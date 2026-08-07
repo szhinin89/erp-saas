@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ZHModal } from "../../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { Badge } from "../../../../components/PageShell";
 import {
   formatDate,
   formatDateTimeSeconds,
@@ -188,7 +189,7 @@ export function KardexMovementDetailModal({
                   <ZHBtn
                     type="button"
                     variant="secondary"
-                    className="kdx-btn-source"
+                    className="zh-mt-10"
                     onClick={goToSourceDocument}
                   >
                     <span className="material-symbols-outlined zh-icon-md">
@@ -214,14 +215,17 @@ export function KardexMovementDetailModal({
             ) : (
               <div className="kdx-links-row">
                 {detail.documentChain.links.map((link, i) => (
-                  <span
+                  <Badge
                     key={i}
-                    className={`pf-badge ${link.isCurrent ? "pf-badge--info" : ""}`}
-                  >
-                    {DOC_TYPE_LABELS[link.docType] ?? link.docType}
-                    {link.docNumber ? ` Â· ${link.docNumber}` : ""}
-                    {link.isCurrent ? " (actual)" : ""}
-                  </span>
+                    variant={link.isCurrent ? "info" : "neutral"}
+                    label={
+                      <>
+                        {DOC_TYPE_LABELS[link.docType] ?? link.docType}
+                        {link.docNumber ? ` Â· ${link.docNumber}` : ""}
+                        {link.isCurrent ? " (actual)" : ""}
+                      </>
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -248,9 +252,10 @@ export function KardexMovementDetailModal({
                   ? `#${detail.relations.previous.sequenceNumber} â€” ${movementTypeLabels[detail.relations.previous.movementTypeName] ?? detail.relations.previous.movementTypeName}`
                   : "Sin movimiento anterior"}
               </ZHBtn>
-              <span className="pf-badge pf-badge--info">
-                Actual: #{detail.relations.current.sequenceNumber}
-              </span>
+              <Badge
+                variant="info"
+                label={`Actual: #${detail.relations.current.sequenceNumber}`}
+              />
               <ZHBtn
                 type="button"
                 variant="secondary"

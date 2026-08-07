@@ -87,8 +87,8 @@ export function LoginPage() {
         </div>
 
         {/* ── Login card ── */}
-        <div className="lp-card">
-          <div className="lp-card-body">
+        <div className="zh-auth-card zh-auth-card--flush">
+          <div className="zh-auth-card-body">
             {/* Error alert */}
             {error && (
               <div className="lp-error" role="alert">
@@ -101,7 +101,7 @@ export function LoginPage() {
 
             {/* Form */}
             <form
-              className="lp-form"
+              className="zh-auth-form"
               onSubmit={handleSubmit(onValid)}
               noValidate
             >
@@ -140,13 +140,13 @@ export function LoginPage() {
               <div
                 className={`zh-auth-field${errors.password ? " zh-auth-field--error" : ""}`}
               >
-                <div className="lp-field-header">
+                <div className="zh-auth-field-header">
                   <label className="zh-auth-label" htmlFor="lp-password">
                     {t("login.password.label")}
                   </label>
                   <button
                     type="button"
-                    className="lp-forgot"
+                    className="zh-auth-link"
                     onClick={() => navigate("/forgot-password")}
                   >
                     {t("login.forgotPassword")}
@@ -199,12 +199,12 @@ export function LoginPage() {
               {/* Submit */}
               <button
                 type="submit"
-                className={`lp-submit${loading ? " lp-submit--loading" : ""}`}
+                className={`zh-auth-submit${loading ? " zh-auth-submit--loading" : ""}`}
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <span className="lp-submit-spinner" aria-hidden="true" />
+                    <span className="zh-auth-submit-spinner" aria-hidden="true" />
                     <span>{t("login.button.loading")}</span>
                   </>
                 ) : (
@@ -226,10 +226,10 @@ export function LoginPage() {
           <div className="lp-card-footer">
             <span className="lp-footer-copy">© 2024 ZH Technologies</span>
             <nav className="lp-footer-links" aria-label="Vínculos legales">
-              <a className="lp-footer-link" href="#">
+              <a className="zh-auth-footer-link" href="#">
                 Soporte
               </a>
-              <a className="lp-footer-link" href="#">
+              <a className="zh-auth-footer-link" href="#">
                 Legal
               </a>
             </nav>

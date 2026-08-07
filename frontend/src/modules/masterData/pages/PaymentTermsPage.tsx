@@ -198,9 +198,7 @@ export function PaymentTermsPage() {
                     <td>{pt.daysBetweenInstallments}</td>
                     <td>{pt.totalDays}</td>
                     <td>
-                      <span className="pf-badge pf-badge--info">
-                        {pt.summary}
-                      </span>
+                      <Badge variant="info" label={pt.summary} />
                     </td>
                     <td>
                       <Badge label={"Estado"} variant="neutral" />

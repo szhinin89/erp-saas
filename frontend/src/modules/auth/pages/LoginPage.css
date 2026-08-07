@@ -49,84 +49,13 @@
 }
 
 /* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.lp-card {
-  width: 100%;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
+/* .lp-card/.lp-card-body ELIMINADOS (Bloque 5A) — consolidados en
+   .zh-auth-card.zh-auth-card--flush + .zh-auth-card-body (zh-ui.css). */
 
-.lp-card-body {
-  padding: var(--space-8);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-/* â”€â”€ Role selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.lp-roles-label {
-  display: block;
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-3);
-}
-
-.lp-roles-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-2);
-  padding: 4px;
-  background: var(--color-surface-container-low);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-
-.lp-role {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: var(--space-2) var(--space-1);
-  border-radius: calc(var(--radius-md) - 1px);
-  border: 1px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  font-family: var(--font-family);
-  transition:
-    background var(--transition),
-    border-color var(--transition);
-}
-.lp-role:hover {
-  background: var(--color-surface-container-high);
-}
-.lp-role--active {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  box-shadow: var(--shadow-xs);
-}
-
-.lp-role-icon {
-  font-size: 20px;
-  color: var(--color-text-secondary);
-}
-.lp-role--active .lp-role-icon {
-  color: var(--color-primary);
-}
-
-.lp-role-label {
-  font-size: 10px;
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  color: var(--color-text-secondary);
-}
-.lp-role--active .lp-role-label {
-  color: var(--color-primary);
-}
+/* .lp-roles-label/.lp-roles-grid/.lp-role/.lp-role--active/.lp-role-icon/
+   .lp-role-label ELIMINADOS (Bloque 5B) — selector de rol sin consumidor en
+   ningún .tsx (confirmado: ni LoginPage.tsx ni ningún otro archivo lo
+   renderiza; sin construcción dinámica de clase). CSS muerto, no duplicado. */
 
 /* â”€â”€ Auth error inline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-error {
@@ -146,36 +75,8 @@
 }
 
 /* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.lp-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-/* Password row: label left, forgot-password link right */
-.lp-field-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.lp-forgot {
-  font-family: var(--font-family);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  color: var(--color-primary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
-  transition: text-decoration var(--transition);
-}
-.lp-forgot:hover {
-  text-decoration: underline;
-}
+/* .lp-form/.lp-field-header/.lp-forgot ELIMINADOS (Bloque 5A) — consolidados
+   en .zh-auth-form / .zh-auth-field-header / .zh-auth-link (zh-ui.css). */
 
 /* Password visibility toggle (absolute inside zh-auth-input-wrap) */
 .lp-password-toggle {
@@ -220,40 +121,7 @@
   user-select: none;
 }
 
-/* Submit */
-.lp-submit {
-  width: 100%;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: 0 var(--space-4);
-  font-family: var(--font-family);
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
-  color: var(--color-on-primary);
-  background: var(--color-primary-container);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition:
-    background var(--transition),
-    transform 0.08s ease;
-}
-.lp-submit:hover:not(:disabled) {
-  background: var(--color-primary);
-}
-.lp-submit:active:not(:disabled) {
-  transform: scale(0.98);
-}
-.lp-submit:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-.lp-submit .material-symbols-outlined {
-  font-size: 18px;
-}
+/* .lp-submit ELIMINADO (Bloque 5A) — consolidado en .zh-auth-submit (zh-ui.css). */
 
 /* â”€â”€ Card footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-card-footer {
@@ -270,22 +138,15 @@
   color: var(--color-text-secondary);
 }
 
+/* Se mantiene: acoplado al layout horizontal (space-between) de .lp-card-footer.
+   .zh-auth-footer-links asume stack vertical + margin-bottom (contexto de
+   .zh-auth-footer standalone en Forgot/Reset) — no es equivalente aquí. */
 .lp-footer-links {
   display: flex;
   gap: var(--space-4);
 }
 
-.lp-footer-link {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  color: var(--color-outline);
-  text-decoration: none;
-  transition: color var(--transition);
-}
-.lp-footer-link:hover {
-  color: var(--color-text-primary);
-  text-decoration: none;
-}
+/* .lp-footer-link ELIMINADO (Bloque 5A) — consolidado en .zh-auth-footer-link (zh-ui.css). */
 
 /* â”€â”€ Security badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-security {
@@ -328,34 +189,11 @@
   flex-shrink: 0;
 }
 
-/* â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.lp-submit--loading {
-  cursor: wait;
-  opacity: 0.82;
-}
-
-/* Spinner dentro del botÃ³n */
-.lp-submit-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
-  border-top-color: var(--color-on-primary);
-  border-radius: 50%;
-  animation: lp-spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes lp-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* .lp-submit--loading/.lp-submit-spinner ELIMINADOS (Bloque 5A) — consolidados
+   en .zh-auth-submit--loading / .zh-auth-submit-spinner (zh-ui.css). */
 
 /* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 480px) {
-  .lp-card-body {
-    padding: var(--space-6);
-  }
   .lp-card-footer {
     padding: var(--space-4) var(--space-6);
   }
@@ -374,6 +212,4 @@
   text-align: center;
 }
 
-.lp-card-body--center {
-  text-align: center;
-}
+/* .lp-card-body--center ELIMINADO (Bloque 5A) — consolidado en .zh-auth-card-body--center (zh-ui.css). */

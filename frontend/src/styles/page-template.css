@@ -72,14 +72,7 @@
   vertical-align: middle;
 }
 
-.pg-kicker {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin: 0 0 2px;
-}
+/* .pg-kicker ELIMINADO (Bloque 12B) — sin consumidores. */
 
 .pg-result-count {
   font-size: 12px;
@@ -117,15 +110,7 @@
   }
 }
 
-.pg-header-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.pg-header-field-label {
-  /* tipografía heredada de la regla unificada de labels en zh-ui.css */
-}
+/* .pg-header-field/.pg-header-field-label ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* ── 3. KPI / STAT CARDS ─────────────────────────────────── */
 .pg-kpis {
@@ -201,31 +186,19 @@
   background: var(--color-error-container);
   color: var(--color-error);
 }
-
-.pg-kpi-badge {
-  font-size: var(--text-badge-size);
-  font-weight: var(--text-badge-weight);
-  line-height: var(--text-badge-height);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-}
-.pg-kpi-badge--success {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
-}
-.pg-kpi-badge--warning {
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  color: var(--color-warning);
-}
-.pg-kpi-badge--error {
-  background: var(--color-error-container);
-  color: var(--color-error);
-}
-.pg-kpi-badge--neutral {
+.pg-kpi-icon--neutral {
   background: var(--color-surface-container);
   color: var(--color-text-secondary);
 }
+.pg-kpi-icon--info {
+  background: var(--color-primary-fixed);
+  color: var(--color-primary);
+}
+
+/* .pg-kpi-badge/--success/--warning/--error/--neutral ELIMINADOS (Bloque 11A)
+   — sin consumidores; ReportKpiCard compone <Badge> oficial desde el
+   Bloque 6D, y los 2 usos sueltos restantes (CompanyProfileSettingsSection,
+   OperationSettingsSection) migraron a <Badge> directo. */
 
 .pg-kpi-bottom {
   display: flex;
@@ -248,11 +221,46 @@
   margin: 0;
 }
 
+/* Value tone (Bloque 12G-3) — color semántico opcional del valor numérico,
+   vía la prop `valueTone` de ReportKpiCard. Aditiva: solo toca color, nunca
+   tamaño/peso/spacing ya definidos por .pg-kpi-value. Cierra la última
+   diferencia visual detectada en la migración de edm-kpi-card (12G-2):
+   .edm-metric--success/--danger coloreaban el número directamente, algo que
+   ReportKpiCard no soportaba hasta ahora. */
+.pg-kpi-value--success {
+  color: var(--color-success);
+}
+.pg-kpi-value--danger {
+  color: var(--color-error);
+}
+
 .pg-kpi-unit {
   font-size: var(--text-help-size);
   font-weight: var(--text-help-weight);
   color: var(--color-text-secondary);
   margin-left: var(--space-1);
+}
+
+/* Trend indicator (icon + texto), promovido desde .dsh-kpi-trend (Bloque 6D) */
+.pg-kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  margin-top: var(--space-1);
+}
+.pg-kpi-trend .material-symbols-outlined {
+  font-size: 16px;
+}
+.pg-kpi-trend--success {
+  color: var(--color-success);
+}
+.pg-kpi-trend--warning {
+  color: var(--color-warning);
+}
+.pg-kpi-trend--neutral {
+  color: var(--color-text-secondary);
 }
 
 /* Variante horizontal (icon left, text right) */
@@ -262,6 +270,43 @@
   justify-content: flex-start;
   gap: var(--space-4);
   min-height: auto;
+}
+
+/* Interactive variant (Bloque 12G-1) — permite usar ReportKpiCard como
+   tarjeta KPI clicable (p. ej. un filtro por estado). Se activa
+   automáticamente cuando <ReportKpiCard onClick={...}> renderiza <button>
+   en vez de <div>. El área clicable es la tarjeta completa (ícono + badge +
+   label + value + trend), no solo el número — decisión de UX explícita para
+   evitar el problema detectado en 12G-0 (título fuera del área clicable en
+   edm-kpi-card). Aditiva: solo normaliza el reset nativo de <button> y
+   agrega hover/foco — nunca toca layout/spacing ya definidos por .pg-kpi.
+   Sin consumidores todavía (preparación de capacidad, Bloque 12G-1). */
+.pg-kpi--interactive {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition:
+    box-shadow var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+}
+.pg-kpi--interactive:hover {
+  background: var(--color-surface-container-low);
+}
+.pg-kpi--interactive:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Active/selected state (Bloque 12G-1) — combina con .pg-kpi--interactive
+   cuando la prop `active` de ReportKpiCard es true, para reflejar qué
+   filtro está aplicado actualmente. Mismo tratamiento visual que tenía
+   .edm-kpi-card--active (borde + sombra primary), generalizado al SSOT. */
+.pg-kpi--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 /* ── 4. SECTION CARD ─────────────────────────────────────── */
@@ -307,47 +352,7 @@
   padding: var(--space-5);
 }
 
-/* ── 5. FORM GRID ────────────────────────────────────────── */
-.pg-form-grid {
-  display: grid;
-  gap: var(--space-4);
-}
-.pg-form-grid--1 {
-  grid-template-columns: 1fr;
-}
-.pg-form-grid--2 {
-  grid-template-columns: 1fr 1fr;
-}
-.pg-form-grid--3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-.pg-form-grid--4 {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-@media (max-width: 1024px) {
-  .pg-form-grid--3,
-  .pg-form-grid--4 {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 640px) {
-  .pg-form-grid--2,
-  .pg-form-grid--3,
-  .pg-form-grid--4 {
-    grid-template-columns: 1fr;
-  }
-}
-
-.pg-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.pg-field-label {
-  /* tipografía heredada de la regla unificada de labels en zh-ui.css */
-}
+/* .pg-form-grid* / .pg-field / .pg-field-label ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* ── 6. TABLE CONTROLS ───────────────────────────────────── */
 .pg-table-controls {
@@ -429,6 +434,21 @@
   font-size: 18px;
 }
 
+/* Variante con texto visible (Bloque 10A) — para paginación con etiquetas
+   ("Anterior"/"Siguiente") + resumen ("Página X de Y"), a diferencia de
+   .pg-pagination-controls/.pg-pagination-btn que son solo-ícono. Los botones
+   en sí usan <ZHBtn> (ya oficial, sin CSS propio necesario) dentro de
+   .pg-pagination-actions; el texto de resumen usa .pg-pagination-summary. */
+.pg-pagination-summary {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.pg-pagination-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 /* ── 7. TABLE FOOTER ─────────────────────────────────────── */
 .pg-table-footer {
   display: flex;
@@ -441,39 +461,7 @@
   gap: var(--space-3);
 }
 
-.pg-legend {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.pg-legend-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.pg-legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.pg-legend-dot--success {
-  background: var(--color-success);
-}
-.pg-legend-dot--warning {
-  background: var(--color-warning);
-}
-.pg-legend-dot--error {
-  background: var(--color-error);
-}
-.pg-legend-dot--neutral {
-  background: var(--color-outline);
-}
+/* .pg-legend* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 .pg-table-timestamp {
   font-size: 12px;
@@ -481,219 +469,11 @@
   font-style: italic;
 }
 
-/* ── 8. ACTIVIDAD / MOVEMENT LOG ─────────────────────────── */
-.pg-activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
+/* .pg-activity-* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
-.pg-activity-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  transition: background var(--transition);
-}
-.pg-activity-item:hover {
-  background: var(--color-surface-container-low);
-}
+/* .pg-accent-card* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
-.pg-activity-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  min-width: 0;
-}
-
-.pg-activity-icon {
-  border-radius: 50%;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.pg-activity-icon--in {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
-}
-.pg-activity-icon--out {
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
-}
-.pg-activity-icon--neutral {
-  background: var(--color-surface-container);
-  color: var(--color-text-secondary);
-}
-.pg-activity-icon .material-symbols-outlined {
-  font-size: 20px;
-}
-
-.pg-activity-title {
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
-  color: var(--color-text-primary);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pg-activity-subtitle {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin: 2px 0 0;
-}
-
-.pg-activity-right {
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.pg-activity-amount {
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
-  display: block;
-}
-.pg-activity-amount--in {
-  color: var(--color-success);
-}
-.pg-activity-amount--out {
-  color: var(--color-error);
-}
-
-.pg-activity-time {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-/* ── 9. ACCENT CARD ──────────────────────────────────────── */
-.pg-accent-card {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-  min-height: 200px;
-}
-
-.pg-accent-card-title {
-  font-size: var(--text-headline-md-size);
-  font-weight: var(--text-headline-md-weight);
-  color: var(--color-on-primary);
-  margin: 0 0 var(--space-2);
-}
-
-.pg-accent-card-body {
-  font-size: var(--text-body-md-size);
-  line-height: var(--text-body-md-height);
-  color: color-mix(in srgb, var(--color-on-primary) 90%, transparent);
-  margin: 0 0 var(--space-4);
-}
-
-.pg-accent-card-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px var(--space-4);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  font-family: var(--font-family);
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
-  cursor: pointer;
-  width: fit-content;
-  transition: opacity var(--transition);
-}
-.pg-accent-card-btn:hover {
-  opacity: 0.88;
-}
-
-.pg-accent-card-deco {
-  position: absolute;
-  bottom: -32px;
-  right: -32px;
-  font-size: 120px;
-  opacity: 0.1;
-  transform: rotate(12deg);
-  color: var(--color-on-primary);
-  pointer-events: none;
-  user-select: none;
-}
-
-/* ── 10. TOTALS SUMMARY ──────────────────────────────────── */
-.pg-totals {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.pg-totals-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--text-body-md-size);
-}
-
-.pg-totals-label {
-  color: var(--color-text-secondary);
-}
-.pg-totals-value {
-  font-weight: 500;
-}
-.pg-totals-value--discount {
-  color: var(--color-error);
-  font-weight: 500;
-}
-
-.pg-totals-sep {
-  height: 1px;
-  background: var(--color-border);
-  margin: var(--space-2) 0;
-}
-
-.pg-totals-grand {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--space-3);
-}
-
-.pg-totals-grand-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pg-totals-grand-label {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-
-.pg-totals-grand-currency {
-  font-size: var(--text-headline-md-size);
-  font-weight: var(--text-headline-md-weight);
-  color: var(--color-primary);
-}
-
-.pg-totals-grand-amount {
-  font-size: 32px;
-  line-height: 1;
-  font-weight: 700;
-  color: var(--color-primary);
-}
+/* .pg-totals* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* ── 11. ACTIONS BAR ─────────────────────────────────────── */
 .pg-actions-bar {
@@ -747,79 +527,4 @@
   }
 }
 
-/* ── 12. INLINE EDITABLE TABLE INPUTS ───────────────────── */
-.pg-editable-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 0;
-  outline: none;
-  box-shadow: none;
-  font-family: var(--font-family);
-  font-size: var(--text-body-md-size);
-  color: var(--color-text-primary);
-  height: auto;
-}
-.pg-editable-input:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-  border: none;
-  box-shadow: none;
-}
-.pg-editable-input--right {
-  text-align: right;
-}
-.pg-editable-input--mono {
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-/* Add-row empty state */
-.pg-add-row {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: var(--font-family);
-  font-size: var(--text-body-md-size);
-  transition: color var(--transition);
-  padding: var(--space-8) 0;
-  width: 100%;
-  justify-content: center;
-}
-.pg-add-row:hover {
-  color: var(--color-primary);
-}
-.pg-add-row .material-symbols-outlined {
-  font-size: 22px;
-  transition: transform var(--transition);
-}
-.pg-add-row:hover .material-symbols-outlined {
-  transform: scale(1.1);
-}
-
-/* Delete row button */
-.pg-row-delete {
-  padding: 4px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 50%;
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background var(--transition),
-    color var(--transition);
-}
-.pg-row-delete:hover {
-  background: var(--color-surface-container);
-  color: var(--color-error);
-}
-.pg-row-delete .material-symbols-outlined {
-  font-size: 20px;
-}
+/* .pg-editable-input* / .pg-add-row / .pg-row-delete ELIMINADOS (Bloque 12B) — sin consumidores. */

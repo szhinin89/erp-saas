@@ -39,7 +39,7 @@ export function ItemListTable({
   }
 
   return (
-    <div className="prd-table-wrap">
+    <div className="table-scroll">
       <table className="table">
         <thead>
           <tr>
@@ -74,12 +74,12 @@ export function ItemListTable({
               <td>
                 <div className="prd-badge-wrap">
                   {item.tracksLot && (
-                    <Badge label="LOT" variant="blue" size="md" title="Lotes" />
+                    <Badge label="LOT" variant="info" size="md" title="Lotes" />
                   )}
                   {item.tracksSeries && (
                     <Badge
                       label="SER"
-                      variant="blue"
+                      variant="info"
                       size="md"
                       title="Series"
                     />
@@ -87,7 +87,7 @@ export function ItemListTable({
                   {item.isForSale && (
                     <Badge
                       label="VENTA"
-                      variant="green"
+                      variant="success"
                       size="md"
                       title="En venta"
                     />
@@ -95,7 +95,7 @@ export function ItemListTable({
                   {item.isEcommerceActive && (
                     <Badge
                       label="EC"
-                      variant="gray"
+                      variant="neutral"
                       size="md"
                       title="eCommerce"
                     />

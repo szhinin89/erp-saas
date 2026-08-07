@@ -2,6 +2,7 @@ import type { FieldValues } from "react-hook-form";
 import { EmptyState, LoadingState } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { useI18n } from "../../../../i18n/i18n";
+import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import type { CatalogCrudContext } from "../hooks/useCatalogCrud";
 
 interface Props<
@@ -52,35 +53,27 @@ export function CatalogListSection<
     <>
       {!loading && (
         <div className="pg-kpis">
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">{icon}</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Total</p>
-              <p className="pg-kpi-value">{totals.total}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">check_circle</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">{t("common.active", "Activos")}</p>
-              <p className="pg-kpi-value">{totals.active}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--error">
-              <span className="material-symbols-outlined">block</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">
-                {t("common.inactive", "Inactivos")}
-              </p>
-              <p className="pg-kpi-value">{totals.inactive}</p>
-            </div>
-          </div>
+          <ReportKpiCard
+            layout="horizontal"
+            icon={icon}
+            tone="primary"
+            label="Total"
+            value={String(totals.total)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="check_circle"
+            tone="primary"
+            label={t("common.active", "Activos")}
+            value={String(totals.active)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="block"
+            tone="error"
+            label={t("common.inactive", "Inactivos")}
+            value={String(totals.inactive)}
+          />
         </div>
       )}
 
@@ -150,7 +143,7 @@ export function CatalogListSection<
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

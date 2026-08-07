@@ -255,7 +255,7 @@ function PriceListSimulationTable({
           )}
         </p>
       ) : (
-        <div className="prd-table-wrap">
+        <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>

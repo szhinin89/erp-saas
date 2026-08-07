@@ -162,51 +162,19 @@
 }
 
 /* ── Fields ─────────────────────────────────────────────────── */
-/* .pf-field/.pf-field__*/
-.pf-label ELIMINADOS (Fase 3B) — consolidados en
+/* .pf-field/.pf-field__* /.pf-label ELIMINADOS (Fase 3B) — consolidados en
    <ZHField density="compact"> (components/zh/ZHForm.tsx + .zh-field--compact en zh-ui.css). */
 
 /* ── Badges ─────────────────────────────────────────────────── */
-.pf-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.pf-badge--success {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
-}
-.pf-badge--warning {
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  color: var(--color-warning);
-}
-.pf-badge--danger {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
-  color: var(--color-error);
-}
-.pf-badge--info {
-  background: var(--color-primary-fixed);
-  color: var(--color-primary);
-}
-.pf-badge--gray {
-  background: var(--color-surface-container-low);
-  color: var(--color-text-secondary);
-}
+/* .pf-badge/.pf-badge--* ELIMINADOS (Fase 3B/4B) — consolidados en <Badge>
+   (components/PageShell.tsx + .badge/.badge--* en zh-ui.css). .pf-badge__icon
+   se mantiene: sigue en uso como utilidad de tamaño de icono dentro de <Badge label>. */
 .pf-badge__icon {
   font-size: 14px;
 }
 
 /* ── Products Table ─────────────────────────────────────────── */
-.pf-table-wrap {
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-}
+/* .pf-table-wrap ELIMINADO (Bloque 7B) — sin consumidores. */
 .pf-table {
   width: 100%;
   border-collapse: collapse;
@@ -224,12 +192,8 @@
   border-bottom: 2px solid var(--color-border);
   white-space: nowrap;
 }
-.pf-table thead th.pf-th--right {
-  text-align: right;
-}
-.pf-table thead th.pf-th--center {
-  text-align: center;
-}
+/* .pf-th--right/--center/.pf-td--right/--center ELIMINADOS (Bloque 7B) —
+   consolidados en .zh-text-align-right/--center (zh-ui.css). */
 .pf-table tbody td {
   padding: var(--space-2) var(--space-3);
   vertical-align: middle;
@@ -238,92 +202,20 @@
 .pf-table tbody tr:hover {
   background: var(--color-surface-container-low);
 }
-.pf-table tbody td.pf-td--right {
-  text-align: right;
-}
-.pf-table tbody td.pf-td--center {
-  text-align: center;
-}
-.pf-table tbody td.pf-td--num {
-  /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — dato numérico, alineado a la derecha. */
-  text-align: right;
-  font-family: var(--font-family-mono);
-  font-size: 12px;
-  font-weight: 500;
-}
+/* .pf-td--num ELIMINADO (Bloque 7B) — consolidado en .zh-table-cell--num (zh-ui.css). */
 
-/* Table inputs */
-.pf-table-input {
-  width: 100%;
-  font-size: 13px;
-  padding: 5px 8px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition);
-}
-.pf-table-input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 8%, transparent);
-}
-.pf-table-input--num {
-  /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — dato numérico, alineado a la derecha. */
-  text-align: right;
-  font-family: var(--font-family-mono);
-  font-size: 12px;
-}
-.pf-table-input--sm {
-  width: 80px;
-}
-.pf-table-input--xs {
-  width: 60px;
-}
+/* .pf-table-input/--num ELIMINADOS (Bloque 8A) — consolidados en
+   ZhDateInput/ZhDecimalInput/ZhTextInput (components/zh/inputs/) +
+   .zh-numeric-input (zh-ui.css) para alineación numérica.
+   .pf-table-input--sm/--xs ELIMINADOS (Bloque 7B) — sin consumidores. */
 
 /* Row actions */
-.pf-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  justify-content: center;
-}
-.pf-row-action {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color var(--transition),
-    background var(--transition);
-}
-.pf-row-action:hover {
-  background: var(--color-surface-container-high);
-  color: var(--color-primary);
-}
-.pf-row-action--danger:hover {
-  color: var(--color-error);
-  background: color-mix(in srgb, var(--color-error) 6%, transparent);
-}
+/* .pf-row-actions ELIMINADO (Bloque 7B) — sin consumidores. */
+/* .pf-row-action/--danger ELIMINADOS (Bloque 7C) — consolidados en el
+   componente oficial <ZHIconButton> (components/zh/ZHIconButton.tsx). */
 
-/* Empty rows */
-.pf-table-empty {
-  padding: var(--space-8) var(--space-5);
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-.pf-table-empty__icon {
-  font-size: 36px;
-  color: var(--color-surface-container-high);
-  display: block;
-  margin-bottom: var(--space-2);
-}
+/* .pf-table-empty ELIMINADO (Bloque 7B) — consolidado en .zh-table-empty (zh-ui.css).
+   .pf-table-empty__icon ELIMINADO (Bloque 7B) — sin consumidores. */
 
 /* ── Main Layout (content + totals sidebar) ─────────────────── */
 .pf-main-layout {
@@ -332,56 +224,8 @@
   gap: var(--space-5);
 }
 
-/* ── Buttons (.pf-btn* — compartido; .pf-totals/.pf-footer/.pf-retention
-   se movieron a modules/purchases/styles/purchases-invoice.css) ──── */
-.pf-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-}
-.pf-btn:hover {
-  background: var(--color-surface-container-low);
-}
-.pf-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.pf-btn--primary {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border-color: var(--color-primary);
-}
-.pf-btn--primary:hover:not(:disabled) {
-  filter: brightness(0.92);
-}
-.pf-btn--success {
-  background: var(--color-success);
-  color: var(--color-on-primary);
-  border-color: var(--color-success);
-}
-.pf-btn--success:hover:not(:disabled) {
-  filter: brightness(0.92);
-}
-.pf-btn--danger {
-  background: var(--color-error);
-  color: var(--color-on-primary);
-  border-color: var(--color-error);
-}
-.pf-btn--danger:hover:not(:disabled) {
-  filter: brightness(0.92);
-}
-.pf-btn__icon {
-  font-size: 18px;
-}
+/* .pf-btn/.pf-btn--*/.pf-btn__icon ELIMINADOS (Bloque 4B) — sin consumidores;
+   equivalente vigente es <ZHBtn> (components/zh/ZHForm.tsx + .zh-btn/.zh-btn--* en zh-ui.css). */
 
 /* .pdl-container/.pdl-topbar* movidos a modules/purchases/styles/purchases-invoice.css */
 
@@ -785,7 +629,4 @@
     grid-template-columns: 1fr;
   }
 }
-.pf-row-action--active {
-  color: var(--color-primary);
-  background: var(--color-primary-fixed);
-}
+/* .pf-row-action--active ELIMINADO (Bloque 7B) — sin consumidores. */

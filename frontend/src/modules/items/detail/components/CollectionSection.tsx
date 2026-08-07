@@ -66,7 +66,7 @@ export function ImagesSection({
       emptyMessage={t("items.images.empty", "No hay imágenes.")}
       count={active.length}
     >
-      <div className="pg-overflow-x">
+      <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -133,7 +133,7 @@ export function UnitConversionsSection({
       )}
       count={active.length}
     >
-      <div className="pg-overflow-x">
+      <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -179,7 +179,7 @@ export function SubstitutesSection({
       )}
       count={active.length}
     >
-      <div className="pg-overflow-x">
+      <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -223,7 +223,7 @@ export function PackagingLevelsSection({
       )}
       count={active.length}
     >
-      <div className="pg-overflow-x">
+      <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>

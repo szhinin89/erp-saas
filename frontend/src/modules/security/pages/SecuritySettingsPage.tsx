@@ -288,11 +288,11 @@ export function SecuritySettingsPage() {
         ) : rows.length === 0 ? (
           <EmptyState message={t("security.emptyUsers")} />
         ) : (
-          <div className="security-scroll">
-            <table className="security-table">
+          <div className="table-scroll">
+            <table className="table table--compact table--neutral table--matrix table--sticky-column">
               <thead>
                 <tr>
-                  <th className="sticky-col">{t("security.users")}</th>
+                  <th className="table__sticky-cell">{t("security.users")}</th>
                   {scopeColumns.map((c) => (
                     <th key={c.key}>{t(c.labelKey)}</th>
                   ))}
@@ -311,7 +311,7 @@ export function SecuritySettingsPage() {
                       key={u.id}
                       className={!u.isActive ? "row--inactive" : ""}
                     >
-                      <td className="sticky-col">
+                      <td className="table__sticky-cell">
                         <div className="userCell">
                           <div className="userName">{u.fullName}</div>
                           <div className="userMeta">

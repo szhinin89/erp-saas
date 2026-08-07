@@ -181,7 +181,7 @@ export function FinancialDestinationsPage() {
   const editorLabel = editing ? "Editar Destino Financiero" : "Nuevo Destino Financiero";
 
   const listContent = (
-    <div className="prd-table-wrap">
+    <div className="table-scroll">
       {loading ? (
         <p>Cargando...</p>
       ) : (

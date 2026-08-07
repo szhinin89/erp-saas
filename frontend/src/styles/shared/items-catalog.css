@@ -30,10 +30,7 @@
 .prd-fadein {
   animation: prd-fadein 0.18s ease both;
 }
-.prd-slidedown {
-  animation: prd-slidedown 0.18s ease both;
-  overflow: hidden;
-}
+/* .prd-slidedown ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* ── Tab bar ─────────────────────────────────────────────── */
 .prd-tabs {
@@ -80,11 +77,7 @@
 .prd-tab-icon {
   font-size: 16px;
 }
-.prd-tab-edit-badge {
-  font-size: 8px;
-  color: var(--color-primary);
-  margin-left: 2px;
-}
+/* .prd-tab-edit-badge ELIMINADO (Bloque 12B) — sin consumidores. */
 
 .prd-tab-content {
   min-height: 320px;
@@ -108,119 +101,16 @@
   }
 }
 
-.prd-kpi-wide {
-  grid-column: span 1;
-}
+/* .prd-kpi-wide / .prd-sparkline* / .prd-kpi-trend-icon ELIMINADOS (Bloque 12B) — sin consumidores. */
 
-.prd-sparkline {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 40px;
-  padding: 4px;
-}
-.prd-sparkline span {
-  width: 6px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
-}
-.prd-sparkline span:nth-child(1) {
-  height: 50%;
-}
-.prd-sparkline span:nth-child(2) {
-  height: 80%;
-}
-.prd-sparkline span:nth-child(3) {
-  height: 65%;
-}
-.prd-sparkline span:nth-child(4) {
-  height: 100%;
-}
-.prd-sparkline-bar--primary {
-  background: var(--color-primary) !important;
-}
-.prd-kpi-trend-icon {
-  font-size: 12px;
-}
-
-/* ── Quick stats ─────────────────────────────────────────── */
-.prd-quick-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
-  margin-bottom: var(--space-6);
-}
-@media (max-width: 640px) {
-  .prd-quick-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.prd-qs {
-  background: var(--color-surface-container-low);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  border: 1px solid var(--color-border);
-}
-.prd-qs__value {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1;
-}
-.prd-qs__label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
-}
-
-.prd-qs--green .prd-qs__value {
-  color: var(--color-success);
-}
-.prd-qs--red .prd-qs__value {
-  color: var(--color-error);
-}
-.prd-qs--blue .prd-qs__value {
-  color: var(--color-primary);
-}
-.prd-qs--gray .prd-qs__value {
-  color: var(--color-text-secondary);
-}
+/* .prd-quick-stats / .prd-qs* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* ── Activity ────────────────────────────────────────────── */
-.prd-activity {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-}
-.prd-activity__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-}
-.prd-activity__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.prd-activity__empty {
-  padding: var(--space-8);
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-}
+/* .prd-activity (base) / .prd-activity__header / __title / __empty ELIMINADOS (Bloque 12B) — sin
+   consumidores. Re-verificación (paso obligatorio de este bloque) detectó que la clase base
+   `.prd-activity` tampoco tenía consumidores directos: solo aparecía como subcadena de sus
+   elementos BEM vivos (__row, __dot, __info, __name, __action, __time, __list), lo cual la
+   auditoría original 12A no distinguió. */
 .prd-activity__list {
   display: flex;
   flex-direction: column;
@@ -393,29 +283,8 @@
   opacity: 0.5;
 }
 
-.prd-product-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-.prd-product-info {
-  min-width: 0;
-}
-.prd-thumb {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-container-high);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-.prd-thumb-icon {
-  font-size: 18px;
-  color: var(--color-primary);
-}
+/* .prd-product-cell / .prd-product-info / .prd-thumb / .prd-thumb-icon ELIMINADOS (Bloque 12B) — sin consumidores. */
+
 .prd-name {
   font-size: 13px;
   font-weight: 500;
@@ -433,13 +302,7 @@
   font-size: 11px;
   color: var(--color-text-tertiary);
 }
-.prd-date-cell {
-  font-size: 11px;
-}
-.prd-footer-count {
-  font-size: 12px;
-  margin: 0;
-}
+/* .prd-date-cell / .prd-footer-count ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 .prd-status-dot {
   display: inline-flex;
@@ -473,12 +336,8 @@
   justify-content: flex-end;
   gap: var(--space-1);
 }
-.prd-btn-mute:hover {
-  color: var(--color-error) !important;
-}
-.prd-btn-activate:hover {
-  color: var(--color-success) !important;
-}
+/* .prd-btn-mute / .prd-btn-activate ELIMINADOS (Bloque 13F) — migrados a
+   <ZHIconButton variant="danger"|"success"> en WarehouseListTab.tsx. */
 
 /* ── Empty state (search) ────────────────────────────────── */
 .prd-empty-search {
@@ -564,75 +423,23 @@
   background: var(--color-success);
   color: var(--color-on-primary);
 }
-.prd-wiz-step--current .prd-wiz-step__num {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-.prd-wiz-step--current {
-  color: var(--color-primary);
-}
+/* .prd-wiz-step--current ELIMINADO (Bloque 12B) — sin consumidores (TSX solo aplica --active/--done). */
 .prd-wiz-step--done {
   color: var(--color-text-primary);
   cursor: pointer;
 }
 
-.prd-wiz-step__line {
-  flex: 1;
-  height: 1px;
-  min-width: 24px;
-  max-width: 48px;
-  background: var(--color-border);
-  margin: 0 var(--space-2);
-  display: block;
-}
+/* .prd-wiz-step__line ELIMINADO (Bloque 12B) — sin consumidores. */
 .prd-wiz-step__label {
   white-space: nowrap;
 }
 
 /* Panel */
-.prd-wiz-body {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-}
+/* .prd-wiz-body ELIMINADO (Bloque 12B) — sin consumidores. */
 .prd-wiz-panel {
   padding: var(--space-6);
 }
-.prd-wiz-panel__head {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-  padding-bottom: var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-}
-.prd-wiz-panel__icon {
-  font-size: 22px;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.prd-wiz-panel__icon--blue {
-  background: var(--color-primary-fixed);
-  color: var(--color-primary);
-}
-.prd-wiz-panel__icon--green {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
-}
-.prd-wiz-panel__icon--amber {
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  color: var(--color-warning);
-}
-.prd-wiz-panel__icon--teal {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
-}
+/* .prd-wiz-panel__head / .prd-wiz-panel__icon* ELIMINADOS (Bloque 12B) — sin consumidores. */
 .prd-wiz-panel__title {
   font-size: 15px;
   font-weight: 600;
@@ -646,116 +453,15 @@
 }
 
 /* Grids */
-.prd-wiz-grid {
-  display: grid;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-.prd-wiz-grid--2 {
-  grid-template-columns: 1fr 1fr;
-}
-.prd-wiz-grid--3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-@media (max-width: 700px) {
-  .prd-wiz-grid--2,
-  .prd-wiz-grid--3 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Fields */
-.prd-wiz-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.prd-wiz-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-.prd-wiz-required {
-  color: var(--color-error);
-  margin-left: 2px;
-}
-.prd-wiz-hint {
-  font-size: 10px;
-  color: var(--color-text-secondary);
-}
+/* .prd-wiz-grid* / .prd-wiz-field / .prd-wiz-label / .prd-wiz-required / .prd-wiz-hint /
+   .prd-wiz-input-wrap / .prd-wiz-input* / .prd-wiz-textarea / .prd-wiz-select /
+   .prd-wiz-input__state* / .prd-wiz-skeleton* ELIMINADOS (Bloque 12B) — sin consumidores.
+   (.prd-wiz-error-msg se conserva: sí tiene consumidor real). */
 .prd-wiz-error-msg {
   font-size: 10px;
   color: var(--color-error);
 }
 
-.prd-wiz-input-wrap {
-  position: relative;
-}
-.prd-wiz-input {
-  width: 100%;
-  border: 1.5px solid var(--color-border) !important;
-  border-radius: var(--radius-md) !important;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s,
-    background 0.15s !important;
-}
-.prd-wiz-input:hover {
-  border-color: var(--color-outline) !important;
-}
-.prd-wiz-input:focus {
-  border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
-  outline: none;
-}
-.prd-wiz-input--error {
-  border-color: var(--color-error) !important;
-  background: var(--color-error-container) !important;
-}
-.prd-wiz-field:not(.prd-wiz-field--error)
-  .prd-wiz-input:not(:placeholder-shown):not(:focus) {
-  border-color: var(--color-success) !important;
-  background: color-mix(in srgb, var(--color-success) 8%, transparent) !important;
-}
-.prd-wiz-textarea {
-  resize: vertical;
-}
-.prd-wiz-select {
-  cursor: pointer;
-}
-
-.prd-wiz-input__state {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.prd-wiz-input__state--ok {
-  opacity: 1;
-  color: var(--color-success);
-}
-.prd-wiz-input__state--error {
-  opacity: 1;
-  color: var(--color-error);
-}
-
-/* Skeleton */
-.prd-wiz-skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-.prd-wiz-skeleton {
-  height: 60px;
-  background: var(--color-surface-container-high);
-  border-radius: var(--radius-md);
-  animation: prd-skeleton 1.4s ease infinite;
-}
 @keyframes prd-skeleton {
   0%,
   100% {
@@ -766,149 +472,12 @@
   }
 }
 
-/* Subsections */
-.prd-wiz-subsec {
-  margin-bottom: var(--space-6);
-}
-.prd-wiz-subsec__title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  margin: 0 0 var(--space-3);
-}
+/* .prd-wiz-subsec* / .prd-opt-grid / .prd-opt-card* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
-/* Option cards */
-.prd-opt-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
-}
-@media (max-width: 640px) {
-  .prd-opt-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.prd-opt-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-3);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  background: var(--color-surface);
-  transition:
-    border-color 0.15s,
-    background 0.15s,
-    box-shadow 0.15s;
-  text-align: center;
-}
-.prd-opt-card:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-fixed);
-}
-.prd-opt-card--on {
-  border-color: var(--color-primary);
-  background: var(--color-primary-fixed);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
-}
-.prd-opt-card--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.prd-opt-card__input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.prd-opt-card__icon {
-  font-size: 22px;
-  color: var(--color-text-secondary);
-  transition: color 0.15s;
-}
-.prd-opt-card:hover .prd-opt-card__icon,
-.prd-opt-card--on .prd-opt-card__icon {
-  color: var(--color-primary);
-}
-.prd-opt-card__title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-/* Barcodes */
-.prd-barcodes {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  margin-top: var(--space-4);
-}
-.prd-barcodes__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-container-low);
-  border-bottom: 1px solid var(--color-border);
-}
-.prd-barcodes__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-.prd-barcodes__empty {
-  padding: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  text-align: center;
-}
-.prd-barcodes__list {
-  display: flex;
-  flex-direction: column;
-}
-.prd-barcodes__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border-light);
-}
-.prd-barcodes__row:last-child {
-  border-bottom: none;
-}
-.prd-btn-remove {
-  color: var(--color-text-secondary);
-}
-.prd-btn-remove:hover {
-  color: var(--color-error) !important;
-}
+/* .prd-barcodes* / .prd-btn-remove ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* Review step */
-.prd-review-card {
-  background: color-mix(in srgb, var(--color-success) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-success) 24%, transparent);
-  border-radius: var(--radius-xl);
-  padding: var(--space-5);
-  margin-bottom: var(--space-4);
-}
-.prd-review-card__title {
-  font-size: var(--text-body-md-size);
-  font-weight: 600;
-  color: var(--color-success);
-  margin-bottom: var(--space-4);
-}
+/* .prd-review-card / .prd-review-card__title ELIMINADOS (Bloque 12B) — sin consumidores. */
 .prd-review-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -919,26 +488,7 @@
     grid-template-columns: 1fr;
   }
 }
-.prd-review-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.prd-review-row__label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-}
-.prd-review-row__value {
-  font-size: 12px;
-  color: var(--color-text-primary);
-}
-.prd-review-row__value--empty {
-  font-style: italic;
-  color: var(--color-text-secondary);
-}
+/* .prd-review-row* ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 .prd-review-warning {
   display: flex;
@@ -971,21 +521,9 @@
   align-items: center;
 }
 
-.prd-btn--success {
-  background: var(--color-success) !important;
-  color: var(--color-on-primary) !important;
-  border-color: var(--color-success) !important;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.prd-btn--success:hover:not(:disabled) {
-  filter: brightness(0.92);
-}
-.prd-btn--success:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* .prd-btn--success (+ :hover / :disabled) ELIMINADOS (Bloque 13G) —
+   migrado a variant="success" (nueva variante oficial de ZHBtn, zh-ui.css)
+   en MasterDataPartnerWizard.tsx. */
 
 /* Spinner */
 .prd-spinner {
@@ -1095,11 +633,7 @@
   font-size: 12px;
   color: var(--color-warning);
 }
-.prd-draft-banner__actions {
-  display: flex;
-  gap: var(--space-2);
-  margin-left: auto;
-}
+/* .prd-draft-banner__actions ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* Responsive wizard footer */
 @media (max-width: 540px) {
@@ -1241,22 +775,8 @@
 }
 
 /* ── Items — tabla de simulación de listas de precio ─────── */
-/* ── Inline status badge (active/inactive) ───────────────── */
-.prd-status-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.prd-status-badge--active {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  color: var(--color-success);
-}
-.prd-status-badge--inactive {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
-  color: var(--color-error);
-}
+/* .prd-status-badge/--active/--inactive/--muted ELIMINADOS (Bloque 4B) —
+   sin consumidores; equivalente vigente es <Badge> (components/PageShell.tsx). */
 
 /* ── CRUD error banner ───────────────────────────────────── */
 .prd-error-banner {
@@ -1288,33 +808,9 @@
 }
 
 /* ── Entity configuration split layout (cfg-*) ───────────── */
-.cfg-split {
-  display: grid;
-  grid-template-columns: minmax(300px, 38%) 1fr;
-  align-items: start;
-  gap: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-top: var(--space-5);
-}
-.cfg-list-panel {
-  border-right: 1px solid var(--color-border);
-  min-height: 520px;
-}
-.cfg-detail-panel {
-  min-height: 520px;
-}
-.cfg-empty-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  min-height: 520px;
-  padding: var(--space-10);
-  text-align: center;
-}
+/* .cfg-split / .cfg-list-panel / .cfg-detail-panel ELIMINADOS (Bloque 12B) — sin consumidores. */
+/* .cfg-empty-panel (base) ELIMINADO (Bloque 12B) — sin consumidores directos: solo se usan sus
+   elementos BEM __icon/__title/__sub, detectado en la re-verificación obligatoria de este bloque. */
 .cfg-empty-panel__icon {
   font-size: 48px;
   color: var(--color-text-secondary);
@@ -1612,16 +1108,8 @@ tr.cfg-row--selected:hover > td {
   border: 1px solid var(--color-border);
 }
 
-.items-profitability__simulate-btn {
-  padding: 6px 16px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
+/* .items-profitability__simulate-btn ELIMINADO (Bloque 13H) — migrado a
+   <ZHBtn variant="primary" size="sm"> en ProfitabilitySection.tsx. */
 
 .items-profitability__sim-grid {
   margin-top: var(--space-4);
@@ -1670,12 +1158,57 @@ tr.cfg-row--selected:hover > td {
   color: var(--color-primary);
 }
 
+/* danger/success: color semántico + hover con fondo suave (Bloque 13D).
+   No se toca padding/geometría de estas dos variantes — permanecen del mismo
+   tamaño que .prd-icon-btn--primary para no romper filas mixtas ya
+   existentes (p.ej. primary + danger/success alternando en la misma fila de
+   tabla). El fondo hover se ajusta al radio del propio ícono. */
 .prd-icon-btn--danger {
   color: var(--color-error);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+.prd-icon-btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
 
 .prd-icon-btn--success {
   color: var(--color-success);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+.prd-icon-btn--success:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+}
+
+/* Ghost: neutro por defecto, resalta a primary en hover (Bloque 7D,
+   ex .pf-row-action de erp-form-core.css). */
+.prd-icon-btn--ghost {
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+.prd-icon-btn--ghost:hover:not(:disabled) {
+  background: var(--color-surface-container-high);
+  color: var(--color-primary);
+}
+
+/* Circle shape (Bloque 13D) — variante circular opcional (prop `shape`),
+   preparada para reemplazar reimplementaciones ad-hoc como
+   .rpt-row-actions-btn (kebab "más acciones"). Aditiva: solo agrega
+   dimensión fija + radio 50%, compone con cualquier variante de color.
+   Sin consumidores todavía — preparación de capacidad (Bloque 13D). */
+.prd-icon-btn--circle {
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  border-radius: 50%;
+}
+.prd-icon-btn--circle:hover:not(:disabled) {
+  background: var(--color-surface-container);
 }
 
 .prd-form-grid {
@@ -1695,11 +1228,6 @@ tr.cfg-row--selected:hover > td {
 
 .pm-checkbox-title {
   font-weight: 600;
-}
-
-.prd-status-badge--muted {
-  background: var(--color-surface-container-low);
-  color: var(--color-text-secondary);
 }
 
 .ct-installment-sum {
@@ -1732,6 +1260,4 @@ tr.cfg-row--selected:hover > td {
   width: 120px;
 }
 
-.ct-installment-delete-btn {
-  margin-top: 20px;
-}
+/* .ct-installment-delete-btn ELIMINADO (Bloque 12B) — sin consumidores. */

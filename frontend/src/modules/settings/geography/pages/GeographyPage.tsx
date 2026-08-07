@@ -5,6 +5,7 @@ import {
   NoAccessPage,
 } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { useI18n } from "../../../../i18n/i18n";
 import { branchService } from "../../../branches/api/branchService";
@@ -154,30 +155,26 @@ export function GeographyPage() {
         ) : (
           <>
             <div className="pg-kpis">
-              <div className="pg-kpi pg-kpi--h">
-                <div className="pg-kpi-bottom">
-                  <p className="pg-kpi-label">Países</p>
-                  <p className="pg-kpi-value">{countries.length}</p>
-                </div>
-              </div>
-              <div className="pg-kpi pg-kpi--h">
-                <div className="pg-kpi-bottom">
-                  <p className="pg-kpi-label">Provincias</p>
-                  <p className="pg-kpi-value">{provinces.length}</p>
-                </div>
-              </div>
-              <div className="pg-kpi pg-kpi--h">
-                <div className="pg-kpi-bottom">
-                  <p className="pg-kpi-label">Cantones</p>
-                  <p className="pg-kpi-value">{cantons.length}</p>
-                </div>
-              </div>
-              <div className="pg-kpi pg-kpi--h">
-                <div className="pg-kpi-bottom">
-                  <p className="pg-kpi-label">Parroquias</p>
-                  <p className="pg-kpi-value">{parishes.length}</p>
-                </div>
-              </div>
+              <ReportKpiCard
+                layout="horizontal"
+                label="Países"
+                value={String(countries.length)}
+              />
+              <ReportKpiCard
+                layout="horizontal"
+                label="Provincias"
+                value={String(provinces.length)}
+              />
+              <ReportKpiCard
+                layout="horizontal"
+                label="Cantones"
+                value={String(cantons.length)}
+              />
+              <ReportKpiCard
+                layout="horizontal"
+                label="Parroquias"
+                value={String(parishes.length)}
+              />
             </div>
 
             {selectedCountry && (
@@ -191,7 +188,7 @@ export function GeographyPage() {
             {cantonId && parishes.length === 0 ? (
               <EmptyState message="No hay parroquias para el cantón seleccionado." />
             ) : (
-              <div className="pg-overflow-x">
+              <div className="table-scroll">
                 <table className="table">
                   <thead>
                     <tr>

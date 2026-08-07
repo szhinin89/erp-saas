@@ -10,6 +10,7 @@ import { LoadingState, Badge } from "../../../../components/PageShell";
 import type { WarehouseDto } from "../api/warehouseService";
 import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 
 interface Props {
   warehouses: WarehouseDto[];
@@ -184,7 +185,7 @@ export function WarehouseListadoTab({
         </div>
       ) : (
         <>
-          <div className="prd-table-wrap">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>
@@ -271,32 +272,22 @@ export function WarehouseListadoTab({
                             </ZHBtn>
                           )}
                           {(row.isActive ? canDelete : canUpdate) && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                row.isActive
-                                  ? "prd-btn-mute"
-                                  : "prd-btn-activate"
-                              }
+                            <ZHIconButton
+                              icon={row.isActive ? "block" : "check_circle"}
+                              variant={row.isActive ? "danger" : "success"}
                               title={
                                 row.isActive
                                   ? t("common.disable", "Desactivar")
                                   : t("common.enable", "Activar")
                               }
-                              disabled={toggling}
-                              onClick={() => handleToggleClick(row)}
-                              aria-label={
+                              ariaLabel={
                                 row.isActive
                                   ? `${t("common.disable", "Desactivar")} ${row.name}`
                                   : `${t("common.enable", "Activar")} ${row.name}`
                               }
-                            >
-                              <span className="material-symbols-outlined">
-                                {row.isActive ? "block" : "check_circle"}
-                              </span>
-                            </ZHBtn>
+                              disabled={toggling}
+                              onClick={() => handleToggleClick(row)}
+                            />
                           )}
                         </div>
                       </td>

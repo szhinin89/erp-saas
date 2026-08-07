@@ -128,7 +128,7 @@ export function PurchaseReceptionPage() {
       align: "center",
       render: (row) => (
         <Badge
-          variant="blue"
+          variant="info"
           upper
           size="md"
           label={DOCUMENT_STATUS_LABEL[row.documentStatus]}
@@ -162,10 +162,10 @@ export function PurchaseReceptionPage() {
         const rowState = ctx.xmlRowState[row.documentId];
 
         if (row.documentStatus !== "IMPORTED") {
-          return <Badge variant="green" label="XML recibido" />;
+          return <Badge variant="success" label="XML recibido" />;
         }
         if (rowState === "loading") {
-          return <Badge variant="gray" label="Consultando..." />;
+          return <Badge variant="neutral" label="Consultando..." />;
         }
         return (
           <div className="pur-xml-cell">
@@ -219,7 +219,7 @@ export function PurchaseReceptionPage() {
       align: "center",
       render: (row) => {
         if (row.documentStatus === "PROCESSED") {
-          return <Badge variant="green" label="Compra creada" />;
+          return <Badge variant="success" label="Compra creada" />;
         }
         if (row.documentStatus !== "VERIFIED") {
           return null;
@@ -281,17 +281,17 @@ export function PurchaseReceptionPage() {
       {ctx.result && (
         <div className="pg-section pur-reception-summary">
           <Badge
-            variant="green"
+            variant="success"
             label={`Importadas: ${ctx.summary.imported}`}
           />
-          <Badge variant="gray" label={`Pendientes: ${ctx.summary.pending}`} />
+          <Badge variant="neutral" label={`Pendientes: ${ctx.summary.pending}`} />
           <Badge
-            variant="orange"
+            variant="warning"
             label={`Proveedor nuevo: ${ctx.summary.newSupplier}`}
           />
           {ctx.summary.skipped > 0 && (
             <Badge
-              variant="gray"
+              variant="neutral"
               label={`Omitidas (no soportadas en esta fase): ${ctx.summary.skipped}`}
             />
           )}

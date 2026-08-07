@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import type { CustomerPickerRow } from "../../masterData/types/businessPartner.types";
 
 type Props = {
@@ -173,13 +174,13 @@ export function CustomerPicker({
                 Sin resultados para &ldquo;{query}&rdquo;
               </div>
               {onCreateNew && (
-                <button
-                  type="button"
+                <ZHBtn
+                  variant="primary"
+                  size="sm"
                   onClick={() => {
                     setOpen(false);
                     onCreateNew(query);
                   }}
-                  className="zh-picker__create-btn"
                 >
                   <span
                     className="material-symbols-outlined zh-picker__create-icon"
@@ -187,7 +188,7 @@ export function CustomerPicker({
                     person_add
                   </span>
                   Crear cliente
-                </button>
+                </ZHBtn>
               )}
             </div>
           )}

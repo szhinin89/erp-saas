@@ -10,9 +10,10 @@
    ============================================================ */
 
 /* ── Totals Panel ───────────────────────────────────────────── */
-.pf-icon--18 { font-size: 18px; }
+/* .pf-icon--14/--18 ELIMINADOS (Bloque 4D) — equivalentes exactos
+   .zh-icon-sm (14px) / .zh-icon-lg (18px) en zh-ui.css. --20/--22/--28
+   se mantienen: sin equivalente en la escala oficial de iconos. */
 .pf-icon--20 { font-size: 20px; }
-.pf-icon--14 { font-size: 14px; }
 .pf-icon--22 { font-size: 22px; }
 .pf-icon--28 { font-size: 28px; }
 
@@ -45,10 +46,8 @@
   gap: var(--space-2);
   align-items: center;
 }
-.pf-schedule-action-btn {
-  padding: 4px 10px;
-  font-size: 11px;
-}
+/* .pf-schedule-action-btn ELIMINADO (Bloque 13C) — reemplazado por
+   size="xs" (prop oficial de ZHBtn) en PurchasesPage.tsx. */
 .pf-schedule-action-icon { font-size: 14px; }
 .pf-schedule-setup {
   display: flex;
@@ -76,7 +75,8 @@
 .pf-schedule-input--date { width: 150px; }
 .pf-schedule-input--amount { width: 110px; }
 .pf-schedule-input--notes { width: 160px; }
-.pf-schedule-remove-icon { font-size: 16px; }
+/* .pf-schedule-remove-icon ELIMINADO (Bloque 7C) — su único consumidor
+   (botón "Eliminar cuota") migró a <ZHIconButton>, que fija su propio tamaño de icono. */
 .pf-schedule-footer {
   padding: var(--space-3) var(--space-4);
   display: flex;
@@ -108,10 +108,8 @@
   display: flex;
   gap: var(--space-2);
 }
-.pf-retention-action-btn {
-  padding: 6px 14px;
-  font-size: 12px;
-}
+/* .pf-retention-action-btn ELIMINADO (Bloque 13C) — reemplazado por
+   size="sm" (prop oficial de ZHBtn) en PurchasesPage.tsx. */
 .pf-retention-action-icon { font-size: 16px; }
 .pf-retention-code { font-family: var(--font-family-mono); }
 .pf-retention-amount { font-weight: 700; }
@@ -128,13 +126,8 @@
   margin-bottom: 2px;
 }
 
-.pf-list-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+/* .pf-list-toolbar ELIMINADO (Bloque 8B) — consolidado en .pg-table-controls
+   (page-template.css), mismo patrón ya usado por SalesPage.tsx. */
 
 .pf-invoice-number {
   font-family: var(--font-family-mono);

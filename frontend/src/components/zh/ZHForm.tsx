@@ -160,9 +160,9 @@ export function ZHField(props: {
 /**
  * `attention` (naranja) y `neutral` (gris) — variantes oficiales para estados intermedios/
  * inactivos (ni éxito ni error/aviso clásico), p. ej. "configuración incompleta" o
- * "funcionalidad deshabilitada". Mismos tokens de color que `.badge--orange`/`.badge--gray`
- * (`design-tokens.css`) — no son colores nuevos, son la aplicación de tokens ya oficiales
- * a esta variante de alerta.
+ * "funcionalidad deshabilitada". Mismos tokens de color que `--color-warning`/
+ * `--color-text-secondary` (`design-tokens.css`) — no son colores nuevos, son la aplicación
+ * de tokens ya oficiales a esta variante de alerta.
  */
 export type ZHFormAlertType =
   "success" | "error" | "warning" | "info" | "attention" | "neutral";
@@ -298,7 +298,12 @@ export function ZHFormAlert(props: {
   );
 }
 
-export type ZHBtnVariant = "primary" | "secondary" | "ghost" | "destructive";
+export type ZHBtnVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "destructive"
+  | "success";
 export type ZHBtnSize = "md" | "sm" | "xs";
 
 export function ZHBtn(

@@ -11,9 +11,13 @@ import {
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 
 export type ZhTextMode = "text" | "letters" | "alphanumeric" | "uppercase";
+export type ZhInputDensity = "default" | "compact";
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   mode?: ZhTextMode;
+  /** `compact` = misma densidad que `<ZHField density="compact">`, para uso suelto
+   * dentro de celdas de tabla (`.zh-input--compact`). */
+  density?: ZhInputDensity;
 };
 
 /**
@@ -27,9 +31,13 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
  * @example
  * <ZhTextInput {...register('name')} mode="letters" />
  * <ZhTextInput {...register('sku')} mode="uppercase" />
+ * <ZhTextInput {...register('notes')} density="compact" />
  */
 export const ZhTextInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ mode = "text", onKeyDown, onPaste, ...props }, ref) => {
+  (
+    { mode = "text", density = "default", onKeyDown, onPaste, className, ...props },
+    ref,
+  ) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (mode === "letters" && !allowsLettersKey(e)) e.preventDefault();
       if (
@@ -55,11 +63,16 @@ export const ZhTextInput = React.forwardRef<HTMLInputElement, Props>(
       onPaste?.(e);
     };
 
+    const cls = [className, density === "compact" ? "zh-input--compact" : ""]
+      .filter(Boolean)
+      .join(" ");
+
     return (
       <input
         {...props}
         ref={ref}
         type="text"
+        className={cls || undefined}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
       />

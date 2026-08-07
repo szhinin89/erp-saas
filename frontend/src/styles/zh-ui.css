@@ -26,7 +26,7 @@
    10. Tablas (.table)
    11. Badges (.badge)
    12. Page Shell / Layout
-   13. Card Sections
+   13. Card Sections — ELIMINADO (Bloque 12B, sin consumidores)
    14. Screen Heading
    16. Estados (empty / loading / error)
    17. Modales
@@ -35,9 +35,9 @@
    21. Avatar (.zh-avatar)
    22. Status Badge (.zh-status)
    23. Entity Item (.zh-entity-item)
-   24. Metric Card (.zh-metric-card, .zh-metric-sparkline)
+   24. Metric Card — ELIMINADO (Bloque 6B, sin consumidores)
    25. Global Topbar (.zh-app-userMenuPopover, footer btn)
-   26. Global Footer (.zh-app-footer)
+   26. Global Footer — ELIMINADO (Bloque 12B, sin consumidores)
    27. Auth Form Card (.zh-auth-card, .zh-auth-form, .zh-auth-input, .zh-auth-submit)
    28. Patrones responsive compartidos
    29. Toast (.zh-toast)
@@ -76,19 +76,9 @@ a:hover {
 .text-muted {
   color: var(--color-text-secondary);
 }
-.text-sm {
-  font-size: var(--text-body-md-size);
-  color: var(--color-text-secondary);
-}
-.text-xs {
-  font-size: var(--text-label-sm-size);
-}
-.text-error {
-  color: var(--color-error);
-}
-.text-success {
-  color: var(--color-success);
-}
+/* .text-sm/.text-xs/.text-error/.text-success ELIMINADOS (Bloque 12B) — sin
+   consumidores (no confundir con --text-sm/--text-xs, tokens de
+   design-tokens.css consumidos por .subtle, esos sí siguen vivos). */
 .mono {
   font-family: var(--font-family-mono);
   font-size: 12px;
@@ -101,11 +91,7 @@ a:hover {
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
 }
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* .truncate ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 2. BOTONES ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .zh-btn {
@@ -197,6 +183,23 @@ a:hover {
 }
 .zh-btn--destructive:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
+/* Success (Bloque 13G) — misma arquitectura que --primary (fondo sólido +
+   texto on-primary + borde a juego, oscurecido en hover vía color-mix).
+   :disabled se resuelve con la regla compartida .zh-btn:disabled, igual que
+   el resto de variantes — no necesita override propio. */
+.zh-btn--success {
+  background: var(--color-success);
+  color: var(--color-on-primary);
+  border-color: var(--color-success);
+}
+.zh-btn--success:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--color-success) 85%,
+    var(--color-text-primary)
+  );
 }
 .zh-inline-action {
   display: inline-flex;
@@ -371,6 +374,18 @@ input[type="date"] {
   text-transform: uppercase;
 }
 
+/* Densidad compacta reutilizable (Bloque 8A.1) — misma especificación que
+   .zh-field--compact .zh-field-control input, pero aplicable directamente
+   sobre un input suelto (p.ej. dentro de una celda de tabla), sin requerir
+   el wrapper <ZHField density="compact">. Usar vía prop `density="compact"`
+   de ZhTextInput/ZhDecimalInput/ZhDateInput. */
+.zh-input--compact {
+  font-size: 13px;
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  border-width: 1.5px;
+}
+
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 4. CAMPOS (.zh-field) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .zh-field {
   display: flex;
@@ -379,10 +394,10 @@ input[type="date"] {
 }
 
 /* Label ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â estilo ÃƒÂºnico oficial, compartido con .zh-auth-label y .pg-field-label */
+/* .pg-field-label/.pg-header-field-label ELIMINADOS de este selector
+   compartido (Bloque 12B) — sin consumidores. */
 .zh-field-label,
-.zh-auth-label,
-.pg-field-label,
-.pg-header-field-label {
+.zh-auth-label {
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
   line-height: var(--text-label-md-height);
@@ -511,9 +526,7 @@ input[type="date"] {
 .zh-col-span-2 {
   grid-column: 1 / span 2;
 }
-.zh-col-span-3 {
-  grid-column: 1 / span 3;
-}
+/* .zh-col-span-3 ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* Acciones del formulario */
 .zh-actions {
@@ -948,6 +961,22 @@ input[type="date"] {
   padding: var(--space-5);
 }
 
+/* Table scroll wrapper (Bloque 12F-1) — SSOT del patrón "wrapper neutro de
+   scroll horizontal para <table>" (una sola declaración: overflow-x: auto).
+   Consolida 4 clases duplicadas detectadas en la auditoría 12F-0
+   (.pg-overflow-x en legacy-pages.css, .prd-table-wrap en items-catalog.css,
+   .rpt-table-wrap en ReportPageTemplate.css, .security-scroll en
+   SecuritySettingsPage.css) — mismo comportamiento exacto, mismas 19+7+1+1
+   consumidores reales repartidos en 4 archivos distintos. Esta fase solo
+   agrega la clase SSOT; las 4 clases legacy y sus consumidores TSX no se
+   tocan todavía (Bloque 12F-2). Distinta de .table-card: esta es un wrapper
+   neutro sin chrome (sin borde/sombra/radio/padding), para usar cuando la
+   tabla no necesita la "card" completa — ej. <div className="table-scroll">
+   <table className="table">...</table></div>. */
+.table-scroll {
+  overflow-x: auto;
+}
+
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 10. TABLAS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .table {
   width: 100%;
@@ -987,13 +1016,102 @@ input[type="date"] {
   padding: 8px var(--space-3);
 }
 
-/* Clickable rows (audit panel, catalog list) */
-.zh-tr-clickable {
-  cursor: pointer;
+/* Neutral variant (Bloque 9B) — reproduce la identidad visual histórica de
+   .pf-table (erp-form-core.css, ya en retiro): encabezado gris neutro en vez
+   del tinte de marca, texto más claro, borde de encabezado más grueso, borde
+   de celda visible incluso en la última fila. Aditiva: solo toca color/
+   fondo/borde/tamaño de fuente, nunca padding — combina sin conflicto con
+   .table--compact (que solo toca padding). No usar sola: siempre junto a
+   .table, ej. className="table table--compact table--neutral". */
+.table--neutral {
+  font-size: 13px;
 }
-.zh-tr-clickable:hover td {
-  background: var(--color-surface-primary-tint) !important;
+.table--neutral th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-container-low);
+  border-bottom: 2px solid var(--color-border);
 }
+.table--neutral td {
+  border-bottom: 1px solid var(--color-surface-container-low);
+}
+.table--neutral tr:last-child td {
+  border-bottom: 1px solid var(--color-surface-container-low);
+}
+
+/* Align-top variant (Bloque 12D) — para tablas con contenido multilínea por
+   celda (p. ej. descripción + metadatos apilados, o un chip + un control de
+   búsqueda inline) donde el centrado vertical por defecto de .table descoloca
+   el contenido superior. Aditiva: solo toca vertical-align, nunca padding —
+   combina sin conflicto con .table--compact y .table--neutral. No usar sola:
+   siempre junto a .table, ej. className="table table--neutral table--align-top". */
+.table--align-top td {
+  vertical-align: top;
+}
+
+/* Matrix/spreadsheet variant (Bloque 12F-3B) — para tablas tipo matriz (filas
+   = entidad, columnas = atributos/permisos), donde cada celda es una unidad
+   visual propia con borde en las 4 caras y contenido centrado (p. ej. un
+   toggle por celda), en vez del estilo "lista con separador inferior" de
+   .table. Detectada como necesidad real en la auditoría 12C/12F-3A
+   (security-table). Aditiva: solo toca border/text-align, nunca padding —
+   combina con .table--compact y .table--neutral (debe declararse después de
+   .table--neutral en el className para que el borde completo prevalezca
+   sobre el border-bottom de la variante neutral). No usar sola: siempre
+   junto a .table, ej.
+   className="table table--compact table--neutral table--matrix". */
+.table--matrix th,
+.table--matrix td {
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+.table--matrix tr:last-child td {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Sticky-column pattern (Bloque 12D, completado en 12F-3B) — capacidad
+   preparada, sin consumidores aún. Detectada como necesidad real en la
+   auditoría 12C (security-table): una tabla con scroll horizontal necesita
+   fijar una columna (típicamente la primera, identificatoria) mientras el
+   resto se desplaza. No se asume "primera columna" automáticamente porque
+   .table se usa con distinto número y orden de columnas según el módulo —
+   la celda a fijar debe marcarse explícitamente. Requiere un contenedor con
+   overflow-x: auto (ya lo provee .table-card, o .table-scroll). Uso
+   previsto, cuando se autorice una migración real:
+     <table className="table table--sticky-column">
+       <th className="table__sticky-cell">...</th>
+       ...
+       <td className="table__sticky-cell">...</td>
+   No mezclar padding aquí: solo position/left/z-index/background/text-align.
+   La celda pegajosa se mantiene alineada a la izquierda aunque la tabla use
+   .table--matrix (centrado por defecto), porque típicamente aloja contenido
+   de identidad multilínea, no un valor centrado. Completado en 12F-3B con
+   dos casos detectados al revisar el patrón contra un consumidor real:
+   (1) el fondo del <th> pegajoso debe seguir al de .table--neutral cuando
+   ambas variantes se combinan; (2) el hover de fila (.table tbody
+   tr:hover td) debe alcanzar también a la celda pegajosa — sin esto, al
+   pasar el mouse sobre una fila se vería una celda sin resaltar en medio de
+   una fila resaltada. */
+.table--sticky-column .table__sticky-cell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  text-align: left;
+}
+.table--sticky-column th.table__sticky-cell {
+  background: var(--color-surface-primary-tint);
+}
+.table--neutral.table--sticky-column th.table__sticky-cell {
+  background: var(--color-surface-container-low);
+}
+.table tbody tr:hover .table__sticky-cell {
+  background: var(--color-surface-container-low);
+}
+
+/* .zh-tr-clickable ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 11. BADGES ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .badge {
@@ -1007,34 +1125,19 @@ input[type="date"] {
   white-space: nowrap;
 }
 
-/* Semantic soft badges (usados en PageShell Badge component) */
-.badge--green {
-  background: color-mix(in srgb, var(--color-success) 12%, transparent);
-  color: var(--color-success);
-}
-.badge--red {
-  background: color-mix(in srgb, var(--color-error) 12%, transparent);
-  color: var(--color-error);
-}
-.badge--gray {
-  background: var(--color-surface-container);
-  color: var(--color-text-secondary);
-}
-.badge--blue {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
-}
-.badge--orange {
-  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
-  color: var(--color-warning);
-}
+/* .badge--green/--red/--gray/--blue/--orange ELIMINADOS (Bloque 12B) — sin
+   consumidores reales (el variantClassMap de <Badge> en PageShell.tsx nunca
+   produce estos nombres literalmente; solo aparecían en un comentario de
+   ZHForm.tsx, ya corregido). */
 
 /* Status badges (solid) */
 .badge--success {
   background: var(--color-success);
   color: var(--color-on-primary);
 }
-.badge--danger {
+/* .badge--danger ELIMINADO (Bloque 12B) — duplicado exacto de .badge--error,
+   nunca producido por variantClassMap (no existe variante "danger"). */
+.badge--error {
   background: var(--color-error);
   color: var(--color-on-primary);
 }
@@ -1046,6 +1149,10 @@ input[type="date"] {
   background: var(--color-primary);
   color: var(--color-on-primary);
 }
+.badge--neutral {
+  background: var(--color-surface-container);
+  color: var(--color-text-secondary);
+}
 
 /* Shape / text modifiers */
 .badge--md {
@@ -1056,14 +1163,7 @@ input[type="date"] {
   letter-spacing: var(--text-label-sm-spacing);
 }
 
-/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Labeled checkbox (label wrapping input) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
-.zh-inline-check {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-body-md-size);
-  cursor: pointer;
-}
+/* .zh-inline-check ELIMINADO (Bloque 12B) -- sin consumidores. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 12. PAGE SHELL / LAYOUT ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .page-shell {
@@ -1096,30 +1196,8 @@ input[type="date"] {
   border-radius: var(--radius-sm);
 }
 
-/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 13. CARD SECTIONS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
-.zh-card-section {
-  padding: var(--space-5);
-}
-.zh-card-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
-}
-.zh-card-section-title {
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--color-text-primary);
-}
-.zh-card-section-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.zh-card-section-body {
-  min-width: 0;
-}
+/* .zh-card-section y familia (-header/-title/-right/-body) ELIMINADOS
+   (Bloque 12B) -- sin consumidores. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 14. SCREEN HEADING ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .zh-screen-heading {
@@ -1282,37 +1360,9 @@ input[type="date"] {
   flex-shrink: 0;
 }
 
-/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Legacy header (CarriersPage etc ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â prefer ZHModal component) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
-.zh-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 22px 14px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-.zh-modal-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0;
-}
-.zh-modal-close {
-  background: none;
-  border: none;
-  color: var(--color-outline);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  transition:
-    color var(--transition),
-    background var(--transition);
-  line-height: 1;
-}
-.zh-modal-close:hover {
-  background: var(--color-surface-container);
-  color: var(--color-text-primary);
-}
+/* .zh-modal-header/.zh-modal-title/.zh-modal-close ELIMINADOS (Bloque 12B) --
+   ya documentados como "legacy" (prefer ZHModal component), 0 consumidores
+   confirmados. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 17b. DRAWER LATERAL (no modal ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â mantiene la tabla de fondo visible) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 @keyframes zh-drawer-in {
@@ -1476,117 +1526,68 @@ input[type="date"] {
   justify-content: flex-end;
   gap: 10px;
 }
-.zh-inline-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-.zh-inline-row-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
+/* .zh-inline-row/.zh-inline-row-right/.zh-wrap/.zh-relative/.zh-grid-row
+   ELIMINADOS (Bloque 12B) — sin consumidores. */
 .zh-stack {
   display: flex;
   flex-direction: column;
 }
-.zh-wrap {
-  flex-wrap: wrap;
-}
-.zh-relative {
-  position: relative;
-}
-.zh-grid-row {
-  margin-bottom: var(--space-3);
-}
 
 /* Spacing */
-.zh-m-0 {
-  margin: 0;
-}
+/* .zh-m-0 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mt-4 {
   margin-top: var(--space-1);
 }
-.zh-mt-6 {
-  margin-top: 6px;
-}
+/* .zh-mt-6 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mt-8 {
   margin-top: var(--space-2);
 }
 .zh-mt-10 {
   margin-top: 10px;
 }
-.zh-mt-12 {
-  margin-top: var(--space-3);
-}
-.zh-mt-14 {
-  margin-top: 14px;
-}
+/* .zh-mt-12 ELIMINADO (Bloque 12B) — sin consumidores. */
+/* .zh-mt-14 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mt-16 {
   margin-top: var(--space-4);
 }
 .zh-mb-4 {
   margin-bottom: var(--space-1);
 }
-.zh-mb-6 {
-  margin-bottom: 6px;
-}
+/* .zh-mb-6 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mb-8 {
   margin-bottom: var(--space-2);
 }
-.zh-mb-10 {
-  margin-bottom: 10px;
-}
+/* .zh-mb-10 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mb-12 {
   margin-bottom: var(--space-3);
 }
-.zh-mb-14 {
-  margin-bottom: 14px;
-}
+/* .zh-mb-14 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mb-16 {
   margin-bottom: var(--space-4);
 }
 
 /* Gap */
-.zh-gap-3 {
-  gap: var(--space-1);
-}
-.zh-gap-6 {
-  gap: 6px;
-}
+/* .zh-gap-3 ELIMINADO (Bloque 12B) — sin consumidores. */
+/* .zh-gap-6 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-gap-8 {
   gap: var(--space-2);
 }
-.zh-gap-10 {
-  gap: 10px;
-}
+/* .zh-gap-10 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-gap-12 {
   gap: var(--space-3);
 }
-.zh-gap-14 {
-  gap: 14px;
-}
-.zh-gap-16 {
-  gap: var(--space-4);
-}
+/* .zh-gap-14 ELIMINADO (Bloque 12B) — sin consumidores. */
+/* .zh-gap-16 ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* Text */
-.zh-text-center {
-  text-align: center;
-}
+/* .zh-text-center ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-text-muted {
   color: var(--color-text-secondary);
 }
 .zh-text-xs {
   font-size: var(--text-label-sm-size);
 }
-.zh-items-end {
-  align-items: flex-end;
-}
+/* .zh-items-end ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* Color swatch (type="color" input) */
 .zh-color-swatch {
@@ -1614,19 +1615,7 @@ input[type="date"] {
   font-size: 32px;
 }
 
-/* Visually hidden (accesibilidad) */
-.sr-only,
-.zh-visually-hidden:not(:focus):not(:active) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
+/* .sr-only/.zh-visually-hidden ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 20. AUTH LAYOUT ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .zh-auth-bg {
@@ -1742,16 +1731,9 @@ input[type="date"] {
   color: var(--color-primary);
   user-select: none;
 }
-.zh-avatar--sm {
-  width: 28px;
-  height: 28px;
-  font-size: 11px;
-}
-.zh-avatar--lg {
-  width: 52px;
-  height: 52px;
-  font-size: 20px;
-}
+/* .zh-avatar--sm/--lg ELIMINADOS (Bloque 12B) — sin consumidores; único
+   generador dinámico de variante (CompanySelectPage.tsx) solo cicla
+   primary/secondary/tertiary. */
 .zh-avatar--square {
   border-radius: var(--radius-md);
 }
@@ -1768,14 +1750,7 @@ input[type="date"] {
   background: color-mix(in srgb, var(--color-tertiary) 14%, transparent);
   color: var(--color-tertiary);
 }
-.zh-avatar--success {
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  color: var(--color-success);
-}
-.zh-avatar--error {
-  background: color-mix(in srgb, var(--color-error) 14%, transparent);
-  color: var(--color-error);
-}
+/* .zh-avatar--success/--error ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 22. STATUS BADGE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .zh-status {
@@ -1871,134 +1846,21 @@ input[type="date"] {
   flex-shrink: 0;
 }
 
-/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 24. METRIC CARD ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
-/* Mini KPI card with trend indicator and optional sparkline */
-.zh-metric-card {
-  background: var(--color-surface-bright);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.zh-metric-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-2);
-}
-
-.zh-metric-label {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.zh-metric-trend {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  white-space: nowrap;
-}
-.zh-metric-trend--up {
-  color: var(--color-success);
-}
-.zh-metric-trend--warning {
-  color: var(--color-warning);
-}
-.zh-metric-trend--neutral {
-  color: var(--color-text-secondary);
-}
-.zh-metric-trend .material-symbols-outlined {
-  font-size: 16px;
-}
-
-.zh-metric-value {
-  font-size: var(--text-headline-md-size);
-  font-weight: var(--text-headline-md-weight);
-  letter-spacing: var(--text-headline-md-spacing);
-  color: var(--color-on-surface);
-  margin: 0;
-}
-
-/* Mini sparkline bars */
-.zh-metric-sparkline {
-  height: 40px;
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  padding: 0 2px;
-  margin-top: 4px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: color-mix(in srgb, var(--color-success) 5%, transparent);
-}
-.zh-metric-sparkline-bar {
-  flex: 1;
-  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
-  background: color-mix(in srgb, var(--color-success) 30%, transparent);
-  min-width: 4px;
-}
-
+/* 24. METRIC CARD -- .zh-metric-card y familia (.zh-metric-card-top,
+   .zh-metric-label, .zh-metric-trend/--up/--warning/--neutral,
+   .zh-metric-value, .zh-metric-sparkline, .zh-metric-sparkline-bar)
+   ELIMINADOS (Bloque 6B) -- 0 consumidores confirmados en ningun .tsx/.ts
+   del repositorio (ni literal ni por construccion dinamica de clase). El
+   patron de KPI card realmente adoptado es .pg-kpi (styles/page-template.css,
+   componente ReportKpiCard, 16 consumidores) -- pendiente de decision de
+   consolidacion en un bloque posterior.
+*/
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 25. GLOBAL TOPBAR ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 /* Moved to components/zh/ZHAppTenantHeader.css (app-shell header only). */
 
-/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 26. GLOBAL FOOTER ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
-.zh-app-footer {
-  background: var(--color-surface-container-low);
-  border-top: 1px solid var(--color-outline-variant);
-  padding: var(--space-4) var(--space-6);
-}
-
-.zh-app-footer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  max-width: 1440px;
-  margin: 0 auto;
-  flex-wrap: wrap;
-}
-
-.zh-app-footer-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.zh-app-footer-brand-name {
-  font-size: var(--text-label-md-size);
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.zh-app-footer-copy {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.zh-app-footer-nav {
-  display: flex;
-  gap: var(--space-6);
-}
-
-.zh-app-footer-link {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  transition: color var(--transition);
-}
-.zh-app-footer-link:hover {
-  color: var(--color-primary);
-  text-decoration: none;
-}
+/* .zh-app-footer y familia (.zh-app-footer-inner/-brand/-brand-name/-copy/
+   -nav/-link) ELIMINADOS (Bloque 12B) -- ningun componente de app-shell
+   renderiza un footer global; 0 consumidores confirmados. */
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 27. AUTH FORM CARD ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 /* Shared by ForgotPasswordPage, ResetPasswordPage, PasswordResetPage (formerly Ã‚Â§24) */
@@ -2009,6 +1871,23 @@ input[type="date"] {
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   padding: var(--space-8);
+}
+
+/* Modificador: card sin padding propio, para componer con .zh-auth-card-body
+   cuando la card necesita una región interna (p.ej. footer full-bleed). */
+.zh-auth-card--flush {
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.zh-auth-card-body {
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.zh-auth-card-body--center {
+  text-align: center;
 }
 
 .zh-auth-card-header {
@@ -2048,6 +1927,32 @@ input[type="date"] {
 .zh-auth-label {
   display: block;
   /* tipografÃƒÂ­a heredada de la regla unificada .zh-field-label/.zh-auth-label/.pg-field-label */
+}
+
+/* Fila de campo con acción inline (p.ej. label + "¿olvidaste tu contraseña?") */
+.zh-auth-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+/* Link de texto pequeño reutilizable dentro de formularios de auth */
+.zh-auth-link {
+  font-family: var(--font-family);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: text-decoration var(--transition);
+}
+.zh-auth-link:hover {
+  text-decoration: underline;
 }
 
 /* Input con ÃƒÂ­cono */
@@ -2105,19 +2010,9 @@ input[type="date"] {
   color: var(--color-error);
 }
 
-.zh-auth-field-hint {
-  font-size: var(--text-help-size);
-  color: var(--color-text-secondary);
-}
-.zh-auth-field-hint--success {
-  color: var(--color-success);
-}
-.zh-auth-field-hint--error {
-  color: var(--color-error);
-}
-.zh-auth-field-hint--info {
-  color: var(--color-primary);
-}
+/* .zh-auth-field-hint y familia (--success/--error/--info) ELIMINADOS
+   (Bloque 12B) — sin consumidores (las páginas de auth usan
+   .zh-auth-field-error, no esta familia de hint). */
 
 /* Submit */
 .zh-auth-submit {
@@ -2151,6 +2046,24 @@ input[type="date"] {
 }
 .zh-auth-submit .material-symbols-outlined {
   font-size: 18px;
+}
+.zh-auth-submit--loading {
+  cursor: wait;
+  opacity: 0.82;
+}
+.zh-auth-submit-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
+  border-top-color: var(--color-on-primary);
+  border-radius: 50%;
+  animation: zh-auth-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes zh-auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Info section */
@@ -2298,6 +2211,9 @@ input[type="date"] {
 
 @media (max-width: 480px) {
   .zh-auth-card {
+    padding: var(--space-6);
+  }
+  .zh-auth-card-body {
     padding: var(--space-6);
   }
   .zh-auth-card-title {
@@ -2640,19 +2556,8 @@ input[type="date"] {
   font-family: var(--font-family-mono);
   color: var(--color-text);
 }
-.zh-picker__create-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 6px 14px;
-  font-size: var(--text-body-sm-size);
-  font-weight: var(--text-label-md-weight);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
+/* .zh-picker__create-btn ELIMINADO (Bloque 13H) — migrado a
+   <ZHBtn variant="primary" size="sm"> en CustomerPicker.tsx. */
 
 .zh-picker__create-icon {
   font-size: 16px;
@@ -2669,9 +2574,7 @@ input[type="date"] {
 }
 
 /* Table text alignment utilities */
-.zh-text-align-left {
-  text-align: left;
-}
+/* .zh-text-align-left ELIMINADO (Bloque 12B) — sin consumidores. */
 
 .zh-text-align-center {
   text-align: center;
@@ -2681,90 +2584,26 @@ input[type="date"] {
   text-align: right;
 }
 
+/* Celda numérica: alineación derecha + mono + tamaño (Bloque 7B, ex .pf-td--num) */
+.zh-table-cell--num {
+  text-align: right;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Fila de estado vacío dentro de <table> (Bloque 7B, ex .pf-table-empty) */
+.zh-table-empty {
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
 
 .zh-form-logo {
   color: var(--color-on-primary);
 }
 
-.zh-document-picker__dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  min-width: 340px;
-  z-index: 1000;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow:
-    0 8px 24px color-mix(in srgb, var(--color-text-primary) 18%, transparent),
-    0 2px 8px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 4px;
-}
-
-.zh-document-picker__item {
-  display: flex;
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  gap: var(--space-3);
-  align-items: flex-start;
-  background: transparent;
-  transition: background var(--transition);
-  border-bottom: 1px solid var(--color-surface-container-low);
-}
-
-.zh-document-picker__item:last-child {
-  border-bottom: none;
-}
-
-.zh-document-picker__item:hover,
-.zh-document-picker__item--focused {
-  background: var(--color-surface-container-low);
-}
-
-.zh-document-picker__item-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.zh-document-picker__item-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.zh-document-picker__item-code {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-primary);
-  font-family: var(--font-family-mono);
-  background: var(--color-primary-fixed);
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-}
-
-.zh-document-picker__meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 12px;
-  font-size: 11px;
-  flex-shrink: 0;
-  text-align: right;
-}
-
-.zh-document-picker__meta-label {
-  color: var(--color-text-secondary);
-}
-
-.zh-document-picker__meta-value {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
-}
+/* .zh-document-picker__* ELIMINADO (Bloque 12B) -- sin consumidores; ningun
+   componente picker de documentos usa este namespace hoy. */

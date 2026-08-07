@@ -539,9 +539,8 @@ export function MasterDataPartnerWizard({
               ) : (
                 <ZHBtn
                   type="submit"
-                  variant="secondary"
+                  variant="success"
                   size="md"
-                  className="prd-btn--success"
                   disabled={submitting}
                 >
                   {submitting ? (

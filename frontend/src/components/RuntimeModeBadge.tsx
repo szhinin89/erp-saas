@@ -13,6 +13,6 @@ export function RuntimeModeBadge() {
       : t("app.runtimeMode.unknown");
 
   return (
-    <Badge label={label} variant="blue" title={t("app.runtimeMode.hint")} />
+    <Badge label={label} variant="info" title={t("app.runtimeMode.hint")} />
   );
 }

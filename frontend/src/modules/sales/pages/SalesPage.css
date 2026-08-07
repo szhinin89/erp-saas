@@ -32,9 +32,7 @@
   align-items: center;
   gap: var(--space-1);
 }
-.sales-form-edit-btn {
-  margin-top: var(--space-1);
-}
+/* .sales-form-edit-btn ELIMINADO (Bloque 4D) — equivalente exacto .zh-mt-4 en zh-ui.css. */
 
 .sales-form-tax-section {
   padding: var(--space-3) var(--space-4);
@@ -144,15 +142,7 @@
   color: var(--color-on-primary);
 }
 
-.sales-payment-remove-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: color-mix(in srgb, var(--color-on-primary) 72%, transparent);
-  font-size: var(--text-body-md-size);
-  padding: 0;
-  line-height: 1;
-}
+/* .sales-payment-remove-btn ELIMINADO (Bloque 13B) — sin consumidores. */
 
 .sales-payment-ref-amount {
   font-size: var(--text-label-sm-size);

@@ -57,16 +57,16 @@ export function PurchaseReturnableLinesEditor({
   };
 
   return (
-    <div className="pg-overflow-x">
+    <div className="table-scroll">
       <table className="pf-table sr-lines-table">
         <thead>
           <tr>
             <th>Producto</th>
-            <th className="pf-th--right">Cant. original</th>
-            <th className="pf-th--right">Ya devuelto</th>
-            <th className="pf-th--right">Remanente</th>
+            <th className="zh-text-align-right">Cant. original</th>
+            <th className="zh-text-align-right">Ya devuelto</th>
+            <th className="zh-text-align-right">Remanente</th>
             <th>Bodega</th>
-            <th className="pf-th--right">Cant. a devolver</th>
+            <th className="zh-text-align-right">Cant. a devolver</th>
           </tr>
         </thead>
         <tbody>
@@ -79,11 +79,11 @@ export function PurchaseReturnableLinesEditor({
                 <td>
                   <div className="sr-lines-table__desc">{line.description}</div>
                 </td>
-                <td className="pf-td--num">{line.originalQuantity}</td>
-                <td className="pf-td--num">{line.returnedQuantity}</td>
-                <td className="pf-td--num">{line.remainingQuantity}</td>
+                <td className="zh-table-cell--num">{line.originalQuantity}</td>
+                <td className="zh-table-cell--num">{line.returnedQuantity}</td>
+                <td className="zh-table-cell--num">{line.remainingQuantity}</td>
                 <td className="sr-lines-table__desc">{line.warehouseId}</td>
-                <td className="pf-td--right">
+                <td className="zh-text-align-right">
                   <ZhDecimalInput
                     decimals={4}
                     positiveOnly

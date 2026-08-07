@@ -171,9 +171,7 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
-.kdx-btn-source {
-  margin-top: 10px;
-}
+/* .kdx-btn-source ELIMINADO (Bloque 4D) — equivalente exacto .zh-mt-10 en zh-ui.css. */
 
 .kdx-muted-text {
   color: var(--color-text-secondary);

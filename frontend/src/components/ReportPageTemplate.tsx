@@ -30,14 +30,23 @@
 
 import type { ReactNode } from "react";
 import { ZHBtn } from "./zh/ZHForm";
+import { ZHIconButton } from "./zh/ZHIconButton";
 import { Badge, type BadgeVariant } from "./PageShell";
 import "./ReportPageTemplate.css";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
 export type RptKpiTone =
-  "primary" | "secondary" | "tertiary" | "success" | "warning" | "error";
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "success"
+  | "warning"
+  | "error"
+  | "neutral"
+  | "info";
 export type RptBadgeTone = "success" | "warning" | "error" | "neutral";
+export type RptKpiTrendTone = "success" | "warning" | "neutral";
 export type RptPeriod = "day" | "week" | "month";
 export type RptStatusTone =
   "success" | "info" | "warning" | "error" | "neutral";
@@ -94,44 +103,118 @@ export function ReportPage({
 export function ReportKpiCard({
   icon,
   tone = "primary",
+  layout = "vertical",
   badge,
   badgeTone = "neutral",
+  trend,
   label,
   value,
+  valueTone = "default",
   unit,
   sub,
+  onClick,
+  active,
 }: {
-  icon: string;
+  icon?: string;
   tone?: RptKpiTone;
-  badge?: string;
-  badgeTone?: RptBadgeTone;
+  /** `horizontal` = ícono a la izquierda, texto a la derecha (`.pg-kpi--h`). */
+  layout?: "vertical" | "horizontal";
+  /** String → se envuelve en <Badge>; ReactNode → se usa tal cual (p.ej. un <Badge> ya construido por el caller). */
+  badge?: ReactNode;
+  badgeTone?: BadgeVariant;
+  trend?: { icon: string; label: string; tone: RptKpiTrendTone };
   label: string;
   value: string;
+  /** Color semántico del valor numérico (`.pg-kpi-value--success`/`--danger`).
+   * `default` mantiene el color neutro actual — no confundir con `trend.tone`
+   * (esa es la etiqueta de tendencia debajo del valor, no el número en sí). */
+  valueTone?: "default" | "success" | "danger";
   unit?: string;
-  sub?: string;
+  /** String → se envuelve en <p className="rpt-kpi-sub"> (texto verde/success); ReactNode → se usa tal cual (p.ej. un <p className="subtle"> para texto neutro). */
+  sub?: ReactNode;
+  /** Si se define, la tarjeta completa (ícono + badge + label + value + trend) se
+   * renderiza como <button type="button"> clicable en vez de <div> estático. */
+  onClick?: () => void;
+  /** Solo tiene efecto junto a `onClick` — aplica `.pg-kpi--active` y `aria-pressed`
+   * para reflejar si esta tarjeta es el filtro actualmente seleccionado. */
+  active?: boolean;
 }) {
-  return (
-    <div className="pg-kpi">
-      <div className="pg-kpi-top">
-        <div className={`pg-kpi-icon pg-kpi-icon--${tone}`}>
-          <span className="material-symbols-outlined">{icon}</span>
-        </div>
-        {badge && (
-          <span className={`pg-kpi-badge pg-kpi-badge--${badgeTone}`}>
-            {badge}
-          </span>
-        )}
-      </div>
-      <div className="pg-kpi-bottom">
-        <p className="pg-kpi-label">{label}</p>
-        <p className="pg-kpi-value">
-          {value}
-          {unit && <span className="pg-kpi-unit">{unit}</span>}
-        </p>
-        {sub && <p className="rpt-kpi-sub">{sub}</p>}
-      </div>
+  const badgeNode =
+    typeof badge === "string" ? (
+      <Badge label={badge} variant={badgeTone} />
+    ) : (
+      badge
+    );
+
+  const subNode =
+    typeof sub === "string" ? <p className="rpt-kpi-sub">{sub}</p> : sub;
+
+  const iconNode = icon && (
+    <div className={`pg-kpi-icon pg-kpi-icon--${tone}`}>
+      <span className="material-symbols-outlined">{icon}</span>
     </div>
   );
+
+  const bottomNode = (
+    <div className="pg-kpi-bottom">
+      <p className="pg-kpi-label">{label}</p>
+      <p
+        className={`pg-kpi-value${valueTone !== "default" ? ` pg-kpi-value--${valueTone}` : ""}`}
+      >
+        {value}
+        {unit && <span className="pg-kpi-unit">{unit}</span>}
+      </p>
+      {trend && (
+        <div className={`pg-kpi-trend pg-kpi-trend--${trend.tone}`}>
+          <span className="material-symbols-outlined">{trend.icon}</span>
+          <span>{trend.label}</span>
+        </div>
+      )}
+      {subNode}
+    </div>
+  );
+
+  const rootClassName = [
+    "pg-kpi",
+    layout === "horizontal" ? "pg-kpi--h" : "",
+    onClick ? "pg-kpi--interactive" : "",
+    onClick && active ? "pg-kpi--active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const content =
+    layout === "horizontal" ? (
+      <>
+        {iconNode}
+        {bottomNode}
+      </>
+    ) : (
+      <>
+        {(iconNode || badgeNode) && (
+          <div className="pg-kpi-top">
+            {iconNode}
+            {badgeNode}
+          </div>
+        )}
+        {bottomNode}
+      </>
+    );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={rootClassName}
+        onClick={onClick}
+        aria-pressed={active}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={rootClassName}>{content}</div>;
 }
 
 /* ── ReportFiltersBar ───────────────────────────────────────── */
@@ -362,7 +445,7 @@ export function ReportTablePanel({
         </div>
       </div>
 
-      <div className="rpt-table-wrap">{children}</div>
+      <div className="table-scroll">{children}</div>
 
       {(footerLeft || footerRight) && (
         <div className="pg-table-footer">
@@ -478,13 +561,12 @@ export function ReportStatusBadge({
 
 export function ReportRowActions({ onClick }: { onClick?: () => void }) {
   return (
-    <button
-      type="button"
-      className="rpt-row-actions-btn"
+    <ZHIconButton
+      icon="more_vert"
+      variant="ghost"
+      shape="circle"
+      title="Más acciones"
       onClick={onClick}
-      aria-label="Más acciones"
-    >
-      <span className="material-symbols-outlined">more_vert</span>
-    </button>
+    />
   );
 }

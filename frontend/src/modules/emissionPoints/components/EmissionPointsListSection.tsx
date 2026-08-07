@@ -1,6 +1,7 @@
 ﻿import { EmptyState, LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useI18n } from "../../../i18n/i18n";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { EMISSION_TYPE_ELECTRONIC } from "../api/emissionPointsService";
@@ -46,42 +47,34 @@ export function EmissionPointsListSection({
     <>
       {!loading && (
         <div className="pg-kpis">
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">point_of_sale</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Total Puntos</p>
-              <p className="pg-kpi-value">{totals.total}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">bolt</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">ElectrÃ³nicos</p>
-              <p className="pg-kpi-value">{totals.electronic}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--secondary">
-              <span className="material-symbols-outlined">print</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">FÃ­sicos</p>
-              <p className="pg-kpi-value">{totals.physical}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--error">
-              <span className="material-symbols-outlined">block</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Inactivos</p>
-              <p className="pg-kpi-value">{totals.inactive}</p>
-            </div>
-          </div>
+          <ReportKpiCard
+            layout="horizontal"
+            icon="point_of_sale"
+            tone="primary"
+            label="Total Puntos"
+            value={String(totals.total)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="bolt"
+            tone="primary"
+            label="ElectrÃ³nicos"
+            value={String(totals.electronic)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="print"
+            tone="secondary"
+            label="FÃ­sicos"
+            value={String(totals.physical)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="block"
+            tone="error"
+            label="Inactivos"
+            value={String(totals.inactive)}
+          />
         </div>
       )}
 
@@ -153,7 +146,7 @@ export function EmissionPointsListSection({
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

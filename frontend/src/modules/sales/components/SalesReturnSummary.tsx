@@ -18,16 +18,16 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
     <>
       {salesReturn.status !== "Draft" && (
         <ZHCard title="Líneas devueltas">
-          <div className="pg-overflow-x">
-            <table className="pf-table sr-lines-table">
+          <div className="table-scroll">
+            <table className="table table--compact table--neutral sr-lines-table">
               <thead>
                 <tr>
                   <th>Producto</th>
-                  <th className="pf-th--right">Cantidad</th>
-                  <th className="pf-th--right">P. unitario</th>
-                  <th className="pf-th--right">IVA</th>
-                  <th className="pf-th--right">ICE</th>
-                  <th className="pf-th--right">Total línea</th>
+                  <th className="zh-text-align-right">Cantidad</th>
+                  <th className="zh-text-align-right">P. unitario</th>
+                  <th className="zh-text-align-right">IVA</th>
+                  <th className="zh-text-align-right">ICE</th>
+                  <th className="zh-text-align-right">Total línea</th>
                 </tr>
               </thead>
               <tbody>
@@ -39,17 +39,17 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
                         <div className="sr-lines-table__sku">{line.snapshotSku}</div>
                       )}
                     </td>
-                    <td className="pf-td--num">{line.quantity}</td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">{line.quantity}</td>
+                    <td className="zh-table-cell--num">
                       {formatMoney(line.unitPrice, decimals)}
                     </td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">
                       {formatMoney(line.vatAmount, decimals)}
                     </td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">
                       {formatMoney(line.iceAmount, decimals)}
                     </td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">
                       {formatMoney(line.taxInclusiveTotal, decimals)}
                     </td>
                   </tr>
@@ -97,12 +97,12 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
 
       {salesReturn.refundAllocations.length > 0 && (
         <ZHCard title="Asignación de reembolso">
-          <div className="pg-overflow-x">
-            <table className="pf-table">
+          <div className="table-scroll">
+            <table className="table table--compact table--neutral">
               <thead>
                 <tr>
                   <th>Forma de reembolso</th>
-                  <th className="pf-th--right">Monto</th>
+                  <th className="zh-text-align-right">Monto</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,7 +113,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
                         ? "Efectivo (Caja)"
                         : "Crédito a Cuenta por Cobrar"}
                     </td>
-                    <td className="pf-td--num">{formatMoney(a.amount, decimals)}</td>
+                    <td className="zh-table-cell--num">{formatMoney(a.amount, decimals)}</td>
                   </tr>
                 ))}
               </tbody>

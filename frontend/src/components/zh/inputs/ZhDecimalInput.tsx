@@ -2,6 +2,7 @@ import React from "react";
 import { allowsDecimalKey } from "../../../lib/validators/numericValidators";
 import { sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
+import type { ZhInputDensity } from "./ZhTextInput";
 
 type Props = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -11,6 +12,9 @@ type Props = Omit<
   positiveOnly?: boolean;
   value?: string | number;
   defaultValue?: string | number;
+  /** `compact` = misma densidad que `<ZHField density="compact">`, para uso suelto
+   * dentro de celdas de tabla (`.zh-input--compact`). */
+  density?: ZhInputDensity;
 };
 
 /**
@@ -21,6 +25,7 @@ type Props = Omit<
  *
  * @example
  * <ZhDecimalInput {...register('price')} decimals={decimalConfig.sales} positiveOnly />
+ * <ZhDecimalInput {...register('amount')} density="compact" />
  */
 export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props>(
   (
@@ -33,6 +38,7 @@ export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props>(
       value,
       defaultValue,
       className,
+      density = "default",
       ...props
     },
     ref,
@@ -68,15 +74,21 @@ export const ZhDecimalInput = React.forwardRef<HTMLInputElement, Props>(
       onBlur?.(e);
     };
 
+    const cls = [
+      "zh-numeric-input",
+      density === "compact" ? "zh-input--compact" : "",
+      className,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     return (
       <input
         {...props}
         ref={ref}
         type="text"
         inputMode="decimal"
-        className={
-          className ? `zh-numeric-input ${className}` : "zh-numeric-input"
-        }
+        className={cls}
         value={typeof value === "number" ? value.toFixed(decimals) : value}
         defaultValue={
           typeof defaultValue === "number"

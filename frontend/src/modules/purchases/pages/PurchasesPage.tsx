@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { SupplierPicker } from "../components/SupplierPicker";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
@@ -10,6 +11,8 @@ import { ItemEditorModal } from "../../../components/items/ItemEditorModal/ItemE
 import type { ItemCreatedResult } from "../../../components/items/ItemEditorModal/types";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
+import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
+import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
@@ -88,7 +91,7 @@ export function PurchasesPage() {
             }}
           >
             <span
-              className="material-symbols-outlined pf-icon--18"
+              className="material-symbols-outlined zh-icon-lg"
             >
               {t.icon}
             </span>
@@ -100,7 +103,7 @@ export function PurchasesPage() {
       {/* ══════════════════════════════════════════════════════════ LISTADO */}
       {ctx.tab === "listado" && (
         <div className="prd-section">
-          <div className="pf-list-toolbar">
+          <div className="pg-table-controls zh-mb-16">
             <input
               type="text"
               placeholder="Buscar por número de factura..."
@@ -122,7 +125,7 @@ export function PurchasesPage() {
               disabled={ctx.listLoading}
             >
               <span
-                className="material-symbols-outlined pf-icon--18"
+                className="material-symbols-outlined zh-icon-lg"
               >
                 refresh
               </span>
@@ -131,14 +134,14 @@ export function PurchasesPage() {
           {ctx.listLoading ? (
             <p>Cargando...</p>
           ) : (
-            <table className="pf-table">
+            <table className="table table--compact table--neutral">
               <thead>
                 <tr>
                   <th>Nro. Factura</th>
                   <th>Fecha</th>
-                  <th className="pf-th--center">Líneas</th>
+                  <th className="zh-text-align-center">Líneas</th>
                   <th>Estado</th>
-                  <th className="pf-th--center">Acciones</th>
+                  <th className="zh-text-align-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,49 +151,44 @@ export function PurchasesPage() {
                       {inv.invoiceNumber}
                     </td>
                     <td>{formatDate(inv.issueDate)}</td>
-                    <td className="pf-td--center">{inv.lineCount}</td>
+                    <td className="zh-text-align-center">{inv.lineCount}</td>
                     <td>
-                      <span
-                        className={`pf-badge ${inv.status === "Draft" ? "pf-badge--warning" : inv.status === "Confirmed" ? "pf-badge--success" : "pf-badge--danger"}`}
-                      >
-                        {inv.status}
-                      </span>
+                      <Badge
+                        variant={
+                          inv.status === "Draft"
+                            ? "warning"
+                            : inv.status === "Confirmed"
+                              ? "success"
+                              : "error"
+                        }
+                        label={inv.status}
+                      />
                     </td>
-                    <td className="pf-td--center">
-                      <button
-                        className="pf-row-action"
-                        onClick={() => void ctx.loadForEdit(inv.id)}
+                    <td className="zh-text-align-center">
+                      <ZHIconButton
+                        icon="edit"
+                        variant="ghost"
                         title="Editar"
-                      >
-                        <span
-                          className="material-symbols-outlined pf-icon--20"
-                        >
-                          edit
-                        </span>
-                      </button>
+                        onClick={() => void ctx.loadForEdit(inv.id)}
+                      />
                       {inv.status === "Confirmed" && (
-                        <button
-                          className="pf-row-action"
+                        <ZHIconButton
+                          icon="history"
+                          variant="ghost"
                           title="Ver Movimiento de Inventario"
                           onClick={() =>
                             navigate(
                               `/inventory/kardex?docId=${inv.id}&docType=PurchaseInvoice`,
                             )
                           }
-                        >
-                          <span
-                            className="material-symbols-outlined pf-icon--20"
-                          >
-                            history
-                          </span>
-                        </button>
+                        />
                       )}
                     </td>
                   </tr>
                 ))}
                 {ctx.listItems.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="pf-table-empty">
+                    <td colSpan={5} className="zh-table-empty">
                       Sin compras registradas.
                     </td>
                   </tr>
@@ -299,27 +297,42 @@ export function PurchasesPage() {
                 {ctx.supplierProfile && (
                   <div className="pf-mini-card__badges">
                     {ctx.supplierProfile.isRequiredToKeepAccounting ? (
-                      <span className="pf-badge pf-badge--success">
-                        <span className="material-symbols-outlined pf-badge__icon">
-                          check_circle
-                        </span>
-                        Obligado Contabilidad
-                      </span>
+                      <Badge
+                        variant="success"
+                        label={
+                          <>
+                            <span className="material-symbols-outlined pf-badge__icon">
+                              check_circle
+                            </span>
+                            Obligado Contabilidad
+                          </>
+                        }
+                      />
                     ) : (
-                      <span className="pf-badge pf-badge--danger">
-                        <span className="material-symbols-outlined pf-badge__icon">
-                          cancel
-                        </span>
-                        No Obligado
-                      </span>
+                      <Badge
+                        variant="error"
+                        label={
+                          <>
+                            <span className="material-symbols-outlined pf-badge__icon">
+                              cancel
+                            </span>
+                            No Obligado
+                          </>
+                        }
+                      />
                     )}
                     {ctx.supplierProfile.config?.isRetentionExempt && (
-                      <span className="pf-badge pf-badge--warning">
-                        <span className="material-symbols-outlined pf-badge__icon">
-                          shield
-                        </span>
-                        Exento Retención
-                      </span>
+                      <Badge
+                        variant="warning"
+                        label={
+                          <>
+                            <span className="material-symbols-outlined pf-badge__icon">
+                              shield
+                            </span>
+                            Exento Retención
+                          </>
+                        }
+                      />
                     )}
                   </div>
                 )}
@@ -459,7 +472,7 @@ export function PurchasesPage() {
               onClick={() => ctx.setShowElectronic((v) => !v)}
             >
               <span
-                className="material-symbols-outlined pf-icon--18"
+                className="material-symbols-outlined zh-icon-lg"
               >
                 qr_code_2
               </span>
@@ -472,11 +485,11 @@ export function PurchasesPage() {
               {!ctx.showElectronic &&
                 (ctx.formWatch.accessKey ||
                   ctx.formWatch.authorizationNumber) && (
-                  <span
-                    className="pf-badge pf-badge--info pf-collapsible__status"
-                  >
-                    Con datos
-                  </span>
+                  <Badge
+                    variant="info"
+                    label="Con datos"
+                    className="pf-collapsible__status"
+                  />
                 )}
             </button>
             {ctx.showElectronic && (
@@ -544,7 +557,7 @@ export function PurchasesPage() {
               onClick={() => ctx.setShowNotes((v) => !v)}
             >
               <span
-                className="material-symbols-outlined pf-icon--18"
+                className="material-symbols-outlined zh-icon-lg"
               >
                 notes
               </span>
@@ -555,11 +568,11 @@ export function PurchasesPage() {
                 expand_more
               </span>
               {!ctx.showNotes && ctx.formWatch.notes && (
-                <span
-                  className="pf-badge pf-badge--info pf-collapsible__status"
-                >
-                  Con notas
-                </span>
+                <Badge
+                  variant="info"
+                  label="Con notas"
+                  className="pf-collapsible__status"
+                />
               )}
             </button>
             {ctx.showNotes && (
@@ -1028,7 +1041,7 @@ function PurchaseLineCard({
                     }}
                   >
                     <span
-                      className="material-symbols-outlined pf-icon--14"
+                      className="material-symbols-outlined zh-icon-sm"
                     >
                       close
                     </span>
@@ -1110,28 +1123,18 @@ function PurchaseLineCard({
           $ {formatMoney(total, getDecimalConfig().totalAmount)}
         </div>
         <div className="pdl-line__actions">
-          <button
-            className="pf-row-action"
-            onClick={() => ctx.duplicateLine(l._key)}
+          <ZHIconButton
+            icon="content_copy"
+            variant="ghost"
             title="Duplicar"
-          >
-            <span
-              className="material-symbols-outlined pf-icon--18"
-            >
-              content_copy
-            </span>
-          </button>
-          <button
-            className="pf-row-action pf-row-action--danger"
-            onClick={() => ctx.removeLine(l._key)}
+            onClick={() => ctx.duplicateLine(l._key)}
+          />
+          <ZHIconButton
+            icon="delete"
+            variant="danger"
             title="Eliminar"
-          >
-            <span
-              className="material-symbols-outlined pf-icon--18"
-            >
-              delete
-            </span>
-          </button>
+            onClick={() => ctx.removeLine(l._key)}
+          />
         </div>
       </div>
 
@@ -1666,21 +1669,25 @@ function PaymentScheduleSection({
           </span>
           Plazos de Pago
           {ctx.hasPersistedSchedule && (
-            <span
-              className="pf-badge pf-badge--success pf-badge--offset"
-            >
-              <span className="material-symbols-outlined pf-badge__icon">
-                lock
-              </span>{" "}
-              Confirmado
-            </span>
+            <Badge
+              variant="success"
+              className="pf-badge--offset"
+              label={
+                <>
+                  <span className="material-symbols-outlined pf-badge__icon">
+                    lock
+                  </span>{" "}
+                  Confirmado
+                </>
+              }
+            />
           )}
           {!ctx.hasPersistedSchedule && ctx.ptLoaded && (
-            <span
-              className="pf-badge pf-badge--warning pf-badge--offset"
-            >
-              Preview
-            </span>
+            <Badge
+              variant="warning"
+              className="pf-badge--offset"
+              label="Preview"
+            />
           )}
         </h4>
         {ctx.isDraft && !ctx.hasPersistedSchedule && (
@@ -1688,7 +1695,7 @@ function PaymentScheduleSection({
             <ZHBtn
               type="button"
               variant="primary"
-              className="pf-schedule-action-btn"
+              size="xs"
               onClick={ctx.regenerateSchedule}
               disabled={ctx.saving || !ctx.formWatch.issueDate}
             >
@@ -1702,7 +1709,7 @@ function PaymentScheduleSection({
             <ZHBtn
               type="button"
               variant="secondary"
-              className="pf-schedule-action-btn"
+              size="xs"
               onClick={ctx.addInstallment}
               disabled={ctx.saving || !ctx.formWatch.issueDate}
             >
@@ -1764,23 +1771,23 @@ function PaymentScheduleSection({
         )}
 
         {ctx.hasPersistedSchedule && (
-          <table className="pf-table">
+          <table className="table table--compact table--neutral">
             <thead>
               <tr>
                 <th className="pf-schedule-col--number">#</th>
                 <th>Vencimiento</th>
-                <th className="pf-th--right">Monto</th>
+                <th className="zh-text-align-right">Monto</th>
                 <th>Notas</th>
               </tr>
             </thead>
             <tbody>
               {ctx.editing!.paymentSchedules.map((s) => (
                 <tr key={s.id}>
-                  <td className="pf-td--center pf-schedule-installment-number">
+                  <td className="zh-text-align-center pf-schedule-installment-number">
                     {s.installmentNumber}
                   </td>
                   <td>{formatDate(s.dueDate)}</td>
-                  <td className="pf-td--num">
+                  <td className="zh-table-cell--num">
                     {formatMoneyWithSymbol(
                       s.amount,
                       getDecimalConfig().totalAmount,
@@ -1802,24 +1809,24 @@ function PaymentScheduleSection({
                 <tr>
                   <th className="pf-schedule-col--number">#</th>
                   <th>Vencimiento</th>
-                  <th className="pf-th--right pf-schedule-col--amount">
+                  <th className="zh-text-align-right pf-schedule-col--amount">
                     Monto ($)
                   </th>
                   <th>Notas</th>
                   <th>Estado</th>
-                  <th className="pf-th--center pf-schedule-col--actions"></th>
+                  <th className="zh-text-align-center pf-schedule-col--actions"></th>
                 </tr>
               </thead>
               <tbody>
                 {ctx.ptRows.map((r, idx) => (
                   <tr key={idx}>
-                    <td className="pf-td--center pf-schedule-installment-number pf-schedule-installment-number--muted">
+                    <td className="zh-text-align-center pf-schedule-installment-number pf-schedule-installment-number--muted">
                       {r.number}
                     </td>
                     <td>
-                      <input
-                        type="date"
-                        className="pf-table-input pf-schedule-input--date"
+                      <ZhDateInput
+                        density="compact"
+                        className="pf-schedule-input--date"
                         value={r.dueDate}
                         onChange={(e) =>
                           ctx.updateScheduleRow(idx, "dueDate", e.target.value)
@@ -1831,7 +1838,8 @@ function PaymentScheduleSection({
                       <ZhDecimalInput
                         decimals={getDecimalConfig().totalAmount}
                         positiveOnly
-                        className="pf-table-input pf-table-input--num pf-schedule-input--amount"
+                        density="compact"
+                        className="pf-schedule-input--amount"
                         defaultValue={r.amount}
                         onBlur={(e) =>
                           ctx.updateScheduleRow(
@@ -1844,9 +1852,9 @@ function PaymentScheduleSection({
                       />
                     </td>
                     <td>
-                      <input
-                        type="text"
-                        className="pf-table-input pf-schedule-input--notes"
+                      <ZhTextInput
+                        density="compact"
+                        className="pf-schedule-input--notes"
                         placeholder="Observación..."
                         value={r.notes}
                         onChange={(e) =>
@@ -1857,24 +1865,17 @@ function PaymentScheduleSection({
                       />
                     </td>
                     <td>
-                      <span className="pf-badge pf-badge--warning">
-                        Pendiente
-                      </span>
+                      <Badge variant="warning" label="Pendiente" />
                     </td>
-                    <td className="pf-td--center">
+                    <td className="zh-text-align-center">
                       {ctx.isDraft && ctx.ptRows.length > 1 && (
-                        <button
-                          className="pf-row-action pf-row-action--danger"
+                        <ZHIconButton
+                          icon="close"
+                          variant="danger"
                           title="Eliminar cuota"
                           onClick={() => ctx.removeInstallment(idx)}
                           disabled={ctx.fieldDisabled}
-                        >
-                          <span
-                            className="material-symbols-outlined pf-schedule-remove-icon"
-                          >
-                            close
-                          </span>
-                        </button>
+                        />
                       )}
                     </td>
                   </tr>
@@ -1946,7 +1947,7 @@ function RetentionSection({
               <ZHBtn
                 type="button"
                 variant="primary"
-                className="pf-retention-action-btn"
+                size="sm"
                 onClick={ctx.handleCalcRetention}
                 disabled={ctx.whLoading}
               >
@@ -1961,7 +1962,7 @@ function RetentionSection({
                 <ZHBtn
                   type="button"
                   variant="primary"
-                  className="pf-retention-action-btn"
+                  size="sm"
                   onClick={() => ctx.setModalWhIssue(true)}
                   disabled={ctx.whLoading}
                 >
@@ -1979,7 +1980,7 @@ function RetentionSection({
             <ZHBtn
               type="button"
               variant="destructive"
-              className="pf-retention-action-btn"
+              size="sm"
               onClick={() => ctx.setModalWhCancel(true)}
               disabled={ctx.whLoading}
             >
@@ -2002,39 +2003,38 @@ function RetentionSection({
               </div>
             )}
             {ctx.whPreview.lines.length > 0 && (
-              <table className="pf-table">
+              <table className="table table--compact table--neutral">
                 <thead>
                   <tr>
                     <th>Tipo</th>
                     <th>Código</th>
                     <th>Descripción</th>
-                    <th className="pf-th--right">Base</th>
-                    <th className="pf-th--right">%</th>
-                    <th className="pf-th--right">Retenido</th>
+                    <th className="zh-text-align-right">Base</th>
+                    <th className="zh-text-align-right">%</th>
+                    <th className="zh-text-align-right">Retenido</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ctx.whPreview.lines.map((l, i) => (
                     <tr key={i}>
                       <td>
-                        <span
-                          className={`pf-badge ${l.taxType === "IVA" ? "pf-badge--info" : "pf-badge--warning"}`}
-                        >
-                          {l.taxType}
-                        </span>
+                        <Badge
+                          variant={l.taxType === "IVA" ? "info" : "warning"}
+                          label={l.taxType}
+                        />
                       </td>
                       <td className="pf-retention-code">
                         {l.retentionCode}
                       </td>
                       <td>{l.retentionCodeName}</td>
-                      <td className="pf-td--num">
+                      <td className="zh-table-cell--num">
                         {formatMoneyWithSymbol(
                           l.taxableBase,
                           getDecimalConfig().totalAmount,
                         )}
                       </td>
-                      <td className="pf-td--num">{l.retentionPct}%</td>
-                      <td className="pf-td--num pf-retention-amount">
+                      <td className="zh-table-cell--num">{l.retentionPct}%</td>
+                      <td className="zh-table-cell--num pf-retention-amount">
                         {formatMoneyWithSymbol(
                           l.amountRetained,
                           getDecimalConfig().totalAmount,
@@ -2064,49 +2064,49 @@ function RetentionSection({
               </span>
               <span className="pf-retention__issued-item">
                 Estado:{" "}
-                <span
-                  className={`pf-badge ${ctx.withholding.status === "Issued" ? "pf-badge--success" : "pf-badge--danger"}`}
-                >
-                  {ctx.withholding.status}
-                </span>
+                <Badge
+                  variant={
+                    ctx.withholding.status === "Issued" ? "success" : "error"
+                  }
+                  label={ctx.withholding.status}
+                />
               </span>
               <span className="pf-retention__issued-item">
                 Fecha: <strong>{formatDate(ctx.withholding.issueDate)}</strong>
               </span>
             </div>
-            <table className="pf-table">
+            <table className="table table--compact table--neutral">
               <thead>
                 <tr>
                   <th>Tipo</th>
                   <th>Código</th>
                   <th>Descripción</th>
-                  <th className="pf-th--right">Base</th>
-                  <th className="pf-th--right">%</th>
-                  <th className="pf-th--right">Retenido</th>
+                  <th className="zh-text-align-right">Base</th>
+                  <th className="zh-text-align-right">%</th>
+                  <th className="zh-text-align-right">Retenido</th>
                 </tr>
               </thead>
               <tbody>
                 {ctx.withholding.details.map((d) => (
                   <tr key={d.id}>
                     <td>
-                      <span
-                        className={`pf-badge ${d.taxType === "IVA" ? "pf-badge--info" : "pf-badge--warning"}`}
-                      >
-                        {d.taxType}
-                      </span>
+                      <Badge
+                        variant={d.taxType === "IVA" ? "info" : "warning"}
+                        label={d.taxType}
+                      />
                     </td>
                     <td className="pf-retention-code">
                       {d.retentionCode}
                     </td>
                     <td>{d.retentionCodeDescription}</td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">
                       {formatMoneyWithSymbol(
                         d.taxableBase,
                         getDecimalConfig().totalAmount,
                       )}
                     </td>
-                    <td className="pf-td--num">{d.retentionPct}%</td>
-                    <td className="pf-td--num pf-retention-amount">
+                    <td className="zh-table-cell--num">{d.retentionPct}%</td>
+                    <td className="zh-table-cell--num pf-retention-amount">
                       {formatMoneyWithSymbol(
                         d.amountRetained,
                         getDecimalConfig().totalAmount,

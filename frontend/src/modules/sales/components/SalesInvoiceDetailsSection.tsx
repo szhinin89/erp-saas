@@ -9,6 +9,7 @@ import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";
 import type { ItemWarehouseAvailabilityDto } from "../../inventory/stock/api/stockService";
 import { Badge } from "../../../components/PageShell";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
 import { lineNet, calcLineTax } from "../utils/salesCalc";
@@ -493,18 +494,13 @@ function SalesProductCard({
       <div className="sf-product__info">
         <div className="sf-product__info-row">
           {!readOnly && (
-            <button
-              className="sf-product__delete-btn"
-              onClick={() => onRemove(line._key)}
+            <ZHIconButton
+              icon="delete"
+              variant="danger"
               title="Eliminar línea"
+              onClick={() => onRemove(line._key)}
               disabled={disabled}
-            >
-              <span
-                className="material-symbols-outlined sales-invoice-details-delete-icon"
-              >
-                delete
-              </span>
-            </button>
+            />
           )}
           <div className="sf-product__text">
             {sku && <div className="sf-product__code">{sku}</div>}

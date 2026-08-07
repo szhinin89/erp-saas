@@ -1,19 +1,26 @@
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { PageShell } from "../../../components/PageShell";
+import {
+  Badge,
+  PageShell,
+  type BadgeVariant,
+} from "../../../components/PageShell";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { useCajaPage } from "../hooks/useCajaPage";
 import "../../../styles/shared/erp-form-core.css";
+import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
 
 export function CajaPage() {
   const ctx = useCajaPage();
 
   const statusLabel = (s: string) => (s === "Open" ? "Abierta" : "Cerrada");
-  const statusBadge = (s: string) =>
-    s === "Open" ? "pf-badge--success" : "pf-badge--gray";
+  const statusBadge = (s: string): BadgeVariant =>
+    s === "Open" ? "success" : "neutral";
 
   const movementTypeLabel = (t: string) => {
     const map: Record<string, string> = {
@@ -80,57 +87,55 @@ export function CajaPage() {
             {ctx.listLoading ? (
               <p>Cargando...</p>
             ) : (
-              <table className="pf-table">
+              <table className="table table--compact table--neutral">
                 <thead>
                   <tr>
                     <th>Apertura</th>
-                    <th className="pf-th--right">Monto Apertura</th>
-                    <th className="pf-th--right">Saldo</th>
-                    <th className="pf-th--center">Movimientos</th>
+                    <th className="zh-text-align-right">Monto Apertura</th>
+                    <th className="zh-text-align-right">Saldo</th>
+                    <th className="zh-text-align-center">Movimientos</th>
                     <th>Estado</th>
                     <th>Cierre</th>
-                    <th className="pf-th--right">Diferencia</th>
-                    <th className="pf-th--center">Acciones</th>
+                    <th className="zh-text-align-right">Diferencia</th>
+                    <th className="zh-text-align-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ctx.listItems.map((s) => (
                     <tr key={s.id}>
                       <td>{formatDateTime(s.openedAt)}</td>
-                      <td className="pf-td--num">
+                      <td className="zh-table-cell--num">
                         {formatMoneyWithSymbol(s.openingAmount)}
                       </td>
-                      <td className="pf-td--num">
+                      <td className="zh-table-cell--num">
                         {formatMoneyWithSymbol(s.currentBalance)}
                       </td>
-                      <td className="pf-td--center">{s.movementCount}</td>
+                      <td className="zh-text-align-center">{s.movementCount}</td>
                       <td>
-                        <span className={`pf-badge ${statusBadge(s.status)}`}>
-                          {statusLabel(s.status)}
-                        </span>
+                        <Badge
+                          variant={statusBadge(s.status)}
+                          label={statusLabel(s.status)}
+                        />
                       </td>
                       <td>{s.closedAt ? formatDateTime(s.closedAt) : "—"}</td>
-                      <td className="pf-td--num">
+                      <td className="zh-table-cell--num">
                         {s.difference != null
                           ? formatMoneyWithSymbol(s.difference)
                           : "—"}
                       </td>
-                      <td className="pf-td--center">
-                        <button
-                          className="pf-row-action"
-                          onClick={() => ctx.loadDetail(s.id)}
+                      <td className="zh-text-align-center">
+                        <ZHIconButton
+                          icon="visibility"
+                          variant="ghost"
                           title="Ver detalle"
-                        >
-                          <span className="material-symbols-outlined zh-icon-md">
-                            visibility
-                          </span>
-                        </button>
+                          onClick={() => ctx.loadDetail(s.id)}
+                        />
                       </td>
                     </tr>
                   ))}
                   {ctx.listItems.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="pf-table-empty">
+                      <td colSpan={8} className="zh-table-empty">
                         Sin sesiones de caja.
                       </td>
                     </tr>
@@ -263,9 +268,10 @@ export function CajaPage() {
                 Volver
               </ZHBtn>
               <h3>Sesión de Caja</h3>
-              <span className={`pf-badge ${statusBadge(ctx.viewing.status)}`}>
-                {statusLabel(ctx.viewing.status)}
-              </span>
+              <Badge
+                variant={statusBadge(ctx.viewing.status)}
+                label={statusLabel(ctx.viewing.status)}
+              />
               <div className="cj-detail-header-spacer" />
               {ctx.viewing.status === "Open" && (
                 <ZHBtn variant="destructive" onClick={ctx.startClose}>
@@ -396,13 +402,13 @@ export function CajaPage() {
             )}
 
             <h4 className="cj-section-title">Movimientos</h4>
-            <table className="pf-table">
+            <table className="table table--compact table--neutral">
               <thead>
                 <tr>
                   <th>Fecha</th>
                   <th>Tipo</th>
                   <th>Descripción</th>
-                  <th className="pf-th--right">Monto</th>
+                  <th className="zh-text-align-right">Monto</th>
                   <th>Referencia</th>
                 </tr>
               </thead>
@@ -412,7 +418,7 @@ export function CajaPage() {
                     <td>{formatDateTime(m.createdAt)}</td>
                     <td>{movementTypeLabel(m.movementType)}</td>
                     <td>{m.description}</td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">
                       {formatMoneyWithSymbol(m.amount)}
                     </td>
                     <td>{m.referenceNumber ?? "—"}</td>
@@ -420,7 +426,7 @@ export function CajaPage() {
                 ))}
                 {ctx.viewing.movements.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="pf-table-empty">
+                    <td colSpan={5} className="zh-table-empty">
                       Sin movimientos.
                     </td>
                   </tr>
@@ -434,20 +440,20 @@ export function CajaPage() {
                   <h4 className="cj-section-title cj-section-title--spaced">
                     Arqueo
                   </h4>
-                  <table className="pf-table cj-arqueo-table">
+                  <table className="table table--compact table--neutral cj-arqueo-table">
                     <thead>
                       <tr>
                         <th>Denominación</th>
-                        <th className="pf-th--center">Cantidad</th>
-                        <th className="pf-th--right">Total</th>
+                        <th className="zh-text-align-center">Cantidad</th>
+                        <th className="zh-text-align-right">Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {ctx.viewing.closingCounts.map((c) => (
                         <tr key={c.id}>
                           <td>{c.denominationLabel}</td>
-                          <td className="pf-td--center">{c.quantity}</td>
-                          <td className="pf-td--num">
+                          <td className="zh-text-align-center">{c.quantity}</td>
+                          <td className="zh-table-cell--num">
                             {formatMoneyWithSymbol(c.total)}
                           </td>
                         </tr>
@@ -509,18 +515,17 @@ export function CajaPage() {
                 <thead>
                   <tr>
                     <th>Denominación</th>
-                    <th className="pf-th--center">Cantidad</th>
-                    <th className="pf-th--right">Total</th>
+                    <th className="zh-text-align-center">Cantidad</th>
+                    <th className="zh-text-align-right">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ctx.closeForm.watch("closingCounts").map((c, i) => (
                     <tr key={c._key}>
                       <td>{c.denominationLabel}</td>
-                      <td className="pf-td--center">
-                        <input
-                          type="number"
-                          min={0}
+                      <td className="zh-text-align-center">
+                        <ZhNumberInput
+                          positiveOnly
                           className="cj-arqueo-input"
                           {...ctx.closeForm.register(
                             `closingCounts.${i}.quantity`,
@@ -528,7 +533,7 @@ export function CajaPage() {
                           )}
                         />
                       </td>
-                      <td className="pf-td--num">
+                      <td className="zh-table-cell--num">
                         {formatMoneyWithSymbol(
                           c.denominationValue * c.quantity,
                         )}
@@ -541,7 +546,7 @@ export function CajaPage() {
                     <td colSpan={2} className="cj-arqueo-total">
                       Total contado
                     </td>
-                    <td className="pf-td--num cj-arqueo-total">
+                    <td className="zh-table-cell--num cj-arqueo-total">
                       {formatMoneyWithSymbol(ctx.countedTotal)}
                     </td>
                   </tr>

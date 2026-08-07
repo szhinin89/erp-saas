@@ -8,8 +8,10 @@ import {
   Badge,
 } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { ZHModal } from "../../../../components/zh/ZHModal";
 import { ZhPhoneInput, ZhTextInput } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
@@ -173,33 +175,27 @@ export function CarriersPage() {
 
       {/* â”€â”€ KPI cards â”€â”€ */}
       <div className="pg-kpis">
-        <div className="pg-kpi pg-kpi--h">
-          <div className="pg-kpi-icon pg-kpi-icon--primary">
-            <span className="material-symbols-outlined">local_shipping</span>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t("carriers.kpi.total")}</p>
-            <p className="pg-kpi-value">{totals.total}</p>
-          </div>
-        </div>
-        <div className="pg-kpi pg-kpi--h">
-          <div className="pg-kpi-icon pg-kpi-icon--success">
-            <span className="material-symbols-outlined">check_circle</span>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t("carriers.kpi.active")}</p>
-            <p className="pg-kpi-value">{totals.active}</p>
-          </div>
-        </div>
-        <div className="pg-kpi pg-kpi--h">
-          <div className="pg-kpi-icon pg-kpi-icon--error">
-            <span className="material-symbols-outlined">do_not_disturb</span>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t("carriers.kpi.inactive")}</p>
-            <p className="pg-kpi-value">{totals.inactive}</p>
-          </div>
-        </div>
+        <ReportKpiCard
+          layout="horizontal"
+          icon="local_shipping"
+          tone="primary"
+          label={t("carriers.kpi.total")}
+          value={String(totals.total)}
+        />
+        <ReportKpiCard
+          layout="horizontal"
+          icon="check_circle"
+          tone="success"
+          label={t("carriers.kpi.active")}
+          value={String(totals.active)}
+        />
+        <ReportKpiCard
+          layout="horizontal"
+          icon="do_not_disturb"
+          tone="error"
+          label={t("carriers.kpi.inactive")}
+          value={String(totals.inactive)}
+        />
       </div>
 
       {/* â”€â”€ Table section â”€â”€ */}
@@ -243,7 +239,7 @@ export function CarriersPage() {
         ) : filtered.length === 0 ? (
           <EmptyState message={t("common.noData")} />
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>
@@ -307,23 +303,13 @@ export function CarriersPage() {
                             edit
                           </span>
                         </ZHBtn>
-                        <ZHBtn
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className={
-                            carrier.isActive
-                              ? "crt-btn-danger"
-                              : "crt-btn-success"
-                          }
+                        <ZHIconButton
+                          icon={carrier.isActive ? "block" : "check_circle"}
+                          variant={carrier.isActive ? "danger" : "success"}
+                          title={carrier.isActive ? "Disable" : "Enable"}
                           onClick={() => void handleToggle(carrier)}
                           disabled={!canEdit || saving}
-                          aria-label={carrier.isActive ? "Disable" : "Enable"}
-                        >
-                          <span className="material-symbols-outlined">
-                            {carrier.isActive ? "block" : "check_circle"}
-                          </span>
-                        </ZHBtn>
+                        />
                       </div>
                     </td>
                   </tr>

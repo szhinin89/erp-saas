@@ -6,6 +6,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useDashboardKpis } from "../hooks/useDashboardData";
 import "./DashboardPage.css";
 
@@ -60,78 +61,62 @@ export function DashboardPage() {
 
       {/* ── KPI cards ── */}
       <div className="pg-kpis">
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">payments</span>
-            </div>
-            {periodLabel && <Badge label={periodLabel} variant="blue" />}
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">Ventas MTD</p>
-            <p className="pg-kpi-value">{loading ? "…" : fmt(d?.salesMtd)}</p>
+        <ReportKpiCard
+          icon="payments"
+          tone="primary"
+          badge={periodLabel ? <Badge label={periodLabel} variant="info" /> : undefined}
+          label="Ventas MTD"
+          value={loading ? "…" : fmt(d?.salesMtd)}
+          sub={
             <p className="subtle">
               {loading ? "" : `${fmtN(d?.invoicesMtd)} facturas`}
             </p>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--warning">
-              <span className="material-symbols-outlined">account_balance</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">CxC Pendiente</p>
-            <p className="pg-kpi-value">
-              {loading ? "…" : fmt(d?.pendingArTotal)}
-            </p>
-            {!loading && !!d?.overdueArTotal && (
-              <div className="dsh-kpi-trend dsh-kpi-trend--warning">
-                <span className="material-symbols-outlined">warning</span>
-                <span>{fmt(d.overdueArTotal)} vencido</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ReportKpiCard
+          icon="account_balance"
+          tone="warning"
+          label="CxC Pendiente"
+          value={loading ? "…" : fmt(d?.pendingArTotal)}
+          trend={
+            !loading && !!d?.overdueArTotal
+              ? {
+                  icon: "warning",
+                  label: `${fmt(d.overdueArTotal)} vencido`,
+                  tone: "warning",
+                }
+              : undefined
+          }
+        />
 
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--error">
-              <span className="material-symbols-outlined">inventory_2</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t("dashboard.kpis.lowStock")}</p>
-            <p className="pg-kpi-value">
-              {loading ? "…" : fmtN(d?.lowStockSkuCount)}
-            </p>
+        <ReportKpiCard
+          icon="inventory_2"
+          tone="error"
+          label={t("dashboard.kpis.lowStock")}
+          value={loading ? "…" : fmtN(d?.lowStockSkuCount)}
+          sub={
             <p className="subtle">
               {loading ? "" : `${fmtN(d?.outOfStockSkuCount)} sin stock`}
             </p>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">shopping_cart</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">CxP Pendiente</p>
-            <p className="pg-kpi-value">
-              {loading ? "…" : fmt(d?.pendingApTotal)}
-            </p>
-            {!loading && !!d?.overdueApTotal && (
-              <div className="dsh-kpi-trend dsh-kpi-trend--warning">
-                <span className="material-symbols-outlined">warning</span>
-                <span>{fmt(d.overdueApTotal)} vencido</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ReportKpiCard
+          icon="shopping_cart"
+          tone="primary"
+          label="CxP Pendiente"
+          value={loading ? "…" : fmt(d?.pendingApTotal)}
+          trend={
+            !loading && !!d?.overdueApTotal
+              ? {
+                  icon: "warning",
+                  label: `${fmt(d.overdueApTotal)} vencido`,
+                  tone: "warning",
+                }
+              : undefined
+          }
+        />
       </div>
 
       {/* ── Aging charts + quick access ── */}
@@ -186,7 +171,7 @@ export function DashboardPage() {
           <div className="card card--xl">
             <div className="card-header">
               <h2 className="dsh-section-title">Resumen Anual</h2>
-              {d && <Badge label={d.year} variant="blue" />}
+              {d && <Badge label={d.year} variant="info" />}
             </div>
             <div className="dsh-card-body">
               <div className="dsh-summary-row">

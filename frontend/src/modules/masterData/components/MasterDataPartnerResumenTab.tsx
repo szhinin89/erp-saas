@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useI18n } from "../../../i18n/i18n";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 import type {
   PartnerActivityItem,
@@ -89,47 +90,26 @@ export function MasterDataPartnerResumenTab({
   return (
     <div className="prd-resumen prd-fadein">
       <div className="prd-kpi-grid">
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">{icon}</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">
-              {t(`${prefix}.kpi.total`, "Total registrados")}
-            </p>
-            <p className="pg-kpi-value">{String(stats.total)}</p>
-          </div>
-        </div>
+        <ReportKpiCard
+          icon={icon}
+          tone="primary"
+          label={t(`${prefix}.kpi.total`, "Total registrados")}
+          value={String(stats.total)}
+        />
 
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--success">
-              <span className="material-symbols-outlined">check_circle</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">
-              {t(`${prefix}.kpi.activePage`, "Activos (página)")}
-            </p>
-            <p className="pg-kpi-value">{stats.active}</p>
-          </div>
-        </div>
+        <ReportKpiCard
+          icon="check_circle"
+          tone="success"
+          label={t(`${prefix}.kpi.activePage`, "Activos (página)")}
+          value={String(stats.active)}
+        />
 
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--neutral">
-              <span className="material-symbols-outlined">inventory</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">
-              {t(`${prefix}.kpi.inactivePage`, "Inactivos (página)")}
-            </p>
-            <p className="pg-kpi-value">{stats.inactive}</p>
-          </div>
-        </div>
+        <ReportKpiCard
+          icon="inventory"
+          tone="neutral"
+          label={t(`${prefix}.kpi.inactivePage`, "Inactivos (página)")}
+          value={String(stats.inactive)}
+        />
       </div>
 
       <div className="prd-resumen__bottom">

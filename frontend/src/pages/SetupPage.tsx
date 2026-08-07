@@ -111,13 +111,13 @@ export function SetupPage() {
             <h1 className="lp-brand-name">ZH Technologies</h1>
             <p className="lp-brand-sub">El sistema ya fue configurado.</p>
           </div>
-          <div className="lp-card">
-            <div className="lp-card-body">
+          <div className="zh-auth-card zh-auth-card--flush">
+            <div className="zh-auth-card-body">
               <p className="setup-page-message">
                 El administrador inicial ya existe.{" "}
                 <button
                   type="button"
-                  className="lp-forgot"
+                  className="zh-auth-link"
                   onClick={() => navigate("/login", { replace: true })}
                 >
                   Ir al login
@@ -138,8 +138,8 @@ export function SetupPage() {
             <h1 className="lp-brand-name">ZH Technologies</h1>
             <p className="lp-brand-sub">ConfiguraciÃ³n completada</p>
           </div>
-          <div className="lp-card">
-            <div className="lp-card-body lp-card-body--center">
+          <div className="zh-auth-card zh-auth-card--flush">
+            <div className="zh-auth-card-body zh-auth-card-body--center">
               Administrador creado correctamente. Redirigiendo al loginâ€¦
             </div>
           </div>
@@ -167,8 +167,8 @@ export function SetupPage() {
           <p className="lp-brand-sub">ConfiguraciÃ³n inicial del sistema</p>
         </div>
 
-        <div className="lp-card">
-          <div className="lp-card-body">
+        <div className="zh-auth-card zh-auth-card--flush">
+          <div className="zh-auth-card-body">
             {error && (
               <div className="lp-error" role="alert">
                 <span className="material-symbols-outlined" aria-hidden="true">
@@ -179,7 +179,7 @@ export function SetupPage() {
             )}
 
             <form
-              className="lp-form"
+              className="zh-auth-form"
               onSubmit={handleSubmit(onValid)}
               noValidate
             >
@@ -356,12 +356,12 @@ export function SetupPage() {
 
               <button
                 type="submit"
-                className={`lp-submit${isSubmitting ? " lp-submit--loading" : ""}`}
+                className={`zh-auth-submit${isSubmitting ? " zh-auth-submit--loading" : ""}`}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <span className="lp-submit-spinner" aria-hidden="true" />
+                    <span className="zh-auth-submit-spinner" aria-hidden="true" />
                     <span>Creando administradorâ€¦</span>
                   </>
                 ) : (

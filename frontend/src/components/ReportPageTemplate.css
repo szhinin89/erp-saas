@@ -233,26 +233,10 @@
   color: var(--color-text-primary);
 }
 
-/* More-actions button */
-.rpt-row-actions-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: none;
-  border-radius: 50%;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: background var(--transition);
-}
-.rpt-row-actions-btn:hover {
-  background: var(--color-surface-container);
-}
-.rpt-row-actions-btn .material-symbols-outlined {
-  font-size: 20px;
-}
+/* .rpt-row-actions-btn (+ :hover / .material-symbols-outlined) ELIMINADOS
+   (Bloque 13E) — migrado a <ZHIconButton variant="ghost" shape="circle">
+   en ReportRowActions (ReportPageTemplate.tsx). Coincidencia 1:1 con
+   .prd-icon-btn--circle (32px, radio 50%, mismo hover, ícono 20px). */
 
 /* Filters button in table controls */
 .rpt-filter-btn {

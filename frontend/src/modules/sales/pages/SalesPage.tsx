@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
@@ -91,12 +92,12 @@ export function SalesPage() {
 
   const statusLabel = (s: string) =>
     s === "Draft" ? "Borrador" : s === "Authorized" ? "Autorizada" : "Anulada";
-  const statusBadgeClass = (s: string) =>
+  const statusBadgeVariant = (s: string): BadgeVariant =>
     s === "Draft"
-      ? "pf-badge--warning"
+      ? "warning"
       : s === "Authorized"
-        ? "pf-badge--success"
-        : "pf-badge--danger";
+        ? "success"
+        : "error";
 
   return (
     <div className="sales-page-root">
@@ -146,17 +147,17 @@ export function SalesPage() {
           {ctx.listLoading ? (
             <p>Cargando...</p>
           ) : (
-            <div className="pg-overflow-x">
-              <table className="pf-table">
+            <div className="table-scroll">
+              <table className="table table--compact table--neutral">
               <thead>
                 <tr>
                   <th>Nro. Factura</th>
                   <th>Fecha</th>
                   <th>Cliente</th>
-                  <th className="pf-th--right">Total</th>
-                  <th className="pf-th--center">Líneas</th>
+                  <th className="zh-text-align-right">Total</th>
+                  <th className="zh-text-align-center">Líneas</th>
                   <th>Estado</th>
-                  <th className="pf-th--center">Acciones</th>
+                  <th className="zh-text-align-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,21 +168,20 @@ export function SalesPage() {
                     </td>
                     <td>{inv.issueDate}</td>
                     <td>{inv.customerName}</td>
-                    <td className="pf-td--num">
+                    <td className="zh-table-cell--num">
                       {formatMoneyWithSymbol(
                         inv.grandTotal,
                         getDecimalConfig().totalAmount,
                       )}
                     </td>
-                    <td className="pf-td--center">{inv.lineCount}</td>
+                    <td className="zh-text-align-center">{inv.lineCount}</td>
                     <td>
-                      <span
-                        className={`pf-badge ${statusBadgeClass(inv.status)}`}
-                      >
-                        {statusLabel(inv.status)}
-                      </span>
+                      <Badge
+                        variant={statusBadgeVariant(inv.status)}
+                        label={statusLabel(inv.status)}
+                      />
                     </td>
-                    <td className="pf-td--center">
+                    <td className="zh-text-align-center">
                       <ZHIconButton
                         icon={inv.status === "Draft" ? "replay" : "edit"}
                         title={
@@ -215,7 +215,7 @@ export function SalesPage() {
                 ))}
                 {ctx.listItems.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="pf-table-empty">
+                    <td colSpan={7} className="zh-table-empty">
                       Sin facturas registradas.
                     </td>
                   </tr>
@@ -416,7 +416,7 @@ export function SalesPage() {
                     <button
                       type="button"
                       onClick={ctx.openEditCustomerModal}
-                      className="zh-inline-action sales-form-edit-btn"
+                      className="zh-inline-action zh-mt-4"
                     >
                       <span className="material-symbols-outlined zh-icon-sm">
                         edit

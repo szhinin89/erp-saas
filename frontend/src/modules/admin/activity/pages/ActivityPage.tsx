@@ -123,7 +123,7 @@ export function ActivityPage() {
             <EmptyState message={t("audit.empty")} />
           </div>
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

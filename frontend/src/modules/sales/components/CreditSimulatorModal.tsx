@@ -1,5 +1,6 @@
 import type { CreditRow } from "../hooks/useSalesPage";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -75,7 +76,7 @@ export function CreditSimulatorModal({
           <tr>
             <th>#</th>
             <th>Vencimiento</th>
-            <th className="pf-th--right">Monto</th>
+            <th className="zh-text-align-right">Monto</th>
           </tr>
         </thead>
         <tbody>
@@ -83,8 +84,7 @@ export function CreditSimulatorModal({
             <tr key={row.number}>
               <td>{row.number}</td>
               <td>
-                <input
-                  type="date"
+                <ZhDateInput
                   value={row.dueDate}
                   onChange={(e) =>
                     onRowsChange(
@@ -95,7 +95,7 @@ export function CreditSimulatorModal({
                   }
                 />
               </td>
-              <td className="pf-td--num">
+              <td className="zh-table-cell--num">
                 <ZhDecimalInput
                   decimals={totalAmountDecimals}
                   positiveOnly
@@ -116,10 +116,10 @@ export function CreditSimulatorModal({
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={2} className="pf-td--right">
+            <td colSpan={2} className="zh-text-align-right">
               <strong>Total cuotas</strong>
             </td>
-            <td className="pf-td--num">
+            <td className="zh-table-cell--num">
               <strong>${formatMoney(totalCuotas, totalAmountDecimals)}</strong>
             </td>
           </tr>

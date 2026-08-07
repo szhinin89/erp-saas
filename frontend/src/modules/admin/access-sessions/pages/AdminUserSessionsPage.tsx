@@ -212,7 +212,7 @@ export function AdminUserSessionsPage() {
             <EmptyState message="No se encontraron sesiones con los filtros indicados." />
           </div>
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { Badge } from "../../../components/PageShell";
 import {
   ZHBtn,
   ZHField,
@@ -516,15 +517,12 @@ export function MasterDataBusinessPartnerDetailPage() {
       {bp && (
         <>
           <div className="md-detail-status-row">
-            <span
-              className={`md-badge ${bp.isActive ? "md-badge--ok" : "md-badge--warn"}`}
-            >
-              {bp.isActive ? "Activo" : "Inactivo"}
-            </span>
+            <Badge
+              variant={bp.isActive ? "success" : "warning"}
+              label={bp.isActive ? "Activo" : "Inactivo"}
+            />
             {activeRoles.map((r) => (
-              <span key={r.id} className="md-badge md-badge--ok">
-                {r.roleLabel}
-              </span>
+              <Badge key={r.id} variant="success" label={r.roleLabel} />
             ))}
           </div>
 
@@ -577,9 +575,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                       {activeRoles.map((r) => (
                         <div key={r.id} className="md-role-card">
                           <div className="md-role-card__header">
-                            <span className="md-badge md-badge--ok">
-                              {r.roleLabel}
-                            </span>
+                            <Badge variant="success" label={r.roleLabel} />
                             {canDisable && (
                               <ZHBtn
                                 variant="ghost"
@@ -663,12 +659,8 @@ export function MasterDataBusinessPartnerDetailPage() {
                             className="md-role-card md-role-card--inactive"
                           >
                             <div className="md-role-card__header">
-                              <span className="md-badge md-badge--warn">
-                                {r.roleLabel}
-                              </span>
-                              <span className="md-badge md-badge--warn">
-                                Revocado
-                              </span>
+                              <Badge variant="warning" label={r.roleLabel} />
+                              <Badge variant="warning" label="Revocado" />
                             </div>
                           </div>
                         ))}
@@ -736,11 +728,9 @@ export function MasterDataBusinessPartnerDetailPage() {
                               {l.name}
                             </span>
                             {l.isPrimary && (
-                              <span className="md-badge md-badge--ok">
-                                Principal
-                              </span>
+                              <Badge variant="success" label="Principal" />
                             )}
-                            <span className="md-badge">{l.typeLabel}</span>
+                            <Badge variant="neutral" label={l.typeLabel} />
                           </div>
                           <p className="md-location-card__address">
                             {l.addressLine}
@@ -748,9 +738,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                           {l.purposes.length > 0 && (
                             <div className="md-location-card__purposes">
                               {l.purposes.map((p) => (
-                                <span key={p} className="md-badge">
-                                  {p}
-                                </span>
+                                <Badge key={p} variant="neutral" label={p} />
                               ))}
                             </div>
                           )}
@@ -832,11 +820,9 @@ export function MasterDataBusinessPartnerDetailPage() {
                           {c.fullName}
                         </span>
                         {c.isPrimary && (
-                          <span className="md-badge md-badge--ok">
-                            Principal
-                          </span>
+                          <Badge variant="success" label="Principal" />
                         )}
-                        <span className="md-badge">{c.roleLabel}</span>
+                        <Badge variant="neutral" label={c.roleLabel} />
                       </div>
                       {c.position && (
                         <p className="md-contact-card__position">

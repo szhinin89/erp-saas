@@ -16,25 +16,9 @@
   width: 75%;
 }
 
-/* ── KPI unique extensions ───────────────────────────────── */
-/* Trend indicator (trending_up icon + % text) */
-.dsh-kpi-trend {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  margin-top: var(--space-1);
-}
-.dsh-kpi-trend .material-symbols-outlined {
-  font-size: 16px;
-}
-.dsh-kpi-trend--success {
-  color: var(--color-success);
-}
-.dsh-kpi-trend--warning {
-  color: var(--color-warning);
-}
+/* .dsh-kpi-trend/--success/--warning ELIMINADOS (Bloque 6D) — promovidos a
+   .pg-kpi-trend/--success/--warning/--neutral (page-template.css), usados
+   ahora vía el prop `trend` de <ReportKpiCard>. */
 
 /* Progress bar (monthly revenue %) */
 .dsh-kpi-progress {

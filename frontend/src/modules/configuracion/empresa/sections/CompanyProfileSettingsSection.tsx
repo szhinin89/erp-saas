@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
+import {
+  Badge,
+  LoadingState,
+  NoAccessPage,
+} from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
@@ -167,16 +171,20 @@ export function CompanyProfileSettingsSection() {
             </div>
             {profile && (
               <div className="zh-flex-end zh-gap-8">
-                <span
-                  className={`pg-kpi-badge ${profile.isActive ? "pg-kpi-badge--success" : "pg-kpi-badge--neutral"}`}
-                >
-                  {profile.isActive ? "Activa" : "Inactiva"}
-                </span>
-                <span className="pg-kpi-badge pg-kpi-badge--neutral">
-                  RUC:{" "}
-                  {TAX_STATUS_LABELS[profile.taxIdentificationStatus] ??
-                    profile.taxIdentificationStatus}
-                </span>
+                <Badge
+                  variant={profile.isActive ? "success" : "neutral"}
+                  label={profile.isActive ? "Activa" : "Inactiva"}
+                />
+                <Badge
+                  variant="neutral"
+                  label={
+                    <>
+                      RUC:{" "}
+                      {TAX_STATUS_LABELS[profile.taxIdentificationStatus] ??
+                        profile.taxIdentificationStatus}
+                    </>
+                  }
+                />
               </div>
             )}
           </div>

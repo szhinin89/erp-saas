@@ -60,7 +60,7 @@ export function BrandsPage() {
             key: "code",
             label: "Código",
             render: (r) => (
-              <Badge label={r.code as string} variant="gray" className="mono" />
+              <Badge label={r.code as string} variant="neutral" className="mono" />
             ),
           },
           {

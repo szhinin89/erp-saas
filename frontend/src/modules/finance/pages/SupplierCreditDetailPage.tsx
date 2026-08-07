@@ -182,12 +182,12 @@ export function SupplierCreditDetailPage() {
       )}
 
       <ZHCard title="Movimientos">
-        <div className="pg-overflow-x">
-          <table className="pf-table sr-lines-table">
+        <div className="table-scroll">
+          <table className="table table--compact table--neutral sr-lines-table">
             <thead>
               <tr>
                 <th>Tipo</th>
-                <th className="pf-th--right">Monto</th>
+                <th className="zh-text-align-right">Monto</th>
                 <th>Fecha</th>
                 <th></th>
               </tr>
@@ -202,9 +202,9 @@ export function SupplierCreditDetailPage() {
                 return (
                   <tr key={m.id}>
                     <td>{MOVEMENT_TYPE_LABEL[m.movementType] ?? m.movementType}</td>
-                    <td className="pf-td--num">{formatMoney(m.amount)}</td>
+                    <td className="zh-table-cell--num">{formatMoney(m.amount)}</td>
                     <td>{formatDateTime(m.createdAtUtc)}</td>
-                    <td className="pf-td--right">
+                    <td className="zh-text-align-right">
                       {m.movementType === "Application" && !alreadyReversed && (
                         <ZHBtn
                           type="button"

@@ -326,10 +326,10 @@ export function ZHItemMatchingPanel({
       {!loading && lines.length > 0 && (
         <>
           <div className="pur-matching-summary">
-            <Badge variant="red" label={`🔴 Pendientes: ${counts.pending}`} />
-            <Badge variant="orange" label={`🟡 Revisar: ${counts.review}`} />
-            <Badge variant="green" label={`🟢 Auto: ${counts.auto}`} />
-            <Badge variant="blue" label={`🔵 Manual: ${counts.manual}`} />
+            <Badge variant="error" label={`🔴 Pendientes: ${counts.pending}`} />
+            <Badge variant="warning" label={`🟡 Revisar: ${counts.review}`} />
+            <Badge variant="success" label={`🟢 Auto: ${counts.auto}`} />
+            <Badge variant="info" label={`🔵 Manual: ${counts.manual}`} />
           </div>
 
           <div className="pur-matching-toolbar">
@@ -341,7 +341,7 @@ export function ZHItemMatchingPanel({
             />
           </div>
 
-          <table className="pur-matching-table">
+          <table className="table table--compact table--neutral table--align-top">
             <thead>
               <tr>
                 <th></th>
@@ -410,7 +410,7 @@ export function ZHItemMatchingPanel({
                               {choice.sku} — {choice.name}
                               {topScore !== undefined && (
                                 <Badge
-                                  variant="blue"
+                                  variant="info"
                                   label={`${Math.round(topScore)}%`}
                                 />
                               )}

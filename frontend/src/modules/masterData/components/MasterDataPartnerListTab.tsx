@@ -152,7 +152,7 @@ export function MasterDataPartnerListTab({
         </div>
       ) : (
         <>
-          <div className="prd-table-wrap">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

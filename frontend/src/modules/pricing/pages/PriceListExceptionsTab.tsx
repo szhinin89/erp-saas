@@ -118,7 +118,7 @@ export function PriceListExceptionsTab({
       {loading ? (
         <p>Cargando...</p>
       ) : (
-        <div className="prd-table-wrap">
+        <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>

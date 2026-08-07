@@ -195,7 +195,7 @@ export function VariantsSection({
           />
         </div>
       ) : (
-        <div className="pg-overflow-x">
+        <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>
@@ -225,7 +225,7 @@ export function VariantsSection({
                         <Badge
                           key={a.attributeDefinitionId}
                           label={a.value}
-                          variant="gray"
+                          variant="neutral"
                           size="md"
                         />
                       ))

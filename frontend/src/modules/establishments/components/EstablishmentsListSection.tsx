@@ -1,5 +1,6 @@
 ﻿import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
 
 type Props = Pick<
@@ -44,42 +45,34 @@ export function EstablishmentsListSection({
     <>
       {!loading && (
         <div className="pg-kpis">
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">receipt_long</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Total</p>
-              <p className="pg-kpi-value">{totals.total}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">check_circle</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Activos</p>
-              <p className="pg-kpi-value">{totals.active}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--secondary">
-              <span className="material-symbols-outlined">star</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Principal</p>
-              <p className="pg-kpi-value">{totals.main}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--error">
-              <span className="material-symbols-outlined">block</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Inactivos</p>
-              <p className="pg-kpi-value">{totals.inactive}</p>
-            </div>
-          </div>
+          <ReportKpiCard
+            layout="horizontal"
+            icon="receipt_long"
+            tone="primary"
+            label="Total"
+            value={String(totals.total)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="check_circle"
+            tone="primary"
+            label="Activos"
+            value={String(totals.active)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="star"
+            tone="secondary"
+            label="Principal"
+            value={String(totals.main)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="block"
+            tone="error"
+            label="Inactivos"
+            value={String(totals.inactive)}
+          />
         </div>
       )}
 
@@ -161,7 +154,7 @@ export function EstablishmentsListSection({
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

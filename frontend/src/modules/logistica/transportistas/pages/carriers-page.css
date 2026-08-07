@@ -12,18 +12,8 @@
   gap: var(--space-1);
 }
 
-.crt-btn-danger:not(:disabled) {
-  color: var(--color-error);
-}
-.crt-btn-danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
-}
-.crt-btn-success:not(:disabled) {
-  color: var(--color-success);
-}
-.crt-btn-success:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-success) 8%, transparent);
-}
+/* .crt-btn-danger / .crt-btn-success ELIMINADOS (Bloque 13F) — migrados a
+   <ZHIconButton variant="danger"|"success"> en CarriersPage.tsx. */
 
 .crt-col-name {
   font-weight: 600;

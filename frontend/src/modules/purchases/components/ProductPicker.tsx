@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { itemService } from "../../items/api/itemService";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
@@ -137,10 +138,9 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
 
   return (
     <div ref={wrapRef} className="zh-picker">
-      <input
+      <ZhTextInput
         ref={inputRef}
         value={query}
-        className="pf-table-input"
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);

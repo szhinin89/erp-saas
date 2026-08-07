@@ -6,6 +6,7 @@ import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ConfigTabsLayout } from "../../../../components/shared/ConfigTabsLayout";
 import { message } from "../../../../lib/messages";
+import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 
 import { useWarehousesPage } from "./useWarehousesPage";
 import { WarehouseListadoTab } from "../components/WarehouseListTab";
@@ -45,42 +46,34 @@ export function BodegasPage() {
     <>
       {!page.loading && (
         <div className="pg-kpis">
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">warehouse</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Total Bodegas</p>
-              <p className="pg-kpi-value">{page.totals.total}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--primary">
-              <span className="material-symbols-outlined">check_circle</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Activas</p>
-              <p className="pg-kpi-value">{page.totals.active}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--error">
-              <span className="material-symbols-outlined">block</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Inactivas</p>
-              <p className="pg-kpi-value">{page.totals.inactive}</p>
-            </div>
-          </div>
-          <div className="pg-kpi pg-kpi--h">
-            <div className="pg-kpi-icon pg-kpi-icon--secondary">
-              <span className="material-symbols-outlined">store</span>
-            </div>
-            <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Sucursales</p>
-              <p className="pg-kpi-value">{page.totals.branches}</p>
-            </div>
-          </div>
+          <ReportKpiCard
+            layout="horizontal"
+            icon="warehouse"
+            tone="primary"
+            label="Total Bodegas"
+            value={String(page.totals.total)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="check_circle"
+            tone="primary"
+            label="Activas"
+            value={String(page.totals.active)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="block"
+            tone="error"
+            label="Inactivas"
+            value={String(page.totals.inactive)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="store"
+            tone="secondary"
+            label="Sucursales"
+            value={String(page.totals.branches)}
+          />
         </div>
       )}
       <WarehouseListadoTab

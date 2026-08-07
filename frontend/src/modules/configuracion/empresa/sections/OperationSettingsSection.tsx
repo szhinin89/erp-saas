@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
+import {
+  Badge,
+  LoadingState,
+  NoAccessPage,
+} from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { useI18n } from "../../../../i18n/i18n";
@@ -128,23 +132,25 @@ export function OperationSettingsSection() {
         <div className="pg-section-body">
           <ZHGrid cols={2}>
             <ZHField label={t("settings.company.operation.companyStatus")}>
-              <span
-                className={`pg-kpi-badge ${profile?.isActive ? "pg-kpi-badge--success" : "pg-kpi-badge--neutral"}`}
-              >
-                {profile?.isActive
-                  ? t("settings.company.operation.statusActive")
-                  : t("settings.company.operation.statusInactive")}
-              </span>
+              <Badge
+                variant={profile?.isActive ? "success" : "neutral"}
+                label={
+                  profile?.isActive
+                    ? t("settings.company.operation.statusActive")
+                    : t("settings.company.operation.statusInactive")
+                }
+              />
             </ZHField>
 
             <ZHField label={t("settings.company.operation.onboardingStatus")}>
-              <span
-                className={`pg-kpi-badge ${profile?.onboardingCompleted ? "pg-kpi-badge--success" : "pg-kpi-badge--neutral"}`}
-              >
-                {profile?.onboardingCompleted
-                  ? t("settings.company.operation.onboardingDone")
-                  : t("settings.company.operation.onboardingPending")}
-              </span>
+              <Badge
+                variant={profile?.onboardingCompleted ? "success" : "neutral"}
+                label={
+                  profile?.onboardingCompleted
+                    ? t("settings.company.operation.onboardingDone")
+                    : t("settings.company.operation.onboardingPending")
+                }
+              />
             </ZHField>
           </ZHGrid>
         </div>

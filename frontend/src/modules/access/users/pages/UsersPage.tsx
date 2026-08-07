@@ -324,7 +324,7 @@ export function UsersPage() {
         ) : filteredRows.length === 0 ? (
           <p className="subtle pg-state-pad">{t("common.noData")}</p>
         ) : (
-          <div className="pg-overflow-x">
+          <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>

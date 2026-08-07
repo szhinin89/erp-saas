@@ -83,7 +83,7 @@ export function AttributeDefinitionsPage() {
             key: "code",
             label: "Código",
             render: (r) => (
-              <Badge label={r.code as string} variant="gray" className="mono" />
+              <Badge label={r.code as string} variant="neutral" className="mono" />
             ),
           },
           {
@@ -95,7 +95,7 @@ export function AttributeDefinitionsPage() {
             key: "dataType",
             label: "Tipo",
             render: (r) => (
-              <Badge label={r.dataType as string} variant="gray" size="md" />
+              <Badge label={r.dataType as string} variant="neutral" size="md" />
             ),
           },
           {

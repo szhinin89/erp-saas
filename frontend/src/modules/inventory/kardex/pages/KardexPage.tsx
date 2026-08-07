@@ -1,10 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
-import { NoAccessPage } from "../../../../components/PageShell";
+import {
+  Badge,
+  NoAccessPage,
+  type BadgeVariant,
+} from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol, formatMoney } from "../../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../../lib/config/decimal.config";
@@ -27,20 +32,20 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   SupplierDebitNote: "Nota de DÃ©bito Proveedor",
 };
 
-function movementBadgeVariant(typeName: string): string {
+function movementBadgeVariant(typeName: string): BadgeVariant {
   if (
     typeName.includes("Entry") ||
     typeName === "PositiveAdjust" ||
     typeName === "SaleReturn"
   )
-    return "pf-badge--success";
+    return "success";
   if (
     typeName.includes("Exit") ||
     typeName === "NegativeAdjust" ||
     typeName === "PurchaseReturn"
   )
-    return "pf-badge--danger";
-  return "pf-badge--info";
+    return "error";
+  return "info";
 }
 
 export function KardexPage() {
@@ -400,21 +405,21 @@ export function KardexPage() {
         {ctx.movementsLoading ? (
           <p>Cargando movimientos...</p>
         ) : (
-          <table className="pf-table">
+          <table className="table table--compact table--neutral">
             <thead>
               <tr>
                 <th>Seq.</th>
                 <th>Fecha Efectiva</th>
                 <th>Tipo</th>
                 <th>Documento</th>
-                <th className="pf-th--right">Entrada</th>
-                <th className="pf-th--right">Salida</th>
-                <th className="pf-th--right">Saldo</th>
-                <th className="pf-th--right">Costo Unit.</th>
-                <th className="pf-th--right">Costo Promedio</th>
-                <th className="pf-th--right">Valor Inventario</th>
+                <th className="zh-text-align-right">Entrada</th>
+                <th className="zh-text-align-right">Salida</th>
+                <th className="zh-text-align-right">Saldo</th>
+                <th className="zh-text-align-right">Costo Unit.</th>
+                <th className="zh-text-align-right">Costo Promedio</th>
+                <th className="zh-text-align-right">Valor Inventario</th>
                 <th>Usuario</th>
-                <th className="pf-th--center">Acciones</th>
+                <th className="zh-text-align-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -425,12 +430,13 @@ export function KardexPage() {
                   </td>
                   <td>{formatDate(m.effectiveDate)}</td>
                   <td>
-                    <span
-                      className={`pf-badge ${movementBadgeVariant(m.movementTypeName)}`}
-                    >
-                      {MOVEMENT_TYPE_LABELS[m.movementTypeName] ??
-                        m.movementTypeName}
-                    </span>
+                    <Badge
+                      variant={movementBadgeVariant(m.movementTypeName)}
+                      label={
+                        MOVEMENT_TYPE_LABELS[m.movementTypeName] ??
+                        m.movementTypeName
+                      }
+                    />
                   </td>
                   <td
                     className="kdx-secondary-text"
@@ -438,48 +444,43 @@ export function KardexPage() {
                     {m.reference ?? "â€”"}
                   </td>
                   <td
-                    className="pf-td--num kdx-positive"
+                    className="zh-table-cell--num kdx-positive"
                   >
                     {m.quantity > 0 ? formatMoney(m.quantity, qty) : "â€”"}
                   </td>
                   <td
-                    className="pf-td--num kdx-negative"
+                    className="zh-table-cell--num kdx-negative"
                   >
                     {m.quantity < 0 ? formatMoney(-m.quantity, qty) : "â€”"}
                   </td>
-                  <td className="pf-td--num kdx-value-strong">
+                  <td className="zh-table-cell--num kdx-value-strong">
                     {formatMoney(m.resultQuantity, qty)}
                   </td>
-                  <td className="pf-td--num">
+                  <td className="zh-table-cell--num">
                     {m.unitCost != null
                       ? formatMoneyWithSymbol(m.unitCost, cost)
                       : "â€”"}
                   </td>
-                  <td className="pf-td--num">
+                  <td className="zh-table-cell--num">
                     {formatMoneyWithSymbol(m.runningAverageCost, cost)}
                   </td>
-                  <td className="pf-td--num">
+                  <td className="zh-table-cell--num">
                     {formatMoneyWithSymbol(m.runningStockValue, total)}
                   </td>
                   <td className="kdx-small-text">{m.createdByName ?? "â€”"}</td>
-                  <td className="pf-td--center">
-                    <button
-                      className="pf-row-action"
+                  <td className="zh-text-align-center">
+                    <ZHIconButton
+                      icon="folder_open"
+                      variant="ghost"
                       title="Ver expediente"
                       onClick={() => void ctx.openDetail(m.id)}
-                    >
-                      <span
-                        className="material-symbols-outlined zh-icon-lg"
-                      >
-                        folder_open
-                      </span>
-                    </button>
+                    />
                   </td>
                 </tr>
               ))}
               {ctx.movements.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="pf-table-empty">
+                  <td colSpan={12} className="zh-table-empty">
                     {ctx.searchMode === "product"
                       ? "Busque un producto para ver su historial de Kardex."
                       : "Resuelva un documento para ver los movimientos que generÃ³."}

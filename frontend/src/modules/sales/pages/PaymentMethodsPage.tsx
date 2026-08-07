@@ -2,6 +2,7 @@
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { Badge } from "../../../components/PageShell";
 import type {
   PaymentMethodDto,
   PaymentMethodDetailType,
@@ -207,18 +208,16 @@ export function PaymentMethodsPage() {
                     <td className="prd-td-code">{pm.code}</td>
                     <td>{pm.name}</td>
                     <td>
-                      <span
-                        className={`prd-status-badge ${pm.requiresReference ? "pf-badge pf-badge--info" : "prd-status-badge--muted"}`}
-                      >
-                        {pm.requiresReference ? "SÃƒÂ­" : "No"}
-                      </span>
+                      <Badge
+                        variant={pm.requiresReference ? "info" : "neutral"}
+                        label={pm.requiresReference ? "SÃƒÂ­" : "No"}
+                      />
                     </td>
                     <td>
-                      <span
-                        className={`prd-status-badge ${pm.isCreditAllowed ? "pf-badge pf-badge--warning" : "prd-status-badge--muted"}`}
-                      >
-                        {pm.isCreditAllowed ? "SÃƒÂ­" : "No"}
-                      </span>
+                      <Badge
+                        variant={pm.isCreditAllowed ? "warning" : "neutral"}
+                        label={pm.isCreditAllowed ? "SÃƒÂ­" : "No"}
+                      />
                     </td>
                     <td>
                       {DETAIL_TYPE_OPTIONS.find(
@@ -227,11 +226,10 @@ export function PaymentMethodsPage() {
                     </td>
                     <td>{pm.sortOrder}</td>
                     <td>
-                      <span
-                        className={`prd-status-badge ${pm.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
-                      >
-                        {pm.isActive ? "Activo" : "Inactivo"}
-                      </span>
+                      <Badge
+                        variant={pm.isActive ? "success" : "error"}
+                        label={pm.isActive ? "Activo" : "Inactivo"}
+                      />
                     </td>
                     <td className="prd-td-actions">
                       <ZHIconButton

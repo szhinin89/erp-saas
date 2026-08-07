@@ -226,7 +226,7 @@ export function TreeEditorPage() {
           >
             {levelInfo.icon}
           </span>
-          <Badge label={node.code} variant="gray" className="mono" />
+          <Badge label={node.code} variant="neutral" className="mono" />
           <strong className="te-label">{node.name}</strong>
           <span
             className={`te-level-badge te-level-badge--${node.level.toLowerCase()}`}
@@ -279,7 +279,7 @@ export function TreeEditorPage() {
             {node.isActive && node.depth >= maxDepth && (
               <Badge
                 label="Máx. nivel"
-                variant="gray"
+                variant="neutral"
                 title={`Profundidad máxima alcanzada (${maxDepth} niveles)`}
               />
             )}

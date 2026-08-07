@@ -63,7 +63,7 @@ export function ZHDataTable<T>({
 
   return (
     <>
-      <div className="pg-overflow-x">
+      <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>

@@ -1,42 +1,13 @@
 /* Electronic Documents Monitor — prefijo edm-* */
 
-.edm-metric {
-  font-size: var(--text-headline-lg-size);
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.edm-metric--success {
-  color: var(--color-success);
-}
-
-.edm-metric--danger {
-  color: var(--color-error);
-}
-
-.edm-kpi-card {
-  padding: 0;
-}
-.edm-kpi-card .card-body {
-  padding: 0;
-}
-.edm-kpi-card--active {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
-}
-
-.edm-kpi-btn {
-  display: block;
-  width: 100%;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  padding: var(--space-4);
-}
-.edm-kpi-btn:hover {
-  background: var(--color-surface-container-low);
-}
+/* .edm-kpi-card / .edm-kpi-card--active / .edm-kpi-btn ELIMINADOS
+   (Bloque 12G-2) — migrados a ReportKpiCard SSOT (onClick + active,
+   Bloque 12G-1) en ElectronicDocumentsDashboardCards.tsx.
+   .edm-metric / .edm-metric--success / .edm-metric--danger ELIMINADOS
+   (Bloque 12G-3) — migrados a ReportKpiCard SSOT (prop valueTone,
+   .pg-kpi-value--success/--danger en page-template.css) en
+   ElectronicDocumentsDashboardCards.tsx. Cierra la última excepción visual
+   del sistema paralelo edm-kpi-card. */
 
 .edm-state-badge-label {
   display: inline-flex;

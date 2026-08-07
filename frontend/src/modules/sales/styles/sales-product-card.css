@@ -67,30 +67,9 @@
   align-items: flex-start;
   gap: 10px;
 }
-.sf-product__delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.15s,
-    background 0.15s;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.sf-product__delete-btn:hover {
-  color: var(--color-error);
-  background: var(--color-error-container);
-}
-.sf-product__delete-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
+/* .sf-product__delete-btn (+ :hover / :disabled) ELIMINADOS (Bloque 13E) —
+   migrado a <ZHIconButton variant="danger"> en
+   SalesInvoiceDetailsSection.tsx. */
 .sf-product__text {
   flex: 1;
   min-width: 0;

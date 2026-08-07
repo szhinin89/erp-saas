@@ -6,6 +6,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { message } from "../../../lib/messages";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import "../../../styles/shared/items-catalog.css";
 
@@ -197,17 +198,17 @@ export function ItemsPage() {
         {/* Resumen */}
         {activeTab === "resumen" && (
           <div className="prd-fadein pg-kpis">
-            <SummaryCard
+            <ReportKpiCard
               label={t("items.summary.total", "Total ítems")}
-              value={items.length}
+              value={String(items.length)}
             />
-            <SummaryCard
+            <ReportKpiCard
               label={t("items.summary.active", "Activos")}
-              value={items.filter((i) => i.isActive).length}
+              value={String(items.filter((i) => i.isActive).length)}
             />
-            <SummaryCard
+            <ReportKpiCard
               label={t("items.summary.withLot", "Con lotes")}
-              value={items.filter((i) => i.tracksLot).length}
+              value={String(items.filter((i) => i.tracksLot).length)}
             />
           </div>
         )}
@@ -292,16 +293,5 @@ export function ItemsPage() {
           )}
       </div>
     </ErpPageTemplate>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="pg-kpi">
-      <div className="pg-kpi-bottom">
-        <p className="pg-kpi-label">{label}</p>
-        <p className="pg-kpi-value">{value}</p>
-      </div>
-    </div>
   );
 }

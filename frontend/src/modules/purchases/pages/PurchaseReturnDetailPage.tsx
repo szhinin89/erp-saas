@@ -305,12 +305,12 @@ export function PurchaseReturnDetailPage() {
 
       {!isDraft && (
         <ZHCard title="Líneas devueltas">
-          <div className="pg-overflow-x">
-            <table className="pf-table sr-lines-table">
+          <div className="table-scroll">
+            <table className="table table--compact table--neutral sr-lines-table">
               <thead>
                 <tr>
                   <th>Producto</th>
-                  <th className="pf-th--right">Cantidad</th>
+                  <th className="zh-text-align-right">Cantidad</th>
                   <th>Bodega</th>
                 </tr>
               </thead>
@@ -318,7 +318,7 @@ export function PurchaseReturnDetailPage() {
                 {editing.lines.map((line) => (
                   <tr key={line.id}>
                     <td>{line.itemId}</td>
-                    <td className="pf-td--num">{line.quantity}</td>
+                    <td className="zh-table-cell--num">{line.quantity}</td>
                     <td>{line.warehouseId}</td>
                   </tr>
                 ))}

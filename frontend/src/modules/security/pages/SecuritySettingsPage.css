@@ -1,39 +1,12 @@
 /* SecuritySettingsPage — tabla de permisos por usuario */
-.security-scroll {
-  overflow-x: auto;
-}
-
-.security-table {
-  border-collapse: collapse;
-  font-size: var(--text-body-md-size);
-  min-width: 600px;
-}
-.security-table th,
-.security-table td {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  text-align: center;
-}
-.security-table th {
-  background: var(--color-surface-primary-tint);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  text-transform: uppercase;
-  color: var(--color-on-surface-variant);
-}
-
-.security-table .sticky-col {
-  position: sticky;
-  left: 0;
-  background: var(--color-surface);
-  text-align: left;
-  min-width: 160px;
-  z-index: 1;
-}
-.security-table th.sticky-col {
-  background: var(--color-surface-primary-tint);
-}
+/* .security-scroll / .security-table (+ th/td) / .sticky-col (+ th.sticky-col)
+   ELIMINADOS (Bloque 12F-3C) — migrados a Table SSOT:
+   className="table-scroll" en el wrapper, className="table table--compact
+   table--neutral table--matrix table--sticky-column" en <table>, y
+   className="table__sticky-cell" en el th/td de identidad de usuario, en
+   SecuritySettingsPage.tsx. Resto de clases de dominio (userCell, userName,
+   userMeta, security-mono, security-badge, cell-center, row--inactive) se
+   mantienen sin cambios. */
 
 .userCell {
   display: flex;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
+import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { apiGet } from "../../../lib/apiEnvelope";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatMoney } from "../../../../lib/sanitizers";
@@ -160,15 +161,16 @@ export function ProfitabilitySection({ itemId, disabled = false }: Props) {
               disabled={disabled}
             />
           </div>
-          <button
+          <ZHBtn
+            variant="primary"
+            size="sm"
             onClick={simulate}
             disabled={disabled || simLoading || !newPvp}
-            className="items-profitability__simulate-btn"
           >
             {simLoading
               ? t("items.profitability.simulating", "Calculando...")
               : t("items.profitability.simulate", "Simular")}
-          </button>
+          </ZHBtn>
         </div>
 
         {sim && (
