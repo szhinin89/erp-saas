@@ -1,7 +1,10 @@
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
+import {
+  ZhDecimalInput,
+  ZhNumberInput,
+  ZhTextarea,
+} from "../../../components/zh/inputs";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   Badge,
@@ -229,7 +232,7 @@ export function CajaPage() {
               </ZHField>
 
               <ZHField density="compact" className="zh-mb-12" label="Notas">
-                <textarea {...ctx.openForm.register("notes")} rows={2} />
+                <ZhTextarea {...ctx.openForm.register("notes")} rows={2} />
               </ZHField>
 
               <div className="cj-actions">
@@ -558,7 +561,7 @@ export function CajaPage() {
                 className="zh-mb-12"
                 label="Notas de cierre"
               >
-                <textarea {...ctx.closeForm.register("closeNotes")} rows={2} />
+                <ZhTextarea {...ctx.closeForm.register("closeNotes")} rows={2} />
               </ZHField>
 
               <div className="cj-actions">
