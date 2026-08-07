@@ -18,6 +18,7 @@ import {
   ZHToggle,
 } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhTextInput } from "../../../components/zh/inputs";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
 
@@ -151,7 +152,7 @@ export function CompanyManagementFormPage({
                 required
                 fieldError={errors.taxId?.message}
               >
-                <input
+                <ZhTextInput
                   disabled={saving || mode === "edit"}
                   {...register("taxId")}
                 />
@@ -161,13 +162,13 @@ export function CompanyManagementFormPage({
                 required
                 fieldError={errors.legalName?.message}
               >
-                <input disabled={saving} {...register("legalName")} />
+                <ZhTextInput disabled={saving} {...register("legalName")} />
               </ZHField>
               <ZHField
                 label={t("companyManagement.tradeName")}
                 fieldError={errors.tradeName?.message}
               >
-                <input disabled={saving} {...register("tradeName")} />
+                <ZhTextInput disabled={saving} {...register("tradeName")} />
               </ZHField>
             </ZHGrid>
           </ZHFormSection>
@@ -177,19 +178,19 @@ export function CompanyManagementFormPage({
                 label={t("companyManagement.country")}
                 fieldError={errors.countryCode?.message}
               >
-                <input disabled={saving} {...register("countryCode")} />
+                <ZhTextInput disabled={saving} {...register("countryCode")} />
               </ZHField>
               <ZHField
                 label={t("companyManagement.timezone")}
                 fieldError={errors.timezone?.message}
               >
-                <input disabled={saving} {...register("timezone")} />
+                <ZhTextInput disabled={saving} {...register("timezone")} />
               </ZHField>
               <ZHField
                 label={t("companyManagement.currency")}
                 fieldError={errors.currencyCode?.message}
               >
-                <input disabled={saving} {...register("currencyCode")} />
+                <ZhTextInput disabled={saving} {...register("currencyCode")} />
               </ZHField>
             </ZHGrid>
           </ZHFormSection>
@@ -209,7 +210,7 @@ export function CompanyManagementFormPage({
                 label={t("companyManagement.website")}
                 fieldError={errors.website?.message}
               >
-                <input disabled={saving} {...register("website")} />
+                <ZhTextInput disabled={saving} {...register("website")} />
               </ZHField>
             </ZHGrid>
           </ZHFormSection>

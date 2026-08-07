@@ -4,6 +4,7 @@ import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZhTextInput } from "../../../components/zh/inputs";
 import type {
   PaymentTermDto,
   CreatePaymentTermPayload,
@@ -161,8 +162,7 @@ export function PaymentTermsPage() {
       {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
-            <input
-              type="text"
+            <ZhTextInput
               placeholder="Buscar por código o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -244,9 +244,10 @@ export function PaymentTermsPage() {
                   Código <span className="zh-field-required">*</span>
                 </label>
                 <div className="zh-field-control">
-                  <input
+                  <ZhTextInput
+                    mode="uppercase"
                     value={fCode}
-                    onChange={(e) => setFCode(e.target.value.toUpperCase())}
+                    onChange={(e) => setFCode(e.target.value)}
                     maxLength={20}
                     placeholder="CONTADO, NET30, 3X30"
                   />
@@ -258,7 +259,7 @@ export function PaymentTermsPage() {
                 Nombre <span className="zh-field-required">*</span>
               </label>
               <div className="zh-field-control">
-                <input
+                <ZhTextInput
                   value={fName}
                   onChange={(e) => setFName(e.target.value)}
                   maxLength={120}
@@ -266,6 +267,9 @@ export function PaymentTermsPage() {
                 />
               </div>
             </div>
+            {/* fInstallments/fDays: NO migrado — ver reporte 14A-2 (input
+                type="number" con min/max nativos y sin Zod/RHF equivalente
+                que los reemplace; ZhNumberInput no soporta min/max). */}
             <div className="zh-field">
               <label className="zh-field-label">
                 Número de cuotas <span className="zh-field-required">*</span>
