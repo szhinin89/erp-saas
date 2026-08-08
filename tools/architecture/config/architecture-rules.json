@@ -90,7 +90,10 @@
       { "from": "*", "to": "lib" },
       { "from": "*", "to": "shared" },
       { "from": "*", "to": "components" },
-      { "from": "*", "to": "config" }
+      { "from": "*", "to": "config" },
+      { "from": "reportes", "to": "sales" },
+      { "from": "reportes", "to": "purchases" },
+      { "from": "reportes", "to": "inventory" }
     ]
   },
   "crossLayer": {
