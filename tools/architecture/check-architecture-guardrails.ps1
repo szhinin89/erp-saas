@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Guardrails de arquitectura (backend + frontend). Ver AI-RULES/PR-RULES-CATALOG.md § AUTOMATED GUARDRAILS; entrada docs/ARCHITECTURE-RULES.md.
+  Guardrails de arquitectura (backend + frontend). Ver docs/architecture/pr-rules-catalog.md § AUTOMATED GUARDRAILS; entrada docs/ARCHITECTURE-RULES.md.
 .PARAMETER DiffBase
   Ref git base (p. ej. origin/main) para validar solo archivos nuevos/modificados en límites de líneas.
 .PARAMETER SkipFrontendChunk

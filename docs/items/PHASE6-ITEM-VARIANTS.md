@@ -2,7 +2,7 @@
 
 **Estado**: ✅ FASE 6 COMPLETADA
 **Fecha de cierre**: 2026-07-02
-**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`docs/STATUS.md`](../STATUS.md))
+**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`STATUS.md`](../../STATUS.md))
 
 Este documento es la referencia oficial de las decisiones funcionales y técnicas de la Fase 6 del módulo Items. Se apoya en las Fases 1-5 ya cerradas y no las reabre.
 

@@ -139,10 +139,7 @@ Política `per-tenant` (`Program.cs`).
 
 ## Prohibido
 
-- `company_id` del body sin JWT + membership
-- `IgnoreQueryFilters()` nuevo fuera de la allowlist de `IgnoreQueryFiltersAuditTests`
-- SDK de pagos en handlers MediatR
-- Migraciones EF escritas a mano
+Cuerpo normativo único de estas 4 prohibiciones: [`docs/architecture/security.md`](architecture/security.md) (multi-tenant/`company_id`/`IgnoreQueryFilters()`) y [`docs/architecture/backend.md`](architecture/backend.md) (migraciones EF, SDK de pagos fuera de Infrastructure). No repetido aquí para evitar duplicación — ver Bloque 16A/16B.
 
 ---
 
@@ -200,5 +197,5 @@ Ciclo completo cerrado (Fases A–H, 2026-07-17). Entidad `ERP.Domain.Access.Ent
   2. `DefaultBranchId` apunta a una sucursal desactivada (soft-delete, nunca DELETE físico) — **corregido en Fase H**: `CompanyUserPreferencesDefaultBranchValidation` ahora exige `Branch.IsActive`, no solo existencia (antes de este fix, una sucursal inactiva pasaba la validación).
   3. El usuario pierde su autorización en `CompanyUserBranch` después de configurar `DirectToDefault` — Login/SwitchCompany revalidan en cada intento (reenviando `UpdateCompanyUserPreferencesCommand` con los mismos valores, mutación idempotente) y **fallan explícitamente con `ValidationFailure`** si la sucursal ya no está autorizada, en vez de caer silenciosamente al heurístico. Aceptado como comportamiento correcto (fail-closed); una futura fase de UX podría ofrecer un fallback más amigable, no es un bug.
   4. Membresía histórica sin fila de preferencias (creada antes de Fase D) — `GetCompanyUserPreferencesQuery` devuelve `null`; el resolver de login lo trata igual que `AskBranch` (heurístico interino). Se "autosana" la próxima vez que `UpsertCompanyUserMembershipHandler` procese esa membresía (crea la fila con los defaults).
-- **Frontend**: dos superficies independientes reutilizan el mismo schema (`companyUserPreferencesSchema`) y servicio (`companyUserPreferencesService`), sin componente compartido: la sección "Preferencias" original de `SecuritySettingsPage.tsx` (`/admin/security`) y el modal de preferencias de `UsersPage.tsx` (`/admin/users`, Fase I-C) — ambas gateadas por `access.company_user_memberships.view`. `SecurityUserDto` se amplió con `CompanyUserMembershipId` (antes solo exponía `IdentityUser.Id`) porque era el único dato que faltaba para poder invocar el endpoint administrativo desde `SecuritySettingsPage`. Ver `docs/STATUS.md` (Fase I-A/I-B/I-C) para la administración completa de `CompanyUserMembership`/`CompanyUserBranch` agregada después de este cierre, no documentada en detalle en esta sección.
+- **Frontend**: dos superficies independientes reutilizan el mismo schema (`companyUserPreferencesSchema`) y servicio (`companyUserPreferencesService`), sin componente compartido: la sección "Preferencias" original de `SecuritySettingsPage.tsx` (`/admin/security`) y el modal de preferencias de `UsersPage.tsx` (`/admin/users`, Fase I-C) — ambas gateadas por `access.company_user_memberships.view`. `SecurityUserDto` se amplió con `CompanyUserMembershipId` (antes solo exponía `IdentityUser.Id`) porque era el único dato que faltaba para poder invocar el endpoint administrativo desde `SecuritySettingsPage`. Ver `STATUS.md` (Fase I-A/I-B/I-C) para la administración completa de `CompanyUserMembership`/`CompanyUserBranch` agregada después de este cierre, no documentada en detalle en esta sección.
 - **JWT**: sin cambios — no se agregó `branch_id` ni ningún claim nuevo; la sucursal resuelta viaja únicamente como parámetro de `CreateAuthenticatedSessionCommand` hacia `UserSession`.

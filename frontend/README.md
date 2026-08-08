@@ -6,7 +6,7 @@ Cliente web del monorepo: **React 19**, **TypeScript**, **Vite**, i18n (`es`, `e
 
 - Índice del repo: [`../CONTEXT.md`](../CONTEXT.md)
 - Arranque y reglas: [`../docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md)
-- Estado del frontend: [`../docs/STATUS.md`](../docs/STATUS.md)
+- Estado del frontend: [`../STATUS.md`](../STATUS.md)
 
 ## Comandos frecuentes
 

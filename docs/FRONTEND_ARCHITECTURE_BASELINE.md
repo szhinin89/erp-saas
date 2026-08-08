@@ -104,6 +104,16 @@ Catálogos con `.zh-form-tabs` ya estabilizados: `CompaniesPage`, catálogos de 
 
 `SalesReportPage` y reportes — excepción de dominio documentada.
 
+### Criterio: ErpPageTemplate vs PageShell directo
+
+| Usar `ErpPageTemplate` | Usar `PageShell` directo (válido) |
+|------------------------|-----------------------------------|
+| Pantallas CRUD estándar, documentos, listados con acciones en shell | Catálogos jerárquicos con `.zh-form-tabs` ya estabilizados (`CompaniesPage`, catálogos de estructura) |
+| Alta/edición con `pg-page` y secciones | Company-management, security, access (patrón ficha + tabs) |
+| Cualquier pantalla nueva de producto | Solo si replica el patrón documentado de referencia |
+
+Ambos son válidos. No duplicar título con `pg-header-row` cuando `PageShell` ya lo provee.
+
 ---
 
 ## 5. Estrategia CSS
@@ -225,12 +235,13 @@ Playwright smoke: `.github/workflows/frontend-ci.yml`.
 
 ## 12. Checklist para agentes IA
 
-1. Leer este documento + [`frontend-layout-conventions.md`](./frontend-layout-conventions.md).
+1. Leer este documento (cuerpo normativo único de layout/CSS frontend — `frontend-layout-conventions.md` fue fusionado aquí, ver nota al final).
 2. No proponer shells, routers ni stores nuevos sin petición explícita.
 3. Migraciones visuales: solo CSS/clases; no cambiar handlers, APIs ni hooks de negocio.
 4. Preferir `ErpPageTemplate` en pantallas nuevas.
 5. Buscar utilidad existente: `grep` en `legacy-pages.css` y `page-template.css` antes de CSS nuevo.
 6. Tras cambios: `npm run build` + `npm run lint` (0 errores).
+7. Antes de un PR de UI: `rg 'style=\{\{'` en el módulo tocado — no introducir `pg-header-row` en páginas con `PageShell`/`ErpPageTemplate`. Coherencia adicional: `.cursor/rules/erp-unified-rules.mdc` (ZH Form, tabs, Copy UX).
 
 ---
 
@@ -238,6 +249,10 @@ Playwright smoke: `.github/workflows/frontend-ci.yml`.
 
 | Documento | Propósito |
 |-----------|-----------|
-| [`CLAUDE.md`](../CLAUDE.md) | Reglas implementación |
-| [`AI-RULES/FRONTEND-RULES.md`](../AI-RULES/FRONTEND-RULES.md) | Entrada corta frontend |
-| [`frontend-layout-conventions.md`](./frontend-layout-conventions.md) | Convenciones layout/CSS |
+| [`/CLAUDE.md`](../CLAUDE.md) | Reglas globales |
+| [`/frontend/CLAUDE.md`](../frontend/CLAUDE.md) | Reglas frontend (adaptador) |
+| [`docs/architecture/frontend.md`](architecture/frontend.md) | Cuerpo normativo Design System / ZH Form |
+| `.cursor/rules/erp-unified-rules.mdc` | ZH Form, tabs, Copy UX (Cursor) |
+| `.cursor/rules/saas-navigation-no-sensitive-url.mdc` | IDs fuera de URL (Cursor) |
+
+> **Nota (Bloque 16B, 2026-08-07):** este documento fusiona el contenido antes duplicado en `docs/frontend-layout-conventions.md` (ahora un stub de redirección, ver ese archivo). Cuerpo normativo único de layout/CSS frontend: este archivo.

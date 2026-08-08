@@ -135,5 +135,5 @@ ItemSupplierCode porque SupplierCodeExistsAsync ya lo encuentra creado en el pas
 ## 8. Evolución futura (fuera de alcance de esta fase)
 
 - **Historial de precio de compra por proveedor**: `ItemSupplierCode` sigue sin campo de precio (ver auditoría original) — Item Matching no lo introduce.
-- **Auditoría de dominio dedicada** (`PurchaseReceptionLineAudit`): evaluada y diferida — la infraestructura CLOSED de Entity Audit (`AI-RULES/AUDIT-INFRASTRUCTURE.md`) ya soporta agregarla sin tocar sus contratos FROZEN cuando el volumen de uso lo justifique.
+- **Auditoría de dominio dedicada** (`PurchaseReceptionLineAudit`): evaluada y diferida — la infraestructura CLOSED de Entity Audit (`docs/architecture/audit-infrastructure.md`) ya soporta agregarla sin tocar sus contratos FROZEN cuando el volumen de uso lo justifique.
 - **Bulk Item Creation** (Fase 2.2): ver sección 7.

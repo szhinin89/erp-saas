@@ -2,7 +2,7 @@
 
 Monolito modular: **Clean Architecture + CQRS (MediatR)**.
 
-Documentos relacionados: [IDENTITY.md](./IDENTITY.md), [DATABASE.md](./DATABASE.md), [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md).
+Documentos relacionados: [IDENTITY.md](./IDENTITY.md), [DATABASE.md](./DATABASE.md), [STATUS.md](../STATUS.md), [ROADMAP.md](./ROADMAP.md).
 
 ---
 
@@ -35,7 +35,7 @@ Tenant (contenedor multiempresa: nombre, slug, idioma)
 
 **Regla:** Tenant agrupa companies (entidad `Tenant`, tabla `tenants` — sin plan/billing/límites, ver [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md)). Company opera el ERP.
 
-> **Nota de naming:** la consolidación `SubscriberId → TenantId` (FASE 4, ver [`docs/STATUS.md`](./STATUS.md)) está completa en código, verificado directamente contra el modelo EF real (`ErpDbContextModelSnapshot.cs`) y las entidades de `ERP.Domain`/`ERP.Application` (2026-07-23). `Tenant`/`tenant_id`/`ICurrentTenant`/`ITenantRepository` son los nombres **vigentes**. Los marcadores de scope vigentes son `ITenantScopedEntity` (Domain) e `ITenantScopedRequest`/`ITenantOnlyRequest` (Application — `ITenantOnlyRequest` es alias legacy, preferir `ITenantScopedRequest`). `ISubscriberScopedEntity`/`ISubscriberScopedRequest` **no existen en el código** — no citarlos como nombres sellados. Toda referencia histórica a `Subscriber` corresponde exclusivamente al Control Plane SaaS eliminado — ver [`docs/archive/SUBSCRIBER-SCOPE-SEALED.md`](./archive/SUBSCRIBER-SCOPE-SEALED.md).
+> **Nota de naming:** la consolidación `SubscriberId → TenantId` (FASE 4, ver [`STATUS.md`](../STATUS.md)) está completa en código, verificado directamente contra el modelo EF real (`ErpDbContextModelSnapshot.cs`) y las entidades de `ERP.Domain`/`ERP.Application` (2026-07-23). `Tenant`/`tenant_id`/`ICurrentTenant`/`ITenantRepository` son los nombres **vigentes**. Los marcadores de scope vigentes son `ITenantScopedEntity` (Domain) e `ITenantScopedRequest`/`ITenantOnlyRequest` (Application — `ITenantOnlyRequest` es alias legacy, preferir `ITenantScopedRequest`). `ISubscriberScopedEntity`/`ISubscriberScopedRequest` **no existen en el código** — no citarlos como nombres sellados. Toda referencia histórica a `Subscriber` corresponde exclusivamente al Control Plane SaaS eliminado — ver [`docs/archive/SUBSCRIBER-SCOPE-SEALED.md`](./archive/SUBSCRIBER-SCOPE-SEALED.md).
 
 ---
 
@@ -72,11 +72,11 @@ Tablas: `tenants`, `tenant_custom_menus`, `config_feature`, `config_global`, `co
 
 JWT: `tenant_id` identifica el tenant del usuario autenticado.
 
-> Tablas `commercial_plans*`, `subscriber_subscriptions`, `saas_billing_*`, `subscriber_custom_menus` **no existen** en el esquema actual — eliminadas en FASE 1 ([`docs/STATUS.md`](./STATUS.md)).
+> Tablas `commercial_plans*`, `subscriber_subscriptions`, `saas_billing_*`, `subscriber_custom_menus` **no existen** en el esquema actual — eliminadas en FASE 1 ([`STATUS.md`](../STATUS.md)).
 
 ### ERP operativo (`company_id`)
 
-Master data, inventario, compras, configuración, fiscal/SRI — todas filtran por `company_id` vía `CompanyScopeBehavior` + `ICompanyOperationalEntity` / EF global filters. Migración Wave 1 (inventario core con `company_id`) **completada y congelada** — ver [`docs/STATUS.md`](./STATUS.md) (ERP CORE BASELINE v1.0, frozen 2026-06-05). RLS a nivel PostgreSQL no está implementado — ver [DATABASE.md#rls](./DATABASE.md#rls).
+Master data, inventario, compras, configuración, fiscal/SRI — todas filtran por `company_id` vía `CompanyScopeBehavior` + `ICompanyOperationalEntity` / EF global filters. Migración Wave 1 (inventario core con `company_id`) **completada y congelada** — ver [`STATUS.md`](../STATUS.md) (ERP CORE BASELINE v1.0, frozen 2026-06-05). RLS a nivel PostgreSQL no está implementado — ver [DATABASE.md#rls](./DATABASE.md#rls).
 
 JWT: `company_id` obligatorio para operaciones ERP (`CompanyScopeBehavior`).
 
@@ -113,7 +113,7 @@ Antes de BD: `JobTenantContext`, `JobCompanyContext` para interceptor PostgreSQL
 
 ## Bounded contexts
 
-> **FASE 1 — ERP Kernel Cleanup (2026-06-05)** eliminó por completo las capas SaaS (Billing domain, Subscriptions domain, Platform entities, Commercial plans, Entitlements y sus controllers/middleware/jobs/services/behaviors — ver [`docs/STATUS.md`](./STATUS.md)). El backend actual es **ERP Core puro**: no existen módulos `Billing`, `Subscriptions` ni `Platform` con lógica activa.
+> **FASE 1 — ERP Kernel Cleanup (2026-06-05)** eliminó por completo las capas SaaS (Billing domain, Subscriptions domain, Platform entities, Commercial plans, Entitlements y sus controllers/middleware/jobs/services/behaviors — ver [`STATUS.md`](../STATUS.md)). El backend actual es **ERP Core puro**: no existen módulos `Billing`, `Subscriptions` ni `Platform` con lógica activa.
 
 | Contexto | Carpeta / namespace | Scope |
 |----------|---------------------|-------|
@@ -179,7 +179,7 @@ Registro: [`ERP.Application/DependencyInjection.cs`](../backend/src/ERP.Applicat
 
 No existen rutas `/api/platform/*`, `/api/saas/*` ni `/api/superadmin/*` — fueron eliminadas en FASE 1. Lista completa: [`ERP.API/Controllers/`](../backend/src/ERP.API/Controllers/).
 
-> **Frontera ERP ↔ Platform:** `/api/integration/v1/*` es la **única** vía de integración permitida para una futura Platform externa — ver [ADR-ERP-002](architecture/decisions/ADR-ERP-002-platform-separation.md) y [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md). Reglas obligatorias: *ERP never depends on Platform* / *Platform may consume ERP APIs only*.
+> **Frontera ERP ↔ Platform:** `/api/integration/v1/*` es la **única** vía de integración permitida para una futura Platform externa — ver [ADR-ERP-002](adr/ADR-ERP-002-platform-separation.md) y [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md). Reglas obligatorias: *ERP never depends on Platform* / *Platform may consume ERP APIs only*.
 
 ---
 

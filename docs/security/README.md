@@ -1,6 +1,6 @@
 # Security — ERP SaaS
 
-Documentación de seguridad (no contiene secretos). Normativa canónica: [`AI-RULES/SECURITY.md`](../../AI-RULES/SECURITY.md) · detalle identidad: [`docs/IDENTITY.md`](../IDENTITY.md).
+Documentación de seguridad (no contiene secretos). Normativa canónica: [`docs/architecture/security.md`](../../docs/architecture/security.md) · detalle identidad: [`docs/IDENTITY.md`](../IDENTITY.md).
 
 | Área | Documento |
 |------|-----------|

@@ -12,21 +12,20 @@ ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inven
 |----------|-----------|
 | Índice maestro | [`CONTEXT.md`](CONTEXT.md) |
 | Arquitectura vigente | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — ver jerarquía documental en [`CLAUDE.md`](CLAUDE.md#jerarquía-documental) |
-| Reglas IA canónicas (Cursor, Claude, PR) | [`AI-RULES/README.md`](AI-RULES/README.md) |
+| Reglas IA canónicas (Cursor, Claude, PR) | [`docs/architecture/README.md`](docs/architecture/README.md) |
 | Gates bloqueantes PR / CI / agentes | [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md) |
 | Congelamiento arquitectura ERP Core | [`ERP_CORE_FREEZE.md`](ERP_CORE_FREEZE.md) |
-| Estado delivery | [`docs/STATUS.md`](docs/STATUS.md) |
+| Estado delivery | [`STATUS.md`](STATUS.md) |
 | Módulos del producto | [`FEATURES.md`](FEATURES.md) |
 | Arranque, stack, tests | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) |
 | Contribución (PR, tests, estándares) | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| Decisiones de arquitectura (ADRs) | [`docs/adr/`](docs/adr/) |
+| Decisiones de arquitectura (ADRs) | [`docs/decisions/`](docs/decisions/) |
 | Release baseline arquitectura (histórico) | [`docs/archive/RELEASE-ARCHITECTURE-v1.0.md`](docs/archive/RELEASE-ARCHITECTURE-v1.0.md) |
 
 ## Estructura del repositorio
 
 ```
 erp-saas/
-├── AI-RULES/          # Reglas canónicas multi-agente IA
 ├── backend/           # .NET — src/, tests en ERP.*.Tests
 ├── frontend/          # React SPA — src/, e2e/
 ├── infrastructure/    # Docker, postgres, deploy templates
@@ -60,7 +59,7 @@ Config: copiar `backend/src/ERP.API/appsettings.Development.json.example` → `a
 
 ## Auth
 
-Access token en memoria · refresh en cookie httpOnly · rotación por familia · multi-tab (Web Locks + BroadcastChannel). Ver [`AI-RULES/SECURITY.md`](AI-RULES/SECURITY.md) · [`docs/IDENTITY.md`](docs/IDENTITY.md).
+Access token en memoria · refresh en cookie httpOnly · rotación por familia · multi-tab (Web Locks + BroadcastChannel). Ver [`docs/architecture/security.md`](docs/architecture/security.md) · [`docs/IDENTITY.md`](docs/IDENTITY.md).
 
 ## CI/CD
 

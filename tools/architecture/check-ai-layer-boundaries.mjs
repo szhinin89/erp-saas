@@ -80,7 +80,7 @@ export function runCheckAiLayerBoundaries() {
         addViolation(result, {
           rule: 'AI-001',
           file: rel,
-          message: `${projectName} references AI/ML package "${pkg}" — AI dependencies must live in ERP.AI.* projects only. See AI-RULES/AI-FOUNDATION.md`,
+          message: `${projectName} references AI/ML package "${pkg}" — AI dependencies must live in ERP.AI.* projects only. See docs/architecture/ai-foundation.md`,
         });
       }
     }
@@ -107,7 +107,7 @@ export function runCheckAiLayerBoundaries() {
           addViolation(result, {
             rule: 'AI-002',
             file: rel,
-            message: `Direct LLM/AI call detected in core layer — move AI logic to ERP.AI.Application or ERP.AI.Infrastructure. See AI-RULES/AI-FOUNDATION.md`,
+            message: `Direct LLM/AI call detected in core layer — move AI logic to ERP.AI.Application or ERP.AI.Infrastructure. See docs/architecture/ai-foundation.md`,
           });
           break;
         }
@@ -145,7 +145,7 @@ export function runCheckAiLayerBoundaries() {
         addWarning(result, {
           rule: 'AI-004',
           file: rel,
-          message: `AI layer references ErpDbContext directly — prefer read models, Outbox consumption, or projection queries instead. See AI-RULES/ANALYTICS-FOUNDATION.md`,
+          message: `AI layer references ErpDbContext directly — prefer read models, Outbox consumption, or projection queries instead. See docs/architecture/ai-foundation.md (Analytics Foundation)`,
         });
       }
     }
@@ -165,7 +165,7 @@ export function runCheckAiLayerBoundaries() {
           addWarning(result, {
             rule: 'AI-005',
             file: rel,
-            message: `Complex aggregation/analytics query in Controller — move to a CQRS query handler or read model. See AI-RULES/ANALYTICS-FOUNDATION.md`,
+            message: `Complex aggregation/analytics query in Controller — move to a CQRS query handler or read model. See docs/architecture/ai-foundation.md (Analytics Foundation)`,
           });
           break;
         }

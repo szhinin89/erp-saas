@@ -6,7 +6,7 @@ alwaysApply: false
 
 # CQRS y validación (adaptador Cursor)
 
-**Canónico:** [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md) · [`AI-RULES/ENFORCEMENT.md`](../../AI-RULES/ENFORCEMENT.md)
+**Canónico:** [`docs/architecture/backend.md`](../../docs/architecture/backend.md) · [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md)
 
 - Commands/Queries deben pasar por MediatR (evitar handlers inyectados directo en controller).
 - Cada command/query con entrada de usuario debe tener validator (FluentValidation).

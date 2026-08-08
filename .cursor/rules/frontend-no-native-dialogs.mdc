@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Frontend sin dialogs nativos
 
-**Canónico:** [`AI-RULES/FRONTEND-RULES.md`](../../AI-RULES/FRONTEND-RULES.md#diálogos)
+**Canónico:** [`docs/architecture/frontend.md`](../../docs/architecture/frontend.md#diálogos)
 
 ## Regla
 

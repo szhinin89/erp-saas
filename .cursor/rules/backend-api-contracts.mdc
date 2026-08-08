@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Backend API Contracts
 
-**Canónico:** [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md#controllers--apiresultextensions-obligatorio)
+**Canónico:** [`docs/architecture/backend.md`](../../docs/architecture/backend.md#controllers--apiresultextensions-obligatorio)
 
 - Usar `ApiResultExtensions` (`ToOkOrBadRequest`, `ToCreatedOrBadRequest`, `ToOkOrNotFound`, `ToOkOrUnauthorized`, `ApiOk`, `ApiBadRequest`, etc.).
 - Evitar `new ApiResponse<...>` manual en controllers.

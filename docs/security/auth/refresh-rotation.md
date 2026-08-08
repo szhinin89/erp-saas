@@ -25,6 +25,6 @@
 
 ## Referencias
 
-- [`AI-RULES/SECURITY.md`](../../../AI-RULES/SECURITY.md)
-- [`docs/adr/ADR-014-refresh-token-rotation.md`](../../adr/ADR-014-refresh-token-rotation.md)
+- [`docs/architecture/security.md`](../../../docs/architecture/security.md)
+- [`docs/decisions/ADR-014-refresh-token-rotation.md`](../../decisions/ADR-014-refresh-token-rotation.md)
 - Código: `RefreshTokenService`, `authRefreshManager.ts`

@@ -8,17 +8,17 @@
 
 | Qué necesito | Archivo | Contenido |
 |--------------|---------|-----------|
-| **Reglas IA (canónico)** | [`AI-RULES/README.md`](./AI-RULES/README.md) | Fuente única: arquitectura, FE/BE, SaaS, enforcement, PR |
+| **Reglas de implementación (canónico)** | [`docs/architecture/README.md`](./docs/architecture/README.md) | Fuente única: arquitectura, FE/BE, SaaS, enforcement, PR |
 | **Verdad arquitectónica (baseline)** | [`ERP_CORE_FREEZE.md`](./ERP_CORE_FREEZE.md), [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Congelamiento ERP Core, arquitectura vigente |
 | **Gates bloqueantes** | [`ARCHITECTURE_GATES.md`](./ARCHITECTURE_GATES.md) | Reglas prohibidas/obligatorias + CI |
 | **Baseline sellada** | [`RELEASES/`](./RELEASES/) | `architecture-v1.0`, `frontend-governance-v1.0` |
 | **Frontend baseline (UI)** | [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](./docs/FRONTEND_ARCHITECTURE_BASELINE.md) | Shells, templates, CSS, governance |
 | **Frontend QA checklist** | [`docs/FRONTEND_QA_CHECKLIST.md`](./docs/FRONTEND_QA_CHECKLIST.md) | Validación manual pre-release |
 | **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
-| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) | Adaptador → [`AI-RULES/`](./AI-RULES/README.md) |
-| **Estado delivery** | [`docs/STATUS.md`](./docs/STATUS.md) | Fuente de verdad MVP |
-| **Reglas PR** | [`AI-RULES/PR-RULES-CATALOG.md`](./AI-RULES/PR-RULES-CATALOG.md) | Catálogo B-xx/F-xx |
-| **Backend / Frontend / Auth / DB** | [`AI-RULES/BACKEND-RULES.md`](./AI-RULES/BACKEND-RULES.md), [`AI-RULES/FRONTEND-RULES.md`](./AI-RULES/FRONTEND-RULES.md), [`AI-RULES/SECURITY.md`](./AI-RULES/SECURITY.md), [`docs/DATABASE.md`](./docs/DATABASE.md) | Reglas canónicas por dominio |
+| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md), [`backend/CLAUDE.md`](./backend/CLAUDE.md), [`frontend/CLAUDE.md`](./frontend/CLAUDE.md) | Adaptadores → [`docs/architecture/`](./docs/architecture/README.md) |
+| **Estado delivery** | [`STATUS.md`](./STATUS.md) | Fuente de verdad MVP |
+| **Reglas PR** | [`docs/architecture/pr-rules-catalog.md`](./docs/architecture/pr-rules-catalog.md) | Catálogo B-xx/F-xx |
+| **Backend / Frontend / Auth / DB** | [`docs/architecture/backend.md`](./docs/architecture/backend.md), [`docs/architecture/frontend.md`](./docs/architecture/frontend.md), [`docs/architecture/security.md`](./docs/architecture/security.md), [`docs/DATABASE.md`](./docs/DATABASE.md) | Reglas canónicas por dominio |
 | **Contribución** | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | PR, tests, prohibiciones |
 | **Features** | [`FEATURES.md`](./FEATURES.md) | Módulos producto |
 | **Prioridades** | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Fases pendientes |
@@ -26,7 +26,7 @@
 | **Platform (futuro, no implementado)** | [`docs/future-platform/README.md`](./docs/future-platform/README.md) | Posible plataforma externa futura — no forma parte del ERP actual |
 | **SaaS comercial (histórico)** | [`docs/archive/SAAS-COMMERCIAL.md`](./docs/archive/SAAS-COMMERCIAL.md) | Planes, billing — eliminado FASE 1, ver [`ERP_CORE_FREEZE.md`](./ERP_CORE_FREEZE.md) |
 | **Base de datos** | [`docs/DATABASE.md`](./docs/DATABASE.md) | EF, RLS |
-| **ADRs** | [`docs/adr/`](./docs/adr/) | Decisiones arquitectura |
+| **ADRs** | [`docs/decisions/`](./docs/decisions/) | Decisiones arquitectura |
 
 > Los **7 archivos canónicos** siguen en `docs/` raíz. Subcarpetas (`adr/`, `diagrams/`, …) amplían sin reemplazar.
 
@@ -36,11 +36,10 @@
 
 ```
 erp-saas/
-├── AI-RULES/         → fuente canónica reglas IA (README.md)
 ├── backend/          → backend/README.md
 ├── frontend/         → baseline UI: `docs/FRONTEND_ARCHITECTURE_BASELINE.md`, `docs/frontend-layout-conventions.md`
 ├── infrastructure/   → Docker, postgres, deployment
-├── docs/             → 7 canónicos + decisions/, diagrams/, …
+├── docs/             → 7 canónicos + architecture/ (reglas canónicas), decisions/, diagrams/, …
 ├── scripts/          → dev/, ci/, db/
 ├── tools/            → architecture/, quality/, generators/
 ├── monitoring/       → preparación observabilidad
@@ -90,8 +89,8 @@ Orquestador: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) → `archi
 ## Reglas para agentes
 
 1. **`CLAUDE.md`** + **`docs/DEVELOPMENT.md`** antes de implementar.
-2. PR bloqueantes → **`AI-RULES/PR-RULES-CATALOG.md`** / **`docs/ARCHITECTURE-RULES.md`**.
-3. Estado → **`docs/STATUS.md`** + **`PROGRESS.html`** al cerrar tareas.
+2. PR bloqueantes → **`docs/architecture/pr-rules-catalog.md`** / **`docs/ARCHITECTURE-RULES.md`**.
+3. Estado → **`STATUS.md`** + **`PROGRESS.html`** al cerrar tareas.
 4. Stack → **`docs/DEVELOPMENT.md#stack-oficial`** + allowlist.
 
 Copilot: [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md).

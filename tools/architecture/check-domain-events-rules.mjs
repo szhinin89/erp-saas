@@ -98,7 +98,7 @@ export function runCheckDomainEventsRules() {
             addWarning(result, {
               rule: 'EV-002',
               file: rel,
-              message: `${className} may use present tense — prefer past tense (e.g., Created, Posted, Approved). See AI-RULES/EVENT-DRIVEN-RULES.md`,
+              message: `${className} may use present tense — prefer past tense (e.g., Created, Posted, Approved). See docs/architecture/events.md`,
             });
             break;
           }

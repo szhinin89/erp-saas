@@ -2,7 +2,7 @@
 
 **Estado**: ✅ FASE 8 COMPLETADA
 **Fecha de cierre**: 2026-07-02
-**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`docs/STATUS.md`](../STATUS.md))
+**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`STATUS.md`](../../STATUS.md))
 
 Este documento es la referencia oficial de las decisiones funcionales y técnicas de la Fase 8 del módulo Items. A diferencia de las fases anteriores, esta fase tocó también el módulo de Compras (Purchases), por ser el único consumidor real de la relación Item↔Proveedor. Se apoya en las Fases 1-7 ya cerradas y no las reabre.
 

@@ -125,33 +125,9 @@ Catálogo de Domain Events activos y planificados del ERP core.
 
 ---
 
-## 🏢 SaaS / Multi-tenant
+## 🏢 SaaS / Multi-tenant — fuera de alcance ERP Core
 
-### `TenantCreatedEvent` 🟡 Planificado
-- **Módulo:** Platform / SaaS
-- **AggregateRoot:** Subscriber
-- **Descripción:** Nuevo tenant creado en la plataforma SaaS. Dispara onboarding automático.
-- **Tenant scope:** No (es un evento de plataforma)
-- **EventVersion:** 1
-- **Payload clave:** SubscriberId, PlanCode, CreatedBy, CreatedAt
-- **Consumers futuros:**
-  - Analytics: growth de la plataforma
-  - AI: predicción de churn temprano
-  - Automation: welcome email, onboarding checklist
-
----
-
-### `SubscriptionPlanChangedEvent` ⏳ Futuro
-- **Módulo:** Platform / Billing
-- **AggregateRoot:** SubscriberSubscription
-- **Descripción:** Tenant cambió de plan (upgrade o downgrade).
-- **Tenant scope:** No (plataforma)
-- **EventVersion:** 1
-- **Payload clave:** SubscriberId, OldPlanId, NewPlanId, ChangedAt, ChangedBy
-- **Consumers futuros:**
-  - Analytics: MRR expansion / contraction
-  - AI: predicción de churn post-downgrade
-  - Automation: invalidación de caché entitlements ← **alta prioridad**
+> **Removido del catálogo activo (Bloque 16B, 2026-08-07).** Esta sección documentaba `TenantCreatedEvent`/`SubscriptionPlanChangedEvent` como eventos futuros del "Módulo Platform / SaaS / Billing" (`AggregateRoot: Subscriber`/`SubscriberSubscription`). El Control Plane SaaS fue eliminado permanentemente del ERP Core en FASE 1 (2026-06-05, ver [`STATUS.md`](../../STATUS.md)) y su reintroducción está bloqueada por CI (`docs/ci/CI_GUARD_RULES.md`) y prohibida por [`ERP_CORE_FREEZE.md`](../../ERP_CORE_FREEZE.md) — directriz "Enfoque exclusivo ERP Core". Modelo histórico completo preservado en [`docs/archive/SUBSCRIBER-SCOPE-SEALED.md`](../archive/SUBSCRIBER-SCOPE-SEALED.md). Si una futura Platform externa (fuera de este repo) necesita estos eventos, se define en su propio catálogo — no en este.
 
 ---
 

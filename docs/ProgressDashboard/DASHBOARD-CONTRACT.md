@@ -85,7 +85,7 @@ Cada uno declara en su propio campo `method`/`source` que es "revisión manual, 
 
 | Archivo | Fuente de verdad | Validado por |
 |---|---|---|
-| `modules-status.json` | Estado funcional/madurez/freeze de cada módulo, curado contra `docs/STATUS.md`/ADRs | `build-dashboard-data.ps1` (`$manualFiles`) |
+| `modules-status.json` | Estado funcional/madurez/freeze de cada módulo, curado contra `STATUS.md`/ADRs | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `roadmap.json` | 7 etapas del Roadmap Maestro, curado contra `docs/ROADMAP.md` | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `blockers.json` | Bloqueadores reales, cada uno trazable a un campo `bloqueadores` de `roadmap.json`/`docs/ROADMAP.md` | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `architecture-governance.json` | Estado de gobierno (freeze/accepted/draft) por módulo | `build-dashboard-data.ps1` (`$manualFiles`) |

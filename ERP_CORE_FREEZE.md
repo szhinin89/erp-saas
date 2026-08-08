@@ -54,7 +54,7 @@ Excluidos permanentemente del ERP Core (viven en Platform, repositorio futuro se
 - Recursos: `tenants` (crear, status, activate, suspend), `companies` (crear, status, activate, suspend).
 - Contratos/casos de uso: `ERP.Application/Modules/Integration/` — solo DTOs, comandos/queries MediatR, autorización y versionado. Sin lógica de negocio de Platform.
 - Verificado: ningún otro controller expone rutas `/api/platform/*`, `/api/saas/*` ni `/api/subscribers/*`.
-- Decisión formalizada en [ADR-ERP-002](docs/architecture/decisions/ADR-ERP-002-platform-separation.md) (**Status: Accepted**), alineada con Clean Architecture (capas y `Dependency Rule` de [ADR-ERP-001](docs/architecture/decisions/ADR-ERP-001-core-independence.md)), CQRS (contratos vía comandos/queries MediatR), y Multi-Tenant (`tenant_id`/`company_id` como claves de los recursos de integración).
+- Decisión formalizada en [ADR-ERP-002](docs/decisions/ADR-ERP-002-platform-separation.md) (**Status: Accepted**), alineada con Clean Architecture (capas y `Dependency Rule` de [ADR-ERP-001](docs/decisions/ADR-ERP-001-core-independence.md)), CQRS (contratos vía comandos/queries MediatR), y Multi-Tenant (`tenant_id`/`company_id` como claves de los recursos de integración).
 
 ---
 
@@ -72,7 +72,7 @@ Excluidos permanentemente del ERP Core (viven en Platform, repositorio futuro se
 - **PLATFORM MAY CONSUME ERP APIs ONLY**: prohibido el acceso directo desde Platform a `ErpDbContext`, repositorios ERP, entidades de dominio ERP o query filters ERP. Toda integración pasa por `/api/integration/v1/*`.
 - Reintroducir conceptos `Billing`, `Subscription`, `Marketplace`, `PlatformOperator`, `CommercialPlan`, `Entitlements` o `SaaS Panel` dentro de `ERP.*`.
 - Compartir DbContexts, tablas o entidades de dominio entre ERP y Platform.
-- Cambios en `Tenant` que agreguen campos comerciales (`PlanCode`, `TrialEndsAt`, etc.) sin Architecture Review — son bloqueantes en PR (ver [ADR-ERP-001](docs/architecture/decisions/ADR-ERP-001-core-independence.md)).
+- Cambios en `Tenant` que agreguen campos comerciales (`PlanCode`, `TrialEndsAt`, etc.) sin Architecture Review — son bloqueantes en PR (ver [ADR-ERP-001](docs/decisions/ADR-ERP-001-core-independence.md)).
 
 ## Cambios permitidos
 
@@ -86,7 +86,7 @@ Excluidos permanentemente del ERP Core (viven en Platform, repositorio futuro se
 
 ## Reglas arquitectónicas obligatorias (BLOQUEANTES)
 
-> Vinculantes — ver [AI-RULES/CORE-ARCHITECTURE.md § Frontera ERP ↔ Platform](AI-RULES/CORE-ARCHITECTURE.md#reglas-de-arquitectura-que-no-se-rompen).
+> Vinculantes — ver [docs/architecture/architecture.md § Frontera ERP ↔ Platform](docs/architecture/architecture.md#reglas-de-arquitectura-que-no-se-rompen).
 
 1. **"ERP NEVER DEPENDS ON PLATFORM"**
 2. **"PLATFORM MAY CONSUME ERP APIs ONLY"**
@@ -106,7 +106,7 @@ ADR-ERP-002 y este acta:
 
 - **API versionada**: todas las rutas de `ERP.API.Controllers` (excepto
   `api/integration/v1/*` y `api/dev/*`, sin cambios) pasan a `api/v1/...`.
-  Detalle: [AI-RULES/CORE-ARCHITECTURE.md § API versionada](AI-RULES/CORE-ARCHITECTURE.md#api-versionada-apiv1).
+  Detalle: [docs/architecture/architecture.md § API versionada](docs/architecture/architecture.md#api-versionada-apiv1).
 - **`Platform.Contracts`** (`backend/src/Platform.Contracts/`): nuevo
   proyecto solo-contratos (interfaces, DTOs, marcador `IIntegrationEvent`,
   `IErpPublicApiClient`) para una futura Platform externa. Sin
@@ -116,7 +116,7 @@ ADR-ERP-002 y este acta:
 
 ## Referencias
 
-- [README.md](README.md) · [CLAUDE.md](CLAUDE.md) · [docs/STATUS.md](docs/STATUS.md) · [FEATURES.md](FEATURES.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [ADR-ERP-001 — ERP Core Independence](docs/architecture/decisions/ADR-ERP-001-core-independence.md)
-- [ADR-ERP-002 — Platform Separation](docs/architecture/decisions/ADR-ERP-002-platform-separation.md)
-- [AI-RULES/CORE-ARCHITECTURE.md](AI-RULES/CORE-ARCHITECTURE.md)
+- [README.md](README.md) · [CLAUDE.md](CLAUDE.md) · [STATUS.md](STATUS.md) · [FEATURES.md](FEATURES.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [ADR-ERP-001 — ERP Core Independence](docs/decisions/ADR-ERP-001-core-independence.md)
+- [ADR-ERP-002 — Platform Separation](docs/decisions/ADR-ERP-002-platform-separation.md)
+- [docs/architecture/architecture.md](docs/architecture/architecture.md)

@@ -2,7 +2,7 @@
 
 - **Fecha**: 2026-07-27
 - **Alcance**: Auditoría de solo lectura. No se modificó código de producción.
-- **Referencia normativa**: [`ADR-027`](../adr/ADR-027-error-handling-architecture.md) · [`AI-RULES/ERROR-HANDLING.md`](../../AI-RULES/ERROR-HANDLING.md)
+- **Referencia normativa**: [`ADR-027`](../decisions/ADR-027-error-handling-architecture.md) · [`docs/architecture/error-handling.md`](./error-handling.md)
 
 Este documento es la fotografía del estado real del código al momento de la auditoría, componente por componente, usada como evidencia para el diseño de ADR-027. No prescribe la solución (eso vive en el ADR) — documenta el `Cumple`/`Parcial`/`No cumple` de cada pieza y las observaciones concretas (archivo:línea) que lo sustentan.
 
@@ -77,4 +77,4 @@ No se encontró el patrón "solo `console.error`, sin ningún feedback visual" m
 | Frontend — infraestructura central (`apiError.ts`, `validationErrors.ts`, `lib/messages`, `ZHToast`/`ZHPageNotice`) | 6 | 1 | 1 |
 | Frontend — adopción por módulos | 3 | 0 | 6 |
 
-**Lectura:** la infraestructura central (lo que ADR-018/019/020/022 ya cerraron como FROZEN, y lo que `apiError.ts`/`ExceptionMiddleware` ya implementan) está mayormente sana. **La deuda está concentrada en la adopción por módulo** — exactamente donde no hay un gate de CI ni una regla canónica que la fuerce. Esta es la brecha que `ADR-027`/`AI-RULES/ERROR-HANDLING.md` cierran a nivel de diseño; la Fase 1-3 de migración (ADR-027 §15) la cierra a nivel de código.
+**Lectura:** la infraestructura central (lo que ADR-018/019/020/022 ya cerraron como FROZEN, y lo que `apiError.ts`/`ExceptionMiddleware` ya implementan) está mayormente sana. **La deuda está concentrada en la adopción por módulo** — exactamente donde no hay un gate de CI ni una regla canónica que la fuerce. Esta es la brecha que `ADR-027`/`docs/architecture/error-handling.md` cierran a nivel de diseño; la Fase 1-3 de migración (ADR-027 §15) la cierra a nivel de código.

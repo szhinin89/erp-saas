@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Stack permitido (adaptador Cursor)
 
-**Canónico:** [`AI-RULES/STACK.md`](../../AI-RULES/STACK.md) · Detalle versiones: [`docs/DEVELOPMENT.md#stack-oficial`](../../docs/DEVELOPMENT.md#stack-oficial)
+**Canónico:** [`docs/architecture/stack.md`](../../docs/architecture/stack.md) · Detalle versiones: [`docs/DEVELOPMENT.md#stack-oficial`](../../docs/DEVELOPMENT.md#stack-oficial)
 
 ## Reglas operativas
 
@@ -15,4 +15,4 @@ alwaysApply: true
 - Entorno oficial: Docker Compose (PostgreSQL + Redis), CI GitHub Actions, xUnit/Playwright.
 - CI: `scripts/ci/verify-stack-allowlist.ps1` + `scripts/stack-allowlist.json`.
 
-Si hay conflicto, prevalece [`AI-RULES/STACK.md`](../../AI-RULES/STACK.md) hasta nueva instrucción del usuario.
+Si hay conflicto, prevalece [`docs/architecture/stack.md`](../../docs/architecture/stack.md) hasta nueva instrucción del usuario.

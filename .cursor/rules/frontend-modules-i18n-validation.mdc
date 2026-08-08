@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Frontend rules (adaptador Cursor)
 
-**Canónico:** [`AI-RULES/FRONTEND-RULES.md`](../../AI-RULES/FRONTEND-RULES.md)
+**Canónico:** [`docs/architecture/frontend.md`](../../docs/architecture/frontend.md)
 
 - Organizar por módulos (`src/modules/{feature}/...`) y `shared/` para reutilizables.
 - Evitar lógica de negocio en componentes; mover a hooks/servicios/casos de uso UI.

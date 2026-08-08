@@ -1,44 +1,20 @@
-# Desarrollo — reglas, stack y operación
+# Desarrollo — arranque, stack y operación
 
-Reglas oficiales para contribuidores y agentes. Violaciones rompen aislamiento multi-tenant o límites de billing.
+Guía operativa para contribuidores y agentes (arranque local, Docker, tests, versiones de stack). Reglas normativas (naming, multi-tenant, migraciones, capas): [`docs/architecture/`](architecture/README.md) — no repetidas aquí, ver Bloque 16A/16B.
 
-**Stack permitido:** sección [Stack oficial](#stack-oficial) (verificado por `scripts/ci/verify-stack-allowlist.ps1` y `scripts/stack-allowlist.json`).
+**Stack permitido:** sección [Stack oficial](#stack-oficial) (verificado por `scripts/ci/verify-stack-allowlist.ps1` y `scripts/stack-allowlist.json`). Reglas: [`docs/architecture/stack.md`](architecture/stack.md).
 
 ---
 
 ## Convenciones de código
 
-### Naming
+Naming (tablas, índices, FKs, tipos): [`docs/architecture/naming.md`](architecture/naming.md).
 
-| Área | Convención |
-|------|------------|
-| Tablas / columnas | `snake_case` |
-| Índices | `ix_*`, `ux_*`, `uq_*` |
-| Foreign keys | `fk_*` con `_tenant_` (no `_subscriber_`) |
-| Tipos dominio | PascalCase; mapeo EF en configurations |
-| Retirado | `Subscriber`, `subscriber_id` |
+Alcance de entidades: antes de crear tablas, declarar scope — ver [ARCHITECTURE.md](./ARCHITECTURE.md#scopes) y [`docs/architecture/architecture.md § Canonical Model Map`](architecture/architecture.md#canonical-model-map).
 
-### Alcance de entidades
+Reglas multi-tenant (`IgnoreQueryFilters()`, `company_id` del body, `ICurrentTenant`/`ICurrentCompany`), migraciones EF, y billing/SaaS fuera de ERP Core: [`docs/architecture/security.md`](architecture/security.md), [`docs/architecture/backend.md`](architecture/backend.md).
 
-Antes de crear tablas, declarar scope — ver [ARCHITECTURE.md](./ARCHITECTURE.md#scopes).
-
-### NEVER
-
-- `IgnoreQueryFilters()` sin `PlatformQueryReason`
-- `company_id` del body como autoridad
-- Límites `MAX_*` hardcodeados en handlers
-- Mezclar billing SaaS con facturas ERP
-- Stripe SDK dentro de handlers MediatR
-- Migraciones `.cs` a mano sin `dotnet ef migrations add`
-- `Subscriber` como concepto ERP Core (retirado — usar `Tenant`)
-
-### ALWAYS
-
-- `ICurrentTenant` / `ICurrentCompany` para contexto
-- `ICompanyAccessGuard` o `CompanyScopeBehavior` en ERP
-- `dotnet ef migrations add <Name>` para schema
-
-> **Fuera del ERP Core (histórico / futura Platform externa):** `ICommercialPlanLimitService`, `IBillingGovernanceService` e invalidación de cache de entitlements pertenecían al Control Plane SaaS eliminado en FASE 1 (ver [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md), [`docs/STATUS.md`](./STATUS.md)). No son reglas ALWAYS vigentes del ERP Core — se conservan como referencia histórica y como posible contrato de una futura Platform externa, no como requisito de desarrollo actual.
+> **Fuera del ERP Core (histórico / futura Platform externa):** `ICommercialPlanLimitService`, `IBillingGovernanceService` e invalidación de cache de entitlements pertenecían al Control Plane SaaS eliminado en FASE 1 (ver [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md), [`STATUS.md`](../STATUS.md)). No son reglas vigentes del ERP Core — se conservan como referencia histórica y como posible contrato de una futura Platform externa, no como requisito de desarrollo actual.
 
 ### Checklist caso de uso ERP nuevo
 
@@ -129,7 +105,7 @@ Scripts SQL puntuales: [`scripts/db/sql/`](../scripts/db/sql/) (ver [`scripts/db
 
 ## Stack oficial
 
-Fuente de verdad para agentes: [`AI-RULES/STACK.md`](../AI-RULES/STACK.md) · `.cursor/rules/stack-tools-source-of-truth.mdc`.
+Fuente de verdad para agentes: [`docs/architecture/stack.md`](architecture/stack.md) · `.cursor/rules/stack-tools-source-of-truth.mdc`.
 
 ### Runtime
 

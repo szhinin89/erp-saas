@@ -2,7 +2,7 @@
 
 **Estado**: ✅ FASE 3 COMPLETADA
 **Fecha de cierre**: 2026-07-02
-**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`docs/STATUS.md`](../STATUS.md))
+**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`STATUS.md`](../../STATUS.md))
 
 Este documento es la referencia oficial de las decisiones funcionales y técnicas de la Fase 3 del módulo Items. Se apoya en la base establecida por [`docs/items/PHASE1-ITEM-IDENTITY.md`](PHASE1-ITEM-IDENTITY.md) y [`docs/items/PHASE2-ITEM-IDENTIFICATION.md`](PHASE2-ITEM-IDENTIFICATION.md) y no las reabre.
 

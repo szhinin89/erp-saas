@@ -9,7 +9,7 @@ import { runCheckDesignSystem } from './check-design-system.mjs';
 import { runCheckNoCrossLayer } from './check-no-cross-layer.mjs';
 import { runCheckPlatformLegacySurface } from './check-platform-legacy-surface.mjs';
 // NOTA: 'frontend-subscriber-naming' (check-frontend-subscriber-naming.mjs) queda deshabilitado
-// deliberadamente: su polaridad quedó invertida respecto a AI-RULES/NAMING.md (Subscriber está
+// deliberadamente: su polaridad quedó invertida respecto a docs/architecture/naming.md (Subscriber está
 // retirado, Tenant es el canónico) y hoy reporta 50+ violaciones preexistentes ajenas a este
 // cambio. Reescribirlo (o retirarlo) es una tarea propia, no cubierta por este commit.
 import { runCheckBackendLayering } from './check-backend-layering.mjs';

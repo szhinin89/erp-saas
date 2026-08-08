@@ -1,18 +1,18 @@
 ---
 description: >-
-  ZH Technologies ERP — adaptador Cursor hacia AI-RULES (fuente canónica).
+  ZH Technologies ERP — adaptador Cursor hacia docs/architecture (fuente canónica).
   Flujo jerárquico, arquitectura, validación, ZH Form, SaaS, i18n qu.
 alwaysApply: true
 ---
 
 # Reglas del proyecto ERP (adaptador Cursor)
 
-**Fuente canónica:** [`AI-RULES/README.md`](../../AI-RULES/README.md) — **no duplicar reglas aquí.**
+**Fuente canónica:** [`docs/architecture/README.md`](../../docs/architecture/README.md) — **no duplicar reglas aquí.**
 
 ## Precedencia
 
-1. [AI-RULES/HIERARCHY.md](../../AI-RULES/HIERARCHY.md)
-2. [AI-RULES/PR-RULES-CATALOG.md](../../AI-RULES/PR-RULES-CATALOG.md) (B-xx/F-xx bloqueante)
+1. [docs/architecture/enforcement.md](../../docs/architecture/enforcement.md)
+2. [docs/architecture/pr-rules-catalog.md](../../docs/architecture/pr-rules-catalog.md) (B-xx/F-xx bloqueante)
 3. Reglas `.mdc` con `globs` más específicas
 4. Mapa: `rules-consolidated-map.mdc`
 
@@ -20,15 +20,15 @@ alwaysApply: true
 
 | Tarea | Archivo |
 |-------|---------|
-| Flujo feature / monorepo | [CORE-ARCHITECTURE.md](../../AI-RULES/CORE-ARCHITECTURE.md) |
-| Backend | [BACKEND-RULES.md](../../AI-RULES/BACKEND-RULES.md) |
-| Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../AI-RULES/FRONTEND-RULES.md) |
-| SaaS / planes / URL | [SAAS-RULES.md](../../AI-RULES/SAAS-RULES.md) |
+| Flujo feature / monorepo | [CORE-ARCHITECTURE.md](../../docs/architecture/architecture.md) |
+| Backend | [BACKEND-RULES.md](../../docs/architecture/backend.md) |
+| Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../docs/architecture/frontend.md) |
+| SaaS / planes / URL | [SAAS-RULES.md](../../docs/architecture/security.md) |
 | Platform naming (equipo) | [TEAM-NAMING-GUIDE.md](../../docs/platform/TEAM-NAMING-GUIDE.md) |
-| Auth / tenant | [SECURITY.md](../../AI-RULES/SECURITY.md) |
-| Stack | [STACK.md](../../AI-RULES/STACK.md) |
-| Validación 4 capas / CI | [ENFORCEMENT.md](../../AI-RULES/ENFORCEMENT.md) |
-| Naming | [NAMING.md](../../AI-RULES/NAMING.md) |
+| Auth / tenant | [SECURITY.md](../../docs/architecture/security.md) |
+| Stack | [STACK.md](../../docs/architecture/stack.md) |
+| Validación 4 capas / CI | [ENFORCEMENT.md](../../docs/architecture/enforcement.md) |
+| Naming | [NAMING.md](../../docs/architecture/naming.md) |
 
 ## Reglas operativas Cursor (mínimas)
 
@@ -45,4 +45,4 @@ alwaysApply: true
 - `frontend-modules-i18n-validation.mdc`, `frontend-no-native-dialogs.mdc`
 - `stack-tools-source-of-truth.mdc`
 
-**Anti-drift:** editar reglas solo en `AI-RULES/*`. Este archivo solo enlaza.
+**Anti-drift:** editar reglas solo en `docs/architecture/*`. Este archivo solo enlaza.

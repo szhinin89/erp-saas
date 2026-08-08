@@ -2,7 +2,7 @@
 
 **Estado**: ✅ FASE 9 COMPLETADA
 **Fecha de cierre**: 2026-07-02
-**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`docs/STATUS.md`](../STATUS.md))
+**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`STATUS.md`](../../STATUS.md))
 
 Última fase de la auditoría del módulo Items. Revisa transversalmente backend, frontend e infraestructura de las Fases 1-8 ya cerradas, sin reabrir ninguna decisión funcional.
 

@@ -35,9 +35,9 @@ Cada entrada enlaza a su ADR/auditoría/reglas correspondientes — **no duplica
 
 | Documento | Contenido |
 |---|---|
-| [`docs/adr/ADR-027-error-handling-architecture.md`](../adr/ADR-027-error-handling-architecture.md) | Decisión arquitectónica completa: contrato de envelope, categorías, mapeo HTTP, responsabilidades por capa, UX, plan de migración detallado |
+| [`docs/decisions/ADR-027-error-handling-architecture.md`](../decisions/ADR-027-error-handling-architecture.md) | Decisión arquitectónica completa: contrato de envelope, categorías, mapeo HTTP, responsabilidades por capa, UX, plan de migración detallado |
 | [`docs/architecture/ERROR-HANDLING-AUDIT.md`](./ERROR-HANDLING-AUDIT.md) | Auditoría del estado actual (matriz Cumple/Parcial/No cumple, backend y frontend) |
-| [`AI-RULES/ERROR-HANDLING.md`](../../AI-RULES/ERROR-HANDLING.md) | Reglas obligatorias ejecutables (E-B1..E-B8, E-F1..E-F7) para todo módulo nuevo desde ya |
+| [`docs/architecture/error-handling.md`](./error-handling.md) | Reglas obligatorias ejecutables (E-B1..E-B8, E-F1..E-F7) para todo módulo nuevo desde ya |
 
 **Plan de ejecución** (detalle completo en ADR-027 §15 — "Plan de migración"):
 
@@ -50,7 +50,7 @@ Cada entrada enlaza a su ADR/auditoría/reglas correspondientes — **no duplica
 
 **Restricciones vigentes mientras la iniciativa esté abierta:**
 - No modifica funcionalidad del ERP ni el roadmap funcional (`docs/ROADMAP.md`) — es transversal a todas las etapas.
-- Todo módulo nuevo debe cumplir `AI-RULES/ERROR-HANDLING.md` desde el momento de su creación, aunque la migración de módulos existentes (Fase 3) no haya comenzado.
+- Todo módulo nuevo debe cumplir `docs/architecture/error-handling.md` desde el momento de su creación, aunque la migración de módulos existentes (Fase 3) no haya comenzado.
 - Ningún cambio a esta iniciativa se documenta duplicando el ADR — solo se actualiza `Estado`/`Fase actual`/`Observaciones` en esta entrada.
 
 **Observaciones:** —
@@ -61,5 +61,5 @@ Cada entrada enlaza a su ADR/auditoría/reglas correspondientes — **no duplica
 
 - IDs correlativos (`GOV-001`, `GOV-002`, …), asignados una sola vez y nunca reutilizados ni renumerados.
 - Estados válidos: `Propuesta`, `Pendiente de migración`, `En progreso`, `Completada`, `Descartada`.
-- Una iniciativa completada no se elimina — se marca `Completada` con fecha, y su ADR (si queda FROZEN) pasa a referenciarse también desde `CLAUDE.md`/`docs/STATUS.md` según corresponda.
+- Una iniciativa completada no se elimina — se marca `Completada` con fecha, y su ADR (si queda FROZEN) pasa a referenciarse también desde `CLAUDE.md`/`STATUS.md` según corresponda.
 - Este documento registra la iniciativa y enlaza su documentación — el detalle técnico, el rationale y el plan de migración viven exclusivamente en el ADR referenciado.

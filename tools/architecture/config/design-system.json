@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Reglas F-04 — Design System único (UI). Canónico: AI-RULES/FRONTEND-RULES.md#design-system-estándares-únicos-obligatorios. Checks Node: tools/architecture/README.md. F-04-color (hex fuera de design-tokens.css) escanea frontend/src/**/*.css salvo cssHexExcludeFiles.",
+  "$schemaNote": "Reglas F-04 — Design System único (UI). Canónico: docs/architecture/frontend.md#design-system--estándares-únicos-obligatorios. Checks Node: tools/architecture/README.md. F-04-color (hex fuera de design-tokens.css) escanea frontend/src/**/*.css salvo cssHexExcludeFiles.",
   "scanGlobs": [
     "frontend/src/modules/**/*.tsx",
     "frontend/src/pages/**/*.tsx",

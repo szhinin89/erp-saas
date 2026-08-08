@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Prefijos CSS por área. Canónico: AI-RULES/NAMING.md",
+  "$schemaNote": "Prefijos CSS por área. Canónico: docs/architecture/naming.md",
   "scanGlobs": [
     "frontend/src/modules/**/*.css",
     "frontend/src/styles/shared/**/*.css"

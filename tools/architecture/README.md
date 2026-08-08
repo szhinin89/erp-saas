@@ -1,8 +1,8 @@
 # Architecture enforcement (Node.js ESM)
 
-Validaciones ejecutables de reglas documentadas en [`AI-RULES/`](../../AI-RULES/README.md). Complementan guardrails PowerShell y NetArchTest. **Cero impacto runtime** — solo CI y desarrollo local.
+Validaciones ejecutables de reglas documentadas en [`docs/architecture/`](../../docs/architecture/README.md). Complementan guardrails PowerShell y NetArchTest. **Cero impacto runtime** — solo CI y desarrollo local.
 
-Rationale histórico: [`docs/adr/`](../../docs/adr/README.md) · CI authority: [`AI-RULES/AGENT-COMPATIBILITY.md`](../../AI-RULES/AGENT-COMPATIBILITY.md#ci-authority)
+Rationale histórico: [`docs/decisions/`](../../docs/decisions/README.md) · CI authority: [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md#ci-authority)
 
 ## Ejecución
 
@@ -83,7 +83,7 @@ Ejemplo anotación GitHub:
   "driftRisk": "medium",
   "summary": { "checksPassed": 9, "violations": 0, "warnings": 13 },
   "modules": { "api-controllers": { "violations": 0, "warnings": 13 } },
-  "adrs": ["docs/adr/ADR-001-modular-monolith.md", "..."]
+  "adrs": ["docs/decisions/ADR-001-modular-monolith.md", "..."]
 }
 ```
 
@@ -99,7 +99,7 @@ Estados: `healthy` (≥90), `warning` (≥70), `critical` (<70). Warnings no fal
 | `config/scoring-rules.json` | Penalizaciones y umbrales de score |
 | `architecture-grandfather.json` | Legacy permitido (`backendControllerMaxLines`, `designSystemGrandfathered`, …) |
 
-**Extender reglas:** editar JSON → `npm run architecture:check`. Documentar en [`AI-RULES/ENFORCEMENT.md`](../../AI-RULES/ENFORCEMENT.md).
+**Extender reglas:** editar JSON → `npm run architecture:check`. Documentar en [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md).
 
 **Excepciones:** preferir refactor. Si inevitable: `exemptions` o grandfather + ADR.
 
@@ -133,6 +133,6 @@ tools/architecture/
 ## Precedencia
 
 1. Scripts ejecutables + CI  
-2. [`AI-RULES/*`](../../AI-RULES/README.md)  
+2. [`docs/architecture/*`](../../docs/architecture/README.md)  
 3. Adaptadores (`.mdc`, `CLAUDE.md`)  
 4. ADRs (rationale, no override de CI sin cambio de config)

@@ -2,7 +2,7 @@
 
 **Estado**: ✅ FASE 1 COMPLETADA
 **Fecha de cierre**: 2026-07-02
-**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`docs/STATUS.md`](../STATUS.md))
+**Nivel documental**: 3 (detalle técnico especializado, referenciado desde [`STATUS.md`](../../STATUS.md))
 
 Este documento es la referencia oficial de las decisiones funcionales y técnicas de la Fase 1 del módulo Items. Las fases siguientes (Identificación, Tributación, Comercial, Inventario, Variantes, Pricing, Compras) se construyen sobre esta base sin reabrir lo aquí definido.
 

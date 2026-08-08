@@ -153,7 +153,7 @@ Agregados en fases posteriores a la tabla original de este README; contrato comp
 
 | Archivo | Contenido | Origen |
 |---|---|---|
-| `modules-status.json` | Estado funcional/madurez/freeze por módulo | Manual, curado contra `docs/STATUS.md`/ADRs |
+| `modules-status.json` | Estado funcional/madurez/freeze por módulo | Manual, curado contra `STATUS.md`/ADRs |
 | `roadmap.json` | 7 etapas del Roadmap Maestro | Manual, curado contra `docs/ROADMAP.md` |
 | `blockers.json` | Bloqueadores reales del proyecto | Manual |
 | `architecture-governance.json` | Estado de gobierno (freeze/accepted/draft) por módulo | Manual |

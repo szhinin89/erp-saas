@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Reglas configurables para tools/architecture/*.mjs. Canónico: AI-RULES/ENFORCEMENT.md",
+  "$schemaNote": "Reglas configurables para tools/architecture/*.mjs. Canónico: docs/architecture/enforcement.md",
   "pageWrapper": {
     "maxLines": 15,
     "forbiddenHookPatterns": [

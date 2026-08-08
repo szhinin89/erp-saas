@@ -1,12 +1,12 @@
 # Roadmap — ERP SaaS ZH Technologies
 
-**Nivel 1** (ver jerarquía documental en [`CLAUDE.md`](../CLAUDE.md)). Prioridades y secuencia de evolución del producto. Para estado de delivery ya cerrado ver [`STATUS.md`](./STATUS.md); para módulos y rutas activas ver [`FEATURES.md`](../FEATURES.md); para el acta de congelamiento del ERP Core y la frontera con Platform ver [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md); para el razonamiento arquitectónico detrás de cada infraestructura FROZEN ver [`docs/adr/README.md`](./adr/README.md).
+**Nivel 1** (ver jerarquía documental en [`CLAUDE.md`](../CLAUDE.md)). Prioridades y secuencia de evolución del producto. Para estado de delivery ya cerrado ver [`STATUS.md`](../STATUS.md); para módulos y rutas activas ver [`FEATURES.md`](../FEATURES.md); para el acta de congelamiento del ERP Core y la frontera con Platform ver [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md); para el razonamiento arquitectónico detrás de cada infraestructura FROZEN ver [`docs/decisions/README.md`](./decisions/README.md).
 
 > Alcance: este roadmap cubre **ERP Core** exclusivamente. Todo lo relacionado a Billing/Subscription/Marketplace/PlatformOperator/CommercialPlan/Entitlements está excluido permanentemente del ERP por `ERP_CORE_FREEZE.md` y vive como referencia histórica en [`docs/archive/SAAS-COMMERCIAL.md`](./archive/SAAS-COMMERCIAL.md) y [`docs/future-platform/`](./future-platform/) — no forma parte de la secuencia de etapas de este documento.
 
 **Reestructuración 2026-07-25 (Fase Dashboard 4.0):** este documento pasó de una secuencia de 10 "FASE N" a **7 Etapas** con nombre propio, para alimentar directamente `docs/ProgressDashboard/data/roadmap.json` y las secciones "Roadmap Maestro" / "Fase Actual" / "Próximas Fases" / "Estado Global" del dashboard. Ningún hecho documentado se perdió en la reorganización — la numeración "FASE N" anterior queda referenciada entre paréntesis en cada etapa para trazabilidad. CRM y RRHH no encajaban de forma natural en ninguna de las 7 etapas nuevas y se dejaron deliberadamente en una sección aparte (ver "Otras fases futuras — sin etapa asignada") en vez de forzarlas dentro de una etapa que no las describe con precisión.
 
-**Reconciliación 2026-07-25 (Fase Gobernanza 1.0):** auditoría de este documento contra el código real (no solo contra `docs/STATUS.md`/ADR-026), verificada por lectura directa de `backend/src/ERP.Application/Modules/Accounting/Posting/`. Se corrigió una subestimación real: la Etapa 4 decía "sin iniciar" para el Posting Engine cuando en realidad ya está implementado y probado (partida doble real, 2 consumidores reales conectados vía eventos de dominio — Sales y Purchases). Se confirmó que el resto del documento (Etapa 1, Etapa 2, Etapas 5-7, CRM/RRHH) sí refleja el estado real del código — ningún otro hallazgo material. Detalle completo en las Etapas 3 y 4 más abajo.
+**Reconciliación 2026-07-25 (Fase Gobernanza 1.0):** auditoría de este documento contra el código real (no solo contra `STATUS.md`/ADR-026), verificada por lectura directa de `backend/src/ERP.Application/Modules/Accounting/Posting/`. Se corrigió una subestimación real: la Etapa 4 decía "sin iniciar" para el Posting Engine cuando en realidad ya está implementado y probado (partida doble real, 2 consumidores reales conectados vía eventos de dominio — Sales y Purchases). Se confirmó que el resto del documento (Etapa 1, Etapa 2, Etapas 5-7, CRM/RRHH) sí refleja el estado real del código — ningún otro hallazgo material. Detalle completo en las Etapas 3 y 4 más abajo.
 
 ---
 
@@ -76,7 +76,7 @@ Hardening e infraestructura transversal, no bloqueante para el MVP comercial per
 
 *(antes "FASE 2 — Accounting Core", parte fundamentos)*
 
-Diseño aprobado en ADR-026 (`docs/adr/ADR-026-accounting-core.md`, `ACCEPTED`, 2026-07-24). Fundamentos de dominio, persistencia y CQRS/API ya implementados y auditados (`ERP.Domain/Modules/Accounting`, `ERP.Application/Modules/Accounting`, `ERP.Infrastructure/Accounting`, `AccountingController` en `api/v1/accounting`) — ver detalle en `docs/STATUS.md` (Fases 1, 1.2-1.4, 2.0-2.2).
+Diseño aprobado en ADR-026 (`docs/decisions/ADR-026-accounting-core.md`, `ACCEPTED`, 2026-07-24). Fundamentos de dominio, persistencia y CQRS/API ya implementados y auditados (`ERP.Domain/Modules/Accounting`, `ERP.Application/Modules/Accounting`, `ERP.Infrastructure/Accounting`, `AccountingController` en `api/v1/accounting`) — ver detalle en `STATUS.md` (Fases 1, 1.2-1.4, 2.0-2.2).
 
 **Reconciliado 2026-07-25 (Fase Gobernanza 1.0)** — verificado por lectura directa del código, no solo de la documentación: esta etapa está más avanzada de lo que la versión anterior de este documento indicaba (decía "Reglas de contabilización... sin ningún consumidor real todavía (Posting Engine no existe)", lo cual ya no es cierto — ver Etapa 4).
 
@@ -94,7 +94,7 @@ Diseño aprobado en ADR-026 (`docs/adr/ADR-026-accounting-core.md`, `ACCEPTED`, 
 
 *(antes "FASE 2 — Accounting Core", parte automatización — Posting Engine)*
 
-**Reconciliado 2026-07-25 (Fase Gobernanza 1.0)** — la versión anterior de esta sección decía "Posting Engine... siguen sin iniciar" y "`JournalEntry` existe solo como tabla/aggregate de identidad, sin líneas ni `Post()`/`Reverse()`". Verificado por lectura directa del código (no solo de `docs/STATUS.md`/ADR-026): eso ya no es cierto para el Posting Engine ni para las líneas de asiento — sí sigue siendo cierto para `Post()`/`Reverse()`. No se infla ni se reduce el avance real: cada fila de la tabla siguiente distingue explícitamente lo implementado de lo pendiente, con evidencia de código verificada.
+**Reconciliado 2026-07-25 (Fase Gobernanza 1.0)** — la versión anterior de esta sección decía "Posting Engine... siguen sin iniciar" y "`JournalEntry` existe solo como tabla/aggregate de identidad, sin líneas ni `Post()`/`Reverse()`". Verificado por lectura directa del código (no solo de `STATUS.md`/ADR-026): eso ya no es cierto para el Posting Engine ni para las líneas de asiento — sí sigue siendo cierto para `Post()`/`Reverse()`. No se infla ni se reduce el avance real: cada fila de la tabla siguiente distingue explícitamente lo implementado de lo pendiente, con evidencia de código verificada.
 
 | Componente | Estado | Evidencia verificada | Prioridad | Riesgos |
 |---|---|---|---|---|
@@ -154,7 +154,7 @@ CRM y RRHH no encajan con precisión semántica en ninguna de las 7 etapas anter
 | CRM | ❌ No iniciado | Business Partners V2 (FROZEN, base sólida para extender a oportunidades/pipeline) | Media (decisión de negocio) | Media | Bajo — se apoya en infraestructura ya cerrada (BP, Audit, Pricing) |
 | RRHH | ❌ No iniciado | Organización / IAM | Baja-Media (decisión de negocio) | Media | Sin dependencias fuertes de otros módulos ERP |
 
-Priorización pendiente de decisión de negocio del cliente (ver `docs/adr/README.md` para el criterio "¿funcionaría sin ZH Platform?" aplicado a cada nueva etapa antes de iniciarla).
+Priorización pendiente de decisión de negocio del cliente (ver `docs/decisions/README.md` para el criterio "¿funcionaría sin ZH Platform?" aplicado a cada nueva etapa antes de iniciarla).
 
 > **SaaS Platform** no aparece en esta tabla porque no es una etapa de desarrollo de este repositorio: es un producto externo que consume `/api/integration/v1/*` (`ERP_CORE_FREEZE.md`). Su evolución (planes, billing, multi-tenant comercial) se planifica en el repositorio de Platform, no aquí.
 
@@ -171,9 +171,9 @@ Priorización pendiente de decisión de negocio del cliente (ver `docs/adr/READM
 
 ## Relacionados
 
-- [`STATUS.md`](./STATUS.md) — qué está cerrado y con qué evidencia
+- [`STATUS.md`](../STATUS.md) — qué está cerrado y con qué evidencia
 - [`FEATURES.md`](../FEATURES.md) — rutas/API activas por módulo
 - [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md) — frontera ERP↔Platform, módulos incluidos/excluidos
-- [`docs/adr/README.md`](./adr/README.md) — decisiones arquitectónicas y su estado
+- [`docs/decisions/README.md`](./decisions/README.md) — decisiones arquitectónicas y su estado
 - [`docs/DEVELOPMENT.md`](./DEVELOPMENT.md) — cómo contribuir de forma segura
 - [`docs/ProgressDashboard/data/roadmap.json`](./ProgressDashboard/data/roadmap.json) — misma estructura de 7 etapas, consumida por el dashboard (`tools/dashboard/render-dashboard.ps1`)

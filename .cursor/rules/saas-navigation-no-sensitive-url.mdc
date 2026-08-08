@@ -7,7 +7,7 @@ alwaysApply: true
 
 # Navegación SaaS: sin IDs sensibles en la URL
 
-**Canónico:** [`AI-RULES/SAAS-RULES.md`](../../AI-RULES/SAAS-RULES.md#ids-de-tenantcompany-fuera-de-la-url)
+**Canónico:** [`docs/architecture/security.md`](../../docs/architecture/security.md#ids-de-tenantcompany-fuera-de-la-url)
 
 ## Objetivo
 

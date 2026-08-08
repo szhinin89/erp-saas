@@ -33,7 +33,7 @@ Cada event tiene:
 - Todos los eventos usan **past tense** + sufijo `Event`
 - `EventVersion = 1` por defecto; subir solo en breaking changes
 - Nuevos eventos deben agregarse a este catálogo **antes** de mergearse
-- Política de versionado: [AI-RULES/EVENT-VERSIONING.md](../../AI-RULES/EVENT-VERSIONING.md)
+- Política de versionado: [docs/architecture/events.md § Event Versioning](../../docs/architecture/events.md#event-versioning)
 
 ---
 

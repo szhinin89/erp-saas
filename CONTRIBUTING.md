@@ -28,7 +28,7 @@
 
 ## Documentación
 
-Al cerrar feature: `docs/STATUS.md`, `PROGRESS.html`, y propagar si cambian rutas/endpoints.
+Al cerrar feature: `STATUS.md`, `PROGRESS.html`, y propagar si cambian rutas/endpoints.
 
 ## Review checklist
 

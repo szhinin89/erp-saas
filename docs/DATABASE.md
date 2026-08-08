@@ -140,7 +140,7 @@ Ver [`docs/archive/SAAS-COMMERCIAL.md`](./archive/SAAS-COMMERCIAL.md): `commerci
 |------|--------------|-----------|--------|
 | Ventas | `master_business_partners`, `sales_bill`, `sales_invoice`, `sales_note` | `tenant_id` | `company_id` |
 | Compras | `purchase_order`, `purch_bill`, `suppliers` | `tenant_id` | `company_id` |
-| Inventario Wave 1 | items/warehouse/stock (nombres físicos reales no verificados en esta auditoría) | `tenant_id` + `company_id` (Wave 1 completada, ver `docs/STATUS.md`) | `company_id` |
+| Inventario Wave 1 | items/warehouse/stock (nombres físicos reales no verificados en esta auditoría) | `tenant_id` + `company_id` (Wave 1 completada, ver `STATUS.md`) | `company_id` |
 | Contabilidad / caja | `accounts`, `journal_entries`, `bank_account` | `tenant_id` | `company_id` |
 
 ### Configuración

@@ -88,4 +88,4 @@ Checklist PR (además de [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 Antes de implementar: leer **`docs/ARCHITECTURE.md`** + **`CLAUDE.md`**.  
 No proponer herramientas fuera del stack.  
 No crear paths paralelos (`scripts/sql/`, duplicar `services/`).  
-Tras feature: actualizar `docs/STATUS.md` y `PROGRESS.html` si aplica.
+Tras feature: actualizar `STATUS.md` y `PROGRESS.html` si aplica.
