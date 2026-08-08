@@ -26,6 +26,11 @@
         <PackageReference Include="QRCoder" Version="1.6.0" />
         <PackageReference Include="ZXing.Net" Version="0.16.10" />
         <PackageReference Include="SkiaSharp" Version="2.88.8" />
+        <!-- El paquete base SkiaSharp solo trae nativos glibc (linux-x64); Alpine/musl
+             (runtime de backend/Dockerfile) necesita este paquete aparte para que exista
+             runtimes/linux-musl-x64/native/libSkiaSharp.so — sin él, Code128BarcodeGenerator
+             (ToPng vía SKBitmap/SKImage) falla con DllNotFoundException en producción Docker. -->
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.8" />
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
