@@ -202,6 +202,7 @@
       "entityScanPath": "backend/src/ERP.Domain",
       "scopedMarker": "ISubscriberScopedEntity",
       "ignoreQueryFiltersAllowlist": [
+        "backend/src/ERP.API/Health/MembershipConsistencyHealthCheck.cs",
         "backend/src/ERP.API.Tests/Integration/DocumentSequenceConcurrencyTests.cs",
         "backend/src/ERP.Infrastructure.Tests/Persistence/AdminUserSessionIntegrationTests.cs",
         "backend/src/ERP.Infrastructure.Tests/Persistence/CompanyUserPreferencesRepositoryTests.cs",

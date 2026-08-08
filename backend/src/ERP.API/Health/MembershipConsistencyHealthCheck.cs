@@ -23,8 +23,15 @@ public sealed class MembershipConsistencyHealthCheck : IHealthCheck
         if (!await _db.Database.CanConnectAsync(cancellationToken))
             return HealthCheckResult.Unhealthy("Database unreachable.");
 
+        // Company es ITenantScopedEntity: su query filter fail-closed devuelve 0 filas sin
+        // contexto de tenant (el caso de este health check, que corre sin request autenticado).
+        // IgnoreQueryFilters() es obligatorio aquí — sin él, todo membership se reporta como
+        // huérfano aunque la company exista, igual que MasterDataReconciliation necesita
+        // visibilidad cross-tenant para su chequeo de integridad de solo lectura.
         var orphanMemberships = await _db
-            .CompanyUserMemberships.Where(m => !_db.Companies.Any(c => c.Id == m.CompanyId))
+            .CompanyUserMemberships.Where(m =>
+                !_db.Companies.IgnoreQueryFilters().Any(c => c.Id == m.CompanyId)
+            )
             .Take(1)
             .AnyAsync(cancellationToken);
 

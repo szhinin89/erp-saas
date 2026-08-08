@@ -34,6 +34,7 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Persistence/Repositories/Configuration/OrgSettingsRepository.cs", // filtros explícitos por tenantId/companyId; jerarquía de scope no depende del query filter ambiental
         "src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockAdjustmentRepository.cs", // filtro explícito por tenantId; secuencial debe considerar registros deshabilitados, no depende del query filter ambiental
         "src/ERP.Infrastructure/Seeding/E2E/E2ESeedService.cs", // provisioning E2E fuera de Production, bajo bandera explícita: mismo motivo que los *BootstrapStep (bootstrap needs cross-tenant visibility)
+        "src/ERP.API/Health/MembershipConsistencyHealthCheck.cs", // health check sin contexto de tenant: mismo motivo que BusinessPartnerReconciliationService (chequeo de integridad cross-tenant de solo lectura)
     };
 
     [Fact]
