@@ -16,6 +16,7 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -151,7 +152,16 @@ else
 builder.Services.AddDistributedCacheInstrumentation(builder.Configuration, redisConfigured);
 
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddDataProtection();
+
+// Sin persistencia explícita, el keyring de Data Protection es efímero al contenedor y se
+// pierde en cada recreate — invalidando secretos ya cifrados con él (p.ej. sri_settings.cert_password).
+// Se persiste en el mismo volumen durable que FileStorage (erp-api-files) para sobrevivir recreates.
+var dataProtectionKeysPath = Path.Combine(
+    builder.Configuration["FileStorage:BasePath"] ?? Path.Combine(builder.Environment.ContentRootPath, "files"),
+    "dataprotection-keys"
+);
+builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+
 builder.Services.AddApplication();
 builder.Services.AddScoped<AppFeatureDiscoveryService>();
 
