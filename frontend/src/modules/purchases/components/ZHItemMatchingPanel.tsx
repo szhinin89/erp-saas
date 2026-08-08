@@ -6,7 +6,7 @@ import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
-import { itemService } from "../../items/api/itemService";
+import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { ProductPicker, type ProductProfile } from "./ProductPicker";
 import { CreateItemFromReceptionLineModal } from "./CreateItemFromReceptionLineModal";
 import {
@@ -120,7 +120,7 @@ export function ZHItemMatchingPanel({
         try {
           let info = cache.get(line.itemId);
           if (!info) {
-            const detail = await itemService.getById(line.itemId);
+            const detail = await itemLookupFacade.getById(line.itemId);
             info = { sku: detail.sku, shortName: detail.shortName };
             cache.set(line.itemId, info);
           }

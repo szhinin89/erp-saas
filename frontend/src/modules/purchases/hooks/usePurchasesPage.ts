@@ -12,7 +12,7 @@ import {
   purchaseReceptionService,
   type PurchaseDraftDto,
 } from "../api/purchaseReceptionService";
-import { itemService } from "../../items/api/itemService";
+import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { useItemTypeOptions } from "../../items/hooks/useItemTypeOptions";
 import type { ItemDto } from "../../../types/items";
 import type {
@@ -279,7 +279,7 @@ export function usePurchasesPage() {
     }
     globalDebounce.current = setTimeout(async () => {
       try {
-        const res = await itemService.getAll({
+        const res = await itemLookupFacade.search({
           search: globalQuery.trim(),
           isActive: true,
           itemTypeId: globalFilter === "all" ? undefined : globalFilter,
@@ -578,7 +578,7 @@ export function usePurchasesPage() {
       setGlobalQuery("");
       setGlobalResults([]);
       const key = lineKey;
-      const detail = await itemService.getById(item.id);
+      const detail = await itemLookupFacade.getById(item.id);
       const newLine: PurchaseLineFormValues = {
         _key: key,
         itemId: item.id,

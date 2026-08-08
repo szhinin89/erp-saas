@@ -9,7 +9,7 @@ import {  ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput"
 import {  formatMoney, parseDecimal } from "../../../lib/sanitizers";
 import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
 import {  formatApiError } from "../../lib/formatApiError";
-import {  itemService } from "../../items/api/itemService";
+import {  itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import type { ItemDto } from "../../../types/items";
 import { 
   priceListService,
@@ -540,7 +540,7 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await itemService.getAll({
+        const res = await itemLookupFacade.search({
           search: query.trim(),
           isActive: true,
           pageSize: 10,

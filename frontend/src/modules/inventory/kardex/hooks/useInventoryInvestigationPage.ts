@@ -8,7 +8,7 @@ import type {
 } from "../../stock/api/stockService";
 import { warehouseService } from "../../warehouses/api/warehouseService";
 import type { WarehouseDto } from "../../warehouses/api/warehouseService";
-import { itemService } from "../../../items/api/itemService";
+import { itemLookupFacade } from "../../../items/facades/itemLookupFacade";
 import type { ItemDto } from "../../../../types/items";
 import { purchaseService } from "../../../purchases/api/purchaseService";
 import { salesService } from "../../../sales/api/salesService";
@@ -87,7 +87,7 @@ export function useInventoryInvestigationPage(
   // Entrada desde la ficha de producto (?productId=...): precarga el nombre visible.
   useEffect(() => {
     if (!initialProductId) return;
-    itemService
+    itemLookupFacade
       .getById(initialProductId)
       .then((item) => setSelectedProduct(item))
       .catch(() => {
@@ -141,7 +141,7 @@ export function useInventoryInvestigationPage(
     }
     setProductSearching(true);
     try {
-      const res = await itemService.getAll({
+      const res = await itemLookupFacade.search({
         search: q.trim(),
         isActive: true,
         pageSize: 10,

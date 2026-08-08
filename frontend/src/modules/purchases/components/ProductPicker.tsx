@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
-import { itemService } from "../../items/api/itemService";
+import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { ItemDto } from "../../../types/items";
@@ -45,7 +45,7 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
     }
     setLoading(true);
     try {
-      const res = await itemService.getAll({
+      const res = await itemLookupFacade.search({
         search: q.trim(),
         isActive: true,
         pageSize: 12,
@@ -86,7 +86,7 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
     }
 
     try {
-      const detail = await itemService.getById(item.id);
+      const detail = await itemLookupFacade.getById(item.id);
 
       const vatCode = detail.taxConfig.purchaseVatCode;
       const vatPct = vatCode ? vatRates?.[vatCode] : undefined;
