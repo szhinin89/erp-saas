@@ -14,6 +14,7 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
         "src/ERP.Infrastructure/MasterData/Reconciliation/BusinessPartnerReconciliationService.cs", // platform-level reconciliation
         "src/ERP.Infrastructure/Persistence/Repositories/AccessRepository.cs", // access checks need cross-tenant visibility
+        "src/ERP.Infrastructure/Persistence/Repositories/BranchRepository.cs", // login flow: GetAsync/GetByIdAsync se invocan antes de que exista ICurrentTenant/ICurrentCompany ambiente confiable, misma razón que AccessRepository/CompanyUserBranchRepository
         "src/ERP.Infrastructure/Persistence/Repositories/UserSessionRepository.cs", // login flow: se invoca antes de que exista ICurrentCompany ambiente confiable, misma razón que AccessRepository
         "src/ERP.Infrastructure/Persistence/Repositories/CompanyUserBranchRepository.cs", // idem — selección de sucursal ocurre durante el propio login
         "src/ERP.Infrastructure/Persistence/Repositories/CompanyRepository.cs", // company bootstrap needs cross-tenant

@@ -212,6 +212,7 @@
         "backend/src/ERP.Infrastructure.Tests/Persistence/UserSessionAndCompanyUserBranchRepositoryTests.cs",
         "backend/src/ERP.Infrastructure/MasterData/Reconciliation/BusinessPartnerReconciliationService.cs",
         "backend/src/ERP.Infrastructure/Persistence/Repositories/AccessRepository.cs",
+        "backend/src/ERP.Infrastructure/Persistence/Repositories/BranchRepository.cs",
         "backend/src/ERP.Infrastructure/Persistence/Repositories/Caja/CashRegisterRepository.cs",
         "backend/src/ERP.Infrastructure/Persistence/Repositories/Caja/CashSessionRepository.cs",
         "backend/src/ERP.Infrastructure/Persistence/Repositories/CompanyRepository.cs",

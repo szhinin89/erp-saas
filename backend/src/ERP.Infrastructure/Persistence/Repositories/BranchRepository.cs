@@ -23,7 +23,12 @@ public sealed class BranchRepository : IBranchRepository
         CancellationToken cancellationToken = default
     )
     {
-        var q = _context.Branches.AsQueryable().Where(x => x.TenantId == tenantId);
+        // IgnoreQueryFilters: Branch es ICompanyOperationalEntity (filtro fail-closed tenant+company).
+        // LoginHandler llama este método (heurístico de sucursal principal) antes de que exista
+        // JWT/ICurrentTenant/ICurrentCompany — sin esto, cualquier login sin preferencias devuelve
+        // 0 sucursales siempre. El WHERE explícito por tenantId de abajo sigue siendo la autoridad
+        // real de scoping, igual que en AccessRepository/UserSessionRepository/CompanyUserBranchRepository.
+        var q = _context.Branches.IgnoreQueryFilters().AsQueryable().Where(x => x.TenantId == tenantId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)
@@ -47,10 +52,12 @@ public sealed class BranchRepository : IBranchRepository
         Guid id,
         CancellationToken cancellationToken = default
     ) =>
-        _context.Branches.FirstOrDefaultAsync(
-            x => x.TenantId == tenantId && x.Id == id,
-            cancellationToken
-        );
+        // IgnoreQueryFilters: mismo motivo que GetAsync — CompanyUserPreferencesDefaultBranchValidation
+        // llama esto durante el login (revalidación de DefaultBranchId), antes de que exista contexto
+        // de tenant/company. El WHERE explícito por tenantId sigue siendo la autoridad real.
+        _context
+            .Branches.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
 
     public async Task ClearMainBranchExceptAsync(
         Guid tenantId,
