@@ -194,6 +194,9 @@
         "SaveChangesAsync"
       ]
     },
+    "duplicateServices": {
+      "allowedMultiRegistration": ["ICompanyBootstrapStep"]
+    },
     "subscriber": {
       "scanPath": "backend/src",
       "entityScanPath": "backend/src/ERP.Domain",
