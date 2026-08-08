@@ -135,10 +135,9 @@ $ManifestFile = Join-Path $BackupDir "manifest.json"
 $Manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $ManifestFile -Encoding utf8
 
 $Sha256File = Join-Path $BackupDir "SHA256SUMS.txt"
-@(
-    "$PostgresHash  postgres.dump"
-    "$FileStorageHash  filestorage.tar.gz"
-) | Set-Content -LiteralPath $Sha256File -Encoding ascii
+# LF-only (not Set-Content's default CRLF) so 'sha256sum -c' works as-is from Linux/WSL/Git Bash.
+$Sha256Content = "$PostgresHash  postgres.dump`n$FileStorageHash  filestorage.tar.gz`n"
+[System.IO.File]::WriteAllText($Sha256File, $Sha256Content, [System.Text.Encoding]::ASCII)
 
 Write-Host "[OK] manifest.json y SHA256SUMS.txt generados" -ForegroundColor Green
 

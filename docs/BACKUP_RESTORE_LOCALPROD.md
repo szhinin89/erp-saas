@@ -95,7 +95,7 @@ docker exec postgreszh psql -U postgres -c "CREATE DATABASE dberpsaas_restore_ch
 docker exec postgreszh pg_restore -U postgres -d dberpsaas_restore_check /tmp/restore-check.dump
 
 # 4. Validaciones básicas (conteos, no contenido)
-docker exec postgreszh psql -U postgres -d dberpsaas_restore_check -c "SELECT count(*) FROM \"Tenants\";"
+docker exec postgreszh psql -U postgres -d dberpsaas_restore_check -c "SELECT count(*) FROM tenants;"
 
 # 5. Limpieza — SOLO de la base temporal creada en este mismo procedimiento
 docker exec postgreszh psql -U postgres -c "DROP DATABASE dberpsaas_restore_check;"
@@ -104,6 +104,44 @@ docker exec postgreszh rm -f /tmp/restore-check.dump
 
 `dberpsaas_restore_check` es una base nueva creada exclusivamente para esta prueba — eliminarla no
 afecta a `dberpsaas` (la base activa) en ningún momento.
+
+Esta opción es rápida pero ejecuta comandos **dentro del contenedor real** `postgreszh` (aunque solo
+contra una base nueva y descartable). Para un drill que no toque `postgreszh` en absoluto, usa la
+opción totalmente aislada de la sección 6bis.
+
+## 6bis. Restore drill totalmente aislado (recomendado antes de un piloto)
+
+`scripts/restore-check-localprod.ps1` automatiza un drill completo — Postgres **y** FileStorage — en
+un contenedor, volumen y red **nuevos y descartables**, sin tocar `postgreszh`,
+`erp-saas-localprod_erp-api-files`, ni ningún contenedor real:
+
+```powershell
+# Usa el backup mas reciente en backups/localprod/
+.\scripts\restore-check-localprod.ps1
+
+# O un backup especifico
+.\scripts\restore-check-localprod.ps1 -BackupDir backups\localprod\20260808-141039
+
+# Deja el entorno temporal vivo para inspeccion manual (limpiar despues a mano)
+.\scripts\restore-check-localprod.ps1 -KeepTemp
+```
+
+El script:
+
+1. Verifica checksums del backup contra `manifest.json`.
+2. Levanta un contenedor `postgres:16` nuevo (`erp-restore-check-postgres`, red
+   `erp-restore-check-net`, password temporal generado y nunca impreso) y restaura `postgres.dump` en
+   una base `dberpsaas_restore_drill` **dentro de ese contenedor** — `dberpsaas` real nunca se toca.
+3. Imprime conteos de las tablas clave (`tenants`, `company`, `identity_users`, `sales_invoices`,
+   `electronic_documents`, `document_sequence`, `sri_settings`).
+4. Crea un volumen `erp-restore-check-files` y extrae `filestorage.tar.gz` ahí, listando la
+   estructura y confirmando la presencia de `certificate.p12`, `authorized.xml` y el RIDE (PDF) — sin
+   imprimir contenido.
+5. Limpia contenedor, volumen y red temporales al finalizar (salvo `-KeepTemp`).
+
+Nombres usados por el script (todos configurables por parámetro si necesitas evitar colisiones):
+`erp-restore-check-postgres`, `erp-restore-check-files`, `erp-restore-check-net`,
+`dberpsaas_restore_drill`.
 
 ## 7. Restaurar FileStorage en un volumen temporal (opción segura)
 
