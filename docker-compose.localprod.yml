@@ -26,10 +26,17 @@ services:
       Redis__ConnectionString: "${REDIS_HOST:-erp-saas-redis}:${REDIS_PORT:-6379},abortConnect=false"
       Jwt__SecretKey: ${JWT_SECRET_KEY}
       Cors__AllowedOrigins__0: "http://localhost:${FRONTEND_PORT:-8080}"
+      # Persistente vía volumen nombrado erp-api-files (ver `volumes:` abajo) — sin esto,
+      # LocalFileStorage cae a <workdir>/files (=/app/files), que vive en el filesystem
+      # efímero del contenedor y se pierde en cada `--force-recreate`. Certificados P12,
+      # XML firmados y RIDE generados dependen de que esta ruta sobreviva recreaciones.
+      FileStorage__BasePath: /app/data/files
     ports:
       - "${API_PORT:-5003}:8080"
     networks:
       - erp-saas-existing
+    volumes:
+      - erp-api-files:/app/data/files
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health/live"]
       interval: 10s
@@ -54,3 +61,10 @@ networks:
   erp-saas-existing:
     name: erp-saas_default
     external: true
+
+volumes:
+  # Certificados P12, XML firmados/autorizados y RIDE (PDF) generados por erp-api.
+  # Nombrado (no bind mount) para no depender de rutas del host — sobrevive a
+  # `docker compose ... up -d --force-recreate erp-api`; solo se borra con `down -v`,
+  # que este proyecto nunca ejecuta contra este compose (ver docs/DOCKER_LOCAL_PROD.md).
+  erp-api-files:

@@ -164,6 +164,30 @@ siguen corriendo (no son parte de este compose) y sus datos persisten en los vol
 
 ---
 
+## Persistencia de archivos (certificados SRI, XML, RIDE)
+
+`ERP.API` guarda certificados P12 (`electronic-invoicing/sri-configuration/certificate`), XML
+firmados/autorizados y PDFs RIDE en disco vía `IFileStorage`/`LocalFileStorage`, bajo la ruta que
+indique `FileStorage:BasePath`. `docker-compose.localprod.yml` fija esa ruta a `/app/data/files`
+dentro del contenedor (`FileStorage__BasePath`) y la monta sobre el volumen nombrado
+**`erp-api-files`** — así los archivos sobreviven a
+`docker compose ... up -d --force-recreate erp-api` (necesario tras cada rebuild de imagen).
+
+Sin este volumen, `LocalFileStorage` cae a `<workdir>/files` = `/app/files`, que vive en el
+filesystem efímero del contenedor y se borra en cada recreación — cualquier certificado subido se
+perdería silenciosamente en el próximo rebuild.
+
+Verificar que el volumen existe:
+
+```powershell
+docker volume ls | findstr erp-api-files
+```
+
+⚠️ El volumen `erp-api-files` **solo** se borra con `docker compose -f docker-compose.localprod.yml
+down -v` — nunca ejecutes ese comando salvo que quieras perder certificados/XML/RIDE ya generados.
+
+---
+
 ## Seguridad
 
 - **Nunca** ejecutes `docker compose -f docker-compose.localprod.yml --env-file .env.docker.local config`
