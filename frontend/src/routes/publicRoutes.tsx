@@ -1,10 +1,13 @@
 import { Route } from "react-router-dom";
 import { lazyNamedPage } from "./lazyPage";
-import { SetupPage } from "../pages/SetupPage";
 
 const LoginPage = lazyNamedPage(
   () => import("../modules/auth/pages/LoginPage"),
   "LoginPage",
+);
+const SetupPage = lazyNamedPage(
+  () => import("../modules/auth/pages/SetupPage"),
+  "SetupPage",
 );
 const ForgotPasswordPage = lazyNamedPage(
   () => import("../modules/auth/pages/ForgotPasswordPage"),

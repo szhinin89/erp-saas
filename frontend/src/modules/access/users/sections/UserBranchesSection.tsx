@@ -42,7 +42,7 @@ export function UserBranchesSection({
         name="authorizedBranchIds"
         control={control}
         render={({ field }) => (
-          <div className="usr-branches-list">
+          <div className="acc-branches-list">
             {branchesCatalog.length === 0 ? (
               <p className="subtle">
                 {t(

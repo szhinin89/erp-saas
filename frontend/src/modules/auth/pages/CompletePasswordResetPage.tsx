@@ -81,8 +81,8 @@ export function CompletePasswordResetPage() {
           <div className="zh-auth-brand-icon" aria-hidden="true">
             <span className="material-symbols-outlined">lock_reset</span>
           </div>
-          <h1 className="cpr-brand-name">ZH Technologies</h1>
-          <p className="cpr-brand-sub">
+          <h1 className="pr-brand-name">ZH Technologies</h1>
+          <p className="pr-brand-sub">
             {t("completePasswordReset.subtitle", "Nueva contraseña")}
           </p>
         </header>

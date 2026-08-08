@@ -169,4 +169,32 @@
     132,
     0.1
   ); /* used in permission badges */
+
+  /* Info = primary — mismo criterio que .zh-form-alert--info / .badge--info / .zh-toast--info */
+  --color-info: var(--color-primary);
+
+  /* Anillo de foco de inputs (3px box-shadow) — mismo criterio que .zh-toggle-switch.is-pressed */
+  --color-focus-ring: color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+  /* Duración corta para transiciones puntuales (barras de progreso, iconos) */
+  --motion-duration-fast: 0.15s;
+
+  /* Interlineado compacto (descripciones secundarias en pickers/resultados) */
+  --line-height-snug: 1.3;
+
+  /* Valor por defecto de la barra de progreso de carga de archivos — el
+     componente lo sobrescribe por instancia vía style inline (ZhFileUpload.tsx). */
+  --upload-progress: 0%;
+
+  /* ── Glass overlay (ZHAppTenantHeader — cabecera translúcida sobre --color-primary) ── */
+  --color-glass-surface-10: rgba(255, 255, 255, 0.1);
+  --color-glass-surface-12: rgba(255, 255, 255, 0.12);
+  --color-glass-surface-15: rgba(255, 255, 255, 0.15);
+  --color-glass-surface-18: rgba(255, 255, 255, 0.18);
+  --color-glass-surface-20: rgba(255, 255, 255, 0.2);
+  --color-glass-border-25: rgba(255, 255, 255, 0.25);
+  --color-glass-border-35: rgba(255, 255, 255, 0.35);
+  --color-overlay-dark-12: rgba(0, 0, 0, 0.12);
+  --color-overlay-dark-18: rgba(0, 0, 0, 0.18);
+  --color-overlay-dark-38: rgba(0, 0, 0, 0.38);
 }

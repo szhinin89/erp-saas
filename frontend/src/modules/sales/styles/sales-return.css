@@ -3,9 +3,9 @@
 
 .sr-list-filters {
   display: flex;
-  gap: var(--spacing-md, 12px);
+  gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: var(--spacing-md, 12px);
+  margin-bottom: var(--space-3);
 }
 
 .sr-invoice-picker {
@@ -111,7 +111,7 @@
 .sr-lines-empty {
   color: var(--color-text-secondary);
   font-size: 13px;
-  padding: var(--spacing-md, 12px) 0;
+  padding: var(--space-3) 0;
 }
 
 .sr-qty-input--error {
@@ -122,7 +122,7 @@
 .sr-totals-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--spacing-md, 12px);
+  gap: var(--space-3);
 }
 
 .sr-general-grid__label {
@@ -152,7 +152,7 @@
 .sr-draft-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--spacing-sm, 8px);
+  gap: var(--space-2);
 }
 
 /* Fila de acciones RIDE junto al badge de estado en ElectronicDocumentDiagnosticPanel
@@ -160,15 +160,15 @@
 .sr-credit-note-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm, 8px);
+  gap: var(--space-2);
 }
 
 .sr-refund-row {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: var(--spacing-sm, 8px);
+  gap: var(--space-2);
   align-items: end;
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: var(--space-2);
 }
 
 .sr-refund-summary {
@@ -176,7 +176,7 @@
   justify-content: space-between;
   font-size: 13px;
   font-weight: 600;
-  margin: var(--spacing-md, 12px) 0;
+  margin: var(--space-3) 0;
 }
 
 .sr-refund-summary--pending {

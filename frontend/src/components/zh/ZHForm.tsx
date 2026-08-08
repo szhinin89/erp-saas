@@ -1,5 +1,5 @@
 import { ZHBrandMark } from "./ZHBrandMark";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useI18n } from "../../i18n/i18n";
 
 export function ZHFormHeader(props: {
@@ -306,12 +306,13 @@ export type ZHBtnVariant =
   | "success";
 export type ZHBtnSize = "md" | "sm" | "xs";
 
-export function ZHBtn(
-  props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+export const ZHBtn = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: ZHBtnVariant;
     size?: ZHBtnSize;
-  },
-) {
+  }
+>(function ZHBtn(props, ref) {
   const { variant = "secondary", size, className, ...rest } = props;
   const cls = useMemo(
     () =>
@@ -320,8 +321,8 @@ export function ZHBtn(
         .join(" "),
     [variant, size, className],
   );
-  return <button {...rest} className={cls} />;
-}
+  return <button {...rest} ref={ref} className={cls} />;
+});
 
 export function ZHFormActions(props: {
   onCancel?: () => void;

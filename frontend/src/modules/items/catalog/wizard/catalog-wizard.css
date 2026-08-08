@@ -1,27 +1,27 @@
-/* .wz-* ELIMINADO (Bloque 4D) — wizard multi-paso sin consumidores en src/**/*.tsx
-   (solo TreeEditor.tsx importa este archivo y solo usa las clases .te-*). */
+/* .wz-* ELIMINADO (Bloque 4D) — wizard multi-paso sin consumidores TSX en el
+   proyecto (solo TreeEditor.tsx importa este archivo y solo usa las clases .cat-te-*). */
 
 /* ── Tree Editor ─────────────────────────────────────────────────────── */
-.te-toolbar {
+.cat-te-toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
-.te-toolbar__toggle {
+.cat-te-toolbar__toggle {
   margin-left: auto;
   font-size: var(--text-body-md-size);
 }
 
-.te-tree {
+.cat-te-tree {
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
   overflow: hidden;
 }
 
-.te-row {
+.cat-te-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -29,14 +29,14 @@
   border-bottom: 1px solid var(--color-surface-container);
   transition: background 0.1s;
 }
-.te-row:hover {
+.cat-te-row:hover {
   background: var(--color-background);
 }
-.te-row--inactive {
+.cat-te-row--inactive {
   opacity: 0.55;
 }
 
-.te-expand {
+.cat-te-expand {
   border: none;
   background: none;
   cursor: pointer;
@@ -47,19 +47,19 @@
   width: 24px;
   flex-shrink: 0;
 }
-.te-expand .material-symbols-outlined {
+.cat-te-expand .material-symbols-outlined {
   font-size: 20px;
 }
-.te-expand--leaf {
+.cat-te-expand--leaf {
   width: 24px;
   visibility: hidden;
 }
 
-.te-icon {
+.cat-te-icon {
   font-size: 20px;
   flex-shrink: 0;
 }
-.te-label {
+.cat-te-label {
   flex: 1;
   font-size: var(--text-body-md-size);
   min-width: 0;
@@ -68,88 +68,88 @@
   white-space: nowrap;
 }
 
-.te-actions {
+.cat-te-actions {
   display: flex;
   gap: 2px;
   flex-shrink: 0;
   margin-left: auto;
 }
 
-.te-toolbar__count {
+.cat-te-toolbar__count {
   margin-left: auto;
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
-.te-level-badge {
+.cat-te-level-badge {
   font-size: var(--text-label-sm-size);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
 }
-.te-level-badge--family {
+.cat-te-level-badge--family {
   background: var(--color-primary-fixed);
   color: var(--color-primary);
 }
-.te-level-badge--category {
+.cat-te-level-badge--category {
   background: var(--color-secondary-fixed);
   color: var(--color-secondary);
 }
-.te-level-badge--subcategory {
+.cat-te-level-badge--subcategory {
   background: var(--color-tertiary-fixed);
   color: var(--color-tertiary);
 }
-.te-level-badge--custom {
+.cat-te-level-badge--custom {
   background: var(--color-surface-container);
   color: var(--color-text-secondary);
 }
 
-.te-row--depth-0 {
+.cat-te-row--depth-0 {
   padding-left: 16px;
 }
 
-.te-row--depth-1 {
+.cat-te-row--depth-1 {
   padding-left: 40px;
 }
 
-.te-row--depth-2 {
+.cat-te-row--depth-2 {
   padding-left: 64px;
 }
 
-.te-row--depth-3 {
+.cat-te-row--depth-3 {
   padding-left: 88px;
 }
 
-.te-row--depth-4 {
+.cat-te-row--depth-4 {
   padding-left: 112px;
 }
 
-.te-row--depth-5 {
+.cat-te-row--depth-5 {
   padding-left: 136px;
 }
 
-.te-row--depth-6 {
+.cat-te-row--depth-6 {
   padding-left: 160px;
 }
-.te-expand-icon {
+.cat-te-expand-icon {
   transition: transform var(--motion-duration-fast);
 }
 
-.te-expand-icon--expanded {
+.cat-te-expand-icon--expanded {
   transform: rotate(90deg);
 }
-.te-icon--family {
+.cat-te-icon--family {
   color: var(--color-primary);
 }
 
-.te-icon--category {
+.cat-te-icon--category {
   color: var(--color-info);
 }
 
-.te-icon--subcategory {
+.cat-te-icon--subcategory {
   color: var(--color-success);
 }
 
-.te-icon--custom {
+.cat-te-icon--custom {
   color: var(--color-text-secondary);
 }

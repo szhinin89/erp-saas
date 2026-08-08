@@ -129,14 +129,15 @@ export function SalesIssueModal({
         <ZHBtn type="button" variant="ghost" size="md" onClick={onCancel}>
           Cancelar
         </ZHBtn>
-        <button
+        <ZHBtn
           ref={confirmBtnRef}
           type="button"
-          className="zh-btn zh-btn--primary zh-btn--md"
+          variant="primary"
+          size="md"
           onClick={onConfirm}
         >
           Emitir Factura
-        </button>
+        </ZHBtn>
       </>
     ) : phase === "success" ? (
       <>

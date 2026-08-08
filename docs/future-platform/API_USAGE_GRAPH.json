@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T11:29:50.392Z",
+  "generatedAt": "2026-08-08T03:35:02.151Z",
   "summary": {
     "total": 95,
     "allowed": 95,
@@ -821,7 +821,7 @@
     {
       "endpoint": "/api/v1/setup/admin",
       "files": [
-        "frontend/src/pages/SetupPage.tsx"
+        "frontend/src/modules/auth/pages/SetupPage.tsx"
       ],
       "legacy": false,
       "allowed": true
@@ -829,7 +829,7 @@
     {
       "endpoint": "/api/v1/setup/status",
       "files": [
-        "frontend/src/pages/SetupPage.tsx"
+        "frontend/src/modules/auth/pages/SetupPage.tsx"
       ],
       "legacy": false,
       "allowed": true

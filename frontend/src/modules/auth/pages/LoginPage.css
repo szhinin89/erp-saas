@@ -203,12 +203,12 @@
 }
 
 /* SetupPage alignment */
-.setup-page-loading {
+.auth-setup-loading {
   text-align: center;
   padding-top: 80px;
 }
 
-.setup-page-message {
+.auth-setup-message {
   text-align: center;
 }
 

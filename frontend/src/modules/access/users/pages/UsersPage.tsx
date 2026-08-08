@@ -79,18 +79,18 @@ function MembershipRow(props: {
   );
 
   return (
-    <tr className={!row.isActive ? "usr-row--inactive" : ""}>
+    <tr className={!row.isActive ? "acc-row--inactive" : ""}>
       <td>
         <button
           type="button"
-          className="usr-user-cell usr-user-cell--link"
+          className="acc-user-cell acc-user-cell--link"
           onClick={() => onOpen(row)}
         >
-          <span className="usr-user-name">{row.fullName}</span>
-          <span className="usr-user-username">{row.username}</span>
+          <span className="acc-user-name">{row.fullName}</span>
+          <span className="acc-user-username">{row.username}</span>
         </button>
       </td>
-      <td className="usr-user-email">{row.email ?? "—"}</td>
+      <td className="acc-user-email">{row.email ?? "—"}</td>
       <td>{row.profileName ?? t("users.table.noProfile", "Sin perfil")}</td>
       <td>{row.role}</td>
       <td>
@@ -118,7 +118,7 @@ function MembershipRow(props: {
       </td>
       {canManage ? (
         <td>
-          <div className="usr-row-actions">
+          <div className="acc-row-actions">
             <ZHBtn
               variant="ghost"
               size="sm"

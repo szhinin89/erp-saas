@@ -1,19 +1,19 @@
-/* UsersPage — administración de CompanyUserMembership (prefijo usr-)
+/* UsersPage — administración de CompanyUserMembership (prefijo acc-)
    Base: .pg-*, .zh-modal*, .table, .zh-status, .zh-toggle, .subtle (globales) */
 
-.usr-row-actions {
+.acc-row-actions {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 
-.usr-user-cell {
+.acc-user-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.usr-user-cell--link {
+.acc-user-cell--link {
   background: none;
   border: none;
   padding: 0;
@@ -21,36 +21,36 @@
   cursor: pointer;
 }
 
-.usr-user-cell--link .usr-user-name {
+.acc-user-cell--link .acc-user-name {
   text-decoration: underline;
   text-decoration-color: transparent;
 }
 
-.usr-user-cell--link:hover .usr-user-name,
-.usr-user-cell--link:focus-visible .usr-user-name {
+.acc-user-cell--link:hover .acc-user-name,
+.acc-user-cell--link:focus-visible .acc-user-name {
   text-decoration-color: currentColor;
 }
 
-.usr-user-name {
+.acc-user-name {
   font-weight: 600;
   font-size: var(--text-body-md-size);
   color: var(--color-text-primary);
 }
 
-.usr-user-username {
+.acc-user-username {
   font-size: var(--text-body-sm-size);
   color: var(--color-text-secondary);
 }
 
-.usr-user-email {
+.acc-user-email {
   color: var(--color-text-secondary);
 }
 
-.usr-row--inactive {
+.acc-row--inactive {
   opacity: 0.55;
 }
 
-.usr-branches-list {
+.acc-branches-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);

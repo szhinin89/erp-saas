@@ -1,4 +1,4 @@
-﻿.branding-logo-preview {
+﻿.cfg-branding-logo-preview {
   max-width: 100%;
   max-height: 96px;
   object-fit: contain;
@@ -7,7 +7,7 @@
   padding: var(--space-2);
 }
 
-.branding-upload-progress {
+.cfg-branding-upload-progress {
   width: 100%;
   height: 6px;
   margin-top: var(--space-2);
@@ -17,22 +17,22 @@
   overflow: hidden;
 }
 
-.branding-upload-progress::-webkit-progress-bar {
+.cfg-branding-upload-progress::-webkit-progress-bar {
   background: var(--color-border);
   border-radius: inherit;
 }
 
-.branding-upload-progress::-webkit-progress-value {
+.cfg-branding-upload-progress::-webkit-progress-value {
   background: var(--color-primary);
   border-radius: inherit;
   transition: width var(--motion-duration-fast);
 }
 
-.branding-upload-progress::-moz-progress-bar {
+.cfg-branding-upload-progress::-moz-progress-bar {
   background: var(--color-primary);
   border-radius: inherit;
 }
 
-.branding-color-row {
+.cfg-branding-color-row {
   justify-content: flex-start;
 }

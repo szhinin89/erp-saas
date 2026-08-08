@@ -382,7 +382,7 @@ export function BrandingSettingsSection() {
                 <img
                   src={logoPreviewUrl ?? currentLogoUrl ?? undefined}
                   alt={t("settings.company.logo.title")}
-                  className="branding-logo-preview"
+                  className="cfg-branding-logo-preview"
                 />
               ) : (
                 <p className="zh-text-muted zh-text-xs">
@@ -410,7 +410,7 @@ export function BrandingSettingsSection() {
               )}
               {logoUploading && (
                 <progress
-                  className="branding-upload-progress"
+                  className="cfg-branding-upload-progress"
                   value={logoUploadProgress}
                   max={100}
                   aria-label={t("settings.company.logo.preview")}
@@ -453,7 +453,7 @@ export function BrandingSettingsSection() {
                 <img
                   src={altLogoPreviewUrl ?? currentAltLogoUrl ?? undefined}
                   alt={t("settings.company.branding.alternateLogo.title")}
-                  className="branding-logo-preview"
+                  className="cfg-branding-logo-preview"
                 />
               ) : (
                 <p className="zh-text-muted zh-text-xs">
@@ -481,7 +481,7 @@ export function BrandingSettingsSection() {
               )}
               {altLogoUploading && (
                 <progress
-                  className="branding-upload-progress"
+                  className="cfg-branding-upload-progress"
                   value={altLogoUploadProgress}
                   max={100}
                   aria-label={t("settings.company.branding.alternateLogo.title")}
@@ -525,7 +525,7 @@ export function BrandingSettingsSection() {
                 error={errors.primaryColor?.message}
               >
                 <div
-                  className="zh-flex-end zh-gap-8 branding-color-row"
+                  className="zh-flex-end zh-gap-8 cfg-branding-color-row"
                 >
                   <input
                     type="color"
@@ -547,7 +547,7 @@ export function BrandingSettingsSection() {
                 error={errors.secondaryColor?.message}
               >
                 <div
-                  className="zh-flex-end zh-gap-8 branding-color-row"
+                  className="zh-flex-end zh-gap-8 cfg-branding-color-row"
                 >
                   <input
                     type="color"

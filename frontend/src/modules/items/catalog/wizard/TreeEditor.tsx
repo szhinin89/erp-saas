@@ -36,10 +36,10 @@ const nodeSchema = z.object({
 type NodeFormValues = z.infer<typeof nodeSchema>;
 
 const LEVEL_ICONS: Record<string, { icon: string; className: string }> = {
-  Family: { icon: "account_tree", className: "te-icon--family" },
-  Category: { icon: "category", className: "te-icon--category" },
-  Subcategory: { icon: "label", className: "te-icon--subcategory" },
-  Custom: { icon: "extension", className: "te-icon--custom" },
+  Family: { icon: "account_tree", className: "cat-te-icon--family" },
+  Category: { icon: "category", className: "cat-te-icon--category" },
+  Subcategory: { icon: "label", className: "cat-te-icon--subcategory" },
+  Custom: { icon: "extension", className: "cat-te-icon--custom" },
 };
 
 type ModalTarget =
@@ -202,34 +202,34 @@ export function TreeEditorPage() {
     const levelInfo = LEVEL_ICONS[node.level] ?? LEVEL_ICONS.Custom;
 
     return (
-      <div key={node.id} className="te-node">
+      <div key={node.id} className="cat-te-node">
         <div
-          className={`te-row te-row--depth-${Math.min(depth, 6)} ${!node.isActive ? "te-row--inactive" : ""}`}
+          className={`cat-te-row cat-te-row--depth-${Math.min(depth, 6)} ${!node.isActive ? "cat-te-row--inactive" : ""}`}
         >
           {hasChildren ? (
             <button
               type="button"
-              className="te-expand"
+              className="cat-te-expand"
               onClick={() => toggle(node.id)}
             >
               <span
-                className={`material-symbols-outlined te-expand-icon ${expanded.has(node.id) ? "te-expand-icon--expanded" : ""}`}
+                className={`material-symbols-outlined cat-te-expand-icon ${expanded.has(node.id) ? "cat-te-expand-icon--expanded" : ""}`}
               >
                 chevron_right
               </span>
             </button>
           ) : (
-            <span className="te-expand te-expand--leaf" />
+            <span className="cat-te-expand cat-te-expand--leaf" />
           )}
           <span
-            className={`material-symbols-outlined te-icon ${levelInfo.className}`}
+            className={`material-symbols-outlined cat-te-icon ${levelInfo.className}`}
           >
             {levelInfo.icon}
           </span>
           <Badge label={node.code} variant="neutral" className="mono" />
-          <strong className="te-label">{node.name}</strong>
+          <strong className="cat-te-label">{node.name}</strong>
           <span
-            className={`te-level-badge te-level-badge--${node.level.toLowerCase()}`}
+            className={`cat-te-level-badge cat-te-level-badge--${node.level.toLowerCase()}`}
           >
             {node.level}
           </span>
@@ -242,7 +242,7 @@ export function TreeEditorPage() {
           >
             {node.isActive ? "Activo" : "Inactivo"}
           </span>
-          <div className="te-actions">
+          <div className="cat-te-actions">
             <ZHBtn
               type="button"
               variant="ghost"
@@ -297,7 +297,7 @@ export function TreeEditorPage() {
     <ErpPageTemplate kicker="Catalogo" title="Arbol de Catalogo">
       {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
 
-      <div className="te-toolbar">
+      <div className="cat-te-toolbar">
         <ZHBtn
           variant="primary"
           size="sm"
@@ -315,7 +315,7 @@ export function TreeEditorPage() {
         >
           <span className="material-symbols-outlined">refresh</span> Actualizar
         </ZHBtn>
-        <label className="zh-checkbox-label te-toolbar__toggle">
+        <label className="zh-checkbox-label cat-te-toolbar__toggle">
           <input
             type="checkbox"
             checked={showInactive}
@@ -323,7 +323,7 @@ export function TreeEditorPage() {
           />
           <span>Mostrar inactivos</span>
         </label>
-        <span className="te-toolbar__count">{nodes.length} nodos</span>
+        <span className="cat-te-toolbar__count">{nodes.length} nodos</span>
       </div>
 
       {loading ? (
@@ -331,7 +331,7 @@ export function TreeEditorPage() {
       ) : roots.length === 0 ? (
         <EmptyState message="No hay nodos de catalogo. Crea la primera familia." />
       ) : (
-        <div className="te-tree">
+        <div className="cat-te-tree">
           {roots.map((node) => renderNode(node, 0))}
         </div>
       )}

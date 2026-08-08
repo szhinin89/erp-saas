@@ -3,9 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { apiPost, apiGet } from "../modules/lib/apiEnvelope";
-import { formatApiRequestError } from "../modules/lib/apiError";
-import "../modules/auth/pages/LoginPage.css";
+import { apiPost, apiGet } from "../../lib/apiEnvelope";
+import { formatApiRequestError } from "../../lib/apiError";
+import "./LoginPage.css";
 
 const setupSchema = z.object({
   username: z
@@ -95,7 +95,7 @@ export function SetupPage() {
     return (
       <div className="zh-auth-bg">
         <div
-          className="zh-auth-wrapper setup-page-loading"
+          className="zh-auth-wrapper auth-setup-loading"
         >
           Verificando estado del sistema…
         </div>
@@ -113,7 +113,7 @@ export function SetupPage() {
           </div>
           <div className="zh-auth-card zh-auth-card--flush">
             <div className="zh-auth-card-body">
-              <p className="setup-page-message">
+              <p className="auth-setup-message">
                 El administrador inicial ya existe.{" "}
                 <button
                   type="button"

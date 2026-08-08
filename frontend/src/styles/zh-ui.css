@@ -2535,15 +2535,15 @@ input[type="date"] {
   align-items: center;
   margin-right: var(--space-2);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-xs);
+  font-weight: var(--text-label-sm-weight);
   color: var(--color-primary);
 }
 
 .zh-picker__result-desc {
   margin-top: var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
   line-height: var(--line-height-snug);
 }
 
@@ -2552,18 +2552,18 @@ input[type="date"] {
   align-items: center;
   gap: var(--space-1);
   margin-left: var(--space-3);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
   white-space: nowrap;
 }
 
 .zh-picker__result-extra-label {
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--text-label-sm-weight);
 }
 
 .zh-picker__result-extra-value {
   font-family: var(--font-family-mono);
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 /* .zh-picker__create-btn ELIMINADO (Bloque 13H) — migrado a
    <ZHBtn variant="primary" size="sm"> en CustomerPicker.tsx. */
