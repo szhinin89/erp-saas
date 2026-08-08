@@ -360,16 +360,6 @@ export type SupplierClassificationBody = {
 };
 
 // ── Constantes de validación (espejo de SupplierRoleConfig + SupplierClassificationConfig C#) ──
-export const SRI_PAYMENT_METHOD_CODES = [
-  "01",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-] as const;
 export const SUPPLIER_CATEGORIES = [
   "Manufacturer",
   "Distributor",

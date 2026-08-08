@@ -25,7 +25,6 @@ import type {
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import {
-  SRI_PAYMENT_METHOD_CODES,
   SUPPLIER_CATEGORIES,
   SUPPLIER_GOOD_TYPES,
   SUPPLIER_RATINGS,
@@ -36,6 +35,7 @@ import {
 import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
+import { useSriPaymentMethods } from "../api/useSriPaymentMethods";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
 
@@ -87,6 +87,11 @@ function SupplierConfigModal({
     [],
   );
   const { options: supplierTypeOptions } = useSriSupplierTypes();
+  const {
+    options: paymentMethodOptions,
+    loading: loadingPaymentMethods,
+    error: paymentMethodsError,
+  } = useSriPaymentMethods();
 
   useEffect(() => {
     paymentTermService
@@ -176,18 +181,25 @@ function SupplierConfigModal({
               </div>
             )}
           </ZHField>
-          <ZHField label="Método de pago SRI">
+          <ZHField
+            label="Método de pago SRI"
+            fieldError={paymentMethodsError ?? undefined}
+          >
             <select
               value={paymentMethodCode}
               onChange={(e) => setPaymentMethodCode(e.target.value)}
-              disabled={saving}
+              disabled={saving || loadingPaymentMethods}
             >
               <option value="">— Sin preferencia —</option>
-              {SRI_PAYMENT_METHOD_CODES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {loadingPaymentMethods ? (
+                <option value="">Cargando…</option>
+              ) : (
+                paymentMethodOptions.map((o) => (
+                  <option key={o.code} value={o.code}>
+                    {o.code} — {o.name}
+                  </option>
+                ))
+              )}
             </select>
           </ZHField>
           <ZHField label="Tipo de Proveedor">

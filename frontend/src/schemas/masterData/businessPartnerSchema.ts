@@ -1,11 +1,20 @@
 import { z } from "zod";
 import { validateIdentification } from "../../lib/validators/documentValidators";
-export const SRI_RUC = "04";
-export const SRI_CI = "05";
-const SRI_PASSPORT = "06";
-const SRI_CONSUMIDOR = "07";
-const SRI_EXTERIOR = "08";
-const SRI_PLACA = "09";
+import {
+  SRI_ID_TYPE_RUC,
+  SRI_ID_TYPE_CEDULA,
+  SRI_ID_TYPE_PASSPORT,
+  SRI_ID_TYPE_CONSUMIDOR_FINAL,
+  SRI_ID_TYPE_EXTERIOR,
+  SRI_ID_TYPE_PLACA,
+} from "../../modules/masterData/constants/sriIdentificationCodes";
+
+export const SRI_RUC = SRI_ID_TYPE_RUC;
+export const SRI_CI = SRI_ID_TYPE_CEDULA;
+const SRI_PASSPORT = SRI_ID_TYPE_PASSPORT;
+const SRI_CONSUMIDOR = SRI_ID_TYPE_CONSUMIDOR_FINAL;
+const SRI_EXTERIOR = SRI_ID_TYPE_EXTERIOR;
+const SRI_PLACA = SRI_ID_TYPE_PLACA;
 
 const VALID_SRI_ID_TYPES = [
   SRI_RUC,

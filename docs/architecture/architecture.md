@@ -409,6 +409,26 @@ El sistema tiene **3 scopes** con responsabilidades exclusivas. Ningún scope pu
 | **Caja** | `BankAccount`, `PettyCash`, `BankStatement` |
 | **Fiscal** | `SriSettings`, `DocumentSequence`, `DigitalCertificate` |
 
+## Catálogos y datos configurables (SSOT dinámico)
+
+> Origen: CLEAN-01 (auditoría de enums/hardcodes/catálogos estáticos, 2026-08-08). Aplica a todo dato fiscal (SRI), operativo, configurable, o dependiente de tenant/empresa.
+
+- Todo dato fiscal, operativo, configurable, dependiente de tenant/empresa, o que pueda cambiar por normativa/proceso, debe vivir en BD/configuración y exponerse mediante servicio/API — nunca como enum o array estático en código.
+- El frontend debe consumir esos datos por hooks/facades/services (p. ej. `sriLookupFacade`, `useSriIdTypes`). No debe duplicar arrays estáticos de códigos si existe endpoint backend.
+- Los enums (backend o frontend) solo se permiten para: estados internos de máquina; flags técnicos; resultados computados; conceptos invariantes no administrables; lógica interna que no cambia por tenant/empresa/normativa.
+- Antes de crear un enum nuevo, justificar explícitamente por qué no es un catálogo persistido.
+- Antes de crear un array estático en frontend, verificar si ya existe un endpoint/catálogo backend equivalente (auditoría de reutilización, igual que con componentes UI).
+- No usar fallback hardcodeado para catálogos fiscales/SRI ante error de carga, salvo excepción documentada — mostrar estado de error/vacío en su lugar.
+- Toda excepción debe llevar comentario explícito en el código: motivo, fuente normativa/técnica, y por qué no es configurable.
+- **Patrón obligatorio:** BD/configuración → servicio backend → API → facade/hook frontend → UI.
+- **Patrón prohibido:** enum backend + array frontend + literal repetido en múltiples archivos.
+
+**Ejemplos — debe ir a BD/servicio:** métodos de pago SRI, tipos de documento SRI, tipos de identificación SRI, régimen tributario, IVA/ICE/retenciones, categorías configurables, motivos operativos, cualquier tipo administrable por el tenant.
+
+**Ejemplos — puede ser enum:** `Draft`/`Authorized`/`Cancelled`, `Pending`/`Processing`/`Failed`, `AuditSource`, `MediaType`, resultados internos de cómputo, flags técnicos no configurables.
+
+Catálogos SRI ya persistidos (schema `global`, ver tabla arriba): `sri_payment_method`, `sri_id_type`, `sri_doc_type`, `sri_uom`, `sri_vat_rate`, `sri_ice_rate`, `sri_retention_code`, `sri_tax_support`, `sri_tax_regime`, `sri_supplier_type`. Constantes frontend que repliquen códigos de estos catálogos (p. ej. para validación Zod síncrona) son válidas solo como espejo de validación — nunca como fuente para poblar selects/listas (eso siempre es API).
+
 ## REGLA FUNDAMENTAL: 1 CONCEPTO = 1 IMPLEMENTACIÓN
 
 ```
