@@ -4,8 +4,7 @@ import type {
   UseFormRegister,
   UseFormSetValue,
 } from "react-hook-form";
-import { Link } from "react-router-dom";
-import { ZHField } from "../../../../components/zh/ZHForm";
+import { ZHField, ZHLinkButton } from "../../../../components/zh/ZHForm";
 import {
   ZHPageNotice,
   type ZHPageNoticeVariant,
@@ -237,15 +236,16 @@ export function UserGeneralSection({
       ) : null}
 
       {alreadyActiveMembershipId ? (
-        <Link
-          className="zh-btn zh-btn--secondary zh-btn--md"
+        <ZHLinkButton
+          variant="secondary"
+          size="md"
           to={`/access/users/${alreadyActiveMembershipId}`}
         >
           {t(
             "users.config.goToExisting",
             "Ir a la configuración de este usuario",
           )}
-        </Link>
+        </ZHLinkButton>
       ) : null}
 
       {blockError ? (

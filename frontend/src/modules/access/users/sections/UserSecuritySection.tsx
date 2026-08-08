@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ZHField, ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHField, ZHBtn, ZHLinkButton } from "../../../../components/zh/ZHForm";
 import { Badge } from "../../../../components/PageShell";
 import { useI18n } from "../../../../i18n/i18n";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
@@ -45,12 +44,12 @@ export function UserSecuritySection({ membership }: Props) {
       </ZHField>
 
       {membership.profileId ? (
-        <Link className="zh-btn zh-btn--ghost zh-btn--md" to="/admin/roles">
+        <ZHLinkButton variant="ghost" size="md" to="/admin/roles">
           {t(
             "users.config.security.viewProfilePermissions",
             "Ver permisos de este perfil",
           )}
-        </Link>
+        </ZHLinkButton>
       ) : null}
 
       {canAssignTemporaryPassword ? (

@@ -1,6 +1,7 @@
 // CA1711: 'AuditedPermission' suffix matches business domain semantics.
 #pragma warning disable CA1711
 using System.Text.Json.Serialization;
+using ERP.Application.Access;
 using ERP.Application.Common;
 using ERP.Domain.Access.Interfaces;
 using MediatR;
@@ -31,6 +32,11 @@ public enum PermissionAuditStatus
     UnknownPrefix = 2,
 }
 
+/// <summary>
+/// ADMIN READ MODEL — auditoría de permisos asignados a un perfil (efectivo vs. bloqueado por plan).
+/// No usar para autorización runtime; ver <see cref="ERP.Application.Access.Caching.IEffectivePermissionKeysProvider"/>.
+/// </summary>
+[AdminReadModel("Auditoría de permisos asignados a un perfil (efectivo vs. bloqueado por plan).")]
 public sealed class GetProfilePermissionAuditHandler
     : IRequestHandler<GetProfilePermissionAuditQuery, Result<ProfilePermissionAuditDto>>
 {

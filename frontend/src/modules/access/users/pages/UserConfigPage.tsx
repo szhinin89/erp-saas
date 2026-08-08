@@ -6,12 +6,11 @@ import {
   useParams,
   useSearchParams,
   useLocation,
-  Link,
 } from "react-router-dom";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage, LoadingState } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
-import { ZHFormActions } from "../../../../components/zh/ZHForm";
+import { ZHFormActions, ZHLinkButton } from "../../../../components/zh/ZHForm";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAuthStore } from "../../../../store/authStore";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
@@ -370,9 +369,9 @@ export function UserConfigPage() {
           message={t("common.errorPrefix")}
           detail={loadError}
         />
-        <Link to="/access/users" className="zh-btn zh-btn--ghost">
+        <ZHLinkButton to="/access/users" variant="ghost">
           ← {t("users.config.backToList", "Volver a Usuarios")}
-        </Link>
+        </ZHLinkButton>
       </ErpPageTemplate>
     );
   }

@@ -1,5 +1,6 @@
 import { ZHBrandMark } from "./ZHBrandMark";
 import React, { useMemo, useState } from "react";
+import { Link, type LinkProps } from "react-router-dom";
 import { useI18n } from "../../i18n/i18n";
 
 export function ZHFormHeader(props: {
@@ -322,6 +323,30 @@ export const ZHBtn = React.forwardRef<
     [variant, size, className],
   );
   return <button {...rest} ref={ref} className={cls} />;
+});
+
+/**
+ * <Link> de navegación estilizado como botón ZH — para links que deben verse como
+ * ZHBtn pero no pueden serlo (ZHBtn solo renderiza <button>, nunca navega).
+ * Mismo variant/size que ZHBtn; misma clase visual `zh-btn`, calculada (nunca literal
+ * en el JSX) para no disparar F-04-btn.
+ */
+export const ZHLinkButton = React.forwardRef<
+  HTMLAnchorElement,
+  LinkProps & {
+    variant?: ZHBtnVariant;
+    size?: ZHBtnSize;
+  }
+>(function ZHLinkButton(props, ref) {
+  const { variant = "secondary", size, className, ...rest } = props;
+  const cls = useMemo(
+    () =>
+      ["zh-btn", `zh-btn--${variant}`, size ? `zh-btn--${size}` : "", className]
+        .filter(Boolean)
+        .join(" "),
+    [variant, size, className],
+  );
+  return <Link {...rest} ref={ref} className={cls} />;
 });
 
 export function ZHFormActions(props: {
