@@ -26,7 +26,13 @@ services:
       - "5435:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zhin@2024}
+      # Sin default: cualquier compose que incluya este archivo (dev, prod) debe
+      # proveer POSTGRES_PASSWORD. Docker Compose no permite override de un
+      # `services:` incluido vía `include:` (genera conflicto, no merge) — por eso
+      # el default de conveniencia para dev vive en el .env raíz del repo
+      # (gitignored; ver .env.example), nunca aquí. Así ningún compose *.prod.yml
+      # puede heredar silenciosamente un password débil.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.example to .env for local dev, or set it in your environment}
       POSTGRES_DB: dberpsaas
     volumes:
       - erp_saas_pgdata:/var/lib/postgresql/data

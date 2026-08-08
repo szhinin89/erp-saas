@@ -1,4 +1,17 @@
 -- =============================================================================
+-- DESHABILITADO — CLEAN-01B (2026-08-08). NO EJECUTAR contra ninguna base real.
+-- =============================================================================
+-- Renombrado a .disabled para bloquear ejecución accidental. No hay ningún
+-- config flag (Documents:UseUnifiedSchema no existe en el código) ni entidad EF
+-- que consuma el esquema `sales_document`/`purchase_document`/`expense_document`
+-- que este script crea — no está wireado a la aplicación actual.
+-- Pendiente decisión de dominio: archivar definitivamente o retomar el diseño.
+-- Ver CLEAN-01A (inventario) y CLEAN-01B (config/infra) para contexto completo.
+-- Convención vigente del repo: cambios estructurales van por EF migrations
+-- (`dotnet ef migrations add`), nunca SQL manual — ver backend/CLAUDE.md.
+-- =============================================================================
+
+-- =============================================================================
 -- ERP SaaS — Unificación de documentos (VENTAS / COMPRAS / GASTOS)
 -- =============================================================================
 -- Objetivo: reemplazar el modelo duplicado (capa operativa + capa electrónica)

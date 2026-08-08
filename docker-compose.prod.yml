@@ -1,6 +1,9 @@
 # Plantilla producción — NO usar tal cual en local.
 # Ajustar secrets, redes, volúmenes y réplicas antes de desplegar.
 # Ver docs/deployment/README.md e infrastructure/deployment/
+#
+# POSTGRES_PASSWORD es obligatorio (sin default): compose.base.yml falla el arranque
+# si no se exporta la variable. Nunca fijar un valor real en este archivo.
 
 include:
   - path: infrastructure/docker/compose.base.yml

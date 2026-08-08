@@ -43,6 +43,42 @@ if (!string.IsNullOrWhiteSpace(dbFromEnv))
     ]);
 }
 
+// Production guard: falla rápido si sigue el placeholder de appsettings.json en vez
+// de un valor real inyectado por env/secret store. Nunca loggear el valor, solo el
+// nombre de la variable faltante.
+if (builder.Environment.IsProduction())
+{
+    var jwtSecret = builder.Configuration["Jwt:SecretKey"];
+    if (
+        string.IsNullOrWhiteSpace(jwtSecret)
+        || jwtSecret == "CHANGE_ME_USE_ENV_VAR_OR_USER_SECRETS"
+    )
+    {
+        throw new InvalidOperationException(
+            "Production requires Jwt:SecretKey configured via environment variable or secret store."
+        );
+    }
+
+    var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (
+        string.IsNullOrWhiteSpace(defaultConnection)
+        || defaultConnection.Contains("Password=CHANGE_ME", StringComparison.Ordinal)
+    )
+    {
+        throw new InvalidOperationException(
+            "Production requires ConnectionStrings:DefaultConnection configured via environment variable or secret store."
+        );
+    }
+
+    var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+    if (corsOrigins is null || corsOrigins.Length == 0)
+    {
+        throw new InvalidOperationException(
+            "Production requires Cors:AllowedOrigins configured — no silent fallback to localhost."
+        );
+    }
+}
+
 builder.Host.UseSerilog(
     (context, _, configuration) =>
     {
@@ -70,6 +106,8 @@ builder.Services.AddCors(options =>
         "Frontend",
         policy =>
         {
+            // Fallback solo alcanzable en Development/Testing — el guard de Production
+            // arriba ya lanzó si Cors:AllowedOrigins está vacío/ausente.
             var origins =
                 builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
                 ?? ["http://localhost:5173"];
