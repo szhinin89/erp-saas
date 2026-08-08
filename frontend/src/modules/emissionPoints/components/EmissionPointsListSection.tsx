@@ -59,14 +59,14 @@ export function EmissionPointsListSection({
             layout="horizontal"
             icon="bolt"
             tone="primary"
-            label="ElectrÃ³nicos"
+            label="Electrónicos"
             value={String(totals.electronic)}
           />
           <ReportKpiCard
             layout="horizontal"
             icon="print"
             tone="secondary"
-            label="FÃ­sicos"
+            label="Físicos"
             value={String(totals.physical)}
           />
           <ReportKpiCard
@@ -86,7 +86,7 @@ export function EmissionPointsListSection({
               point_of_sale
             </span>
             <span className="pg-section-label">
-              Puntos de EmisiÃ³n Registrados
+              Puntos de Emisión Registrados
             </span>
           </div>
           <div className="br-actions-tight">
@@ -119,7 +119,7 @@ export function EmissionPointsListSection({
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
               <ZhTextInput
-                placeholder="Buscar por cÃ³digo, nombre o establecimiento..."
+                placeholder="Buscar por código, nombre o establecimiento..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -150,10 +150,10 @@ export function EmissionPointsListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>CÃ³digo</th>
+                  <th>Código</th>
                   <th>Nombre</th>
                   <th>Sucursal</th>
-                  <th>Tipo de emisiÃ³n</th>
+                  <th>Tipo de emisión</th>
                   <th>Estado</th>
                   <th>Fecha</th>
                   {canUpdate || canDelete ? (
@@ -184,7 +184,7 @@ export function EmissionPointsListSection({
                     </td>
                     <td>
                       <div className="br-list-name">
-                        {row.name ?? <span className="subtle">â€”</span>}
+                        {row.name ?? <span className="subtle">—</span>}
                       </div>
                       {row.isDefault && (
                         <div className="br-list-sub">
@@ -210,8 +210,8 @@ export function EmissionPointsListSection({
                         size="md"
                         label={
                           row.emissionType === EMISSION_TYPE_ELECTRONIC
-                            ? "ElectrÃ³nico"
-                            : "FÃ­sico"
+                            ? "Electrónico"
+                            : "Físico"
                         }
                       />
                     </td>
@@ -274,11 +274,11 @@ export function EmissionPointsListSection({
 
         <div className="pg-table-footer">
           <p className="subtle br-list-footer-note">
-            {filtered.length} puntos de emisiÃ³n
+            {filtered.length} puntos de emisión
           </p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Ãšltima carga: {new Date().toTimeString().slice(0, 8)}
+              Última carga: {new Date().toTimeString().slice(0, 8)}
             </p>
           )}
         </div>

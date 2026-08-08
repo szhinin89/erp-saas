@@ -1,8 +1,8 @@
-/* LoginPage â€” ZH Technologies ERP */
-/* Background/wrapper: zh-auth-bg, zh-auth-wrapper (zh-ui.css Â§20) */
-/* Field inputs: zh-auth-field, zh-auth-input, etc. (zh-ui.css Â§24) */
+/* LoginPage — ZH Technologies ERP */
+/* Background/wrapper: zh-auth-bg, zh-auth-wrapper (zh-ui.css §20) */
+/* Field inputs: zh-auth-field, zh-auth-input, etc. (zh-ui.css §24) */
 
-/* â”€â”€ Brand (horizontal row layout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Brand (horizontal row layout) ─────────────────────────── */
 .lp-brand {
   display: flex;
   flex-direction: column;
@@ -48,7 +48,7 @@
   margin: 0;
 }
 
-/* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Card ────────────────────────────────────────────────────── */
 /* .lp-card/.lp-card-body ELIMINADOS (Bloque 5A) — consolidados en
    .zh-auth-card.zh-auth-card--flush + .zh-auth-card-body (zh-ui.css). */
 
@@ -57,7 +57,7 @@
    ningún .tsx (confirmado: ni LoginPage.tsx ni ningún otro archivo lo
    renderiza; sin construcción dinámica de clase). CSS muerto, no duplicado. */
 
-/* â”€â”€ Auth error inline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Auth error inline ───────────────────────────────────────── */
 .lp-error {
   display: flex;
   align-items: center;
@@ -74,7 +74,7 @@
   flex-shrink: 0;
 }
 
-/* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Form ────────────────────────────────────────────────────── */
 /* .lp-form/.lp-field-header/.lp-forgot ELIMINADOS (Bloque 5A) — consolidados
    en .zh-auth-form / .zh-auth-field-header / .zh-auth-link (zh-ui.css). */
 
@@ -123,7 +123,7 @@
 
 /* .lp-submit ELIMINADO (Bloque 5A) — consolidado en .zh-auth-submit (zh-ui.css). */
 
-/* â”€â”€ Card footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Card footer ─────────────────────────────────────────────── */
 .lp-card-footer {
   padding: var(--space-4) var(--space-8);
   background: var(--color-surface-container-low);
@@ -148,7 +148,7 @@
 
 /* .lp-footer-link ELIMINADO (Bloque 5A) — consolidado en .zh-auth-footer-link (zh-ui.css). */
 
-/* â”€â”€ Security badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Security badges ─────────────────────────────────────────── */
 .lp-security {
   display: flex;
   align-items: center;
@@ -192,7 +192,7 @@
 /* .lp-submit--loading/.lp-submit-spinner ELIMINADOS (Bloque 5A) — consolidados
    en .zh-auth-submit--loading / .zh-auth-submit-spinner (zh-ui.css). */
 
-/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .lp-card-footer {
     padding: var(--space-4) var(--space-6);

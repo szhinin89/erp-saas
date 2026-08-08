@@ -83,7 +83,7 @@ interface PromptProps {
   label: string;
   placeholder?: string;
   type?: "text" | "number" | "date" | "datetime-local" | "decimal";
-  /** Solo aplica con type="decimal" â€” cantidad de decimales permitidos (ej. getDecimalConfig().percentage). */
+  /** Solo aplica con type="decimal" — cantidad de decimales permitidos (ej. getDecimalConfig().percentage). */
   decimals?: number;
   positiveOnly?: boolean;
   defaultValue?: string;

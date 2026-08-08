@@ -38,7 +38,7 @@ export function CarriersPage() {
   const canCreate = canShow("logistics.carriers.create");
   const canEdit = canShow("logistics.carriers.update") || canCreate;
 
-  /* â”€â”€ State â”€â”€ */
+  /* ── State ── */
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "inactive"
@@ -46,7 +46,7 @@ export function CarriersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  /* â”€â”€ Data â”€â”€ */
+  /* ── Data ── */
   const {
     carriers,
     loading,
@@ -70,7 +70,7 @@ export function CarriersPage() {
     defaultValues: defaultCarrierValues,
   });
 
-  /* â”€â”€ Derived â”€â”€ */
+  /* ── Derived ── */
   const filtered = useMemo(() => {
     let list = carriers;
     if (statusFilter === "active") list = list.filter((c) => c.isActive);
@@ -95,7 +95,7 @@ export function CarriersPage() {
     [carriers],
   );
 
-  /* â”€â”€ Modal helpers â”€â”€ */
+  /* ── Modal helpers ── */
   const openCreate = () => {
     setEditingId(null);
     reset(defaultCarrierValues);
@@ -161,7 +161,7 @@ export function CarriersPage() {
         ) : undefined
       }
     >
-      {/* â”€â”€ Errors â”€â”€ */}
+      {/* ── Errors ── */}
       {error && (
         <ZHPageNotice
           variant="error"
@@ -177,7 +177,7 @@ export function CarriersPage() {
         />
       )}
 
-      {/* â”€â”€ KPI cards â”€â”€ */}
+      {/* ── KPI cards ── */}
       <div className="pg-kpis">
         <ReportKpiCard
           layout="horizontal"
@@ -202,7 +202,7 @@ export function CarriersPage() {
         />
       </div>
 
-      {/* â”€â”€ Table section â”€â”€ */}
+      {/* ── Table section ── */}
       <div className="pg-section">
         {/* Filter bar */}
         <div className="pg-table-controls">
@@ -277,8 +277,8 @@ export function CarriersPage() {
                         className="mono"
                       />
                     </td>
-                    <td className="subtle">{carrier.phone ?? "â€”"}</td>
-                    <td className="subtle">{carrier.email ?? "â€”"}</td>
+                    <td className="subtle">{carrier.phone ?? "—"}</td>
+                    <td className="subtle">{carrier.email ?? "—"}</td>
                     <td>
                       <span
                         className={
@@ -332,7 +332,7 @@ export function CarriersPage() {
             ? t("carriers.modal.editTitle")
             : t("carriers.modal.createTitle")
         }
-        subtitle={t("carriers.subtitle", "GestiÃ³n de transportistas.")}
+        subtitle={t("carriers.subtitle", "Gestión de transportistas.")}
         footer={
           <div className="pg-actions-buttons">
             <ZHBtn variant="ghost" size="md" type="button" onClick={closeModal}>

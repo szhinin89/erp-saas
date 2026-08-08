@@ -94,7 +94,7 @@ export function WarehouseListadoTab({
 
   return (
     <div className="bod-listado prd-fadein">
-      {/* â”€â”€ Search bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Search bar ─────────────────────────────────────── */}
       <div className="prd-search-wrap">
         <div className="prd-search-box">
           <span
@@ -108,7 +108,7 @@ export function WarehouseListadoTab({
             className="prd-search-input"
             placeholder={t(
               "warehouses.search.placeholder",
-              "Buscar por nombre, cÃ³digo o encargado...",
+              "Buscar por nombre, código o encargado...",
             )}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -121,7 +121,7 @@ export function WarehouseListadoTab({
               type="button"
               className="prd-search-clear"
               onClick={handleClear}
-              aria-label={t("warehouses.search.clear", "Limpiar bÃºsqueda")}
+              aria-label={t("warehouses.search.clear", "Limpiar búsqueda")}
             >
               <span className="material-symbols-outlined zh-icon-lg">
                 close
@@ -143,7 +143,7 @@ export function WarehouseListadoTab({
         </div>
       </div>
 
-      {/* â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Content ────────────────────────────────────────── */}
       {loading ? (
         <div className="pg-pad-40">
           <LoadingState />
@@ -178,7 +178,7 @@ export function WarehouseListadoTab({
             <p className="prd-empty-search__desc">
               {t(
                 "warehouses.search.noWarehouses",
-                "No hay bodegas registradas aÃºn.",
+                "No hay bodegas registradas aún.",
               )}
             </p>
           )}
@@ -189,7 +189,7 @@ export function WarehouseListadoTab({
             <table className="table">
               <thead>
                 <tr>
-                  <th>{t("warehouses.table.code", "CÃ³digo")}</th>
+                  <th>{t("warehouses.table.code", "Código")}</th>
                   <th>{t("warehouses.table.name", "Bodega")}</th>
                   <th>{t("warehouses.table.branch", "Sucursal")}</th>
                   <th>{t("warehouses.table.manager", "Encargado")}</th>
@@ -210,7 +210,7 @@ export function WarehouseListadoTab({
                   >
                     <td>
                       <Badge
-                        label={row.code ?? "â€”"}
+                        label={row.code ?? "—"}
                         variant="neutral"
                         size="md"
                         className="mono"
@@ -231,16 +231,16 @@ export function WarehouseListadoTab({
                       {row.manager ? (
                         highlight(row.manager, query)
                       ) : (
-                        <span className="subtle">â€”</span>
+                        <span className="subtle">—</span>
                       )}
                     </td>
                     <td>
                       {row.capacity ? (
                         <span className="mono subtle">
-                          {row.capacity.toFixed(2)} mÂ³
+                          {row.capacity.toFixed(2)} m³
                         </span>
                       ) : (
-                        <span className="subtle">â€”</span>
+                        <span className="subtle">—</span>
                       )}
                     </td>
                     <td>
@@ -303,14 +303,14 @@ export function WarehouseListadoTab({
               {filtered.length} {t("warehouses.table.results", "bodegas")}
             </p>
             <p className="pg-table-timestamp">
-              {t("warehouses.list.lastLoad", "Ãšltima carga:")}{" "}
+              {t("warehouses.list.lastLoad", "Última carga:")}{" "}
               {new Date().toTimeString().slice(0, 8)}
             </p>
           </div>
         </>
       )}
 
-      {/* â”€â”€ Confirm modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Confirm modal ──────────────────────────────────── */}
       <ZHConfirmModal
         open={!!confirmRow}
         title={
@@ -323,20 +323,20 @@ export function WarehouseListadoTab({
             <>
               {t(
                 "warehouses.toggle.disable.warning",
-                "DejarÃ¡ de estar disponible para operaciones de inventario.",
+                "Dejará de estar disponible para operaciones de inventario.",
               )}{" "}
               <strong>{confirmRow?.name}</strong>
             </>
           ) : (
             <>
-              Â¿Deseas activar la bodega <strong>{confirmRow?.name}</strong>?
+              ¿Deseas activar la bodega <strong>{confirmRow?.name}</strong>?
             </>
           )
         }
         confirmLabel={
           confirmRow?.isActive
-            ? t("warehouses.toggle.disable.confirm", "SÃ­, desactivar")
-            : t("warehouses.toggle.activate.confirm", "SÃ­, activar")
+            ? t("warehouses.toggle.disable.confirm", "Sí, desactivar")
+            : t("warehouses.toggle.activate.confirm", "Sí, activar")
         }
         cancelLabel={t("common.cancel", "Cancelar")}
         variant={confirmRow?.isActive ? "danger" : "default"}

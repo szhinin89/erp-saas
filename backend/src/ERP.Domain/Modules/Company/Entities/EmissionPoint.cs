@@ -18,7 +18,7 @@ public sealed class EmissionPoint : MasterEntity, ITenantScopedEntity, ICompanyS
     public string? Name { get; private set; }
     public EmissionType EmissionType { get; private set; }
 
-    /// <summary>Punto de emisi�n predeterminado del establecimiento; usado cuando el comando no especifica uno.</summary>
+    /// <summary>Punto de emisión predeterminado del establecimiento; usado cuando el comando no especifica uno.</summary>
     public bool IsDefault { get; private set; }
 
     // EF navigation
@@ -41,7 +41,7 @@ public sealed class EmissionPoint : MasterEntity, ITenantScopedEntity, ICompanyS
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException(
-                "El c�digo de punto de emisi�n es obligatorio.",
+                "El código de punto de emisión es obligatorio.",
                 nameof(code)
             );
 

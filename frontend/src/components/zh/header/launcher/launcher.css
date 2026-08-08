@@ -1,16 +1,16 @@
 ﻿/* ============================================================
-   App Launcher â€” jerarquÃ­a visual de niveles
-   Nivel 0 Favoritos Â· Nivel 1 Buscador Â· Nivel 2 MÃ³dulos Â·
-   Nivel 3 CategorÃ­as Â· Nivel 4 Formularios
+   App Launcher — jerarquía visual de niveles
+   Nivel 0 Favoritos · Nivel 1 Buscador · Nivel 2 Módulos ·
+   Nivel 3 Categorías · Nivel 4 Formularios
    Usa tokens de design-tokens.css. No define colores nuevos.
    ============================================================ */
 
-/* â”€â”€ Nivel 0 â€” Favoritos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Nivel 0 — Favoritos ──────────────────────────────────── */
 .zh-launcher__favorites {
   border-bottom: 1px solid var(--color-border-light);
 }
 
-/* El header completo es el toggle del acordeÃ³n */
+/* El header completo es el toggle del acordeón */
 .zh-launcher__favoritesHeader {
   display: flex;
   align-items: center;
@@ -69,7 +69,7 @@
   transform: rotate(180deg);
 }
 
-/* AcordeÃ³n: max-height transition */
+/* Acordeón: max-height transition */
 .zh-launcher__favoritesContent {
   max-height: 0;
   overflow: hidden;
@@ -116,7 +116,7 @@
   text-decoration: underline;
 }
 
-/* â”€â”€ Nivel 2 â€” MÃ³dulos del ERP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Nivel 2 — Módulos del ERP ───────────────────────────── */
 .zh-launcher__modules {
   padding: 0;
   background: var(--color-surface);
@@ -165,7 +165,7 @@
   font-weight: 600;
   line-height: 1.3;
 }
-/* Caret como Material Symbol â€” rotaciÃ³n vÃ­a aria-expanded del padre */
+/* Caret como Material Symbol — rotación vía aria-expanded del padre */
 .zh-launcher__moduleCaret {
   width: 16px;
   height: 16px;
@@ -186,7 +186,7 @@
   padding: 0;
 }
 
-/* â”€â”€ Nivel 3 â€” CategorÃ­as funcionales â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Nivel 3 — Categorías funcionales ────────────────────── */
 .zh-launcher__category {
   margin-top: 6px;
 }
@@ -218,7 +218,7 @@
   letter-spacing: 0.045em;
   color: var(--color-text-secondary);
 }
-/* Caret de categorÃ­a â€” mismo patrÃ³n que mÃ³dulo */
+/* Caret de categoría — mismo patrón que módulo */
 .zh-launcher__categoryCaret {
   width: 14px;
   height: 14px;
@@ -235,7 +235,7 @@
   padding-top: 0;
 }
 
-/* â”€â”€ Nivel 4 â€” Formularios finales â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Nivel 4 — Formularios finales ───────────────────────── */
 .zh-launcher__item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22px;
@@ -270,7 +270,7 @@
   text-decoration: none;
   text-align: left;
   border-radius: 0;
-  /* Indicador activo sin alterar el ancho del Ã­tem. */
+  /* Indicador activo sin alterar el ancho del ítem. */
   box-shadow: inset 3px 0 0 transparent;
   transition:
     background var(--transition),
@@ -331,7 +331,7 @@
   display: none;
 }
 
-/* â”€â”€ BotÃ³n de favorito â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Botón de favorito ────────────────────────────────────── */
 .zh-launcher__fav {
   flex-shrink: 0;
   align-self: center;
@@ -354,14 +354,14 @@
   height: 18px;
   line-height: 1;
   color: var(--color-outline);
-  /* fill variation â€” Material Symbols Outlined */
+  /* fill variation — Material Symbols Outlined */
   font-variation-settings: "FILL" 0;
   /* Phase 7: hover + opacity en 100ms */
   transition:
     color 100ms ease,
     opacity 100ms ease,
     font-variation-settings 150ms ease;
-  /* Phase 6: estrella visible solo en hover e is-on (accesibilidad: focus-within tambiÃ©n) */
+  /* Phase 6: estrella visible solo en hover e is-on (accesibilidad: focus-within también) */
   opacity: 0;
 }
 /* Estrella visible cuando el item tiene foco, hover, o ya es favorito */
@@ -379,7 +379,7 @@
   opacity: 1;
 }
 
-/* â”€â”€ Foco visible â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Foco visible ─────────────────────────────────────────── */
 .zh-launcher__moduleToggle:focus-visible,
 .zh-launcher__categoryToggle:focus-visible,
 .zh-launcher__itemLink:focus-visible,
@@ -390,7 +390,7 @@
   outline-offset: 1px;
 }
 
-/* â”€â”€ Skeleton loading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Skeleton loading ────────────────────────────────────── */
 @keyframes zh-launcher-shimmer {
   0% {
     background-position: -200px 0;

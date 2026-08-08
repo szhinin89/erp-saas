@@ -1,9 +1,9 @@
-/* ReportPageTemplate â€” rpt-* (complementa pg-* y .badge* de zh-ui.css)
-   Tabla    â†’ .table              (zh-ui.css)
-   Badges   â†’ .badge.badge--md   (zh-ui.css)
-   Avatar   â†’ .zh-avatar--square (zh-ui.css)               */
+/* ReportPageTemplate — rpt-* (complementa pg-* y .badge* de zh-ui.css)
+   Tabla    → .table              (zh-ui.css)
+   Badges   → .badge.badge--md   (zh-ui.css)
+   Avatar   → .zh-avatar--square (zh-ui.css)               */
 
-/* â”€â”€ KPI sub-text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── KPI sub-text ────────────────────────────────────────── */
 .rpt-kpi-sub {
   font-size: var(--text-label-sm-size);
   font-weight: 500;
@@ -11,7 +11,7 @@
   margin: 0;
 }
 
-/* â”€â”€ Filters bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Filters bar ─────────────────────────────────────────── */
 .rpt-filters {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -78,7 +78,7 @@
   padding-left: 36px;
 }
 
-/* â”€â”€ Chart panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Chart panel ─────────────────────────────────────────── */
 .rpt-chart-panel .pg-section-header {
   padding: var(--space-4) var(--space-5);
 }
@@ -90,7 +90,7 @@
   text-transform: none;
 }
 
-/* Period toggle (DÃ­a | Semana | Mes) */
+/* Period toggle (Día | Semana | Mes) */
 .rpt-period-toggle {
   display: flex;
   background: var(--color-surface-container-low);
@@ -182,7 +182,7 @@
   color: var(--color-error);
 }
 
-/* â”€â”€ Table wrapper (scrollbar custom) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Table wrapper (scrollbar custom) ───────────────────── */
 .rpt-table-wrap {
   overflow-x: auto;
 }
@@ -197,7 +197,7 @@
   border-radius: 10px;
 }
 
-/* Alignment helpers for th/td (minimal â€” .table styles handle the rest) */
+/* Alignment helpers for th/td (minimal — .table styles handle the rest) */
 .rpt-th--right {
   text-align: right;
 }
@@ -211,7 +211,7 @@
   text-align: center;
 }
 
-/* â”€â”€ Table cell components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Table cell components ───────────────────────────────── */
 
 /* Row ID */
 .rpt-row-id {

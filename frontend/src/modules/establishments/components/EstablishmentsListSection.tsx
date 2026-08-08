@@ -115,7 +115,7 @@ export function EstablishmentsListSection({
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
               <ZhTextInput
-                placeholder="Buscar por cÃ³digo, nombre, direcciÃ³n o sucursal..."
+                placeholder="Buscar por código, nombre, dirección o sucursal..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -158,11 +158,11 @@ export function EstablishmentsListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>CÃ³digo SRI</th>
+                  <th>Código SRI</th>
                   <th>Nombre</th>
-                  <th>DirecciÃ³n fiscal</th>
+                  <th>Dirección fiscal</th>
                   <th>Sucursal</th>
-                  <th>P. EmisiÃ³n</th>
+                  <th>P. Emisión</th>
                   <th>Estado</th>
                   {(canUpdate || canDisable) && (
                     <th className="pg-th-right">Acciones</th>
@@ -211,7 +211,7 @@ export function EstablishmentsListSection({
                       {row.branchName ? (
                         <div className="br-list-name">{row.branchName}</div>
                       ) : (
-                        <span className="subtle">â€”</span>
+                        <span className="subtle">—</span>
                       )}
                     </td>
                     <td>

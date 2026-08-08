@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 
 /// <summary>
-/// Configuraci�n EF Core para BusinessPartner.
+/// Configuración EF Core para BusinessPartner.
 ///
 /// CAMBIOS respecto al modelo anterior:
 ///   - Eliminado: email, phone, legal_representative_name, navigations CustomerProfile/SupplierProfile
@@ -21,7 +21,7 @@ namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 ///   solo optimizacion de UX para el caso comun.
 ///
 /// QUERY FILTER:
-///   Aplicado autom�ticamente por EnterpriseQueryFilterConfigurator
+///   Aplicado automáticamente por EnterpriseQueryFilterConfigurator
 ///   (ITenantScopedEntity ? subscriber fail-closed).
 /// </summary>
 public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<BusinessPartner>
@@ -105,7 +105,7 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        // -- �ndices -----------------------------------------------------------
+        // -- Índices -----------------------------------------------------------
         builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_mbp_subscriber");
 
         builder

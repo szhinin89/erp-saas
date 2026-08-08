@@ -14,7 +14,7 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
     public decimal AverageCost => Quantity > 0m ? TotalStockValue / Quantity : 0m;
     public DateTime LastUpdatedAt { get; private set; }
 
-    /// <summary>Optimistic concurrency token â€” EF Core uses this for concurrent update detection.</summary>
+    /// <summary>Optimistic concurrency token — EF Core uses this for concurrent update detection.</summary>
     public uint RowVersion { get; private set; }
 
     private CurrentStock() { }

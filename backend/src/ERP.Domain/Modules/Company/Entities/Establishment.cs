@@ -15,7 +15,7 @@ public sealed class Establishment : MasterEntity, ITenantScopedEntity, ICompanyS
     public const int AddressMaxLen = 500;
     public const int PhoneMaxLen = 40;
 
-    /// <summary>Sucursal operativa con la que se agrupa este establecimiento. Opcional � el SRI no requiere sucursal para registrar un establecimiento.</summary>
+    /// <summary>Sucursal operativa con la que se agrupa este establecimiento. Opcional — el SRI no requiere sucursal para registrar un establecimiento.</summary>
     public Guid? BranchId { get; private set; }
 
     /// <summary>Denormalizado desde Branch.CompanyId; requerido por filtro global ICompanyScopedEntity.</summary>
@@ -26,7 +26,7 @@ public sealed class Establishment : MasterEntity, ITenantScopedEntity, ICompanyS
     public string? Phone { get; private set; }
     public bool IsMain { get; private set; }
 
-    // EF navigation � no exponer como colecciones mutables
+    // EF navigation — no exponer como colecciones mutables
     public Branch? Branch { get; private set; }
     public Company Company { get; private set; } = null!;
     public ICollection<EmissionPoint> EmissionPoints { get; private set; } = [];

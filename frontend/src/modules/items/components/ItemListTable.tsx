@@ -32,7 +32,7 @@ export function ItemListTable({
       <p className="empty-state">
         {t(
           "items.list.empty",
-          "No se encontraron Ã­tems con los filtros actuales.",
+          "No se encontraron ítems con los filtros actuales.",
         )}
       </p>
     );

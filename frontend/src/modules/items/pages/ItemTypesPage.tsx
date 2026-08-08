@@ -95,7 +95,7 @@ export function ItemTypesPage() {
         message.success(
           t(
             "itemTypes.updated.success",
-            "Tipo de Ã­tem actualizado correctamente.",
+            "Tipo de ítem actualizado correctamente.",
           ),
         );
       } else {
@@ -105,7 +105,7 @@ export function ItemTypesPage() {
           sortOrder: fSortOrder,
         });
         message.success(
-          t("itemTypes.created.success", "Tipo de Ã­tem creado correctamente."),
+          t("itemTypes.created.success", "Tipo de ítem creado correctamente."),
         );
       }
       resetForm();
@@ -135,8 +135,8 @@ export function ItemTypesPage() {
       await itemTypeService.toggle(it.id);
       message.success(
         it.isActive
-          ? t("itemTypes.toggle.disabled", "Tipo de Ã­tem desactivado.")
-          : t("itemTypes.toggle.activated", "Tipo de Ã­tem activado."),
+          ? t("itemTypes.toggle.disabled", "Tipo de ítem desactivado.")
+          : t("itemTypes.toggle.activated", "Tipo de ítem activado."),
       );
       void fetchItems();
     } catch (e: unknown) {
@@ -151,18 +151,18 @@ export function ItemTypesPage() {
   };
 
   if (!canView)
-    return <NoAccessPage title={t("itemTypes.title", "Tipos de Ãtem")} />;
+    return <NoAccessPage title={t("itemTypes.title", "Tipos de Ítem")} />;
 
   const editorLabel = editing
-    ? t("itemTypes.editTitle", "Editar Tipo de Ãtem")
-    : t("itemTypes.newTitle", "Nuevo Tipo de Ãtem");
+    ? t("itemTypes.editTitle", "Editar Tipo de Ítem")
+    : t("itemTypes.newTitle", "Nuevo Tipo de Ítem");
 
   const listContent = (
     <>
       <div className="prd-filters-bar">
         <input
           className="zh-input prd-filters-bar__search"
-          placeholder={t("itemTypes.search", "Buscar por cÃ³digo o nombre...")}
+          placeholder={t("itemTypes.search", "Buscar por código o nombre...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -174,7 +174,7 @@ export function ItemTypesPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>{t("itemTypes.col.code", "CÃ³digo")}</th>
+                <th>{t("itemTypes.col.code", "Código")}</th>
                 <th>{t("itemTypes.col.name", "Nombre")}</th>
                 <th>{t("itemTypes.col.sortOrder", "Orden")}</th>
                 <th>{t("common.status", "Estado")}</th>
@@ -241,7 +241,7 @@ export function ItemTypesPage() {
               {filtered.length === 0 && (
                 <tr className="prd-empty-row">
                   <td colSpan={5}>
-                    {t("itemTypes.empty", "Sin tipos de Ã­tem registrados.")}
+                    {t("itemTypes.empty", "Sin tipos de ítem registrados.")}
                   </td>
                 </tr>
               )}
@@ -256,7 +256,7 @@ export function ItemTypesPage() {
     <div className="pg-section-body">
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
-        <ZHField label={t("itemTypes.form.code", "CÃ³digo")} required>
+        <ZHField label={t("itemTypes.form.code", "Código")} required>
           <input
             className="zh-input--upper"
             value={fCode}
@@ -276,7 +276,7 @@ export function ItemTypesPage() {
           />
         </ZHField>
         <ZHField
-          label={t("itemTypes.form.sortOrder", "Orden de visualizaciÃ³n")}
+          label={t("itemTypes.form.sortOrder", "Orden de visualización")}
         >
           <ZhNumberInput
             positiveOnly
@@ -310,7 +310,7 @@ export function ItemTypesPage() {
   return (
     <ErpPageTemplate
       kicker={t("app.nav.group.inventario", "Inventario")}
-      title={t("itemTypes.title", "Tipos de Ãtem")}
+      title={t("itemTypes.title", "Tipos de Ítem")}
       action={
         canCreate ? (
           <ZHBtn variant="primary" size="md" type="button" onClick={openCreate}>

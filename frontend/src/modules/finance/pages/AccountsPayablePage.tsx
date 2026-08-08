@@ -13,8 +13,8 @@ import { RegisterPaymentModal } from "../components/RegisterPaymentModal";
 import "../../../styles/shared/items-catalog.css";
 
 /**
- * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) â€” pantalla mÃ­nima de Cuentas por Pagar: consulta,
- * selecciÃ³n de la deuda y registro de pago contra ella (RegisterPaymentModal). Mismo patrÃ³n que
+ * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — pantalla mínima de Cuentas por Pagar: consulta,
+ * selección de la deuda y registro de pago contra ella (RegisterPaymentModal). Mismo patrón que
  * AccountsReceivablePage (CxC).
  */
 export function AccountsPayablePage() {
@@ -32,7 +32,7 @@ export function AccountsPayablePage() {
       setItems(res.items);
       setTotal(res.total);
     } catch {
-      /* la tabla queda vacÃ­a; el usuario puede reintentar con el botÃ³n Actualizar */
+      /* la tabla queda vacía; el usuario puede reintentar con el botón Actualizar */
     }
     setLoading(false);
   }, [status]);
@@ -44,14 +44,14 @@ export function AccountsPayablePage() {
   return (
     <ErpPageTemplate
       title="Cuentas por Pagar"
-      subtitle="Consulta las facturas de compra a crÃ©dito pendientes y registra pagos."
+      subtitle="Consulta las facturas de compra a crédito pendientes y registra pagos."
       action={
         <ZHBtn
           type="button"
           variant="ghost"
           onClick={() => navigate("/finance/supplier-credits")}
         >
-          CrÃ©ditos de proveedor
+          Créditos de proveedor
         </ZHBtn>
       }
     >
@@ -124,7 +124,7 @@ export function AccountsPayablePage() {
         )}
         {!loading && total > items.length && (
           <p className="zh-text-muted">
-            Mostrando {items.length} de {total} â€” refina el filtro de estado para ver mÃ¡s.
+            Mostrando {items.length} de {total} — refina el filtro de estado para ver más.
           </p>
         )}
       </div>

@@ -41,12 +41,12 @@ interface CashRegisterOption {
 }
 
 /**
- * P0-02 Fase 13 â€” administraciÃ³n limitada de `CompanyFinancialDestination` (Â§6.4ter): alta con
- * los 8 campos estructurales (inmutables tras crear), ediciÃ³n limitada a
- * Name/AccountingAccountId/IsActive. Sigue el patrÃ³n `ConfigTabsLayout` obligatorio (Master
- * Configuration UI CLOSED, mismo criterio que `ItemTypesPage.tsx`) â€” modernizado con RHF+Zod
+ * P0-02 Fase 13 — administración limitada de `CompanyFinancialDestination` (§6.4ter): alta con
+ * los 8 campos estructurales (inmutables tras crear), edición limitada a
+ * Name/AccountingAccountId/IsActive. Sigue el patrón `ConfigTabsLayout` obligatorio (Master
+ * Configuration UI CLOSED, mismo criterio que `ItemTypesPage.tsx`) — modernizado con RHF+Zod
  * (F-V1/F-V2), a diferencia del `useState` manual de `ItemTypesPage.tsx` (no repetir esa deuda,
- * mismo criterio que Fase 12). Sin botÃ³n de eliminaciÃ³n fÃ­sica â€” solo activar/desactivar.
+ * mismo criterio que Fase 12). Sin botón de eliminación física — solo activar/desactivar.
  */
 export function FinancialDestinationsPage() {
   const [activeTab, setActiveTab] = useState<"list" | "editor">("list");
@@ -189,7 +189,7 @@ export function FinancialDestinationsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>CÃ³digo</th>
+              <th>Código</th>
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Moneda</th>
@@ -244,7 +244,7 @@ export function FinancialDestinationsPage() {
     <div className="pg-section-body">
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
-        <ZHField label="CÃ³digo" readOnly>
+        <ZHField label="Código" readOnly>
           <ZhTextInput className="zh-input--upper" value={editing.code} disabled />
         </ZHField>
         <ZHField label="Tipo" readOnly>
@@ -273,7 +273,7 @@ export function FinancialDestinationsPage() {
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.code} â€” {a.name}
+                {a.code} — {a.name}
               </option>
             ))}
           </ZhSelect>
@@ -298,7 +298,7 @@ export function FinancialDestinationsPage() {
     <div className="pg-section-body">
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
-        <ZHField label="CÃ³digo" required fieldError={createForm.formState.errors.code?.message}>
+        <ZHField label="Código" required fieldError={createForm.formState.errors.code?.message}>
           <ZhTextInput
             className="zh-input--upper"
             maxLength={30}
@@ -349,7 +349,7 @@ export function FinancialDestinationsPage() {
             <option value="">Seleccione una cuenta</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.code} â€” {a.name}
+                {a.code} — {a.name}
               </option>
             ))}
           </ZhSelect>
@@ -369,7 +369,7 @@ export function FinancialDestinationsPage() {
               <option value="">Seleccione una caja</option>
               {cashRegisters.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.code} â€” {c.name}
+                  {c.code} — {c.name}
                 </option>
               ))}
             </ZhSelect>
@@ -379,7 +379,7 @@ export function FinancialDestinationsPage() {
         {destinationTypeCode === "BankAccount" && (
           <>
             <ZHField
-              label="InstituciÃ³n bancaria"
+              label="Institución bancaria"
               required
               fieldError={createForm.formState.errors.bankInstitutionCode?.message}
             >
@@ -391,7 +391,7 @@ export function FinancialDestinationsPage() {
               />
             </ZHField>
             <ZHField
-              label="NÃºmero de cuenta"
+              label="Número de cuenta"
               required
               fieldError={createForm.formState.errors.bankAccountIdentifierNormalized?.message}
             >

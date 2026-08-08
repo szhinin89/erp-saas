@@ -1,11 +1,11 @@
 ﻿# =============================================================================
 # ZH Technologies
-# Progress Dashboard â€” Engineering Health Report Renderer
+# Progress Dashboard — Engineering Health Report Renderer
 # Canonical entry point (consolidated from the v13 -> v21 lineage)
 #
 # Historial completo de versiones anteriores (v2 .. v21, incluyendo backups
 # y variantes "final"): tools/dashboard/archive/. Este archivo es la UNICA
-# version activa; no crear render-dashboard-vNN.ps1 nuevos â€” evolucionar
+# version activa; no crear render-dashboard-vNN.ps1 nuevos — evolucionar
 # este archivo directamente y, si se quiere conservar un punto de referencia
 # grande, copiar un snapshot a archive/ antes de un cambio mayor.
 #
@@ -1381,7 +1381,7 @@ $($domainsHtml -join "`n")
 <p>Unmapped Modules: $unmappedNames</p>
 
 <h3>Architecture Explorer (Domain &rarr; Module &rarr; Feature &rarr; Process &rarr; Task &rarr; File)</h3>
-<p class='muted-note'>Tree built exclusively from modules.json / features.json / processes.json / tasks.json. No relation is invented â€” collapsed nodes with no evidence say so explicitly.</p>
+<p class='muted-note'>Tree built exclusively from modules.json / features.json / processes.json / tasks.json. No relation is invented — collapsed nodes with no evidence say so explicitly.</p>
 $explorerTreeHtml
 </section>
 "@

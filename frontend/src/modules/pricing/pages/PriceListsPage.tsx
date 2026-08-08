@@ -37,7 +37,7 @@ export function PriceListsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // â”€â”€ Form state â”€â”€
+  // ── Form state ──
   const [fCode, setFCode] = useState("");
   const [fName, setFName] = useState("");
   const [fCurrency, setFCurrency] = useState("USD");
@@ -90,14 +90,14 @@ export function PriceListsPage() {
   const handleSave = async () => {
     setError("");
 
-    // Regla general: si hay tipo seleccionado, el valor es obligatorio y debe ser numÃ©rico.
+    // Regla general: si hay tipo seleccionado, el valor es obligatorio y debe ser numérico.
     let ruleType: string | null = null;
     let ruleValue: number | null = null;
     if (fRuleType) {
       const parsed = parseDecimal(fRuleValue);
       if (!fRuleValue.trim() || Number.isNaN(parsed)) {
         setError(
-          "Debe ingresar un valor vÃ¡lido para la regla general seleccionada.",
+          "Debe ingresar un valor válido para la regla general seleccionada.",
         );
         return;
       }
@@ -170,8 +170,8 @@ export function PriceListsPage() {
     }
   };
 
-  // â”€â”€ Tab definitions â”€â”€
-  // "Excepciones" solo tiene sentido con una lista ya cargada â€” administraciÃ³n de PricingRule
+  // ── Tab definitions ──
+  // "Excepciones" solo tiene sentido con una lista ya cargada — administración de PricingRule
   // arranca siempre desde una PriceList concreta, nunca desde el Item (ver AI-RULES).
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "resumen", label: "Resumen", icon: "bar_chart_4_bars" },
@@ -223,7 +223,7 @@ export function PriceListsPage() {
             />
             <StatCard
               label="Predeterminada"
-              value={items.find((i) => i.isDefault)?.name ?? "â€”"}
+              value={items.find((i) => i.isDefault)?.name ?? "—"}
             />
           </div>
         </div>
@@ -234,7 +234,7 @@ export function PriceListsPage() {
         <div className="prd-section">
           <div className="prd-crud-toolbar">
             <ZhTextInput
-              placeholder="Buscar por cÃ³digo o nombre..."
+              placeholder="Buscar por código o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -251,7 +251,7 @@ export function PriceListsPage() {
             <table className="prd-crud-table">
               <thead>
                 <tr>
-                  <th>CÃ³digo</th>
+                  <th>Código</th>
                   <th>Nombre</th>
                   <th>Moneda</th>
                   <th>Regla General</th>
@@ -273,7 +273,7 @@ export function PriceListsPage() {
                         pl.currencyCode,
                       )}
                     </td>
-                    <td>{pl.isDefault ? "âœ“" : ""}</td>
+                    <td>{pl.isDefault ? "✓" : ""}</td>
                     <td>
                       <Badge label={"Estado"} variant="neutral" />
                     </td>
@@ -296,7 +296,7 @@ export function PriceListsPage() {
                 {items.length === 0 && (
                   <tr className="prd-empty-row">
                     <td colSpan={7}>
-                      No hay listas de precios. Crea la primera en la pestaÃ±a
+                      No hay listas de precios. Crea la primera en la pestaña
                       "Nueva Lista".
                     </td>
                   </tr>
@@ -319,7 +319,7 @@ export function PriceListsPage() {
             {!editing && (
               <div className="zh-field">
                 <label className="zh-field-label">
-                  CÃ³digo <span className="zh-field-required">*</span>
+                  Código <span className="zh-field-required">*</span>
                 </label>
                 <div className="zh-field-control">
                   <ZhTextInput
@@ -486,7 +486,7 @@ export function PriceListsPage() {
         </div>
       )}
 
-      {/* EXCEPCIONES (PricingRule) â€” solo con una lista cargada */}
+      {/* EXCEPCIONES (PricingRule) — solo con una lista cargada */}
       {tab === "excepciones" && editing && (
         <PriceListExceptionsTab priceList={editing} />
       )}
@@ -494,7 +494,7 @@ export function PriceListsPage() {
   );
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers ──────────────────────────────────────────────────────────────
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (

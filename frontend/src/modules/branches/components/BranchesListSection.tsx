@@ -114,7 +114,7 @@ export function BranchesListSection({
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
               <ZhTextInput
-                placeholder="Buscar por nombre, cÃ³digo o encargado..."
+                placeholder="Buscar por nombre, código o encargado..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -145,9 +145,9 @@ export function BranchesListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>CÃ³digo</th>
+                  <th>Código</th>
                   <th>Nombre</th>
-                  <th>DirecciÃ³n</th>
+                  <th>Dirección</th>
                   <th>Responsable</th>
                   <th>Estado</th>
                   {canUpdate || canDelete ? (
@@ -170,7 +170,7 @@ export function BranchesListSection({
                   >
                     <td>
                       <Badge
-                        label={row.code ?? "â€”"}
+                        label={row.code ?? "—"}
                         variant="neutral"
                         size="md"
                         className="mono"
@@ -186,11 +186,11 @@ export function BranchesListSection({
                     </td>
                     <td>
                       <div className="br-list-contact">
-                        {row.address || <span className="subtle">â€”</span>}
+                        {row.address || <span className="subtle">—</span>}
                       </div>
                     </td>
                     <td>
-                      {row.managerName ?? <span className="subtle">â€”</span>}
+                      {row.managerName ?? <span className="subtle">—</span>}
                     </td>
                     <td>
                       <span
@@ -259,7 +259,7 @@ export function BranchesListSection({
           </p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Ãšltima carga: {new Date().toTimeString().slice(0, 8)}
+              Última carga: {new Date().toTimeString().slice(0, 8)}
             </p>
           )}
         </div>

@@ -67,7 +67,7 @@ export function KardexMovementDetailModal({
       size="lg"
       title={
         m
-          ? `Movimiento #${m.sequenceNumber} Â· ${typeLabel}`
+          ? `Movimiento #${m.sequenceNumber} · ${typeLabel}`
           : "Expediente del movimiento"
       }
       subtitle={
@@ -79,7 +79,7 @@ export function KardexMovementDetailModal({
       {loading && <p>Cargando expediente...</p>}
       {!loading && detail && m && (
         <div className="kdx-modal-stack">
-          {/* â”€â”€ A. Hecho de Inventario â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── A. Hecho de Inventario ─────────────────────────────────── */}
           <Section icon="inventory_2" title="Hecho de Inventario">
             <div
               className="pdl-line__context kdx-grid-4"
@@ -95,7 +95,7 @@ export function KardexMovementDetailModal({
                 value={
                   m.unitCost != null
                     ? formatMoneyWithSymbol(m.unitCost, cost)
-                    : "â€”"
+                    : "—"
                 }
               />
               <Field
@@ -103,7 +103,7 @@ export function KardexMovementDetailModal({
                 value={
                   m.totalCost != null
                     ? formatMoneyWithSymbol(m.totalCost, total)
-                    : "â€”"
+                    : "—"
                 }
               />
               <Field
@@ -111,7 +111,7 @@ export function KardexMovementDetailModal({
                 value={formatMoney(m.previousQuantity, qty)}
               />
               <Field
-                label="Saldo DespuÃ©s"
+                label="Saldo Después"
                 value={formatMoney(m.resultQuantity, qty)}
               />
               <Field
@@ -125,7 +125,7 @@ export function KardexMovementDetailModal({
             </div>
           </Section>
 
-          {/* â”€â”€ B. Documento Origen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── B. Documento Origen ─────────────────────────────────────── */}
           <Section icon="description" title="Documento Origen">
             {detail.sourceDocument ? (
               <>
@@ -140,8 +140,8 @@ export function KardexMovementDetailModal({
                     }
                   />
                   <Field
-                    label="NÃºmero"
-                    value={detail.sourceDocument.docNumber ?? "â€”"}
+                    label="Número"
+                    value={detail.sourceDocument.docNumber ?? "—"}
                     mono
                   />
                   {detail.sourceDocument.partnerName && (
@@ -206,7 +206,7 @@ export function KardexMovementDetailModal({
             )}
           </Section>
 
-          {/* â”€â”€ Cadena Documental â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Cadena Documental ────────────────────────────────────────── */}
           <Section icon="link" title="Cadena Documental">
             {detail.documentChain.links.length === 0 ? (
               <p className="kdx-muted-text">
@@ -221,7 +221,7 @@ export function KardexMovementDetailModal({
                     label={
                       <>
                         {DOC_TYPE_LABELS[link.docType] ?? link.docType}
-                        {link.docNumber ? ` Â· ${link.docNumber}` : ""}
+                        {link.docNumber ? ` · ${link.docNumber}` : ""}
                         {link.isCurrent ? " (actual)" : ""}
                       </>
                     }
@@ -231,7 +231,7 @@ export function KardexMovementDetailModal({
             )}
           </Section>
 
-          {/* â”€â”€ Relaciones (navegaciÃ³n anterior/siguiente) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Relaciones (navegación anterior/siguiente) ──────────────── */}
           <Section icon="timeline" title="Relaciones">
             <div
               className="kdx-relations-row"
@@ -249,7 +249,7 @@ export function KardexMovementDetailModal({
                   chevron_left
                 </span>
                 {detail.relations.previous
-                  ? `#${detail.relations.previous.sequenceNumber} â€” ${movementTypeLabels[detail.relations.previous.movementTypeName] ?? detail.relations.previous.movementTypeName}`
+                  ? `#${detail.relations.previous.sequenceNumber} — ${movementTypeLabels[detail.relations.previous.movementTypeName] ?? detail.relations.previous.movementTypeName}`
                   : "Sin movimiento anterior"}
               </ZHBtn>
               <Badge
@@ -266,7 +266,7 @@ export function KardexMovementDetailModal({
                 }
               >
                 {detail.relations.next
-                  ? `#${detail.relations.next.sequenceNumber} â€” ${movementTypeLabels[detail.relations.next.movementTypeName] ?? detail.relations.next.movementTypeName}`
+                  ? `#${detail.relations.next.sequenceNumber} — ${movementTypeLabels[detail.relations.next.movementTypeName] ?? detail.relations.next.movementTypeName}`
                   : "Sin movimiento siguiente"}
                 <span className="material-symbols-outlined zh-icon-md">
                   chevron_right
@@ -275,14 +275,14 @@ export function KardexMovementDetailModal({
             </div>
           </Section>
 
-          {/* â”€â”€ C. AuditorÃ­a â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-          <Section icon="verified_user" title="AuditorÃ­a">
+          {/* ── C. Auditoría ─────────────────────────────────────────────── */}
+          <Section icon="verified_user" title="Auditoría">
             <div
               className="pdl-line__context pdl-line__context--audit"
             >
               <Field label="Usuario" value={detail.actor.userName} />
               <Field
-                label="Fecha de CreaciÃ³n"
+                label="Fecha de Creación"
                 value={formatDateTimeSeconds(m.createdAt)}
               />
               <Field
@@ -291,18 +291,18 @@ export function KardexMovementDetailModal({
               />
               <Field
                 label="Tipo de Documento (SourceDocType)"
-                value={m.sourceDocType ?? "â€”"}
+                value={m.sourceDocType ?? "—"}
                 mono
               />
               <Field
                 label="Id de Documento (SourceDocId)"
-                value={m.sourceDocId ?? "â€”"}
+                value={m.sourceDocId ?? "—"}
                 mono
               />
             </div>
           </Section>
 
-          {/* â”€â”€ D. Contabilidad â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── D. Contabilidad ──────────────────────────────────────────── */}
           <Section icon="account_balance" title="Contabilidad">
             <div
               className="pf-mini-card__body kdx-accounting-info"
@@ -312,7 +312,7 @@ export function KardexMovementDetailModal({
               >
                 schedule
               </span>
-              IntegraciÃ³n contable preparada â€” aÃºn no hay asiento generado para
+              Integración contable preparada — aún no hay asiento generado para
               este movimiento.
             </div>
           </Section>

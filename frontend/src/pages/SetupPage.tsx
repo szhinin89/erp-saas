@@ -10,21 +10,21 @@ import "../modules/auth/pages/LoginPage.css";
 const setupSchema = z.object({
   username: z
     .string()
-    .min(3, "MÃ­nimo 3 caracteres")
+    .min(3, "Mínimo 3 caracteres")
     .regex(
       /^[a-zA-Z0-9][a-zA-Z0-9._-]{1,48}[a-zA-Z0-9]$/,
-      "Solo letras, nÃºmeros, punto, guion o guion bajo",
+      "Solo letras, números, punto, guion o guion bajo",
     ),
   firstName: z.string().min(1, "Requerido"),
   lastName: z.string().min(1, "Requerido"),
   email: z
-    .union([z.string().email("Email invÃ¡lido"), z.literal("")])
+    .union([z.string().email("Email inválido"), z.literal("")])
     .optional(),
   password: z
     .string()
-    .min(8, "MÃ­nimo 8 caracteres")
-    .regex(/[A-Z]/, "Debe contener al menos una mayÃºscula")
-    .regex(/[0-9]/, "Debe contener al menos un nÃºmero"),
+    .min(8, "Mínimo 8 caracteres")
+    .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
+    .regex(/[0-9]/, "Debe contener al menos un número"),
   setupToken: z.string().min(1, "Token requerido"),
 });
 
@@ -63,7 +63,7 @@ export function SetupPage() {
         }
       })
       .catch(() => {
-        /* ignore â€” show form anyway */
+        /* ignore — show form anyway */
       })
       .finally(() => setChecking(false));
   });
@@ -97,7 +97,7 @@ export function SetupPage() {
         <div
           className="zh-auth-wrapper setup-page-loading"
         >
-          Verificando estado del sistemaâ€¦
+          Verificando estado del sistema…
         </div>
       </div>
     );
@@ -136,11 +136,11 @@ export function SetupPage() {
         <div className="zh-auth-wrapper">
           <div className="lp-brand">
             <h1 className="lp-brand-name">ZH Technologies</h1>
-            <p className="lp-brand-sub">ConfiguraciÃ³n completada</p>
+            <p className="lp-brand-sub">Configuración completada</p>
           </div>
           <div className="zh-auth-card zh-auth-card--flush">
             <div className="zh-auth-card-body zh-auth-card-body--center">
-              Administrador creado correctamente. Redirigiendo al loginâ€¦
+              Administrador creado correctamente. Redirigiendo al login…
             </div>
           </div>
         </div>
@@ -164,7 +164,7 @@ export function SetupPage() {
               ZH Technologies
             </h1>
           </div>
-          <p className="lp-brand-sub">ConfiguraciÃ³n inicial del sistema</p>
+          <p className="lp-brand-sub">Configuración inicial del sistema</p>
         </div>
 
         <div className="zh-auth-card zh-auth-card--flush">
@@ -301,7 +301,7 @@ export function SetupPage() {
                 className={`zh-auth-field${errors.password ? " zh-auth-field--error" : ""}`}
               >
                 <label className="zh-auth-label" htmlFor="setup-password">
-                  ContraseÃ±a
+                  Contraseña
                 </label>
                 <div className="zh-auth-input-wrap">
                   <span
@@ -314,7 +314,7 @@ export function SetupPage() {
                     className="zh-auth-input"
                     id="setup-password"
                     type="password"
-                    placeholder="MÃ­nimo 8 caracteres, 1 mayÃºscula, 1 nÃºmero"
+                    placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número"
                     autoComplete="new-password"
                     {...register("password")}
                   />
@@ -330,7 +330,7 @@ export function SetupPage() {
                 className={`zh-auth-field${errors.setupToken ? " zh-auth-field--error" : ""}`}
               >
                 <label className="zh-auth-label" htmlFor="setup-token">
-                  Token de configuraciÃ³n
+                  Token de configuración
                 </label>
                 <div className="zh-auth-input-wrap">
                   <span
@@ -362,7 +362,7 @@ export function SetupPage() {
                 {isSubmitting ? (
                   <>
                     <span className="zh-auth-submit-spinner" aria-hidden="true" />
-                    <span>Creando administradorâ€¦</span>
+                    <span>Creando administrador…</span>
                   </>
                 ) : (
                   <>

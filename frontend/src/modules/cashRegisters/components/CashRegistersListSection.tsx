@@ -105,7 +105,7 @@ export function CashRegistersListSection({
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
               <ZhTextInput
-                placeholder="Buscar por cÃ³digo, nombre o sucursal..."
+                placeholder="Buscar por código, nombre o sucursal..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -136,10 +136,10 @@ export function CashRegistersListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>CÃ³digo</th>
+                  <th>Código</th>
                   <th>Nombre</th>
                   <th>Sucursal</th>
-                  <th>Establecimiento / Pto. EmisiÃ³n</th>
+                  <th>Establecimiento / Pto. Emisión</th>
                   <th>Estado</th>
                   <th>Fecha</th>
                   {canManage ? <th className="pg-th-right">Acciones</th> : null}
@@ -191,7 +191,7 @@ export function CashRegistersListSection({
                             {row.establishmentCode}-{row.emissionPointCode}
                           </div>
                           <div className="br-list-sub">
-                            {row.emissionPointName ?? "â€”"}
+                            {row.emissionPointName ?? "—"}
                           </div>
                         </>
                       ) : (
@@ -257,7 +257,7 @@ export function CashRegistersListSection({
           <p className="subtle br-list-footer-note">{filtered.length} cajas</p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Ãšltima carga: {new Date().toTimeString().slice(0, 8)}
+              Última carga: {new Date().toTimeString().slice(0, 8)}
             </p>
           )}
         </div>

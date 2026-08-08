@@ -4,14 +4,14 @@ import { ZHCard as Card } from "./zh/ZHCard";
 
 interface Props {
   title: string;
-  /** LÃ­nea superior (mÃ³dulo / contexto), opcional. */
+  /** Línea superior (módulo / contexto), opcional. */
   kicker?: string;
   subtitle?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }
 
-/** Contenedor de pÃ¡gina con encabezado compacto unificado (ZHScreenHeading). */
+/** Contenedor de página con encabezado compacto unificado (ZHScreenHeading). */
 export function PageShell({
   title,
   kicker,
@@ -102,7 +102,7 @@ export function Badge(
     variant: BadgeVariant;
     /** `md` aplica `.badge--md` (radius menos redondeado); por defecto usa el radius pill. */
     size?: "md";
-    /** Aplica `.badge--upper` (mayÃºsculas + letter-spacing). */
+    /** Aplica `.badge--upper` (mayúsculas + letter-spacing). */
     upper?: boolean;
   },
 ) {
