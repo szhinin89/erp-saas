@@ -5,7 +5,7 @@ import { apiGet } from "../../../lib/apiEnvelope";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatMoney } from "../../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../../lib/config/decimal.config";
-import { companyProfileService } from "../../../configuracion/empresa/api/companyProfileService";
+import { companyProfileLookupFacade } from "../../../configuracion/empresa/facades/companyProfileLookupFacade";
 import { itemService } from "../../api/itemService";
 import type {
   ItemProfitabilityDto,
@@ -65,7 +65,7 @@ export function ProfitabilitySection({ itemId, disabled = false }: Props) {
     apiGet<MarginStatusOption[]>("/api/v1/catalog/item-margin-statuses")
       .then(setMarginStatuses)
       .catch(() => {});
-    companyProfileService
+    companyProfileLookupFacade
       .getProfile()
       .then((p) => setCompanyCurrency(p?.currencyCode ?? null))
       .catch(() => {});

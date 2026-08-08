@@ -12,13 +12,13 @@ import { formatMoney } from "../../../../lib/sanitizers";
 import { useAsync } from "../../../../hooks/useAsync";
 import { useDebounce } from "../../../../hooks/useDebounce";
 import { formatApiError } from "../../../lib/formatApiError";
-import { priceListService } from "../../../pricing/api/pricingService";
-import { companyProfileService } from "../../../configuracion/empresa/api/companyProfileService";
+import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
+import { companyProfileLookupFacade } from "../../../configuracion/empresa/facades/companyProfileLookupFacade";
 import {
   itemService,
   type ItemPricingSimulationRow,
 } from "../../api/itemService";
-import type { PriceSource } from "../../../pricing/api/pricingService";
+import type { PriceSource } from "../../../pricing/facades/priceListLookupFacade";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
 const SOURCE_LABELS: Record<PriceSource, string> = {
@@ -47,12 +47,12 @@ export function PricingTab({ t, disabled, isEditMode, itemId }: Props) {
   // (ítem nuevo), se usa la moneda configurada en el perfil de la empresa
   // (Company.CurrencyCode) — nunca un código fijo en el código del formulario.
   const priceListsState = useAsync(() =>
-    priceListService.list(true).catch(() => []),
+    priceListLookupFacade.list(true).catch(() => []),
   );
   const defaultList = (priceListsState.data ?? []).find((pl) => pl.isDefault);
 
   const companyProfileState = useAsync(() =>
-    companyProfileService.getProfile().catch(() => null),
+    companyProfileLookupFacade.getProfile().catch(() => null),
   );
   const currencyCode =
     defaultList?.currencyCode ?? companyProfileState.data?.currencyCode ?? "";
