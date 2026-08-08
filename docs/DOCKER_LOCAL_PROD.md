@@ -164,6 +164,22 @@ siguen corriendo (no son parte de este compose) y sus datos persisten en los vol
 
 ---
 
+## Seguridad
+
+- **Nunca** ejecutes `docker compose -f docker-compose.localprod.yml --env-file .env.docker.local config`
+  y pegues la salida completa en un log, chat, PR o terminal compartida — esa salida interpola
+  `POSTGRES_PASSWORD` y `JWT_SECRET_KEY` en texto plano dentro de `ConnectionStrings__DefaultConnection`
+  y `Jwt__SecretKey`. Si necesitas inspeccionar el cableado, filtra esas líneas antes de mostrarlas
+  (por ejemplo `... config | grep -viE "password=|secretkey"`), o revisa solo las claves, no los valores.
+- Si `POSTGRES_PASSWORD` o `JWT_SECRET_KEY` se exponen por accidente (log, captura de pantalla, salida
+  de comando sin filtrar), rótalos de inmediato: `ALTER USER postgres WITH PASSWORD '...'` en Postgres
+  y un nuevo valor aleatorio para `JWT_SECRET_KEY` (invalida todas las sesiones activas al reiniciar
+  `erp-api`, es el comportamiento esperado).
+- `.env.docker.local` nunca se versiona (`.gitignore`); `.env.docker.local.example` solo contiene
+  placeholders `CHANGE_ME_*`, nunca secretos reales.
+
+---
+
 ## Troubleshooting rápido
 
 | Síntoma | Causa probable | Acción |
