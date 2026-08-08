@@ -14,7 +14,7 @@ import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { message } from "../../../../lib/messages";
 import { orgConfigService } from "../api/orgConfigService";
-import { sriLookupService } from "../../../items/catalog/api/catalogService";
+import { sriLookupFacade } from "../../../items/facades/sriLookupFacade";
 import { paymentTermService } from "../../../masterData/api/paymentTermService";
 
 // ── Schema ─────────────────────────────────────────────────────────────────
@@ -46,8 +46,8 @@ export function CompanyOrgConfigSection() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // ── Catálogos ────────────────────────────────────────────────────────────
-  const docTypesState = useAsync(() => sriLookupService.docTypes());
-  const paymentMethodsState = useAsync(() => sriLookupService.paymentMethods());
+  const docTypesState = useAsync(() => sriLookupFacade.docTypes());
+  const paymentMethodsState = useAsync(() => sriLookupFacade.paymentMethods());
   const paymentTermsState = useAsync(() => paymentTermService.list());
 
   // ── Valores actuales ─────────────────────────────────────────────────────

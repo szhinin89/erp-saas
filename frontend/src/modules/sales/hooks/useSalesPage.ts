@@ -33,7 +33,7 @@ import {
 } from "../../masterData/api/businessPartnerService";
 import { paymentTermService } from "../../masterData/api/paymentTermService";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
-import { sriLookupService } from "../../items/catalog/api/catalogService";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { salesDefaultsService } from "../api/salesDefaultsService";
 import type { SalesInvoiceDefaultsDto } from "../api/salesDefaultsService";
 import { salesItemPricingService } from "../api/salesItemPricingService";
@@ -458,7 +458,7 @@ export function useSalesPage() {
           .then(setPaymentMethods)
           .catch(() => {}),
         loadDecimalConfig(),
-        sriLookupService
+        sriLookupFacade
           .paymentMethods()
           .then((pms) =>
             setSriPaymentMethods(
@@ -466,14 +466,14 @@ export function useSalesPage() {
             ),
           )
           .catch(() => {}),
-        sriLookupService
+        sriLookupFacade
           .docTypes()
           .then((dts) =>
             setSriDocTypes(dts.map((d) => ({ code: d.code, name: d.name }))),
           )
           .catch(() => {}),
         warehouseService.list("active"),
-        sriLookupService
+        sriLookupFacade
           .vatRates()
           .then((rates) => {
             const map: Record<string, number> = {};
@@ -482,7 +482,7 @@ export function useSalesPage() {
           })
           .catch(() => {}),
         checkCashSession(),
-        sriLookupService
+        sriLookupFacade
           .iceRates()
           .then((rates) => {
             const map: Record<string, number> = {};
@@ -490,7 +490,7 @@ export function useSalesPage() {
             setIceRatesMap(map);
           })
           .catch(() => {}),
-        sriLookupService
+        sriLookupFacade
           .idTypes("Customer")
           .then((types) =>
             setSriIdTypes(types.map((t) => ({ code: t.code, name: t.name }))),

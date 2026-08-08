@@ -24,12 +24,12 @@ import { warehouseService } from "../../inventory/warehouses/api/warehouseServic
 import type { WarehouseDto } from "../../inventory/warehouses/api/warehouseService";
 import { paymentTermService } from "../../masterData/api/paymentTermService";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
-import { sriLookupService } from "../../items/catalog/api/catalogService";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import type {
   SriDocTypeLookup,
   SriPaymentMethodLookup,
   SriTaxSupportLookup,
-} from "../../items/catalog/api/catalogService";
+} from "../../items/facades/sriLookupFacade";
 import {
   calcSummary,
   generateScheduleRows,
@@ -236,15 +236,15 @@ export function usePurchasesPage() {
       .list("active")
       .then(setWarehouses)
       .catch(() => {});
-    sriLookupService
+    sriLookupFacade
       .docTypes()
       .then(setSriDocTypes)
       .catch(() => {});
-    sriLookupService
+    sriLookupFacade
       .paymentMethods()
       .then(setSriPaymentMethods)
       .catch(() => {});
-    sriLookupService
+    sriLookupFacade
       .taxSupportCodes()
       .then(setSriTaxSupports)
       .catch(() => {});
@@ -252,7 +252,7 @@ export function usePurchasesPage() {
       .list()
       .then(setPaymentTermsList)
       .catch(() => {});
-    sriLookupService
+    sriLookupFacade
       .vatRates()
       .then((rates) => {
         const map: Record<string, number> = {};
@@ -260,7 +260,7 @@ export function usePurchasesPage() {
         setVatRatesMap(map);
       })
       .catch(() => {});
-    sriLookupService
+    sriLookupFacade
       .iceRates()
       .then((rates) => {
         const map: Record<string, number> = {};

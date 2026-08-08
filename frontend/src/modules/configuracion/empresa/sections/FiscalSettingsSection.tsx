@@ -11,8 +11,8 @@ import { companyProfileService } from "../api/companyProfileService";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
-import { sriLookupService } from "../../../items/catalog/api/catalogService";
-import type { SriTaxRegimeLookup } from "../../../items/catalog/api/catalogService";
+import { sriLookupFacade } from "../../../items/facades/sriLookupFacade";
+import type { SriTaxRegimeLookup } from "../../../items/facades/sriLookupFacade";
 import {
   companyFiscalSchema,
   defaultCompanyFiscalValues,
@@ -33,7 +33,7 @@ export function FiscalSettingsSection() {
   const profileState = useAsync(() => companyProfileService.getProfile());
 
   useEffect(() => {
-    sriLookupService
+    sriLookupFacade
       .taxRegimes()
       .then(setTaxRegimes)
       .catch(() => {});
