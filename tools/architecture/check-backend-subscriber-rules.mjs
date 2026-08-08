@@ -3,6 +3,17 @@ import { REPO_ROOT, loadConfig, matchGlob, toRepoRel, walkFiles } from './shared
 import { createCheckResult, addViolation, addWarning } from './shared/report-utils.mjs';
 import { readBackendText, scanIgnoreQueryFilters } from './shared/backend-utils.mjs';
 
+/**
+ * `backend.subscriber.ignoreQueryFiltersAllowlist` (architecture-rules.json) must stay in
+ * sync with `AllowedRelativePaths` in
+ * backend/src/ERP.Infrastructure.Tests/Persistence/IgnoreQueryFiltersAuditTests.cs — that
+ * xUnit test is the backend team's own reviewed, per-file, per-reason source of truth for
+ * legitimate `.IgnoreQueryFilters()` usage (multi-tenant "subscriber" scoping bypass). The
+ * xUnit test additionally excludes `.Tests` projects from its own scan (integration tests
+ * legitimately need to read raw DB state in a fresh DbContext for fixture verification); this
+ * checker mirrors that by listing the same test files explicitly here (no directory-wide
+ * `.Tests` exclusion, to keep every entry a named, auditable file — never a wildcard).
+ */
 export const CHECK_NAME = 'backend-subscriber-rules';
 
 /** @param {string} rel @param {string[]} globs */
