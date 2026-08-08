@@ -50,7 +50,7 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
         .getBusinessPartner(value)
         .then((bp) => {
           const role = bp.roles?.find(
-            (r: any) => r.roleType === "Supplier" && r.isActive,
+            (r) => r.roleType === "Supplier" && r.isActive,
           );
           setSelected({
             id: bp.id,

@@ -85,7 +85,7 @@ export function PricingTab({ t, disabled, isEditMode, itemId }: Props) {
               "items.pricing.pvp",
               `PVP — Precio base sin IVA (${currencyCode})`,
             )}
-            fieldError={fe((errors as any).baseSalePrice?.message)}
+            fieldError={fe(errors.baseSalePrice?.message)}
           >
             <div className="items-currency-input">
               <span className="items-currency-input__prefix">

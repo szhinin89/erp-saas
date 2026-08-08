@@ -61,6 +61,25 @@ export type SupplierProfile = {
   isRequiredToKeepAccounting: boolean;
 };
 
+// `isRequiredToKeepAccounting` no forma parte del contrato SupplierRoleConfigDto
+// declarado en masterData; el backend lo incluye en la respuesta de supplierConfig
+// como campo adicional. Tipo local mínimo para leerlo sin `any`.
+type SupplierConfigWithAccounting = SupplierRoleConfigDto & {
+  isRequiredToKeepAccounting?: boolean;
+};
+
+// Forma mínima esperada de un error HTTP (axios) para extraer un mensaje legible;
+// todos los accesos son opcionales porque el shape real puede variar según el catch.
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      message?: { user?: string };
+      data?: { errors?: string[] };
+    };
+  };
+  message?: string;
+};
+
 export type ScheduleRow = {
   number: number;
   dueDate: string;
@@ -650,14 +669,15 @@ export function usePurchasesPage() {
       try {
         const bp = await businessPartnerFacade.getBusinessPartner(s.id);
         const role = bp.roles?.find(
-          (r: any) => r.roleType === "Supplier" && r.isActive,
+          (r) => r.roleType === "Supplier" && r.isActive,
         );
         const profile: SupplierProfile = {
           ruc: bp.identificationNumber,
           name: bp.tradeName || bp.legalName,
           config: role?.supplierConfig ?? null,
           isRequiredToKeepAccounting:
-            (role?.supplierConfig as any)?.isRequiredToKeepAccounting ?? false,
+            (role?.supplierConfig as SupplierConfigWithAccounting | null)
+              ?.isRequiredToKeepAccounting ?? false,
         };
         profileCache.current.set(s.id, profile);
         setSupplierProfile(profile);
@@ -706,15 +726,15 @@ export function usePurchasesPage() {
                 inv.supplierId,
               );
               const role = bp.roles?.find(
-                (r: any) => r.roleType === "Supplier" && r.isActive,
+                (r) => r.roleType === "Supplier" && r.isActive,
               );
               const profile: SupplierProfile = {
                 ruc: bp.identificationNumber,
                 name: bp.tradeName || bp.legalName,
                 config: role?.supplierConfig ?? null,
                 isRequiredToKeepAccounting:
-                  (role?.supplierConfig as any)?.isRequiredToKeepAccounting ??
-                  false,
+                  (role?.supplierConfig as SupplierConfigWithAccounting | null)
+                    ?.isRequiredToKeepAccounting ?? false,
               };
               profileCache.current.set(inv.supplierId, profile);
               setSupplierProfile(profile);
@@ -863,15 +883,15 @@ export function usePurchasesPage() {
                 draft.supplierId,
               );
               const role = bp.roles?.find(
-                (r: any) => r.roleType === "Supplier" && r.isActive,
+                (r) => r.roleType === "Supplier" && r.isActive,
               );
               const profile: SupplierProfile = {
                 ruc: bp.identificationNumber,
                 name: bp.tradeName || bp.legalName,
                 config: role?.supplierConfig ?? null,
                 isRequiredToKeepAccounting:
-                  (role?.supplierConfig as any)?.isRequiredToKeepAccounting ??
-                  false,
+                  (role?.supplierConfig as SupplierConfigWithAccounting | null)
+                    ?.isRequiredToKeepAccounting ?? false,
               };
               profileCache.current.set(draft.supplierId, profile);
               setSupplierProfile(profile);
@@ -997,7 +1017,7 @@ export function usePurchasesPage() {
         setSaveError(msg),
       );
       if (!applied) {
-        const e = err as any;
+        const e = err as ApiErrorLike;
         setSaveError(
           e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
@@ -1029,7 +1049,8 @@ export function usePurchasesPage() {
       resetForm();
       setTab("listado");
       fetchList();
-    } catch (e: any) {
+    } catch (err: unknown) {
+      const e = err as ApiErrorLike;
       setSaveError(
         e?.response?.data?.message?.user ??
           e?.response?.data?.data?.errors?.[0] ??
@@ -1052,7 +1073,8 @@ export function usePurchasesPage() {
         resetForm();
         setTab("listado");
         fetchList();
-      } catch (e: any) {
+      } catch (err: unknown) {
+        const e = err as ApiErrorLike;
         setSaveError(
           e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
@@ -1138,7 +1160,8 @@ export function usePurchasesPage() {
         setWithholding(wh);
         setWhPreview(null);
         message.success("Retención emitida correctamente.");
-      } catch (e: any) {
+      } catch (err: unknown) {
+        const e = err as ApiErrorLike;
         setSaveError(
           e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
@@ -1162,7 +1185,8 @@ export function usePurchasesPage() {
         );
         setWithholding(wh);
         message.success("Retención anulada correctamente.");
-      } catch (e: any) {
+      } catch (err: unknown) {
+        const e = err as ApiErrorLike;
         setSaveError(
           e?.response?.data?.message?.user ?? "Error al anular retención.",
         );

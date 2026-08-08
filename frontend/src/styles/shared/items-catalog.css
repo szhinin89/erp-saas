@@ -1143,6 +1143,22 @@ tr.cfg-row--selected:hover > td {
   letter-spacing: -0.5px;
 }
 
+.items-metric-card__value--success {
+  color: var(--color-success);
+}
+
+.items-metric-card__value--warning {
+  color: var(--color-warning);
+}
+
+.items-metric-card__value--error {
+  color: var(--color-error);
+}
+
+.items-metric-card__value--neutral {
+  color: var(--color-text-secondary);
+}
+
 .items-metric-card--small .items-metric-card__value {
   font-size: 16px;
 }

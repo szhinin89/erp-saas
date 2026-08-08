@@ -7,20 +7,23 @@ import {
   calcSummary,
   generateScheduleRows,
 } from "./purchaseCalc";
+import type { PurchaseItemContextDto } from "../api/purchaseService";
 
+// Los tests solo ejercitan vatPercent/icePercent (los únicos campos que lee
+// calcLineTax); el resto del contrato PurchaseItemContextDto es irrelevante aquí.
 const mkLine = (
   qty: number,
   price: number,
   vatCode = "10",
   discountPct = 0,
-  ctx?: any,
+  ctx?: Partial<PurchaseItemContextDto>,
 ) => ({
   description: "Test",
   quantity: qty,
   unitPrice: price,
   vatCode,
   discountPct,
-  ...(ctx && { context: ctx }),
+  ...(ctx && { context: ctx as PurchaseItemContextDto }),
 });
 
 // ────────────────────────────────────────────────────────

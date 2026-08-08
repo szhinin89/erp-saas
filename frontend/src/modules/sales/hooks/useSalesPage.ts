@@ -1417,7 +1417,16 @@ export function useSalesPage() {
       const profile = await loadCustomerProfile(bpId);
       setCustomerProfile(profile);
       setModalNewCustomer(false);
-    } catch (e: any) {
+    } catch (err: unknown) {
+      const e = err as {
+        response?: {
+          data?: {
+            message?: { user?: string };
+            data?: { errors?: Record<string, string[]> };
+          };
+        };
+        message?: string;
+      };
       setNewCustError(
         e?.response?.data?.message?.user ??
           e?.response?.data?.data?.errors?.[

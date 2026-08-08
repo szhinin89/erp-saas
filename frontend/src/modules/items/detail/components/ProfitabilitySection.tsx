@@ -18,14 +18,15 @@ interface Props {
   disabled?: boolean;
 }
 
-// Mapeo puramente presentacional token→variable CSS. El código/label/existencia de cada
-// estado de margen viene del catálogo `item-margin-statuses` (backend), no se hardcodea aquí.
-const COLOR_TOKEN_VAR: Record<string, string> = {
-  success: "var(--color-success)",
-  warning: "var(--color-warning)",
-  error: "var(--color-error)",
-  neutral: "var(--color-text-secondary)",
-};
+// Tonos soportados por las clases `items-metric-card__value--*` (ver items-catalog.css).
+// El código/label/existencia de cada estado de margen viene del catálogo
+// `item-margin-statuses` (backend); aquí solo se valida que el colorToken recibido
+// coincida con un tono conocido, cayendo a "neutral" si no.
+const VALID_TONES = new Set(["success", "warning", "error", "neutral"]);
+
+function toneClass(colorToken: string | undefined): string {
+  return colorToken && VALID_TONES.has(colorToken) ? colorToken : "neutral";
+}
 
 type MarginStatusOption = {
   code: MarginStatusCode;
@@ -87,10 +88,8 @@ export function ProfitabilitySection({ itemId, disabled = false }: Props) {
     setSimLoading(false);
   };
 
-  const statusColor = (s: MarginStatusCode) =>
-    COLOR_TOKEN_VAR[
-      marginStatuses.find((m) => m.code === s)?.colorToken ?? ""
-    ] ?? "var(--color-text-secondary)";
+  const statusTone = (s: MarginStatusCode) =>
+    toneClass(marginStatuses.find((m) => m.code === s)?.colorToken);
 
   const statusLabel = (s: MarginStatusCode) =>
     marginStatuses.find((m) => m.code === s)?.label ?? s;
@@ -127,12 +126,12 @@ export function ProfitabilitySection({ itemId, disabled = false }: Props) {
           label={t("items.profitability.grossMargin", "Margen Bruto")}
           value={`${currencyCode} ${formatMoney(data.marginAmount, dc.totalAmount)}`}
           sublabel={`${formatMoney(data.marginPercent, dc.percentage)}%`}
-          valueColor={statusColor(data.marginStatus)}
+          valueTone={statusTone(data.marginStatus)}
         />
         <MetricCard
           label={t("items.profitability.status", "Estado")}
           value={statusLabel(data.marginStatus)}
-          valueColor={statusColor(data.marginStatus)}
+          valueTone={statusTone(data.marginStatus)}
         />
       </div>
 
@@ -188,23 +187,19 @@ export function ProfitabilitySection({ itemId, disabled = false }: Props) {
               )}
               value={`${currencyCode} ${formatMoney(sim.simulatedMarginAmount, dc.totalAmount)}`}
               sublabel={`${formatMoney(sim.simulatedMarginPercent, dc.percentage)}%`}
-              valueColor={statusColor(sim.simulatedMarginStatus)}
+              valueTone={statusTone(sim.simulatedMarginStatus)}
               small
             />
             <MetricCard
               label={t("items.profitability.difference", "Diferencia")}
               value={`${sim.marginDifference >= 0 ? "+" : ""}${currencyCode} ${formatMoney(sim.marginDifference, dc.totalAmount)}`}
-              valueColor={
-                sim.marginDifference >= 0
-                  ? "var(--color-success)"
-                  : "var(--color-error)"
-              }
+              valueTone={sim.marginDifference >= 0 ? "success" : "error"}
               small
             />
             <MetricCard
               label={t("items.profitability.status", "Estado")}
               value={statusLabel(sim.simulatedMarginStatus)}
-              valueColor={statusColor(sim.simulatedMarginStatus)}
+              valueTone={statusTone(sim.simulatedMarginStatus)}
               small
             />
           </div>
@@ -218,13 +213,13 @@ function MetricCard({
   label,
   value,
   sublabel,
-  valueColor,
+  valueTone,
   small,
 }: {
   label: string;
   value: string;
   sublabel?: string;
-  valueColor?: string;
+  valueTone?: string;
   small?: boolean;
 }) {
   return (
@@ -233,8 +228,7 @@ function MetricCard({
     >
       <div className="items-metric-card__label">{label}</div>
       <div
-        className="items-metric-card__value"
-        style={valueColor ? { color: valueColor } : undefined}
+        className={`items-metric-card__value${valueTone ? ` items-metric-card__value--${valueTone}` : ""}`}
       >
         {value}
       </div>

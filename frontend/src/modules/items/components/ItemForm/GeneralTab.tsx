@@ -99,7 +99,7 @@ export function GeneralTab({
         <ZHField
           label={t("items.form.brand", "Marca")}
           required={!isEditMode}
-          fieldError={fe((errors as any).brandId?.message)}
+          fieldError={fe(errors.brandId?.message)}
         >
           <ZhSelect {...register("brandId")} disabled={disabled}>
             <option value="">
@@ -115,7 +115,7 @@ export function GeneralTab({
         <ZHField
           label={t("items.form.category", "Categoría")}
           required={!isEditMode}
-          fieldError={fe((errors as any).categoryNodeId?.message)}
+          fieldError={fe(errors.categoryNodeId?.message)}
         >
           <ZhSelect {...register("categoryNodeId")} disabled={disabled}>
             <option value="">
