@@ -5,7 +5,7 @@ import type {
   ItemVariantDto,
   GetItemsResponse,
 } from "../../../types/items";
-import type { PricingRuleSummaryDto } from "../../pricing/api/pricingService";
+import type { PricingRuleSummaryDto } from "../../pricing/types";
 
 export interface GetItemsParams {
   search?: string;

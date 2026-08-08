@@ -12,7 +12,7 @@ import { UserPreferencesSection } from "../sections/UserPreferencesSection";
 import { UserSecuritySection } from "../sections/UserSecuritySection";
 import { type CompanyUserMembershipAdminDto } from "../api/membershipService";
 import { type Profile } from "../../api/profileService";
-import { type BranchListItemDto } from "../../../branches/api/branchService";
+import { type BranchListItemDto } from "../../../branches/types";
 import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 
 export type UserConfigTabId =

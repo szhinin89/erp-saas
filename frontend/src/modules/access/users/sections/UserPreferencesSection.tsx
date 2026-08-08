@@ -12,7 +12,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { COMPANY_USER_LOGIN_MODES } from "../../api/companyUserPreferencesService";
-import { type BranchListItemDto } from "../../../branches/api/branchService";
+import { type BranchListItemDto } from "../../../branches/types";
 import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 
 interface Props {

@@ -5,7 +5,7 @@ import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import { useCashRegistersPage } from "../hooks/useCashRegistersPage";
 import { CashRegistersListSection } from "./CashRegistersListSection";
 import { CashRegistersFormPanel } from "./CashRegistersFormPanel";
-import type { CashRegisterDto } from "../../caja/api/cajaService";
+import type { CashRegisterDto } from "../../caja/types";
 import "../../../styles/shared/items-catalog.css";
 
 export function CashRegistersManagementSection() {

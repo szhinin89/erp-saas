@@ -2,7 +2,7 @@ import { Controller, type Control } from "react-hook-form";
 import { ZHToggle } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { useI18n } from "../../../../i18n/i18n";
-import { type BranchListItemDto } from "../../../branches/api/branchService";
+import { type BranchListItemDto } from "../../../branches/types";
 import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 
 interface Props {
