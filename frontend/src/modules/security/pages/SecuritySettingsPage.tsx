@@ -24,13 +24,13 @@ import {
   type SecurityUser,
 } from "../api/securityService";
 import {
-  companyUserPreferencesService,
+  companyUserPreferencesFacade,
   COMPANY_USER_LOGIN_MODES,
-} from "../../access/api/companyUserPreferencesService";
+} from "../../access/facades/companyUserPreferencesFacade";
 import {
-  branchService,
+  branchLookupFacade,
   type BranchListItemDto,
-} from "../../branches/api/branchService";
+} from "../../branches/facades/branchLookupFacade";
 import {
   companyUserPreferencesSchema,
   type CompanyUserPreferencesFormValues,
@@ -118,12 +118,12 @@ export function SecuritySettingsPage() {
     try {
       if (branches.length === 0) {
         setBranchesLoading(true);
-        branchService
+        branchLookupFacade
           .list("all")
           .then(setBranches)
           .finally(() => setBranchesLoading(false));
       }
-      const existing = await companyUserPreferencesService.get(
+      const existing = await companyUserPreferencesFacade.get(
         target.companyUserMembershipId,
       );
       resetPrefs({
@@ -155,7 +155,7 @@ export function SecuritySettingsPage() {
     setPrefsSaving(true);
     setPrefsSaveError("");
     try {
-      await companyUserPreferencesService.update(
+      await companyUserPreferencesFacade.update(
         prefsTarget.companyUserMembershipId,
         {
           loginMode: values.loginMode,

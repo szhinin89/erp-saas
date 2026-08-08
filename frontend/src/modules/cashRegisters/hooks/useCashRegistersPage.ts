@@ -2,19 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  cajaService,
+  cashRegisterAdminFacade,
   type CashRegisterDto,
   type CashRegisterActiveStatus,
   type EmissionPointLookupForBranchDto,
-} from "../../caja/api/cajaService";
+} from "../../caja/facades/cashRegisterAdminFacade";
 import {
-  branchService,
+  branchLookupFacade,
   type BranchListItemDto,
-} from "../../branches/api/branchService";
+} from "../../branches/facades/branchLookupFacade";
 import {
-  warehouseService,
+  warehouseLookupFacade,
   type WarehouseDto,
-} from "../../inventory/warehouses/api/warehouseService";
+} from "../../inventory/facades/warehouseLookupFacade";
 import {
   cashRegistersPageSchema,
   emptyCashRegistersPageForm,
@@ -86,7 +86,7 @@ export function useCashRegistersPage() {
     setLoading(true);
     try {
       setItems(
-        await cajaService.listAllCashRegisters(
+        await cashRegisterAdminFacade.listAllCashRegisters(
           activeStatus,
           search || undefined,
         ),
@@ -101,7 +101,7 @@ export function useCashRegistersPage() {
   const loadBranches = useCallback(async () => {
     setLoadingBranches(true);
     try {
-      setBranches(await branchService.list("active"));
+      setBranches(await branchLookupFacade.list("active"));
     } catch {
       // selector mostrará vacío
     } finally {
@@ -117,7 +117,7 @@ export function useCashRegistersPage() {
     setLoadingEmissionPoints(true);
     try {
       setEmissionPoints(
-        await cajaService.emissionPointLookupsByBranch(branchId),
+        await cashRegisterAdminFacade.emissionPointLookupsByBranch(branchId),
       );
     } catch {
       setEmissionPoints([]);
@@ -133,7 +133,7 @@ export function useCashRegistersPage() {
     }
     setLoadingWarehouses(true);
     try {
-      setWarehouses(await warehouseService.list("active", undefined, branchId));
+      setWarehouses(await warehouseLookupFacade.list("active", undefined, branchId));
     } catch {
       setWarehouses([]);
     } finally {
@@ -230,7 +230,7 @@ export function useCashRegistersPage() {
     setSaving(true);
     try {
       if (editingId) {
-        await cajaService.updateCashRegister(editingId, {
+        await cashRegisterAdminFacade.updateCashRegister(editingId, {
           id: editingId,
           name: form.name.trim(),
           emissionPointId: form.emissionPointId || null,
@@ -241,7 +241,7 @@ export function useCashRegistersPage() {
         await fetchList();
         message.success("Caja actualizada correctamente.");
       } else {
-        const created = await cajaService.createCashRegister({
+        const created = await cashRegisterAdminFacade.createCashRegister({
           branchId: form.branchId,
           code: form.code.trim(),
           name: form.name.trim(),
@@ -282,9 +282,9 @@ export function useCashRegistersPage() {
     if (!canManage) return;
     try {
       if (item.isActive) {
-        await cajaService.disableCashRegister(item.id);
+        await cashRegisterAdminFacade.disableCashRegister(item.id);
       } else {
-        await cajaService.enableCashRegister(item.id);
+        await cashRegisterAdminFacade.enableCashRegister(item.id);
       }
       await fetchList();
     } catch (err: unknown) {

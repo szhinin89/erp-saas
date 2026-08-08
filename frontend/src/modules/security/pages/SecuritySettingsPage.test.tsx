@@ -10,8 +10,8 @@ import {
 import { I18nProvider } from "../../../i18n/i18n";
 import { useAuthStore } from "../../../store/authStore";
 import { SecuritySettingsPage } from "./SecuritySettingsPage";
-import { companyUserPreferencesService } from "../../access/api/companyUserPreferencesService";
-import { branchService } from "../../branches/api/branchService";
+import { companyUserPreferencesFacade } from "../../access/facades/companyUserPreferencesFacade";
+import { branchLookupFacade } from "../../branches/facades/branchLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 vi.mock("../api/securityService", () => ({
@@ -21,16 +21,16 @@ vi.mock("../api/securityService", () => ({
   },
 }));
 
-vi.mock("../../access/api/companyUserPreferencesService", () => ({
+vi.mock("../../access/facades/companyUserPreferencesFacade", () => ({
   COMPANY_USER_LOGIN_MODES: ["AskBranch", "DirectToDefault"],
-  companyUserPreferencesService: {
+  companyUserPreferencesFacade: {
     get: vi.fn(),
     update: vi.fn(),
   },
 }));
 
-vi.mock("../../branches/api/branchService", () => ({
-  branchService: {
+vi.mock("../../branches/facades/branchLookupFacade", () => ({
+  branchLookupFacade: {
     list: vi.fn().mockResolvedValue([]),
   },
 }));
@@ -151,9 +151,9 @@ describe("SecuritySettingsPage — preferences (Fase G)", () => {
     vi.mocked(securityService.getAdminMatrix).mockResolvedValue(
       matrixWithOneUser,
     );
-    vi.mocked(companyUserPreferencesService.get).mockReset();
-    vi.mocked(companyUserPreferencesService.update).mockReset();
-    vi.mocked(branchService.list).mockResolvedValue([
+    vi.mocked(companyUserPreferencesFacade.get).mockReset();
+    vi.mocked(companyUserPreferencesFacade.update).mockReset();
+    vi.mocked(branchLookupFacade.list).mockResolvedValue([
       {
         id: "branch-1",
         name: "Matriz",
@@ -198,7 +198,7 @@ describe("SecuritySettingsPage — preferences (Fase G)", () => {
   });
 
   it("carga las preferencias existentes al abrir el modal usando el companyUserMembershipId", async () => {
-    vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
+    vi.mocked(companyUserPreferencesFacade.get).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: "branch-2",
       loginMode: "DirectToDefault",
@@ -207,13 +207,13 @@ describe("SecuritySettingsPage — preferences (Fase G)", () => {
     renderPage();
     await openPreferencesModalFor("Ana Perez");
 
-    expect(companyUserPreferencesService.get).toHaveBeenCalledWith(
+    expect(companyUserPreferencesFacade.get).toHaveBeenCalledWith(
       membershipId,
     );
   });
 
   it("muestra los valores existentes en el formulario", async () => {
-    vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
+    vi.mocked(companyUserPreferencesFacade.get).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: "branch-2",
       loginMode: "DirectToDefault",
@@ -235,12 +235,12 @@ describe("SecuritySettingsPage — preferences (Fase G)", () => {
   });
 
   it("el update envía companyUserId por la ruta (no en el body) y solo los campos editables", async () => {
-    vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
+    vi.mocked(companyUserPreferencesFacade.get).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: null,
       loginMode: "AskBranch",
     });
-    vi.mocked(companyUserPreferencesService.update).mockResolvedValue({
+    vi.mocked(companyUserPreferencesFacade.update).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: "branch-1",
       loginMode: "DirectToDefault",
@@ -258,7 +258,7 @@ describe("SecuritySettingsPage — preferences (Fase G)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
 
     await waitFor(() => {
-      expect(companyUserPreferencesService.update).toHaveBeenCalledWith(
+      expect(companyUserPreferencesFacade.update).toHaveBeenCalledWith(
         membershipId,
         {
           loginMode: "DirectToDefault",
@@ -269,12 +269,12 @@ describe("SecuritySettingsPage — preferences (Fase G)", () => {
   });
 
   it("un error 422 del backend muestra el mensaje usando la infraestructura existente", async () => {
-    vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
+    vi.mocked(companyUserPreferencesFacade.get).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: null,
       loginMode: "AskBranch",
     });
-    vi.mocked(companyUserPreferencesService.update).mockRejectedValue({
+    vi.mocked(companyUserPreferencesFacade.update).mockRejectedValue({
       isAxiosError: true,
       response: {
         status: 422,

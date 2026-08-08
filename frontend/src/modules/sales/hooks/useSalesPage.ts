@@ -16,8 +16,8 @@ import { warehouseService } from "../../inventory/warehouses/api/warehouseServic
 import type { WarehouseDto } from "../../inventory/warehouses/api/warehouseService";
 import { stockService } from "../../inventory/stock/api/stockService";
 import type { ItemWarehouseAvailabilityDto } from "../../inventory/stock/api/stockService";
-import { electronicDocumentsMonitorService } from "../../electronicDocuments/monitor/api/electronicDocumentsMonitorService";
-import type { ElectronicDocumentXmlVariant } from "../../electronicDocuments/monitor/api/electronicDocumentsMonitorService";
+import { electronicDocumentAccessFacade } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
+import type { ElectronicDocumentXmlVariant } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
 import { downloadTextFile } from "../../electronicDocuments/monitor/utils/download";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
 import type {
@@ -48,8 +48,8 @@ import {
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import { calcSummary, type TaxBreakdownEntry } from "../utils/salesCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
-import { cajaService } from "../../caja/api/cajaService";
-import type { CashSessionDto } from "../../caja/api/cajaService";
+import { cajaSessionLookupFacade } from "../../caja/facades/cajaSessionLookupFacade";
+import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { message } from "../../../lib/messages";
 import {
@@ -242,7 +242,7 @@ export function useSalesPage() {
 
   const checkCashSession = useCallback(async (): Promise<CashSessionDto | null> => {
     try {
-      const s = await cajaService.getMy();
+      const s = await cajaSessionLookupFacade.getMy();
       setMyCashSession(s);
       setCashSessionCheckError(null);
       return s;
@@ -1177,7 +1177,7 @@ export function useSalesPage() {
     try {
       const variant: ElectronicDocumentXmlVariant =
         issueResult.electronicStatus === "Authorized" ? "Authorized" : "Signed";
-      const xml = await electronicDocumentsMonitorService.getXml(
+      const xml = await electronicDocumentAccessFacade.getXml(
         "Sales",
         issueResult.id,
         variant,
@@ -1209,7 +1209,7 @@ export function useSalesPage() {
     if (!editing) return;
     setSaving(true);
     try {
-      const result = await electronicDocumentsMonitorService.register(
+      const result = await electronicDocumentAccessFacade.register(
         "Invoice",
         "Sales",
         editing.id,

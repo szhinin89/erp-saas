@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
 import { message } from "../../../lib/messages";
 import {
-  rideService,
+  rideGenerationFacade,
   type RideGenerationResultDto,
-} from "../../ride/api/rideService";
+} from "../../ride/facades/rideGenerationFacade";
 import { downloadBlob } from "../../ride/utils/downloadBlob";
 
 const SOURCE_MODULE = "Sales";
@@ -64,7 +64,7 @@ function announceOutcome(result: RideGenerationResultDto): boolean {
 }
 
 async function openRideInNewTab(sourceEntityId: string): Promise<void> {
-  const blob = await rideService.getContentBlob(SOURCE_MODULE, sourceEntityId);
+  const blob = await rideGenerationFacade.getContentBlob(SOURCE_MODULE, sourceEntityId);
   const url = URL.createObjectURL(blob);
   // No se revoca inmediatamente: la pestaña nueva sigue necesitando la URL viva. El navegador
   // libera la memoria al cerrar esa pestaña — mismo criterio que useAuthenticatedImage.ts, que
@@ -78,7 +78,7 @@ export function useRideActions() {
   const handleViewRide = useCallback(async (sourceEntityId: string) => {
     setRidePending(true);
     try {
-      const result = await rideService.getOrGenerate(
+      const result = await rideGenerationFacade.getOrGenerate(
         SOURCE_MODULE,
         sourceEntityId,
       );
@@ -95,12 +95,12 @@ export function useRideActions() {
     async (sourceEntityId: string, invoiceNumber?: string) => {
       setRidePending(true);
       try {
-        const result = await rideService.getOrGenerate(
+        const result = await rideGenerationFacade.getOrGenerate(
           SOURCE_MODULE,
           sourceEntityId,
         );
         if (announceOutcome(result)) {
-          const blob = await rideService.getContentBlob(
+          const blob = await rideGenerationFacade.getContentBlob(
             SOURCE_MODULE,
             sourceEntityId,
           );
@@ -117,7 +117,7 @@ export function useRideActions() {
   const handleRegenerateRide = useCallback(async (sourceEntityId: string) => {
     setRidePending(true);
     try {
-      const result = await rideService.regenerate(
+      const result = await rideGenerationFacade.regenerate(
         SOURCE_MODULE,
         sourceEntityId,
       );

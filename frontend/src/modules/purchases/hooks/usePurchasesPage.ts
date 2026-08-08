@@ -20,8 +20,8 @@ import type {
   SupplierRoleConfigDto,
 } from "../../masterData/types/businessPartner.types";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
-import { warehouseService } from "../../inventory/warehouses/api/warehouseService";
-import type { WarehouseDto } from "../../inventory/warehouses/api/warehouseService";
+import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
+import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
 import { paymentTermService } from "../../masterData/api/paymentTermService";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
@@ -232,7 +232,7 @@ export function usePurchasesPage() {
 
   // ── Init reference data ────────────────────────────────────────────
   useEffect(() => {
-    warehouseService
+    warehouseLookupFacade
       .list("active")
       .then(setWarehouses)
       .catch(() => {});

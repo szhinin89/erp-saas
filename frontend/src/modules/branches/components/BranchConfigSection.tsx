@@ -12,8 +12,8 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
-import { orgConfigService } from "../../configuracion/empresa/api/orgConfigService";
-import { warehouseService } from "../../inventory/warehouses/api/warehouseService";
+import { branchInvoiceDefaultsFacade } from "../../configuracion/empresa/facades/branchInvoiceDefaultsFacade";
+import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 // Propietario Sucursal: DefaultWarehouseId.
@@ -39,14 +39,14 @@ export function BranchConfigSection({ branchId }: Props) {
 
   // ── Bodegas de esta sucursal ──────────────────────────────────────────────
   const warehousesState = useAsync(
-    () => warehouseService.list("active", undefined, branchId),
+    () => warehouseLookupFacade.list("active", undefined, branchId),
     true,
     [branchId],
   );
 
   // ── Configuración actual de la sucursal ───────────────────────────────────
   const settingsState = useAsync(
-    () => orgConfigService.getBranchInvoiceDefaults(branchId),
+    () => branchInvoiceDefaultsFacade.getBranchInvoiceDefaults(branchId),
     true,
     [branchId],
   );
@@ -89,7 +89,7 @@ export function BranchConfigSection({ branchId }: Props) {
     setSaveError(null);
     setSaving(true);
     try {
-      await orgConfigService.upsertBranchInvoiceDefaults(branchId, {
+      await branchInvoiceDefaultsFacade.upsertBranchInvoiceDefaults(branchId, {
         defaultWarehouseId: values.defaultWarehouseId ?? null,
       });
       message.success("Configuración de sucursal guardada.");

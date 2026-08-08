@@ -15,7 +15,7 @@ import { formatApiRequestError } from "../../../lib/apiError";
 import { message } from "../../../../lib/messages";
 import { orgConfigService } from "../api/orgConfigService";
 import { sriLookupFacade } from "../../../items/facades/sriLookupFacade";
-import { paymentTermService } from "../../../masterData/api/paymentTermService";
+import { paymentTermLookupFacade } from "../../../masterData/facades/paymentTermLookupFacade";
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 // Propietario Empresa: DocTypeCode, PaymentMethodCode, PaymentTermId.
@@ -48,7 +48,7 @@ export function CompanyOrgConfigSection() {
   // ── Catálogos ────────────────────────────────────────────────────────────
   const docTypesState = useAsync(() => sriLookupFacade.docTypes());
   const paymentMethodsState = useAsync(() => sriLookupFacade.paymentMethods());
-  const paymentTermsState = useAsync(() => paymentTermService.list());
+  const paymentTermsState = useAsync(() => paymentTermLookupFacade.list());
 
   // ── Valores actuales ─────────────────────────────────────────────────────
   const settingsState = useAsync(() =>

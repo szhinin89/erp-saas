@@ -4,14 +4,14 @@ import { renderHook, act } from "@testing-library/react";
 import type {
   RideGenerationResultDto,
   RideOutcome,
-} from "../../ride/api/rideService";
+} from "../../ride/facades/rideGenerationFacade";
 
 const getOrGenerateMock = vi.fn();
 const regenerateMock = vi.fn();
 const getContentBlobMock = vi.fn();
 
-vi.mock("../../ride/api/rideService", () => ({
-  rideService: {
+vi.mock("../../ride/facades/rideGenerationFacade", () => ({
+  rideGenerationFacade: {
     getOrGenerate: (...a: unknown[]) => getOrGenerateMock(...a),
     regenerate: (...a: unknown[]) => regenerateMock(...a),
     getContentBlob: (...a: unknown[]) => getContentBlobMock(...a),

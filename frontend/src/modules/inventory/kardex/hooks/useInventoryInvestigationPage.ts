@@ -10,8 +10,8 @@ import { warehouseService } from "../../warehouses/api/warehouseService";
 import type { WarehouseDto } from "../../warehouses/api/warehouseService";
 import { itemLookupFacade } from "../../../items/facades/itemLookupFacade";
 import type { ItemDto } from "../../../../types/items";
-import { purchaseService } from "../../../purchases/api/purchaseService";
-import { salesService } from "../../../sales/api/salesService";
+import { purchaseLookupFacade } from "../../../purchases/facades/purchaseLookupFacade";
+import { salesLookupFacade } from "../../../sales/facades/salesLookupFacade";
 import { message } from "../../../../lib/messages";
 
 export type InvestigationTab = "kardex" | "analisis" | "conteo-fisico";
@@ -101,8 +101,8 @@ export function useInventoryInvestigationPage(
     setDocSubType(initialDocument.docType);
     const resolve =
       initialDocument.docType === "PurchaseInvoice"
-        ? purchaseService.getById(initialDocument.id)
-        : salesService.getById(initialDocument.id);
+        ? purchaseLookupFacade.getById(initialDocument.id)
+        : salesLookupFacade.getById(initialDocument.id);
     resolve
       .then((inv) =>
         setSelectedDoc({
@@ -172,7 +172,7 @@ export function useInventoryInvestigationPage(
     setDocMatches([]);
     try {
       if (docSubType === "PurchaseInvoice") {
-        const res = await purchaseService.list(
+        const res = await purchaseLookupFacade.list(
           docNumberQuery.trim(),
           undefined,
           1,
@@ -187,7 +187,7 @@ export function useInventoryInvestigationPage(
           })),
         );
       } else {
-        const res = await salesService.list(
+        const res = await salesLookupFacade.list(
           docNumberQuery.trim(),
           undefined,
           1,

@@ -28,9 +28,9 @@ import { branchAssignmentService } from "../api/branchAssignmentService";
 import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
 import { profileService, type Profile } from "../../api/profileService";
 import {
-  branchService,
+  branchLookupFacade,
   type BranchListItemDto,
-} from "../../../branches/api/branchService";
+} from "../../../branches/facades/branchLookupFacade";
 import { userConfigTabs, type UserConfigTabId } from "../config/userConfigTabs";
 import {
   userConfigSchema,
@@ -134,7 +134,7 @@ export function UserConfigPage() {
     let cancelled = false;
 
     if (mode === "new") {
-      Promise.all([profileService.list(true), branchService.list("active")])
+      Promise.all([profileService.list(true), branchLookupFacade.list("active")])
         .then(([profilesList, branchesList]) => {
           if (cancelled) return;
           setProfiles(profilesList);
@@ -157,7 +157,7 @@ export function UserConfigPage() {
     Promise.all([
       membershipService.list(false),
       profileService.list(true),
-      branchService.list("active"),
+      branchLookupFacade.list("active"),
       branchAssignmentService.getMembershipBranches(userId),
       companyUserPreferencesService.get(userId),
     ])

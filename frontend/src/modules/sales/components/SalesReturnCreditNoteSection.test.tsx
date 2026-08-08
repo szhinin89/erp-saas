@@ -16,8 +16,8 @@ vi.mock(
 );
 
 const getXmlMock = vi.fn();
-vi.mock("../../electronicDocuments/monitor/api/electronicDocumentsMonitorService", () => ({
-  electronicDocumentsMonitorService: {
+vi.mock("../../electronicDocuments/facades/electronicDocumentAccessFacade", () => ({
+  electronicDocumentAccessFacade: {
     getXml: (...a: unknown[]) => getXmlMock(...a),
   },
 }));

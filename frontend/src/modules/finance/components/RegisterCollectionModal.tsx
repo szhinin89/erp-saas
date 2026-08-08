@@ -16,9 +16,9 @@ import { formatMoney } from "../../../lib/sanitizers";
 import type { SalesReceivableDto } from "../api/receivableService";
 import { paymentService } from "../api/paymentService";
 import {
-  paymentMethodService,
+  paymentMethodLookupFacade,
   type PaymentMethodDto,
-} from "../../sales/api/paymentMethodService";
+} from "../../sales/facades/paymentMethodLookupFacade";
 import {
   buildRegisterCollectionSchema,
   type RegisterCollectionFormValues,
@@ -68,7 +68,7 @@ export function RegisterCollectionModal({
       reference: "",
     });
     setSubmitError("");
-    paymentMethodService
+    paymentMethodLookupFacade
       .list(true)
       .then(setMethods)
       .catch(() => setMethods([]));

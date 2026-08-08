@@ -10,7 +10,7 @@ import type {
 } from "../../../components/zh/electronicDocuments/electronicDocumentDiagnosticTypes";
 import { useI18n } from "../../../i18n/i18n";
 import { formatApiError } from "../../lib/formatApiError";
-import { electronicDocumentsMonitorService } from "../../electronicDocuments/monitor/api/electronicDocumentsMonitorService";
+import { electronicDocumentAccessFacade } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
 
 const SOURCE_MODULE = "Sales";
 
@@ -82,7 +82,7 @@ export function SalesElectronicDiagnosticDrawer({
     setXmlContent(null);
     setXmlVariant(variant);
     try {
-      const xml = await electronicDocumentsMonitorService.getXml(
+      const xml = await electronicDocumentAccessFacade.getXml(
         SOURCE_MODULE,
         invoiceId,
         variant,

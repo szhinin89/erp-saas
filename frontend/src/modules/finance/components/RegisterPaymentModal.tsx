@@ -16,9 +16,9 @@ import { formatMoney } from "../../../lib/sanitizers";
 import type { PurchasePayableDto } from "../api/payableService";
 import { paymentService } from "../api/paymentService";
 import {
-  paymentMethodService,
+  paymentMethodLookupFacade,
   type PaymentMethodDto,
-} from "../../sales/api/paymentMethodService";
+} from "../../sales/facades/paymentMethodLookupFacade";
 import {
   buildRegisterPaymentSchema,
   type RegisterPaymentFormValues,
@@ -62,7 +62,7 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
       reference: "",
     });
     setSubmitError("");
-    paymentMethodService
+    paymentMethodLookupFacade
       .list(true)
       .then(setMethods)
       .catch(() => setMethods([]));

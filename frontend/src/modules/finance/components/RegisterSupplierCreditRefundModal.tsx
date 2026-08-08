@@ -16,7 +16,7 @@ import {
   financialDestinationService,
   type CompanyFinancialDestinationDto,
 } from "../api/financialDestinationService";
-import { paymentMethodService, type PaymentMethodDto } from "../../sales/api/paymentMethodService";
+import { paymentMethodLookupFacade, type PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import {
   buildRegisterSupplierCreditRefundSchema,
   type RegisterSupplierCreditRefundFormValues,
@@ -34,7 +34,7 @@ interface Props {
  * se resuelve vía `GET /finance/financial-destinations?isActive=true` (Remediación 01, Fase 13);
  * `AccountingAccountId` nunca se envía — se deriva server-side (diseño Fase 13 cambio exacto #3).
  * `externalReference` es condicionalmente obligatorio según `PaymentMethod.RequiresReference`
- * (catálogo real, `paymentMethodService.list(true)`) — validado manualmente en el submit porque
+ * (catálogo real, `paymentMethodLookupFacade.list(true)`) — validado manualmente en el submit porque
  * el resolver de Zod se fija al montar el formulario y no puede reaccionar a la selección del
  * método de pago sin remontar el modal.
  */
@@ -85,7 +85,7 @@ export function RegisterSupplierCreditRefundModal({
       .list(true)
       .then((list) => setDestinations(list.filter((d) => d.currencyCode === credit.currencyCode)))
       .catch(() => setDestinations([]));
-    paymentMethodService
+    paymentMethodLookupFacade
       .list(true)
       .then(setMethods)
       .catch(() => setMethods([]));

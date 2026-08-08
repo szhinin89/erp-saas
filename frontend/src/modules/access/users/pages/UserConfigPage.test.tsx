@@ -15,7 +15,7 @@ import { membershipService } from "../api/membershipService";
 import { branchAssignmentService } from "../api/branchAssignmentService";
 import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
 import { profileService } from "../../api/profileService";
-import { branchService } from "../../../branches/api/branchService";
+import { branchLookupFacade } from "../../../branches/facades/branchLookupFacade";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { message } from "../../../../lib/messages";
 
@@ -61,8 +61,8 @@ vi.mock("../../api/profileService", () => ({
   },
 }));
 
-vi.mock("../../../branches/api/branchService", () => ({
-  branchService: {
+vi.mock("../../../branches/facades/branchLookupFacade", () => ({
+  branchLookupFacade: {
     list: vi.fn(),
   },
 }));
@@ -214,7 +214,7 @@ beforeEach(() => {
   vi.mocked(profileService.list).mockResolvedValue([
     { id: "profile-1", name: "Ventas", description: null, isActive: true },
   ]);
-  vi.mocked(branchService.list).mockResolvedValue(twoBranchesCatalog);
+  vi.mocked(branchLookupFacade.list).mockResolvedValue(twoBranchesCatalog);
   vi.mocked(message.confirm).mockResolvedValue(true);
   setUserRole("Admin");
 });
@@ -461,7 +461,7 @@ describe("UserConfigPage — reglas de negocio de sucursales/preferencias", () =
   it("revocar la sucursal por defecto limpia el campo y muestra la nota, sin llegar a un 422", async () => {
     // Tres sucursales autorizadas (Matriz es la default) — al revocar Matriz deben quedar dos
     // autorizadas (no una sola), para aislar esta regla de la de auto-selección de "1 sola".
-    vi.mocked(branchService.list).mockResolvedValue([
+    vi.mocked(branchLookupFacade.list).mockResolvedValue([
       ...twoBranchesCatalog,
       {
         id: "branch-3",

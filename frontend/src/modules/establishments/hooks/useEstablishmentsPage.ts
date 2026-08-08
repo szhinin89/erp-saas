@@ -7,9 +7,9 @@ import {
   type EstablishmentListItemDto,
 } from "../api/establishmentService";
 import {
-  branchService,
+  branchLookupFacade,
   type BranchListItemDto,
-} from "../../branches/api/branchService";
+} from "../../branches/facades/branchLookupFacade";
 import {
   establishmentSchema,
   emptyEstablishmentForm,
@@ -86,7 +86,7 @@ export function useEstablishmentsPage() {
   const loadBranches = useCallback(async () => {
     setLoadingBranches(true);
     try {
-      setBranches(await branchService.list("active"));
+      setBranches(await branchLookupFacade.list("active"));
     } catch {
       // selector mostrará vacío
     } finally {

@@ -9,7 +9,7 @@ import type {
   ElectronicDocumentDiagnosticDto,
   ElectronicDocumentXmlVariant,
 } from "../../../components/zh/electronicDocuments/electronicDocumentDiagnosticTypes";
-import { electronicDocumentsMonitorService } from "../../electronicDocuments/monitor/api/electronicDocumentsMonitorService";
+import { electronicDocumentAccessFacade } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
 import { formatApiError } from "../../lib/formatApiError";
 import { message } from "../../../lib/messages";
 import { useRideActions } from "../hooks/useRideActions";
@@ -104,7 +104,7 @@ export function SalesReturnCreditNoteSection({
     setXmlContent(null);
     setXmlVariant(variant);
     try {
-      const xml = await electronicDocumentsMonitorService.getXml(
+      const xml = await electronicDocumentAccessFacade.getXml(
         SOURCE_MODULE,
         salesReturnId,
         variant,
