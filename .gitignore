@@ -86,6 +86,12 @@ dist/
 .dockerignore
 docker-compose.override.yml
 
+# Backups locales (Postgres dump + FileStorage) — nunca versionar, pueden contener
+# datos reales de tenants, certificados P12 y comprobantes electrónicos SRI
+backups/
+*.dump
+*.tar.gz
+
 # Test results
 TestResults/
 coverage/
