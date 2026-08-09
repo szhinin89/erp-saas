@@ -231,7 +231,10 @@
         "backend/src/ERP.Infrastructure/Seeding/Steps/ElectronicDocumentsBootstrapStep.cs",
         "backend/src/ERP.Infrastructure/Seeding/Steps/InventoryBootstrapStep.cs",
         "backend/src/ERP.Infrastructure/Seeding/Steps/OrganizationBootstrapStep.cs",
-        "backend/src/ERP.Infrastructure/Seeding/Steps/SalesBootstrapStep.cs"
+        "backend/src/ERP.Infrastructure/Seeding/Steps/SalesBootstrapStep.cs",
+        "backend/src/ERP.Infrastructure/Seeding/MasterDataClassificationSeeder.cs",
+        "backend/src/ERP.Infrastructure/Seeding/MasterDataClassificationBackfillService.cs",
+        "backend/src/ERP.Infrastructure/Persistence/Repositories/MasterData/ClassificationCatalogRepositoryBase.cs"
       ],
       "exemptEntityGlobs": [
         "**/Billing/**",

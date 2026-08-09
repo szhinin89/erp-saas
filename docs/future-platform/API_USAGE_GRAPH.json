@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-08T03:35:02.151Z",
+  "generatedAt": "2026-08-09T00:49:28.212Z",
   "summary": {
-    "total": 95,
-    "allowed": 95,
+    "total": 96,
+    "allowed": 96,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -220,6 +220,14 @@
         "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
         "frontend/src/modules/items/catalog/api/categoryNodeService.ts",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/classifications",
+      "files": [
+        "frontend/src/modules/masterData/api/classificationCatalogService.ts"
       ],
       "legacy": false,
       "allowed": true
