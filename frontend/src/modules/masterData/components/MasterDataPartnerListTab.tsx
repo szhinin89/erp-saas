@@ -30,6 +30,8 @@ export interface MasterDataPartnerListTabProps {
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
   onSettings?: (bp: BusinessPartnerSummaryDto) => void;
   onSupplierProfile?: (bp: BusinessPartnerSummaryDto) => void;
+  onCustomerConfig?: (bp: BusinessPartnerSummaryDto) => void;
+  onSupplierClassification?: (bp: BusinessPartnerSummaryDto) => void;
   onAddAsSupplier?: (id: string) => void;
   onAddAsCustomer?: (id: string) => void;
   onActivate: (id: string) => void;
@@ -56,6 +58,8 @@ export function MasterDataPartnerListTab({
   searchInputRef,
   onSettings,
   onSupplierProfile,
+  onCustomerConfig,
+  onSupplierClassification,
   onAddAsSupplier,
   onAddAsCustomer,
   onActivate,
@@ -222,6 +226,28 @@ export function MasterDataPartnerListTab({
                             onClick={() => onSupplierProfile(bp)}
                           >
                             {t(`${prefix}.action.sri`, "Config SRI")}
+                          </ZHBtn>
+                        )}
+                      {role === "customer" &&
+                        canUpdate &&
+                        onCustomerConfig && (
+                          <ZHBtn
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onCustomerConfig(bp)}
+                          >
+                            {t(`${prefix}.action.classification`, "Clasificación")}
+                          </ZHBtn>
+                        )}
+                      {role === "supplier" &&
+                        canUpdate &&
+                        onSupplierClassification && (
+                          <ZHBtn
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onSupplierClassification(bp)}
+                          >
+                            {t(`${prefix}.action.classification`, "Clasificación")}
                           </ZHBtn>
                         )}
                       {canUpdate && !bp.isActive && (
