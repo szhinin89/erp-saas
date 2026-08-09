@@ -1,5 +1,5 @@
-using System.Collections.Concurrent;
 using ERP.Domain.Access.Interfaces;
+using System.Collections.Concurrent;
 
 namespace ERP.Application.Access.Caching;
 

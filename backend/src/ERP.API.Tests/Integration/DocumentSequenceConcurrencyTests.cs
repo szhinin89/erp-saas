@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ERP.API.Tests.Support;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
@@ -8,6 +7,7 @@ using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 using Xunit.Abstractions;
 
 namespace ERP.API.Tests.Integration;

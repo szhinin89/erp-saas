@@ -1,5 +1,4 @@
 using ERP.Application.Common.Interfaces;
-using ERP.Infrastructure.Seeding;
 
 namespace ERP.Infrastructure.Seeding.Steps;
 

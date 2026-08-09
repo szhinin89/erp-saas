@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
@@ -9,6 +6,9 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 

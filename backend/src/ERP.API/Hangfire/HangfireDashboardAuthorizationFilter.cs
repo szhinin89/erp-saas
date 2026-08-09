@@ -1,7 +1,6 @@
+using Hangfire.Dashboard;
 using System.Net;
 using System.Net.Sockets;
-using Hangfire.Dashboard;
-using Microsoft.AspNetCore.Hosting;
 
 namespace ERP.API.Hangfire;
 

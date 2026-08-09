@@ -1,10 +1,9 @@
 // CA1711: 'AuditedPermission' suffix matches business domain semantics.
 #pragma warning disable CA1711
-using System.Text.Json.Serialization;
-using ERP.Application.Access;
 using ERP.Application.Common;
 using ERP.Domain.Access.Interfaces;
 using MediatR;
+using System.Text.Json.Serialization;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 

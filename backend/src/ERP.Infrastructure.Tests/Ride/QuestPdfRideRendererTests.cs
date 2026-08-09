@@ -1,8 +1,8 @@
-using System.Diagnostics;
-using System.Text;
 using ERP.Application.Modules.Ride.Rendering;
 using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
+using System.Diagnostics;
+using System.Text;
 using Xunit.Abstractions;
 
 namespace ERP.Infrastructure.Tests.Ride;
