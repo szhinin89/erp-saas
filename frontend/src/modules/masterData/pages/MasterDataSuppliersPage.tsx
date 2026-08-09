@@ -580,6 +580,11 @@ export function MasterDataSuppliersPage() {
             searchInputRef={searchRef}
             onSettings={(bp) => void page.openSettings(bp)}
             onSupplierProfile={(bp) => void page.openSupplierConfig(bp)}
+            onSupplierClassification={
+              page.canUpdate
+                ? (bp) => void page.openSupplierClassification(bp)
+                : undefined
+            }
             onAddAsCustomer={(id) => void page.addAsCustomer(id)}
             onActivate={handleActivate}
             onDisable={handleDisable}
