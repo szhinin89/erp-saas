@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 
 namespace ERP.Domain.Configuration.Entities;
 
@@ -15,7 +16,7 @@ public sealed class SriSettings : AuditableEntity, ITenantScopedEntity, ICompany
     public const long CertMaxSizeBytes = 5 * 1024 * 1024;
 
     // Defaults SRI Ecuador cuando la empresa no ha configurado un valor específico
-    public const string FallbackDocTypeCode = "01";
+    public const string FallbackDocTypeCode = SriDocumentTypeCodes.Invoice;
     public const string FallbackSriPaymentMethodCode = "01";
 
     public Guid CompanyId { get; private set; }

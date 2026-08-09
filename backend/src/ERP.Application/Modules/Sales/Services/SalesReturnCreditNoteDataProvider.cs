@@ -9,6 +9,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using System.Globalization;
 
@@ -33,7 +34,7 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
     /// este proveedor, no un valor de negocio configurable (igual que <c>DocumentType</c> abajo).
     /// <c>internal</c> porque <see cref="UseCases.AuthorizeSalesReturnHandler"/> reutiliza el mismo
     /// valor al capturar el secuencial — única fuente de verdad, sin duplicar el literal.</summary>
-    internal const string CreditNoteDocTypeCode = "04";
+    internal const string CreditNoteDocTypeCode = SriDocumentTypeCodes.CreditNote;
 
     private readonly ISalesReturnRepository _returnRepository;
     private readonly ISalesInvoiceRepository _invoiceRepository;

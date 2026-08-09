@@ -6,6 +6,7 @@ using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.Services;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 using FluentValidation;
 using MediatR;
 
@@ -75,7 +76,7 @@ public sealed class IssueWithholdingHandler
     /// fija de este flujo de emisión, no un valor de negocio configurable (mismo criterio que
     /// <see cref="ERP.Application.Modules.Sales.Services.SalesReturnCreditNoteDataProvider.CreditNoteDocTypeCode"/>
     /// para Notas de Crédito "04").</summary>
-    private const string WithholdingDocTypeCode = "07";
+    private const string WithholdingDocTypeCode = SriDocumentTypeCodes.Withholding;
 
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;

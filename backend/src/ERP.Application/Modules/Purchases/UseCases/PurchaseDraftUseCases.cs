@@ -133,13 +133,26 @@ file static class AuthorizationRules
 
 public sealed class CreatePurchaseDraftValidator : AbstractValidator<CreatePurchaseDraftCommand>
 {
-    public CreatePurchaseDraftValidator()
+    /// <summary>
+    /// CLEAN-01C: <c>DocTypeCode</c> se persiste en <c>PurchaseInvoice</c> sin FK (a diferencia de
+    /// <c>DocumentSequence</c>, que sí referencia <c>SriDocType</c>) — sin esta regla, un cliente
+    /// podía enviar cualquier string de hasta 5 caracteres y quedaba guardado sin validar contra el
+    /// catálogo fiscal real.
+    /// </summary>
+    public CreatePurchaseDraftValidator(
+        ERP.Application.Common.Services.ISriDocTypeCatalogResolver docTypeCatalogResolver
+    )
     {
         RuleFor(x => x.SupplierId).NotEmpty().WithMessage("El proveedor es obligatorio.");
         RuleFor(x => x.DocTypeCode)
             .NotEmpty()
             .MaximumLength(PurchaseInvoice.DocTypeCodeMaxLen)
-            .WithMessage("El tipo de comprobante es obligatorio.");
+            .WithMessage("El tipo de comprobante es obligatorio.")
+            .MustAsync(
+                (code, ct) => docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(code, ct)
+            )
+            .WithMessage("El tipo de comprobante no corresponde a un código SRI activo.")
+            .When(x => !string.IsNullOrWhiteSpace(x.DocTypeCode));
         RuleFor(x => x.InvoiceNumber).NotEmpty().MaximumLength(PurchaseInvoice.InvoiceNumberMaxLen);
         RuleFor(x => x.IssueDate).NotEmpty();
         RuleFor(x => x.AuthorizationNumber).ValidSriAuthorization();
@@ -169,14 +182,22 @@ public sealed class CreatePurchaseDraftValidator : AbstractValidator<CreatePurch
 
 public sealed class UpdatePurchaseDraftValidator : AbstractValidator<UpdatePurchaseDraftCommand>
 {
-    public UpdatePurchaseDraftValidator()
+    /// <summary>CLEAN-01C: mismo criterio que <see cref="CreatePurchaseDraftValidator"/> — ver comentario ahí.</summary>
+    public UpdatePurchaseDraftValidator(
+        ERP.Application.Common.Services.ISriDocTypeCatalogResolver docTypeCatalogResolver
+    )
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.SupplierId).NotEmpty().WithMessage("El proveedor es obligatorio.");
         RuleFor(x => x.DocTypeCode)
             .NotEmpty()
             .MaximumLength(PurchaseInvoice.DocTypeCodeMaxLen)
-            .WithMessage("El tipo de comprobante es obligatorio.");
+            .WithMessage("El tipo de comprobante es obligatorio.")
+            .MustAsync(
+                (code, ct) => docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(code, ct)
+            )
+            .WithMessage("El tipo de comprobante no corresponde a un código SRI activo.")
+            .When(x => !string.IsNullOrWhiteSpace(x.DocTypeCode));
         RuleFor(x => x.InvoiceNumber).NotEmpty().MaximumLength(PurchaseInvoice.InvoiceNumberMaxLen);
         RuleFor(x => x.IssueDate).NotEmpty();
         RuleFor(x => x.AuthorizationNumber).ValidSriAuthorization();

@@ -3,6 +3,7 @@ using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
 using ERP.Domain.Modules.Sales.ValueObjects;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
@@ -36,7 +37,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
     // ── Documento ───────────────────────────────────────────────────
     // Default: SRI código "01" = Factura (fuente de verdad: tabla sri_doc_types)
-    public string DocTypeCode { get; private set; } = "01";
+    public string DocTypeCode { get; private set; } = SriDocumentTypeCodes.Invoice;
     public string InvoiceNumber { get; private set; } = null!;
     public DateOnly IssueDate { get; private set; }
     public Guid? EmissionPointId { get; private set; }

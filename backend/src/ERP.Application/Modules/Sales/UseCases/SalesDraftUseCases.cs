@@ -116,10 +116,21 @@ public sealed record SalesListResponse(
 
 public sealed class CreateSalesDraftValidator : AbstractValidator<CreateSalesDraftCommand>
 {
-    public CreateSalesDraftValidator()
+    /// <summary>
+    /// CLEAN-01C: <c>DocTypeCode</c> se persiste en <c>SalesInvoice</c> sin FK (a diferencia de
+    /// <c>DocumentSequence</c>, que sí referencia <c>SriDocType</c>) — sin esta regla, un cliente
+    /// podía enviar cualquier string de hasta 5 caracteres y quedaba guardado sin validar contra el
+    /// catálogo fiscal real. Mismo patrón <c>MustAsync</c> que
+    /// <c>UpdateSupplierClassificationConfigValidator</c> (CLASS-BP-CATALOGS-01).
+    /// </summary>
+    public CreateSalesDraftValidator(ISriDocTypeCatalogResolver docTypeCatalogResolver)
     {
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("El cliente es obligatorio.");
         RuleFor(x => x.IssueDate).NotEmpty();
+        RuleFor(x => x.DocTypeCode)
+            .MustAsync((code, ct) => docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(code!, ct))
+            .WithMessage("El tipo de comprobante no corresponde a un código SRI activo.")
+            .When(x => !string.IsNullOrWhiteSpace(x.DocTypeCode));
         RuleFor(x => x.Lines).NotEmpty().WithMessage("Debe incluir al menos una línea.");
         RuleForEach(x => x.Lines)
             .ChildRules(line =>

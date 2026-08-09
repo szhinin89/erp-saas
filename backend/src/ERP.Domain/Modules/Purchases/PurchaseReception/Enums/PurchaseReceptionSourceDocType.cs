@@ -4,6 +4,11 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 /// Tipo de comprobante de origen detectado en la columna <c>TIPO_COMPROBANTE</c> del TXT del SRI.
 /// Fase 1 solo procesa <see cref="Invoice"/> (Factura) — los demás valores se reconocen para
 /// permitir, en una fase futura, un importador dedicado por tipo sin rediseñar el parser.
+/// Enum técnico de clasificación de texto (deriva de la etiqueta en español del TXT, ej. "FACTURA")
+/// — no es fuente fiscal ni equivale al código SRI <c>codDoc</c>. El documento persistido también
+/// guarda por separado el <c>DocTypeCode</c> real (string, derivado del XML <c>codDoc</c> cuando
+/// existe) — ambos campos describen el mismo comprobante desde dos fuentes de importación distintas
+/// (TXT vs XML) y no deben confundirse entre sí.
 /// </summary>
 public enum PurchaseReceptionSourceDocType
 {
