@@ -401,7 +401,7 @@ export function MasterDataCustomersPage() {
             setPage={page.setPage}
             searchInputRef={searchRef}
             onSettings={(bp) => void page.openSettings(bp)}
-            onSupplierProfile={
+            onCustomerConfig={
               page.canUpdate
                 ? (bp) => void page.openCustomerConfig(bp)
                 : undefined
