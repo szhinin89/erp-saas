@@ -43,11 +43,30 @@ export type SupplierConfigAtCreation = {
   paymentTermId: string;
 };
 
+/** Precarga del paso 2 (Identidad) saltando el paso 1 (Buscar) — para flujos que ya saben que el
+ * BP no existe (p.ej. crear proveedor desde un documento de recepción SRI con RUC/razón social
+ * ya conocidos). No confundir con `editingPartner`: aquí seguimos creando, no editando. */
+export type PartnerWizardInitialValues = {
+  identificationType?: string;
+  identificationNumber?: string;
+  legalName?: string;
+  tradeName?: string;
+  countryCode?: string;
+};
+
 interface Props {
   role: Role;
   draftKey: string;
   submitting: boolean;
   editingPartner: BusinessPartnerSummaryDto | null;
+  initialValues?: PartnerWizardInitialValues;
+  /** Modo embebido en un modal ajeno a MasterData (p. ej. "Crear proveedor" desde Recepción
+   * electrónica): oculta el stepper de pasos y "Guardar borrador" — ese chrome multi-sesión no
+   * aporta en un formulario de una sola pasada con datos ya precargados, y el stepper deshabilitado
+   * (pasos futuros en gris, sin poder hacer clic) se lee como botones rotos en un modal chico.
+   * El wizard normal de MasterData (`MasterDataSuppliersPage`/`MasterDataCustomersPage`) no pasa
+   * esta prop y sigue exactamente igual. */
+  embedded?: boolean;
   onSubmitCreate: (
     body: CreateBusinessPartnerBody,
     supplierConfig?: SupplierConfigAtCreation,
@@ -100,6 +119,8 @@ export function MasterDataPartnerWizard({
   draftKey,
   submitting,
   editingPartner,
+  initialValues,
+  embedded = false,
   onSubmitCreate,
   onSubmitUpdate,
   onAssignRole,
@@ -108,7 +129,10 @@ export function MasterDataPartnerWizard({
 }: Props) {
   const { t } = useI18n();
   const isEdit = !!editingPartner;
-  const [step, setStep] = useState<StepId>(isEdit ? 2 : 1);
+  // Salta el paso 1 (Buscar) tanto al editar como cuando el caller ya sabe que el BP no existe y
+  // trae datos precargados (`initialValues`) — en ambos casos el paso 2 arranca con datos.
+  const skipStep1 = isEdit || !!initialValues;
+  const [step, setStep] = useState<StepId>(skipStep1 ? 2 : 1);
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -126,25 +150,32 @@ export function MasterDataPartnerWizard({
   const form = useForm<BusinessPartnerFormValues>({
     resolver: zodResolver(businessPartnerSchema(role)),
     defaultValues: {
-      identificationType: editingPartner?.identificationType ?? "04",
-      identificationNumber: editingPartner?.identificationNumber ?? "",
+      identificationType:
+        editingPartner?.identificationType ??
+        initialValues?.identificationType ??
+        "04",
+      identificationNumber:
+        editingPartner?.identificationNumber ??
+        initialValues?.identificationNumber ??
+        "",
       // Sin default: el backend infiere la naturaleza jurídica de RUC/CI; para el resto de
       // tipos de identificación el usuario debe elegirla explícitamente (ver MasterDataBpFormFields).
       legalEntityTypeCode: editingPartner?.legalEntityTypeCode ?? undefined,
-      legalName: editingPartner?.legalName ?? "",
-      tradeName: editingPartner?.tradeName ?? "",
-      countryCode: editingPartner?.countryCode ?? "EC",
+      legalName: editingPartner?.legalName ?? initialValues?.legalName ?? "",
+      tradeName: editingPartner?.tradeName ?? initialValues?.tradeName ?? "",
+      countryCode:
+        editingPartner?.countryCode ?? initialValues?.countryCode ?? "EC",
       refundProviderTypeCode: "",
       paymentTermId: "",
     },
   });
 
   useEffect(() => {
-    if (!isEdit) {
+    if (!isEdit && !embedded) {
       const d = loadDraft(draftKey);
       if (d) setDraftBanner(d);
     }
-  }, [draftKey, isEdit]);
+  }, [draftKey, isEdit, embedded]);
 
   const prefill = (q: string) => {
     const s = q.trim();
@@ -262,37 +293,42 @@ export function MasterDataPartnerWizard({
   return (
     <FormProvider {...form}>
       <div className="prd-wizard prd-fadein">
-        {/* Progress */}
-        <div className="prd-wiz-progress">
-          {STEPS.map((s) => {
-            if (isEdit && s.id === 1) return null;
-            const done = s.id < step;
-            const active = s.id === step;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                className={`prd-wiz-step ${active ? "prd-wiz-step--active" : ""} ${done ? "prd-wiz-step--done" : ""}`}
-                disabled={!done}
-                onClick={() => done && setStep(s.id)}
-              >
-                <span className="prd-wiz-step__num">
-                  {done ? (
-                    <span className="material-symbols-outlined zh-icon-md">
-                      check
-                    </span>
-                  ) : (
-                    s.id
-                  )}
-                </span>
-                <span className="material-symbols-outlined prd-wiz-step__icon">
-                  {s.icon}
-                </span>
-                <span className="prd-wiz-step__label">{s.labelFb}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Progress — oculto en modo embebido (ver doc de `embedded` en Props): con solo 2 de los 3
+            pasos visibles (skipStep1), el paso actual queda deshabilitado (todavía no "done") y el
+            siguiente aparece en gris sin poder hacer clic — en un modal chico se lee como botones
+            rotos. El título de cada panel (`h3.prd-wiz-panel__title`) ya comunica en qué paso está. */}
+        {!embedded && (
+          <div className="prd-wiz-progress">
+            {STEPS.map((s) => {
+              if (skipStep1 && s.id === 1) return null;
+              const done = s.id < step;
+              const active = s.id === step;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`prd-wiz-step ${active ? "prd-wiz-step--active" : ""} ${done ? "prd-wiz-step--done" : ""}`}
+                  disabled={!done}
+                  onClick={() => done && setStep(s.id)}
+                >
+                  <span className="prd-wiz-step__num">
+                    {done ? (
+                      <span className="material-symbols-outlined zh-icon-md">
+                        check
+                      </span>
+                    ) : (
+                      s.id
+                    )}
+                  </span>
+                  <span className="material-symbols-outlined prd-wiz-step__icon">
+                    {s.icon}
+                  </span>
+                  <span className="prd-wiz-step__label">{s.labelFb}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {draftBanner && !isEdit && (
           <div className="prd-draft-banner">
@@ -350,7 +386,7 @@ export function MasterDataPartnerWizard({
           onSubmit={form.handleSubmit(onValidSubmit)}
         >
           {/* ── Step 1: Search ───────────────────────────────────────── */}
-          {step === 1 && !isEdit && (
+          {step === 1 && !skipStep1 && (
             <div className="prd-wiz-panel">
               <h3 className="prd-wiz-panel__title">
                 ¿Ya existe en el sistema?
@@ -473,7 +509,7 @@ export function MasterDataPartnerWizard({
           {/* ── Footer ───────────────────────────────────────────────── */}
           <div className="prd-wiz-footer">
             <div className="prd-wiz-footer__left">
-              {((!isEdit && step > 1) || (isEdit && step > 2)) && (
+              {((!skipStep1 && step > 1) || (skipStep1 && step > 2)) && (
                 <ZHBtn type="button" variant="ghost" size="md" onClick={goPrev}>
                   <span className="material-symbols-outlined zh-icon-md">
                     arrow_back
@@ -506,7 +542,7 @@ export function MasterDataPartnerWizard({
                   + Crear sin buscar
                 </ZHBtn>
               )}
-              {step === 2 && (
+              {step === 2 && !embedded && (
                 <ZHBtn
                   type="button"
                   variant="ghost"
@@ -531,10 +567,16 @@ export function MasterDataPartnerWizard({
                   onClick={() => void goNext()}
                   disabled={step === 1 && !hasSearched && !notFound}
                 >
-                  Siguiente{" "}
-                  <span className="material-symbols-outlined zh-icon-md">
-                    arrow_forward
-                  </span>
+                  {embedded ? (
+                    t("masterdata.wizard.btn.reviewAndCreate", "Revisar y crear")
+                  ) : (
+                    <>
+                      Siguiente{" "}
+                      <span className="material-symbols-outlined zh-icon-md">
+                        arrow_forward
+                      </span>
+                    </>
+                  )}
                 </ZHBtn>
               ) : (
                 <ZHBtn

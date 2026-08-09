@@ -18,7 +18,8 @@ public sealed record PurchaseReceptionDetailProcessingResult(
     IReadOnlyList<PurchaseReceptionLine> Lines,
     PurchaseReceptionProcessingOutcome Processing,
     string? DocTypeCode,
-    string? SriPaymentMethodCode
+    string? SriPaymentMethodCode,
+    string? SupplierTradeName
 );
 
 public interface IPurchaseReceptionDetailProcessor
@@ -190,7 +191,8 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
             lines,
             processing,
             parseResult.IsSuccess ? parseResult.Value!.DocTypeCode : null,
-            parseResult.IsSuccess ? parseResult.Value!.SriPaymentMethodCode : null
+            parseResult.IsSuccess ? parseResult.Value!.SriPaymentMethodCode : null,
+            parseResult.IsSuccess ? parseResult.Value!.SupplierTradeName : null
         );
     }
 }

@@ -21,6 +21,7 @@ public sealed class PurchaseReceptionDocument
     public const int SupplierNameMaxLen = 200;
     public const int AccessKeyMaxLen = 49;
     public const int InvoiceNumberMaxLen = 30;
+    public const int ModifiedDocumentNumberMaxLen = 30;
     public const int AuthorizationNumberMaxLen = 49;
     public const int DocTypeCodeMaxLen = 10;
     public const int SriPaymentMethodCodeMaxLen = 10;
@@ -42,6 +43,12 @@ public sealed class PurchaseReceptionDocument
 
     public string AccessKey { get; private set; } = null!;
     public string InvoiceNumber { get; private set; } = null!;
+
+    /// <summary>
+    /// <c>NUMERO_DOCUMENTO_MODIFICADO</c> del TXT SRI — solo aplica a notas de crédito/débito (la
+    /// factura que modifican). Null para <see cref="PurchaseReceptionSourceDocType.Invoice"/>.
+    /// </summary>
+    public string? ModifiedDocumentNumber { get; private set; }
     public DateOnly IssueDate { get; private set; }
 
     /// <summary>Fecha de autorización — inicialmente la del TXT; se sobrescribe con la del SRI al descargar el XML.</summary>
@@ -122,7 +129,8 @@ public sealed class PurchaseReceptionDocument
         decimal totalAmount,
         Guid createdBy,
         Guid? purchaseId = null,
-        string currencyCode = "USD"
+        string currencyCode = "USD",
+        string? modifiedDocumentNumber = null
     )
     {
         if (companyId == Guid.Empty)
@@ -161,6 +169,9 @@ public sealed class PurchaseReceptionDocument
             SupplierId = supplierId,
             AccessKey = accessKey.Trim(),
             InvoiceNumber = invoiceNumber.Trim(),
+            ModifiedDocumentNumber = string.IsNullOrWhiteSpace(modifiedDocumentNumber)
+                ? null
+                : modifiedDocumentNumber.Trim(),
             IssueDate = issueDate,
             AuthorizationDate = authorizationDate,
             Subtotal = subtotal,

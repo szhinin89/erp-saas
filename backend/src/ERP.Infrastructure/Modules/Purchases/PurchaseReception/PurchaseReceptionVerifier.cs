@@ -80,6 +80,25 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
 
             var supplierId = supplierExists ? businessPartner?.Id : null;
 
+            var affectedPurchaseExists = false;
+            Guid? affectedPurchaseId = null;
+            if (
+                supplierExists
+                && supplierId.HasValue
+                && record.SourceDocType == PurchaseReceptionSourceDocType.CreditNote
+                && !string.IsNullOrWhiteSpace(record.ModifiedDocumentNumber)
+            )
+            {
+                var affectedPurchase = await _purchaseRepo.GetBySupplierAndInvoiceNumberAsync(
+                    _tenant.TenantId,
+                    supplierId.Value,
+                    record.ModifiedDocumentNumber,
+                    cancellationToken
+                );
+                affectedPurchaseExists = affectedPurchase is not null;
+                affectedPurchaseId = affectedPurchase?.Id;
+            }
+
             items.Add(
                 new PurchaseReceptionVerifiedItem(
                     record,
@@ -87,7 +106,9 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                     purchaseExists,
                     status,
                     supplierId,
-                    purchaseId
+                    purchaseId,
+                    affectedPurchaseExists,
+                    affectedPurchaseId
                 )
             );
         }

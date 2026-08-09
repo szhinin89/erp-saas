@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { Badge, EmptyState, ErrorState } from "../../../components/PageShell";
 import { ZhFileUpload } from "../../../components/zh/ZhFileUpload";
@@ -7,269 +6,279 @@ import {
   type ZHDataTableColumn,
 } from "../../../components/zh/ZHDataTable";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import {
   formatDate,
   formatDateTime,
 } from "../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { useI18n } from "../../../i18n/i18n";
 import { usePurchaseReceptionPage } from "../hooks/usePurchaseReceptionPage";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
-import { ZHItemMatchingPanel } from "../components/ZHItemMatchingPanel";
+import { CreateSupplierModal } from "../components/CreateSupplierModal";
+import { PurchaseReceptionProcessCell } from "../components/PurchaseReceptionProcessCell";
+import { PurchaseReceptionActionsCell } from "../components/PurchaseReceptionActionsCell";
+import { PurchaseReceptionDocumentCell } from "../components/PurchaseReceptionDocumentCell";
 import "../styles/purchase-reception.css";
-
-const STATUS_LABEL: Record<PurchaseReceptionItem["status"], string> = {
-  IMPORTED: "Importada",
-  PENDING: "Pendiente",
-  NEW_SUPPLIER: "Proveedor nuevo",
-};
-
-const STATUS_VARIANT: Record<
-  PurchaseReceptionItem["status"],
-  "green" | "gray" | "orange"
-> = {
-  IMPORTED: "green",
-  PENDING: "gray",
-  NEW_SUPPLIER: "orange",
-};
-
-const DOCUMENT_STATUS_LABEL: Record<
-  PurchaseReceptionItem["documentStatus"],
-  string
-> = {
-  IMPORTED: "Guardado",
-  VERIFIED: "Verificado",
-  PROCESSED: "Procesado",
-  CANCELLED: "Anulado",
-};
-
-const PROCESSING_STATUS_LABEL: Record<
-  PurchaseReceptionItem["processingStatus"],
-  string
-> = {
-  PENDING: "Sin procesar",
-  PROCESSED: "Detalle OK",
-  PROCESSED_WITH_WARNINGS: "Con advertencias",
-  FAILED: "No interpretado",
-};
-
-const PROCESSING_STATUS_VARIANT: Record<
-  PurchaseReceptionItem["processingStatus"],
-  "green" | "orange" | "red" | "gray"
-> = {
-  PENDING: "gray",
-  PROCESSED: "green",
-  PROCESSED_WITH_WARNINGS: "orange",
-  FAILED: "red",
-};
 
 export function PurchaseReceptionPage() {
   const ctx = usePurchaseReceptionPage();
-  const navigate = useNavigate();
+  const { t } = useI18n();
 
   const columns: ZHDataTableColumn<PurchaseReceptionItem>[] = [
     {
       key: "issueDate",
-      header: "Fecha emisión",
+      header: t("purchases.reception.table.date", "Emisión"),
       render: (row) => formatDate(row.issueDate),
     },
     {
-      key: "supplierName",
-      header: "Proveedor",
-      render: (row) => row.supplierName,
-    },
-    { key: "supplierRuc", header: "RUC", render: (row) => row.supplierRuc },
-    {
-      key: "invoiceNumber",
-      header: "Factura",
-      render: (row) => row.invoiceNumber,
-    },
-    {
-      key: "total",
-      header: "Total",
-      align: "right",
-      render: (row) => formatMoneyWithSymbol(row.total),
-    },
-    {
-      key: "supplierExists",
-      header: "Proveedor ERP",
-      align: "center",
+      key: "supplier",
+      header: t("purchases.reception.table.supplier", "Proveedor"),
       render: (row) => (
-        <Badge
-          variant={row.supplierExists ? "green" : "red"}
-          label={row.supplierExists ? "Existe" : "No existe"}
-        />
-      ),
-    },
-    {
-      key: "purchaseExists",
-      header: "Compra ERP",
-      align: "center",
-      render: (row) => (
-        <Badge
-          variant={row.purchaseExists ? "green" : "red"}
-          label={row.purchaseExists ? "Existe" : "No existe"}
-        />
-      ),
-    },
-    {
-      key: "status",
-      header: "Estado",
-      align: "center",
-      render: (row) => (
-        <Badge
-          variant={STATUS_VARIANT[row.status]}
-          label={STATUS_LABEL[row.status]}
-        />
-      ),
-    },
-    {
-      key: "documentStatus",
-      header: "Documento",
-      align: "center",
-      render: (row) => (
-        <Badge
-          variant="info"
-          upper
-          size="md"
-          label={DOCUMENT_STATUS_LABEL[row.documentStatus]}
-          title={`Documento persistido — id ${row.documentId}`}
-        />
-      ),
-    },
-    {
-      key: "processingStatus",
-      header: "Procesamiento",
-      align: "center",
-      render: (row) => {
-        if (row.documentStatus === "IMPORTED") return null;
-        return (
-          <Badge
-            variant={PROCESSING_STATUS_VARIANT[row.processingStatus]}
-            label={PROCESSING_STATUS_LABEL[row.processingStatus]}
-            title={
-              row.processingNotes ??
-              "El detalle del XML se interpretó sin advertencias."
-            }
-          />
-        );
-      },
-    },
-    {
-      key: "xmlSri",
-      header: "XML SRI",
-      align: "center",
-      render: (row) => {
-        const rowState = ctx.xmlRowState[row.documentId];
-
-        if (row.documentStatus !== "IMPORTED") {
-          return <Badge variant="success" label="XML recibido" />;
-        }
-        if (rowState === "loading") {
-          return <Badge variant="neutral" label="Consultando..." />;
-        }
-        return (
-          <div className="pur-xml-cell">
+        <div className="pur-supplier-cell">
+          <p className="pur-supplier-name">{row.supplierName}</p>
+          <p className="pur-supplier-ruc">{row.supplierRuc}</p>
+          {row.supplierExists ? (
             <Badge
-              variant={rowState === "error" ? "red" : "gray"}
-              label={rowState === "error" ? "Error consulta" : "Pendiente XML"}
+              variant="success"
+              label={t(
+                "purchases.reception.supplier.registered",
+                "Proveedor registrado",
+              )}
             />
-            <ZHBtn
-              variant="secondary"
-              size="xs"
-              type="button"
-              onClick={() => void ctx.handleDownloadXml(row.documentId)}
-            >
-              Consultar XML
-            </ZHBtn>
+          ) : (
+            <>
+              <Badge
+                variant="warning"
+                label={t(
+                  "purchases.reception.supplier.notRegistered",
+                  "Proveedor no registrado",
+                )}
+              />
+              {row.sourceDocType !== "CREDIT_NOTE" && (
+                // Una NC afecta una compra existente — si el proveedor no está registrado, la
+                // acción correcta es ubicar/ingresar primero la factura afectada (columna
+                // Documento), nunca crear el proveedor desde la fila de la NC.
+                <ZHBtn
+                  variant="secondary"
+                  size="xs"
+                  type="button"
+                  onClick={() =>
+                    ctx.openCreateSupplier(
+                      row.supplierRuc,
+                      row.supplierName,
+                      row.supplierTradeName,
+                    )
+                  }
+                >
+                  {t(
+                    "purchases.reception.supplier.createButton",
+                    "Crear proveedor",
+                  )}
+                </ZHBtn>
+              )}
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "document",
+      header: t("purchases.reception.table.document", "Documento"),
+      render: (row) => <PurchaseReceptionDocumentCell row={row} />,
+    },
+    {
+      key: "values",
+      header: t("purchases.reception.table.values", "Valores"),
+      align: "right",
+      render: (row) => {
+        const isCreditNote = row.sourceDocType === "CREDIT_NOTE";
+        return (
+          <div className="pur-values-cell">
+            <p className="pur-values-line">
+              <span className="pur-values-label">
+                {isCreditNote
+                  ? t(
+                      "purchases.reception.values.creditSubtotal",
+                      "Subtotal crédito",
+                    )
+                  : t("purchases.reception.values.subtotal", "Subtotal")}
+              </span>
+              <span>{formatMoneyWithSymbol(row.subtotal)}</span>
+            </p>
+            <p className="pur-values-line">
+              <span className="pur-values-label">
+                {t("purchases.reception.values.vat", "IVA")}
+              </span>
+              <span>{formatMoneyWithSymbol(row.vatAmount)}</span>
+            </p>
+            {isCreditNote ? (
+              <p className="pur-values-line pur-values-total">
+                <span className="pur-values-label">
+                  {t(
+                    "purchases.reception.values.creditTotal",
+                    "Total crédito",
+                  )}
+                </span>
+                <span>{formatMoneyWithSymbol(row.total)}</span>
+              </p>
+            ) : (
+              <p className="pur-values-total">
+                {formatMoneyWithSymbol(row.total)}
+              </p>
+            )}
           </div>
         );
       },
     },
     {
-      key: "itemMatching",
-      header: "Productos",
+      key: "purchaseExists",
+      header: t("purchases.reception.table.purchaseErp", "Documento"),
       align: "center",
-      render: (row) => {
-        if (
-          row.documentStatus !== "VERIFIED" &&
-          row.documentStatus !== "PROCESSED"
-        ) {
-          return null;
-        }
-        if (row.processingStatus === "FAILED") {
-          return null;
-        }
-        return (
-          <ZHBtn
-            variant="secondary"
-            size="xs"
-            type="button"
-            onClick={() =>
-              ctx.openMatchingPanel(row.documentId, row.supplierName)
+      render: (row) =>
+        row.sourceDocType === "CREDIT_NOTE" ? (
+          <Badge
+            variant={row.affectedPurchaseExists ? "success" : "warning"}
+            label={
+              row.affectedPurchaseExists
+                ? t(
+                    "purchases.reception.documentErp.affectedFound",
+                    "Factura afectada encontrada",
+                  )
+                : t(
+                    "purchases.reception.documentErp.affectedNotEntered",
+                    "Factura afectada no ingresada",
+                  )
             }
-          >
-            Vincular productos
-          </ZHBtn>
-        );
-      },
+          />
+        ) : (
+          <Badge
+            variant={row.purchaseExists ? "success" : "warning"}
+            label={
+              row.purchaseExists
+                ? t("purchases.reception.purchaseErp.entered", "Compra ingresada")
+                : t(
+                    "purchases.reception.purchaseErp.notEntered",
+                    "Compra no ingresada",
+                  )
+            }
+          />
+        ),
     },
     {
-      key: "createPurchase",
-      header: "Compra",
+      key: "process",
+      header: t("purchases.reception.table.process", "Proceso"),
       align: "center",
-      render: (row) => {
-        if (row.documentStatus === "PROCESSED") {
-          return <Badge variant="success" label="Compra creada" />;
-        }
-        if (row.documentStatus !== "VERIFIED") {
-          return null;
-        }
-        // Un único botón para todos los documentos Verificados, sin excepciones visibles: la
-        // reconstrucción del detalle cuando el intento anterior falló (o el rechazo si el XML
-        // sigue sin poder interpretarse) ocurre de forma transparente dentro de create-draft — el
-        // usuario nunca ve un paso, label ni concepto distinto de "Crear Compra".
-        return (
-          <ZHBtn
-            variant="primary"
-            size="xs"
-            type="button"
-            onClick={() =>
-              navigate(`/purchases?fromReceptionId=${row.documentId}`)
-            }
-          >
-            Crear compra
-          </ZHBtn>
-        );
-      },
+      render: (row) => (
+        <PurchaseReceptionProcessCell
+          row={row}
+          xmlState={ctx.xmlRowState[row.documentId]}
+        />
+      ),
+    },
+    {
+      key: "actions",
+      header: t("purchases.reception.table.actions", "Acciones"),
+      align: "center",
+      render: (row) => (
+        <PurchaseReceptionActionsCell
+          row={row}
+          xmlState={ctx.xmlRowState[row.documentId]}
+          onDownloadXml={(documentId) => void ctx.handleDownloadXml(documentId)}
+        />
+      ),
     },
   ];
 
   return (
     <ErpPageTemplate
       title="Recepción electrónica"
-      subtitle="Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP. Al consultar el XML autorizado, sus líneas quedan disponibles para vincular con el catálogo de Items — todavía no crea compras automáticamente."
+      subtitle="Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP. La vinculación de productos con el catálogo de Items se hace desde la pantalla de Compras al crear o abrir la compra."
     >
-      <div className="pg-section">
-        <ZhFileUpload
-          accept=".txt"
-          onFileSelected={(file) => void ctx.handleFileSelected(file)}
-          uploading={ctx.uploading}
-          progress={ctx.progress}
-          error={ctx.error}
-          currentFile={
-            ctx.fileName
-              ? {
-                  name: ctx.fileName,
-                  sizeBytes: 0,
-                  uploadedAt: formatDateTime(new Date().toISOString()),
-                }
-              : null
-          }
-          selectLabel="Seleccione el archivo TXT de recepción"
-          dropLabel="o arrástrelo aquí"
-          uploadingLabel="Analizando archivo..."
-          noFileLabel="Aún no se ha importado ningún archivo."
-        />
+      <div className="pg-section pur-reception-top">
+        <div className="pur-reception-upload">
+          <ZhFileUpload
+            compact
+            accept=".txt"
+            onFileSelected={(file) => void ctx.handleFileSelected(file)}
+            uploading={ctx.uploading}
+            progress={ctx.progress}
+            error={ctx.error}
+            currentFile={
+              ctx.fileName
+                ? {
+                    name: ctx.fileName,
+                    sizeBytes: 0,
+                    uploadedAt: formatDateTime(new Date().toISOString()),
+                  }
+                : null
+            }
+            selectLabel="Seleccione el archivo TXT de recepción"
+            dropLabel="o arrástrelo aquí"
+            uploadingLabel="Analizando archivo..."
+            noFileLabel="Aún no se ha importado ningún archivo."
+          />
+        </div>
+
+        {ctx.result && (
+          <div className="pur-reception-kpis">
+            <ReportKpiCard
+              layout="horizontal"
+              icon="check_circle"
+              tone="success"
+              label={t(
+                "purchases.reception.summary.readyPurchases.title",
+                "Compras listas",
+              )}
+              value={String(ctx.summary.imported)}
+              valueTone="success"
+              sub={
+                <p className="subtle">
+                  {t(
+                    "purchases.reception.summary.readyPurchases.description",
+                    "Compras ya ingresadas al sistema",
+                  )}
+                </p>
+              }
+            />
+            <ReportKpiCard
+              layout="horizontal"
+              icon="hourglass_empty"
+              tone="neutral"
+              label={t(
+                "purchases.reception.summary.toReview.title",
+                "Por revisar",
+              )}
+              value={String(ctx.summary.pending)}
+              sub={
+                <p className="subtle">
+                  {t(
+                    "purchases.reception.summary.toReview.description",
+                    "Falta registrar o ingresar compras",
+                  )}
+                </p>
+              }
+            />
+            <ReportKpiCard
+              layout="horizontal"
+              icon="person_add"
+              tone="warning"
+              label={t(
+                "purchases.reception.summary.suppliersToCreate.title",
+                "Proveedores por crear",
+              )}
+              value={String(ctx.summary.newSupplier)}
+              sub={
+                <p className="subtle">
+                  {t(
+                    "purchases.reception.summary.suppliersToCreate.description",
+                    "Debe crearlos para ingresar las compras",
+                  )}
+                </p>
+              }
+            />
+          </div>
+        )}
       </div>
 
       {ctx.error && !ctx.uploading && (
@@ -278,23 +287,12 @@ export function PurchaseReceptionPage() {
         </div>
       )}
 
-      {ctx.result && (
-        <div className="pg-section pur-reception-summary">
+      {ctx.result && ctx.summary.skipped > 0 && (
+        <div className="pg-section">
           <Badge
-            variant="success"
-            label={`Importadas: ${ctx.summary.imported}`}
+            variant="neutral"
+            label={`Omitidas (no soportadas en esta fase): ${ctx.summary.skipped}`}
           />
-          <Badge variant="neutral" label={`Pendientes: ${ctx.summary.pending}`} />
-          <Badge
-            variant="warning"
-            label={`Proveedor nuevo: ${ctx.summary.newSupplier}`}
-          />
-          {ctx.summary.skipped > 0 && (
-            <Badge
-              variant="neutral"
-              label={`Omitidas (no soportadas en esta fase): ${ctx.summary.skipped}`}
-            />
-          )}
         </div>
       )}
 
@@ -316,11 +314,16 @@ export function PurchaseReceptionPage() {
         )}
       </div>
 
-      <ZHItemMatchingPanel
-        open={ctx.matchingDocumentId !== null}
-        documentId={ctx.matchingDocumentId}
-        supplierName={ctx.matchingSupplierName}
-        onClose={ctx.closeMatchingPanel}
+      <CreateSupplierModal
+        open={ctx.newSupplierRow !== null}
+        supplierRuc={ctx.newSupplierRow?.ruc ?? ""}
+        supplierName={ctx.newSupplierRow?.name ?? ""}
+        supplierTradeName={ctx.newSupplierRow?.tradeName ?? null}
+        onClose={ctx.closeCreateSupplier}
+        onCreated={() =>
+          ctx.newSupplierRow &&
+          ctx.handleSupplierCreated(ctx.newSupplierRow.ruc)
+        }
       />
     </ErpPageTemplate>
   );

@@ -137,7 +137,8 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             PurchaseReceptionMapper.ToProcessingStatusCode(document.ProcessingStatus),
             document.LinesDetectedCount,
             document.LinesProcessedCount,
-            document.ProcessingNotes
+            document.ProcessingNotes,
+            processed.SupplierTradeName
         );
 
         return Result<DownloadPurchaseReceptionXmlResultDto>.Success(dto);

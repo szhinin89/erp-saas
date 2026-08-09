@@ -89,6 +89,7 @@ public sealed class PurchaseXmlDraftParserTests
 
         draft.SupplierRuc.Should().Be("1790012345001");
         draft.SupplierName.Should().Be("PROVEEDOR ACME S.A.");
+        draft.SupplierTradeName.Should().Be("ACME");
         draft.DocTypeCode.Should().Be("01");
         draft.InvoiceNumber.Should().Be("001-001-000000123");
         draft.IssueDate.Should().Be(new DateOnly(2026, 7, 8));

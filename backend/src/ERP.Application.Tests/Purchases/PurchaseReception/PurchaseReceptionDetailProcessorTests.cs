@@ -86,6 +86,7 @@ public sealed class PurchaseReceptionDetailProcessorTests
                     new ParsedPurchaseXml(
                         "1791352688001",
                         "QUALA ECUADOR S A",
+                        "QUALA",
                         "01",
                         "015-027-000161740",
                         new DateOnly(2026, 7, 1),
@@ -121,6 +122,7 @@ public sealed class PurchaseReceptionDetailProcessorTests
         result.Processing.Status.Should().Be(PurchaseReceptionProcessingStatus.Processed);
         result.DocTypeCode.Should().Be("01");
         result.SriPaymentMethodCode.Should().BeNull();
+        result.SupplierTradeName.Should().Be("QUALA");
     }
 
     [Fact]
@@ -150,6 +152,7 @@ public sealed class PurchaseReceptionDetailProcessorTests
         result.Processing.Notes.Should().Contain("infoFactura");
         result.DocTypeCode.Should().BeNull();
         result.SriPaymentMethodCode.Should().BeNull();
+        result.SupplierTradeName.Should().BeNull();
     }
 
     [Fact]
@@ -187,6 +190,7 @@ public sealed class PurchaseReceptionDetailProcessorTests
                     new ParsedPurchaseXml(
                         "1791352688001",
                         "QUALA ECUADOR S A",
+                        null,
                         "01",
                         "015-027-000161740",
                         new DateOnly(2026, 7, 1),

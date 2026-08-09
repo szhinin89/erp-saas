@@ -85,7 +85,8 @@ public sealed class ImportPurchaseReceptionHandler
                     item.Record.VatAmount,
                     item.Record.Total,
                     _user.UserId,
-                    item.PurchaseId
+                    item.PurchaseId,
+                    modifiedDocumentNumber: item.Record.ModifiedDocumentNumber
                 );
 
                 await _documentRepo.AddAsync(document, cancellationToken);

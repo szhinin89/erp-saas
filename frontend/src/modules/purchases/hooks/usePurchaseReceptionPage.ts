@@ -27,11 +27,13 @@ export function usePurchaseReceptionPage() {
   const [xmlRowState, setXmlRowState] = useState<
     Record<string, "loading" | "error">
   >({});
-  // Panel de Item Matching (Vincular productos) — documento activo o null si está cerrado.
-  const [matchingDocumentId, setMatchingDocumentId] = useState<string | null>(
-    null,
-  );
-  const [matchingSupplierName, setMatchingSupplierName] = useState<string>("");
+  // Modal "Crear proveedor" — fila activa (RUC/nombre/nombre comercial del documento) o null si
+  // está cerrado.
+  const [newSupplierRow, setNewSupplierRow] = useState<{
+    ruc: string;
+    name: string;
+    tradeName: string | null;
+  } | null>(null);
 
   const handleFileSelected = async (file: File) => {
     setUploading(true);
@@ -44,7 +46,16 @@ export function usePurchaseReceptionPage() {
         file,
         setProgress,
       );
-      setResult(importResult);
+      // El TXT del SRI nunca trae nombreComercial — solo llega al consultar el XML (ver
+      // handleDownloadXml). Se normaliza a null aquí para que el tipo del item sea siempre
+      // consistente, en vez de dejarlo `undefined` hasta esa consulta.
+      setResult({
+        ...importResult,
+        items: importResult.items.map((item) => ({
+          ...item,
+          supplierTradeName: item.supplierTradeName ?? null,
+        })),
+      });
       setFileName(file.name);
     } catch (err) {
       setError(
@@ -75,6 +86,8 @@ export function usePurchaseReceptionPage() {
                       documentStatus: download.status,
                       processingStatus: download.processingStatus,
                       processingNotes: download.processingNotes,
+                      supplierTradeName:
+                        download.supplierTradeName ?? item.supplierTradeName,
                     }
                   : item,
               ),
@@ -121,12 +134,31 @@ export function usePurchaseReceptionPage() {
     handleFileSelected,
     xmlRowState,
     handleDownloadXml,
-    matchingDocumentId,
-    matchingSupplierName,
-    openMatchingPanel: (documentId: string, supplierName: string) => {
-      setMatchingDocumentId(documentId);
-      setMatchingSupplierName(supplierName);
+    newSupplierRow,
+    openCreateSupplier: (ruc: string, name: string, tradeName: string | null) =>
+      setNewSupplierRow({ ruc, name, tradeName }),
+    closeCreateSupplier: () => setNewSupplierRow(null),
+    // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
+    // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor
+    // existe + compra no existe todavía => PENDING).
+    handleSupplierCreated: (ruc: string) => {
+      setResult((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              items: prev.items.map((item) =>
+                item.supplierRuc === ruc
+                  ? {
+                      ...item,
+                      supplierExists: true,
+                      status: item.purchaseExists ? item.status : "PENDING",
+                    }
+                  : item,
+              ),
+            },
+      );
+      setNewSupplierRow(null);
     },
-    closeMatchingPanel: () => setMatchingDocumentId(null),
   };
 }

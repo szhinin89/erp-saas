@@ -9,5 +9,10 @@ public sealed record PurchaseReceptionVerifiedItem(
     bool PurchaseExists,
     PurchaseReceptionStatus Status,
     Guid? SupplierId = null,
-    Guid? PurchaseId = null
+    Guid? PurchaseId = null,
+    // Solo se resuelve para notas de crédito (Record.SourceDocType == CreditNote): si la factura
+    // que la NC afecta (Record.ModifiedDocumentNumber) ya está ingresada como PurchaseInvoice del
+    // mismo proveedor. False/null para cualquier otro tipo de comprobante.
+    bool AffectedPurchaseExists = false,
+    Guid? AffectedPurchaseId = null
 );

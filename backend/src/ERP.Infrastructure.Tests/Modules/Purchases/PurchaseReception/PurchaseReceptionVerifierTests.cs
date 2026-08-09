@@ -38,6 +38,26 @@ public sealed class PurchaseReceptionVerifierTests
             null
         );
 
+    private static PurchaseReceptionRecord CreditNoteRecord(
+        string ruc = "1791352688001",
+        string modifiedDocumentNumber = "015-027-000161740"
+    ) =>
+        new(
+            2,
+            PurchaseReceptionSourceDocType.CreditNote,
+            ruc,
+            "QUALA ECUADOR S A",
+            "015-027-000161741",
+            "0107202601179135268800120150270001617410016174012",
+            new DateOnly(2026, 7, 1),
+            new DateTime(2026, 7, 1, 21, 6, 55),
+            "0350016432",
+            1m,
+            0.12m,
+            1.12m,
+            modifiedDocumentNumber
+        );
+
     private static (
         Mock<IBusinessPartnerRepository> bp,
         Mock<IBusinessPartnerRoleRepository> role,
@@ -199,5 +219,191 @@ public sealed class PurchaseReceptionVerifierTests
         result[0].SupplierExists.Should().BeTrue();
         result[0].PurchaseExists.Should().BeTrue();
         result[0].Status.Should().Be(PurchaseReceptionStatus.Imported);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_credit_note_finds_affected_invoice_when_it_already_exists()
+    {
+        var (bp, role, purchase, tenant) = BuildMocks();
+        var partner = BusinessPartner.Create(
+            TenantId,
+            TaxIdentification.SriRuc,
+            "1791352688001",
+            2,
+            "QUALA ECUADOR S A",
+            UserId
+        );
+        bp.Setup(r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    "1791352688001",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(partner);
+        role.Setup(r =>
+                r.GetByTypeAsync(partner.Id, RoleType.Supplier, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                BusinessPartnerRole.Create(TenantId, partner.Id, RoleType.Supplier, UserId)
+            );
+
+        var affectedInvoice = PurchaseInvoice.CreateDraft(
+            TenantId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            partner.Id,
+            "QUALA ECUADOR S A",
+            "1791352688001",
+            "01",
+            "015-027-000161740",
+            new DateOnly(2026, 7, 1),
+            UserId,
+            Guid.NewGuid(),
+            "Contado",
+            1,
+            30
+        );
+        purchase
+            .Setup(r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    TenantId,
+                    partner.Id,
+                    "015-027-000161740",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(affectedInvoice);
+
+        var verifier = new PurchaseReceptionVerifier(
+            bp.Object,
+            role.Object,
+            purchase.Object,
+            tenant.Object
+        );
+        var result = await verifier.VerifyAsync([CreditNoteRecord()]);
+
+        result.Should().ContainSingle();
+        result[0].AffectedPurchaseExists.Should().BeTrue();
+        result[0].AffectedPurchaseId.Should().Be(affectedInvoice.Id);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_credit_note_reports_affected_invoice_missing_when_not_found()
+    {
+        var (bp, role, purchase, tenant) = BuildMocks();
+        var partner = BusinessPartner.Create(
+            TenantId,
+            TaxIdentification.SriRuc,
+            "1791352688001",
+            2,
+            "QUALA ECUADOR S A",
+            UserId
+        );
+        bp.Setup(r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    "1791352688001",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(partner);
+        role.Setup(r =>
+                r.GetByTypeAsync(partner.Id, RoleType.Supplier, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                BusinessPartnerRole.Create(TenantId, partner.Id, RoleType.Supplier, UserId)
+            );
+        purchase
+            .Setup(r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    TenantId,
+                    partner.Id,
+                    "015-027-000161740",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((PurchaseInvoice?)null);
+
+        var verifier = new PurchaseReceptionVerifier(
+            bp.Object,
+            role.Object,
+            purchase.Object,
+            tenant.Object
+        );
+        var result = await verifier.VerifyAsync([CreditNoteRecord()]);
+
+        result[0].AffectedPurchaseExists.Should().BeFalse();
+        result[0].AffectedPurchaseId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task VerifyAsync_credit_note_skips_affected_invoice_lookup_when_supplier_does_not_exist()
+    {
+        var (bp, role, purchase, tenant) = BuildMocks();
+        bp.Setup(r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    "1791352688001",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((BusinessPartner?)null);
+
+        var verifier = new PurchaseReceptionVerifier(
+            bp.Object,
+            role.Object,
+            purchase.Object,
+            tenant.Object
+        );
+        var result = await verifier.VerifyAsync([CreditNoteRecord()]);
+
+        result[0].AffectedPurchaseExists.Should().BeFalse();
+        result[0].AffectedPurchaseId.Should().BeNull();
+        purchase.Verify(
+            r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task VerifyAsync_invoice_row_never_looks_up_affected_invoice()
+    {
+        var (bp, role, purchase, tenant) = BuildMocks();
+        bp.Setup(r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    "1791352688001",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((BusinessPartner?)null);
+
+        var verifier = new PurchaseReceptionVerifier(
+            bp.Object,
+            role.Object,
+            purchase.Object,
+            tenant.Object
+        );
+        var result = await verifier.VerifyAsync([Record()]);
+
+        result[0].AffectedPurchaseExists.Should().BeFalse();
+        result[0].AffectedPurchaseId.Should().BeNull();
+        purchase.Verify(
+            r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

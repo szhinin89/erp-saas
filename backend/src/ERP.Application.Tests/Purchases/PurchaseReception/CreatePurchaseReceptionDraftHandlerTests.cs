@@ -355,6 +355,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                     [],
                     PurchaseReceptionProcessingOutcome.Failed("El XML no tiene un elemento raíz."),
                     null,
+                    null,
                     null
                 )
             );
@@ -425,7 +426,8 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                         null
                     ),
                     "01",
-                    "01"
+                    "01",
+                    null
                 )
             );
 
@@ -485,7 +487,8 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                         null
                     ),
                     "01",
-                    "01"
+                    "01",
+                    null
                 )
             );
 

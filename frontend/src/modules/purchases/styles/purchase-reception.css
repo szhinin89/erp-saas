@@ -1,78 +1,172 @@
-.pur-reception-summary {
+/* ── Franja superior: upload compacto + cards de resumen ──
+   Desktop: upload a la izquierda (ancho fijo, ver .zh-upload--compact) y las cards ocupando el
+   resto del ancho a la derecha. Mobile: se apilan, cards debajo del upload. */
+
+.pur-reception-top {
   display: flex;
+  align-items: stretch;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-4);
 }
 
-.pur-xml-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
+.pur-reception-upload {
+  flex: 0 0 auto;
 }
 
-.pur-matching-summary {
-  display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-/* .pur-matching-table / th / td ELIMINADOS (Bloque 12E) — migrados a
-   Table SSOT: className="table table--compact table--neutral table--align-top"
-   en ZHItemMatchingPanel.tsx. Resto de clases pur-matching-* (contenido de
-   celda, no skin de tabla) se mantienen sin cambios. */
-
-.pur-matching-desc {
-  font-weight: 500;
-}
-
-.pur-matching-meta {
-  display: flex;
-  flex-wrap: wrap;
+.pur-reception-kpis {
+  /* Base de 320px: si no cabe junto al upload, `flex-wrap: wrap` del padre la baja de línea
+     automáticamente — sin breakpoint fijo para el apilado en sí. */
+  flex: 1 1 320px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  margin-top: var(--space-1);
 }
 
-.pur-matching-pick {
-  min-width: min(240px, 100%);
+@media (max-width: 600px) {
+  .pur-reception-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.pur-matching-choice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-1);
-  font-size: 13px;
+@media (max-width: 420px) {
+  .pur-reception-kpis {
+    grid-template-columns: 1fr;
+  }
 }
 
-.pur-matching-resolved {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.pur-matching-actions {
+/* Celda agrupada "Proveedor": nombre + RUC + estado ERP + acción de creación cuando falta —
+   evita una columna aparte solo para el estado del proveedor en el ERP. */
+.pur-supplier-cell {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 180px;
+}
+
+.pur-supplier-name {
+  margin: 0;
+  font-weight: var(--text-label-md-weight);
+}
+
+.pur-supplier-ruc {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+/* Celda agrupada "Documento": tipo de comprobante (hoy siempre Factura, preparado para Nota de
+   crédito) + número. */
+.pur-document-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-1);
 }
 
-.pur-matching-toolbar {
-  margin-bottom: var(--space-3);
+.pur-document-number {
+  margin: 0;
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
 }
 
-.pur-matching-resolved-item {
-  font-size: 13px;
+.pur-document-affects {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
 }
 
-.pur-matching-resolved-name {
-  font-weight: 500;
+/* "Afecta: <número>" como ZHBtn ghost cuando la factura afectada ya existe — se ve como texto
+   subrayado, no como botón grande, para no competir visualmente con el número de documento. */
+.pur-document-affects-link {
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  font-size: var(--text-help-size);
+  text-decoration: underline;
+}
+
+.pur-document-affects-hint {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.pur-document-affects-hint--warning {
+  color: var(--color-warning);
+}
+
+/* Celda agrupada "Valores": subtotal/IVA de apoyo + total resaltado — nunca columnas aparte. */
+.pur-values-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.pur-values-line {
+  margin: 0;
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.pur-values-label {
+  color: var(--color-text-secondary);
+}
+
+.pur-values-total {
+  margin: 0;
+  font-size: var(--text-label-md-size);
+  font-weight: 700;
   color: var(--color-text-primary);
 }
 
-.pur-matching-resolved-sku {
+/* Celda agrupada "Proceso": lista compacta label/valor (Documento, Detalle, XML) — grid de 2
+   columnas para que labels y badges queden alineados en vez de badges sueltos en fila. No repite
+   el estado del proveedor, que ya vive en la columna Proveedor. */
+.pur-process-cell {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  max-width: 220px;
+  text-align: left;
+}
+
+.pur-process-label {
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
-  font-size: 12px;
-  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.pur-process-value {
+  display: flex;
+  align-items: center;
+}
+
+.pur-process-value--muted {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+/* Celda "Acciones": Consultar XML / Crear compra / Compra creada — nunca Crear proveedor, que
+   vive en la celda Proveedor. */
+.pur-actions-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Explicación corta cuando "Crear compra" queda deshabilitado por falta de proveedor ERP — nunca
+   se oculta el botón en silencio, siempre se explica el motivo debajo. */
+.pur-actions-hint {
+  margin: 0;
+  max-width: 140px;
+  text-align: center;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
 }

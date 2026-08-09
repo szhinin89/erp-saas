@@ -36,6 +36,18 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         CancellationToken ct = default
     ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
 
+    public Task<PurchaseInvoice?> GetBySupplierAndInvoiceNumberAsync(
+        Guid tenantId,
+        Guid supplierId,
+        string invoiceNumber,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .FirstOrDefaultAsync(
+                x => x.SupplierId == supplierId && x.InvoiceNumber == invoiceNumber,
+                ct
+            );
+
     public async Task<(
         IReadOnlyList<PurchaseInvoice> Items,
         IReadOnlyDictionary<Guid, int> LineCounts,

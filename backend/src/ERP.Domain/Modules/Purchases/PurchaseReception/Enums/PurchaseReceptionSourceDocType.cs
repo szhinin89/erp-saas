@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 
 /// <summary>
@@ -23,17 +26,42 @@ public static class PurchaseReceptionSourceDocTypeMapper
 {
     public static PurchaseReceptionSourceDocType FromRawText(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw))
+        var normalized = Normalize(raw);
+        if (normalized is null)
             return PurchaseReceptionSourceDocType.Unknown;
 
-        return raw.Trim().ToUpperInvariant() switch
+        return normalized switch
         {
             "FACTURA" => PurchaseReceptionSourceDocType.Invoice,
-            "NOTA DE CRÉDITO" or "NOTA DE CREDITO" => PurchaseReceptionSourceDocType.CreditNote,
-            "NOTA DE DÉBITO" or "NOTA DE DEBITO" => PurchaseReceptionSourceDocType.DebitNote,
-            "COMPROBANTE DE RETENCIÓN" or "COMPROBANTE DE RETENCION" =>
-                PurchaseReceptionSourceDocType.Retention,
+            "NOTA DE CREDITO" or "NOTA CREDITO" => PurchaseReceptionSourceDocType.CreditNote,
+            "NOTA DE DEBITO" => PurchaseReceptionSourceDocType.DebitNote,
+            "COMPROBANTE DE RETENCION" => PurchaseReceptionSourceDocType.Retention,
             _ => PurchaseReceptionSourceDocType.Unknown,
         };
+    }
+
+    /// <summary>
+    /// TIPO_COMPROBANTE del TXT del SRI llega con variaciones de acento, mayúsculas/minúsculas,
+    /// espacios múltiples e incluso sin la palabra "de" ("Nota Crédito" en vez de "Nota de
+    /// Crédito") — normaliza a mayúsculas, sin diacríticos y con espacio simple para que la
+    /// clasificación no dependa de una comparación exacta del texto original.
+    /// </summary>
+    private static string? Normalize(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        var decomposed = raw.Trim().ToUpperInvariant().Normalize(NormalizationForm.FormD);
+        var stripped = new StringBuilder(decomposed.Length);
+        foreach (var c in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                stripped.Append(c);
+        }
+
+        var words = stripped
+            .ToString()
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return words.Length == 0 ? null : string.Join(' ', words);
     }
 }

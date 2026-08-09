@@ -30,6 +30,8 @@ export function ZhFileUpload(props: {
   dropLabel: string;
   uploadingLabel?: string;
   noFileLabel: string;
+  /** Reduce el padding de la zona de drop para pantallas donde el upload no es el foco principal. */
+  compact?: boolean;
 }) {
   const {
     accept,
@@ -43,6 +45,7 @@ export function ZhFileUpload(props: {
     dropLabel,
     uploadingLabel,
     noFileLabel,
+    compact,
   } = props;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +58,7 @@ export function ZhFileUpload(props: {
   };
 
   return (
-    <div className="zh-upload">
+    <div className={`zh-upload ${compact ? "zh-upload--compact" : ""}`}>
       <div
         className={`zh-upload-drop ${dragOver ? "zh-upload-drop--active" : ""} ${disabled ? "zh-upload-drop--disabled" : ""}`}
         onClick={() => !disabled && !uploading && inputRef.current?.click()}
@@ -70,11 +73,15 @@ export function ZhFileUpload(props: {
           if (!disabled && !uploading) pick(e.dataTransfer.files?.[0]);
         }}
       >
-        <span className="material-symbols-outlined zh-upload-icon">
-          upload_file
+        <span className="zh-upload-icon-wrap">
+          <span className="material-symbols-outlined zh-upload-icon">
+            upload_file
+          </span>
         </span>
-        <p className="zh-upload-select">{selectLabel}</p>
-        <p className="zh-upload-hint">{dropLabel}</p>
+        <div className="zh-upload-copy">
+          <p className="zh-upload-select">{selectLabel}</p>
+          <p className="zh-upload-hint">{dropLabel}</p>
+        </div>
         <input
           ref={inputRef}
           type="file"
@@ -101,10 +108,12 @@ export function ZhFileUpload(props: {
 
       {!uploading && currentFile && (
         <div className="zh-upload-current">
-          <span className="material-symbols-outlined zh-upload-current-icon">
-            description
+          <span className="zh-upload-current-icon-wrap">
+            <span className="material-symbols-outlined zh-upload-current-icon">
+              task_alt
+            </span>
           </span>
-          <div>
+          <div className="zh-upload-current-copy">
             <p className="zh-upload-current-name">{currentFile.name}</p>
             <p className="zh-upload-current-meta">
               {formatBytes(currentFile.sizeBytes)} · {currentFile.uploadedAt}

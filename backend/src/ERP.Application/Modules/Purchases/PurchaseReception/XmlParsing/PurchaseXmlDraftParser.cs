@@ -46,6 +46,10 @@ public sealed record ParsedPurchaseXmlLineError(
 public sealed record ParsedPurchaseXml(
     string SupplierRuc,
     string SupplierName,
+    // infoTributaria/nombreComercial — opcional en el esquema SRI, muchos emisores solo declaran
+    // razonSocial. Se usa únicamente para precargar el formulario de creación de proveedor cuando
+    // el BP todavía no existe en el ERP.
+    string? SupplierTradeName,
     string DocTypeCode,
     string InvoiceNumber,
     DateOnly IssueDate,
@@ -96,6 +100,7 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
 
             var supplierRuc = RequireText(infoTributaria, "ruc");
             var supplierName = RequireText(infoTributaria, "razonSocial");
+            var supplierTradeName = OptionalText(infoTributaria, "nombreComercial");
             var docTypeCode = RequireText(infoTributaria, "codDoc");
             var invoiceNumber = BuildInvoiceNumber(infoTributaria);
             var issueDate = ParseDate(RequireText(infoFactura, "fechaEmision"));
@@ -132,6 +137,7 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
             var header = new ParsedPurchaseXml(
                 SupplierRuc: supplierRuc,
                 SupplierName: supplierName,
+                SupplierTradeName: supplierTradeName,
                 DocTypeCode: docTypeCode,
                 InvoiceNumber: invoiceNumber,
                 IssueDate: issueDate,

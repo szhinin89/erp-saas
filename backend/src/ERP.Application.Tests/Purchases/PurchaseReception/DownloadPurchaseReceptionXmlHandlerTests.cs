@@ -45,7 +45,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
 
     private static PurchaseReceptionDetailProcessingResult FailedResult(
         string note = "XML sin detalle de prueba."
-    ) => new([], PurchaseReceptionProcessingOutcome.Failed(note), null, null);
+    ) => new([], PurchaseReceptionProcessingOutcome.Failed(note), null, null, null);
 
     private static (
         DownloadPurchaseReceptionXmlHandler handler,
@@ -206,7 +206,8 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
                         null
                     ),
                     "01",
-                    "20"
+                    "20",
+                    "Comercial ACME"
                 )
             );
 
@@ -223,6 +224,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
         document.DocTypeCode.Should().Be("01");
         document.SriPaymentMethodCode.Should().Be("20");
+        result.Value!.SupplierTradeName.Should().Be("Comercial ACME");
     }
 
     [Fact]

@@ -2,13 +2,14 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using System.Globalization;
+using System.Text;
 
 namespace ERP.Infrastructure.Modules.Purchases.PurchaseReception;
 
 /// <summary>
 /// Interpreta el TXT de recepción de comprobantes del SRI (delimitado por tabulador, con encabezado).
-/// Solo procesa filas <c>TIPO_COMPROBANTE = Factura</c> en Fase 1 — otros tipos se cuentan como
-/// omitidos (no soportados todavía), sin abortar el archivo. No conoce base de datos ni EF Core.
+/// Procesa filas <c>TIPO_COMPROBANTE = Factura</c> y <c>Nota de Crédito</c> — otros tipos se cuentan
+/// como omitidos (no soportados todavía), sin abortar el archivo. No conoce base de datos ni EF Core.
 /// </summary>
 public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
 {
@@ -37,11 +38,14 @@ public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
         var errors = new List<PurchaseReceptionParseError>();
         var skippedUnsupported = 0;
 
+        using var buffer = new MemoryStream();
+        await fileContent.CopyToAsync(buffer, cancellationToken);
+        var bytes = buffer.ToArray();
+
         using var reader = new StreamReader(
-            fileContent,
-            System.Text.Encoding.UTF8,
-            detectEncodingFromByteOrderMarks: true,
-            leaveOpen: true
+            new MemoryStream(bytes),
+            DetectEncoding(bytes),
+            detectEncodingFromByteOrderMarks: true
         );
 
         var headerLine = await reader.ReadLineAsync(cancellationToken);
@@ -96,6 +100,33 @@ public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
         return new PurchaseReceptionParseResult(records, errors, skippedUnsupported);
     }
 
+    /// <summary>
+    /// El TXT del SRI casi siempre es UTF-8 sin BOM, pero algunos exports (frecuente en notas de
+    /// crédito) vienen en Windows-1252/ISO-8859-1 de un solo byte por acento. Forzar UTF-8 en ese
+    /// caso corrompe "Crédito" en <c>TIPO_COMPROBANTE</c>, la fila deja de mapear a
+    /// <see cref="PurchaseReceptionSourceDocType.CreditNote"/> y se cuenta como omitida sin error
+    /// visible — el archivo "no carga" en silencio. Se detecta con una decodificación UTF-8
+    /// estricta (falla ante cualquier byte inválido); si falla, se usa <see cref="Encoding.Latin1"/>
+    /// — mismo mapeo que Windows-1252 para el rango de acentos que usa este archivo (á é í ó ú ñ),
+    /// sin requerir el paquete de code pages.
+    /// </summary>
+    private static Encoding DetectEncoding(byte[] bytes)
+    {
+        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            return Encoding.UTF8;
+
+        try
+        {
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true)
+                .GetString(bytes);
+            return Encoding.UTF8;
+        }
+        catch (DecoderFallbackException)
+        {
+            return Encoding.Latin1;
+        }
+    }
+
     private static Dictionary<string, int> BuildColumnIndex(string headerLine)
     {
         var columns = headerLine.Split(Delimiter);
@@ -135,9 +166,11 @@ public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
 
         var docTypeRaw = Field("TIPO_COMPROBANTE");
         var sourceDocType = PurchaseReceptionSourceDocTypeMapper.FromRawText(docTypeRaw);
-        isSupportedType = sourceDocType == PurchaseReceptionSourceDocType.Invoice;
+        isSupportedType =
+            sourceDocType == PurchaseReceptionSourceDocType.Invoice
+            || sourceDocType == PurchaseReceptionSourceDocType.CreditNote;
         if (!isSupportedType)
-            return true; // línea válida, pero de un tipo no soportado en Fase 1 — se cuenta como omitida, no como error
+            return true; // línea válida, pero de un tipo no soportado todavía — se cuenta como omitida, no como error
 
         var ruc = Field("RUC_EMISOR");
         var supplierName = Field("RAZON_SOCIAL_EMISOR");
@@ -189,11 +222,28 @@ public sealed class PurchaseInvoiceTxtParser : IPurchaseReceptionParser
         if (
             !TryParseAmount(Field("VALOR_SIN_IMPUESTOS"), out var subtotal)
             || !TryParseAmount(Field("IVA"), out var vat)
-            || !TryParseAmount(Field("IMPORTE_TOTAL"), out var total)
         )
         {
-            reason =
-                "VALOR_SIN_IMPUESTOS, IVA e IMPORTE_TOTAL deben ser valores numéricos válidos.";
+            reason = "VALOR_SIN_IMPUESTOS e IVA deben ser valores numéricos válidos.";
+            return false;
+        }
+
+        var totalRaw = Field("IMPORTE_TOTAL");
+        decimal total;
+        if (string.IsNullOrWhiteSpace(totalRaw))
+        {
+            // IMPORTE_TOTAL viene vacío en algunas notas de crédito del SRI — se calcula, nunca se
+            // inventa: mismo criterio que la UI aplicará para mostrar el total de crédito.
+            if (sourceDocType != PurchaseReceptionSourceDocType.CreditNote)
+            {
+                reason = "IMPORTE_TOTAL es obligatorio.";
+                return false;
+            }
+            total = subtotal + vat;
+        }
+        else if (!TryParseAmount(totalRaw, out total))
+        {
+            reason = "IMPORTE_TOTAL debe ser un valor numérico válido.";
             return false;
         }
 

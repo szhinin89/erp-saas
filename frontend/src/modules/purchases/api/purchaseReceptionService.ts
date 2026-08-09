@@ -47,16 +47,34 @@ export interface BulkMatchResultEntry {
   error: string | null;
 }
 
+export type PurchaseReceptionSourceDocType =
+  | "INVOICE"
+  | "CREDIT_NOTE"
+  | "DEBIT_NOTE"
+  | "RETENTION"
+  | "UNKNOWN";
+
 export interface PurchaseReceptionItem {
   supplierRuc: string;
   supplierName: string;
+  sourceDocType: PurchaseReceptionSourceDocType;
   invoiceNumber: string;
+  /** Factura afectada (`NUMERO_DOCUMENTO_MODIFICADO`) — solo en notas de crédito/débito, null en Factura. */
+  modifiedDocumentNumber: string | null;
   accessKey: string;
   issueDate: string;
   authorizationDate: string;
+  /** Base imponible del comprobante (TXT SRI) — ya se venía persistiendo, ahora se expone aquí. */
+  subtotal: number;
+  /** IVA del comprobante (TXT SRI) — ídem. */
+  vatAmount: number;
   total: number;
   supplierExists: boolean;
   purchaseExists: boolean;
+  /** Solo notas de crédito: si `modifiedDocumentNumber` ya existe como compra del mismo proveedor. False en Factura. */
+  affectedPurchaseExists: boolean;
+  /** Id de la compra afectada, para abrirla en `/purchases?invoiceId=<id>` — null si no existe o no aplica. */
+  affectedPurchaseId: string | null;
   status: "IMPORTED" | "PENDING" | "NEW_SUPPLIER";
   /** Id del PurchaseReceptionDocument persistido (Fase 2) — ya no es solo una vista en memoria. */
   documentId: string;
@@ -66,6 +84,9 @@ export interface PurchaseReceptionItem {
   processingStatus: ProcessingStatus;
   /** Resumen legible de advertencias/errores de procesamiento — null si no hay ninguna. */
   processingNotes: string | null;
+  /** Nombre comercial del emisor (infoTributaria/nombreComercial) — solo disponible después de
+   * "Consultar XML" (el TXT del SRI no lo trae); null hasta entonces o si el XML no lo declara. */
+  supplierTradeName: string | null;
 }
 
 export interface PurchaseReceptionImportResult {
@@ -85,6 +106,8 @@ export interface DownloadXmlResult {
   linesDetectedCount: number;
   linesProcessedCount: number;
   processingNotes: string | null;
+  /** infoTributaria/nombreComercial del emisor — null si el XML no lo declara. */
+  supplierTradeName: string | null;
 }
 
 /**

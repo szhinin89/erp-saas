@@ -49,6 +49,10 @@ public sealed class PurchaseReceptionDocumentConfiguration
             .HasColumnName("invoice_number")
             .HasMaxLength(PurchaseReceptionDocument.InvoiceNumberMaxLen)
             .IsRequired();
+        builder
+            .Property(x => x.ModifiedDocumentNumber)
+            .HasColumnName("modified_document_number")
+            .HasMaxLength(PurchaseReceptionDocument.ModifiedDocumentNumberMaxLen);
         builder.Property(x => x.IssueDate).HasColumnName("issue_date").IsRequired();
         builder.Property(x => x.AuthorizationDate).HasColumnName("authorization_date");
         builder

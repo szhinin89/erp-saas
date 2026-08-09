@@ -6,24 +6,34 @@
   gap: var(--space-2);
 }
 
+/* ── Trigger principal — debe leerse como una acción, no como texto plano ── */
+
 .zh-upload-drop {
   position: relative;
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-fixed);
   padding: var(--space-5);
   text-align: center;
   cursor: pointer;
   transition:
     border-color 0.15s,
-    background 0.15s;
+    background 0.15s,
+    box-shadow 0.15s;
 }
 
 .zh-upload-drop:hover {
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-focus-ring);
 }
 
 .zh-upload-drop--active {
   border-color: var(--color-primary);
+  border-style: solid;
   background: var(--color-primary-subtle);
 }
 
@@ -32,19 +42,36 @@
   opacity: 0.6;
 }
 
+.zh-upload-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-subtle);
+}
+
 .zh-upload-icon {
-  font-size: 32px;
-  color: var(--color-text-secondary);
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+.zh-upload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .zh-upload-select {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   font-weight: var(--text-label-md-weight);
   font-size: var(--text-label-md-size);
+  color: var(--color-text-primary);
 }
 
 .zh-upload-hint {
-  margin: var(--space-1) 0 0;
+  margin: 0;
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
@@ -81,27 +108,86 @@
   color: var(--color-error);
 }
 
+/* ── Archivo cargado — visualmente distinto del estado vacío (acento de éxito) ── */
+
 .zh-upload-current {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-success);
   border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+}
+
+.zh-upload-current-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
 }
 
 .zh-upload-current-icon {
-  color: var(--color-text-secondary);
+  font-size: 16px;
+  color: var(--color-success);
+}
+
+.zh-upload-current-copy {
+  min-width: 0;
 }
 
 .zh-upload-current-name {
   margin: 0;
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .zh-upload-current-meta {
   margin: 0;
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
+}
+
+/* ── Variante compacta — trigger + archivo cargado en fila, ancho reducido ──
+   Objetivo: ~25% del ancho disponible en desktop, intermedio en tablet, completo en mobile. */
+
+.zh-upload--compact {
+  width: 100%;
+  max-width: 320px;
+}
+
+.zh-upload--compact .zh-upload-drop {
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+}
+
+.zh-upload--compact .zh-upload-copy {
+  min-width: 0;
+}
+
+.zh-upload--compact .zh-upload-select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .zh-upload--compact {
+    max-width: 480px;
+  }
+}
+
+@media (max-width: 600px) {
+  .zh-upload--compact {
+    max-width: 100%;
+  }
 }

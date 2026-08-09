@@ -12,6 +12,19 @@ public interface IPurchaseInvoiceRepository
     );
 
     /// <summary>
+    /// Usado por la Recepción electrónica (FLOW-READY-02B.2) para verificar si la factura que una
+    /// nota de crédito afecta (<c>NUMERO_DOCUMENTO_MODIFICADO</c>) ya está ingresada en el ERP — a
+    /// diferencia de <see cref="GetByAccessKeyAsync"/>, la NC no trae la clave de acceso de la
+    /// factura afectada, solo su número, por lo que se busca por proveedor + número de documento.
+    /// </summary>
+    Task<PurchaseInvoice?> GetBySupplierAndInvoiceNumberAsync(
+        Guid tenantId,
+        Guid supplierId,
+        string invoiceNumber,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// <c>LineCounts</c> se resuelve con un COUNT agrupado, no con <c>Include(Lines)</c> —
     /// el listado no necesita las líneas completas de cada compra, solo su cantidad.
     /// </summary>

@@ -117,6 +117,8 @@ public sealed class ImportPurchaseReceptionHandlerTests
         result.Value.Items[0].Status.Should().Be("PENDING");
         result.Value.Items[0].DocumentStatus.Should().Be("IMPORTED");
         result.Value.Items[0].SupplierRuc.Should().Be("1791352688001");
+        result.Value.Items[0].Subtotal.Should().Be(15.96m);
+        result.Value.Items[0].VatAmount.Should().Be(2.4m);
 
         added.Should().NotBeNull();
         added!.TenantId.Should().Be(TenantId);
