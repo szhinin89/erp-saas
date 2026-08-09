@@ -216,7 +216,6 @@ public class ErpDbContext : DbContext
     public DbSet<OrgSetting> OrgSettings => Set<OrgSetting>();
 
     // ── SRI Catalogs (global reference data) ─────────────────────────────
-    public DbSet<SriEnvironment> SriEnvironments => Set<SriEnvironment>();
     public DbSet<SriEmissionType> SriEmissionTypes => Set<SriEmissionType>();
     public DbSet<SriDocType> SriDocTypes => Set<SriDocType>();
     public DbSet<SriIdType> SriIdTypes => Set<SriIdType>();

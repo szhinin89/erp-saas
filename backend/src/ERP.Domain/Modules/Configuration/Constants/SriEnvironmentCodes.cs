@@ -2,10 +2,8 @@ namespace ERP.Domain.Configuration.Constants;
 
 /// <summary>
 /// Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente"): binario técnico estable,
-/// no configurable por tenant/empresa — no requiere catálogo persistido. Mismos valores que
-/// <c>ERP.Domain.Modules.SriCatalogs.Entities.SriEnvironment</c> (catálogo sembrado hoy sin
-/// ningún consumidor de lectura); esta clase cubre los puntos que hoy comparan el código crudo
-/// ("1"/"2" como viene del XML/config) sin pasar por ese catálogo.
+/// no configurable por tenant/empresa — fuente única, no requiere catálogo persistido
+/// (CLEAN-01G retiró el catálogo <c>sri_environment</c> huérfano que duplicaba estos valores).
 /// </summary>
 public static class SriEnvironmentCodes
 {

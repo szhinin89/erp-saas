@@ -141,7 +141,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
     [Fact]
     public async Task Handle_configured_with_valid_certificate_in_production_is_ready()
     {
-        // Ficha Técnica SRI, Tabla 4 "Ambiente": 2 = Producción (ver SriEnvironmentConfiguration).
+        // Ficha Técnica SRI, Tabla 4 "Ambiente": 2 = Producción (ver SriEnvironmentCodes).
         var settings = NewSettings(environment: 2);
         var handler = BuildHandler(settings, ValidCert);
 
@@ -161,7 +161,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
     [Fact]
     public async Task Handle_configured_in_test_environment_reports_testing()
     {
-        // Ficha Técnica SRI, Tabla 4 "Ambiente": 1 = Pruebas (ver SriEnvironmentConfiguration).
+        // Ficha Técnica SRI, Tabla 4 "Ambiente": 1 = Pruebas (ver SriEnvironmentCodes).
         var settings = NewSettings(environment: 1);
         var handler = BuildHandler(settings, ValidCert);
 

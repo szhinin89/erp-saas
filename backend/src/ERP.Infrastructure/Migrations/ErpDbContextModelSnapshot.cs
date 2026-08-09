@@ -11316,46 +11316,6 @@ namespace ERP.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriEnvironment", b =>
-                {
-                    b.Property<short>("Code")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("code");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Code"));
-
-                    b.Property<string>("Abbrev")
-                        .IsRequired()
-                        .HasMaxLength(6)
-                        .HasColumnType("character varying(6)")
-                        .HasColumnName("abbrev");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(25)
-                        .HasColumnType("character varying(25)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Code");
-
-                    b.ToTable("sri_environment", "global");
-
-                    b.HasData(
-                        new
-                        {
-                            Code = (short)1,
-                            Abbrev = "TEST",
-                            Name = "Pruebas"
-                        },
-                        new
-                        {
-                            Code = (short)2,
-                            Abbrev = "PROD",
-                            Name = "Producción"
-                        });
-                });
-
             modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriErrorCode", b =>
                 {
                     b.Property<string>("Code")
