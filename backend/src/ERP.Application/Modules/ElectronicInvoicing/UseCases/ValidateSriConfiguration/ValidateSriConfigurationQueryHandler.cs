@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
+using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
@@ -67,7 +68,9 @@ public sealed class ValidateSriConfigurationQueryHandler
             )
         );
 
-        var environmentValid = settings.Environment is 1 or 2;
+        var environmentValid =
+            settings.Environment is SriEnvironmentCodes.TestingValue
+                or SriEnvironmentCodes.ProductionValue;
         checks.Add(
             new SriConfigurationCheckDto(
                 "environment",

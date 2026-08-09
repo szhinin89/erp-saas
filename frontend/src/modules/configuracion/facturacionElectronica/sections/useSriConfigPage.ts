@@ -17,6 +17,7 @@ import {
   SRI_WSDL_DEFAULTS,
   type SriConfigValues,
 } from "../schemas/sriConfigurationSchema";
+import { SRI_ENVIRONMENT } from "../constants/sriEnvironmentCodes";
 
 const ALLOWED_CERT_EXTENSIONS = [".p12", ".pfx"];
 const MAX_CERT_SIZE_BYTES = 5 * 1024 * 1024;
@@ -28,15 +29,14 @@ export function useSriConfigPage() {
   const canView = canShow("electronic-invoicing.view");
   const canEdit = canShow("electronic-invoicing.configure");
 
-  // Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente"): 1=Pruebas, 2=Producción.
   const sriEnvOptions = [
     {
-      value: 1 as const,
+      value: SRI_ENVIRONMENT.TESTING,
       label: t("settings.electronicInvoicing.sri.envTestLabel"),
       description: t("settings.electronicInvoicing.sri.envTestDesc"),
     },
     {
-      value: 2 as const,
+      value: SRI_ENVIRONMENT.PRODUCTION,
       label: t("settings.electronicInvoicing.sri.envProdLabel"),
       description: t("settings.electronicInvoicing.sri.envProdDesc"),
     },
@@ -69,7 +69,7 @@ export function useSriConfigPage() {
     resolver: zodResolver(sriConfigSchema),
     defaultValues: {
       certPassword: "",
-      environment: 1,
+      environment: SRI_ENVIRONMENT.TESTING,
       wsdlUrl: SRI_WSDL_DEFAULTS.pruebas,
     },
   });
@@ -88,7 +88,10 @@ export function useSriConfigPage() {
   const resetFromData = (d: NonNullable<typeof sriState.data>) => {
     reset({
       certPassword: "",
-      environment: d.environment === 2 ? 2 : 1,
+      environment:
+        d.environment === SRI_ENVIRONMENT.PRODUCTION
+          ? SRI_ENVIRONMENT.PRODUCTION
+          : SRI_ENVIRONMENT.TESTING,
       wsdlUrl: d.wsdlUrl ?? SRI_WSDL_DEFAULTS.pruebas,
     });
   };
@@ -107,7 +110,7 @@ export function useSriConfigPage() {
     if (isDefault || !currentUrl) {
       setValue(
         "wsdlUrl",
-        envValue === 2
+        envValue === SRI_ENVIRONMENT.PRODUCTION
           ? SRI_WSDL_DEFAULTS.produccion
           : SRI_WSDL_DEFAULTS.pruebas,
         {

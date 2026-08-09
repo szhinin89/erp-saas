@@ -1,8 +1,12 @@
 import { z } from "zod";
+import { SRI_ENVIRONMENT } from "../constants/sriEnvironmentCodes";
 
 export const sriConfigSchema = z.object({
   certPassword: z.string().optional(),
-  environment: z.union([z.literal(1), z.literal(2)]),
+  environment: z.union([
+    z.literal(SRI_ENVIRONMENT.TESTING),
+    z.literal(SRI_ENVIRONMENT.PRODUCTION),
+  ]),
   wsdlUrl: z.string().url("Debe ser una URL válida").max(500),
 });
 

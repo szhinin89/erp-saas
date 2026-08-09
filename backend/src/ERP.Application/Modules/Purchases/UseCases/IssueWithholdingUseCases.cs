@@ -71,6 +71,12 @@ public sealed class IssueWithholdingHandler
     // ya para Ventas (ver AuthorizeSalesUseCases.cs) — aplica igual a Retenciones.
     private const int SriIssueDateToleranceDays = 90;
 
+    /// <summary>Código SRI "07" = Comprobante de Retención (tabla <c>sri_doc_types</c>) — identidad
+    /// fija de este flujo de emisión, no un valor de negocio configurable (mismo criterio que
+    /// <see cref="ERP.Application.Modules.Sales.Services.SalesReturnCreditNoteDataProvider.CreditNoteDocTypeCode"/>
+    /// para Notas de Crédito "04").</summary>
+    private const string WithholdingDocTypeCode = "07";
+
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
     private readonly IRetentionCodeResolver _retResolver;
@@ -291,12 +297,11 @@ public sealed class IssueWithholdingHandler
             }
 
             // CaptureNextAsync: atómico (advisory lock + transacción propia).
-            // "07" es el código SRI fijo para retenciones en la fuente.
             var sequential = await _seqRepo.CaptureNextAsync(
                 tid,
                 _c.CompanyId,
                 cmd.EmissionPointId,
-                "07",
+                WithholdingDocTypeCode,
                 ct
             );
             var number = $"{est.Code}-{ep.Code}-{sequential}";

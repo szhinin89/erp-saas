@@ -1,4 +1,5 @@
 using ERP.Application.Modules.Ride.Templates;
+using ERP.Domain.Configuration.Constants;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -117,7 +118,11 @@ public static class HeaderSection
                         {
                             text.DefaultTextStyle(x => x.FontSize(8));
                             text.Span("AMBIENTE: ").Bold();
-                            text.Span(header.Environment == "2" ? "PRODUCCIÓN" : "PRUEBAS");
+                            text.Span(
+                                SriEnvironmentCodes.IsProduction(header.Environment)
+                                    ? "PRODUCCIÓN"
+                                    : "PRUEBAS"
+                            );
                         });
                     right
                         .Item()

@@ -3,6 +3,7 @@ using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Enums;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
+using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using MediatR;
@@ -72,11 +73,11 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         CancellationToken cancellationToken
     )
     {
-        // Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente"): 1=Pruebas, 2=Producción.
+        // Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente") — ver SriEnvironmentCodes.
         var (environment, environmentName) = settings.Environment switch
         {
-            1 => ("Test", "Pruebas"),
-            2 => ("Production", "Producción"),
+            SriEnvironmentCodes.TestingValue => ("Test", "Pruebas"),
+            SriEnvironmentCodes.ProductionValue => ("Production", "Producción"),
             _ => ((string?)null, (string?)null),
         };
         var emissionType = settings.EmissionType == 1 ? "Normal" : null;
