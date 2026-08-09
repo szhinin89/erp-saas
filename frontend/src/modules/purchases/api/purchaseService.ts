@@ -4,6 +4,27 @@ const BASE = "/api/v1/purchases";
 
 // ── DTOs ─────────────────────────────────────────────────────────────────
 
+/**
+ * FLOW-READY-02D.1/02C-R1.2 — resumen fiscal persistido de una compra confirmada, agrupado por
+ * combinación de impuesto. `creditedTaxableBase`/`availableTaxableBase` reflejan cuánta base ya fue
+ * acreditada por notas de crédito de compra tipo Descuento no canceladas.
+ */
+export interface PurchaseInvoiceTaxSummaryDto {
+  id: string;
+  vatCode: string;
+  vatRate: number;
+  vatName: string | null;
+  iceCode: string | null;
+  iceRate: number;
+  iceName: string | null;
+  taxableBase: number;
+  iceAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+  creditedTaxableBase: number;
+  availableTaxableBase: number;
+}
+
 export interface PurchaseLineDto {
   id: string;
   itemId: string | null;
@@ -289,6 +310,10 @@ export const purchaseService = {
     const url = qs ? `${BASE}/report?${qs}` : `${BASE}/report`;
     return apiGet<PurchasesBySupplierReportResponse>(url);
   },
+
+  /** FLOW-READY-02D.1 — resumen fiscal persistido de la compra, agrupado por impuesto. Vacío si la compra aún no fue confirmada o no tiene resumen persistido (nunca inventado en frontend). */
+  getTaxSummaries: (invoiceId: string) =>
+    apiGet<PurchaseInvoiceTaxSummaryDto[]>(`${BASE}/invoices/${invoiceId}/tax-summaries`),
 };
 
 // ── Withholding DTOs ─────────────────────────────────────────────────────

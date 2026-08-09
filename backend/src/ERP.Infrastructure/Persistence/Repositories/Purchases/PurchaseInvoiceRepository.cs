@@ -28,6 +28,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         Scoped(tenantId)
             .Include(x => x.Lines.OrderBy(l => l.SortOrder))
             .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
+            .Include(x => x.TaxSummaries)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public Task<PurchaseInvoice?> GetByAccessKeyAsync(

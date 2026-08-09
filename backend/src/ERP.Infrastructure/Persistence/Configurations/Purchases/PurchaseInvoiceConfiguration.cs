@@ -161,6 +161,15 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
             .HasForeignKey(x => x.PurchaseInvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // FLOW-READY-02D.1 — resumen fiscal persistido, regenerado por PurchaseInvoice.Confirm().
+        // Cascade con la factura (mismo criterio que Lines/PaymentSchedules): no hay borrado físico
+        // de negocio, esto solo cubre el caso de eliminar la factura en dev/test.
+        builder
+            .HasMany(x => x.TaxSummaries)
+            .WithOne()
+            .HasForeignKey(x => x.PurchaseInvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder
             .HasOne<BusinessPartner>()
             .WithMany()

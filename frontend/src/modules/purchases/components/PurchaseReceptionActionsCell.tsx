@@ -4,9 +4,13 @@ import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 
 /**
- * Celda "Acciones" de `/purchases/reception`. Notas de crédito (FLOW-READY-02B.1, Fase 1) solo se
- * cargan y muestran — sin Consultar XML, sin Crear compra, sin navegación; el procesamiento real es
- * una fase futura.
+ * Celda "Acciones" de `/purchases/reception`. Notas de crédito (FLOW-READY-02B.1) solo se cargan y
+ * muestran — sin Consultar XML, sin Crear compra (nunca reintroduce matching de productos ni crea
+ * proveedor desde esta fila). FLOW-READY-02C.4 agrega la única acción real posible: si la factura
+ * afectada ya existe en el ERP, "Procesar NC" abre la pantalla centralizada de Nota de Crédito de
+ * Compra (`PurchaseCreditNoteFormPage`, FLOW-READY-02C.3) en una pestaña nueva — mismo criterio que
+ * "Crear compra"/"Abrir factura afectada": la Recepción permanece abierta como bandeja. El usuario
+ * decide ahí mismo si es Devolución o Descuento/promoción; esta celda nunca infiere el tipo.
  */
 export function PurchaseReceptionActionsCell({
   row,
@@ -20,20 +24,42 @@ export function PurchaseReceptionActionsCell({
   const { t } = useI18n();
 
   if (row.sourceDocType === "CREDIT_NOTE") {
+    if (row.affectedPurchaseExists && row.affectedPurchaseId) {
+      return (
+        <div className="pur-actions-cell">
+          <ZHBtn
+            variant="primary"
+            size="xs"
+            type="button"
+            title={t("purchases.creditNote.actions.processCreditNote", "Procesar nota de crédito")}
+            onClick={() =>
+              window.open(
+                `/purchases/credit-notes/new?invoiceId=${row.affectedPurchaseId}&receptionDocumentId=${row.documentId}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            {t("purchases.creditNote.actions.processNc", "Procesar NC")}
+          </ZHBtn>
+        </div>
+      );
+    }
+
     return (
       <div className="pur-actions-cell">
         <Badge
           variant="neutral"
           label={t("purchases.reception.actions.ncPending", "NC pendiente")}
           title={t(
-            "purchases.reception.actions.noActionAvailable",
-            "Sin acción disponible — procesamiento pendiente",
+            "purchases.creditNote.errors.affectedInvoiceRequired",
+            "La factura afectada debe estar ingresada antes de procesar la NC",
           )}
         />
         <p className="pur-actions-hint">
           {t(
-            "purchases.reception.actions.documentReceived",
-            "Documento recibido",
+            "purchases.reception.document.enterInvoiceFirst",
+            "Ingrese primero la factura afectada",
           )}
         </p>
       </div>

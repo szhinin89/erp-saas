@@ -78,6 +78,10 @@ public sealed class PurchaseInvoice
     public IReadOnlyList<PurchasePaymentSchedule> PaymentSchedules =>
         _paymentSchedules.AsReadOnly();
 
+    /// <summary>FLOW-READY-02D.1 — resumen fiscal persistido, regenerado exclusivamente por <see cref="Confirm"/>.</summary>
+    private readonly List<PurchaseInvoiceTaxSummary> _taxSummaries = new();
+    public IReadOnlyList<PurchaseInvoiceTaxSummary> TaxSummaries => _taxSummaries.AsReadOnly();
+
     public decimal Subtotal => ConfirmedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
     public decimal TotalDiscount => ConfirmedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
     public decimal TotalIce => _lines.Sum(l => l.IceAmount);
@@ -398,6 +402,8 @@ public sealed class PurchaseInvoice
         foreach (var line in _lines)
             line.FreezeCosts();
 
+        RebuildTaxSummariesFromLines();
+
         ConfirmedSubtotal = _lines.Sum(l => l.LineSubtotal);
         ConfirmedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
         ConfirmedTotalTax = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
@@ -621,5 +627,50 @@ public sealed class PurchaseInvoice
             throw new InvalidOperationException(
                 "Solo se pueden editar compras en estado borrador."
             );
+    }
+
+    /// <summary>
+    /// FLOW-READY-02D.1 — regenera íntegramente <see cref="TaxSummaries"/> desde las líneas ya
+    /// congeladas (<see cref="PurchaseInvoiceDetail.FreezeCosts"/>), agrupando por combinación
+    /// exacta de impuesto (VatCode/VatRate/IceCode/IceRate — nunca mezcla bases de impuestos
+    /// distintos). Solo se invoca una vez, dentro de <see cref="Confirm"/> — no existe ningún otro
+    /// punto de entrada público para regenerar o editar summaries manualmente.
+    /// </summary>
+    private void RebuildTaxSummariesFromLines()
+    {
+        _taxSummaries.Clear();
+
+        var groups = _lines.GroupBy(l => (l.VatCode, l.VatRate, l.IceCode, l.IceRate));
+        foreach (var group in groups)
+        {
+            var (vatCode, vatRate, iceCode, iceRate) = group.Key;
+            var taxableBase = group.Sum(l => l.TaxableBase);
+            var iceAmount = group.Sum(l => l.IceAmount);
+            var vatAmount = group.Sum(l => l.VatAmount);
+            var vatName = group
+                .Select(l => l.SnapshotVatName)
+                .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+            var iceName = group
+                .Select(l => l.SnapshotIceName)
+                .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+
+            _taxSummaries.Add(
+                PurchaseInvoiceTaxSummary.Create(
+                    TenantId,
+                    CompanyId,
+                    BranchId,
+                    Id,
+                    vatCode,
+                    vatRate,
+                    vatName,
+                    iceCode,
+                    iceRate,
+                    iceName,
+                    taxableBase,
+                    iceAmount,
+                    vatAmount
+                )
+            );
+        }
     }
 }

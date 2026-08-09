@@ -30,12 +30,22 @@ public sealed class PurchasePayable
     /// </summary>
     public decimal SupplierCreditAppliedAmount { get; private set; }
 
+    /// <summary>
+    /// Acumulado técnico de <c>PurchaseCreditNote</c> (descuento/promoción, FLOW-READY-02C) aplicado
+    /// directamente contra esta CxP — mutado exclusivamente vía <see cref="ApplyCreditNote"/>/
+    /// <see cref="ReverseCreditNote"/>. Distinto de <see cref="ReturnAppliedAmount"/> (devolución
+    /// física, P0-02) y de <see cref="SupplierCreditAppliedAmount"/> (crédito de proveedor externo)
+    /// para trazabilidad diferenciada — mismo patrón, cuarto track paralelo.
+    /// </summary>
+    public decimal CreditNoteAppliedAmount { get; private set; }
+
     public decimal BalanceDue =>
         TotalAmount
         - PaidAmount
         - TotalRetained
         - ReturnAppliedAmount
-        - SupplierCreditAppliedAmount;
+        - SupplierCreditAppliedAmount
+        - CreditNoteAppliedAmount;
     public string Status { get; private set; } = "pending";
 
     private readonly List<PurchasePayableInstallment> _installments = new();
@@ -217,6 +227,50 @@ public sealed class PurchasePayable
             );
 
         SupplierCreditAppliedAmount -= amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Aplica una <c>PurchaseCreditNote</c> (descuento/promoción, FLOW-READY-02C) contra esta CxP —
+    /// invocado por <c>AuthorizePurchaseCreditNoteHandler</c> (fase futura de Application). Nunca
+    /// trunca al saldo disponible: el bloqueo por excedente ya ocurrió en
+    /// <c>PurchaseCreditNote.Authorize()</c> (ajuste obligatorio #1 del diseño, §4.2) — este método
+    /// solo rechaza defensivamente si, pese a eso, el monto excede el saldo actual.
+    /// </summary>
+    public void ApplyCreditNote(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "El monto de la nota de crédito a aplicar debe ser mayor a cero.",
+                nameof(amount)
+            );
+        if (Status == "cancelled")
+            throw new InvalidOperationException(
+                "No se puede aplicar una nota de crédito sobre una cuenta por pagar anulada."
+            );
+        if (amount > BalanceDue)
+            throw new InvalidOperationException(
+                "El monto de la nota de crédito excede el saldo pendiente de la cuenta por pagar."
+            );
+
+        CreditNoteAppliedAmount += amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Reversa una <c>PurchaseCreditNote</c> aplicada (invocado por <c>CancelPurchaseCreditNoteHandler</c>, fase futura de Application).</summary>
+    public void ReverseCreditNote(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(amount)
+            );
+        if (amount > CreditNoteAppliedAmount)
+            throw new InvalidOperationException(
+                "El monto a reversar excede el monto de nota de crédito aplicado registrado en la cuenta por pagar."
+            );
+
+        CreditNoteAppliedAmount -= amount;
         SetUpdated(updatedBy);
     }
 

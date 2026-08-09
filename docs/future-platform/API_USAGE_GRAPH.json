@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-09T14:47:56.853Z",
+  "generatedAt": "2026-08-09T21:25:44.834Z",
   "summary": {
-    "total": 96,
-    "allowed": 96,
+    "total": 97,
+    "allowed": 97,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -625,6 +625,14 @@
       "endpoint": "/api/v1/purchases",
       "files": [
         "frontend/src/modules/purchases/api/purchaseService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/purchases/credit-notes",
+      "files": [
+        "frontend/src/modules/purchases/api/purchaseCreditNoteService.ts"
       ],
       "legacy": false,
       "allowed": true

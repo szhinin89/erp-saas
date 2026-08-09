@@ -8025,6 +8025,391 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_communications", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccessKey")
+                        .HasMaxLength(49)
+                        .HasColumnType("character varying(49)")
+                        .HasColumnName("access_key");
+
+                    b.Property<int>("ApplicationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("application_type");
+
+                    b.Property<decimal?>("AppliedToPayableAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("applied_to_payable_amount");
+
+                    b.Property<DateOnly?>("AuthorizationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("authorization_date");
+
+                    b.Property<string>("AuthorizationNumber")
+                        .HasMaxLength(49)
+                        .HasColumnType("character varying(49)")
+                        .HasColumnName("authorization_number");
+
+                    b.Property<Guid?>("AuthorizeClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("authorize_client_request_id");
+
+                    b.Property<string>("AuthorizeRequestPayloadHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("authorize_request_payload_hash");
+
+                    b.Property<DateTime?>("AuthorizedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("authorized_at_utc");
+
+                    b.Property<Guid?>("AuthorizedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("authorized_by_user_id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CancelClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancel_client_request_id");
+
+                    b.Property<string>("CancelRequestPayloadHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("cancel_request_payload_hash");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by_user_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<Guid>("CreateClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("create_client_request_id");
+
+                    b.Property<string>("CreateRequestPayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("create_request_payload_hash");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CreditNoteNumber")
+                        .IsRequired()
+                        .HasMaxLength(17)
+                        .HasColumnType("character varying(17)")
+                        .HasColumnName("credit_note_number");
+
+                    b.Property<decimal>("IceAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("ice_amount");
+
+                    b.Property<DateOnly>("IssueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("issue_date");
+
+                    b.Property<Guid?>("LinkedPurchaseReturnId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_purchase_return_id");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReceptionDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reception_document_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("subtotal");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("LinkedPurchaseReturnId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("ReceptionDocumentId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "AccessKey")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_access_key")
+                        .HasFilter("\"access_key\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "AuthorizeClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_authorize_client_request_id")
+                        .HasFilter("\"authorize_client_request_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CancelClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_cancel_client_request_id")
+                        .HasFilter("\"cancel_client_request_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CreateClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_create_client_request_id");
+
+                    b.HasIndex("TenantId", "LinkedPurchaseReturnId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_linked_purchase_return_id")
+                        .HasFilter("\"linked_purchase_return_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId")
+                        .HasDatabaseName("ix_purchase_credit_notes_tenant_purchase_invoice");
+
+                    b.HasIndex("TenantId", "ReceptionDocumentId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_reception_document_id")
+                        .HasFilter("\"reception_document_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("ix_purchase_credit_notes_tenant_status");
+
+                    b.HasIndex("TenantId", "CompanyId", "BranchId")
+                        .HasDatabaseName("ix_purchase_credit_notes_tenant_company_branch");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierId", "CreditNoteNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_credit_notes_tenant_company_supplier_number");
+
+                    b.ToTable("purchase_credit_notes", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("PurchaseCreditNoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_credit_note_id");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("subtotal");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<string>("VatCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("vat_code");
+
+                    b.Property<decimal?>("VatRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseCreditNoteId");
+
+                    b.HasIndex("TenantId", "PurchaseCreditNoteId")
+                        .HasDatabaseName("ix_purchase_credit_note_details_tenant_purchase_credit_note");
+
+                    b.ToTable("purchase_credit_note_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("IceAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("ice_amount");
+
+                    b.Property<string>("IceCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("ice_code");
+
+                    b.Property<string>("IceName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ice_name");
+
+                    b.Property<decimal>("IceRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("ice_rate");
+
+                    b.Property<Guid>("PurchaseCreditNoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_credit_note_id");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<Guid>("SourcePurchaseInvoiceTaxSummaryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_purchase_invoice_tax_summary_id");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<string>("VatCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("vat_code");
+
+                    b.Property<string>("VatName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("vat_name");
+
+                    b.Property<decimal>("VatRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PurchaseCreditNoteId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("SourcePurchaseInvoiceTaxSummaryId");
+
+                    b.HasIndex("TenantId", "PurchaseCreditNoteId")
+                        .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_credit_note");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId")
+                        .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_invoice");
+
+                    b.HasIndex("TenantId", "SourcePurchaseInvoiceTaxSummaryId")
+                        .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_source_summary");
+
+                    b.HasIndex("TenantId", "CompanyId", "BranchId")
+                        .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_company_branch");
+
+                    b.HasIndex("TenantId", "PurchaseCreditNoteId", "VatCode", "IceCode")
+                        .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_credit_note_vat_ice");
+
+                    b.ToTable("purchase_cn_tax_summaries", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8530,6 +8915,98 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_invoice_details", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("IceAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("ice_amount");
+
+                    b.Property<string>("IceCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("ice_code");
+
+                    b.Property<string>("IceName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ice_name");
+
+                    b.Property<decimal>("IceRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("ice_rate");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<string>("VatCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("vat_code");
+
+                    b.Property<string>("VatName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("vat_name");
+
+                    b.Property<decimal>("VatRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId")
+                        .HasDatabaseName("ix_purchase_invoice_tax_summaries_tenant_invoice");
+
+                    b.HasIndex("TenantId", "CompanyId", "BranchId")
+                        .HasDatabaseName("ix_purchase_invoice_tax_summaries_tenant_company_branch");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId", "VatCode", "IceCode")
+                        .HasDatabaseName("ix_purchase_invoice_tax_summaries_tenant_invoice_vat_ice");
+
+                    b.ToTable("purchase_invoice_tax_summaries", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseLinePvpAudit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8642,6 +9119,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<decimal>("CreditNoteAppliedAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("credit_note_applied_amount");
 
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("numeric(18,2)")
@@ -14383,6 +14864,85 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedPurchaseReturnId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", null)
+                        .WithMany()
+                        .HasForeignKey("ReceptionDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteDetail", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PurchaseCreditNoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", null)
+                        .WithMany("TaxSummaries")
+                        .HasForeignKey("PurchaseCreditNoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", null)
+                        .WithMany()
+                        .HasForeignKey("SourcePurchaseInvoiceTaxSummaryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -14432,6 +14992,27 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                        .WithMany("TaxSummaries")
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayableInstallment", b =>
@@ -15017,11 +15598,20 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Details");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
+                {
+                    b.Navigation("Lines");
+
+                    b.Navigation("TaxSummaries");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
                     b.Navigation("Lines");
 
                     b.Navigation("PaymentSchedules");
+
+                    b.Navigation("TaxSummaries");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", b =>

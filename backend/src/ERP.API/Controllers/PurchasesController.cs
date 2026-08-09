@@ -207,6 +207,30 @@ public sealed class PurchasesController : ControllerBase
         this.ToOkOrBadRequest(
             await _mediator.Send(new CancelWithholdingCommand(whId, request.Reason), ct)
         );
+
+    // ══════════════════════════════════════════════════════════════════════
+    // RESUMEN FISCAL POR IMPUESTO (FLOW-READY-02D.1)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Resumen fiscal persistido de la factura, agrupado por combinación de impuesto
+    /// (VatCode/VatRate/IceCode/IceRate) — generado exclusivamente al confirmar la compra desde las
+    /// líneas ya congeladas, nunca recalculado desde catálogos vivos. Vacío si la factura sigue en
+    /// borrador (aún no confirmada).
+    /// </summary>
+    /// <response code="200">Resumen fiscal de la factura.</response>
+    /// <response code="404">La factura no existe.</response>
+    [HttpGet("/api/v1/purchases/invoices/{invoiceId:guid}/tax-summaries")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<PurchaseInvoiceTaxSummaryDto>>),
+        StatusCodes.Status200OK
+    )]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTaxSummaries(Guid invoiceId, CancellationToken ct) =>
+        this.ToOkOrNotFound(
+            await _mediator.Send(new GetPurchaseInvoiceTaxSummariesQuery(invoiceId), ct)
+        );
 }
 
 public record UpdatePvpRequest(decimal NewPvp);

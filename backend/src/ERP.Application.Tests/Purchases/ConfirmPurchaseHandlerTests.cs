@@ -362,6 +362,31 @@ public sealed class ConfirmPurchaseHandlerTests
     }
 
     [Fact]
+    public async Task Confirm_populates_tax_summaries_from_lines()
+    {
+        var inv = CreateDraftInvoice(1);
+        var (handler, _, _) = BuildHandler(inv);
+        var total = ExpectedGrandTotal(inv);
+
+        var schedule = new List<ConfirmScheduleInput>
+        {
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
+        };
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, schedule),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        inv.TaxSummaries.Should().ContainSingle();
+        var summary = inv.TaxSummaries.Single();
+        summary.VatCode.Should().Be("10");
+        summary.VatRate.Should().Be(15m);
+        summary.TotalAmount.Should()
+            .Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount);
+    }
+
+    [Fact]
     public async Task Confirm_not_found_returns_failure()
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();

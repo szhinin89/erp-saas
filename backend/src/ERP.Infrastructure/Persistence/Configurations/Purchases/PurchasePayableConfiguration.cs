@@ -45,6 +45,13 @@ public sealed class PurchasePayableConfiguration : IEntityTypeConfiguration<Purc
             .HasColumnType("numeric(18,2)")
             .IsRequired();
 
+        // ── FLOW-READY-02C (diseño §4.1) ─────────────────────────────────────
+        builder
+            .Property(x => x.CreditNoteAppliedAmount)
+            .HasColumnName("credit_note_applied_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+
         builder.Ignore(x => x.BalanceDue);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

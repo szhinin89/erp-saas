@@ -29,6 +29,7 @@ import {
   roundToTotalAmount,
 } from "../utils/purchaseCalc";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
+import { useI18n } from "../../../i18n/i18n";
 import {
   ItemMatchStatusBadge,
   useViewMatchedItem,
@@ -50,6 +51,7 @@ import "../styles/purchases-invoice.css";
 export function PurchasesPage() {
   const ctx = usePurchasesPage();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const openedFromParam = useRef(false);
 
@@ -854,6 +856,28 @@ export function PurchasesPage() {
                   assignment_return
                 </span>
                 Devolución
+              </ZHBtn>
+            )}
+            {ctx.editing && ctx.editing.status === "Confirmed" && (
+              // Acción complementaria (FLOW-READY-02C.4) — nunca reemplaza "Devolución": la
+              // pantalla centralizada de Nota de Crédito (FLOW-READY-02C.3) delega ahí mismo a
+              // /purchases/returns/new cuando el usuario elige Devolución. Mismo patrón de
+              // navegación que el botón "Devolución" de arriba (navigate en la misma pestaña,
+              // no window.open): esta pantalla de edición de compra ya navega in-place para sus
+              // acciones documentales (Devolución, Anular Compra), a diferencia de la bandeja de
+              // Recepción que sí abre pestañas nuevas para mantenerse abierta como lista.
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                title={t("purchases.creditNote.actions.openCreditNote", "Abrir nota de crédito")}
+                onClick={() =>
+                  navigate(`/purchases/credit-notes/new?invoiceId=${ctx.editing!.id}`)
+                }
+              >
+                <span className="material-symbols-outlined zh-icon-md">
+                  request_quote
+                </span>
+                {t("purchases.creditNote.actions.creditNoteButton", "Nota de crédito")}
               </ZHBtn>
             )}
             {ctx.editing && ctx.editing.status === "Confirmed" && (

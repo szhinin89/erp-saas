@@ -663,6 +663,11 @@ public static class DependencyInjection
             ERP.Domain.Modules.Purchases.Interfaces.IPurchaseReturnSequenceRepository,
             ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseReturnSequenceRepository
         >();
+        // FLOW-READY-02C.2: PurchaseCreditNote (descuento/promoción) — Application/API.
+        services.AddScoped<
+            ERP.Domain.Modules.Purchases.Interfaces.IPurchaseCreditNoteRepository,
+            ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository
+        >();
         services.AddScoped<
             ERP.Domain.Modules.Finance.Interfaces.ICompanyFinancialDestinationRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.CompanyFinancialDestinationRepository

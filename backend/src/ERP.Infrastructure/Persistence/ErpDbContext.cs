@@ -288,6 +288,8 @@ public class ErpDbContext : DbContext
     public DbSet<PurchaseInvoiceDetail> PurchaseInvoiceDetails => Set<PurchaseInvoiceDetail>();
     public DbSet<PurchasePaymentSchedule> PurchasePaymentSchedules =>
         Set<PurchasePaymentSchedule>();
+    public DbSet<PurchaseInvoiceTaxSummary> PurchaseInvoiceTaxSummaries =>
+        Set<PurchaseInvoiceTaxSummary>();
     public DbSet<PurchasePayable> PurchasePayables => Set<PurchasePayable>();
     public DbSet<PurchasePayableInstallment> PurchasePayableInstallments =>
         Set<PurchasePayableInstallment>();
@@ -316,6 +318,13 @@ public class ErpDbContext : DbContext
         Set<CompanyFinancialDestinationAudit>();
     public DbSet<SupplierCreditRefundTransaction> SupplierCreditRefundTransactions =>
         Set<SupplierCreditRefundTransaction>();
+
+    // ── FLOW-READY-02C: PurchaseCreditNote (descuento/promoción) ────────────
+    public DbSet<PurchaseCreditNote> PurchaseCreditNotes => Set<PurchaseCreditNote>();
+    public DbSet<PurchaseCreditNoteDetail> PurchaseCreditNoteDetails =>
+        Set<PurchaseCreditNoteDetail>();
+    public DbSet<PurchaseCreditNoteTaxSummary> PurchaseCreditNoteTaxSummaries =>
+        Set<PurchaseCreditNoteTaxSummary>();
 
     // ── Sales BC ──────────────────────────────────────────────────────────
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();

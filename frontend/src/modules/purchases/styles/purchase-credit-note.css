@@ -1,0 +1,85 @@
+/* FLOW-READY-02C.3 — layout de PurchaseCreditNoteFormPage/PurchaseCreditNoteDetailPage.
+   Prefijo propio del módulo (pcn-*), reutiliza tokens de design-tokens.css — nunca estilos
+   inline. Mismo patrón de grid que .sr-general-grid (sales-return.css), sin duplicar esa
+   hoja porque este módulo tiene su propio dominio (Purchases, no Sales). */
+
+.pcn-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.pcn-summary-grid__label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
+}
+
+.pcn-summary-grid__value {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pcn-fiscal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.pcn-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.pcn-hint {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-top: var(--space-2);
+}
+
+.pcn-radio-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pcn-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* FLOW-READY-02C-R1.2 — tabla de detalle de compra afectada / resumen fiscal por impuesto,
+   mismo patrón visual que .sr-lines-table (sales-return.css), sin duplicar esa hoja. */
+.pcn-lines-table__desc {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.pcn-lines-table__meta {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.pcn-lines-table__error {
+  font-size: 11px;
+  color: var(--color-error);
+  margin-top: 2px;
+}
+
+.pcn-lines-empty {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: var(--space-3) 0;
+}
+
+.pcn-qty-input--error {
+  border-color: var(--color-error) !important;
+}
