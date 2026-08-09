@@ -18,6 +18,12 @@ public static class CompanyBootstrapStepOrder
     /// <summary>Tipos de ítem por defecto.</summary>
     public const int Inventory = 30;
 
+    /// <summary>
+    /// Catálogos de clasificación de BusinessPartner (CLASS-BP-CATALOGS-01): categorías/segmentos
+    /// de cliente y proveedor, ratings, loyalty tier, formato de factura, tipo de bien, etc.
+    /// </summary>
+    public const int MasterDataClassifications = 35;
+
     /// <summary>Formas de pago, Consumidor Final, Lista de Precios, Condición de Pago.</summary>
     public const int Sales = 40;
 

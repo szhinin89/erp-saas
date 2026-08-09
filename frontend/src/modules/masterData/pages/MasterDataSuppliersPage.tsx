@@ -25,13 +25,13 @@ import type {
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import {
-  SUPPLIER_CATEGORIES,
-  SUPPLIER_GOOD_TYPES,
-  SUPPLIER_RATINGS,
-  SUPPLIER_RISKS,
-  SUPPLIER_SEGMENTS,
-  SUPPLIER_TYPES,
-} from "../types/businessPartner.types";
+  usePrimaryGoodTypes,
+  useSupplierCategories,
+  useSupplierRatings,
+  useSupplierRisks,
+  useSupplierSegments,
+  useSupplierTypes,
+} from "../api/useClassificationCatalogs";
 import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
@@ -263,6 +263,20 @@ function SupplierClassificationModal({
   const [segment, setSegment] = useState("");
   const [paymentPref, setPaymentPref] = useState("");
 
+  const categories = useSupplierCategories();
+  const types = useSupplierTypes();
+  const risks = useSupplierRisks();
+  const ratings = useSupplierRatings();
+  const goodTypes = usePrimaryGoodTypes();
+  const segments = useSupplierSegments();
+  const catalogsError =
+    categories.error ||
+    types.error ||
+    risks.error ||
+    ratings.error ||
+    goodTypes.error ||
+    segments.error;
+
   return (
     <ZHModal
       open
@@ -286,17 +300,20 @@ function SupplierClassificationModal({
         }}
       >
         {error && <ZHPageNotice variant="error" message={error} />}
+        {catalogsError && <ZHPageNotice variant="error" message={catalogsError} />}
         <ZHGrid cols={2}>
           <ZHField label="Categoría">
             <ZhSelect
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              disabled={saving}
+              disabled={saving || categories.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {SUPPLIER_CATEGORIES.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {categories.loading ? "Cargando…" : "— Sin asignar —"}
+              </option>
+              {categories.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -305,12 +322,12 @@ function SupplierClassificationModal({
             <ZhSelect
               value={type}
               onChange={(e) => setType(e.target.value)}
-              disabled={saving}
+              disabled={saving || types.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {SUPPLIER_TYPES.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">{types.loading ? "Cargando…" : "— Sin asignar —"}</option>
+              {types.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -319,12 +336,12 @@ function SupplierClassificationModal({
             <ZhSelect
               value={risk}
               onChange={(e) => setRisk(e.target.value)}
-              disabled={saving}
+              disabled={saving || risks.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {SUPPLIER_RISKS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">{risks.loading ? "Cargando…" : "— Sin asignar —"}</option>
+              {risks.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -333,12 +350,14 @@ function SupplierClassificationModal({
             <ZhSelect
               value={rating}
               onChange={(e) => setRating(e.target.value)}
-              disabled={saving}
+              disabled={saving || ratings.loading}
             >
-              <option value="">— Sin calificar —</option>
-              {SUPPLIER_RATINGS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {ratings.loading ? "Cargando…" : "— Sin calificar —"}
+              </option>
+              {ratings.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -347,12 +366,14 @@ function SupplierClassificationModal({
             <ZhSelect
               value={goodType}
               onChange={(e) => setGoodType(e.target.value)}
-              disabled={saving}
+              disabled={saving || goodTypes.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {SUPPLIER_GOOD_TYPES.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {goodTypes.loading ? "Cargando…" : "— Sin asignar —"}
+              </option>
+              {goodTypes.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -361,12 +382,14 @@ function SupplierClassificationModal({
             <ZhSelect
               value={segment}
               onChange={(e) => setSegment(e.target.value)}
-              disabled={saving}
+              disabled={saving || segments.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {SUPPLIER_SEGMENTS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {segments.loading ? "Cargando…" : "— Sin asignar —"}
+              </option>
+              {segments.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>

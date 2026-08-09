@@ -288,54 +288,11 @@ export type CustomerConfigBody = {
   customerClassification?: string | null;
 };
 
-// ── Constantes de validación (espejo de CustomerRoleConfig C#) ────────────────
-export const CUSTOMER_CATEGORIES = [
-  "Retail",
-  "Wholesale",
-  "Corporate",
-  "Government",
-  "VIP",
-  "Other",
-] as const;
-export const CUSTOMER_SEGMENTS = [
-  "Individual",
-  "SMB",
-  "MidMarket",
-  "Enterprise",
-  "StartUp",
-] as const;
-export const CREDIT_RATINGS = [
-  "AAA",
-  "AA",
-  "A",
-  "BBB",
-  "BB",
-  "B",
-  "C",
-  "D",
-  "NR",
-] as const;
-export const LOYALTY_TIERS = [
-  "None",
-  "Bronze",
-  "Silver",
-  "Gold",
-  "Platinum",
-] as const;
-export const INVOICE_FORMATS = [
-  "PDF",
-  "XML",
-  "EMAIL",
-  "PORTAL",
-  "PAPER",
-] as const;
-export const CUSTOMER_CLASSIFICATIONS = [
-  "Nacional",
-  "Exportador",
-  "Importador",
-  "Exento",
-  "Especial",
-] as const;
+// CLASS-BP-CATALOGS-01: las constantes de validación de cliente (categoría, segmento, rating
+// crediticio, loyalty tier, formato de factura, clasificación tributaria/comercial) ya no viven
+// como arrays hardcodeados aquí — son catálogos persistidos tenant+company-scoped, consumidos vía
+// los hooks de ../api/useClassificationCatalogs.ts (useCustomerCategories, useCustomerSegments,
+// useCustomerCreditRatings, useLoyaltyTiers, useCustomerInvoiceFormats, useCustomerClassifications).
 
 /** Body para PATCH /{bpId}/roles/{roleId}/supplier-config */
 export type SupplierConfigBody = {
@@ -359,40 +316,10 @@ export type SupplierClassificationBody = {
   paymentMethodPreference?: string | null;
 };
 
-// ── Constantes de validación (espejo de SupplierRoleConfig + SupplierClassificationConfig C#) ──
-export const SUPPLIER_CATEGORIES = [
-  "Manufacturer",
-  "Distributor",
-  "ServiceProvider",
-  "Agent",
-  "Retailer",
-  "Other",
-] as const;
-export const SUPPLIER_TYPES = ["National", "International", "Both"] as const;
-export const SUPPLIER_RISKS = ["Low", "Medium", "High", "Critical"] as const;
-export const SUPPLIER_RATINGS = [
-  "AAA",
-  "AA",
-  "A",
-  "BBB",
-  "BB",
-  "B",
-  "C",
-  "D",
-  "NR",
-] as const;
-export const SUPPLIER_GOOD_TYPES = [
-  "Goods",
-  "Services",
-  "Both",
-  "Digital",
-] as const;
-export const SUPPLIER_SEGMENTS = [
-  "Strategic",
-  "Preferred",
-  "Approved",
-  "Transactional",
-] as const;
+// CLASS-BP-CATALOGS-01: mismo cambio que las constantes de cliente arriba — categoría, tipo,
+// riesgo, rating, tipo de bien principal y segmento de proveedor son catálogos persistidos,
+// consumidos vía useSupplierCategories/useSupplierTypes/useSupplierRisks/useSupplierRatings/
+// usePrimaryGoodTypes/useSupplierSegments en ../api/useClassificationCatalogs.ts.
 
 export type CarrierConfigBody = {
   transportAuthorizationNumber?: string | null;

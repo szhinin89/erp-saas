@@ -23,79 +23,12 @@ public sealed record SupplierClassificationConfig
     public const int SegmentMaxLen = 30;
     public const int PaymentPrefMaxLen = 100;
 
-    // ── Valores válidos ───────────────────────────────────────────────────────
-
-    /// <summary>Tipo estratégico del proveedor.</summary>
-    public static readonly IReadOnlySet<string> ValidCategories = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "Manufacturer",
-        "Distributor",
-        "ServiceProvider",
-        "Agent",
-        "Retailer",
-        "Other",
-    };
-
-    /// <summary>Origen geográfico del proveedor.</summary>
-    public static readonly IReadOnlySet<string> ValidTypes = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "National",
-        "International",
-        "Both",
-    };
-
-    /// <summary>Nivel de riesgo operativo y comercial.</summary>
-    public static readonly IReadOnlySet<string> ValidRisks = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "Low",
-        "Medium",
-        "High",
-        "Critical",
-    };
-
-    /// <summary>Calificación de calidad y confiabilidad del proveedor.</summary>
-    public static readonly IReadOnlySet<string> ValidRatings = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "AAA",
-        "AA",
-        "A",
-        "BBB",
-        "BB",
-        "B",
-        "C",
-        "D",
-        "NR",
-    };
-
-    /// <summary>Tipo de bien o servicio principal que provee.</summary>
-    public static readonly IReadOnlySet<string> ValidGoodTypes = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "Goods",
-        "Services",
-        "Both",
-        "Digital",
-    };
-
-    /// <summary>Segmento estratégico para gestión de proveedores.</summary>
-    public static readonly IReadOnlySet<string> ValidSegments = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "Strategic",
-        "Preferred",
-        "Approved",
-        "Transactional",
-    };
+    // ── Valores válidos: CLASS-BP-CATALOGS-01 — ya no viven como HashSet fijo en Domain, ver
+    // catálogos persistidos tenant+company-scoped en ERP.Domain.MasterData.Entities
+    // (SupplierCategory, SupplierType, SupplierRisk, SupplierRating, PrimaryGoodType,
+    // SupplierSegment) y su validación async en UpdateSupplierClassificationConfigValidator
+    // (Application layer, FluentValidation MustAsync). Un VO factory debe seguir siendo
+    // síncrono/libre de efectos secundarios — Domain no puede hacer lookup async a BD.
 
     // ── Propiedades ───────────────────────────────────────────────────────────
 
@@ -150,46 +83,18 @@ public sealed record SupplierClassificationConfig
     )
     {
         return new SupplierClassificationConfig(
-            ValidateEnum(
-                supplierCategory,
-                ValidCategories,
-                CategoryMaxLen,
-                nameof(supplierCategory)
-            ),
-            ValidateEnum(supplierType, ValidTypes, TypeMaxLen, nameof(supplierType)),
-            ValidateEnum(supplierRisk, ValidRisks, RiskMaxLen, nameof(supplierRisk)),
-            ValidateEnum(supplierRating, ValidRatings, RatingMaxLen, nameof(supplierRating)),
-            ValidateEnum(primaryGoodType, ValidGoodTypes, GoodTypeMaxLen, nameof(primaryGoodType)),
-            ValidateEnum(supplierSegment, ValidSegments, SegmentMaxLen, nameof(supplierSegment)),
+            NormalizeText(supplierCategory, CategoryMaxLen, nameof(supplierCategory)),
+            NormalizeText(supplierType, TypeMaxLen, nameof(supplierType)),
+            NormalizeText(supplierRisk, RiskMaxLen, nameof(supplierRisk)),
+            NormalizeText(supplierRating, RatingMaxLen, nameof(supplierRating)),
+            NormalizeText(primaryGoodType, GoodTypeMaxLen, nameof(primaryGoodType)),
+            NormalizeText(supplierSegment, SegmentMaxLen, nameof(supplierSegment)),
             NormalizeText(
                 paymentMethodPreference,
                 PaymentPrefMaxLen,
                 nameof(paymentMethodPreference)
             )
         );
-    }
-
-    private static string? ValidateEnum(
-        string? value,
-        IReadOnlySet<string> validValues,
-        int maxLen,
-        string paramName
-    )
-    {
-        var v = value?.Trim();
-        if (string.IsNullOrEmpty(v))
-            return null;
-        if (v.Length > maxLen)
-            throw new ArgumentException(
-                $"{paramName} no puede superar {maxLen} caracteres.",
-                paramName
-            );
-        if (!validValues.Contains(v))
-            throw new ArgumentException(
-                $"{paramName} '{v}' no es un valor válido. Permitidos: {string.Join(", ", validValues)}.",
-                paramName
-            );
-        return v;
     }
 
     private static string? NormalizeText(string? value, int maxLen, string paramName)

@@ -19,13 +19,13 @@ import type {
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import {
-  CUSTOMER_CATEGORIES,
-  CUSTOMER_CLASSIFICATIONS,
-  CUSTOMER_SEGMENTS,
-  CREDIT_RATINGS,
-  INVOICE_FORMATS,
-  LOYALTY_TIERS,
-} from "../types/businessPartner.types";
+  useCustomerCategories,
+  useCustomerClassifications,
+  useCustomerCreditRatings,
+  useCustomerInvoiceFormats,
+  useCustomerSegments,
+  useLoyaltyTiers,
+} from "../api/useClassificationCatalogs";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
 
@@ -51,6 +51,20 @@ function CustomerConfigModal({
   const [invoiceFormat, setInvoiceFormat] = useState("");
   const [classification, setClassification] = useState("");
 
+  const categories = useCustomerCategories();
+  const segments = useCustomerSegments();
+  const creditRatings = useCustomerCreditRatings();
+  const loyaltyTiers = useLoyaltyTiers();
+  const invoiceFormats = useCustomerInvoiceFormats();
+  const classifications = useCustomerClassifications();
+  const catalogsError =
+    categories.error ||
+    segments.error ||
+    creditRatings.error ||
+    loyaltyTiers.error ||
+    invoiceFormats.error ||
+    classifications.error;
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
@@ -73,17 +87,20 @@ function CustomerConfigModal({
     >
       <form onSubmit={handleSave}>
         {error && <ZHPageNotice variant="error" message={error} />}
+        {catalogsError && <ZHPageNotice variant="error" message={catalogsError} />}
         <ZHGrid cols={2}>
           <ZHField label="Categoría">
             <ZhSelect
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              disabled={saving}
+              disabled={saving || categories.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {CUSTOMER_CATEGORIES.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {categories.loading ? "Cargando…" : "— Sin asignar —"}
+              </option>
+              {categories.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -92,12 +109,14 @@ function CustomerConfigModal({
             <ZhSelect
               value={segment}
               onChange={(e) => setSegment(e.target.value)}
-              disabled={saving}
+              disabled={saving || segments.loading}
             >
-              <option value="">— Sin asignar —</option>
-              {CUSTOMER_SEGMENTS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {segments.loading ? "Cargando…" : "— Sin asignar —"}
+              </option>
+              {segments.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -116,12 +135,14 @@ function CustomerConfigModal({
             <ZhSelect
               value={rating}
               onChange={(e) => setRating(e.target.value)}
-              disabled={saving}
+              disabled={saving || creditRatings.loading}
             >
-              <option value="">— Sin calificar —</option>
-              {CREDIT_RATINGS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {creditRatings.loading ? "Cargando…" : "— Sin calificar —"}
+              </option>
+              {creditRatings.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -130,12 +151,12 @@ function CustomerConfigModal({
             <ZhSelect
               value={loyalty}
               onChange={(e) => setLoyalty(e.target.value)}
-              disabled={saving}
+              disabled={saving || loyaltyTiers.loading}
             >
-              <option value="">— Sin nivel —</option>
-              {LOYALTY_TIERS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">{loyaltyTiers.loading ? "Cargando…" : "— Sin nivel —"}</option>
+              {loyaltyTiers.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -144,12 +165,14 @@ function CustomerConfigModal({
             <ZhSelect
               value={invoiceFormat}
               onChange={(e) => setInvoiceFormat(e.target.value)}
-              disabled={saving}
+              disabled={saving || invoiceFormats.loading}
             >
-              <option value="">— Sin preferencia —</option>
-              {INVOICE_FORMATS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {invoiceFormats.loading ? "Cargando…" : "— Sin preferencia —"}
+              </option>
+              {invoiceFormats.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>
@@ -158,12 +181,14 @@ function CustomerConfigModal({
             <ZhSelect
               value={classification}
               onChange={(e) => setClassification(e.target.value)}
-              disabled={saving}
+              disabled={saving || classifications.loading}
             >
-              <option value="">— Sin clasificar —</option>
-              {CUSTOMER_CLASSIFICATIONS.map((v) => (
-                <option key={v} value={v}>
-                  {v}
+              <option value="">
+                {classifications.loading ? "Cargando…" : "— Sin clasificar —"}
+              </option>
+              {classifications.options.map((v) => (
+                <option key={v.id} value={v.code}>
+                  {v.name}
                 </option>
               ))}
             </ZhSelect>

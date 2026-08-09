@@ -30,66 +30,11 @@ public sealed record CustomerRoleConfig
     public const int InvoiceFormatMaxLen = 20;
     public const int ClassificationMaxLen = 50;
 
-    // ── Valores válidos (validación en Application layer vía FluentValidation) ─
-    public static readonly IReadOnlySet<string> ValidCategories = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "Retail",
-        "Wholesale",
-        "Corporate",
-        "Government",
-        "VIP",
-        "Other",
-    };
-
-    public static readonly IReadOnlySet<string> ValidSegments = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "Individual",
-        "SMB",
-        "MidMarket",
-        "Enterprise",
-        "StartUp",
-    };
-
-    public static readonly IReadOnlySet<string> ValidCreditRatings = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "AAA",
-        "AA",
-        "A",
-        "BBB",
-        "BB",
-        "B",
-        "C",
-        "D",
-        "NR",
-    };
-
-    public static readonly IReadOnlySet<string> ValidLoyaltyTiers = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "None",
-        "Bronze",
-        "Silver",
-        "Gold",
-        "Platinum",
-    };
-
-    public static readonly IReadOnlySet<string> ValidInvoiceFormats = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "PDF",
-        "XML",
-        "EMAIL",
-        "PORTAL",
-        "PAPER",
-    };
+    // ── Valores válidos: CLASS-BP-CATALOGS-01 — ya no viven como HashSet fijo en Domain, ver
+    // catálogos persistidos tenant+company-scoped en ERP.Domain.MasterData.Entities
+    // (CustomerCategory, CustomerSegment, CustomerCreditRating, LoyaltyTier,
+    // CustomerInvoiceFormat, CustomerClassification) y su validación async en
+    // UpdateCustomerRoleConfigValidator (Application layer, FluentValidation MustAsync).
 
     // ── Propiedades ───────────────────────────────────────────────────────────
 

@@ -189,6 +189,20 @@ public class ErpDbContext : DbContext
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
     public DbSet<LegalEntityTypeCatalog> LegalEntityTypeCatalog => Set<LegalEntityTypeCatalog>();
 
+    // ── MasterData BC — catálogos de clasificación BusinessPartner (CLASS-BP-CATALOGS-01) ──
+    public DbSet<CustomerCategory> CustomerCategories => Set<CustomerCategory>();
+    public DbSet<CustomerSegment> CustomerSegments => Set<CustomerSegment>();
+    public DbSet<CustomerCreditRating> CustomerCreditRatings => Set<CustomerCreditRating>();
+    public DbSet<LoyaltyTier> LoyaltyTiers => Set<LoyaltyTier>();
+    public DbSet<CustomerInvoiceFormat> CustomerInvoiceFormats => Set<CustomerInvoiceFormat>();
+    public DbSet<CustomerClassification> CustomerClassifications => Set<CustomerClassification>();
+    public DbSet<SupplierCategory> SupplierCategories => Set<SupplierCategory>();
+    public DbSet<SupplierType> SupplierTypes => Set<SupplierType>();
+    public DbSet<SupplierRisk> SupplierRisks => Set<SupplierRisk>();
+    public DbSet<SupplierRating> SupplierRatings => Set<SupplierRating>();
+    public DbSet<PrimaryGoodType> PrimaryGoodTypes => Set<PrimaryGoodType>();
+    public DbSet<SupplierSegment> SupplierSegments => Set<SupplierSegment>();
+
     // ── Navigation / UI ───────────────────────────────────────────────────
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();

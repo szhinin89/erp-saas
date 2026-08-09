@@ -139,6 +139,23 @@ public static class DependencyInjection
         services.AddScoped<IBusinessPartnerLocationRepository, BusinessPartnerLocationRepository>();
         services.AddScoped<IBusinessPartnerContactRepository, BusinessPartnerContactRepository>();
         services.AddScoped<IPaymentTermRepository, PaymentTermRepository>();
+
+        // ── MasterData BC — catálogos de clasificación BusinessPartner (CLASS-BP-CATALOGS-01) ──
+        services.AddScoped<ICustomerCategoryRepository, CustomerCategoryRepository>();
+        services.AddScoped<ICustomerSegmentRepository, CustomerSegmentRepository>();
+        services.AddScoped<ICustomerCreditRatingRepository, CustomerCreditRatingRepository>();
+        services.AddScoped<ILoyaltyTierRepository, LoyaltyTierRepository>();
+        services.AddScoped<ICustomerInvoiceFormatRepository, CustomerInvoiceFormatRepository>();
+        services.AddScoped<
+            ICustomerClassificationRepository,
+            CustomerClassificationRepository
+        >();
+        services.AddScoped<ISupplierCategoryRepository, SupplierCategoryRepository>();
+        services.AddScoped<ISupplierTypeRepository, SupplierTypeRepository>();
+        services.AddScoped<ISupplierRiskRepository, SupplierRiskRepository>();
+        services.AddScoped<ISupplierRatingRepository, SupplierRatingRepository>();
+        services.AddScoped<IPrimaryGoodTypeRepository, PrimaryGoodTypeRepository>();
+        services.AddScoped<ISupplierSegmentRepository, SupplierSegmentRepository>();
         services.AddScoped<
             ICompanyBpTradingSettingsRepository,
             CompanyBpTradingSettingsRepository
@@ -745,6 +762,9 @@ public static class DependencyInjection
         services.AddScoped<ICompanyBootstrapStep, OrganizationBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, ElectronicDocumentsBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, InventoryBootstrapStep>();
+        services.AddScoped<MasterDataClassificationSeeder>();
+        services.AddScoped<ICompanyBootstrapStep, MasterDataClassificationBootstrapStep>();
+        services.AddScoped<MasterDataClassificationBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, SalesBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, CajaBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, AccessBootstrapStep>();

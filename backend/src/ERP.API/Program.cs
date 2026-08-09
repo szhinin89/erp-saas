@@ -344,6 +344,22 @@ using (var migrationScope = app.Services.CreateScope())
         await db.Database.MigrateAsync();
 }
 
+// Comando de una sola vez (CLASS-BP-CATALOGS-01): backfill idempotente de los 12 catálogos de
+// clasificación de BusinessPartner para empresas creadas antes de este bloque (p. ej. Sumak).
+// No es un endpoint HTTP ni un IGlobalBootstrapStep — es una operación de despliegue explícita:
+// `dotnet run -- backfill-master-data-classifications`. Sale sin iniciar el host web.
+if (args.Contains("backfill-master-data-classifications"))
+{
+    using var backfillScope = app.Services.CreateScope();
+    var backfillService =
+        backfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.MasterDataClassificationBackfillService>();
+    var result = await backfillService.RunAsync();
+    Console.WriteLine(
+        $"[backfill-master-data-classifications] Empresas procesadas: {result.CompaniesProcessed}. Filas insertadas: {result.RowsInserted}."
+    );
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())

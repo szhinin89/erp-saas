@@ -36,6 +36,9 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockAdjustmentRepository.cs", // filtro explícito por tenantId; secuencial debe considerar registros deshabilitados, no depende del query filter ambiental
         "src/ERP.Infrastructure/Seeding/E2E/E2ESeedService.cs", // provisioning E2E fuera de Production, bajo bandera explícita: mismo motivo que los *BootstrapStep (bootstrap needs cross-tenant visibility)
         "src/ERP.API/Health/MembershipConsistencyHealthCheck.cs", // health check sin contexto de tenant: mismo motivo que BusinessPartnerReconciliationService (chequeo de integridad cross-tenant de solo lectura)
+        "src/ERP.Infrastructure/Seeding/MasterDataClassificationSeeder.cs", // CLASS-BP-CATALOGS-01: reutilizado por bootstrap step (request-scoped) y backfill (multi-tenant, sin contexto HTTP ambiente); filtro explícito TenantId+CompanyId, fail-closed
+        "src/ERP.Infrastructure/Seeding/MasterDataClassificationBackfillService.cs", // CLASS-BP-CATALOGS-01: itera todas las (TenantId, CompanyId) existentes para el backfill de empresas ya creadas — mismo motivo que los *BootstrapStep
+        "src/ERP.Infrastructure/Persistence/Repositories/MasterData/ClassificationCatalogRepositoryBase.cs", // CLASS-BP-CATALOGS-01: base compartida de los 12 repos de catálogo, consumida también desde el bootstrap step/backfill sin ICurrentTenant/ICurrentCompany ambiente; filtro explícito TenantId+CompanyId, fail-closed
     };
 
     [Fact]
