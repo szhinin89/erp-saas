@@ -157,6 +157,65 @@ export interface PurchaseDraftDto {
   processingNotes: string | null;
 }
 
+export interface PurchaseReceptionXmlViewTaxSummary {
+  taxType: string;
+  taxCode: string;
+  taxRate: number | null;
+  taxableBase: number;
+  taxAmount: number;
+}
+
+export interface PurchaseReceptionXmlViewLineTax {
+  taxType: string;
+  taxCode: string;
+  rate: number;
+  taxAmount: number;
+}
+
+export interface PurchaseReceptionXmlViewLine {
+  mainCode: string | null;
+  auxCode: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  taxableBase: number;
+  iceAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+  taxes: PurchaseReceptionXmlViewLineTax[];
+}
+
+/**
+ * Vista de solo lectura del XML ya guardado en recepción electrónica (FLOW-READY-02E.1) — nunca
+ * dispara una nueva descarga/reprocesamiento, solo lee lo que ya está persistido.
+ */
+export interface PurchaseReceptionXmlView {
+  documentId: string;
+  documentType: PurchaseReceptionSourceDocType;
+  documentNumber: string;
+  issueDate: string;
+  accessKey: string;
+  authorizationNumber: string | null;
+  authorizationDate: string | null;
+  supplierName: string;
+  supplierTradeName: string | null;
+  supplierTaxId: string;
+  modifiedDocumentNumber: string | null;
+  modifiedDocumentType: string | null;
+  modifiedDocumentDate: string | null;
+  modificationReason: string | null;
+  subtotal: number;
+  discountAmount: number;
+  iceAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+  taxSummaries: PurchaseReceptionXmlViewTaxSummary[];
+  lines: PurchaseReceptionXmlViewLine[];
+  rawXmlAvailable: boolean;
+  rawXml: string | null;
+}
+
 export const purchaseReceptionService = {
   importTxt(
     file: File,
@@ -184,6 +243,11 @@ export const purchaseReceptionService = {
 
   getLines(documentId: string): Promise<PurchaseReceptionLineMatch[]> {
     return apiGet<PurchaseReceptionLineMatch[]>(`${BASE}/${documentId}/lines`);
+  },
+
+  /** Vista de solo lectura del XML ya guardado — no descarga ni reprocesa nada. */
+  getXmlView(documentId: string): Promise<PurchaseReceptionXmlView> {
+    return apiGet<PurchaseReceptionXmlView>(`${BASE}/documents/${documentId}/xml-view`);
   },
 
   /** Estado actual de una única línea, por su Id — usado por /purchases al reabrir una compra ya guardada. */

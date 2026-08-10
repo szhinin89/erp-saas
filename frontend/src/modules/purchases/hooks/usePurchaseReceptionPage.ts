@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   purchaseReceptionService,
   type PurchaseReceptionImportResult,
+  type PurchaseReceptionXmlView,
 } from "../api/purchaseReceptionService";
 
 const PAGE_SIZE = 20;
@@ -34,6 +35,14 @@ export function usePurchaseReceptionPage() {
     name: string;
     tradeName: string | null;
   } | null>(null);
+
+  // Modal "Ver XML" (FLOW-READY-02E.1) — read-only, nunca dispara descarga/reprocesamiento.
+  const [xmlViewOpen, setXmlViewOpen] = useState(false);
+  const [xmlViewLoading, setXmlViewLoading] = useState(false);
+  const [xmlViewError, setXmlViewError] = useState<string | null>(null);
+  const [xmlViewData, setXmlViewData] = useState<PurchaseReceptionXmlView | null>(
+    null,
+  );
 
   const handleFileSelected = async (file: File) => {
     setUploading(true);
@@ -103,6 +112,29 @@ export function usePurchaseReceptionPage() {
     }
   };
 
+  const openXmlView = async (documentId: string) => {
+    setXmlViewOpen(true);
+    setXmlViewLoading(true);
+    setXmlViewError(null);
+    setXmlViewData(null);
+    try {
+      const data = await purchaseReceptionService.getXmlView(documentId);
+      setXmlViewData(data);
+    } catch (err) {
+      setXmlViewError(
+        extractErrorMessage(err, "No se pudo cargar el XML del comprobante."),
+      );
+    } finally {
+      setXmlViewLoading(false);
+    }
+  };
+
+  const closeXmlView = () => {
+    setXmlViewOpen(false);
+    setXmlViewError(null);
+    setXmlViewData(null);
+  };
+
   const items = useMemo(() => result?.items ?? [], [result]);
   const pagedItems = useMemo(
     () => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -138,6 +170,12 @@ export function usePurchaseReceptionPage() {
     openCreateSupplier: (ruc: string, name: string, tradeName: string | null) =>
       setNewSupplierRow({ ruc, name, tradeName }),
     closeCreateSupplier: () => setNewSupplierRow(null),
+    xmlViewOpen,
+    xmlViewLoading,
+    xmlViewError,
+    xmlViewData,
+    openXmlView: (documentId: string) => void openXmlView(documentId),
+    closeXmlView,
     // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
     // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor
     // existe + compra no existe todavía => PENDING).

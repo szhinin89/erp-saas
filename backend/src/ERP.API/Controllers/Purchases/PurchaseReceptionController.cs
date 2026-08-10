@@ -10,6 +10,7 @@ using ERP.Application.Modules.Inventory.ItemMatching.UseCases.UnmatchItem;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurchaseReceptionXmlView;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
@@ -74,6 +75,21 @@ public sealed class PurchaseReceptionController : ControllerBase
     public async Task<IActionResult> CreateDraft(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new CreatePurchaseReceptionDraftCommand(id), ct)
+        );
+
+    /// <summary>
+    /// Vista de solo lectura del XML ya guardado en recepción electrónica (FLOW-READY-02E.1) —
+    /// nunca descarga, reprocesa ni cambia el estado del documento.
+    /// </summary>
+    [HttpGet("documents/{id:guid}/xml-view")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<PurchaseReceptionXmlViewDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetXmlView(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetPurchaseReceptionXmlViewQuery(id), ct)
         );
 
     // ── Item Matching ────────────────────────────────────────────────────

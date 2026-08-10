@@ -19,6 +19,7 @@ import { CreateSupplierModal } from "../components/CreateSupplierModal";
 import { PurchaseReceptionProcessCell } from "../components/PurchaseReceptionProcessCell";
 import { PurchaseReceptionActionsCell } from "../components/PurchaseReceptionActionsCell";
 import { PurchaseReceptionDocumentCell } from "../components/PurchaseReceptionDocumentCell";
+import { PurchaseReceptionXmlViewModal } from "../components/PurchaseReceptionXmlViewModal";
 import "../styles/purchase-reception.css";
 
 export function PurchaseReceptionPage() {
@@ -185,6 +186,7 @@ export function PurchaseReceptionPage() {
           row={row}
           xmlState={ctx.xmlRowState[row.documentId]}
           onDownloadXml={(documentId) => void ctx.handleDownloadXml(documentId)}
+          onViewXml={ctx.openXmlView}
         />
       ),
     },
@@ -324,6 +326,14 @@ export function PurchaseReceptionPage() {
           ctx.newSupplierRow &&
           ctx.handleSupplierCreated(ctx.newSupplierRow.ruc)
         }
+      />
+
+      <PurchaseReceptionXmlViewModal
+        open={ctx.xmlViewOpen}
+        loading={ctx.xmlViewLoading}
+        error={ctx.xmlViewError}
+        data={ctx.xmlViewData}
+        onClose={ctx.closeXmlView}
       />
     </ErpPageTemplate>
   );

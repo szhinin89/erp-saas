@@ -16,12 +16,29 @@ export function PurchaseReceptionActionsCell({
   row,
   xmlState,
   onDownloadXml,
+  onViewXml,
 }: {
   row: PurchaseReceptionItem;
   xmlState: "loading" | "error" | undefined;
   onDownloadXml: (documentId: string) => void;
+  onViewXml: (documentId: string) => void;
 }) {
   const { t } = useI18n();
+
+  // El XML solo existe una vez el documento fue verificado/procesado (AttachSriAuthorization) —
+  // en Importado todavía no hay nada que mostrar.
+  const canViewXml =
+    row.documentStatus === "VERIFIED" || row.documentStatus === "PROCESSED";
+  const viewXmlButton = canViewXml && (
+    <ZHBtn
+      variant="secondary"
+      size="xs"
+      type="button"
+      onClick={() => onViewXml(row.documentId)}
+    >
+      {t("purchases.reception.actions.viewXml", "Ver XML")}
+    </ZHBtn>
+  );
 
   if (row.sourceDocType === "CREDIT_NOTE") {
     if (row.affectedPurchaseExists && row.affectedPurchaseId) {
@@ -42,6 +59,7 @@ export function PurchaseReceptionActionsCell({
           >
             {t("purchases.creditNote.actions.processNc", "Procesar NC")}
           </ZHBtn>
+          {viewXmlButton}
         </div>
       );
     }
@@ -62,6 +80,7 @@ export function PurchaseReceptionActionsCell({
             "Ingrese primero la factura afectada",
           )}
         </p>
+        {viewXmlButton}
       </div>
     );
   }
@@ -79,6 +98,7 @@ export function PurchaseReceptionActionsCell({
           {t("purchases.reception.actions.consultXml", "Consultar XML")}
         </ZHBtn>
       )}
+      {viewXmlButton}
       {row.documentStatus === "VERIFIED" && (
         // Un único botón para todos los documentos Verificados, sin excepciones visibles: la
         // reconstrucción del detalle cuando el intento anterior falló (o el rechazo si el XML

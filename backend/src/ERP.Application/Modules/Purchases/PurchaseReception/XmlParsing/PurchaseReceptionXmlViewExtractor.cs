@@ -1,0 +1,129 @@
+using System.Globalization;
+using System.Xml.Linq;
+
+namespace ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
+
+/// <summary>Cabecera "extra" del XML que <c>PurchaseReceptionDocument</c> no persiste — únicamente lo que <see cref="PurchaseReceptionXmlViewExtractor"/> lee para la vista de solo lectura (FLOW-READY-02E.1).</summary>
+public sealed record PurchaseReceptionXmlViewExtras(
+    string? SupplierTradeName,
+    decimal DiscountAmount,
+    decimal IceAmount,
+    IReadOnlyList<PurchaseReceptionXmlViewExtraTax> TaxSummaries,
+    string? ModifiedDocumentType,
+    DateOnly? ModifiedDocumentDate,
+    string? ModificationReason
+);
+
+public sealed record PurchaseReceptionXmlViewExtraTax(
+    string TaxType,
+    string TaxCode,
+    decimal? TaxRate,
+    decimal TaxableBase,
+    decimal TaxAmount
+);
+
+/// <summary>
+/// Extrae de un XML SRI ya autorizado (Factura o Nota de Crédito) únicamente los campos de
+/// cabecera que <see cref="Entities.PurchaseReceptionDocument">PurchaseReceptionDocument</see> no
+/// persiste — el resto de la vista (montos, líneas) sale de la entidad ya guardada, nunca de este
+/// extractor. Puramente de solo lectura: no crea líneas, no aplica Item Matching, no cambia estado,
+/// no es el parser de ingesta (<c>PurchaseXmlDraftParser</c>) — ver comentario de esa clase para el
+/// motivo de no reutilizarla (no cubre &lt;notaCredito&gt; ni &lt;totalConImpuestos&gt;).
+///
+/// Nunca inventa un valor: si un elemento opcional del esquema SRI no está presente (p. ej.
+/// &lt;tarifa&gt; en &lt;totalImpuesto&gt;, que el esquema no define a ese nivel), el campo
+/// correspondiente queda <see langword="null"/>/0, nunca calculado o asumido.
+/// </summary>
+public static class PurchaseReceptionXmlViewExtractor
+{
+    private const string SriIceTaxCode = "3";
+
+    public static PurchaseReceptionXmlViewExtras Extract(string xmlContent)
+    {
+        var root = XDocument.Parse(xmlContent).Root;
+        if (root is null)
+            return Empty;
+
+        return root.Name.LocalName switch
+        {
+            "factura" => ExtractFromInvoice(root),
+            "notaCredito" => ExtractFromCreditNote(root),
+            _ => Empty,
+        };
+    }
+
+    private static readonly PurchaseReceptionXmlViewExtras Empty =
+        new(null, 0m, 0m, [], null, null, null);
+
+    private static PurchaseReceptionXmlViewExtras ExtractFromInvoice(XElement factura)
+    {
+        var infoTributaria = factura.Element("infoTributaria");
+        var infoFactura = factura.Element("infoFactura");
+        if (infoFactura is null)
+            return Empty;
+
+        var taxSummaries = ParseTaxSummaries(infoFactura.Element("totalConImpuestos"));
+
+        return new PurchaseReceptionXmlViewExtras(
+            SupplierTradeName: OptionalText(infoTributaria, "nombreComercial"),
+            DiscountAmount: OptionalDecimal(infoFactura, "totalDescuento") ?? 0m,
+            IceAmount: SumIce(taxSummaries),
+            TaxSummaries: taxSummaries,
+            ModifiedDocumentType: null,
+            ModifiedDocumentDate: null,
+            ModificationReason: null
+        );
+    }
+
+    private static PurchaseReceptionXmlViewExtras ExtractFromCreditNote(XElement notaCredito)
+    {
+        var infoTributaria = notaCredito.Element("infoTributaria");
+        var infoNotaCredito = notaCredito.Element("infoNotaCredito");
+        if (infoNotaCredito is null)
+            return Empty;
+
+        var taxSummaries = ParseTaxSummaries(infoNotaCredito.Element("totalConImpuestos"));
+
+        return new PurchaseReceptionXmlViewExtras(
+            SupplierTradeName: OptionalText(infoTributaria, "nombreComercial"),
+            // El esquema notaCredito no define totalDescuento a nivel de documento.
+            DiscountAmount: 0m,
+            IceAmount: SumIce(taxSummaries),
+            TaxSummaries: taxSummaries,
+            ModifiedDocumentType: OptionalText(infoNotaCredito, "codDocModificado"),
+            ModifiedDocumentDate: OptionalDate(infoNotaCredito, "fechaEmisionDocSustento"),
+            ModificationReason: OptionalText(infoNotaCredito, "motivo")
+        );
+    }
+
+    private static IReadOnlyList<PurchaseReceptionXmlViewExtraTax> ParseTaxSummaries(
+        XElement? totalConImpuestos
+    ) =>
+        totalConImpuestos
+            ?.Elements("totalImpuesto")
+            .Select(t => new PurchaseReceptionXmlViewExtraTax(
+                TaxType: OptionalText(t, "codigo") ?? string.Empty,
+                TaxCode: OptionalText(t, "codigoPorcentaje") ?? string.Empty,
+                TaxRate: OptionalDecimal(t, "tarifa"),
+                TaxableBase: OptionalDecimal(t, "baseImponible") ?? 0m,
+                TaxAmount: OptionalDecimal(t, "valor") ?? 0m
+            ))
+            .ToList()
+        ?? [];
+
+    private static decimal SumIce(IReadOnlyList<PurchaseReceptionXmlViewExtraTax> taxSummaries) =>
+        taxSummaries.Where(t => t.TaxType == SriIceTaxCode).Sum(t => t.TaxAmount);
+
+    private static string? OptionalText(XElement? parent, string name) =>
+        parent?.Element(name)?.Value is { Length: > 0 } value ? value : null;
+
+    private static decimal? OptionalDecimal(XElement? parent, string name) =>
+        OptionalText(parent, name) is { } text
+            ? decimal.Parse(text, NumberStyles.Number, CultureInfo.InvariantCulture)
+            : null;
+
+    private static DateOnly? OptionalDate(XElement? parent, string name) =>
+        OptionalText(parent, name) is { } text
+            ? DateOnly.ParseExact(text, "dd/MM/yyyy", CultureInfo.InvariantCulture)
+            : null;
+}

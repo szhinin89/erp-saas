@@ -170,3 +170,63 @@
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
+
+/* Modal "Ver XML" (FLOW-READY-02E.1) — vista de solo lectura del XML ya guardado. */
+.pur-xmlview-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pur-xmlview-disclaimer {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.pur-xmlview-error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.pur-xmlview-muted {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.pur-xmlview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-5);
+}
+
+.pur-xmlview-tax-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pur-xmlview-raw summary {
+  cursor: pointer;
+  font-size: var(--text-label-md-size);
+  font-weight: 600;
+  padding: var(--space-2) 0;
+}
+
+.pur-xmlview-raw-content {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: var(--text-help-size);
+  padding: var(--space-3);
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .pur-xmlview-grid {
+    grid-template-columns: 1fr;
+  }
+}
