@@ -15,9 +15,14 @@ public sealed record PurchaseInvoiceTaxSummaryDto(
     string? IceCode,
     decimal IceRate,
     string? IceName,
+    // FLOW-READY-02F.1 — dimensión IRBPNR, aditiva; siempre null/0 en facturas sin ese impuesto.
+    string? IrbpnrCode,
+    decimal IrbpnrRate,
+    string? IrbpnrName,
     decimal TaxableBase,
     decimal IceAmount,
     decimal VatAmount,
+    decimal IrbpnrAmount,
     decimal TotalAmount,
     decimal CreditedTaxableBase,
     decimal AvailableTaxableBase

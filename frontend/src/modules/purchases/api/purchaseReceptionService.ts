@@ -117,6 +117,15 @@ export interface DownloadXmlResult {
  * la línea de recepción — el usuario los completa manualmente. Los campos desde `supplierCode` en
  * adelante son de solo lectura: exactamente lo que trae el XML, para mostrar el detalle completo.
  */
+/** FLOW-READY-02F.1 — un impuesto crudo del XML, tal como quedó en PurchaseReceptionLineTax. */
+export interface PurchaseDraftLineTax {
+  taxCode: string;
+  taxRateCode: string;
+  tarifa: number;
+  taxableBase: number;
+  taxAmount: number;
+}
+
 export interface PurchaseDraftLineDto {
   purchaseReceptionLineId: string;
   itemId: string | null;
@@ -137,6 +146,8 @@ export interface PurchaseDraftLineDto {
   vatPercentage: number;
   taxValue: number;
   totalLine: number;
+  /** FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (IVA/ICE/IRBPNR), solo lectura. */
+  taxes: PurchaseDraftLineTax[];
 }
 
 /** Borrador de compra armado desde el PurchaseReceptionDocument ya verificado — para precargar el formulario de Nueva Compra. */

@@ -41,6 +41,7 @@ internal static class PurchaseMapper
             i.TotalFreight,
             i.TotalOtherCosts,
             i.GrandTotal,
+            i.TotalIrbpnr,
             i.Lines.OrderBy(l => l.SortOrder).Select(MapLine).ToList(),
             i.PaymentSchedules.OrderBy(s => s.InstallmentNumber).Select(MapSchedule).ToList(),
             i.CancelReason,
@@ -78,6 +79,11 @@ internal static class PurchaseMapper
             l.IceRate,
             l.IceAmount,
             l.SnapshotIceName,
+            l.IrbpnrCode,
+            l.IrbpnrRate,
+            l.IrbpnrAmount,
+            l.SnapshotIrbpnrName,
+            l.Taxes.Select(MapTax).ToList(),
             l.TaxInclusiveTotal,
             l.SnapshotItemPvp,
             l.WarehouseId,
@@ -91,4 +97,16 @@ internal static class PurchaseMapper
 
     public static PurchasePaymentScheduleDto MapSchedule(PurchasePaymentSchedule s) =>
         new(s.Id, s.InstallmentNumber, s.DueDate, s.Amount, s.Notes);
+
+    public static PurchaseInvoiceDetailTaxDto MapTax(PurchaseInvoiceDetailTax t) =>
+        new(
+            t.TaxCode,
+            t.TaxRateCode,
+            t.TaxName,
+            t.Rate,
+            t.CalculationType.ToString(),
+            t.TaxableBase,
+            t.TaxAmount,
+            t.Source.ToString()
+        );
 }

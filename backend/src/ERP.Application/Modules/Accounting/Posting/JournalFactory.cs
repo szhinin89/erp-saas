@@ -72,6 +72,8 @@ internal sealed class JournalFactory
             PostingAmountKind.CostVarianceDebit => fact.CostVarianceDebitAmount ?? 0m,
             PostingAmountKind.CostVarianceCredit => fact.CostVarianceCreditAmount ?? 0m,
             PostingAmountKind.HistoricalCost => fact.HistoricalCostTotal ?? 0m,
+            // FLOW-READY-02F.2 — IRBPNR (Compras); mismo criterio: campo nullable nuevo de PostingFact.
+            PostingAmountKind.TaxIrbpnr => fact.TotalIrbpnr ?? 0m,
             _ => 0m,
         };
 }

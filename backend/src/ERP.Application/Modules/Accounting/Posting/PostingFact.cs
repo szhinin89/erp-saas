@@ -32,5 +32,8 @@ public sealed record PostingFact(
     decimal? SupplierCreditAmount = null,
     decimal? CostVarianceDebitAmount = null,
     decimal? CostVarianceCreditAmount = null,
-    decimal? HistoricalCostTotal = null
+    decimal? HistoricalCostTotal = null,
+    // FLOW-READY-02F.2 — IRBPNR (Compras). Mismo criterio aditivo que los 5 campos anteriores:
+    // opcional, agregado al final, ningún call site existente se rompe.
+    decimal? TotalIrbpnr = null
 );

@@ -1,6 +1,8 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -71,7 +73,7 @@ public sealed class ConfirmPurchaseHandlerTests
         ConfirmPurchaseHandler handler,
         Mock<IPurchaseInvoiceRepository> repo,
         Mock<IStockRepository> stockRepo
-    ) BuildHandler(PurchaseInvoice inv)
+    ) BuildHandler(PurchaseInvoice inv, bool irbpnrConfigured = false)
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
@@ -169,6 +171,20 @@ public sealed class ConfirmPurchaseHandlerTests
         tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ERP.Application.Common.Services.TaxRateResult(15m, "IVA 15%"));
 
+        var postingEngine = new Mock<IPostingEngine>();
+        postingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    TenantId,
+                    CompanyId,
+                    "Purchases",
+                    "InvoiceReceived",
+                    PostingAmountKind.TaxIrbpnr,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(irbpnrConfigured);
+
         var logger = new Mock<ILogger<ConfirmPurchaseHandler>>();
 
         var tenant = new Mock<ICurrentTenant>();
@@ -187,6 +203,7 @@ public sealed class ConfirmPurchaseHandlerTests
             stockRepo.Object,
             itemRepo.Object,
             tax.Object,
+            postingEngine.Object,
             logger.Object,
             tenant.Object,
             company.Object,
@@ -386,6 +403,115 @@ public sealed class ConfirmPurchaseHandlerTests
             .Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount);
     }
 
+    private static void AttachIrbpnr(PurchaseInvoiceDetail line, decimal amount) =>
+        line.ReplaceTaxes(
+            [
+                ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax.Create(
+                    line.Id,
+                    TenantId,
+                    "5",
+                    "5001",
+                    "IRBPNR",
+                    0.02m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    amount,
+                    ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
+                ),
+            ]
+        );
+
+    [Fact]
+    public async Task Confirm_blocks_a_purchase_with_IRBPNR_when_no_PostingRuleLine_is_configured()
+    {
+        // FLOW-READY-02F.2 — el bloqueo ya no es incondicional (02F.1): ahora depende de si existe
+        // una PostingRuleLine para TaxIrbpnr (aquí el mock de IPostingEngine responde "no
+        // configurado", vía irbpnrConfigured: false por defecto en BuildHandler).
+        var inv = CreateDraftInvoice(1);
+        AttachIrbpnr(inv.Lines[0], 0.48m);
+        var (handler, _, stockRepo) = BuildHandler(inv);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("IRBPNR");
+        result.Error.Should().Contain("PostingRuleLine");
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_succeeds_with_IRBPNR_when_PostingRuleLine_is_configured()
+    {
+        // FLOW-READY-02F.2 — con la configuración contable presente (mock devuelve true), la
+        // compra confirma y GrandTotal/PurchasePayable incluyen el monto IRBPNR.
+        var inv = CreateDraftInvoice(1);
+        var line = inv.Lines[0];
+        AttachIrbpnr(line, 0.48m);
+        var (handler, repo, _) = BuildHandler(inv, irbpnrConfigured: true);
+
+        var expectedGrandTotal = ExpectedGrandTotal(inv) + 0.48m;
+        var schedule = new List<ConfirmScheduleInput>
+        {
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), expectedGrandTotal, null),
+        };
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, schedule),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        result.Value!.GrandTotal.Should().Be(expectedGrandTotal);
+        line.IrbpnrAmount.Should().Be(0.48m);
+        repo.Verify(
+            r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount == expectedGrandTotal)),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_without_IRBPNR_is_unaffected_by_the_guard()
+    {
+        // Regresión — el guard nuevo no debe afectar compras sin IRBPNR (mayoría de los casos).
+        var inv = CreateDraftInvoice(1);
+        var (handler, _, _) = BuildHandler(inv);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+    }
+
     [Fact]
     public async Task Confirm_not_found_returns_failure()
     {
@@ -414,6 +540,7 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<IStockRepository>().Object,
             new Mock<IItemRepository>().Object,
             new Mock<ISriTaxResolver>().Object,
+            new Mock<IPostingEngine>().Object,
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
             tenant.Object,
             company.Object,

@@ -1,6 +1,7 @@
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -151,6 +152,12 @@ public sealed class PurchaseInvoiceDetailConfiguration
             .Property(x => x.SnapshotIceName)
             .HasColumnName("snapshot_ice_name")
             .HasMaxLength(PurchaseInvoiceDetail.IceNameMaxLen);
+        builder
+            .Property(x => x.IceCalculationType)
+            .HasColumnName("ice_calculation_type")
+            .HasConversion<int>()
+            .HasDefaultValue(SriTaxCalculationType.Percentage)
+            .IsRequired();
 
         // ── Warehouse (logistic reference) ──────────────────────────────
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id");
@@ -189,8 +196,18 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder.Ignore(x => x.LineSubtotal);
         builder.Ignore(x => x.TaxableBase);
         builder.Ignore(x => x.TaxInclusiveTotal);
+        builder.Ignore(x => x.IrbpnrCode);
+        builder.Ignore(x => x.IrbpnrRate);
+        builder.Ignore(x => x.SnapshotIrbpnrName);
+        builder.Ignore(x => x.IrbpnrAmount);
 
         // ── Relationships ───────────────────────────────────────────────
+        builder
+            .HasMany(x => x.Taxes)
+            .WithOne()
+            .HasForeignKey(x => x.PurchaseInvoiceDetailId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder
             .HasOne<Item>()
             .WithMany()

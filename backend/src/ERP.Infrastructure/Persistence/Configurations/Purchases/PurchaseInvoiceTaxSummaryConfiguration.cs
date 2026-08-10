@@ -53,6 +53,28 @@ public sealed class PurchaseInvoiceTaxSummaryConfiguration
             .HasColumnName("ice_name")
             .HasMaxLength(PurchaseInvoiceTaxSummary.IceNameMaxLen);
 
+        // FLOW-READY-02F.1 — dimensión IRBPNR, aditiva a la clave de agrupación Vat/Ice existente.
+        builder
+            .Property(x => x.IrbpnrCode)
+            .HasColumnName("irbpnr_code")
+            .HasMaxLength(PurchaseInvoiceDetailTax.TaxRateCodeMaxLen);
+        builder
+            .Property(x => x.IrbpnrRate)
+            .HasColumnName("irbpnr_rate")
+            .HasColumnType("numeric(10,4)")
+            .HasDefaultValue(0m)
+            .IsRequired();
+        builder
+            .Property(x => x.IrbpnrName)
+            .HasColumnName("irbpnr_name")
+            .HasMaxLength(PurchaseInvoiceDetailTax.TaxNameMaxLen);
+        builder
+            .Property(x => x.IrbpnrAmount)
+            .HasColumnName("irbpnr_amount")
+            .HasColumnType("numeric(18,2)")
+            .HasDefaultValue(0m)
+            .IsRequired();
+
         builder
             .Property(x => x.TaxableBase)
             .HasColumnName("taxable_base")

@@ -104,12 +104,22 @@ public sealed class GetPurchaseReceptionXmlViewHandler
 
     private static PurchaseReceptionXmlViewLineDto ToLineDto(PurchaseReceptionLine line)
     {
-        var taxes = new List<PurchaseReceptionXmlViewLineTaxDto>
-        {
-            new("2", line.VatCode, line.VatPercentage, line.TaxValue),
-        };
-        if (!string.IsNullOrWhiteSpace(line.IceCode))
-            taxes.Add(new PurchaseReceptionXmlViewLineTaxDto("3", line.IceCode, 0m, line.IceValue));
+        // FLOW-READY-02F.1 — cuando la línea capturó el detalle genérico de impuestos (esta fase en
+        // adelante), se usa como fuente: incluye automáticamente cualquier código (IRBPNR, etc.) sin
+        // necesidad de un caso especial por impuesto. Líneas de recepciones anteriores a esta fase
+        // (sin esa colección) siguen construyendo Taxes solo desde VatCode/IceCode, exactamente como
+        // antes — regresión cero.
+        var taxes =
+            line.Taxes.Count > 0
+                ? line
+                    .Taxes.Select(t => new PurchaseReceptionXmlViewLineTaxDto(
+                        t.TaxCode,
+                        t.TaxRateCode,
+                        t.Tarifa,
+                        t.TaxAmount
+                    ))
+                    .ToList()
+                : BuildLegacyTaxes(line);
 
         return new PurchaseReceptionXmlViewLineDto(
             MainCode: line.SupplierCode,
@@ -124,6 +134,17 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             TotalAmount: line.TotalLine,
             Taxes: taxes
         );
+    }
+
+    private static List<PurchaseReceptionXmlViewLineTaxDto> BuildLegacyTaxes(PurchaseReceptionLine line)
+    {
+        var taxes = new List<PurchaseReceptionXmlViewLineTaxDto>
+        {
+            new("2", line.VatCode, line.VatPercentage, line.TaxValue),
+        };
+        if (!string.IsNullOrWhiteSpace(line.IceCode))
+            taxes.Add(new PurchaseReceptionXmlViewLineTaxDto("3", line.IceCode, 0m, line.IceValue));
+        return taxes;
     }
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>

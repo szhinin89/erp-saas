@@ -17,12 +17,29 @@ export interface PurchaseInvoiceTaxSummaryDto {
   iceCode: string | null;
   iceRate: number;
   iceName: string | null;
+  // FLOW-READY-02F.1 — dimensión IRBPNR, aditiva; siempre null/0 en facturas sin ese impuesto.
+  irbpnrCode: string | null;
+  irbpnrRate: number;
+  irbpnrName: string | null;
   taxableBase: number;
   iceAmount: number;
   vatAmount: number;
+  irbpnrAmount: number;
   totalAmount: number;
   creditedTaxableBase: number;
   availableTaxableBase: number;
+}
+
+/** FLOW-READY-02F.1 — snapshot fiel de un impuesto del XML (IVA/ICE/IRBPNR), solo lectura. */
+export interface PurchaseInvoiceDetailTaxDto {
+  taxCode: string;
+  taxRateCode: string;
+  taxName: string;
+  rate: number | null;
+  calculationType: string;
+  taxableBase: number;
+  taxAmount: number;
+  source: string;
 }
 
 export interface PurchaseLineDto {
@@ -58,6 +75,13 @@ export interface PurchaseLineDto {
   iceRate: number;
   iceAmount: number;
   snapshotIceName: string | null;
+  // ── IRBPNR (FLOW-READY-02F.1 — sin campos escalares legacy: derivado de Taxes) ───
+  irbpnrCode: string | null;
+  irbpnrRate: number | null;
+  irbpnrAmount: number;
+  snapshotIrbpnrName: string | null;
+  // ── Detalle fiel de impuestos del XML (IVA/ICE/IRBPNR) ───────────────────────
+  taxes: PurchaseInvoiceDetailTaxDto[];
   // ── Total ───────────────────────────────────────────────────────
   taxInclusiveTotal: number;
   // ── Analytic ────────────────────────────────────────────────────
@@ -120,6 +144,8 @@ export interface PurchaseInvoiceDto {
   totalFreight: number;
   totalOtherCosts: number;
   grandTotal: number;
+  // FLOW-READY-02F.1 — informativo, NUNCA incluido en grandTotal (soporte contable pendiente).
+  totalIrbpnr: number;
   lines: PurchaseLineDto[];
   paymentSchedules: PurchasePaymentScheduleDto[];
   createdAt: string;

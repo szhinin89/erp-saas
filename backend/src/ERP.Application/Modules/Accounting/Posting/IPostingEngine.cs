@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Accounting.Enums;
 
 namespace ERP.Application.Modules.Accounting.Posting;
 
@@ -20,6 +21,23 @@ public interface IPostingEngine
     /// </summary>
     Task<Result<PostingOutcomeDto>> PostAsync(
         PostingFact fact,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// FLOW-READY-02F.2 — consulta de solo lectura, sin efecto sobre el pipeline de posting: ¿existe
+    /// una <c>PostingRule</c> activa para <paramref name="sourceModule"/>/<paramref name="factType"/>
+    /// con al menos una <c>PostingRuleLine</c> configurada para <paramref name="amountKind"/>? Punto
+    /// de entrada público para que otros módulos (p. ej. Purchases) verifiquen una precondición
+    /// contable ANTES de confirmar un documento — nunca dependen directamente de
+    /// <c>IPostingRuleRepository</c> (Domain de Accounting).
+    /// </summary>
+    Task<bool> IsAmountKindConfiguredAsync(
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        string factType,
+        PostingAmountKind amountKind,
         CancellationToken cancellationToken = default
     );
 }

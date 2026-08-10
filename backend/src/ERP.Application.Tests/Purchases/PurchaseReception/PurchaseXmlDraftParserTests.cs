@@ -307,6 +307,53 @@ public sealed class PurchaseXmlDraftParserTests
     }
 
     [Fact]
+    public void Captures_ivbpnr_codigo_5_generically_without_discarding_it()
+    {
+        // Caso real: factura Arca Continental, línea FANTA HARMONY NRJ 1350 PET(12) con
+        // IVA(2)/ICE(3053)/IRBPNR(5). El parser generaba ParsedPurchaseXmlLine sin capturar el
+        // nodo <impuesto codigo="5"> — este test fija que ahora sí queda en Taxes, sin tocar el
+        // comportamiento existente de VatCode/IceCode/IceValue.
+        const string xml =
+            "<factura><infoTributaria><ruc>1790000000001</ruc><razonSocial>ARCA CONTINENTAL ECUADOR</razonSocial>"
+            + "<codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000999</secuencial>"
+            + "</infoTributaria><infoFactura><fechaEmision>05/08/2026</fechaEmision></infoFactura>"
+            + "<detalles><detalle><codigoPrincipal>7861234560001</codigoPrincipal>"
+            + "<descripcion>FANTA HARMONY NRJ 1350 PET(12)</descripcion>"
+            + "<cantidad>2.0000</cantidad><precioUnitario>7.0044</precioUnitario><descuento>0.00</descuento>"
+            + "<precioTotalSinImpuesto>14.01</precioTotalSinImpuesto>"
+            + "<impuestos>"
+            + "<impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>4.00</tarifa>"
+            + "<baseImponible>14.01</baseImponible><valor>0.56</valor></impuesto>"
+            + "<impuesto><codigo>3</codigo><codigoPorcentaje>3053</codigoPorcentaje><tarifa>0.00</tarifa>"
+            + "<baseImponible>14.01</baseImponible><valor>1.23</valor></impuesto>"
+            + "<impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa>"
+            + "<baseImponible>24</baseImponible><valor>0.48</valor></impuesto>"
+            + "</impuestos></detalle></detalles></factura>";
+        var parser = new PurchaseXmlDraftParser();
+
+        var result = parser.Parse(xml);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = result.Value!.Lines.Should().ContainSingle().Subject;
+
+        // Comportamiento existente (VatCode/IceCode/IceValue) sin cambios — regresión.
+        line.VatCode.Should().Be("4");
+        line.IceCode.Should().Be("3053");
+        line.IceValue.Should().Be(1.23m);
+
+        // Nuevo: los 3 impuestos quedan capturados genéricamente, incluyendo IRBPNR (código "5"),
+        // que antes se descartaba por completo.
+        line.Taxes.Should().HaveCount(3);
+        line.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxRateCode == "4" && t.TaxAmount == 0.56m);
+        line.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxRateCode == "3053" && t.TaxAmount == 1.23m);
+        var irbpnr = line.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        irbpnr.TaxRateCode.Should().Be("5001");
+        irbpnr.TaxAmount.Should().Be(0.48m);
+        irbpnr.TaxableBase.Should().Be(24m);
+        irbpnr.Tarifa.Should().Be(0.02m);
+    }
+
+    [Fact]
     public void Fails_gracefully_when_the_xml_is_not_a_valid_factura()
     {
         var parser = new PurchaseXmlDraftParser();

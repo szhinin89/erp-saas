@@ -38,7 +38,16 @@ public static class PurchaseDraftMapper
                     TaxCode: l.TaxCode,
                     VatPercentage: l.VatPercentage,
                     TaxValue: l.TaxValue,
-                    TotalLine: l.TotalLine
+                    TotalLine: l.TotalLine,
+                    Taxes: l.Taxes
+                        .Select(t => new PurchaseDraftLineTaxDto(
+                            t.TaxCode,
+                            t.TaxRateCode,
+                            t.Tarifa,
+                            t.TaxableBase,
+                            t.TaxAmount
+                        ))
+                        .ToList()
                 ))
                 .ToList(),
             ProcessingStatus: PurchaseReceptionMapper.ToProcessingStatusCode(

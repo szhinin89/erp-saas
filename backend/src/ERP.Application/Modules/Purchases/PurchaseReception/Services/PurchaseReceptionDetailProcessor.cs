@@ -123,7 +123,14 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                         parsedLine.SupplierCode,
                         parsedLine.SupplierAuxCode,
                         itemId,
-                        matchStatus
+                        matchStatus,
+                        parsedLine.Taxes.Select(t => (
+                            t.TaxCode,
+                            t.TaxRateCode,
+                            t.Tarifa,
+                            t.TaxableBase,
+                            t.TaxAmount
+                        ))
                     );
 
                     // Si no hubo código exacto pero el motor de matching ya encuentra candidatos por

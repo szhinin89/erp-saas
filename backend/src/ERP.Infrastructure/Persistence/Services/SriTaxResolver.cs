@@ -1,4 +1,5 @@
 using ERP.Application.Common.Services;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using Microsoft.EntityFrameworkCore;
 using PurchasesTaxResolver = ERP.Application.Modules.Purchases.Services.ISriTaxResolver;
 
@@ -59,5 +60,63 @@ public sealed class SriTaxResolver : ISriTaxResolver, PurchasesTaxResolver
             .SriPaymentMethods.AsNoTracking()
             .FirstOrDefaultAsync(m => m.Code == code && m.IsActive, ct);
         return pm?.Name;
+    }
+
+    // ── FLOW-READY-02F.1 — modelo de impuestos múltiples por línea de compra ────────────────
+    public async Task<SriTaxCatalogEntry?> GetVatCatalogEntryAsync(
+        string vatCode,
+        CancellationToken ct = default
+    )
+    {
+        var rate = await _db
+            .SriVatRates.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Code == vatCode && r.IsActive, ct);
+        return rate is null
+            ? null
+            : new SriTaxCatalogEntry(
+                rate.Code,
+                rate.Name,
+                rate.Percentage,
+                null,
+                SriTaxCalculationType.Percentage
+            );
+    }
+
+    public async Task<SriTaxCatalogEntry?> GetIceCatalogEntryAsync(
+        string iceCode,
+        CancellationToken ct = default
+    )
+    {
+        var rate = await _db
+            .SriIceRates.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Code == iceCode && r.IsActive, ct);
+        return rate is null
+            ? null
+            : new SriTaxCatalogEntry(
+                rate.Code,
+                rate.Name,
+                rate.Percentage,
+                rate.UnitValue,
+                rate.CalculationType
+            );
+    }
+
+    public async Task<SriTaxCatalogEntry?> GetIrbpnrCatalogEntryAsync(
+        string irbpnrCode,
+        CancellationToken ct = default
+    )
+    {
+        var rate = await _db
+            .SriIrbpnrRates.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Code == irbpnrCode && r.IsActive, ct);
+        return rate is null
+            ? null
+            : new SriTaxCatalogEntry(
+                rate.Code,
+                rate.Name,
+                rate.Percentage,
+                rate.UnitValue,
+                rate.CalculationType
+            );
     }
 }

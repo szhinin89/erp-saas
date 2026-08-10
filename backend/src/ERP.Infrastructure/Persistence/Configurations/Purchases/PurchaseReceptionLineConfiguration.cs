@@ -119,5 +119,12 @@ public sealed class PurchaseReceptionLineConfiguration
             .HasIndex(x => x.ItemId)
             .HasDatabaseName("ix_purchase_reception_lines_item")
             .HasFilter("item_id IS NOT NULL");
+
+        // FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (incluye IRBPNR).
+        builder
+            .HasMany(x => x.Taxes)
+            .WithOne()
+            .HasForeignKey(x => x.PurchaseReceptionLineId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

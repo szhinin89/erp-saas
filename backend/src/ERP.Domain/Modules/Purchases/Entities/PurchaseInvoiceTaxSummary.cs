@@ -36,10 +36,20 @@ public sealed class PurchaseInvoiceTaxSummary : ICompanyOperationalEntity
     public decimal IceRate { get; private set; }
     public string? IceName { get; private set; }
 
+    /// <summary>
+    /// FLOW-READY-02F.1 — dimensión adicional de la clave de agrupación. Para facturas sin IRBPNR
+    /// (100% de los datos históricos) es siempre null/0 en todas las líneas, así que no cambia el
+    /// agrupamiento existente por (VatCode, VatRate, IceCode, IceRate).
+    /// </summary>
+    public string? IrbpnrCode { get; private set; }
+    public decimal IrbpnrRate { get; private set; }
+    public string? IrbpnrName { get; private set; }
+
     // ── Montos agregados (suma de líneas del grupo, snapshot congelado) ──
     public decimal TaxableBase { get; private set; }
     public decimal IceAmount { get; private set; }
     public decimal VatAmount { get; private set; }
+    public decimal IrbpnrAmount { get; private set; }
     public decimal TotalAmount { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
@@ -64,7 +74,11 @@ public sealed class PurchaseInvoiceTaxSummary : ICompanyOperationalEntity
         string? iceName,
         decimal taxableBase,
         decimal iceAmount,
-        decimal vatAmount
+        decimal vatAmount,
+        string? irbpnrCode = null,
+        decimal irbpnrRate = 0m,
+        string? irbpnrName = null,
+        decimal irbpnrAmount = 0m
     )
     {
         if (purchaseInvoiceId == Guid.Empty)
@@ -88,10 +102,14 @@ public sealed class PurchaseInvoiceTaxSummary : ICompanyOperationalEntity
             IceCode = OptionalCode.Normalize(iceCode),
             IceRate = iceRate,
             IceName = string.IsNullOrWhiteSpace(iceName) ? null : iceName.Trim(),
+            IrbpnrCode = OptionalCode.Normalize(irbpnrCode),
+            IrbpnrRate = irbpnrRate,
+            IrbpnrName = string.IsNullOrWhiteSpace(irbpnrName) ? null : irbpnrName.Trim(),
             TaxableBase = taxableBase,
             IceAmount = iceAmount,
             VatAmount = vatAmount,
-            TotalAmount = taxableBase + iceAmount + vatAmount,
+            IrbpnrAmount = irbpnrAmount,
+            TotalAmount = taxableBase + iceAmount + vatAmount + irbpnrAmount,
             CreatedAt = DateTime.UtcNow,
         };
     }

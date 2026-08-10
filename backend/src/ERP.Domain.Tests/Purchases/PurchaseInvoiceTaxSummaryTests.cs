@@ -1,4 +1,6 @@
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentAssertions;
 
 namespace ERP.Domain.Tests.Purchases;
@@ -207,6 +209,105 @@ public sealed class PurchaseInvoiceTaxSummaryTests
         summary.TenantId.Should().Be(TenantId);
         summary.CompanyId.Should().Be(CompanyId);
         summary.BranchId.Should().Be(BranchId);
+    }
+
+    // ── FLOW-READY-02F.1 — dimensión IRBPNR en el resumen fiscal ────────────────────────────
+
+    private static void AttachIrbpnr(
+        PurchaseInvoiceDetail line,
+        string rateCode,
+        decimal amount
+    ) =>
+        line.ReplaceTaxes(
+            [
+                PurchaseInvoiceDetailTax.Create(
+                    line.Id,
+                    TenantId,
+                    "5",
+                    rateCode,
+                    "IRBPNR",
+                    0.02m,
+                    SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    amount,
+                    PurchaseTaxSource.Xml
+                ),
+            ]
+        );
+
+    [Fact]
+    public void Lineas_con_distinto_IrbpnrCode_no_se_mezclan()
+    {
+        var inv = CreateDraftInvoice();
+        var line1 = CreateLine(inv.Id, "Producto A", 1, 100m, "10");
+        var line2 = CreateLine(inv.Id, "Producto B", 1, 100m, "10");
+        inv.ReplaceLines([line1, line2], UserId);
+        line1.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+        line2.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+        AttachIrbpnr(line1, "5001", 0.48m);
+        // line2 sin IRBPNR — distinta combinación, no debe mezclarse con line1.
+
+        inv.Confirm(UserId);
+
+        inv.TaxSummaries.Should().HaveCount(2);
+        inv.TaxSummaries.Select(s => s.IrbpnrCode).Should().BeEquivalentTo(new[] { "5001", null });
+    }
+
+    [Fact]
+    public void IrbpnrAmount_se_incluye_en_TotalAmount_del_resumen()
+    {
+        var inv = CreateDraftInvoice();
+        var line = CreateLine(inv.Id, "Producto con IRBPNR", 24, 0.30m, "2");
+        inv.ReplaceLines([line], UserId);
+        line.ApplyTaxes("2", 15m, "IVA 15%", null, 0m, null);
+        AttachIrbpnr(line, "5001", 0.48m);
+
+        inv.Confirm(UserId);
+
+        var summary = inv.TaxSummaries.Single();
+        summary.IrbpnrAmount.Should().Be(0.48m);
+        summary.TotalAmount
+            .Should()
+            .Be(summary.TaxableBase + summary.IceAmount + summary.VatAmount + summary.IrbpnrAmount);
+    }
+
+    [Fact]
+    public void Compra_sin_IRBPNR_mantiene_agrupacion_igual_que_antes()
+    {
+        // Regresión — dos líneas con mismo IVA y sin IRBPNR siguen colapsando en 1 solo resumen,
+        // exactamente como antes de agregar la dimensión IRBPNR a la clave de agrupación.
+        var inv = CreateDraftInvoice();
+        var line1 = CreateLine(inv.Id, "Producto A", 2, 50m, "10");
+        var line2 = CreateLine(inv.Id, "Producto B", 3, 20m, "10");
+        inv.ReplaceLines([line1, line2], UserId);
+        line1.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+        line2.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+
+        inv.Confirm(UserId);
+
+        inv.TaxSummaries.Should().ContainSingle();
+        inv.TaxSummaries.Single().IrbpnrCode.Should().BeNull();
+        inv.TaxSummaries.Single().IrbpnrAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public void GrandTotal_y_TotalIrbpnr_incluyen_el_monto_IRBPNR_FLOW_READY_02F_2()
+    {
+        // FLOW-READY-02F.2 — IRBPNR debe formar parte de GrandTotal/PurchasePayable (a diferencia
+        // de 02F.1, donde Confirm quedaba bloqueado antes de llegar a este cálculo).
+        var inv = CreateDraftInvoice();
+        var line = CreateLine(inv.Id, "Producto con IRBPNR", 24, 0.5837m, "10");
+        inv.ReplaceLines([line], UserId);
+        line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+        AttachIrbpnr(line, "5001", 0.48m);
+
+        var expectedGrandTotal = line.TaxableBase + line.VatAmount + line.IrbpnrAmount;
+
+        inv.TotalIrbpnr.Should().Be(0.48m);
+        inv.Confirm(UserId);
+
+        inv.GrandTotal.Should().Be(expectedGrandTotal);
+        inv.TotalIrbpnr.Should().Be(0.48m);
     }
 
     [Fact]

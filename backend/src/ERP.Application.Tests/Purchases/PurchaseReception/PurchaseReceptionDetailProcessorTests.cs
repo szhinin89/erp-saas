@@ -77,7 +77,8 @@ public sealed class PurchaseReceptionDetailProcessorTests
             TaxCode: "2",
             VatPercentage: 15,
             TaxValue: 0.75m,
-            TotalLine: 5.75m
+            TotalLine: 5.75m,
+            Taxes: []
         );
         parser
             .Setup(p => p.Parse(It.IsAny<string>()))
@@ -175,7 +176,8 @@ public sealed class PurchaseReceptionDetailProcessorTests
             TaxCode: "2",
             VatPercentage: 15,
             TaxValue: 1.5m,
-            TotalLine: 11.5m
+            TotalLine: 11.5m,
+            Taxes: []
         );
         var badLineError = new ParsedPurchaseXmlLineError(
             2,

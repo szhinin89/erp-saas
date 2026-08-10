@@ -87,6 +87,17 @@ export function PurchaseReceptionXmlViewModal({
       render: (row) => formatMoneyWithSymbol(row.iceAmount, total),
     },
     {
+      key: "irbpnrAmount",
+      header: t("purchases.reception.xmlView.lines.irbpnr", "IRBPNR"),
+      align: "right",
+      render: (row) => {
+        const irbpnr = row.taxes.find((tx) => tx.taxType === "5");
+        return irbpnr
+          ? formatMoneyWithSymbol(irbpnr.taxAmount, total)
+          : formatMoneyWithSymbol(0, total);
+      },
+    },
+    {
       key: "totalAmount",
       header: t("purchases.reception.xmlView.lines.total", "Total"),
       align: "right",
@@ -231,6 +242,15 @@ export function PurchaseReceptionXmlViewModal({
               <Field
                 label={t("purchases.reception.xmlView.field.iceAmount", "ICE")}
                 value={formatMoneyWithSymbol(data.iceAmount, total)}
+              />
+              <Field
+                label={t("purchases.reception.xmlView.field.irbpnrAmount", "IRBPNR")}
+                value={formatMoneyWithSymbol(
+                  data.taxSummaries
+                    .filter((tx) => tx.taxType === "5")
+                    .reduce((sum, tx) => sum + tx.taxAmount, 0),
+                  total,
+                )}
               />
               <Field
                 label={t("purchases.reception.xmlView.field.vatAmount", "IVA")}

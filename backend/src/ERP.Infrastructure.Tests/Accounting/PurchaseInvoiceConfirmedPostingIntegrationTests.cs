@@ -282,6 +282,109 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// FLOW-READY-02F.2 — misma regla que <see cref="SeedRuleAndPeriodAsync"/>, con una tercera
+    /// línea (Débito, TaxIrbpnr) para que el asiento balancee cuando la factura incluye IRBPNR:
+    /// Debit(Subtotal + TaxIrbpnr) == Credit(GrandTotal), ya que GrandTotal = Subtotal + IRBPNR en
+    /// esta factura de prueba (sin IVA/ICE, igual que el resto de fixtures de este archivo).
+    /// </summary>
+    private async Task SeedRuleAndPeriodWithIrbpnrAsync(ErpDbContext db, DateOnly entryDate)
+    {
+        var debitAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"5.1.{Guid.NewGuid():N}"[..8]),
+            "Compras",
+            null,
+            AccountType.Expense,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        var irbpnrAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"5.2.{Guid.NewGuid():N}"[..8]),
+            "IRBPNR por pagar",
+            null,
+            AccountType.Expense,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        var creditAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
+            "Cuentas por pagar",
+            null,
+            AccountType.Liability,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        db.Accounts.AddRange(debitAccount, irbpnrAccount, creditAccount);
+
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            "InvoiceReceived",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.Subtotal);
+        rule.AddLine(irbpnrAccount.Id, AccountNature.Debit, PostingAmountKind.TaxIrbpnr);
+        rule.AddLine(creditAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
+
+        var period = AccountingPeriod.Create(
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
+            new DateOnly(entryDate.Year, entryDate.Month, 1),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
+
+        db.PostingRules.Add(rule);
+        db.AccountingPeriods.Add(period);
+        await db.SaveChangesAsync();
+    }
+
+    private PurchaseInvoice BuildConfirmableInvoiceWithIrbpnr(
+        DateOnly issueDate,
+        string invoiceNumber,
+        decimal irbpnrAmount
+    )
+    {
+        var inv = BuildConfirmableInvoice(issueDate, invoiceNumber);
+        var line = inv.Lines[0];
+        line.ReplaceTaxes(
+            [
+                PurchaseInvoiceDetailTax.Create(
+                    line.Id,
+                    _tenantId,
+                    "5",
+                    "5001",
+                    "IRBPNR",
+                    0.02m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    irbpnrAmount,
+                    ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml
+                ),
+            ]
+        );
+        return inv;
+    }
+
     private PurchaseInvoice BuildConfirmableInvoice(DateOnly issueDate, string invoiceNumber)
     {
         var inv = PurchaseInvoice.CreateDraft(
@@ -341,6 +444,39 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         entry.PostedAtUtc.Should().NotBeNull();
         entry.SourceModule.Should().Be("Purchases");
         entry.SourceEventType.Should().Be("InvoiceReceived");
+    }
+
+    [Fact]
+    public async Task Confirmar_PurchaseInvoice_con_IRBPNR_genera_JournalEntry_balanceado()
+    {
+        // FLOW-READY-02F.2 — con una PostingRuleLine para TaxIrbpnr configurada, una compra con
+        // IRBPNR confirma y el asiento resultante balancea: Debit(Subtotal + TaxIrbpnr) ==
+        // Credit(GrandTotal), porque GrandTotal = Subtotal + IRBPNR (esta factura no aplica IVA/ICE).
+        var issueDate = new DateOnly(2026, 7, 25);
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodWithIrbpnrAsync(db, issueDate);
+
+        var inv = BuildConfirmableInvoiceWithIrbpnr(issueDate, "001-001-000000005", 0.48m);
+        db.PurchaseInvoices.Add(inv);
+        await db.SaveChangesAsync();
+
+        inv.GrandTotal.Should().Be(100m + 0.48m);
+
+        inv.Confirm(_createdBy);
+        await db.SaveChangesAsync();
+
+        await using var verifyDb = CreateContext();
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.SourceEventId == inv.Id);
+
+        entry.Should().NotBeNull();
+        entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
+        entry.Lines.Should().HaveCount(3);
+        var totalDebit = entry.Lines.Sum(l => l.Debit);
+        var totalCredit = entry.Lines.Sum(l => l.Credit);
+        totalDebit.Should().Be(totalCredit, "el asiento debe balancear con la línea IRBPNR incluida");
+        totalCredit.Should().Be(inv.GrandTotal);
     }
 
     [Fact]

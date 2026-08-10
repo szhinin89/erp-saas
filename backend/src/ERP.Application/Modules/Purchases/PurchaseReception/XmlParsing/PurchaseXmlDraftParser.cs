@@ -27,7 +27,23 @@ public sealed record ParsedPurchaseXmlLine(
     string TaxCode,
     decimal VatPercentage,
     decimal TaxValue,
-    decimal TotalLine
+    decimal TotalLine,
+    IReadOnlyList<ParsedPurchaseXmlLineTax> Taxes
+);
+
+/// <summary>
+/// FLOW-READY-02F.1 — snapshot fiel de UN nodo &lt;impuesto&gt; del XML, sin interpretar (no
+/// distingue IVA/ICE/IRBPNR aquí — eso lo hace el consumidor por <see cref="TaxCode"/>). Aditivo a
+/// <see cref="ParsedPurchaseXmlLine"/>: los campos existentes (VatCode/IceCode/IceValue/...) se
+/// siguen calculando exactamente igual que antes — esta lista es la única fuente que además captura
+/// impuestos que esos campos no representan (p. ej. IRBPNR, código "5").
+/// </summary>
+public sealed record ParsedPurchaseXmlLineTax(
+    string TaxCode,
+    string TaxRateCode,
+    decimal Tarifa,
+    decimal TaxableBase,
+    decimal TaxAmount
 );
 
 /// <summary>
@@ -183,6 +199,21 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
         var iceCode = ice is not null ? OptionalText(ice, "codigoPorcentaje") : null;
         var iceValue = ice is not null ? ParseDecimal(RequireText(ice, "valor")) : 0m;
 
+        // FLOW-READY-02F.1 — captura genérica de TODOS los <impuesto> (incluye codigo="5" IRBPNR,
+        // que antes se descartaba). No reemplaza los campos VatCode/IceCode/IceValue anteriores —
+        // es aditiva, para no cambiar el comportamiento de ningún consumidor existente.
+        var taxes = impuestos
+            .Select(i => new ParsedPurchaseXmlLineTax(
+                TaxCode: RequireText(i, "codigo"),
+                TaxRateCode: OptionalText(i, "codigoPorcentaje") ?? RequireText(i, "codigo"),
+                Tarifa: OptionalText(i, "tarifa") is { Length: > 0 } t ? ParseDecimal(t) : 0m,
+                TaxableBase: OptionalText(i, "baseImponible") is { Length: > 0 } b
+                    ? ParseDecimal(b)
+                    : 0m,
+                TaxAmount: ParseDecimal(RequireText(i, "valor"))
+            ))
+            .ToList();
+
         var quantity = ParseDecimal(RequireText(detalle, "cantidad"));
         var unitPrice = ParseDecimal(RequireText(detalle, "precioUnitario"));
         var discount = ParseDecimal(RequireText(detalle, "descuento"));
@@ -212,7 +243,8 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
             TaxCode: taxCode,
             VatPercentage: vatPercentage,
             TaxValue: taxValue,
-            TotalLine: totalLine
+            TotalLine: totalLine,
+            Taxes: taxes
         );
     }
 

@@ -50,6 +50,14 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
     public DateTime? MatchedAt { get; private set; }
     public Guid? MatchedBy { get; private set; }
 
+    /// <summary>
+    /// FLOW-READY-02F.1 — snapshot fiel de todo &lt;impuesto&gt; del XML (IVA/ICE/IRBPNR), incluyendo
+    /// códigos que <see cref="VatCode"/>/<see cref="IceCode"/> no representan (p. ej. IRBPNR). Se
+    /// persiste aquí porque "Crear compra" puede ocurrir mucho después del parseo del XML.
+    /// </summary>
+    private readonly List<PurchaseReceptionLineTax> _taxes = new();
+    public IReadOnlyList<PurchaseReceptionLineTax> Taxes => _taxes.AsReadOnly();
+
     private PurchaseReceptionLine() { }
 
     public static PurchaseReceptionLine Create(
@@ -71,7 +79,9 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
         string? supplierCode = null,
         string? supplierAuxCode = null,
         Guid? itemId = null,
-        ItemMatchStatus matchStatus = ItemMatchStatus.Pending
+        ItemMatchStatus matchStatus = ItemMatchStatus.Pending,
+        IEnumerable<(string TaxCode, string TaxRateCode, decimal Tarifa, decimal TaxableBase, decimal TaxAmount)>? taxes =
+            null
     )
     {
         if (documentId == Guid.Empty)
@@ -101,7 +111,7 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
                 nameof(itemId)
             );
 
-        return new PurchaseReceptionLine
+        var line = new PurchaseReceptionLine
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
@@ -124,6 +134,24 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
             ItemId = itemId,
             MatchStatus = matchStatus,
         };
+
+        if (taxes is not null)
+        {
+            foreach (var t in taxes)
+                line._taxes.Add(
+                    PurchaseReceptionLineTax.Create(
+                        line.Id,
+                        tenantId,
+                        t.TaxCode,
+                        t.TaxRateCode,
+                        t.Tarifa,
+                        t.TaxableBase,
+                        t.TaxAmount
+                    )
+                );
+        }
+
+        return line;
     }
 
     /// <summary>Resolución automática al persistir la línea — solo por código de proveedor exacto, sin intervención del usuario.</summary>

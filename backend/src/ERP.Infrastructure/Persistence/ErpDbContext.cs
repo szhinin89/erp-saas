@@ -222,6 +222,7 @@ public class ErpDbContext : DbContext
     public DbSet<SriIdTypeUsage> SriIdTypeUsages => Set<SriIdTypeUsage>();
     public DbSet<SriVatRate> SriVatRates => Set<SriVatRate>();
     public DbSet<SriIceRate> SriIceRates => Set<SriIceRate>();
+    public DbSet<SriIrbpnrRate> SriIrbpnrRates => Set<SriIrbpnrRate>();
     public DbSet<SriRetentionCode> SriRetentionCodes => Set<SriRetentionCode>();
     public DbSet<SriPaymentMethod> SriPaymentMethods => Set<SriPaymentMethod>();
     public DbSet<SriTaxRegime> SriTaxRegimes => Set<SriTaxRegime>();

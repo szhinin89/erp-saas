@@ -26,7 +26,19 @@ public sealed record PurchaseDraftLineDto(
     string TaxCode,
     decimal VatPercentage,
     decimal TaxValue,
-    decimal TotalLine
+    decimal TotalLine,
+    // FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (IVA/ICE/IRBPNR), para que la vista
+    // previa "Producto recibido (XML)" del formulario de compra pueda mostrarlos sin adivinar.
+    List<PurchaseDraftLineTaxDto> Taxes
+);
+
+/// <summary>FLOW-READY-02F.1 — un impuesto crudo del XML, tal como quedó en <c>PurchaseReceptionLineTax</c>.</summary>
+public sealed record PurchaseDraftLineTaxDto(
+    string TaxCode,
+    string TaxRateCode,
+    decimal Tarifa,
+    decimal TaxableBase,
+    decimal TaxAmount
 );
 
 /// <summary>

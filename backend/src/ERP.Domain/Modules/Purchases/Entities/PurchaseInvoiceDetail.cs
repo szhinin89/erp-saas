@@ -1,4 +1,6 @@
 using ERP.Domain.Common;
+using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
@@ -60,6 +62,29 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public decimal IceAmount { get; private set; }
     public string? SnapshotIceName { get; private set; }
 
+    /// <summary>
+    /// FLOW-READY-02F.1 — cómo se obtuvo <see cref="IceAmount"/>: <c>Percentage</c> (default,
+    /// comportamiento histórico) recalcula siempre <c>TaxableBase * IceRate / 100</c>;
+    /// <c>Specific</c> (p. ej. ICE código 3053, bebidas azucaradas) fija <see cref="IceAmount"/> al
+    /// monto exacto del XML y nunca lo recalcula desde una tarifa porcentual.
+    /// </summary>
+    public SriTaxCalculationType IceCalculationType { get; private set; } =
+        SriTaxCalculationType.Percentage;
+
+    // ── Impuestos por línea (FLOW-READY-02F.1) — snapshot fiel del XML, incluye IVA/ICE/IRBPNR ──
+    private readonly List<PurchaseInvoiceDetailTax> _taxes = new();
+    public IReadOnlyList<PurchaseInvoiceDetailTax> Taxes => _taxes.AsReadOnly();
+
+    private const string IrbpnrSriTaxCode = "5";
+
+    /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
+    public string? IrbpnrCode =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxRateCode;
+    public decimal? IrbpnrRate => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate;
+    public string? SnapshotIrbpnrName =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxName;
+    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+
     // ── Warehouse (logistic reference) ──────────────────────────────────
     public Guid? WarehouseId { get; private set; }
     public string? SnapshotWarehouseCode { get; private set; }
@@ -96,7 +121,10 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         );
     public decimal TaxInclusiveTotal =>
         Math.Round(
-            TaxableBase + IceAmount + VatAmount,
+            // FLOW-READY-02F.2 — IRBPNR forma parte del valor real del XML y de la cuenta por
+            // pagar al proveedor: se incluye aquí, propagando automáticamente a GrandTotal/
+            // ConfirmedGrandTotal/PurchasePayable sin tocar esos call sites.
+            TaxableBase + IceAmount + VatAmount + IrbpnrAmount,
             FiscalPrecision.TaxAmount,
             MidpointRounding.AwayFromZero
         );
@@ -197,7 +225,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         string? vatName,
         string? iceCode,
         decimal iceRate,
-        string? iceName
+        string? iceName,
+        SriTaxCalculationType iceCalculationType = SriTaxCalculationType.Percentage,
+        decimal? iceExactAmount = null
     )
     {
         EnsureNotFrozen();
@@ -214,7 +244,26 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         IceCode = OptionalCode.Normalize(iceCode);
         IceRate = iceRate;
         SnapshotIceName = iceName?.Trim();
+        IceCalculationType = iceCalculationType;
+        // ICE "específico" (p. ej. código 3053) no se recalcula desde una tarifa porcentual — se fija
+        // aquí al monto exacto del XML; RecalcTaxes lo preserva y solo recalcula VatAmount sobre él.
+        if (iceCalculationType == SriTaxCalculationType.Specific)
+            IceAmount = iceExactAmount ?? 0m;
         RecalcTaxes();
+    }
+
+    /// <summary>
+    /// FLOW-READY-02F.1 — reemplaza el detalle fiel de impuestos de la línea (IVA/ICE/IRBPNR, tal
+    /// como vinieron en el XML). Aditivo: no toca los campos escalares legacy (VatCode/VatRate/
+    /// VatAmount, IceCode/IceRate/IceAmount) — esos siguen actualizándose únicamente vía
+    /// <see cref="ApplyTaxes"/>. Se llama junto con <see cref="ApplyTaxes"/> al crear/actualizar una
+    /// línea desde Recepción Electrónica.
+    /// </summary>
+    public void ReplaceTaxes(IEnumerable<PurchaseInvoiceDetailTax> taxes)
+    {
+        EnsureNotFrozen();
+        _taxes.Clear();
+        _taxes.AddRange(taxes);
     }
 
     // ── Discount ────────────────────────────────────────────────────────
@@ -296,11 +345,31 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
 
     private void RecalcTaxes()
     {
-        (IceAmount, VatAmount, _) = SriTaxCalculator.Compute(
-            TaxableBase,
-            VatRate,
-            !string.IsNullOrWhiteSpace(IceCode) ? IceRate : 0m
-        );
+        if (IceCalculationType == SriTaxCalculationType.Specific)
+        {
+            // IceAmount ya quedó fijado en ApplyTaxes al monto exacto del XML — un impuesto
+            // específico (p. ej. ICE código 3053, USD por cada 100g de azúcar) no es proporcional a
+            // la base imponible ni al descuento, así que nunca se recalcula aquí. Solo se recalcula
+            // VatAmount, incluyendo ese ICE ya fijo en la base del IVA (regla SRI: IVA se calcula
+            // sobre base + ICE, sin importar cómo se determinó el ICE).
+            var vatBase = TaxableBase + IceAmount;
+            VatAmount =
+                VatRate > 0
+                    ? Math.Round(
+                        vatBase * VatRate / 100m,
+                        FiscalPrecision.TaxAmount,
+                        MidpointRounding.AwayFromZero
+                    )
+                    : 0m;
+        }
+        else
+        {
+            (IceAmount, VatAmount, _) = SriTaxCalculator.Compute(
+                TaxableBase,
+                VatRate,
+                !string.IsNullOrWhiteSpace(IceCode) ? IceRate : 0m
+            );
+        }
     }
 
     private void RecalcCosts()

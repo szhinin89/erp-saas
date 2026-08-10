@@ -5,7 +5,11 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentValidation;
 using MediatR;
 
@@ -47,6 +51,27 @@ file static class SupplierCodeResolver
             return null;
 
         return await itemRepo.GetSupplierCodeAsync(itemId, supplierId.Value, tenantId, ct);
+    }
+}
+
+/// <summary>
+/// FLOW-READY-02F.1 — carga las taxes crudas capturadas del XML para una línea de Recepción
+/// Electrónica ya persistida. El cliente solo envía <c>PurchaseReceptionLineId</c> — el detalle
+/// tributario siempre se lee del servidor, nunca del body (mismo principio que
+/// <see cref="SupplierCodeResolver"/>).
+/// </summary>
+file static class ReceptionTaxLookup
+{
+    public static async Task<IReadOnlyList<PurchaseReceptionLineTax>> LoadAsync(
+        IPurchaseReceptionDocumentRepository receptionRepo,
+        Guid tenantId,
+        Guid purchaseReceptionLineId,
+        CancellationToken ct
+    )
+    {
+        var doc = await receptionRepo.GetByLineIdAsync(tenantId, purchaseReceptionLineId, ct);
+        var line = doc?.Lines.FirstOrDefault(l => l.Id == purchaseReceptionLineId);
+        return line?.Taxes ?? Array.Empty<PurchaseReceptionLineTax>();
     }
 }
 
@@ -233,6 +258,7 @@ public sealed class CreatePurchaseDraftHandler
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
+    private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -246,6 +272,7 @@ public sealed class CreatePurchaseDraftHandler
         IItemRepository itemRepo,
         IWarehouseRepository whRepo,
         ISriTaxResolver tax,
+        IPurchaseReceptionDocumentRepository receptionRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -259,6 +286,7 @@ public sealed class CreatePurchaseDraftHandler
         _itemRepo = itemRepo;
         _whRepo = whRepo;
         _tax = tax;
+        _receptionRepo = receptionRepo;
         _t = t;
         _c = c;
         _b = b;
@@ -425,12 +453,39 @@ public sealed class CreatePurchaseDraftHandler
                 purchaseReceptionLineId: l.PurchaseReceptionLineId
             );
 
-            var taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+            var taxResult = await ResolveLineTaxesAsync(line, l.PurchaseReceptionLineId, tid, ct);
             if (taxResult is not null)
                 return new(null!, taxResult);
             lines.Add(line);
         }
         return new(lines, null);
+    }
+
+    /// <summary>
+    /// FLOW-READY-02F.1 — si la línea viene de Recepción Electrónica Y esa recepción capturó taxes
+    /// genéricas (esta fase en adelante), se resuelve IVA/ICE/IRBPNR fiel al XML. En cualquier otro
+    /// caso (línea manual, o recepción de antes de esta fase sin taxes capturadas) se mantiene el
+    /// comportamiento histórico exacto (<see cref="TaxHelper.ResolveTaxesAsync"/>).
+    /// </summary>
+    private async Task<Result<PurchaseInvoiceDto>?> ResolveLineTaxesAsync(
+        PurchaseInvoiceDetail line,
+        Guid? purchaseReceptionLineId,
+        Guid tenantId,
+        CancellationToken ct
+    )
+    {
+        if (purchaseReceptionLineId.HasValue)
+        {
+            var receptionTaxes = await ReceptionTaxLookup.LoadAsync(
+                _receptionRepo,
+                tenantId,
+                purchaseReceptionLineId.Value,
+                ct
+            );
+            if (receptionTaxes.Count > 0)
+                return await ReceptionTaxHelper.ApplyReceptionTaxesAsync(line, receptionTaxes, _tax, ct);
+        }
+        return await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
     }
 
     private sealed record LinesBuildResult(
@@ -449,6 +504,7 @@ public sealed class UpdatePurchaseDraftHandler
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
+    private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
@@ -460,6 +516,7 @@ public sealed class UpdatePurchaseDraftHandler
         IItemRepository itemRepo,
         IWarehouseRepository whRepo,
         ISriTaxResolver tax,
+        IPurchaseReceptionDocumentRepository receptionRepo,
         ICurrentTenant t,
         ICurrentUser u
     )
@@ -471,6 +528,7 @@ public sealed class UpdatePurchaseDraftHandler
         _itemRepo = itemRepo;
         _whRepo = whRepo;
         _tax = tax;
+        _receptionRepo = receptionRepo;
         _t = t;
         _u = u;
     }
@@ -621,7 +679,29 @@ public sealed class UpdatePurchaseDraftHandler
                     purchaseReceptionLineId: l.PurchaseReceptionLineId
                 );
 
-                var taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+                Result<PurchaseInvoiceDto>? taxResult = null;
+                if (l.PurchaseReceptionLineId.HasValue)
+                {
+                    var receptionTaxes = await ReceptionTaxLookup.LoadAsync(
+                        _receptionRepo,
+                        _t.TenantId,
+                        l.PurchaseReceptionLineId.Value,
+                        ct
+                    );
+                    if (receptionTaxes.Count > 0)
+                        taxResult = await ReceptionTaxHelper.ApplyReceptionTaxesAsync(
+                            line,
+                            receptionTaxes,
+                            _tax,
+                            ct
+                        );
+                    else
+                        taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+                }
+                else
+                {
+                    taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+                }
                 if (taxResult is not null)
                     return taxResult;
                 lines.Add(line);
@@ -676,6 +756,131 @@ file static class TaxHelper
             iceRate,
             iceName
         );
+        return null;
+    }
+}
+
+/// <summary>
+/// FLOW-READY-02F.1 — resuelve el detalle fiel de impuestos (IVA/ICE/IRBPNR, y cualquier código
+/// SRI no reconocido) capturado desde el XML de Recepción Electrónica, contra los catálogos SRI
+/// globales. Solo se usa cuando la línea viene de Recepción y esa línea sí tiene taxes capturadas
+/// (<see cref="ReceptionTaxLookup"/>) — si no, el caller cae de vuelta a
+/// <see cref="TaxHelper.ResolveTaxesAsync"/> (líneas manuales o recepciones anteriores a esta fase).
+/// </summary>
+file static class ReceptionTaxHelper
+{
+    private const string SriVatTaxCode = "2";
+    private const string SriIceTaxCode = "3";
+    private const string SriIrbpnrTaxCode = "5";
+
+    public static async Task<Result<PurchaseInvoiceDto>?> ApplyReceptionTaxesAsync(
+        PurchaseInvoiceDetail line,
+        IReadOnlyList<PurchaseReceptionLineTax> receptionTaxes,
+        ISriTaxResolver tax,
+        CancellationToken ct
+    )
+    {
+        var built = new List<PurchaseInvoiceDetailTax>();
+
+        string? vatCode = null;
+        decimal vatRate = 0;
+        string? vatName = null;
+
+        string? iceCode = null;
+        decimal iceRate = 0;
+        string? iceName = null;
+        var iceCalcType = SriTaxCalculationType.Percentage;
+        decimal? iceExactAmount = null;
+
+        foreach (var t in receptionTaxes)
+        {
+            var label = t.TaxCode switch
+            {
+                SriVatTaxCode => "IVA",
+                SriIceTaxCode => "ICE",
+                SriIrbpnrTaxCode => "IRBPNR",
+                _ => null,
+            };
+
+            if (label is null)
+            {
+                // Código SRI no reconocido — nunca se descarta (regla: no borrar impuestos
+                // desconocidos), pero tampoco se inventa una tarifa: se persiste tal como vino.
+                built.Add(
+                    PurchaseInvoiceDetailTax.Create(
+                        line.Id,
+                        line.TenantId,
+                        t.TaxCode,
+                        t.TaxRateCode,
+                        $"Impuesto SRI (código {t.TaxCode})",
+                        null,
+                        SriTaxCalculationType.Percentage,
+                        t.TaxableBase,
+                        t.TaxAmount,
+                        PurchaseTaxSource.Xml
+                    )
+                );
+                continue;
+            }
+
+            var entry =
+                t.TaxCode == SriVatTaxCode ? await tax.GetVatCatalogEntryAsync(t.TaxRateCode, ct)
+                : t.TaxCode == SriIceTaxCode ? await tax.GetIceCatalogEntryAsync(t.TaxRateCode, ct)
+                : await tax.GetIrbpnrCatalogEntryAsync(t.TaxRateCode, ct);
+
+            if (entry is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"El XML contiene impuesto {label} {t.TaxRateCode}, pero ese código no está "
+                        + "cargado o activo en el catálogo SRI global."
+                );
+
+            built.Add(
+                PurchaseInvoiceDetailTax.Create(
+                    line.Id,
+                    line.TenantId,
+                    t.TaxCode,
+                    t.TaxRateCode,
+                    entry.Name,
+                    entry.Percentage ?? entry.UnitValue,
+                    entry.CalculationType,
+                    t.TaxableBase,
+                    t.TaxAmount,
+                    PurchaseTaxSource.Xml
+                )
+            );
+
+            switch (t.TaxCode)
+            {
+                case SriVatTaxCode:
+                    vatCode = t.TaxRateCode;
+                    vatRate = entry.Percentage ?? 0m;
+                    vatName = entry.Name;
+                    break;
+                case SriIceTaxCode:
+                    iceCode = t.TaxRateCode;
+                    iceName = entry.Name;
+                    iceCalcType = entry.CalculationType;
+                    if (entry.CalculationType == SriTaxCalculationType.Specific)
+                    {
+                        iceExactAmount = t.TaxAmount;
+                        iceRate = 0m;
+                    }
+                    else
+                    {
+                        iceRate = entry.Percentage ?? 0m;
+                    }
+                    break;
+                // IRBPNR no tiene campos escalares legacy — solo vive en la colección Taxes.
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(vatCode))
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "La línea no tiene impuesto IVA — no se puede resolver."
+            );
+
+        line.ApplyTaxes(vatCode, vatRate, vatName, iceCode, iceRate, iceName, iceCalcType, iceExactAmount);
+        line.ReplaceTaxes(built);
         return null;
     }
 }

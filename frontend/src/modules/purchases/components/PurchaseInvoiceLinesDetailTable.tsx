@@ -51,6 +51,9 @@ export function PurchaseInvoiceLinesDetailTable({ lines }: Readonly<Props>) {
               {t("purchases.creditNote.invoiceLines.ice", "ICE")}
             </th>
             <th className="zh-text-align-right">
+              {t("purchases.creditNote.invoiceLines.irbpnr", "IRBPNR")}
+            </th>
+            <th className="zh-text-align-right">
               {t("purchases.creditNote.invoiceLines.total", "Total")}
             </th>
             <th>{t("purchases.creditNote.invoiceLines.warehouse", "Bodega")}</th>
@@ -73,6 +76,7 @@ export function PurchaseInvoiceLinesDetailTable({ lines }: Readonly<Props>) {
               <td className="zh-table-cell--num">{formatMoney(line.taxableBase)}</td>
               <td className="zh-table-cell--num">{formatMoney(line.vatAmount)}</td>
               <td className="zh-table-cell--num">{formatMoney(line.iceAmount)}</td>
+              <td className="zh-table-cell--num">{formatMoney(line.irbpnrAmount)}</td>
               <td className="zh-table-cell--num">{formatMoney(line.taxInclusiveTotal)}</td>
               <td className="pcn-lines-table__meta">
                 {line.snapshotWarehouseCode ?? "—"}

@@ -988,6 +988,10 @@ function PurchaseLineCard({
   const localTax = calcLineTax(l, ctx.vatRatesMap, ctx.iceRatesMap);
   const vatAmt = editLine?.vatAmount ?? localTax.vat;
   const iceAmt = editLine?.iceAmount ?? localTax.ice;
+  // FLOW-READY-02F.1 — IRBPNR solo existe una vez persistido desde el XML (no hay cálculo local
+  // por tarifas, a diferencia de IVA/ICE); nunca se suma al total de línea (ver ConfirmPurchase:
+  // no forma parte de TaxInclusiveTotal mientras no exista soporte contable verificado).
+  const irbpnrAmt = editLine?.irbpnrAmount ?? 0;
   const total = editLine
     ? (editLine.totalLineCost ?? sub) + editLine.vatAmount + editLine.iceAmount
     : sub + localTax.vat + localTax.ice;
@@ -1164,6 +1168,11 @@ function PurchaseLineCard({
           <div className="pdl-line__tax-ice">
             ICE: $ {formatMoney(iceAmt, getDecimalConfig().totalAmount)}
           </div>
+          {irbpnrAmt > 0 && (
+            <div className="pdl-line__tax-ice">
+              IRBPNR: $ {formatMoney(irbpnrAmt, getDecimalConfig().totalAmount)}
+            </div>
+          )}
         </div>
         <div className="pdl-line__total">
           $ {formatMoney(total, getDecimalConfig().totalAmount)}
@@ -2242,6 +2251,22 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             )}
           </span>
         </div>
+        {!!ctx.editing?.totalIrbpnr && (
+          <div className="pf-totals__row">
+            <span className="pf-totals__label">
+              IRBPNR{" "}
+              <span className="pf-totals__value--warning" title="Informativo — no incluido en el Gran Total mientras no exista soporte contable.">
+                (i)
+              </span>
+            </span>
+            <span className="pf-totals__value">
+              {formatMoneyWithSymbol(
+                ctx.editing.totalIrbpnr,
+                getDecimalConfig().totalAmount,
+              )}
+            </span>
+          </div>
+        )}
         <div className="pf-totals__row">
           <span className="pf-totals__label">Flete</span>
           <span className="pf-totals__value">

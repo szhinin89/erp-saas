@@ -22,6 +22,13 @@ public sealed class PurchaseInvoiceConfirmedEvent : BaseDomainEvent, IAuditEvent
     public decimal TotalIce { get; }
     public decimal TotalDiscount { get; }
 
+    /// <summary>
+    /// FLOW-READY-02F.2 — IRBPNR (impuesto SRI código "5"). Opcional, agregado al final del
+    /// constructor para no romper ningún call site existente (aditivo, mismo criterio que el resto
+    /// de campos de este evento).
+    /// </summary>
+    public decimal TotalIrbpnr { get; }
+
     public PurchaseInvoiceConfirmedEvent(
         Guid tenantId,
         Guid invoiceId,
@@ -33,7 +40,8 @@ public sealed class PurchaseInvoiceConfirmedEvent : BaseDomainEvent, IAuditEvent
         decimal subtotal,
         decimal totalVat,
         decimal totalIce,
-        decimal totalDiscount
+        decimal totalDiscount,
+        decimal totalIrbpnr = 0m
     )
     {
         TenantId = tenantId;
@@ -47,6 +55,7 @@ public sealed class PurchaseInvoiceConfirmedEvent : BaseDomainEvent, IAuditEvent
         TotalVat = totalVat;
         TotalIce = totalIce;
         TotalDiscount = totalDiscount;
+        TotalIrbpnr = totalIrbpnr;
     }
 
     Guid IAuditEvent.EntityId => InvoiceId;

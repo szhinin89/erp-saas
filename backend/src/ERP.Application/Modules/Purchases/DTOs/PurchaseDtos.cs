@@ -35,6 +35,9 @@ public sealed record PurchaseInvoiceDto(
     decimal TotalFreight,
     decimal TotalOtherCosts,
     decimal GrandTotal,
+    // FLOW-READY-02F.1 — informativo, NUNCA incluido en GrandTotal (ver ConfirmPurchaseHandler,
+    // guard que bloquea Confirm mientras no exista soporte contable verificado para IRBPNR).
+    decimal TotalIrbpnr,
     IReadOnlyList<PurchaseInvoiceDetailDto> Lines,
     IReadOnlyList<PurchasePaymentScheduleDto> PaymentSchedules,
     string? CancelReason,
@@ -85,6 +88,13 @@ public sealed record PurchaseInvoiceDetailDto(
     decimal IceRate,
     decimal IceAmount,
     string? SnapshotIceName,
+    // ── IRBPNR (FLOW-READY-02F.1 — sin campos escalares legacy: derivado de Taxes) ───
+    string? IrbpnrCode,
+    decimal? IrbpnrRate,
+    decimal IrbpnrAmount,
+    string? SnapshotIrbpnrName,
+    // ── Detalle fiel de impuestos del XML (IVA/ICE/IRBPNR, FLOW-READY-02F.1) ─────────
+    IReadOnlyList<PurchaseInvoiceDetailTaxDto> Taxes,
     // ── Total ───────────────────────────────────────────────────────
     decimal TaxInclusiveTotal,
     // ── Analytic ────────────────────────────────────────────────────
@@ -100,6 +110,18 @@ public sealed record PurchaseInvoiceDetailDto(
     // ── Meta ────────────────────────────────────────────────────────
     string? Notes,
     short SortOrder
+);
+
+/// <summary>FLOW-READY-02F.1 — snapshot fiel de un &lt;impuesto&gt; del XML (IVA/ICE/IRBPNR).</summary>
+public sealed record PurchaseInvoiceDetailTaxDto(
+    string TaxCode,
+    string TaxRateCode,
+    string TaxName,
+    decimal? Rate,
+    string CalculationType,
+    decimal TaxableBase,
+    decimal TaxAmount,
+    string Source
 );
 
 public sealed record PurchaseListDto(

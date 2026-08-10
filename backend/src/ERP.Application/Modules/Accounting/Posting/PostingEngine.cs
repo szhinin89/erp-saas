@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.Posting;
@@ -19,6 +20,7 @@ namespace ERP.Application.Modules.Accounting.Posting;
 public sealed class PostingEngine : IPostingEngine
 {
     private readonly PostingPipeline _pipeline;
+    private readonly IPostingRuleRepository _postingRuleRepository;
 
     public PostingEngine(
         IJournalEntryRepository journalEntryRepository,
@@ -27,6 +29,7 @@ public sealed class PostingEngine : IPostingEngine
         IJournalEntrySequenceRepository journalEntrySequenceRepository
     )
     {
+        _postingRuleRepository = postingRuleRepository;
         _pipeline = new PostingPipeline(
             new PostingIdempotencyGuard(journalEntryRepository),
             new PostingRuleResolver(postingRuleRepository),
@@ -43,4 +46,23 @@ public sealed class PostingEngine : IPostingEngine
         PostingFact fact,
         CancellationToken cancellationToken = default
     ) => _pipeline.ExecuteAsync(fact, cancellationToken);
+
+    public async Task<bool> IsAmountKindConfiguredAsync(
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        string factType,
+        PostingAmountKind amountKind,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var rule = await _postingRuleRepository.FindByKeyAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            factType,
+            cancellationToken
+        );
+        return rule is { IsActive: true } && rule.Lines.Any(l => l.AmountKind == amountKind);
+    }
 }

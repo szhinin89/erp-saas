@@ -86,6 +86,9 @@ public sealed class PurchaseInvoice
     public decimal TotalDiscount => ConfirmedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
     public decimal TotalIce => _lines.Sum(l => l.IceAmount);
     public decimal TotalVat => _lines.Sum(l => l.VatAmount);
+
+    /// <summary>FLOW-READY-02F.2 — informativo pero YA incluido en GrandTotal (vía TaxInclusiveTotal).</summary>
+    public decimal TotalIrbpnr => _lines.Sum(l => l.IrbpnrAmount);
     public decimal TotalTax => TotalIce + TotalVat;
     public decimal TotalFreight => _lines.Sum(l => l.FreightAllocated);
     public decimal TotalOtherCosts => _lines.Sum(l => l.OtherCostsAllocated);
@@ -423,7 +426,8 @@ public sealed class PurchaseInvoice
                 Subtotal,
                 TotalVat,
                 TotalIce,
-                TotalDiscount
+                TotalDiscount,
+                TotalIrbpnr
             )
         );
     }
@@ -640,18 +644,33 @@ public sealed class PurchaseInvoice
     {
         _taxSummaries.Clear();
 
-        var groups = _lines.GroupBy(l => (l.VatCode, l.VatRate, l.IceCode, l.IceRate));
+        // FLOW-READY-02F.1 — clave de agrupación extendida con IRBPNR (IrbpnrCode/IrbpnrRate). Para
+        // facturas sin IRBPNR esa dimensión es constante (null/0) en todas las líneas, así que el
+        // agrupamiento por (VatCode, VatRate, IceCode, IceRate) queda idéntico al comportamiento
+        // anterior — no se colapsan ni se dividen grupos existentes.
+        var groups = _lines.GroupBy(l => (
+            l.VatCode,
+            l.VatRate,
+            l.IceCode,
+            l.IceRate,
+            l.IrbpnrCode,
+            IrbpnrRate: l.IrbpnrRate ?? 0m
+        ));
         foreach (var group in groups)
         {
-            var (vatCode, vatRate, iceCode, iceRate) = group.Key;
+            var (vatCode, vatRate, iceCode, iceRate, irbpnrCode, irbpnrRate) = group.Key;
             var taxableBase = group.Sum(l => l.TaxableBase);
             var iceAmount = group.Sum(l => l.IceAmount);
             var vatAmount = group.Sum(l => l.VatAmount);
+            var irbpnrAmount = group.Sum(l => l.IrbpnrAmount);
             var vatName = group
                 .Select(l => l.SnapshotVatName)
                 .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
             var iceName = group
                 .Select(l => l.SnapshotIceName)
+                .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+            var irbpnrName = group
+                .Select(l => l.SnapshotIrbpnrName)
                 .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
 
             _taxSummaries.Add(
@@ -668,7 +687,11 @@ public sealed class PurchaseInvoice
                     iceName,
                     taxableBase,
                     iceAmount,
-                    vatAmount
+                    vatAmount,
+                    irbpnrCode,
+                    irbpnrRate,
+                    irbpnrName,
+                    irbpnrAmount
                 )
             );
         }

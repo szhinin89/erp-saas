@@ -73,9 +73,13 @@ public sealed class GetPurchaseInvoiceTaxSummariesHandler
                     s.IceCode,
                     s.IceRate,
                     s.IceName,
+                    s.IrbpnrCode,
+                    s.IrbpnrRate,
+                    s.IrbpnrName,
                     s.TaxableBase,
                     s.IceAmount,
                     s.VatAmount,
+                    s.IrbpnrAmount,
                     s.TotalAmount,
                     credited,
                     s.TaxableBase - credited

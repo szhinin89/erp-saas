@@ -1,6 +1,8 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -30,6 +32,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IStockRepository _stockRepo;
     private readonly IItemRepository _itemRepo;
     private readonly ISriTaxResolver _tax;
+    private readonly IPostingEngine _postingEngine;
     private readonly ILogger<ConfirmPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -40,6 +43,7 @@ public sealed class ConfirmPurchaseHandler
         IStockRepository stockRepo,
         IItemRepository itemRepo,
         ISriTaxResolver tax,
+        IPostingEngine postingEngine,
         ILogger<ConfirmPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -50,6 +54,7 @@ public sealed class ConfirmPurchaseHandler
         _stockRepo = stockRepo;
         _itemRepo = itemRepo;
         _tax = tax;
+        _postingEngine = postingEngine;
         _logger = logger;
         _t = t;
         _c = c;
@@ -72,6 +77,31 @@ public sealed class ConfirmPurchaseHandler
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");
 
+        // ── STEP 0: Guard IRBPNR (FLOW-READY-02F.2) ──────────────────────
+        // El posting nunca revierte una confirmación ya persistida (ver PurchaseInvoiceConfirmedPostingTranslator
+        // — un Result fallido de IPostingEngine.PostAsync solo se registra en log, jamás lanza) — por
+        // eso la única forma confiable de exigir configuración contable es esta precondición, antes
+        // de inv.Confirm()/SaveChanges. GrandTotal/PurchasePayable/el evento SÍ incluyen IRBPNR desde
+        // esta fase, así que confirmar sin una PostingRuleLine para TaxIrbpnr generaría un asiento
+        // descuadrado (línea de crédito GrandTotal sin su contrapartida de débito) — se bloquea.
+        if (inv.Lines.Any(l => l.IrbpnrAmount > 0))
+        {
+            var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
+                tid,
+                cid,
+                "Purchases",
+                "InvoiceReceived",
+                PostingAmountKind.TaxIrbpnr,
+                ct
+            );
+            if (!irbpnrConfigured)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "Esta compra contiene IRBPNR (impuesto código 5), pero no existe una regla de "
+                        + "contabilización (PostingRuleLine) configurada para IRBPNR en Compras. "
+                        + "Configure la cuenta contable correspondiente antes de confirmar."
+                );
+        }
+
         // ── STEP 1: Recalcular impuestos con nombres ────────────────────
         foreach (var line in inv.Lines)
         {
@@ -83,15 +113,31 @@ public sealed class ConfirmPurchaseHandler
 
             decimal iceRate = 0;
             string? iceName = null;
+            var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+            decimal? iceExactAmount = null;
             if (!string.IsNullOrWhiteSpace(line.IceCode))
             {
-                var iceResult = await _tax.GetIceRateWithNameAsync(line.IceCode, ct);
-                if (iceResult is null)
+                // FLOW-READY-02F.1 — usa el catálogo completo (no el legacy GetIceRateWithNameAsync,
+                // que exige Percentage y por eso nunca resuelve ICE "específico" como el código 3053)
+                // para poder re-resolver también líneas con ICE de monto fijo sin romper Confirm.
+                var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
+                if (iceEntry is null)
                     return Result<PurchaseInvoiceDto>.ValidationFailure(
                         $"Código ICE '{line.IceCode}' no encontrado."
                     );
-                iceRate = iceResult.Rate;
-                iceName = iceResult.Name;
+                iceName = iceEntry.Name;
+                iceCalculationType = iceEntry.CalculationType;
+                if (iceEntry.CalculationType
+                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
+                {
+                    // El monto ya fue fijado al valor exacto del XML al crear/actualizar el borrador
+                    // — Confirm lo preserva, nunca lo recalcula desde una tarifa porcentual.
+                    iceExactAmount = line.IceAmount;
+                }
+                else
+                {
+                    iceRate = iceEntry.Percentage ?? 0m;
+                }
             }
             line.ApplyTaxes(
                 line.VatCode,
@@ -99,7 +145,9 @@ public sealed class ConfirmPurchaseHandler
                 vatResult.Name,
                 line.IceCode,
                 iceRate,
-                iceName
+                iceName,
+                iceCalculationType,
+                iceExactAmount
             );
         }
         inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, uid);

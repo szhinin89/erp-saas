@@ -24,4 +24,8 @@ public enum PostingAmountKind
     CostVarianceDebit,
     CostVarianceCredit,
     HistoricalCost,
+
+    // FLOW-READY-02F.2 — IRBPNR (impuesto SRI código "5", Compras). Mismo criterio aditivo: se
+    // agrega al final, nunca reasigna los valores existentes.
+    TaxIrbpnr,
 }
