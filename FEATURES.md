@@ -8,11 +8,11 @@
 |---------|-------------|-------|
 | Auth & acceso | `/login`, `/api/auth/*`, `/api/me` | JWT + refresh rotation, RBAC |
 | Master data — Business Partners (Customer/Supplier) | `/api/master/business-partners*` | BP V2, roles Customer/Supplier — FROZEN (ver `STATUS.md`) |
-| Catálogo / Ítems | `/api/v1/catalog/*`, `/api/v1/items/*` | 14 entidades, 56 endpoints, CRUD completo, variantes, atributos, SRI lookups. FROZEN v2.0 (rediseño flujo de creación, 2026-07-02) + auditoría por fases 1-9 (2026-07-02) |
+| Catálogo / Ítems | `/api/v1/catalog/*`, `/api/v1/items/*` | 14 entidades, 56 endpoints, CRUD completo, variantes, atributos, SRI lookups. Empaques con presentación base obligatoria para inventariables, validación de factor, bloqueo de empaques usados y advertencias visuales sin inferencia automática. FROZEN v2.0 (rediseño flujo de creación, 2026-07-02) + auditoría por fases 1-9 (2026-07-02) |
 | Motor de Pricing v2 | — (consumido internamente vía `IPricingResolver`) | `Item.BaseSalePrice` SSOT + `PricingRule` (reemplaza `ItemPrice`) + `PriceList` con regla general opcional. CLOSED (ADR-021, 2026-07-05) — ver `STATUS.md` |
 | Tipos de Ítem | `/api/v1/item-types`, `/inventory/item-types` | Catálogo tenant-editable (reemplaza enum fijo); `items.item_type_id` FK por Guid; sin flags de comportamiento. FROZEN |
 | Inventario | `/api/inventory/*` (categorías, líneas, tipos, marcas, tarifas) | Company isolation FROZEN |
-| Compras | `Modules/Purchases` | |
+| Compras | `Modules/Purchases` | Compra XML con checklist previo a confirmación, bloqueo fail-closed de líneas inventariables sin presentación, asociación proveedor+código+presentación y alerta de costo base extremo contra último/promedio. |
 | Ventas | `/api/v1/sales/*`, `/sales` | SalesInvoice + Detail; Draft→Authorize→Cancel; snapshot fiscal IVA/ICE; DocumentSequence SRI; facturación electrónica. FROZEN |
 | Devolución de Ventas (SalesReturn) + Nota de Crédito SRI | `/api/v1/sales/returns*`, `/sales/returns` | Devolución parcial/total sobre factura autorizada; Draft→Update→Cancel→Authorize; control de remanente bajo concurrencia (advisory lock); reversión de inventario; reembolso explícito Efectivo/Crédito CxC/mixto; asiento contable automático (ADR-026); Entity Audit; Nota de Crédito electrónica SRI V1.1.0 + RIDE (ADR-031). **P0-01 — COMPLETED/CLOSED (2026-07-31)**, ver `STATUS.md` |
 | Configuración / SRI | `/api/settings/*`, catálogos SRI | Sucursales, geografía, parámetros |

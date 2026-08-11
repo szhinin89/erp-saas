@@ -115,6 +115,7 @@ public sealed class GetPurchaseItemContextQueryHandler
                 ShortName = item.Code.ShortName,
                 Description = item.Code.Description,
                 BaseUomCode = item.DefaultUomCode,
+                TracksStock = item.StockConfig.TracksStock,
                 PackagingLevels = item
                     .PackagingLevels.Where(p => p.IsActive)
                     .OrderBy(p => p.Level)

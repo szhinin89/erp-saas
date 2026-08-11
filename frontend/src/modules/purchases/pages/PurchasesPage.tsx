@@ -54,6 +54,13 @@ export function PurchasesPage() {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const openedFromParam = useRef(false);
+  const xmlConfirmChecklist = buildXmlConfirmChecklist(
+    ctx.lines,
+    ctx.editing?.lines ?? [],
+    ctx.vatRatesMap,
+    ctx.iceRatesMap,
+    t,
+  );
 
   // Entrada cruzada desde el Kardex ("Ver documento origen"): abre la factura referida.
   // Entrada cruzada desde Recepción Electrónica ("Crear compra"): precarga un borrador desde el XML.
@@ -915,9 +922,9 @@ export function PurchasesPage() {
       <ZHConfirmModal
         open={ctx.modalConfirm}
         variant="warning"
-        title="Confirmar Compra"
-        message="Esta acción generará movimientos de inventario y cuentas por pagar. No se puede revertir."
-        confirmLabel="Confirmar"
+        title={t("purchases.confirm.title", "Confirmar compra")}
+        message={<XmlConfirmChecklist summary={xmlConfirmChecklist} />}
+        confirmLabel={t("common.confirm", "Confirmar")}
         onCancel={() => ctx.setModalConfirm(false)}
         onConfirm={ctx.handleConfirm}
       />
@@ -972,6 +979,242 @@ const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
 };
 
 type PurchaseLineDraft = PurchaseLineFormValues;
+type TFunction = ReturnType<typeof useI18n>["t"];
+type ChecklistTone = "success" | "warning" | "danger" | "neutral";
+type XmlConfirmChecklistSummary = {
+  hasXmlPurchase: boolean;
+  blockerCount: number;
+  items: {
+    key: string;
+    label: string;
+    detail: string;
+    tone: ChecklistTone;
+    icon: string;
+  }[];
+};
+
+function buildXmlConfirmChecklist(
+  lines: PurchaseLineDraft[],
+  persistedLines: NonNullable<ReturnType<typeof usePurchasesPage>["editing"]>["lines"],
+  vatRatesMap: Record<string, number>,
+  iceRatesMap: Record<string, number>,
+  t: TFunction,
+): XmlConfirmChecklistSummary {
+  const xmlLines = lines.filter((line) => line.purchaseReceptionLineId);
+  const persistedByReceptionLine = new Map(
+    persistedLines
+      .filter((line) => line.purchaseReceptionLineId)
+      .map((line) => [line.purchaseReceptionLineId, line]),
+  );
+  const linkedItems = xmlLines.filter((line) => !!line.itemId).length;
+  const missingItems = xmlLines.length - linkedItems;
+  const linesWithoutPresentation = xmlLines.filter(
+    (line) => line.itemId && !line.packagingLevelId,
+  );
+  const stockLinesWithoutPresentation = linesWithoutPresentation.filter(
+    (line) => line.context?.tracksStock === true,
+  );
+  const unknownPresentationRisk = linesWithoutPresentation.filter(
+    (line) => line.context?.tracksStock === undefined,
+  );
+  const taxesRecognized = xmlLines.filter((line) => {
+    const persisted = line.purchaseReceptionLineId
+      ? persistedByReceptionLine.get(line.purchaseReceptionLineId)
+      : undefined;
+    if (persisted?.taxes?.length) {
+      return persisted.taxes.every((tax) => tax.taxRateCode && tax.taxName);
+    }
+    return !!line.vatCode || !!line.xmlTaxCode || line.xmlTaxValue !== undefined;
+  }).length;
+  const xmlTotalsAvailable =
+    xmlLines.length > 0 &&
+    xmlLines.every((line) => typeof line.xmlTotalLine === "number");
+  const totalDifference = xmlTotalsAvailable
+    ? roundToTotalAmount(
+        xmlLines.reduce(
+          (sum, line) =>
+            sum +
+            lineNet(line) +
+            calcLineTax(line, vatRatesMap, iceRatesMap).vat +
+            calcLineTax(line, vatRatesMap, iceRatesMap).ice -
+            (line.xmlTotalLine ?? 0),
+          0,
+        ),
+      )
+    : null;
+
+  if (xmlLines.length === 0) {
+    return {
+      hasXmlPurchase: false,
+      blockerCount: 0,
+      items: [
+        {
+          key: "manual",
+          label: t("purchases.confirm.checklist.manualTitle"),
+          detail: t("purchases.confirm.checklist.manualDetail"),
+          tone: "neutral",
+          icon: "description",
+        },
+      ],
+    };
+  }
+
+  const blockerCount = missingItems + stockLinesWithoutPresentation.length;
+  return {
+    hasXmlPurchase: true,
+    blockerCount,
+    items: [
+      {
+        key: "linked-items",
+        label: t("purchases.confirm.checklist.linkedItems"),
+        detail:
+          missingItems === 0
+            ? t("purchases.confirm.checklist.linkedItemsOk", {
+                count: linkedItems,
+              })
+            : t("purchases.confirm.checklist.linkedItemsMissing", {
+                count: missingItems,
+              }),
+        tone: missingItems === 0 ? "success" : "danger",
+        icon: missingItems === 0 ? "check_circle" : "error",
+      },
+      {
+        key: "linked-presentations",
+        label: t("purchases.confirm.checklist.linkedPresentations"),
+        detail:
+          linesWithoutPresentation.length === 0
+            ? t("purchases.confirm.checklist.linkedPresentationsOk")
+            : t("purchases.confirm.checklist.linkedPresentationsMissing", {
+                count: linesWithoutPresentation.length,
+              }),
+        tone:
+          stockLinesWithoutPresentation.length > 0
+            ? "danger"
+            : linesWithoutPresentation.length > 0
+              ? "warning"
+              : "success",
+        icon:
+          linesWithoutPresentation.length === 0
+            ? "check_circle"
+            : stockLinesWithoutPresentation.length > 0
+              ? "error"
+              : "warning",
+      },
+      {
+        key: "missing-presentations",
+        label: t("purchases.confirm.checklist.linesWithoutPresentation"),
+        detail:
+          linesWithoutPresentation.length === 0
+            ? t("purchases.confirm.checklist.linesWithoutPresentationOk")
+            : unknownPresentationRisk.length > 0
+              ? t("purchases.confirm.checklist.linesWithoutPresentationUnknown", {
+                  count: linesWithoutPresentation.length,
+                })
+              : t("purchases.confirm.checklist.linesWithoutPresentationWarn", {
+                  count: linesWithoutPresentation.length,
+                }),
+        tone:
+          stockLinesWithoutPresentation.length > 0
+            ? "danger"
+            : linesWithoutPresentation.length > 0
+              ? "warning"
+              : "success",
+        icon:
+          linesWithoutPresentation.length === 0
+            ? "check_circle"
+            : stockLinesWithoutPresentation.length > 0
+              ? "error"
+              : "warning",
+      },
+      {
+        key: "taxes",
+        label: t("purchases.confirm.checklist.recognizedTaxes"),
+        detail:
+          taxesRecognized === xmlLines.length
+            ? t("purchases.confirm.checklist.recognizedTaxesOk", {
+                count: taxesRecognized,
+              })
+            : t("purchases.confirm.checklist.recognizedTaxesWarn", {
+                count: xmlLines.length - taxesRecognized,
+              }),
+        tone: taxesRecognized === xmlLines.length ? "success" : "warning",
+        icon: taxesRecognized === xmlLines.length ? "check_circle" : "warning",
+      },
+      {
+        key: "total-difference",
+        label: t("purchases.confirm.checklist.totalDifference"),
+        detail:
+          totalDifference === null
+            ? t("purchases.confirm.checklist.totalDifferenceUnavailable")
+            : t("purchases.confirm.checklist.totalDifferenceValue", {
+                amount: formatMoneyWithSymbol(
+                  Math.abs(totalDifference),
+                  getDecimalConfig().totalAmount,
+                ),
+              }),
+        tone:
+          totalDifference === null
+            ? "warning"
+            : Math.abs(totalDifference) <= 0.01
+              ? "success"
+              : "warning",
+        icon:
+          totalDifference !== null && Math.abs(totalDifference) <= 0.01
+            ? "check_circle"
+            : "warning",
+      },
+    ],
+  };
+}
+
+function XmlConfirmChecklist({
+  summary,
+}: {
+  summary: XmlConfirmChecklistSummary;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="pf-confirm-checklist">
+      <p className="pf-confirm-checklist__intro">
+        {t(
+          "purchases.confirm.message",
+          "Esta acción generará movimientos de inventario y cuentas por pagar. No se puede revertir.",
+        )}
+      </p>
+      {summary.hasXmlPurchase && (
+        <p className="pf-confirm-checklist__hint">
+          {summary.blockerCount > 0
+            ? t(
+                "purchases.confirm.checklist.blockingHint",
+                "Hay controles pendientes que bloquearán la confirmación.",
+              )
+            : t(
+                "purchases.confirm.checklist.readyHint",
+                "Revise el checklist antes de confirmar la compra XML.",
+              )}
+        </p>
+      )}
+      <ul className="pf-confirm-checklist__list">
+        {summary.items.map((item) => (
+          <li
+            key={item.key}
+            className={`pf-confirm-checklist__item pf-confirm-checklist__item--${item.tone}`}
+          >
+            <span className="material-symbols-outlined pf-confirm-checklist__icon">
+              {item.icon}
+            </span>
+            <span>
+              <strong>{item.label}</strong>
+              <span className="pf-confirm-checklist__detail">
+                {item.detail}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function PurchaseLineCard({
   line: l,
@@ -998,7 +1241,7 @@ function PurchaseLineCard({
     : sub + localTax.vat + localTax.ice;
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
-  const vm = buildPurchaseLinePresentation(l);
+  const vm = buildPurchaseLinePresentation(l, t);
   const packagingLevels = ctxData?.packagingLevels ?? [];
   const handlePackagingChange = (packagingLevelId: string) => {
     const selected = packagingLevels.find((p) => p.id === packagingLevelId);

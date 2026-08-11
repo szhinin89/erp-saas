@@ -9,6 +9,7 @@ const context: PurchaseItemContextDto = {
   shortName: "Fanta",
   description: "Fanta naranja",
   baseUomCode: "UNIT",
+  tracksStock: true,
   supplierCode: "3172",
   packagingLevels: [
     {
@@ -94,5 +95,29 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     expect(vm.status.label).toBe("Ítem + PACA x 12.0000");
     expect(vm.inventory.hasPresentation).toBe(true);
     expect(vm.inventory.conversionDetail).toBe("2.0000 PACA -> 24.0000 UNIT");
+  });
+
+  it("muestra alerta si el costo base cambia de forma extrema contra el último costo", () => {
+    const vm = buildPurchaseLinePresentation(
+      line({
+        unitPrice: 120,
+        packagingLevelId: "paca-12",
+        uomCode: "PACA",
+        baseUomCode: "UNIT",
+        conversionFactor: 12,
+        quantityInBaseUom: 24,
+        context: {
+          ...context,
+          lastPurchaseCost: 5,
+          averageCost: 4,
+        },
+      }),
+    );
+
+    expect(vm.commercial.costs.showDeviationAlert).toBe(true);
+    expect(vm.commercial.costs.deviationLabel).toContain("Costo base");
+    expect(vm.commercial.costs.deviationLabel).toContain(
+      "Revise presentación/factor",
+    );
   });
 });

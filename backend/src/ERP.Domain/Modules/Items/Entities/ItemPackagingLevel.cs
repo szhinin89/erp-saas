@@ -48,6 +48,11 @@ public sealed class ItemPackagingLevel : AuditableEntity
                 "La cantidad base debe ser mayor que cero.",
                 nameof(baseQuantity)
             );
+        if (isBaseUnit && baseQuantity != 1m)
+            throw new ArgumentException(
+                "La presentación base debe tener cantidad base 1.",
+                nameof(baseQuantity)
+            );
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new ArgumentException("El código UOM es obligatorio.", nameof(uomCode));
 
@@ -92,6 +97,11 @@ public sealed class ItemPackagingLevel : AuditableEntity
         if (baseQuantity <= 0)
             throw new ArgumentException(
                 "La cantidad base debe ser mayor que cero.",
+                nameof(baseQuantity)
+            );
+        if (isBaseUnit && baseQuantity != 1m)
+            throw new ArgumentException(
+                "La presentación base debe tener cantidad base 1.",
                 nameof(baseQuantity)
             );
         if (string.IsNullOrWhiteSpace(uomCode))

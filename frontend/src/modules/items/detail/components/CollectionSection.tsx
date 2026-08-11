@@ -260,6 +260,11 @@ function toPackagingDraft(level: ItemPackagingLevelDto): PackagingLevelDraft {
   };
 }
 
+function packagingNameSuggestsMultiplier(name: string, baseQuantity: string) {
+  const qty = Number(baseQuantity);
+  return qty === 1 && /\b[xX]\s*(?:[2-9]|\d{2,})\b/.test(name);
+}
+
 function buildPackagingPayload(
   rows: { id: string | null; draft: PackagingLevelDraft }[],
 ): PackagingLevelInput[] {
@@ -301,6 +306,7 @@ export function PackagingLevelsSection({
   uomOptions,
   baseUomCode,
   usedPackagingLevelIds,
+  tracksStock,
   disabled = false,
   onSave,
 }: {
@@ -309,6 +315,7 @@ export function PackagingLevelsSection({
   uomOptions: PackagingUomOption[];
   baseUomCode: string;
   usedPackagingLevelIds: Set<string>;
+  tracksStock: boolean;
   disabled?: boolean;
   onSave: (levels: PackagingLevelInput[]) => Promise<void>;
 }) {
@@ -378,10 +385,15 @@ export function PackagingLevelsSection({
     rows: { id: string | null; draft: PackagingLevelDraft }[],
   ): string | null => {
     const baseCount = rows.filter((r) => r.draft.isBaseUnit).length;
-    if (baseCount !== 1)
+    if (tracksStock && baseCount !== 1)
       return t(
         "items.packaging.errors.baseUnitRequired",
         "Debe existir una presentación base, por ejemplo UNIDAD X1 con cantidad base 1.",
+      );
+    if (!tracksStock && baseCount > 1)
+      return t(
+        "items.packaging.errors.baseUnitMaxOne",
+        "No puede existir más de una presentación marcada como unidad base.",
       );
     return null;
   };
@@ -491,6 +503,24 @@ export function PackagingLevelsSection({
   };
 
   const actionsDisabled = disabled || busy;
+  const addWarning = packagingNameSuggestsMultiplier(
+    addDraft.name,
+    addDraft.baseQuantity,
+  )
+    ? t(
+        "items.packaging.warnings.nameSuggestsMultiplier",
+        "El nombre sugiere una presentación múltiple, pero la cantidad base es 1. Revise el factor; no se infiere automáticamente.",
+      )
+    : null;
+  const editWarning = packagingNameSuggestsMultiplier(
+    editDraft.name,
+    editDraft.baseQuantity,
+  )
+    ? t(
+        "items.packaging.warnings.nameSuggestsMultiplier",
+        "El nombre sugiere una presentación múltiple, pero la cantidad base es 1. Revise el factor; no se infiere automáticamente.",
+      )
+    : null;
 
   return (
     <div className="pg-section">
@@ -719,12 +749,25 @@ export function PackagingLevelsSection({
                           {editError}
                         </p>
                       )}
+                      {!editError && editWarning && (
+                        <p className="zh-field-hint zh-field-hint--warning">
+                          {editWarning}
+                        </p>
+                      )}
                     </td>
                   </tr>
                 ) : (
                   <tr key={l.id}>
                     <td>
                       <strong>{l.name}</strong>
+                      {packagingNameSuggestsMultiplier(l.name, String(l.baseQuantity)) && (
+                        <p className="zh-field-hint zh-field-hint--warning">
+                          {t(
+                            "items.packaging.warnings.nameSuggestsMultiplier",
+                            "El nombre sugiere una presentación múltiple, pero la cantidad base es 1. Revise el factor; no se infiere automáticamente.",
+                          )}
+                        </p>
+                      )}
                     </td>
                     <td>
                       <code title={l.uomCode}>{l.uomAbbrev}</code>
@@ -927,6 +970,11 @@ export function PackagingLevelsSection({
                         {addError}
                       </p>
                     )}
+                    {!addError && addWarning && (
+                      <p className="zh-field-hint zh-field-hint--warning">
+                        {addWarning}
+                      </p>
+                    )}
                   </td>
                 </tr>
               )}
@@ -1023,6 +1071,14 @@ export function SupplierCodesDetailSection({
                       </option>
                     ))}
                   </ZhSelect>
+                  {activePackaging.length > 0 && !s.packagingLevelId && (
+                    <p className="zh-field-hint zh-field-hint--warning">
+                      {t(
+                        "items.supplierCodes.presentationMissingWarning",
+                        "Sin presentación vinculada; una compra XML inventariable se bloqueará al confirmar.",
+                      )}
+                    </p>
+                  )}
                 </td>
               </tr>
             ))}

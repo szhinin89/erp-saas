@@ -6,6 +6,10 @@ import { calcMarginPercent } from "../../../lib/margin";
 
 /** Dato desconocido — nunca se confunde con un valor real (p. ej. stock 0). */
 const UNKNOWN = "—";
+type TFunction = (
+  key: string,
+  fallbackOrParams?: string | Record<string, string | number>,
+) => string;
 
 export type LineStatusTone = "success" | "warning" | "danger";
 
@@ -85,6 +89,7 @@ export interface PurchaseLinePresentationVM {
 
 export function buildPurchaseLinePresentation(
   line: PurchaseLineFormValues,
+  t?: TFunction,
 ): PurchaseLinePresentationVM {
   const decimals = getDecimalConfig();
   const ctx = line.context;
@@ -127,15 +132,37 @@ export function buildPurchaseLinePresentation(
     quantityInBase > 0 ? (quantity * unitPrice) / quantityInBase : 0;
   const marginPctValue = hasContext ? calcMarginPercent(unitPrice, pvp) : 0;
 
+  const referenceCost =
+    hasContext && (ctx?.lastPurchaseCost ?? 0) > 0
+      ? ctx!.lastPurchaseCost
+      : averageCost;
+  const referenceLabel =
+    hasContext && (ctx?.lastPurchaseCost ?? 0) > 0
+      ? t?.("purchases.lines.costReferenceLast", "último costo") ??
+        "último costo"
+      : t?.("purchases.lines.costReferenceAverage", "costo promedio") ??
+        "costo promedio";
   const deviationRatio =
-    hasContext && averageCost > 0 && unitPrice > 0
-      ? Math.abs(unitPrice - averageCost) / averageCost
+    hasContext && referenceCost > 0 && baseUnitCost > 0
+      ? Math.abs(baseUnitCost - referenceCost) / referenceCost
       : 0;
-  const showDeviationAlert = hasContext && deviationRatio > 0.2;
+  const showDeviationAlert = hasContext && deviationRatio > 0.5;
+  const deviationPercent = formatMoney(
+    deviationRatio * 100,
+    decimals.percentage,
+  );
   const deviationLabel = showDeviationAlert
-    ? unitPrice > averageCost
-      ? `Costo ${formatMoney(((unitPrice - averageCost) / averageCost) * 100, decimals.percentage)}% sobre el promedio`
-      : `Costo ${formatMoney(((averageCost - unitPrice) / averageCost) * 100, decimals.percentage)}% bajo el promedio`
+    ? baseUnitCost > referenceCost
+      ? t?.("purchases.lines.baseCostDeviationHigh", {
+          percent: deviationPercent,
+          reference: referenceLabel,
+        }) ??
+        `Costo base ${deviationPercent}% sobre ${referenceLabel}. Revise presentación/factor.`
+      : t?.("purchases.lines.baseCostDeviationLow", {
+          percent: deviationPercent,
+          reference: referenceLabel,
+        }) ??
+        `Costo base ${deviationPercent}% bajo ${referenceLabel}. Revise presentación/factor.`
     : "";
 
   const missingRequiredData = hasItem && !isLoading && !line.vatCode;

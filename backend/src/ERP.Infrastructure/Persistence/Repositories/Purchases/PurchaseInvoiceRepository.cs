@@ -113,6 +113,33 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlySet<Guid>> GetPackagingLevelIdsUsedInConfirmedDocumentsAsync(
+        Guid tenantId,
+        Guid itemId,
+        IReadOnlyCollection<Guid> packagingLevelIds,
+        CancellationToken ct = default
+    )
+    {
+        if (packagingLevelIds.Count == 0)
+            return new HashSet<Guid>();
+
+        var ids = await (
+            from line in _db.Set<PurchaseInvoiceDetail>()
+            join invoice in Scoped(tenantId) on line.InvoiceId equals invoice.Id
+            where
+                line.TenantId == tenantId
+                && line.ItemId == itemId
+                && line.PackagingLevelId.HasValue
+                && packagingLevelIds.Contains(line.PackagingLevelId.Value)
+                && invoice.Status == PurchaseStatus.Confirmed
+            select line.PackagingLevelId!.Value
+        )
+            .Distinct()
+            .ToListAsync(ct);
+
+        return ids.ToHashSet();
+    }
+
     public Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default) =>
         _db.PurchaseInvoices.AddAsync(invoice, ct).AsTask();
 

@@ -4,6 +4,20 @@
 
 ---
 
+## FLOW-READY-02F.7 — Controles preventivos empaques / XML (2026-08-11)
+
+**Estado: COMPLETADO.** Controles fail-closed para evitar configuraciones peligrosas de presentación, código proveedor y compra XML.
+
+- Ítems inventariables requieren exactamente una presentación base con `BaseQuantity = 1`; servicios/no inventariables no quedan bloqueados por ausencia de base.
+- Empaques validan cantidad positiva, no duplican `UOM + BaseQuantity`, no permiten base con factor distinto de 1 y advierten nombres tipo `PACA x12` con factor 1 sin inferir automáticamente.
+- Códigos proveedor muestran estado “sin presentación” y permiten guardar la presentación asociada.
+- Confirmación de compra XML muestra checklist de ítems, presentaciones, líneas sin presentación, impuestos y diferencia total; backend bloquea líneas XML inventariables sin presentación.
+- Empaques usados por códigos proveedor o documentos confirmados no pueden eliminarse ni cambiar su factor; se debe crear una nueva presentación.
+- Alerta de costo base extremo contra último costo/promedio sugiere revisar presentación/factor.
+- Validado con `dotnet build backend/src/ERP.slnx`, `dotnet test backend/src/ERP.slnx --filter Items`, `dotnet test backend/src/ERP.slnx --filter Purchase`, `dotnet test backend/src/ERP.slnx --filter PurchaseReception`, `npx tsc --noEmit`, `npm run lint`, `npm run build` y `npx vitest run src/modules/items src/modules/purchases`.
+
+---
+
 ## Purchases — Recepción XML empaques FIX03 (2026-08-11)
 
 **Estado: COMPLETADO.** Corrección de rehidratación de presentación al abrir una compra desde Recepción Electrónica con `fromReceptionId`.

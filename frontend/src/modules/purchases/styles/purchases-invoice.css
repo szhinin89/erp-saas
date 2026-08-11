@@ -145,6 +145,64 @@
 .pf-pagination__summary { color: var(--color-text-secondary); }
 .pf-pagination__actions { display: flex; gap: 8px; }
 
+.pf-confirm-checklist {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.pf-confirm-checklist__intro,
+.pf-confirm-checklist__hint {
+  margin: 0;
+}
+
+.pf-confirm-checklist__hint {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.pf-confirm-checklist__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pf-confirm-checklist__item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: start;
+  font-size: 13px;
+}
+
+.pf-confirm-checklist__icon {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.pf-confirm-checklist__detail {
+  display: block;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.pf-confirm-checklist__item--success .pf-confirm-checklist__icon {
+  color: var(--color-success);
+}
+
+.pf-confirm-checklist__item--warning .pf-confirm-checklist__icon {
+  color: var(--color-warning);
+}
+
+.pf-confirm-checklist__item--danger .pf-confirm-checklist__icon {
+  color: var(--color-danger);
+}
+
+.pf-confirm-checklist__item--neutral .pf-confirm-checklist__icon {
+  color: var(--color-text-secondary);
+}
+
 /* ── Plazos + Resumen Grid ──────────────────────────────────── */
 .pf-plazos-resumen-grid {
   display: grid;

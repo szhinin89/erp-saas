@@ -440,6 +440,7 @@ export function ItemFormTabs({
                   levels={detail.item.packagingLevels}
                   uomOptions={sriUomOptions}
                   baseUomCode={detail.item.defaultUomCode}
+                  tracksStock={detail.item.tracksStock}
                   usedPackagingLevelIds={
                     new Set(
                       detail.item.supplierCodes

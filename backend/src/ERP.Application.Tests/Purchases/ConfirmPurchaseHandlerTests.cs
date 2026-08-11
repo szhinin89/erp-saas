@@ -6,7 +6,9 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -106,11 +108,83 @@ public sealed class ConfirmPurchaseHandlerTests
         return inv;
     }
 
+    private static PurchaseInvoice CreateXmlDraftInvoice(
+        Guid itemId,
+        Guid? packagingLevelId = null,
+        decimal conversionFactor = 1m,
+        string uomCode = "UNIT"
+    )
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000003",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
+
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto XML",
+            quantity: 2m,
+            unitPrice: 9.29m,
+            vatCode: "10",
+            uomCode: uomCode,
+            itemId: itemId,
+            warehouseId: WhId,
+            conversionFactor: conversionFactor,
+            purchaseReceptionLineId: Guid.NewGuid(),
+            baseUomCode: "UNIT",
+            packagingLevelId: packagingLevelId
+        );
+        inv.ReplaceLines([line], UserId);
+        return inv;
+    }
+
+    private static Item CreateItem(bool tracksStock = true)
+    {
+        var item = Item.Create(
+            TenantId,
+            "SKU-XML",
+            "Item XML",
+            "Item XML",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(),
+            ItemStockConfig.Create(tracksStock),
+            UserId
+        );
+        item.ReplacePackagingLevels(
+            [
+                ("UNIDAD X1", 1, 1m, "UNIT", null, null, true, false, true),
+                ("PACA X12", 2, 12m, "PACA", null, null, false, true, false),
+            ],
+            UserId
+        );
+        return item;
+    }
+
     private (
         ConfirmPurchaseHandler handler,
         Mock<IPurchaseInvoiceRepository> repo,
         Mock<IStockRepository> stockRepo
-    ) BuildHandler(PurchaseInvoice inv, bool irbpnrConfigured = false)
+    ) BuildHandler(
+        PurchaseInvoice inv,
+        bool irbpnrConfigured = false,
+        Item? itemForXmlLines = null
+    )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
@@ -198,6 +272,18 @@ public sealed class ConfirmPurchaseHandlerTests
             .ReturnsAsync(1);
 
         var itemRepo = new Mock<IItemRepository>();
+        if (itemForXmlLines is not null)
+        {
+            itemRepo
+                .Setup(r =>
+                    r.GetByIdAsync(
+                        itemForXmlLines.Id,
+                        TenantId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(itemForXmlLines);
+        }
         itemRepo
             .Setup(r =>
                 r.GetByIdLightAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>())
@@ -339,6 +425,82 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_bloquea_compra_xml_de_item_inventariable_sin_presentacion()
+    {
+        var item = CreateItem(tracksStock: true);
+        var inv = CreateXmlDraftInvoice(item.Id);
+        var (handler, _, stockRepo) = BuildHandler(inv, itemForXmlLines: item);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("ítem inventariable sin presentación");
+        stockRepo.Verify(
+            s => s.AppendMovementAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<StockMovementType>(),
+                It.IsAny<decimal>(),
+                It.IsAny<string>(),
+                It.IsAny<DateOnly>(),
+                It.IsAny<string?>(),
+                It.IsAny<Guid?>(),
+                It.IsAny<string?>(),
+                It.IsAny<Guid>(),
+                It.IsAny<decimal?>(),
+                It.IsAny<Guid?>(),
+                It.IsAny<Guid?>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<Guid?>()
+            ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_permite_compra_xml_de_PACA_X12_con_presentacion_vinculada()
+    {
+        var item = CreateItem(tracksStock: true);
+        var pacaId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
+        var inv = CreateXmlDraftInvoice(
+            item.Id,
+            packagingLevelId: pacaId,
+            conversionFactor: 12m,
+            uomCode: "PACA"
+        );
+        var (handler, _, stockRepo) = BuildHandler(inv, itemForXmlLines: item);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    item.Id,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    24m,
+                    "UNIT",
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 ),
             Times.Once
         );

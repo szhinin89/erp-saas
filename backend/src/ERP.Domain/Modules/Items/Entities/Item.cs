@@ -363,9 +363,18 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     )
     {
         var list = levels.ToList();
-        if (list.Count(l => l.IsBaseUnit) != 1)
+        var baseCount = list.Count(l => l.IsBaseUnit);
+        if (StockConfig.TracksStock && baseCount != 1)
             throw new InvalidOperationException(
                 "Debe existir exactamente un nivel base (IsBaseUnit=true)."
+            );
+        if (!StockConfig.TracksStock && baseCount > 1)
+            throw new InvalidOperationException(
+                "No puede existir más de un nivel base (IsBaseUnit=true)."
+            );
+        if (list.Any(l => l.IsBaseUnit && l.BaseQuantity != 1m))
+            throw new InvalidOperationException(
+                "La presentación base debe tener cantidad base 1."
             );
 
         _packagingLevels.Clear();

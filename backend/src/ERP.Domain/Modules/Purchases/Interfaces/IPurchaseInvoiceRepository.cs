@@ -56,6 +56,13 @@ public interface IPurchaseInvoiceRepository
         CancellationToken ct = default
     );
 
+    Task<IReadOnlySet<Guid>> GetPackagingLevelIdsUsedInConfirmedDocumentsAsync(
+        Guid tenantId,
+        Guid itemId,
+        IReadOnlyCollection<Guid> packagingLevelIds,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default);
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,

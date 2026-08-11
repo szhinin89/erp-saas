@@ -77,6 +77,30 @@ public sealed class ConfirmPurchaseHandler
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");
 
+        // ── STEP 0a: Guard de presentación en compras XML ───────────────
+        // Las líneas provenientes de Recepción Electrónica impactan inventario y auditoría fiscal.
+        // Para ítems físicos inventariables, el factor debe venir de una presentación explícita
+        // (incluida la unidad base x1); nunca se acepta factor 1 implícito por falta de configuración.
+        foreach (var line in inv.Lines.Where(l => l.PurchaseReceptionLineId.HasValue))
+        {
+            if (line.ItemId is not { } itemId)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"La línea XML '{line.Description}' no tiene ítem vinculado."
+                );
+
+            var item = await _itemRepo.GetByIdAsync(itemId, tid, ct);
+            if (item is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"La línea XML '{line.Description}' referencia un ítem inexistente."
+                );
+
+            if (item.StockConfig.TracksStock && line.PackagingLevelId is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"La línea XML '{line.Description}' corresponde a un ítem inventariable sin presentación vinculada. "
+                        + "Asocie el código de proveedor a la presentación correcta antes de confirmar."
+                );
+        }
+
         // ── STEP 0: Guard IRBPNR (FLOW-READY-02F.2) ──────────────────────
         // El posting nunca revierte una confirmación ya persistida (ver PurchaseInvoiceConfirmedPostingTranslator
         // — un Result fallido de IPostingEngine.PostAsync solo se registra en log, jamás lanza) — por

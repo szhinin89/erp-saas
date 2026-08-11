@@ -95,6 +95,24 @@ describe("SupplierCodesDetailSection", () => {
       "PACA × 12 UND",
     );
   });
+
+  it("muestra warning cuando el código proveedor no tiene presentación", () => {
+    render(
+      <SupplierCodesDetailSection
+        t={t}
+        supplierCodes={supplierCodes}
+        packagingLevels={packagingLevels}
+        baseUomAbbrev="UND"
+        onUpdatePresentation={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Sin presentación vinculada; una compra XML inventariable se bloqueará al confirmar.",
+      ),
+    ).toBeTruthy();
+  });
 });
 
 const uomOptions = [
@@ -125,6 +143,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -149,6 +168,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -200,6 +220,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -235,6 +256,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -268,6 +290,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -300,6 +323,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel, pacaLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -327,6 +351,32 @@ describe("PackagingLevelsSection", () => {
     );
   });
 
+  it("PACA x12 con BaseQuantity 1 muestra advertencia visual sin inferir factor", () => {
+    const pacaLevel: ItemPackagingLevelDto = {
+      ...packagingLevels[0],
+      name: "PACA x12",
+      baseQuantity: 1,
+    };
+
+    render(
+      <PackagingLevelsSection
+        t={t}
+        levels={[baseUnitLevel, pacaLevel]}
+        uomOptions={uomOptions}
+        baseUomCode="UNIDAD"
+        tracksStock
+        usedPackagingLevelIds={new Set()}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "El nombre sugiere una presentación múltiple, pero la cantidad base es 1. Revise el factor; no se infiere automáticamente.",
+      ),
+    ).toBeTruthy();
+  });
+
   it("valida que BaseQuantity sea mayor a 0", () => {
     render(
       <PackagingLevelsSection
@@ -334,6 +384,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -360,6 +411,7 @@ describe("PackagingLevelsSection", () => {
         levels={[]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -392,6 +444,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,
@@ -427,6 +480,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set(["unidad-1"])}
         onSave={vi.fn()}
       />,
@@ -457,6 +511,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel, secondLevel]}
         uomOptions={[...uomOptions, { code: "CAJA", name: "Caja", abbrev: "CAJA" }]}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={onSave}
       />,
@@ -497,6 +552,7 @@ describe("PackagingLevelsSection", () => {
         levels={[baseUnitLevel]}
         uomOptions={uomOptions}
         baseUomCode="UNIDAD"
+        tracksStock
         usedPackagingLevelIds={new Set()}
         onSave={vi.fn()}
       />,

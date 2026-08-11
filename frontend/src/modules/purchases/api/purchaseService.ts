@@ -260,6 +260,7 @@ export interface PurchaseItemContextDto {
   shortName: string;
   description: string;
   baseUomCode: string;
+  tracksStock: boolean;
   packagingLevels: PurchaseItemPackagingLevelDto[];
   supplierCode: string | null;
   currentStock: number;

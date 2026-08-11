@@ -3,6 +3,7 @@ using ERP.Application.Items.UseCases.ItemPackagingLevels;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.ValueObjects;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -56,7 +57,7 @@ public sealed class ReplaceItemPackagingLevelsTests
     }
 
     [Fact]
-    public void Validator_rechaza_conjunto_sin_unidad_base()
+    public void Validator_no_exige_unidad_base_sin_contexto_de_stock()
     {
         var cmd = new ReplaceItemPackagingLevelsCommand(
             Guid.NewGuid(),
@@ -65,9 +66,7 @@ public sealed class ReplaceItemPackagingLevelsTests
 
         var result = Validator.Validate(cmd);
 
-        result
-            .Errors.Should()
-            .Contain(e => e.ErrorMessage.Contains("exactamente una presentación"));
+        result.Errors.Should().BeEmpty();
     }
 
     [Fact]
@@ -106,6 +105,7 @@ public sealed class ReplaceItemPackagingLevelsTests
 
         var handler = new ReplaceItemPackagingLevelsCommandHandler(
             repo.Object,
+            Mock.Of<IPurchaseInvoiceRepository>(),
             tenant.Object,
             user.Object,
             Mock.Of<ISriCatalogResolver>(),
@@ -132,5 +132,96 @@ public sealed class ReplaceItemPackagingLevelsTests
                 ),
             Times.Never
         );
+    }
+
+    [Fact]
+    public void Validator_rechaza_presentacion_base_con_cantidad_distinta_de_uno()
+    {
+        var cmd = new ReplaceItemPackagingLevelsCommand(
+            Guid.NewGuid(),
+            [Level(null, "PACA X12", 1, 12m, "PACA", true)]
+        );
+
+        var result = Validator.Validate(cmd);
+
+        result
+            .Errors.Should()
+            .Contain(e => e.ErrorMessage.Contains("cantidad base 1"));
+    }
+
+    [Fact]
+    public async Task Handler_rechaza_item_inventariable_sin_presentacion_base()
+    {
+        var item = CreateItem();
+        var repo = new Mock<IItemRepository>();
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+
+        var handler = new ReplaceItemPackagingLevelsCommandHandler(
+            repo.Object,
+            Mock.Of<IPurchaseInvoiceRepository>(),
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            Mock.Of<ISriCatalogResolver>(),
+            Mock.Of<IItemTypeRepository>()
+        );
+
+        var result = await handler.Handle(
+            new ReplaceItemPackagingLevelsCommand(
+                item.Id,
+                [Level(null, "PACA X12", 1, 12m, "PACA", false)]
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("ítems que manejan stock");
+    }
+
+    [Fact]
+    public async Task Handler_rechaza_cambiar_factor_de_presentacion_usada_en_documentos_confirmados()
+    {
+        var item = CreateItem();
+        var pacaId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
+        var baseId = item.PackagingLevels.Single(p => p.IsBaseUnit).Id;
+
+        var repo = new Mock<IItemRepository>();
+        repo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+
+        var purchaseRepo = new Mock<IPurchaseInvoiceRepository>();
+        purchaseRepo
+            .Setup(r =>
+                r.GetPackagingLevelIdsUsedInConfirmedDocumentsAsync(
+                    TenantId,
+                    item.Id,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new HashSet<Guid> { pacaId });
+
+        var handler = new ReplaceItemPackagingLevelsCommandHandler(
+            repo.Object,
+            purchaseRepo.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            Mock.Of<ISriCatalogResolver>(),
+            Mock.Of<IItemTypeRepository>()
+        );
+
+        var result = await handler.Handle(
+            new ReplaceItemPackagingLevelsCommand(
+                item.Id,
+                [
+                    Level(baseId, "UNIDAD X1", 1, 1m, "UNIT", true),
+                    Level(pacaId, "PACA X24", 2, 24m, "PACA", false),
+                ]
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("No se puede cambiar la cantidad base");
     }
 }
