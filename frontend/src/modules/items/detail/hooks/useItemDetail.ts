@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { itemService } from "../../api/itemService";
+import { formatApiRequestError } from "../../../lib/apiError";
 import type { ItemDetailDto } from "../../../../types/items";
 
 export function useItemDetailPage(itemId: string | undefined) {
@@ -75,6 +76,7 @@ export function useItemDetailPage(itemId: string | undefined) {
 
   const replacePackagingLevels = async (
     levels: {
+      id?: string | null;
       name: string;
       level: number;
       baseQuantity: number;
@@ -88,10 +90,33 @@ export function useItemDetailPage(itemId: string | undefined) {
   ) => {
     if (!itemId) return;
     try {
-      await itemService.replacePackagingLevels(itemId, levels);
+      setItem(await itemService.replacePackagingLevels(itemId, levels));
       await fetchItem();
+    } catch (err) {
+      const message = formatApiRequestError(err, {
+        generic: "Error al guardar niveles de empaque.",
+      });
+      setError(message);
+      throw new Error(message, { cause: err });
+    }
+  };
+
+  const updateSupplierCodePresentation = async (
+    supplierId: string,
+    code: string,
+    packagingLevelId: string | null,
+  ) => {
+    if (!itemId) return;
+    try {
+      setItem(
+        await itemService.updateSupplierCodePresentation(itemId, {
+          supplierId,
+          code,
+          packagingLevelId,
+        }),
+      );
     } catch {
-      setError("Error al guardar niveles de empaque.");
+      setError("Error al guardar la presentación del código proveedor.");
     }
   };
 
@@ -105,5 +130,6 @@ export function useItemDetailPage(itemId: string | undefined) {
     replaceUnitConversions,
     replaceSubstitutes,
     replacePackagingLevels,
+    updateSupplierCodePresentation,
   };
 }

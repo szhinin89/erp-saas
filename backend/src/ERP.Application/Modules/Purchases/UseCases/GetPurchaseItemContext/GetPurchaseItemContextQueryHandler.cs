@@ -47,8 +47,9 @@ public sealed class GetPurchaseItemContextQueryHandler
         var tid = _tenant.TenantId;
         var decimalConfig = await _decimalConfigRepo.GetAsync(tid, _company.CompanyId, ct);
 
-        // 1. ITEM — carga ligera (sin colecciones)
-        var item = await _itemRepo.GetByIdLightAsync(request.ItemId, tid, ct);
+        // 1. ITEM — incluye empaques para que Compras pueda seleccionar presentación sin
+        // duplicar un sistema UOM paralelo.
+        var item = await _itemRepo.GetByIdAsync(request.ItemId, tid, ct);
         if (item is null)
             return Result<PurchaseItemContextDto>.NotFound("Ítem no encontrado.");
 
@@ -113,6 +114,19 @@ public sealed class GetPurchaseItemContextQueryHandler
                 Sku = item.Code.SKU,
                 ShortName = item.Code.ShortName,
                 Description = item.Code.Description,
+                BaseUomCode = item.DefaultUomCode,
+                PackagingLevels = item
+                    .PackagingLevels.Where(p => p.IsActive)
+                    .OrderBy(p => p.Level)
+                    .Select(p => new PurchaseItemPackagingLevelDto(
+                        p.Id,
+                        p.Name,
+                        p.BaseQuantity,
+                        p.UomCode,
+                        p.IsBaseUnit,
+                        p.IsPurchaseDefault
+                    ))
+                    .ToList(),
                 SupplierCode = supplierCode,
 
                 CurrentStock = currentQty,

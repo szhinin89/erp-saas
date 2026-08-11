@@ -51,7 +51,9 @@ export interface PurchaseLineDto {
   snapshotItemName: string | null;
   snapshotSupplierCode: string | null;
   // ── UoM ─────────────────────────────────────────────────────────
+  packagingLevelId: string | null;
   uomCode: string;
+  baseUomCode: string;
   conversionFactor: number;
   quantityInBaseUom: number;
   // ── Quantity & Price ────────────────────────────────────────────
@@ -213,6 +215,7 @@ export interface PurchaseLineInput {
   purchaseOrderDetailId?: string | null;
   orderedQuantity?: number | null;
   purchaseReceptionLineId?: string | null;
+  packagingLevelId?: string | null;
 }
 
 export interface CreatePurchasePayload {
@@ -256,6 +259,8 @@ export interface PurchaseItemContextDto {
   sku: string;
   shortName: string;
   description: string;
+  baseUomCode: string;
+  packagingLevels: PurchaseItemPackagingLevelDto[];
   supplierCode: string | null;
   currentStock: number;
   availableStock: number;
@@ -273,6 +278,15 @@ export interface PurchaseItemContextDto {
   hasIce: boolean;
   costMargin: number;
   costMarginPercent: number;
+}
+
+export interface PurchaseItemPackagingLevelDto {
+  id: string;
+  name: string;
+  baseQuantity: number;
+  uomCode: string;
+  isBaseUnit: boolean;
+  isPurchaseDefault: boolean;
 }
 
 export const purchaseService = {

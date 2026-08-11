@@ -105,6 +105,9 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
                     .WithMessage("El código de proveedor es obligatorio.")
                     .MaximumLength(100)
                     .WithMessage("El código de proveedor no puede exceder 100 caracteres.");
+                s.RuleFor(x => x.PackagingLevelId)
+                    .Must(id => id is null || id.Value != Guid.Empty)
+                    .WithMessage("El nivel de empaque no es válido.");
             });
 
         RuleFor(x => x.SupplierCodes)

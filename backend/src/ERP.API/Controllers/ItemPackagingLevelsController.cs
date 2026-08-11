@@ -38,6 +38,7 @@ public sealed class ItemPackagingLevelsController : ControllerBase
             id,
             request
                 .Levels.Select(l => new PackagingLevelInput(
+                    l.Id,
                     l.Name,
                     l.Level,
                     l.BaseQuantity,
@@ -59,6 +60,7 @@ public sealed class ItemPackagingLevelsController : ControllerBase
 public record ReplacePackagingRequest(IReadOnlyList<PackagingApiInput> Levels);
 
 public record PackagingApiInput(
+    Guid? Id,
     string Name,
     int Level,
     decimal BaseQuantity,

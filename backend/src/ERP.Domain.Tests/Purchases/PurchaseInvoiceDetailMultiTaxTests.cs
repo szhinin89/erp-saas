@@ -26,6 +26,30 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
         );
 
     [Fact]
+    public void Create_con_presentacion_de_compra_calcula_cantidad_y_costo_en_unidad_base()
+    {
+        var line = PurchaseInvoiceDetail.Create(
+            invoiceId: Guid.NewGuid(),
+            tenantId: TenantId,
+            description: "Fanta Harmony NRJ 1350 PET(12)",
+            quantity: 2m,
+            unitPrice: 9.29m,
+            vatCode: "4",
+            uomCode: "PACA",
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+
+        line.Quantity.Should().Be(2m);
+        line.UomCode.Should().Be("PACA");
+        line.BaseUomCode.Should().Be("UNIT");
+        line.ConversionFactor.Should().Be(12m);
+        line.QuantityInBaseUom.Should().Be(24m);
+        line.LineSubtotal.Should().Be(18.58m);
+        line.LandedUnitCost.Should().Be(0.774167m);
+    }
+
+    [Fact]
     public void ApplyTaxes_con_ICE_Percentage_mantiene_comportamiento_historico()
     {
         var line = CreateLine(1, 100m, "4");

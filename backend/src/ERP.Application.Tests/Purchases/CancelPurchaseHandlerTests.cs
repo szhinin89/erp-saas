@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -24,6 +25,8 @@ public sealed class CancelPurchaseHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid PtId = Guid.NewGuid();
+    private static readonly Guid ItemId = Guid.NewGuid();
+    private static readonly Guid WhId = Guid.NewGuid();
 
     private static PurchaseInvoice CreateConfirmedInvoice()
     {
@@ -54,6 +57,44 @@ public sealed class CancelPurchaseHandlerTests
             uomCode: "UNIT"
         );
         inv.ReplaceLines(new[] { line }, UserId);
+        inv.Confirm(UserId);
+        return inv;
+    }
+
+    private static PurchaseInvoice CreateConfirmedInvoiceWithPackagedLine()
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000002",
+            new DateOnly(2026, 7, 30),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
+
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Fanta Harmony NRJ 1350 PET(12)",
+            quantity: 2m,
+            unitPrice: 9.29m,
+            vatCode: "10",
+            uomCode: "PACA",
+            itemId: ItemId,
+            warehouseId: WhId,
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+        inv.ReplaceLines([line], UserId);
         inv.Confirm(UserId);
         return inv;
     }
@@ -124,6 +165,53 @@ public sealed class CancelPurchaseHandlerTests
         inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
         stockRepo.Verify(
             s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Anulacion_con_presentacion_de_compra_revierte_inventario_en_unidad_base()
+    {
+        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var inv = CreateConfirmedInvoiceWithPackagedLine();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((PurchasePayable?)null);
+        repo.Setup(r =>
+                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((IssuedWithholding?)null);
+
+        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId,
+                    WhId,
+                    StockMovementType.PurchaseReturn,
+                    -24m,
+                    "UNIT",
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    0.774167m,
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }

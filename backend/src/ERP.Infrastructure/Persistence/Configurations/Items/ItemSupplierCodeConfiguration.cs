@@ -16,6 +16,7 @@ public sealed class ItemSupplierCodeConfiguration : IEntityTypeConfiguration<Ite
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(x => x.PackagingLevelId).HasColumnName("packaging_level_id");
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(100).IsRequired();
         builder.Property(x => x.IsPrimary).HasColumnName("is_primary").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
@@ -29,6 +30,16 @@ public sealed class ItemSupplierCodeConfiguration : IEntityTypeConfiguration<Ite
             .WithMany()
             .HasForeignKey(x => x.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<ItemPackagingLevel>()
+            .WithMany()
+            .HasForeignKey(x => x.PackagingLevelId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasIndex(x => x.PackagingLevelId)
+            .HasDatabaseName("ix_item_supplier_codes_packaging_level");
 
         // Un código de proveedor identifica un único ítem en todo el catálogo del tenant
         // (Fase 2) — ya no está acotado por item_id.

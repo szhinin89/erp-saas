@@ -64,7 +64,9 @@ public sealed record PurchaseInvoiceDetailDto(
     string? SnapshotItemName,
     string? SnapshotSupplierCode,
     // ── UoM ─────────────────────────────────────────────────────────
+    Guid? PackagingLevelId,
     string UomCode,
+    string BaseUomCode,
     decimal ConversionFactor,
     decimal QuantityInBaseUom,
     // ── Quantity & Price ────────────────────────────────────────────

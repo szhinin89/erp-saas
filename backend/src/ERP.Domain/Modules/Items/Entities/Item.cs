@@ -374,6 +374,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
                 ItemPackagingLevel.Create(
                     Id,
                     TenantId,
+                    null,
                     l.Name,
                     l.Level,
                     l.BaseQuantity,
@@ -395,16 +396,28 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         string code,
         bool isPrimary,
         Guid supplierId,
-        Guid updatedBy
+        Guid updatedBy,
+        Guid? packagingLevelId = null
     )
     {
+        if (
+            packagingLevelId.HasValue
+            && !_packagingLevels.Any(p => p.Id == packagingLevelId.Value && p.IsActive)
+        )
+        {
+            throw new InvalidOperationException(
+                "El nivel de empaque asociado al código de proveedor no pertenece al ítem."
+            );
+        }
+
         var supplierCode = ItemSupplierCode.Create(
             Id,
             TenantId,
             supplierId,
             code,
             updatedBy,
-            isPrimary
+            isPrimary,
+            packagingLevelId
         );
         _supplierCodes.Add(supplierCode);
         SetUpdated(updatedBy);
@@ -426,6 +439,33 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
             return;
 
         supplierCode.Disable();
+        SetUpdated(updatedBy);
+    }
+
+    public void SetSupplierCodePackagingLevel(
+        Guid supplierId,
+        string code,
+        Guid? packagingLevelId,
+        Guid updatedBy
+    )
+    {
+        var supplierCode = _supplierCodes.FirstOrDefault(sc =>
+            sc.SupplierId == supplierId && sc.Code == code.Trim() && sc.IsActive
+        );
+        if (supplierCode is null)
+            throw new InvalidOperationException("El código de proveedor no pertenece al ítem.");
+
+        if (
+            packagingLevelId.HasValue
+            && !_packagingLevels.Any(p => p.Id == packagingLevelId.Value && p.IsActive)
+        )
+        {
+            throw new InvalidOperationException(
+                "El nivel de empaque asociado al código de proveedor no pertenece al ítem."
+            );
+        }
+
+        supplierCode.SetPackagingLevel(packagingLevelId);
         SetUpdated(updatedBy);
     }
 

@@ -5,6 +5,8 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
+using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.Models;
 using FluentAssertions;
 using Moq;
 
@@ -66,11 +68,13 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     private static (
         CreatePurchaseReceptionDraftHandler handler,
         Mock<IPurchaseReceptionDocumentRepository> repo,
-        Mock<IPurchaseReceptionDetailProcessor> detailProcessor
+        Mock<IPurchaseReceptionDetailProcessor> detailProcessor,
+        Mock<IItemRepository> itemRepo
     ) BuildHandler()
     {
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
         var detailProcessor = new Mock<IPurchaseReceptionDetailProcessor>();
+        var itemRepo = new Mock<IItemRepository>();
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var user = new Mock<ICurrentUser>();
@@ -79,10 +83,11 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var handler = new CreatePurchaseReceptionDraftHandler(
             repo.Object,
             detailProcessor.Object,
+            itemRepo.Object,
             tenant.Object,
             user.Object
         );
-        return (handler, repo, detailProcessor);
+        return (handler, repo, detailProcessor, itemRepo);
     }
 
     [Fact]
@@ -106,7 +111,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -151,7 +156,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -167,7 +172,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     [Fact]
     public async Task Handle_returns_not_found_for_a_nonexistent_document()
     {
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         var missingId = Guid.NewGuid();
         repo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseReceptionDocument?)null);
@@ -185,7 +190,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     public async Task Handle_rejects_a_document_that_has_not_downloaded_its_xml_yet()
     {
         var document = SampleDocument();
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -220,7 +225,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -261,7 +266,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -302,7 +307,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -314,6 +319,126 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var lineDto = result.Value!.Lines.Single();
         lineDto.ItemId.Should().Be(itemId);
         lineDto.ItemMatchStatus.Should().Be("MANUALLY_MATCHED");
+    }
+
+    [Fact]
+    public async Task Handle_rehydrates_packaging_from_the_current_supplier_code_match()
+    {
+        var document = SampleDocument(SupplierId);
+        var itemId = Guid.NewGuid();
+        var packagingLevelId = Guid.NewGuid();
+        var line = SampleLine(
+            document.Id,
+            supplierCode: "3172",
+            itemId: itemId,
+            matchStatus: ItemMatchStatus.AutoMatched
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
+        var (handler, repo, _, itemRepo) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        itemRepo
+            .Setup(r =>
+                r.GetSupplierCodeMatchAsync(
+                    SupplierId,
+                    "3172",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new ItemSupplierCodeMatch(
+                    itemId,
+                    packagingLevelId,
+                    "PACA",
+                    12m,
+                    "UNIT"
+                )
+            );
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var lineDto = result.Value!.Lines.Single();
+        lineDto.ItemId.Should().Be(itemId);
+        lineDto.PackagingLevelId.Should().Be(packagingLevelId);
+        lineDto.UomCode.Should().Be("PACA");
+        lineDto.BaseUomCode.Should().Be("UNIT");
+        lineDto.ConversionFactor.Should().Be(12m);
+        lineDto.QuantityInBaseUom.Should().Be(24m);
+    }
+
+    [Fact]
+    public async Task Handle_keeps_base_unit_when_supplier_code_has_no_packaging_level()
+    {
+        var document = SampleDocument(SupplierId);
+        var itemId = Guid.NewGuid();
+        var line = SampleLine(
+            document.Id,
+            supplierCode: "3172",
+            itemId: itemId,
+            matchStatus: ItemMatchStatus.AutoMatched
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
+        var (handler, repo, _, itemRepo) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        itemRepo
+            .Setup(r =>
+                r.GetSupplierCodeMatchAsync(
+                    SupplierId,
+                    "3172",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new ItemSupplierCodeMatch(itemId, null, null, null, "UNIT"));
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var lineDto = result.Value!.Lines.Single();
+        lineDto.PackagingLevelId.Should().BeNull();
+        lineDto.UomCode.Should().Be("UNIT");
+        lineDto.BaseUomCode.Should().Be("UNIT");
+        lineDto.ConversionFactor.Should().Be(1m);
+        lineDto.QuantityInBaseUom.Should().Be(2m);
     }
 
     // ── Fase 5: nunca generar un draft "exitoso" vacío cuando el detalle no se pudo interpretar ──
@@ -337,7 +462,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 "El XML no tiene un elemento raíz."
             )
         );
-        var (handler, repo, detailProcessor) = BuildHandler();
+        var (handler, repo, detailProcessor, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
         detailProcessor
@@ -402,7 +527,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 "El parser anterior no pudo interpretar el detalle."
             )
         );
-        var (handler, repo, detailProcessor) = BuildHandler();
+        var (handler, repo, detailProcessor, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
         var recoveredLine = SampleLine(document.Id);
@@ -461,7 +586,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 "El parser anterior no pudo interpretar el detalle."
             )
         );
-        var (handler, repo, detailProcessor) = BuildHandler();
+        var (handler, repo, detailProcessor, _) = BuildHandler();
         // El repositorio simula persistencia real: siempre devuelve la MISMA instancia mutable, así
         // que el efecto de ReprocessDetail() en el primer Handle() es visible en el segundo.
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
@@ -546,7 +671,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, detailProcessor) = BuildHandler();
+        var (handler, repo, detailProcessor, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -591,7 +716,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 "Línea 2: omitida."
             )
         );
-        var (handler, repo, detailProcessor) = BuildHandler();
+        var (handler, repo, detailProcessor, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -637,7 +762,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 "Línea 2 (SKU-999): La línea no tiene impuesto IVA. — línea omitida."
             )
         );
-        var (handler, repo, _) = BuildHandler();
+        var (handler, repo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 

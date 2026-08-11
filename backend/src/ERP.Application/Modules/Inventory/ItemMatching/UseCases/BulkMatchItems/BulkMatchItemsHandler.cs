@@ -85,7 +85,7 @@ public sealed class BulkMatchItemsHandler
                     entry.ItemId,
                     _user.UserId,
                     matchedAtUtc,
-                    cancellationToken
+                    cancellationToken: cancellationToken
                 );
                 await _documentRepo.SaveChangesAsync(cancellationToken);
 

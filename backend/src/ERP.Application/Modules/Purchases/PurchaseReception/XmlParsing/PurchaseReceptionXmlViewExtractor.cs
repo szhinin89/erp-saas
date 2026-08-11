@@ -6,21 +6,52 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 /// <summary>Cabecera "extra" del XML que <c>PurchaseReceptionDocument</c> no persiste — únicamente lo que <see cref="PurchaseReceptionXmlViewExtractor"/> lee para la vista de solo lectura (FLOW-READY-02E.1).</summary>
 public sealed record PurchaseReceptionXmlViewExtras(
     string? SupplierTradeName,
+    string? ReferralGuide,
+    string? PaymentMethodCode,
+    string? PaymentTerm,
+    string? PaymentTimeUnit,
+    PurchaseReceptionXmlViewExtraTotals Totals,
     decimal DiscountAmount,
     decimal IceAmount,
     IReadOnlyList<PurchaseReceptionXmlViewExtraTax> TaxSummaries,
+    IReadOnlyList<PurchaseReceptionXmlViewExtraLine> Lines,
     string? ModifiedDocumentType,
     DateOnly? ModifiedDocumentDate,
     string? ModificationReason
 );
 
+public sealed record PurchaseReceptionXmlViewExtraTotals(
+    decimal? TotalWithoutTaxes,
+    decimal? TotalDiscount,
+    decimal? Tip,
+    decimal? TotalAmount
+);
+
 public sealed record PurchaseReceptionXmlViewExtraTax(
-    string TaxType,
     string TaxCode,
+    string TaxRateCode,
     decimal? TaxRate,
     decimal TaxableBase,
     decimal TaxAmount
 );
+
+public sealed record PurchaseReceptionXmlViewExtraLine(
+    string? MainCode,
+    string? AuxCode,
+    string Description,
+    IReadOnlyList<PurchaseReceptionXmlViewExtraLineTax> Taxes,
+    IReadOnlyList<PurchaseReceptionXmlViewAdditionalDetail> AdditionalDetails
+);
+
+public sealed record PurchaseReceptionXmlViewExtraLineTax(
+    string TaxCode,
+    string TaxRateCode,
+    decimal Rate,
+    decimal TaxableBase,
+    decimal TaxAmount
+);
+
+public sealed record PurchaseReceptionXmlViewAdditionalDetail(string Name, string Value);
 
 /// <summary>
 /// Extrae de un XML SRI ya autorizado (Factura o Nota de Crédito) únicamente los campos de
@@ -52,8 +83,10 @@ public static class PurchaseReceptionXmlViewExtractor
         };
     }
 
+    private static readonly PurchaseReceptionXmlViewExtraTotals EmptyTotals = new(null, null, null, null);
+
     private static readonly PurchaseReceptionXmlViewExtras Empty =
-        new(null, 0m, 0m, [], null, null, null);
+        new(null, null, null, null, null, EmptyTotals, 0m, 0m, [], [], null, null, null);
 
     private static PurchaseReceptionXmlViewExtras ExtractFromInvoice(XElement factura)
     {
@@ -63,12 +96,19 @@ public static class PurchaseReceptionXmlViewExtractor
             return Empty;
 
         var taxSummaries = ParseTaxSummaries(infoFactura.Element("totalConImpuestos"));
+        var payment = infoFactura.Element("pagos")?.Elements("pago").FirstOrDefault();
 
         return new PurchaseReceptionXmlViewExtras(
             SupplierTradeName: OptionalText(infoTributaria, "nombreComercial"),
+            ReferralGuide: OptionalText(infoFactura, "guiaRemision"),
+            PaymentMethodCode: OptionalText(payment, "formaPago"),
+            PaymentTerm: OptionalText(payment, "plazo"),
+            PaymentTimeUnit: OptionalText(payment, "unidadTiempo"),
+            Totals: ParseInvoiceTotals(infoFactura),
             DiscountAmount: OptionalDecimal(infoFactura, "totalDescuento") ?? 0m,
             IceAmount: SumIce(taxSummaries),
             TaxSummaries: taxSummaries,
+            Lines: ParseLines(factura.Element("detalles")),
             ModifiedDocumentType: null,
             ModifiedDocumentDate: null,
             ModificationReason: null
@@ -86,15 +126,34 @@ public static class PurchaseReceptionXmlViewExtractor
 
         return new PurchaseReceptionXmlViewExtras(
             SupplierTradeName: OptionalText(infoTributaria, "nombreComercial"),
+            ReferralGuide: null,
+            PaymentMethodCode: null,
+            PaymentTerm: null,
+            PaymentTimeUnit: null,
+            Totals: new PurchaseReceptionXmlViewExtraTotals(
+                OptionalDecimal(infoNotaCredito, "totalSinImpuestos"),
+                null,
+                null,
+                OptionalDecimal(infoNotaCredito, "valorModificacion")
+            ),
             // El esquema notaCredito no define totalDescuento a nivel de documento.
             DiscountAmount: 0m,
             IceAmount: SumIce(taxSummaries),
             TaxSummaries: taxSummaries,
+            Lines: ParseLines(notaCredito.Element("detalles")),
             ModifiedDocumentType: OptionalText(infoNotaCredito, "codDocModificado"),
             ModifiedDocumentDate: OptionalDate(infoNotaCredito, "fechaEmisionDocSustento"),
             ModificationReason: OptionalText(infoNotaCredito, "motivo")
         );
     }
+
+    private static PurchaseReceptionXmlViewExtraTotals ParseInvoiceTotals(XElement infoFactura) =>
+        new(
+            OptionalDecimal(infoFactura, "totalSinImpuestos"),
+            OptionalDecimal(infoFactura, "totalDescuento"),
+            OptionalDecimal(infoFactura, "propina"),
+            OptionalDecimal(infoFactura, "importeTotal")
+        );
 
     private static IReadOnlyList<PurchaseReceptionXmlViewExtraTax> ParseTaxSummaries(
         XElement? totalConImpuestos
@@ -102,8 +161,8 @@ public static class PurchaseReceptionXmlViewExtractor
         totalConImpuestos
             ?.Elements("totalImpuesto")
             .Select(t => new PurchaseReceptionXmlViewExtraTax(
-                TaxType: OptionalText(t, "codigo") ?? string.Empty,
-                TaxCode: OptionalText(t, "codigoPorcentaje") ?? string.Empty,
+                TaxCode: OptionalText(t, "codigo") ?? string.Empty,
+                TaxRateCode: OptionalText(t, "codigoPorcentaje") ?? string.Empty,
                 TaxRate: OptionalDecimal(t, "tarifa"),
                 TaxableBase: OptionalDecimal(t, "baseImponible") ?? 0m,
                 TaxAmount: OptionalDecimal(t, "valor") ?? 0m
@@ -111,8 +170,49 @@ public static class PurchaseReceptionXmlViewExtractor
             .ToList()
         ?? [];
 
+    private static IReadOnlyList<PurchaseReceptionXmlViewExtraLine> ParseLines(XElement? detalles) =>
+        detalles
+            ?.Elements("detalle")
+            .Select(d => new PurchaseReceptionXmlViewExtraLine(
+                MainCode: OptionalText(d, "codigoPrincipal"),
+                AuxCode: OptionalText(d, "codigoAuxiliar"),
+                Description: OptionalText(d, "descripcion") ?? string.Empty,
+                Taxes: ParseLineTaxes(d.Element("impuestos")),
+                AdditionalDetails: ParseAdditionalDetails(d.Element("detallesAdicionales"))
+            ))
+            .ToList()
+        ?? [];
+
+    private static IReadOnlyList<PurchaseReceptionXmlViewExtraLineTax> ParseLineTaxes(
+        XElement? impuestos
+    ) =>
+        impuestos
+            ?.Elements("impuesto")
+            .Select(t => new PurchaseReceptionXmlViewExtraLineTax(
+                TaxCode: OptionalText(t, "codigo") ?? string.Empty,
+                TaxRateCode: OptionalText(t, "codigoPorcentaje") ?? string.Empty,
+                Rate: OptionalDecimal(t, "tarifa") ?? 0m,
+                TaxableBase: OptionalDecimal(t, "baseImponible") ?? 0m,
+                TaxAmount: OptionalDecimal(t, "valor") ?? 0m
+            ))
+            .ToList()
+        ?? [];
+
+    private static IReadOnlyList<PurchaseReceptionXmlViewAdditionalDetail> ParseAdditionalDetails(
+        XElement? detallesAdicionales
+    ) =>
+        detallesAdicionales
+            ?.Elements("detAdicional")
+            .Select(d => new PurchaseReceptionXmlViewAdditionalDetail(
+                OptionalText(d, "nombre") ?? d.Attribute("nombre")?.Value ?? string.Empty,
+                OptionalText(d, "valor") ?? d.Attribute("valor")?.Value ?? string.Empty
+            ))
+            .Where(d => !string.IsNullOrWhiteSpace(d.Name) || !string.IsNullOrWhiteSpace(d.Value))
+            .ToList()
+        ?? [];
+
     private static decimal SumIce(IReadOnlyList<PurchaseReceptionXmlViewExtraTax> taxSummaries) =>
-        taxSummaries.Where(t => t.TaxType == SriIceTaxCode).Sum(t => t.TaxAmount);
+        taxSummaries.Where(t => t.TaxCode == SriIceTaxCode).Sum(t => t.TaxAmount);
 
     private static string? OptionalText(XElement? parent, string name) =>
         parent?.Element(name)?.Value is { Length: > 0 } value ? value : null;

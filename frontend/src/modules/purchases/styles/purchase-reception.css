@@ -207,6 +207,41 @@
   gap: var(--space-2);
 }
 
+.pur-xmlview-strong {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.pur-xmlview-line-detail summary {
+  cursor: pointer;
+  font-size: var(--text-help-size);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.pur-xmlview-line-detail__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+
+.pur-xmlview-line-detail__list div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.pur-xmlview-line-detail__list dt {
+  font-size: var(--text-help-size);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.pur-xmlview-line-detail__list dd {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
 .pur-xmlview-raw summary {
   cursor: pointer;
   font-size: var(--text-label-md-size);

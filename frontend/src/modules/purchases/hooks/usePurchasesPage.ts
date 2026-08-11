@@ -399,6 +399,7 @@ export function usePurchasesPage() {
           unitPrice: 0,
           vatCode: "",
           discountPct: 0,
+          conversionFactor: 1,
         },
       ],
       { shouldValidate: true },
@@ -486,7 +487,12 @@ export function usePurchasesPage() {
   const [matchingKey, setMatchingKey] = useState<number | null>(null);
 
   const handleMatchItem = useCallback(
-    async (key: number, itemId: string, itemLabel: string) => {
+    async (
+      key: number,
+      itemId: string,
+      itemLabel: string,
+      packagingLevelId?: string | null,
+    ) => {
       const currentLines = getValues("lines");
       const line = currentLines.find((l) => l._key === key);
       if (!line?.purchaseReceptionLineId) return;
@@ -496,6 +502,7 @@ export function usePurchasesPage() {
         const updated = await purchaseReceptionService.matchItem(
           line.purchaseReceptionLineId,
           itemId,
+          packagingLevelId,
         );
         const latest = getValues("lines");
         setValue(
@@ -522,6 +529,54 @@ export function usePurchasesPage() {
       setMatchingKey(null);
     },
     [getValues, setValue, fetchItemContext],
+  );
+
+  const handleSaveSupplierPresentation = useCallback(
+    async (key: number) => {
+      const currentLines = getValues("lines");
+      const line = currentLines.find((l) => l._key === key);
+      if (!line?.purchaseReceptionLineId || !line.itemId || !line.packagingLevelId)
+        return;
+
+      setMatchingKey(key);
+      try {
+        const updated = await purchaseReceptionService.matchItem(
+          line.purchaseReceptionLineId,
+          line.itemId,
+          line.packagingLevelId,
+        );
+        const latest = getValues("lines");
+        const selectedPackaging = line.context?.packagingLevels?.find(
+          (p) => p.id === line.packagingLevelId,
+        );
+        const conversionFactor =
+          selectedPackaging?.baseQuantity ?? line.conversionFactor ?? 1;
+        setValue(
+          "lines",
+          latest.map((l) =>
+            l._key === key
+              ? {
+                  ...l,
+                  itemMatchStatus: updated.matchStatus,
+                  packagingLevelId: line.packagingLevelId,
+                  uomCode: selectedPackaging?.uomCode ?? line.uomCode,
+                  baseUomCode: line.context?.baseUomCode ?? line.baseUomCode,
+                  conversionFactor,
+                  quantityInBaseUom: line.quantity * conversionFactor,
+                }
+              : l,
+          ),
+        );
+        message.success("Presentación guardada para este proveedor.");
+      } catch (err) {
+        message.error(
+          readApiErrorMessage(err) ??
+            "No se pudo guardar la presentación para este proveedor.",
+        );
+      }
+      setMatchingKey(null);
+    },
+    [getValues, setValue],
   );
 
   const handleUnmatchItem = useCallback(
@@ -757,6 +812,11 @@ export function usePurchasesPage() {
           warehouseId: l.warehouseId,
           notes: l.notes,
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
+          packagingLevelId: l.packagingLevelId ?? undefined,
+          uomCode: l.uomCode,
+          baseUomCode: l.baseUomCode,
+          conversionFactor: l.conversionFactor,
+          quantityInBaseUom: l.quantityInBaseUom,
         }));
 
         // SRI codes
@@ -916,6 +976,11 @@ export function usePurchasesPage() {
             warehouseId: l.warehouseId ?? undefined,
             notes: l.notes ?? undefined,
             purchaseReceptionLineId: l.purchaseReceptionLineId,
+            packagingLevelId: l.packagingLevelId ?? undefined,
+            uomCode: l.uomCode,
+            baseUomCode: l.baseUomCode,
+            conversionFactor: l.conversionFactor,
+            quantityInBaseUom: l.quantityInBaseUom,
             itemMatchStatus: l.itemMatchStatus,
             xmlSupplierCode: l.supplierCode ?? undefined,
             xmlSupplierAuxCode: l.supplierAuxCode,
@@ -985,6 +1050,7 @@ export function usePurchasesPage() {
           warehouseId: l.warehouseId,
           notes: l.notes,
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
+          packagingLevelId: l.packagingLevelId ?? undefined,
         })),
         accessKey: normalizeOptionalCode(data.accessKey),
         authorizationNumber: normalizeOptionalCode(data.authorizationNumber),
@@ -1321,6 +1387,7 @@ export function usePurchasesPage() {
     applyGlobalWarehouse,
     matchingKey,
     handleMatchItem,
+    handleSaveSupplierPresentation,
     handleUnmatchItem,
 
     // Supplier

@@ -216,6 +216,78 @@ public sealed class ItemRepository : IItemRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<ItemSupplierCodeMatch?> GetSupplierCodeMatchAsync(
+        Guid supplierId,
+        string code,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalized = code.Trim().ToUpperInvariant();
+
+        var supplierMatch = await (
+            from supplierCode in _context.Set<ItemSupplierCode>()
+            join item in Scoped(tenantId) on supplierCode.ItemId equals item.Id
+            join packaging in _context.ItemPackagingLevels
+                on supplierCode.PackagingLevelId equals packaging.Id
+                into packagingJoin
+            from packaging in packagingJoin.DefaultIfEmpty()
+            where
+                supplierCode.TenantId == tenantId
+                && supplierCode.SupplierId == supplierId
+                && supplierCode.Code == normalized
+                && supplierCode.IsActive
+                && (packaging == null || packaging.ItemId == supplierCode.ItemId)
+            select new ItemSupplierCodeMatch(
+                supplierCode.ItemId,
+                supplierCode.PackagingLevelId,
+                packaging != null && packaging.IsActive ? packaging.UomCode : null,
+                packaging != null && packaging.IsActive ? packaging.BaseQuantity : null,
+                item.DefaultUomCode
+            )
+        ).FirstOrDefaultAsync(cancellationToken);
+
+        if (supplierMatch is not null)
+            return supplierMatch;
+
+        return await Scoped(tenantId)
+            .Where(x => x.IsActive && x.Code.SKU == normalized)
+            .Select(x => new ItemSupplierCodeMatch(x.Id, null, null, null, x.DefaultUomCode))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> PackagingLevelBelongsToItemAsync(
+        Guid itemId,
+        Guid packagingLevelId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await _context.ItemPackagingLevels.AnyAsync(
+            x =>
+                x.TenantId == tenantId
+                && x.ItemId == itemId
+                && x.Id == packagingLevelId
+                && x.IsActive,
+            cancellationToken
+        );
+
+    public async Task UpdateSupplierCodePackagingLevelAsync(
+        Guid itemId,
+        Guid supplierId,
+        string code,
+        Guid? packagingLevelId,
+        Guid tenantId,
+        Guid updatedBy,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var item = await GetByIdAsync(itemId, tenantId, cancellationToken);
+        if (item is null)
+            throw new InvalidOperationException("Ítem no encontrado.");
+
+        item.SetSupplierCodePackagingLevel(supplierId, code, packagingLevelId, updatedBy);
+    }
+
     public async Task<IReadOnlyList<ItemSimilarityMatch>> SearchBySimilarityAsync(
         string text,
         Guid tenantId,
@@ -393,11 +465,36 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default
     )
     {
+        var incoming = newLevels.ToList();
         var existing = await _context
             .ItemPackagingLevels.Where(x => x.ItemId == itemId)
             .ToListAsync(cancellationToken);
-        _context.ItemPackagingLevels.RemoveRange(existing);
-        await _context.ItemPackagingLevels.AddRangeAsync(newLevels, cancellationToken);
+
+        var incomingIds = incoming.Select(x => x.Id).ToHashSet();
+        _context.ItemPackagingLevels.RemoveRange(existing.Where(x => !incomingIds.Contains(x.Id)));
+
+        foreach (var level in incoming)
+        {
+            var current = existing.FirstOrDefault(x => x.Id == level.Id);
+            if (current is null)
+            {
+                await _context.ItemPackagingLevels.AddAsync(level, cancellationToken);
+                continue;
+            }
+
+            current.Update(
+                level.Name,
+                level.Level,
+                level.BaseQuantity,
+                level.UomCode,
+                level.Barcode,
+                level.Weight,
+                level.IsBaseUnit,
+                level.IsPurchaseDefault,
+                level.IsSaleDefault,
+                level.UpdatedBy ?? level.CreatedBy
+            );
+        }
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>

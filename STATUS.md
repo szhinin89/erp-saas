@@ -1,6 +1,30 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-08-07** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-08-11** · Kernel refactor: **2026-06-05**.
+
+---
+
+## Purchases — Recepción XML empaques FIX03 (2026-08-11)
+
+**Estado: COMPLETADO.** Corrección de rehidratación de presentación al abrir una compra desde Recepción Electrónica con `fromReceptionId`.
+
+- `CreatePurchaseReceptionDraftHandler` re-resuelve cada línea vinculada usando `SupplierId + SupplierCode` contra `ItemSupplierCode` y toma `PackagingLevelId`, UOM y factor desde `ItemPackagingLevel`.
+- El DTO de draft de recepción expone `packagingLevelId`, `uomCode`, `baseUomCode`, `conversionFactor` y `quantityInBaseUom`, evitando que el frontend vuelva a factor 1.
+- `/purchases?fromReceptionId=...` hidrata el formulario con la instantánea de presentación y el VM muestra `Ítem + PACA x12` aun si el contexto de bodega todavía no cargó.
+- Guardar presentación del proveedor actualiza la línea local con UOM, factor y cantidad base sin requerir recarga manual.
+- Validado con `dotnet build backend/src/ERP.slnx`, `dotnet test backend/src/ERP.slnx --filter PurchaseReception`, `dotnet test backend/src/ERP.slnx --filter Purchase`, `dotnet test backend/src/ERP.slnx --filter Items`, `npx tsc --noEmit`, `npm run lint`, `npm run build` y `npx vitest run src/modules/purchases src/modules/items`.
+
+---
+
+## Items — Empaques FIX02 (2026-08-11)
+
+**Estado: COMPLETADO.** Corrección del flujo de edición de niveles de empaque en maestro de ítems.
+
+- El guardado de empaques muestra errores reales de validación backend y conserva la fila en edición si falla.
+- La UI impide guardar conjuntos sin exactamente una presentación base y facilita crear `UNIDAD X1`.
+- `replacePackagingLevels` preserva IDs existentes al editar, evitando romper asociaciones de códigos de proveedor.
+- El selector de presentación de códigos proveedor usa los empaques refrescados y muestra el factor contra la unidad base del ítem.
+- Validado con `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npx vitest run src/modules/items`, `dotnet build backend/src/ERP.slnx` y `dotnet test backend/src/ERP.slnx --filter Items`.
 
 ---
 

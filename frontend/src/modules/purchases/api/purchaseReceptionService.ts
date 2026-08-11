@@ -146,6 +146,11 @@ export interface PurchaseDraftLineDto {
   vatPercentage: number;
   taxValue: number;
   totalLine: number;
+  packagingLevelId: string | null;
+  uomCode: string;
+  baseUomCode: string;
+  conversionFactor: number;
+  quantityInBaseUom: number;
   /** FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (IVA/ICE/IRBPNR), solo lectura. */
   taxes: PurchaseDraftLineTax[];
 }
@@ -169,18 +174,26 @@ export interface PurchaseDraftDto {
 }
 
 export interface PurchaseReceptionXmlViewTaxSummary {
-  taxType: string;
   taxCode: string;
-  taxRate: number | null;
+  taxRateCode: string;
+  taxName: string;
+  rate: number | null;
   taxableBase: number;
-  taxAmount: number;
+  amount: number;
 }
 
 export interface PurchaseReceptionXmlViewLineTax {
-  taxType: string;
   taxCode: string;
+  taxRateCode: string;
+  taxName: string;
   rate: number;
-  taxAmount: number;
+  taxableBase: number;
+  amount: number;
+}
+
+export interface PurchaseReceptionXmlViewAdditionalDetail {
+  name: string;
+  value: string;
 }
 
 export interface PurchaseReceptionXmlViewLine {
@@ -192,9 +205,12 @@ export interface PurchaseReceptionXmlViewLine {
   discountAmount: number;
   taxableBase: number;
   iceAmount: number;
+  irbpnrAmount: number;
   vatAmount: number;
   totalAmount: number;
+  lineTotal: number;
   taxes: PurchaseReceptionXmlViewLineTax[];
+  additionalDetails: PurchaseReceptionXmlViewAdditionalDetail[];
 }
 
 /**
@@ -212,6 +228,10 @@ export interface PurchaseReceptionXmlView {
   supplierName: string;
   supplierTradeName: string | null;
   supplierTaxId: string;
+  referralGuide: string | null;
+  paymentMethodCode: string | null;
+  paymentTerm: string | null;
+  paymentTimeUnit: string | null;
   modifiedDocumentNumber: string | null;
   modifiedDocumentType: string | null;
   modifiedDocumentDate: string | null;
@@ -219,8 +239,12 @@ export interface PurchaseReceptionXmlView {
   subtotal: number;
   discountAmount: number;
   iceAmount: number;
+  irbpnrAmount: number;
   vatAmount: number;
+  tipAmount: number;
   totalAmount: number;
+  lineCalculatedTotal: number;
+  roundingDifference: number;
   taxSummaries: PurchaseReceptionXmlViewTaxSummary[];
   lines: PurchaseReceptionXmlViewLine[];
   rawXmlAvailable: boolean;
@@ -269,10 +293,11 @@ export const purchaseReceptionService = {
   matchItem(
     lineId: string,
     itemId: string,
+    packagingLevelId?: string | null,
   ): Promise<PurchaseReceptionLineMatch> {
     return apiPost<PurchaseReceptionLineMatch>(
       `${BASE}/lines/${lineId}/match-item`,
-      { itemId },
+      { itemId, packagingLevelId: packagingLevelId ?? null },
     );
   },
 

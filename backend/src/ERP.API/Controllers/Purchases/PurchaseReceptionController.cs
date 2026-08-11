@@ -122,7 +122,10 @@ public sealed class PurchaseReceptionController : ControllerBase
         Guid id,
         [FromBody] MatchItemRequest body,
         CancellationToken ct
-    ) => this.ToOkOrBadRequest(await _mediator.Send(new MatchItemCommand(id, body.ItemId), ct));
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new MatchItemCommand(id, body.ItemId, body.PackagingLevelId), ct)
+        );
 
     [HttpPost("lines/{id:guid}/unmatch-item")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
@@ -147,4 +150,4 @@ public sealed class PurchaseReceptionController : ControllerBase
     ) => this.ToOkOrBadRequest(await _mediator.Send(new BulkMatchItemsCommand(matches), ct));
 }
 
-public sealed record MatchItemRequest(Guid ItemId);
+public sealed record MatchItemRequest(Guid ItemId, Guid? PackagingLevelId = null);

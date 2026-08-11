@@ -20,6 +20,10 @@ public sealed record PurchaseReceptionXmlViewDto(
     string SupplierName,
     string? SupplierTradeName,
     string SupplierTaxId,
+    string? ReferralGuide,
+    string? PaymentMethodCode,
+    string? PaymentTerm,
+    string? PaymentTimeUnit,
     string? ModifiedDocumentNumber,
     string? ModifiedDocumentType,
     DateOnly? ModifiedDocumentDate,
@@ -27,21 +31,26 @@ public sealed record PurchaseReceptionXmlViewDto(
     decimal Subtotal,
     decimal DiscountAmount,
     decimal IceAmount,
+    decimal IrbpnrAmount,
     decimal VatAmount,
+    decimal TipAmount,
     decimal TotalAmount,
+    decimal LineCalculatedTotal,
+    decimal RoundingDifference,
     IReadOnlyList<PurchaseReceptionXmlViewTaxSummaryDto> TaxSummaries,
     IReadOnlyList<PurchaseReceptionXmlViewLineDto> Lines,
     bool RawXmlAvailable,
     string? RawXml
 );
 
-/// <summary>Un <c>&lt;totalImpuesto&gt;</c> de cabecera, tal como lo declara el XML — sin tarifa (el esquema SRI no la incluye a este nivel).</summary>
+/// <summary>Un <c>&lt;totalImpuesto&gt;</c> de cabecera, enriquecido solo con tarifa observada en impuestos reales de línea cuando existe.</summary>
 public sealed record PurchaseReceptionXmlViewTaxSummaryDto(
-    string TaxType,
     string TaxCode,
-    decimal? TaxRate,
+    string TaxRateCode,
+    string TaxName,
+    decimal? Rate,
     decimal TaxableBase,
-    decimal TaxAmount
+    decimal Amount
 );
 
 public sealed record PurchaseReceptionXmlViewLineDto(
@@ -53,14 +62,21 @@ public sealed record PurchaseReceptionXmlViewLineDto(
     decimal DiscountAmount,
     decimal TaxableBase,
     decimal IceAmount,
+    decimal IrbpnrAmount,
     decimal VatAmount,
     decimal TotalAmount,
-    IReadOnlyList<PurchaseReceptionXmlViewLineTaxDto> Taxes
+    decimal LineTotal,
+    IReadOnlyList<PurchaseReceptionXmlViewLineTaxDto> Taxes,
+    IReadOnlyList<PurchaseReceptionXmlViewAdditionalDetailDto> AdditionalDetails
 );
 
 public sealed record PurchaseReceptionXmlViewLineTaxDto(
-    string TaxType,
     string TaxCode,
+    string TaxRateCode,
+    string TaxName,
     decimal Rate,
-    decimal TaxAmount
+    decimal TaxableBase,
+    decimal Amount
 );
+
+public sealed record PurchaseReceptionXmlViewAdditionalDetailDto(string Name, string Value);

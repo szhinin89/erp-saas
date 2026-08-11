@@ -1,7 +1,10 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
+using ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
+using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using MediatR;
 using DraftMapper = ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft.PurchaseDraftMapper;
@@ -23,18 +26,21 @@ public sealed class CreatePurchaseReceptionDraftHandler
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
+    private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
 
     public CreatePurchaseReceptionDraftHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
         IPurchaseReceptionDetailProcessor detailProcessor,
+        IItemRepository itemRepo,
         ICurrentTenant tenant,
         ICurrentUser user
     )
     {
         _documentRepo = documentRepo;
         _detailProcessor = detailProcessor;
+        _itemRepo = itemRepo;
         _tenant = tenant;
         _user = user;
     }
@@ -100,7 +106,53 @@ public sealed class CreatePurchaseReceptionDraftHandler
         }
 
         var draft = DraftModel.FromReceptionDocument(document);
+        var packagingByLine = await ResolvePackagingSnapshotsAsync(document, cancellationToken);
 
-        return Result<PurchaseDraftDto>.Success(DraftMapper.ToDto(draft));
+        return Result<PurchaseDraftDto>.Success(DraftMapper.ToDto(draft, packagingByLine));
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, PurchaseDraftLinePackagingSnapshot>> ResolvePackagingSnapshotsAsync(
+        PurchaseReceptionDocument document,
+        CancellationToken cancellationToken
+    )
+    {
+        var snapshots = new Dictionary<Guid, PurchaseDraftLinePackagingSnapshot>();
+
+        if (document.SupplierId is not { } supplierId)
+            return snapshots;
+
+        foreach (var line in document.Lines)
+        {
+            if (line.ItemId is not { } itemId || string.IsNullOrWhiteSpace(line.SupplierCode))
+                continue;
+
+            var match = await _itemRepo.GetSupplierCodeMatchAsync(
+                supplierId,
+                line.SupplierCode,
+                document.TenantId,
+                cancellationToken
+            );
+            if (match is null || match.ItemId != itemId)
+                continue;
+
+            if (
+                match.PackagingLevelId is { } packagingLevelId
+                && !string.IsNullOrWhiteSpace(match.PackagingUomCode)
+                && match.PackagingBaseQuantity is > 0m
+            )
+            {
+                snapshots[line.Id] = new PurchaseDraftLinePackagingSnapshot(
+                    packagingLevelId,
+                    match.PackagingUomCode,
+                    match.BaseUomCode,
+                    match.PackagingBaseQuantity.Value
+                );
+                continue;
+            }
+
+            snapshots[line.Id] = PurchaseDraftLinePackagingSnapshot.Base(match.BaseUomCode);
+        }
+
+        return snapshots;
     }
 }

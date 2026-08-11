@@ -69,6 +69,43 @@ public sealed class ConfirmPurchaseHandlerTests
         return inv;
     }
 
+    private static PurchaseInvoice CreateDraftInvoiceWithPackagedLine()
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000002",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
+
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Fanta Harmony NRJ 1350 PET(12)",
+            quantity: 2m,
+            unitPrice: 9.29m,
+            vatCode: "10",
+            uomCode: "PACA",
+            itemId: ItemId1,
+            warehouseId: WhId,
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+        inv.ReplaceLines([line], UserId);
+        return inv;
+    }
+
     private (
         ConfirmPurchaseHandler handler,
         Mock<IPurchaseInvoiceRepository> repo,
@@ -270,6 +307,39 @@ public sealed class ConfirmPurchaseHandlerTests
         );
         stockRepo.Verify(
             s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_con_presentacion_de_compra_mueve_inventario_en_unidad_base()
+    {
+        var inv = CreateDraftInvoiceWithPackagedLine();
+        var (handler, _, stockRepo) = BuildHandler(inv);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId1,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    24m,
+                    "UNIT",
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    0.774167m,
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }

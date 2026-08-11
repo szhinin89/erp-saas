@@ -8,6 +8,7 @@ using MediatR;
 namespace ERP.Application.Items.UseCases.ItemPackagingLevels;
 
 public record PackagingLevelInput(
+    Guid? Id,
     string Name,
     int Level,
     decimal BaseQuantity,
@@ -33,11 +34,26 @@ public sealed class ReplaceItemPackagingLevelsCommandValidator
         RuleFor(x => x.Levels)
             .NotEmpty()
             .WithMessage("Debe especificar al menos un nivel de empaque.")
-            .Must(lvls => lvls.Count(l => l.IsBaseUnit) == 1)
-            .WithMessage("Debe existir exactamente un nivel base (IsBaseUnit=true).");
+            .Must(lvls => lvls is not null && lvls.Count(l => l.IsBaseUnit) == 1)
+            .WithMessage(
+                "Debe existir exactamente una presentación marcada como unidad base."
+            )
+            .Must(lvls =>
+                lvls is not null
+                && lvls.All(l => !string.IsNullOrWhiteSpace(l.UomCode))
+                && lvls.Select(l => new
+                    {
+                        UomCode = l.UomCode.Trim().ToUpperInvariant(),
+                        l.BaseQuantity,
+                    })
+                    .Distinct()
+                    .Count() == lvls.Count
+            )
+            .WithMessage("No se puede duplicar UOM y cantidad base en empaques.");
         RuleForEach(x => x.Levels)
             .ChildRules(l =>
             {
+                l.RuleFor(x => x.Id).NotEqual(Guid.Empty).When(x => x.Id.HasValue);
                 l.RuleFor(x => x.Name).NotEmpty().MaximumLength(50);
                 l.RuleFor(x => x.UomCode).NotEmpty().MaximumLength(10);
                 l.RuleFor(x => x.BaseQuantity).GreaterThan(0);
@@ -74,7 +90,7 @@ public sealed class ReplaceItemPackagingLevelsCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var item = await _repository.GetByIdLightAsync(
+        var item = await _repository.GetByIdAsync(
             cmd.Id,
             _currentTenant.TenantId,
             cancellationToken
@@ -82,12 +98,35 @@ public sealed class ReplaceItemPackagingLevelsCommandHandler
         if (item is null)
             return Result<ItemDetailDto>.NotFound("Ítem no encontrado.");
 
+        var currentPackagingIds = item.PackagingLevels.Select(p => p.Id).ToHashSet();
+        var foreignId = cmd.Levels.FirstOrDefault(l =>
+            l.Id.HasValue && !currentPackagingIds.Contains(l.Id.Value)
+        );
+        if (foreignId is not null)
+        {
+            return Result<ItemDetailDto>.ValidationFailure(
+                "El nivel de empaque no pertenece al ítem."
+            );
+        }
+
+        var submittedIds = cmd.Levels.Where(l => l.Id.HasValue).Select(l => l.Id!.Value).ToHashSet();
+        var removedUsedLevel = item.SupplierCodes.Any(s =>
+            s.IsActive && s.PackagingLevelId.HasValue && !submittedIds.Contains(s.PackagingLevelId.Value)
+        );
+        if (removedUsedLevel)
+        {
+            return Result<ItemDetailDto>.ValidationFailure(
+                "No se puede quitar una presentación usada por códigos de proveedor."
+            );
+        }
+
         var newLevels = cmd
             .Levels.OrderBy(l => l.Level)
             .Select(l =>
                 ItemPackagingLevel.Create(
                     cmd.Id,
                     item.TenantId,
+                    l.Id,
                     l.Name,
                     l.Level,
                     l.BaseQuantity,

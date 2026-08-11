@@ -6,6 +6,7 @@ public sealed class ItemSupplierCode : AuditableEntity
 {
     public Guid ItemId { get; private set; }
     public Guid SupplierId { get; private set; }
+    public Guid? PackagingLevelId { get; private set; }
     public string Code { get; private set; } = null!;
     public bool IsPrimary { get; private set; }
     public bool IsActive { get; private set; }
@@ -22,7 +23,8 @@ public sealed class ItemSupplierCode : AuditableEntity
         Guid supplierId,
         string code,
         Guid createdBy,
-        bool isPrimary = false
+        bool isPrimary = false,
+        Guid? packagingLevelId = null
     )
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -34,6 +36,11 @@ public sealed class ItemSupplierCode : AuditableEntity
             );
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
+        if (packagingLevelId == Guid.Empty)
+            throw new ArgumentException(
+                "El nivel de empaque no es válido.",
+                nameof(packagingLevelId)
+            );
 
         var entity = new ItemSupplierCode
         {
@@ -41,6 +48,7 @@ public sealed class ItemSupplierCode : AuditableEntity
             TenantId = tenantId,
             ItemId = itemId,
             SupplierId = supplierId,
+            PackagingLevelId = packagingLevelId,
             Code = code.Trim(),
             IsPrimary = isPrimary,
             IsActive = true,
@@ -56,4 +64,15 @@ public sealed class ItemSupplierCode : AuditableEntity
     public void MarkAsPrimary() => IsPrimary = true;
 
     public void UnmarkAsPrimary() => IsPrimary = false;
+
+    public void SetPackagingLevel(Guid? packagingLevelId)
+    {
+        if (packagingLevelId == Guid.Empty)
+            throw new ArgumentException(
+                "El nivel de empaque no es válido.",
+                nameof(packagingLevelId)
+            );
+
+        PackagingLevelId = packagingLevelId;
+    }
 }

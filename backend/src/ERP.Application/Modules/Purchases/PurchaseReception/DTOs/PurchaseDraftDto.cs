@@ -27,6 +27,11 @@ public sealed record PurchaseDraftLineDto(
     decimal VatPercentage,
     decimal TaxValue,
     decimal TotalLine,
+    Guid? PackagingLevelId,
+    string UomCode,
+    string BaseUomCode,
+    decimal ConversionFactor,
+    decimal QuantityInBaseUom,
     // FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (IVA/ICE/IRBPNR), para que la vista
     // previa "Producto recibido (XML)" del formulario de compra pueda mostrarlos sin adivinar.
     List<PurchaseDraftLineTaxDto> Taxes

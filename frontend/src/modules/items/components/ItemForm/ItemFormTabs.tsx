@@ -17,6 +17,7 @@ import {
   ImagesSection,
   SubstitutesSection,
   PackagingLevelsSection,
+  SupplierCodesDetailSection,
 } from "../../detail/components/CollectionSection";
 import { ProfitabilitySection } from "../../detail/components/ProfitabilitySection";
 import {
@@ -433,10 +434,31 @@ export function ItemFormTabs({
             ))}
           {activeTab === "packaging" &&
             (isEditMode && detail.item ? (
-              <PackagingLevelsSection
-                t={t}
-                levels={detail.item.packagingLevels}
-              />
+              <>
+                <PackagingLevelsSection
+                  t={t}
+                  levels={detail.item.packagingLevels}
+                  uomOptions={sriUomOptions}
+                  baseUomCode={detail.item.defaultUomCode}
+                  usedPackagingLevelIds={
+                    new Set(
+                      detail.item.supplierCodes
+                        .filter((s) => s.packagingLevelId)
+                        .map((s) => s.packagingLevelId as string),
+                    )
+                  }
+                  disabled={fieldsDisabled}
+                  onSave={detail.replacePackagingLevels}
+                />
+                <SupplierCodesDetailSection
+                  t={t}
+                  supplierCodes={detail.item.supplierCodes}
+                  packagingLevels={detail.item.packagingLevels}
+                  baseUomAbbrev={detail.item.defaultUomAbbrev}
+                  disabled={fieldsDisabled}
+                  onUpdatePresentation={detail.updateSupplierCodePresentation}
+                />
+              </>
             ) : (
               <AfterCreateNotice
                 message={t(

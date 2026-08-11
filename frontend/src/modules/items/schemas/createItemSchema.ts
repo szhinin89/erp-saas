@@ -67,6 +67,7 @@ const supplierCodeSchema = z.object({
     .trim()
     .min(1, "items.validation.supplierCodeRequired")
     .max(100, "items.validation.supplierCodeMax"),
+  packagingLevelId: z.string().uuid().nullable().optional(),
   isPrimary: z.boolean().default(false),
 });
 

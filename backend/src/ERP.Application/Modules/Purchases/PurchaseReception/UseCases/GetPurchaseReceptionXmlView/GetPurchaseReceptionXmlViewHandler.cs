@@ -17,6 +17,10 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurcha
 public sealed class GetPurchaseReceptionXmlViewHandler
     : IRequestHandler<GetPurchaseReceptionXmlViewQuery, Result<PurchaseReceptionXmlViewDto>>
 {
+    private const string SriVatTaxCode = "2";
+    private const string SriIceTaxCode = "3";
+    private const string SriIrbpnrTaxCode = "5";
+
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly ICurrentTenant _tenant;
 
@@ -48,6 +52,28 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             ? null
             : TryExtract(document.XmlContent);
 
+        var lines = document
+            .Lines.Select((line, index) =>
+                ToLineDto(
+                    line,
+                    extras?.Lines.Count > index ? extras.Lines[index] : null
+                )
+            )
+            .ToList();
+        var lineCalculatedTotal = lines.Sum(l => l.LineTotal);
+        var taxSummaries = extras is null
+            ? []
+            : extras
+                .TaxSummaries.Select(t => ToTaxSummaryDto(t, lines))
+                .ToList();
+        var subtotal = extras?.Totals.TotalWithoutTaxes ?? document.Subtotal;
+        var discount = extras?.Totals.TotalDiscount ?? extras?.DiscountAmount ?? 0m;
+        var totalIce = SumTax(taxSummaries, SriIceTaxCode, extras?.IceAmount ?? 0m);
+        var totalIrbpnr = SumTax(taxSummaries, SriIrbpnrTaxCode, 0m);
+        var totalVat = SumTax(taxSummaries, SriVatTaxCode, document.VatAmount);
+        var tip = extras?.Totals.Tip ?? 0m;
+        var totalAmount = extras?.Totals.TotalAmount ?? document.TotalAmount;
+
         var dto = new PurchaseReceptionXmlViewDto(
             DocumentId: document.Id,
             DocumentType: ToSourceDocTypeCode(document.SourceDocType),
@@ -59,27 +85,25 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             SupplierName: document.SupplierName,
             SupplierTradeName: extras?.SupplierTradeName,
             SupplierTaxId: document.SupplierRuc,
+            ReferralGuide: extras?.ReferralGuide,
+            PaymentMethodCode: extras?.PaymentMethodCode ?? document.SriPaymentMethodCode,
+            PaymentTerm: extras?.PaymentTerm,
+            PaymentTimeUnit: extras?.PaymentTimeUnit,
             ModifiedDocumentNumber: document.ModifiedDocumentNumber,
             ModifiedDocumentType: extras?.ModifiedDocumentType,
             ModifiedDocumentDate: extras?.ModifiedDocumentDate,
             ModificationReason: extras?.ModificationReason,
-            Subtotal: document.Subtotal,
-            DiscountAmount: extras?.DiscountAmount ?? 0m,
-            IceAmount: extras?.IceAmount ?? 0m,
-            VatAmount: document.VatAmount,
-            TotalAmount: document.TotalAmount,
-            TaxSummaries: extras is null
-                ? []
-                : extras
-                    .TaxSummaries.Select(t => new PurchaseReceptionXmlViewTaxSummaryDto(
-                        t.TaxType,
-                        t.TaxCode,
-                        t.TaxRate,
-                        t.TaxableBase,
-                        t.TaxAmount
-                    ))
-                    .ToList(),
-            Lines: document.Lines.Select(ToLineDto).ToList(),
+            Subtotal: subtotal,
+            DiscountAmount: discount,
+            IceAmount: totalIce,
+            IrbpnrAmount: totalIrbpnr,
+            VatAmount: totalVat,
+            TipAmount: tip,
+            TotalAmount: totalAmount,
+            LineCalculatedTotal: lineCalculatedTotal,
+            RoundingDifference: totalAmount - lineCalculatedTotal,
+            TaxSummaries: taxSummaries,
+            Lines: lines,
             RawXmlAvailable: !string.IsNullOrWhiteSpace(document.XmlContent),
             RawXml: document.XmlContent
         );
@@ -102,24 +126,53 @@ public sealed class GetPurchaseReceptionXmlViewHandler
         }
     }
 
-    private static PurchaseReceptionXmlViewLineDto ToLineDto(PurchaseReceptionLine line)
+    private static PurchaseReceptionXmlViewTaxSummaryDto ToTaxSummaryDto(
+        PurchaseReceptionXmlViewExtraTax tax,
+        IReadOnlyList<PurchaseReceptionXmlViewLineDto> lines
+    )
+    {
+        var rate = tax.TaxRate
+            ?? lines
+                .SelectMany(l => l.Taxes)
+                .Where(t => t.TaxCode == tax.TaxCode && t.TaxRateCode == tax.TaxRateCode)
+                .Select(t => (decimal?)t.Rate)
+                .FirstOrDefault();
+
+        return new PurchaseReceptionXmlViewTaxSummaryDto(
+            TaxCode: tax.TaxCode,
+            TaxRateCode: tax.TaxRateCode,
+            TaxName: TaxName(tax.TaxCode),
+            Rate: rate,
+            TaxableBase: tax.TaxableBase,
+            Amount: tax.TaxAmount
+        );
+    }
+
+    private static decimal SumTax(
+        IReadOnlyList<PurchaseReceptionXmlViewTaxSummaryDto> taxSummaries,
+        string taxCode,
+        decimal fallback
+    )
+    {
+        var total = taxSummaries.Where(t => t.TaxCode == taxCode).Sum(t => t.Amount);
+        return total == 0m ? fallback : total;
+    }
+
+    private static PurchaseReceptionXmlViewLineDto ToLineDto(
+        PurchaseReceptionLine line,
+        PurchaseReceptionXmlViewExtraLine? extraLine
+    )
     {
         // FLOW-READY-02F.1 — cuando la línea capturó el detalle genérico de impuestos (esta fase en
         // adelante), se usa como fuente: incluye automáticamente cualquier código (IRBPNR, etc.) sin
         // necesidad de un caso especial por impuesto. Líneas de recepciones anteriores a esta fase
         // (sin esa colección) siguen construyendo Taxes solo desde VatCode/IceCode, exactamente como
         // antes — regresión cero.
-        var taxes =
-            line.Taxes.Count > 0
-                ? line
-                    .Taxes.Select(t => new PurchaseReceptionXmlViewLineTaxDto(
-                        t.TaxCode,
-                        t.TaxRateCode,
-                        t.Tarifa,
-                        t.TaxAmount
-                    ))
-                    .ToList()
-                : BuildLegacyTaxes(line);
+        var taxes = BuildLineTaxes(line, extraLine);
+        var vatAmount = taxes.Where(t => t.TaxCode == SriVatTaxCode).Sum(t => t.Amount);
+        var iceAmount = taxes.Where(t => t.TaxCode == SriIceTaxCode).Sum(t => t.Amount);
+        var irbpnrAmount = taxes.Where(t => t.TaxCode == SriIrbpnrTaxCode).Sum(t => t.Amount);
+        var lineTotal = line.LineSubtotal + taxes.Sum(t => t.Amount);
 
         return new PurchaseReceptionXmlViewLineDto(
             MainCode: line.SupplierCode,
@@ -129,23 +182,89 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             UnitPrice: line.UnitPrice,
             DiscountAmount: line.Discount,
             TaxableBase: line.LineSubtotal,
-            IceAmount: line.IceValue,
-            VatAmount: line.TaxValue,
+            IceAmount: iceAmount,
+            IrbpnrAmount: irbpnrAmount,
+            VatAmount: vatAmount,
             TotalAmount: line.TotalLine,
-            Taxes: taxes
+            LineTotal: lineTotal,
+            Taxes: taxes,
+            AdditionalDetails: extraLine
+                    ?.AdditionalDetails.Select(d => new PurchaseReceptionXmlViewAdditionalDetailDto(
+                        d.Name,
+                        d.Value
+                    ))
+                    .ToList()
+                ?? []
         );
+    }
+
+    private static List<PurchaseReceptionXmlViewLineTaxDto> BuildLineTaxes(
+        PurchaseReceptionLine line,
+        PurchaseReceptionXmlViewExtraLine? extraLine
+    )
+    {
+        if (extraLine?.Taxes.Count > 0)
+            return extraLine
+                .Taxes.Select(t => new PurchaseReceptionXmlViewLineTaxDto(
+                    t.TaxCode,
+                    t.TaxRateCode,
+                    TaxName(t.TaxCode),
+                    t.Rate,
+                    t.TaxableBase,
+                    t.TaxAmount
+                ))
+                .ToList();
+
+        if (line.Taxes.Count > 0)
+            return line
+                .Taxes.Select(t => new PurchaseReceptionXmlViewLineTaxDto(
+                    t.TaxCode,
+                    t.TaxRateCode,
+                    TaxName(t.TaxCode),
+                    t.Tarifa,
+                    t.TaxableBase,
+                    t.TaxAmount
+                ))
+                .ToList();
+
+        return BuildLegacyTaxes(line);
     }
 
     private static List<PurchaseReceptionXmlViewLineTaxDto> BuildLegacyTaxes(PurchaseReceptionLine line)
     {
         var taxes = new List<PurchaseReceptionXmlViewLineTaxDto>
         {
-            new("2", line.VatCode, line.VatPercentage, line.TaxValue),
+            new(
+                SriVatTaxCode,
+                line.VatCode,
+                TaxName(SriVatTaxCode),
+                line.VatPercentage,
+                line.LineSubtotal,
+                line.TaxValue
+            ),
         };
         if (!string.IsNullOrWhiteSpace(line.IceCode))
-            taxes.Add(new PurchaseReceptionXmlViewLineTaxDto("3", line.IceCode, 0m, line.IceValue));
+            taxes.Add(
+                new PurchaseReceptionXmlViewLineTaxDto(
+                    SriIceTaxCode,
+                    line.IceCode,
+                    TaxName(SriIceTaxCode),
+                    0m,
+                    line.LineSubtotal,
+                    line.IceValue
+                )
+            );
         return taxes;
     }
+
+    private static string TaxName(string taxCode) =>
+        taxCode switch
+        {
+            SriVatTaxCode => "IVA",
+            SriIceTaxCode => "ICE",
+            SriIrbpnrTaxCode => "IRBPNR",
+            _ => taxCode,
+        };
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>
         sourceDocType switch

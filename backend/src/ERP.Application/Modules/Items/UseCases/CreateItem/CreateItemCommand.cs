@@ -7,7 +7,12 @@ namespace ERP.Application.Items.UseCases.CreateItem;
 public sealed record CreateItemBarcodeDto(string Code, string BarcodeType, bool IsPrimary);
 
 /// <summary>SupplierId es obligatorio — no existe "código de proveedor" sin proveedor (Fase 2).</summary>
-public sealed record CreateItemSupplierCodeDto(Guid SupplierId, string Code, bool IsPrimary);
+public sealed record CreateItemSupplierCodeDto(
+    Guid SupplierId,
+    string Code,
+    bool IsPrimary,
+    Guid? PackagingLevelId = null
+);
 
 public sealed record CreateItemCommand(
     // ── Identity ──────────────────────────────────────────────────────────

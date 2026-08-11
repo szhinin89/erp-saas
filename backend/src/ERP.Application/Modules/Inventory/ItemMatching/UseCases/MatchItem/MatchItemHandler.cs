@@ -59,12 +59,48 @@ public sealed class MatchItemHandler
                 "El ítem seleccionado no existe."
             );
 
+        if (
+            request.PackagingLevelId.HasValue
+            && !await _itemRepo.PackagingLevelBelongsToItemAsync(
+                request.ItemId,
+                request.PackagingLevelId.Value,
+                _tenant.TenantId,
+                cancellationToken
+            )
+        )
+        {
+            return Result<PurchaseReceptionLineMatchDto>.ValidationFailure(
+                "La presentación seleccionada no pertenece al ítem."
+            );
+        }
+
+        if (
+            request.PackagingLevelId.HasValue
+            && document.SupplierId.HasValue
+            && !string.IsNullOrWhiteSpace(line.SupplierCode)
+        )
+        {
+            var existingMatch = await _itemRepo.GetSupplierCodeMatchAsync(
+                document.SupplierId.Value,
+                line.SupplierCode!,
+                _tenant.TenantId,
+                cancellationToken
+            );
+            if (existingMatch is not null && existingMatch.ItemId != request.ItemId)
+            {
+                return Result<PurchaseReceptionLineMatchDto>.ValidationFailure(
+                    "El código de proveedor ya está asociado a otro ítem."
+                );
+            }
+        }
+
         await _confirmationService.ConfirmAsync(
             document,
             line,
             request.ItemId,
             _user.UserId,
             DateTime.UtcNow,
+            request.PackagingLevelId,
             cancellationToken
         );
         await _documentRepo.SaveChangesAsync(cancellationToken);

@@ -7,6 +7,8 @@ public sealed class PurchaseItemContextDto
     public string Sku { get; init; } = default!;
     public string ShortName { get; init; } = default!;
     public string Description { get; init; } = default!;
+    public string BaseUomCode { get; init; } = default!;
+    public IReadOnlyList<PurchaseItemPackagingLevelDto> PackagingLevels { get; init; } = [];
     public string? SupplierCode { get; init; }
 
     // ── STOCK (SSOT) ─────────────────────────────────────────────
@@ -35,3 +37,12 @@ public sealed class PurchaseItemContextDto
     public decimal CostMargin { get; init; }
     public decimal CostMarginPercent { get; init; }
 }
+
+public sealed record PurchaseItemPackagingLevelDto(
+    Guid Id,
+    string Name,
+    decimal BaseQuantity,
+    string UomCode,
+    bool IsBaseUnit,
+    bool IsPurchaseDefault
+);

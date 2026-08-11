@@ -227,5 +227,5 @@ internal static class ItemMappingService
         );
 
     private static ItemSupplierCodeDto MapSupplierCode(ItemSupplierCode s) =>
-        new(s.Id, s.SupplierId, s.Code, s.IsPrimary, s.IsActive);
+        new(s.Id, s.SupplierId, s.PackagingLevelId, s.Code, s.IsPrimary, s.IsActive);
 }

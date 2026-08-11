@@ -56,7 +56,11 @@ public sealed class ItemMatchConfirmationServiceTests
         );
 
     private static Item CreateItem() =>
-        Item.Create(
+        CreateItemCore();
+
+    private static Item CreateItemCore()
+    {
+        var item = Item.Create(
             TenantId,
             "SKU-001",
             "Coca Cola 500ML",
@@ -68,6 +72,15 @@ public sealed class ItemMatchConfirmationServiceTests
             ItemStockConfig.Create(),
             UserId
         );
+        item.ReplacePackagingLevels(
+            [
+                ("Unidad", 1, 1m, "UNIT", null, null, true, false, true),
+                ("Paca 12", 2, 12m, "PACA", null, null, false, true, false),
+            ],
+            UserId
+        );
+        return item;
+    }
 
     [Fact]
     public async Task ConfirmAsync_creates_a_new_ItemSupplierCode_when_none_exists_for_the_supplier()
@@ -104,6 +117,48 @@ public sealed class ItemMatchConfirmationServiceTests
     }
 
     [Fact]
+    public async Task ConfirmAsync_creates_ItemSupplierCode_with_packaging_when_provided()
+    {
+        var document = CreateDocument();
+        var line = CreateLine(document.Id, "PROV-PACA-12");
+        var item = CreateItem();
+        var packagingId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
+
+        var itemRepo = new Mock<IItemRepository>();
+        itemRepo
+            .Setup(r =>
+                r.SupplierCodeExistsAsync(
+                    SupplierId,
+                    "PROV-PACA-12",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(false);
+        itemRepo
+            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+
+        var service = new ItemMatchConfirmationService(itemRepo.Object);
+        await service.ConfirmAsync(
+            document,
+            line,
+            item.Id,
+            UserId,
+            DateTime.UtcNow,
+            packagingId
+        );
+
+        item.SupplierCodes.Should()
+            .ContainSingle(c =>
+                c.SupplierId == SupplierId
+                && c.Code == "PROV-PACA-12"
+                && c.PackagingLevelId == packagingId
+            );
+        line.ItemId.Should().Be(item.Id);
+    }
+
+    [Fact]
     public async Task ConfirmAsync_does_not_duplicate_an_existing_ItemSupplierCode()
     {
         var document = CreateDocument();
@@ -129,9 +184,68 @@ public sealed class ItemMatchConfirmationServiceTests
             r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
+        itemRepo.Verify(
+            r =>
+                r.UpdateSupplierCodePackagingLevelAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         itemRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         line.MatchStatus.Should().Be(ItemMatchStatus.ManuallyMatched);
         line.ItemId.Should().Be(item.Id);
+    }
+
+    [Fact]
+    public async Task ConfirmAsync_updates_existing_ItemSupplierCode_packaging_when_provided()
+    {
+        var document = CreateDocument();
+        var line = CreateLine(document.Id, "PROV-001");
+        var item = CreateItem();
+        var packagingId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
+
+        var itemRepo = new Mock<IItemRepository>();
+        itemRepo
+            .Setup(r =>
+                r.SupplierCodeExistsAsync(
+                    SupplierId,
+                    "PROV-001",
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
+
+        var service = new ItemMatchConfirmationService(itemRepo.Object);
+        await service.ConfirmAsync(
+            document,
+            line,
+            item.Id,
+            UserId,
+            DateTime.UtcNow,
+            packagingId
+        );
+
+        itemRepo.Verify(
+            r =>
+                r.UpdateSupplierCodePackagingLevelAsync(
+                    item.Id,
+                    SupplierId,
+                    "PROV-001",
+                    packagingId,
+                    TenantId,
+                    UserId,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        itemRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

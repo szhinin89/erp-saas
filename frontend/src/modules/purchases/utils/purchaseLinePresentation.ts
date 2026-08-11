@@ -40,7 +40,16 @@ export interface PurchaseLinePresentationVM {
     name: string;
     /** No existe en PurchaseItemContextDto hoy — se muestra "—" a propósito, nunca "0" ni inventado. */
     uom: string;
+    baseUom: string;
     matchStatus: ItemMatchStatus | null;
+  };
+  inventory: {
+    presentation: string;
+    hasPresentation: boolean;
+    presentationLabel: string;
+    conversionDetail: string;
+    baseQuantity: string;
+    baseUnitCost: string;
   };
   /** 3. Impacto para el negocio — "Información Comercial", menor peso visual, solo si hay contexto real. */
   commercial: {
@@ -94,6 +103,28 @@ export function buildPurchaseLinePresentation(
   const currentStock = ctx?.currentStock ?? 0;
   const averageCost = ctx?.averageCost ?? 0;
   const pvp = ctx?.pvp ?? 0;
+  const selectedPackaging = ctx?.packagingLevels?.find(
+    (p) => p.id === line.packagingLevelId,
+  );
+  const persistedFactor = line.conversionFactor && line.conversionFactor > 0
+    ? line.conversionFactor
+    : 1;
+  const conversionFactor = selectedPackaging?.baseQuantity ?? persistedFactor;
+  const baseUom = ctx?.baseUomCode || line.baseUomCode || UNKNOWN;
+  const presentationUom =
+    selectedPackaging?.uomCode || line.uomCode || ctx?.baseUomCode || UNKNOWN;
+  const quantityInBase =
+    selectedPackaging || line.quantityInBaseUom === undefined
+      ? quantity * conversionFactor
+      : line.quantityInBaseUom;
+  const hasPresentation = !!line.packagingLevelId;
+  const presentationLabel =
+    selectedPackaging?.name ??
+    (hasPresentation && conversionFactor > 1
+      ? `${presentationUom} x ${formatMoney(conversionFactor, decimals.quantity)}`
+      : presentationUom);
+  const baseUnitCost =
+    quantityInBase > 0 ? (quantity * unitPrice) / quantityInBase : 0;
   const marginPctValue = hasContext ? calcMarginPercent(unitPrice, pvp) : 0;
 
   const deviationRatio =
@@ -107,8 +138,7 @@ export function buildPurchaseLinePresentation(
       : `Costo ${formatMoney(((averageCost - unitPrice) / averageCost) * 100, decimals.percentage)}% bajo el promedio`
     : "";
 
-  const missingRequiredData =
-    hasItem && !isLoading && (!hasContext || !line.vatCode);
+  const missingRequiredData = hasItem && !isLoading && !line.vatCode;
 
   return {
     xml: {
@@ -138,8 +168,28 @@ export function buildPurchaseLinePresentation(
       sku:
         (hasItem && (ctx?.sku || line.description?.split(" — ")[0])) || UNKNOWN,
       name: (hasItem && displayName) || UNKNOWN,
-      uom: UNKNOWN,
+      uom: presentationUom,
+      baseUom,
       matchStatus: line.itemMatchStatus ?? null,
+    },
+    inventory: {
+      presentation:
+        selectedPackaging?.name ??
+        (conversionFactor > 1
+          ? `${presentationUom} x ${formatMoney(conversionFactor, decimals.quantity)}`
+          : presentationUom),
+      hasPresentation,
+      presentationLabel,
+      conversionDetail: hasItem
+        ? `${formatMoney(quantity, decimals.quantity)} ${presentationUom} -> ${formatMoney(quantityInBase, decimals.quantity)} ${baseUom}`
+        : UNKNOWN,
+      baseQuantity: hasItem
+        ? `${formatMoney(quantityInBase, decimals.quantity)} ${baseUom}`
+        : UNKNOWN,
+      baseUnitCost:
+        hasItem && quantityInBase > 0
+          ? formatMoneyWithSymbol(baseUnitCost, decimals.purchaseUnitPrice)
+          : UNKNOWN,
     },
     commercial: {
       hasContext,
@@ -186,7 +236,14 @@ export function buildPurchaseLinePresentation(
           : UNKNOWN,
       },
     },
-    status: buildLineStatus({ hasItem, isLoading, missingRequiredData }),
+    status: buildLineStatus({
+      hasItem,
+      isLoading,
+      missingRequiredData,
+      hasOrigin,
+      hasPresentation,
+      presentationLabel,
+    }),
   };
 }
 
@@ -194,9 +251,12 @@ function buildLineStatus(input: {
   hasItem: boolean;
   isLoading: boolean;
   missingRequiredData: boolean;
+  hasOrigin: boolean;
+  hasPresentation: boolean;
+  presentationLabel: string;
 }): PurchaseLinePresentationVM["status"] {
   if (!input.hasItem) {
-    return { icon: "🟡", label: "Pendiente de vincular Item", tone: "warning" };
+    return { icon: "🟡", label: "Sin ítem vinculado", tone: "warning" };
   }
   if (input.isLoading) {
     return { icon: "🟡", label: "Contexto cargando", tone: "warning" };
@@ -204,5 +264,19 @@ function buildLineStatus(input: {
   if (input.missingRequiredData) {
     return { icon: "🔴", label: "Información incompleta", tone: "danger" };
   }
-  return { icon: "🟢", label: "Item vinculado", tone: "success" };
+  if (input.hasPresentation) {
+    return {
+      icon: "🟢",
+      label: `Ítem + ${input.presentationLabel}`,
+      tone: "success",
+    };
+  }
+  if (input.hasOrigin) {
+    return {
+      icon: "🟡",
+      label: "Ítem vinculado sin presentación",
+      tone: "warning",
+    };
+  }
+  return { icon: "🟢", label: "Ítem vinculado", tone: "success" };
 }

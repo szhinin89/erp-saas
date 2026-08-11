@@ -41,10 +41,17 @@ public sealed class PurchaseInvoiceDetailConfiguration
             .HasMaxLength(PurchaseInvoiceDetail.SupplierCodeMaxLen);
 
         // ── UoM ─────────────────────────────────────────────────────────
+        builder.Property(x => x.PackagingLevelId).HasColumnName("packaging_level_id");
         builder
             .Property(x => x.UomCode)
             .HasColumnName("uom_code")
             .HasMaxLength(PurchaseInvoiceDetail.UomCodeMaxLen)
+            .HasDefaultValue("UNIT")
+            .IsRequired();
+        builder
+            .Property(x => x.BaseUomCode)
+            .HasColumnName("base_uom_code")
+            .HasMaxLength(PurchaseInvoiceDetail.BaseUomCodeMaxLen)
             .HasDefaultValue("UNIT")
             .IsRequired();
         builder

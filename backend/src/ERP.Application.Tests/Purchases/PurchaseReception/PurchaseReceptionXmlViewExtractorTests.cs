@@ -57,8 +57,12 @@ public sealed class PurchaseReceptionXmlViewExtractorTests
         // El esquema notaCredito no define totalDescuento a nivel de documento.
         extras.DiscountAmount.Should().Be(0m);
         extras.TaxSummaries.Should().ContainSingle();
+        extras.TaxSummaries[0].TaxCode.Should().Be("2");
+        extras.TaxSummaries[0].TaxRateCode.Should().Be("2");
         extras.TaxSummaries[0].TaxableBase.Should().Be(10.00m);
         extras.TaxSummaries[0].TaxAmount.Should().Be(1.50m);
+        extras.Totals.TotalWithoutTaxes.Should().Be(10.00m);
+        extras.Totals.TotalAmount.Should().Be(11.50m);
     }
 
     [Fact]
@@ -70,5 +74,6 @@ public sealed class PurchaseReceptionXmlViewExtractorTests
         extras.TaxSummaries.Should().BeEmpty();
         extras.DiscountAmount.Should().Be(0m);
         extras.IceAmount.Should().Be(0m);
+        extras.Lines.Should().BeEmpty();
     }
 }

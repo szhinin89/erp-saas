@@ -69,6 +69,34 @@ public interface IItemRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Resuelve el código del proveedor con su presentación logística opcional. Aditivo al lookup
+    /// histórico que solo devuelve ItemId.
+    /// </summary>
+    Task<ItemSupplierCodeMatch?> GetSupplierCodeMatchAsync(
+        Guid supplierId,
+        string code,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<bool> PackagingLevelBelongsToItemAsync(
+        Guid itemId,
+        Guid packagingLevelId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task UpdateSupplierCodePackagingLevelAsync(
+        Guid itemId,
+        Guid supplierId,
+        string code,
+        Guid? packagingLevelId,
+        Guid tenantId,
+        Guid updatedBy,
+        CancellationToken cancellationToken = default
+    );
+
     Task<(IReadOnlyList<Item> Items, int TotalCount)> GetPageAsync(
         Guid tenantId,
         ItemReportFilter filter,

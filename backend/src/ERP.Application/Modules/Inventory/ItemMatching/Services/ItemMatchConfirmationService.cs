@@ -17,6 +17,7 @@ public interface IItemMatchConfirmationService
         Guid itemId,
         Guid matchedBy,
         DateTime matchedAtUtc,
+        Guid? packagingLevelId = null,
         CancellationToken cancellationToken = default
     );
 
@@ -45,6 +46,7 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
         Guid itemId,
         Guid matchedBy,
         DateTime matchedAtUtc,
+        Guid? packagingLevelId = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -56,7 +58,20 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
                 document.TenantId,
                 cancellationToken
             );
-            if (!alreadyExists)
+            if (alreadyExists && packagingLevelId.HasValue)
+            {
+                await _itemRepo.UpdateSupplierCodePackagingLevelAsync(
+                    itemId,
+                    supplierId,
+                    line.SupplierCode,
+                    packagingLevelId,
+                    document.TenantId,
+                    matchedBy,
+                    cancellationToken
+                );
+                await _itemRepo.SaveChangesAsync(cancellationToken);
+            }
+            else if (!alreadyExists)
             {
                 var item = await _itemRepo.GetByIdAsync(
                     itemId,
@@ -69,7 +84,8 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
                         line.SupplierCode,
                         isPrimary: false,
                         supplierId,
-                        matchedBy
+                        matchedBy,
+                        packagingLevelId
                     );
                     await _itemRepo.SaveChangesAsync(cancellationToken);
                 }

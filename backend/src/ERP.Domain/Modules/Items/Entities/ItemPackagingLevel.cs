@@ -25,6 +25,7 @@ public sealed class ItemPackagingLevel : AuditableEntity
     public static ItemPackagingLevel Create(
         Guid itemId,
         Guid tenantId,
+        Guid? id,
         string name,
         int level,
         decimal baseQuantity,
@@ -52,7 +53,7 @@ public sealed class ItemPackagingLevel : AuditableEntity
 
         var entity = new ItemPackagingLevel
         {
-            Id = Guid.NewGuid(),
+            Id = id.GetValueOrDefault(Guid.NewGuid()),
             TenantId = tenantId,
             ItemId = itemId,
             Name = name.Trim(),
@@ -68,6 +69,45 @@ public sealed class ItemPackagingLevel : AuditableEntity
         };
         entity.SetCreated(createdBy);
         return entity;
+    }
+
+    public void Update(
+        string name,
+        int level,
+        decimal baseQuantity,
+        string uomCode,
+        string? barcode,
+        decimal? weight,
+        bool isBaseUnit,
+        bool isPurchaseDefault,
+        bool isSaleDefault,
+        Guid updatedBy
+    )
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException(
+                "El nombre del nivel de empaque es obligatorio.",
+                nameof(name)
+            );
+        if (baseQuantity <= 0)
+            throw new ArgumentException(
+                "La cantidad base debe ser mayor que cero.",
+                nameof(baseQuantity)
+            );
+        if (string.IsNullOrWhiteSpace(uomCode))
+            throw new ArgumentException("El código UOM es obligatorio.", nameof(uomCode));
+
+        Name = name.Trim();
+        Level = level;
+        BaseQuantity = baseQuantity;
+        UomCode = uomCode.Trim().ToUpperInvariant();
+        Barcode = barcode?.Trim();
+        Weight = weight;
+        IsBaseUnit = isBaseUnit;
+        IsPurchaseDefault = isPurchaseDefault;
+        IsSaleDefault = isSaleDefault;
+        IsActive = true;
+        SetUpdated(updatedBy);
     }
 
     public void Disable(Guid updatedBy)

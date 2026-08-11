@@ -1,5 +1,4 @@
 import { ZHModal } from "../../../components/zh/ZHModal";
-import { Badge } from "../../../components/PageShell";
 import {
   ZHDataTable,
   type ZHDataTableColumn,
@@ -11,6 +10,8 @@ import { useI18n } from "../../../i18n/i18n";
 import type {
   PurchaseReceptionXmlView,
   PurchaseReceptionXmlViewLine,
+  PurchaseReceptionXmlViewLineTax,
+  PurchaseReceptionXmlViewTaxSummary,
 } from "../api/purchaseReceptionService";
 
 type Props = {
@@ -19,6 +20,13 @@ type Props = {
   error: string | null;
   data: PurchaseReceptionXmlView | null;
   onClose: () => void;
+};
+
+type TotalRow = {
+  key: string;
+  label: string;
+  value: number;
+  emphasize?: boolean;
 };
 
 /**
@@ -38,6 +46,124 @@ export function PurchaseReceptionXmlViewModal({
   const cost = getDecimalConfig().purchaseUnitPrice;
   const total = getDecimalConfig().totalAmount;
   const pct = getDecimalConfig().percentage;
+
+  const totalRows: TotalRow[] = data
+    ? [
+        {
+          key: "subtotal",
+          label: t(
+            "purchases.reception.xmlView.field.subtotal",
+            "Subtotal sin impuestos",
+          ),
+          value: data.subtotal,
+        },
+        {
+          key: "discount",
+          label: t("purchases.reception.xmlView.field.discountAmount", "Descuento"),
+          value: data.discountAmount,
+        },
+        {
+          key: "ice",
+          label: t("purchases.reception.xmlView.field.iceAmount", "ICE"),
+          value: data.iceAmount,
+        },
+        {
+          key: "irbpnr",
+          label: t("purchases.reception.xmlView.field.irbpnrAmount", "IRBPNR"),
+          value: data.irbpnrAmount,
+        },
+        {
+          key: "vat",
+          label: t("purchases.reception.xmlView.field.vatAmount", "IVA"),
+          value: data.vatAmount,
+        },
+        {
+          key: "tip",
+          label: t("purchases.reception.xmlView.field.tipAmount", "Propina"),
+          value: data.tipAmount,
+        },
+        {
+          key: "xmlTotal",
+          label: t(
+            "purchases.reception.xmlView.field.totalAmount",
+            "Importe total XML",
+          ),
+          value: data.totalAmount,
+          emphasize: true,
+        },
+        {
+          key: "lineTotal",
+          label: t(
+            "purchases.reception.xmlView.field.lineCalculatedTotal",
+            "Suma líneas",
+          ),
+          value: data.lineCalculatedTotal,
+        },
+        {
+          key: "rounding",
+          label: t(
+            "purchases.reception.xmlView.field.roundingDifference",
+            "Diferencia/redondeo",
+          ),
+          value: data.roundingDifference,
+          emphasize: data.roundingDifference !== 0,
+        },
+      ]
+    : [];
+
+  const totalsColumns: ZHDataTableColumn<TotalRow>[] = [
+    {
+      key: "label",
+      header: t("purchases.reception.xmlView.totals.concept", "Concepto"),
+      render: (row) => (
+        <span className={row.emphasize ? "pur-xmlview-strong" : undefined}>
+          {row.label}
+        </span>
+      ),
+    },
+    {
+      key: "value",
+      header: t("purchases.reception.xmlView.totals.value", "Valor"),
+      align: "right",
+      render: (row) => (
+        <span className={row.emphasize ? "pur-xmlview-strong" : undefined}>
+          {formatMoneyWithSymbol(row.value, total)}
+        </span>
+      ),
+    },
+  ];
+
+  const taxColumns: ZHDataTableColumn<PurchaseReceptionXmlViewTaxSummary>[] = [
+    {
+      key: "name",
+      header: t("purchases.reception.xmlView.taxes.name", "Impuesto"),
+      render: (row) => row.taxName,
+    },
+    {
+      key: "code",
+      header: t("purchases.reception.xmlView.taxes.code", "Código"),
+      render: (row) => `${row.taxCode}/${row.taxRateCode}`,
+    },
+    {
+      key: "rate",
+      header: t("purchases.reception.xmlView.taxes.rate", "Tarifa"),
+      align: "right",
+      render: (row) =>
+        row.rate == null ? "—" : formatTaxRate(row.rate, pct),
+    },
+    {
+      key: "base",
+      header: t("purchases.reception.xmlView.taxes.base", "Base"),
+      align: "right",
+      render: (row) => formatMoneyWithSymbol(row.taxableBase, total),
+    },
+    {
+      key: "amount",
+      header: t("purchases.reception.xmlView.taxes.amount", "Valor"),
+      align: "right",
+      render: (row) => formatMoneyWithSymbol(row.amount, total),
+    },
+  ];
 
   const lineColumns: ZHDataTableColumn<PurchaseReceptionXmlViewLine>[] = [
     {
@@ -90,18 +216,32 @@ export function PurchaseReceptionXmlViewModal({
       key: "irbpnrAmount",
       header: t("purchases.reception.xmlView.lines.irbpnr", "IRBPNR"),
       align: "right",
-      render: (row) => {
-        const irbpnr = row.taxes.find((tx) => tx.taxType === "5");
-        return irbpnr
-          ? formatMoneyWithSymbol(irbpnr.taxAmount, total)
-          : formatMoneyWithSymbol(0, total);
-      },
+      render: (row) => formatMoneyWithSymbol(row.irbpnrAmount, total),
     },
     {
       key: "totalAmount",
-      header: t("purchases.reception.xmlView.lines.total", "Total"),
+      header: t("purchases.reception.xmlView.lines.total", "Total línea"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.totalAmount, total),
+      render: (row) => formatMoneyWithSymbol(row.lineTotal, total),
+    },
+    {
+      key: "detail",
+      header: t("purchases.reception.xmlView.lines.detail", "Detalle"),
+      render: (row) => (
+        <LineDetail
+          row={row}
+          totalDecimals={total}
+          pctDecimals={pct}
+          emptyText={t(
+            "purchases.reception.xmlView.lines.detail.empty",
+            "Sin detalle adicional.",
+          )}
+          summaryText={t(
+            "purchases.reception.xmlView.lines.detail.summary",
+            "Ver detalle",
+          )}
+        />
+      ),
     },
   ];
 
@@ -126,8 +266,29 @@ export function PurchaseReceptionXmlViewModal({
             )}
           </p>
 
-          <Section title={t("purchases.reception.xmlView.section.document", "Documento")}>
+          <Section
+            title={t(
+              "purchases.reception.xmlView.section.header",
+              "Cabecera del comprobante",
+            )}
+          >
             <div className="pur-xmlview-grid">
+              <Field
+                label={t("purchases.reception.xmlView.field.supplierName", "Razón social")}
+                value={data.supplierName}
+              />
+              <Field
+                label={t(
+                  "purchases.reception.xmlView.field.supplierTradeName",
+                  "Nombre comercial",
+                )}
+                value={data.supplierTradeName ?? "—"}
+              />
+              <Field
+                label={t("purchases.reception.xmlView.field.supplierTaxId", "RUC")}
+                value={data.supplierTaxId}
+                mono
+              />
               <Field
                 label={t("purchases.reception.xmlView.field.documentNumber", "Número")}
                 value={data.documentNumber}
@@ -159,26 +320,14 @@ export function PurchaseReceptionXmlViewModal({
                   data.authorizationDate ? formatDateTime(data.authorizationDate) : "—"
                 }
               />
-            </div>
-          </Section>
-
-          <Section title={t("purchases.reception.xmlView.section.supplier", "Proveedor")}>
-            <div className="pur-xmlview-grid">
               <Field
-                label={t("purchases.reception.xmlView.field.supplierName", "Razón social")}
-                value={data.supplierName}
-              />
-              <Field
-                label={t(
-                  "purchases.reception.xmlView.field.supplierTradeName",
-                  "Nombre comercial",
-                )}
-                value={data.supplierTradeName ?? "—"}
-              />
-              <Field
-                label={t("purchases.reception.xmlView.field.supplierTaxId", "RUC")}
-                value={data.supplierTaxId}
+                label={t("purchases.reception.xmlView.field.referralGuide", "Guía")}
+                value={data.referralGuide ?? "—"}
                 mono
+              />
+              <Field
+                label={t("purchases.reception.xmlView.field.payment", "Pago/plazo")}
+                value={formatPayment(data)}
               />
             </div>
           </Section>
@@ -229,83 +378,45 @@ export function PurchaseReceptionXmlViewModal({
             </Section>
           )}
 
-          <Section title={t("purchases.reception.xmlView.section.totals", "Totales")}>
-            <div className="pur-xmlview-grid">
-              <Field
-                label={t("purchases.reception.xmlView.field.subtotal", "Subtotal")}
-                value={formatMoneyWithSymbol(data.subtotal, total)}
-              />
-              <Field
-                label={t("purchases.reception.xmlView.field.discountAmount", "Descuento")}
-                value={formatMoneyWithSymbol(data.discountAmount, total)}
-              />
-              <Field
-                label={t("purchases.reception.xmlView.field.iceAmount", "ICE")}
-                value={formatMoneyWithSymbol(data.iceAmount, total)}
-              />
-              <Field
-                label={t("purchases.reception.xmlView.field.irbpnrAmount", "IRBPNR")}
-                value={formatMoneyWithSymbol(
-                  data.taxSummaries
-                    .filter((tx) => tx.taxType === "5")
-                    .reduce((sum, tx) => sum + tx.taxAmount, 0),
-                  total,
-                )}
-              />
-              <Field
-                label={t("purchases.reception.xmlView.field.vatAmount", "IVA")}
-                value={formatMoneyWithSymbol(data.vatAmount, total)}
-              />
-              <Field
-                label={t("purchases.reception.xmlView.field.totalAmount", "Total")}
-                value={formatMoneyWithSymbol(data.totalAmount, total)}
-              />
-            </div>
+          <Section
+            title={t("purchases.reception.xmlView.section.totals", "Totales XML")}
+          >
+            <ZHDataTable
+              columns={totalsColumns}
+              rows={totalRows}
+              rowKey={(row) => row.key}
+            />
           </Section>
 
-          <Section title={t("purchases.reception.xmlView.section.taxes", "Impuestos")}>
-            {data.taxSummaries.length === 0 ? (
-              <p className="pur-xmlview-muted">
-                {t(
-                  "purchases.reception.xmlView.taxes.empty",
-                  "Sin desglose de impuestos disponible.",
-                )}
-              </p>
-            ) : (
-              <div className="pur-xmlview-tax-list">
-                {data.taxSummaries.map((tax, i) => (
-                  <Badge
-                    key={i}
-                    variant="neutral"
-                    label={`${tax.taxType}/${tax.taxCode}${
-                      tax.taxRate != null ? ` (${formatMoney(tax.taxRate, pct)}%)` : ""
-                    } · Base ${formatMoney(tax.taxableBase, total)} · ${formatMoney(
-                      tax.taxAmount,
-                      total,
-                    )}`}
-                  />
-                ))}
-              </div>
+          <Section
+            title={t(
+              "purchases.reception.xmlView.section.taxes",
+              "Resumen de impuestos",
             )}
+          >
+            <ZHDataTable
+              columns={taxColumns}
+              rows={data.taxSummaries}
+              rowKey={(row) => `${row.taxCode}-${row.taxRateCode}`}
+              emptyMessage={t(
+                "purchases.reception.xmlView.taxes.empty",
+                "Sin desglose de impuestos disponible.",
+              )}
+            />
           </Section>
 
           <Section title={t("purchases.reception.xmlView.section.lines", "Líneas del XML")}>
-            {data.lines.length === 0 ? (
-              <p className="pur-xmlview-muted">
-                {t(
-                  "purchases.reception.xmlView.lines.empty",
-                  "Sin líneas guardadas para este documento.",
-                )}
-              </p>
-            ) : (
-              <ZHDataTable
-                columns={lineColumns}
-                rows={data.lines}
-                rowKey={(row) =>
-                  `${row.mainCode ?? row.auxCode ?? "line"}-${row.description}-${row.quantity}-${row.unitPrice}`
-                }
-              />
-            )}
+            <ZHDataTable
+              columns={lineColumns}
+              rows={data.lines}
+              rowKey={(row) =>
+                `${row.mainCode ?? row.auxCode ?? "line"}-${row.description}-${row.quantity}-${row.unitPrice}`
+              }
+              emptyMessage={t(
+                "purchases.reception.xmlView.lines.empty",
+                "Sin líneas guardadas para este documento.",
+              )}
+            />
           </Section>
 
           {data.rawXmlAvailable && data.rawXml ? (
@@ -326,6 +437,75 @@ export function PurchaseReceptionXmlViewModal({
         </div>
       )}
     </ZHModal>
+  );
+}
+
+function LineDetail({
+  row,
+  totalDecimals,
+  pctDecimals,
+  emptyText,
+  summaryText,
+}: {
+  row: PurchaseReceptionXmlViewLine;
+  totalDecimals: number;
+  pctDecimals: number;
+  emptyText: string;
+  summaryText: string;
+}) {
+  const hasTaxes = row.taxes.length > 0;
+  const hasDetails = row.additionalDetails.length > 0;
+
+  return (
+    <details className="pur-xmlview-line-detail">
+      <summary>{summaryText}</summary>
+      {!hasTaxes && !hasDetails && <p className="pur-xmlview-muted">{emptyText}</p>}
+      {hasTaxes && (
+        <dl className="pur-xmlview-line-detail__list">
+          {row.taxes.map((tax) => (
+            <LineTax
+              key={`${tax.taxCode}-${tax.taxRateCode}-${tax.amount}`}
+              tax={tax}
+              totalDecimals={totalDecimals}
+              pctDecimals={pctDecimals}
+            />
+          ))}
+        </dl>
+      )}
+      {hasDetails && (
+        <dl className="pur-xmlview-line-detail__list">
+          {row.additionalDetails.map((detail) => (
+            <div key={`${detail.name}-${detail.value}`}>
+              <dt>{detail.name || "—"}</dt>
+              <dd>{detail.value || "—"}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </details>
+  );
+}
+
+function LineTax({
+  tax,
+  totalDecimals,
+  pctDecimals,
+}: {
+  tax: PurchaseReceptionXmlViewLineTax;
+  totalDecimals: number;
+  pctDecimals: number;
+}) {
+  return (
+    <div>
+      <dt>
+        {tax.taxName} {tax.taxCode}/{tax.taxRateCode}
+      </dt>
+      <dd>
+        {formatTaxRate(tax.rate, pctDecimals)} ·{" "}
+        {formatMoneyWithSymbol(tax.taxableBase, totalDecimals)} ·{" "}
+        {formatMoneyWithSymbol(tax.amount, totalDecimals)}
+      </dd>
+    </div>
   );
 }
 
@@ -363,4 +543,14 @@ function Field({
       </div>
     </div>
   );
+}
+
+function formatPayment(data: PurchaseReceptionXmlView) {
+  const method = data.paymentMethodCode ?? "—";
+  if (!data.paymentTerm) return method;
+  return `${method} · ${data.paymentTerm}${data.paymentTimeUnit ? ` ${data.paymentTimeUnit}` : ""}`;
+}
+
+function formatTaxRate(rate: number, decimals: number) {
+  return `${formatMoney(rate, decimals)}%`;
 }

@@ -31,6 +31,7 @@ export interface CreateItemBarcodeRequest {
 export interface CreateItemSupplierCodeRequest {
   code: string;
   isPrimary: boolean;
+  packagingLevelId?: string | null;
   // Obligatorio (Fase 2) — no existe código de proveedor sin proveedor.
   supplierId: string;
 }
@@ -183,6 +184,7 @@ export const itemService = {
   replacePackagingLevels: (
     itemId: string,
     levels: {
+      id?: string | null;
       name: string;
       level: number;
       baseQuantity: number;
@@ -196,6 +198,20 @@ export const itemService = {
   ) =>
     apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/packaging-levels`, {
       levels,
+    }),
+
+  updateSupplierCodePresentation: (
+    itemId: string,
+    request: {
+      supplierId: string;
+      code: string;
+      packagingLevelId?: string | null;
+    },
+  ) =>
+    apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/supplier-codes/presentation`, {
+      supplierId: request.supplierId,
+      code: request.code,
+      packagingLevelId: request.packagingLevelId ?? null,
     }),
 
   addBarcode: (

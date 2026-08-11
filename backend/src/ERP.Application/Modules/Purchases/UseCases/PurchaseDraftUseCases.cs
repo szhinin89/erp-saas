@@ -3,6 +3,7 @@ using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -29,7 +30,8 @@ public sealed record PurchaseLineInput(
     string? IceCode = null,
     Guid? PurchaseOrderDetailId = null,
     decimal? OrderedQuantity = null,
-    Guid? PurchaseReceptionLineId = null
+    Guid? PurchaseReceptionLineId = null,
+    Guid? PackagingLevelId = null
 );
 
 /// <summary>
@@ -51,6 +53,107 @@ file static class SupplierCodeResolver
             return null;
 
         return await itemRepo.GetSupplierCodeAsync(itemId, supplierId.Value, tenantId, ct);
+    }
+}
+
+file sealed record PurchaseLinePackagingSnapshot(
+    Guid? PackagingLevelId,
+    string UomCode,
+    string BaseUomCode,
+    decimal ConversionFactor
+);
+
+file sealed record PurchaseLinePackagingResolveResult(
+    PurchaseLinePackagingSnapshot? Packaging,
+    Result<PurchaseInvoiceDto>? Error
+);
+
+file static class PurchaseLinePackagingResolver
+{
+    public static async Task<PurchaseLinePackagingResolveResult> ResolveAsync(
+        IItemRepository itemRepo,
+        IPurchaseReceptionDocumentRepository receptionRepo,
+        Item item,
+        PurchaseLineInput line,
+        Guid? supplierId,
+        Guid tenantId,
+        CancellationToken ct
+    )
+    {
+        var fallback = new PurchaseLinePackagingSnapshot(
+            null,
+            item.DefaultUomCode,
+            item.DefaultUomCode,
+            1m
+        );
+
+        if (line.PackagingLevelId.HasValue)
+        {
+            var selected = item.PackagingLevels.FirstOrDefault(p =>
+                p.Id == line.PackagingLevelId.Value && p.IsActive
+            );
+            if (selected is null)
+                return new(
+                    null,
+                    Result<PurchaseInvoiceDto>.ValidationFailure(
+                        $"Línea '{line.Description}': la presentación seleccionada no pertenece al ítem o está inactiva."
+                    )
+                );
+
+            return new(ToSnapshot(item, selected), null);
+        }
+
+        if (supplierId is null || line.PurchaseReceptionLineId is null)
+            return new(fallback, null);
+
+        var document = await receptionRepo.GetByLineIdAsync(
+            tenantId,
+            line.PurchaseReceptionLineId.Value,
+            ct
+        );
+        var receptionLine = document
+            ?.Lines.FirstOrDefault(l => l.Id == line.PurchaseReceptionLineId.Value);
+        if (string.IsNullOrWhiteSpace(receptionLine?.SupplierCode))
+            return new(fallback, null);
+
+        var match = await itemRepo.GetSupplierCodeMatchAsync(
+            supplierId.Value,
+            receptionLine.SupplierCode,
+            tenantId,
+            ct
+        );
+        if (match is null || match.ItemId != item.Id || match.PackagingLevelId is null)
+            return new(fallback, null);
+
+        if (
+            string.IsNullOrWhiteSpace(match.PackagingUomCode)
+            || match.PackagingBaseQuantity is null
+            || match.PackagingBaseQuantity <= 0
+        )
+            return new(fallback, null);
+
+        return new(
+            new PurchaseLinePackagingSnapshot(
+                match.PackagingLevelId,
+                match.PackagingUomCode,
+                match.BaseUomCode,
+                match.PackagingBaseQuantity.Value
+            ),
+            null
+        );
+    }
+
+    private static PurchaseLinePackagingSnapshot ToSnapshot(Item item, ItemPackagingLevel packaging)
+    {
+        if (packaging.BaseQuantity <= 0)
+            throw new InvalidOperationException("La cantidad base del empaque debe ser mayor a cero.");
+
+        return new PurchaseLinePackagingSnapshot(
+            packaging.Id,
+            packaging.UomCode,
+            item.DefaultUomCode,
+            packaging.BaseQuantity
+        );
     }
 }
 
@@ -389,11 +492,11 @@ public sealed class CreatePurchaseDraftHandler
             string? snapshotSku = null;
             string? snapshotItemName = null;
             string? snapshotSupplierCode = null;
-            string uomCode = "UNIT";
+            var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
 
             if (l.ItemId.HasValue)
             {
-                var item = await _itemRepo.GetByIdLightAsync(l.ItemId.Value, tid, ct);
+                var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, tid, ct);
                 if (item is not null)
                 {
                     snapshotSku = item.Code.SKU;
@@ -405,7 +508,18 @@ public sealed class CreatePurchaseDraftHandler
                         supplierId,
                         ct
                     );
-                    uomCode = item.DefaultUomCode;
+                    var packagingResult = await PurchaseLinePackagingResolver.ResolveAsync(
+                        _itemRepo,
+                        _receptionRepo,
+                        item,
+                        l,
+                        supplierId,
+                        tid,
+                        ct
+                    );
+                    if (packagingResult.Error is not null)
+                        return new(null!, packagingResult.Error);
+                    packaging = packagingResult.Packaging!;
 
                     if (string.IsNullOrWhiteSpace(vatCode))
                         vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
@@ -437,7 +551,7 @@ public sealed class CreatePurchaseDraftHandler
                 l.Quantity,
                 l.UnitPrice,
                 vatCode,
-                uomCode,
+                packaging.UomCode,
                 l.ItemId,
                 l.WarehouseId,
                 l.Notes,
@@ -446,11 +560,13 @@ public sealed class CreatePurchaseDraftHandler
                 snapshotSku,
                 snapshotItemName,
                 snapshotSupplierCode,
-                conversionFactor: 1m,
+                conversionFactor: packaging.ConversionFactor,
                 snapshotWarehouseCode: snapshotWhCode,
                 purchaseOrderDetailId: l.PurchaseOrderDetailId,
                 orderedQuantity: l.OrderedQuantity,
-                purchaseReceptionLineId: l.PurchaseReceptionLineId
+                purchaseReceptionLineId: l.PurchaseReceptionLineId,
+                baseUomCode: packaging.BaseUomCode,
+                packagingLevelId: packaging.PackagingLevelId
             );
 
             var taxResult = await ResolveLineTaxesAsync(line, l.PurchaseReceptionLineId, tid, ct);
@@ -618,11 +734,11 @@ public sealed class UpdatePurchaseDraftHandler
                 string? snapshotSku = null;
                 string? snapshotItemName = null;
                 string? snapshotSupplierCode = null;
-                string uomCode = "UNIT";
+                var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
 
                 if (l.ItemId.HasValue)
                 {
-                    var item = await _itemRepo.GetByIdLightAsync(l.ItemId.Value, _t.TenantId, ct);
+                    var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, _t.TenantId, ct);
                     if (item is not null)
                     {
                         snapshotSku = item.Code.SKU;
@@ -634,7 +750,18 @@ public sealed class UpdatePurchaseDraftHandler
                             cmd.SupplierId,
                             ct
                         );
-                        uomCode = item.DefaultUomCode;
+                        var packagingResult = await PurchaseLinePackagingResolver.ResolveAsync(
+                            _itemRepo,
+                            _receptionRepo,
+                            item,
+                            l,
+                            cmd.SupplierId,
+                            _t.TenantId,
+                            ct
+                        );
+                        if (packagingResult.Error is not null)
+                            return packagingResult.Error;
+                        packaging = packagingResult.Packaging!;
 
                         if (string.IsNullOrWhiteSpace(vatCode))
                             vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
@@ -663,7 +790,7 @@ public sealed class UpdatePurchaseDraftHandler
                     l.Quantity,
                     l.UnitPrice,
                     vatCode,
-                    uomCode,
+                    packaging.UomCode,
                     l.ItemId,
                     l.WarehouseId,
                     l.Notes,
@@ -672,11 +799,13 @@ public sealed class UpdatePurchaseDraftHandler
                     snapshotSku,
                     snapshotItemName,
                     snapshotSupplierCode,
-                    conversionFactor: 1m,
+                    conversionFactor: packaging.ConversionFactor,
                     snapshotWarehouseCode: snapshotWhCode,
                     purchaseOrderDetailId: l.PurchaseOrderDetailId,
                     orderedQuantity: l.OrderedQuantity,
-                    purchaseReceptionLineId: l.PurchaseReceptionLineId
+                    purchaseReceptionLineId: l.PurchaseReceptionLineId,
+                    baseUomCode: packaging.BaseUomCode,
+                    packagingLevelId: packaging.PackagingLevelId
                 );
 
                 Result<PurchaseInvoiceDto>? taxResult = null;

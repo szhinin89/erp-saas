@@ -982,6 +982,7 @@ function PurchaseLineCard({
   idx: number;
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
+  const { t } = useI18n();
   const viewMatchedItem = useViewMatchedItem();
   const sub = lineNet(l);
   const editLine = ctx.editing?.lines?.[idx];
@@ -998,6 +999,19 @@ function PurchaseLineCard({
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
   const vm = buildPurchaseLinePresentation(l);
+  const packagingLevels = ctxData?.packagingLevels ?? [];
+  const handlePackagingChange = (packagingLevelId: string) => {
+    const selected = packagingLevels.find((p) => p.id === packagingLevelId);
+    ctx.updateLine(l._key, "packagingLevelId", packagingLevelId || undefined);
+    ctx.updateLine(l._key, "uomCode", selected?.uomCode ?? ctxData?.baseUomCode);
+    ctx.updateLine(l._key, "baseUomCode", ctxData?.baseUomCode);
+    ctx.updateLine(l._key, "conversionFactor", selected?.baseQuantity ?? 1);
+    ctx.updateLine(
+      l._key,
+      "quantityInBaseUom",
+      l.quantity * (selected?.baseQuantity ?? 1),
+    );
+  };
 
   return (
     <div className="pdl-line">
@@ -1304,6 +1318,123 @@ function PurchaseLineCard({
             <div>
               <span className="pdl-cost-label">Unidad</span>
               <span className="pdl-cost-val">{vm.item.uom}</span>
+            </div>
+            {packagingLevels.length > 0 && (
+              <div>
+                <span className="pdl-cost-label">
+                  {t("purchases.lines.presentation", "Presentación")}
+                </span>
+                <ZhSelect
+                  className="pdl-line__wh-select"
+                  value={l.packagingLevelId ?? ""}
+                  onChange={(e) => handlePackagingChange(e.target.value)}
+                  disabled={ctx.fieldDisabled}
+                >
+                  <option value="">
+                    {t("purchases.lines.baseUnit", "Unidad base")}
+                  </option>
+                  {packagingLevels.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} x {p.baseQuantity} {ctxData?.baseUomCode}
+                    </option>
+                  ))}
+                </ZhSelect>
+              </div>
+            )}
+            {vm.item.hasItem &&
+              vm.xml.hasOrigin &&
+              packagingLevels.length === 0 &&
+              !vm.inventory.hasPresentation && (
+                <div className="pdl-cost-wide">
+                  <span className="pdl-cost-label">
+                    {t(
+                      "purchases.lines.presentationUnavailable",
+                      "Presentación",
+                    )}
+                  </span>
+                  <span className="pdl-cost-val">
+                    {t(
+                      "purchases.lines.presentationCreateInMaster",
+                      "Cree la presentación en el maestro del ítem o use factor 1 temporalmente.",
+                    )}
+                  </span>
+                </div>
+              )}
+            {vm.item.hasItem && vm.xml.hasOrigin && !vm.inventory.hasPresentation && (
+              <div className="pdl-cost-wide">
+                <span className="pdl-cost-label">
+                  {t(
+                    "purchases.lines.supplierPresentationWarningTitle",
+                    "Código proveedor",
+                  )}
+                </span>
+                <span className="pdl-cost-val">
+                  {t(
+                    "purchases.lines.supplierPresentationWarning",
+                    "Código proveedor sin presentación asociada. Se usará factor 1.",
+                  )}
+                </span>
+              </div>
+            )}
+            {vm.inventory.hasPresentation && (
+              <div className="pdl-cost-wide">
+                <span className="pdl-cost-label">
+                  {t(
+                    "purchases.lines.linkedPresentation",
+                    "Presentación vinculada",
+                  )}
+                </span>
+                <span className="pdl-cost-val">
+                  {vm.inventory.presentationLabel}
+                </span>
+              </div>
+            )}
+            {vm.item.hasItem && vm.inventory.hasPresentation && (
+              <div className="pdl-cost-wide">
+                <span className="pdl-cost-label">
+                  {t("purchases.lines.baseConversion", "Conversión")}
+                </span>
+                <span className="pdl-cost-val">
+                  {vm.inventory.conversionDetail}
+                </span>
+              </div>
+            )}
+            {vm.item.hasItem && vm.xml.hasOrigin && (
+              <div className="pdl-cost-wide">
+                <ZHBtn
+                  type="button"
+                  variant="secondary"
+                  size="xs"
+                  disabled={
+                    ctx.fieldDisabled ||
+                    ctx.matchingKey === l._key ||
+                    !l.packagingLevelId
+                  }
+                  onClick={() => void ctx.handleSaveSupplierPresentation(l._key)}
+                >
+                  {ctx.matchingKey === l._key
+                    ? t(
+                        "purchases.lines.savingSupplierPresentation",
+                        "Guardando presentación...",
+                      )
+                    : t(
+                        "purchases.lines.saveSupplierPresentation",
+                        "Guardar presentación para este proveedor",
+                      )}
+                </ZHBtn>
+              </div>
+            )}
+            <div>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.inventory", "Inventario")}
+              </span>
+              <span className="pdl-cost-val">{vm.inventory.baseQuantity}</span>
+            </div>
+            <div>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.baseCost", "Costo base")}
+              </span>
+              <span className="pdl-cost-val">{vm.inventory.baseUnitCost}</span>
             </div>
           </div>
         </section>

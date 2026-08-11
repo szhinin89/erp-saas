@@ -193,12 +193,20 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
             );
 
         foreach (var supplierCode in cmd.SupplierCodes ?? [])
+        {
+            if (supplierCode.PackagingLevelId.HasValue)
+                return Result<ItemDto>.ValidationFailure(
+                    "El nivel de empaque asociado al código de proveedor no pertenece al ítem."
+                );
+
             item.AddSupplierCode(
                 supplierCode.Code,
                 supplierCode.IsPrimary,
                 supplierCode.SupplierId,
-                userId
+                userId,
+                supplierCode.PackagingLevelId
             );
+        }
 
         await _repository.AddAsync(item, cancellationToken);
 

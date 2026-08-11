@@ -14,6 +14,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public const int ItemNameMaxLen = 254;
     public const int SupplierCodeMaxLen = 50;
     public const int UomCodeMaxLen = 10;
+    public const int BaseUomCodeMaxLen = 10;
     public const int VatNameMaxLen = 100;
     public const int IceNameMaxLen = 100;
     public const int WarehouseCodeMaxLen = 20;
@@ -31,7 +32,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public string? SnapshotSupplierCode { get; private set; }
 
     // ── UoM ─────────────────────────────────────────────────────────────
+    public Guid? PackagingLevelId { get; private set; }
     public string UomCode { get; private set; } = "UNIT";
+    public string BaseUomCode { get; private set; } = "UNIT";
     public decimal ConversionFactor { get; private set; } = 1m;
     public decimal QuantityInBaseUom { get; private set; }
 
@@ -153,7 +156,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         string? snapshotWarehouseCode = null,
         Guid? purchaseOrderDetailId = null,
         decimal? orderedQuantity = null,
-        Guid? purchaseReceptionLineId = null
+        Guid? purchaseReceptionLineId = null,
+        string? baseUomCode = null,
+        Guid? packagingLevelId = null
     )
     {
         if (string.IsNullOrWhiteSpace(description))
@@ -177,10 +182,20 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new ArgumentException("La unidad de medida es obligatoria.", nameof(uomCode));
+        if (string.IsNullOrWhiteSpace(baseUomCode ?? uomCode))
+            throw new ArgumentException(
+                "La unidad base de inventario es obligatoria.",
+                nameof(baseUomCode)
+            );
         if (conversionFactor <= 0)
             throw new ArgumentException(
                 "El factor de conversión debe ser mayor a cero.",
                 nameof(conversionFactor)
+            );
+        if (packagingLevelId == Guid.Empty)
+            throw new ArgumentException(
+                "El nivel de empaque no es válido.",
+                nameof(packagingLevelId)
             );
 
         var line = new PurchaseInvoiceDetail
@@ -193,7 +208,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             SnapshotSku = snapshotSku?.Trim(),
             SnapshotItemName = snapshotItemName?.Trim(),
             SnapshotSupplierCode = snapshotSupplierCode?.Trim(),
+            PackagingLevelId = packagingLevelId,
             UomCode = uomCode.Trim().ToUpperInvariant(),
+            BaseUomCode = (baseUomCode ?? uomCode).Trim().ToUpperInvariant(),
             ConversionFactor = conversionFactor,
             Quantity = quantity,
             QuantityInBaseUom = Math.Round(
@@ -381,9 +398,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         );
 
         LandedUnitCost =
-            Quantity > 0
+            QuantityInBaseUom > 0
                 ? Math.Round(
-                    TotalLineCost / Quantity,
+                    TotalLineCost / QuantityInBaseUom,
                     FiscalPrecision.UnitCost,
                     MidpointRounding.AwayFromZero
                 )

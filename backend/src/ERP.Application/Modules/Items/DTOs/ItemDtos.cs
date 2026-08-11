@@ -117,6 +117,7 @@ public record ItemPackagingLevelDto(
 public record ItemSupplierCodeDto(
     Guid Id,
     Guid SupplierId,
+    Guid? PackagingLevelId,
     string Code,
     bool IsPrimary,
     bool IsActive
