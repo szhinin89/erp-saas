@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Models;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 
@@ -53,7 +55,8 @@ internal static class ItemMappingService
         ISriCatalogResolver sri,
         IItemTypeRepository itemTypeRepo,
         Guid tenantId,
-        CancellationToken ct
+        CancellationToken ct,
+        IBusinessPartnerRepository? businessPartnerRepo = null
     )
     {
         var uomCodes = item
@@ -78,7 +81,15 @@ internal static class ItemMappingService
             ? new Dictionary<Guid, string>()
             : new Dictionary<Guid, string> { [itemType.Id] = itemType.Name };
 
-        return ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames);
+        var supplierInfo =
+            businessPartnerRepo is null
+                ? new Dictionary<Guid, BusinessPartnerDisplayInfo>()
+                : await businessPartnerRepo.GetDisplayInfoByIdsAsync(
+                    item.SupplierCodes.Where(s => s.IsActive).Select(s => s.SupplierId),
+                    ct
+                );
+
+        return ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames, supplierInfo);
     }
 
     public static ItemDetailDto ToDetailDto(
@@ -86,7 +97,8 @@ internal static class ItemMappingService
         IReadOnlyDictionary<string, SriUomInfo> uomMap,
         IReadOnlyDictionary<string, SriVatInfo> vatMap,
         IReadOnlyDictionary<string, SriIceInfo> iceMap,
-        IReadOnlyDictionary<Guid, string> itemTypeNames
+        IReadOnlyDictionary<Guid, string> itemTypeNames,
+        IReadOnlyDictionary<Guid, BusinessPartnerDisplayInfo>? supplierInfo = null
     ) =>
         new(
             item.Id,
@@ -111,7 +123,7 @@ internal static class ItemMappingService
             item.UnitConversions.Select(c => MapConversion(c, uomMap)).ToList(),
             item.Substitutes.Select(MapSubstitute).ToList(),
             item.PackagingLevels.Select(p => MapPackaging(p, uomMap)).ToList(),
-            item.SupplierCodes.Select(MapSupplierCode).ToList(),
+            item.SupplierCodes.Select(s => MapSupplierCode(s, supplierInfo)).ToList(),
             item.BaseSalePrice,
             item.IsActive,
             item.CreatedAt,
@@ -226,6 +238,22 @@ internal static class ItemMappingService
             p.IsActive
         );
 
-    private static ItemSupplierCodeDto MapSupplierCode(ItemSupplierCode s) =>
-        new(s.Id, s.SupplierId, s.PackagingLevelId, s.Code, s.IsPrimary, s.IsActive);
+    private static ItemSupplierCodeDto MapSupplierCode(
+        ItemSupplierCode s,
+        IReadOnlyDictionary<Guid, BusinessPartnerDisplayInfo>? supplierInfo
+    )
+    {
+        BusinessPartnerDisplayInfo? supplier = null;
+        supplierInfo?.TryGetValue(s.SupplierId, out supplier);
+        return new(
+            s.Id,
+            s.SupplierId,
+            supplier?.DisplayName,
+            supplier?.IdentificationNumber,
+            s.PackagingLevelId,
+            s.Code,
+            s.IsPrimary,
+            s.IsActive
+        );
+    }
 }

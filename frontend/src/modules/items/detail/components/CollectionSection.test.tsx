@@ -22,6 +22,8 @@ const supplierCodes: ItemSupplierCodeDto[] = [
   {
     id: "supplier-code-1",
     supplierId: "11111111-1111-1111-1111-111111111111",
+    supplierDisplayName: "Cervecería Nacional",
+    supplierIdentification: "0999999999001",
     packagingLevelId: null,
     code: "3172",
     isPrimary: true,
@@ -64,6 +66,11 @@ describe("SupplierCodesDetailSection", () => {
     expect(screen.getByText("Proveedor")).toBeTruthy();
     expect(screen.getByText("Código")).toBeTruthy();
     expect(screen.getByText("Presentación")).toBeTruthy();
+    expect(screen.getByText("Cervecería Nacional")).toBeTruthy();
+    expect(screen.getByText("RUC: 0999999999001")).toBeTruthy();
+    expect(
+      screen.queryByText("11111111-1111-1111-1111-111111111111"),
+    ).toBeNull();
     expect(screen.getByText("3172")).toBeTruthy();
 
     fireEvent.change(screen.getByRole("combobox"), {
@@ -112,6 +119,52 @@ describe("SupplierCodesDetailSection", () => {
         "Sin presentación vinculada; una compra XML inventariable se bloqueará al confirmar.",
       ),
     ).toBeTruthy();
+  });
+
+  it("usa fallback controlado cuando no hay nombre ni identificación", () => {
+    render(
+      <SupplierCodesDetailSection
+        t={t}
+        supplierCodes={[
+          {
+            ...supplierCodes[0],
+            supplierDisplayName: null,
+            supplierIdentification: null,
+          },
+        ]}
+        packagingLevels={packagingLevels}
+        baseUomAbbrev="UND"
+        onUpdatePresentation={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Proveedor sin nombre")).toBeTruthy();
+    expect(
+      screen.queryByText("11111111-1111-1111-1111-111111111111"),
+    ).toBeNull();
+  });
+
+  it("usa la identificación como proveedor visible cuando no hay nombre", () => {
+    render(
+      <SupplierCodesDetailSection
+        t={t}
+        supplierCodes={[
+          {
+            ...supplierCodes[0],
+            supplierDisplayName: null,
+            supplierIdentification: "0999999999001",
+          },
+        ]}
+        packagingLevels={packagingLevels}
+        baseUomAbbrev="UND"
+        onUpdatePresentation={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("0999999999001")).toBeTruthy();
+    expect(
+      screen.queryByText("11111111-1111-1111-1111-111111111111"),
+    ).toBeNull();
   });
 });
 

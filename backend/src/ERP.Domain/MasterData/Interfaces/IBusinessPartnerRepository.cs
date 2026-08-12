@@ -1,5 +1,6 @@
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
+using ERP.Domain.MasterData.Models;
 
 namespace ERP.Domain.MasterData.Interfaces;
 
@@ -17,6 +18,11 @@ public interface IBusinessPartnerRepository
     /// Missing IDs (deleted or cross-tenant) are silently omitted from the result.
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> GetNamesByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyDictionary<Guid, BusinessPartnerDisplayInfo>> GetDisplayInfoByIdsAsync(
         IEnumerable<Guid> ids,
         CancellationToken cancellationToken = default
     );

@@ -117,6 +117,8 @@ public record ItemPackagingLevelDto(
 public record ItemSupplierCodeDto(
     Guid Id,
     Guid SupplierId,
+    string? SupplierDisplayName,
+    string? SupplierIdentification,
     Guid? PackagingLevelId,
     string Code,
     bool IsPrimary,

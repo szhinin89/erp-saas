@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using FluentValidation;
@@ -51,13 +52,15 @@ public sealed class ReplaceItemImagesCommandHandler
     private readonly ICurrentUser _user;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
+    private readonly IBusinessPartnerRepository _businessPartnerRepo;
 
     public ReplaceItemImagesCommandHandler(
         IItemRepository repository,
         ICurrentTenant tenant,
         ICurrentUser user,
         ISriCatalogResolver sri,
-        IItemTypeRepository itemTypeRepo
+        IItemTypeRepository itemTypeRepo,
+        IBusinessPartnerRepository businessPartnerRepo
     )
     {
         _repository = repository;
@@ -65,6 +68,7 @@ public sealed class ReplaceItemImagesCommandHandler
         _user = user;
         _sri = sri;
         _itemTypeRepo = itemTypeRepo;
+        _businessPartnerRepo = businessPartnerRepo;
     }
 
     public async Task<Result<ItemDetailDto>> Handle(
@@ -109,7 +113,8 @@ public sealed class ReplaceItemImagesCommandHandler
                 _sri,
                 _itemTypeRepo,
                 _currentTenant.TenantId,
-                cancellationToken
+                cancellationToken,
+                _businessPartnerRepo
             )
         );
     }

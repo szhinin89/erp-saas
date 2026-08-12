@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
 
@@ -21,13 +22,15 @@ public sealed class GetItemFullReportQueryHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
+    private readonly IBusinessPartnerRepository _businessPartnerRepo;
 
     public GetItemFullReportQueryHandler(
         IItemRepository repository,
         IItemCatalogRepository catalog,
         ICurrentTenant tenant,
         ISriCatalogResolver sri,
-        IItemTypeRepository itemTypeRepo
+        IItemTypeRepository itemTypeRepo,
+        IBusinessPartnerRepository businessPartnerRepo
     )
     {
         _repository = repository;
@@ -35,6 +38,7 @@ public sealed class GetItemFullReportQueryHandler
         _currentTenant = tenant;
         _sri = sri;
         _itemTypeRepo = itemTypeRepo;
+        _businessPartnerRepo = businessPartnerRepo;
     }
 
     public async Task<Result<ItemFullReportDto>> Handle(
@@ -79,8 +83,19 @@ public sealed class GetItemFullReportQueryHandler
         var itemTypeNames = itemType is null
             ? new Dictionary<Guid, string>()
             : new Dictionary<Guid, string> { [itemType.Id] = itemType.Name };
+        var supplierInfo = await _businessPartnerRepo.GetDisplayInfoByIdsAsync(
+            item.SupplierCodes.Where(s => s.IsActive).Select(s => s.SupplierId),
+            cancellationToken
+        );
 
-        var detail = ItemMappingService.ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames);
+        var detail = ItemMappingService.ToDetailDto(
+            item,
+            uomMap,
+            vatMap,
+            iceMap,
+            itemTypeNames,
+            supplierInfo
+        );
 
         uomMap.TryGetValue(item.DefaultUomCode, out var uomInfo);
 

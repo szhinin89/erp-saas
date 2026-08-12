@@ -2635,6 +2635,8 @@
   "items.supplierCodes.noPresentation": "No presentation",
   "items.supplierCodes.presentationSelect": "Supplier code presentation",
   "items.supplierCodes.presentationMissingWarning": "No linked presentation; a stock XML purchase will be blocked on confirmation.",
+  "items.supplierCodes.unnamedSupplier": "Unnamed supplier",
+  "items.supplierCodes.identificationPrefix": "Tax ID",
   "items.tabs.packaging": "Packaging",
   "items.packaging.sectionTitle": "Packaging Levels",
   "items.packaging.add": "Add packaging",

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.UseCases.ItemPackagingLevels;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.ValueObjects;
@@ -109,7 +110,8 @@ public sealed class ReplaceItemPackagingLevelsTests
             tenant.Object,
             user.Object,
             Mock.Of<ISriCatalogResolver>(),
-            Mock.Of<IItemTypeRepository>()
+            Mock.Of<IItemTypeRepository>(),
+            Mock.Of<IBusinessPartnerRepository>()
         );
 
         var baseId = item.PackagingLevels.Single(p => p.IsBaseUnit).Id;
@@ -163,7 +165,8 @@ public sealed class ReplaceItemPackagingLevelsTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<ISriCatalogResolver>(),
-            Mock.Of<IItemTypeRepository>()
+            Mock.Of<IItemTypeRepository>(),
+            Mock.Of<IBusinessPartnerRepository>()
         );
 
         var result = await handler.Handle(
@@ -207,7 +210,8 @@ public sealed class ReplaceItemPackagingLevelsTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<ISriCatalogResolver>(),
-            Mock.Of<IItemTypeRepository>()
+            Mock.Of<IItemTypeRepository>(),
+            Mock.Of<IBusinessPartnerRepository>()
         );
 
         var result = await handler.Handle(

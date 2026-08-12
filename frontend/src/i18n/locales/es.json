@@ -2637,6 +2637,8 @@
   "items.supplierCodes.noPresentation": "Sin presentación",
   "items.supplierCodes.presentationSelect": "Presentación del código proveedor",
   "items.supplierCodes.presentationMissingWarning": "Sin presentación vinculada; una compra XML inventariable se bloqueará al confirmar.",
+  "items.supplierCodes.unnamedSupplier": "Proveedor sin nombre",
+  "items.supplierCodes.identificationPrefix": "RUC",
   "items.tabs.packaging": "Empaques",
   "items.packaging.sectionTitle": "Niveles de Empaque",
   "items.packaging.add": "Agregar empaque",

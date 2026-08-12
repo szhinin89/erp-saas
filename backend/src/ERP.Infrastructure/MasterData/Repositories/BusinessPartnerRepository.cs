@@ -1,6 +1,7 @@
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Models;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -110,6 +111,29 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
             .BusinessPartners.AsNoTracking()
             .Where(x => idList.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id, x => x.Name.LegalName, cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, BusinessPartnerDisplayInfo>> GetDisplayInfoByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var idList = ids.Distinct().ToList();
+        if (idList.Count == 0)
+            return new Dictionary<Guid, BusinessPartnerDisplayInfo>();
+
+        var rows = await _db
+            .BusinessPartners.AsNoTracking()
+            .Where(x => idList.Contains(x.Id))
+            .Select(x => new BusinessPartnerDisplayInfo(
+                x.Id,
+                x.Name.TradeName,
+                x.Name.LegalName,
+                x.Identification.Number
+            ))
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(x => x.Id);
     }
 
     public async Task AddAsync(

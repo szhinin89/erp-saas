@@ -1007,11 +1007,24 @@ export function SupplierCodesDetailSection({
 }) {
   const active = supplierCodes.filter((s) => s.isActive);
   const activePackaging = packagingLevels.filter((p) => p.isActive);
+  const unnamedSupplierLabel = t(
+    "items.supplierCodes.unnamedSupplier",
+    "Proveedor sin nombre",
+  );
+  const identificationPrefix = t("items.supplierCodes.identificationPrefix", "RUC");
   const packagingLabel = (id: string | null) => {
     const packaging = activePackaging.find((p) => p.id === id);
     return packaging
       ? `${packaging.name} × ${packaging.baseQuantity} ${baseUomAbbrev}`
       : t("items.supplierCodes.noPresentation", "Sin presentación");
+  };
+  const supplierDisplay = (supplier: ItemSupplierCodeDto) => {
+    const displayName = supplier.supplierDisplayName?.trim();
+    const identification = supplier.supplierIdentification?.trim();
+    return {
+      primary: displayName || identification || unnamedSupplierLabel,
+      secondary: displayName && identification ? identification : null,
+    };
   };
 
   return (
@@ -1038,7 +1051,19 @@ export function SupplierCodesDetailSection({
             {active.map((s) => (
               <tr key={s.id}>
                 <td>
-                  <code>{s.supplierId?.slice(0, 12) ?? "—"}</code>
+                  {(() => {
+                    const supplier = supplierDisplay(s);
+                    return (
+                      <>
+                        <strong>{supplier.primary}</strong>
+                        {supplier.secondary && (
+                          <p className="zh-field-hint">
+                            {identificationPrefix}: {supplier.secondary}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </td>
                 <td>
                   <code>{s.code}</code>

@@ -126,6 +126,8 @@ export interface ItemPackagingLevelDto {
 export interface ItemSupplierCodeDto {
   id: string;
   supplierId: string | null;
+  supplierDisplayName: string | null;
+  supplierIdentification: string | null;
   packagingLevelId: string | null;
   code: string;
   isPrimary: boolean;

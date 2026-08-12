@@ -85,6 +85,8 @@ const baseItem: ItemDetailDto = {
     {
       id: "supplier-code-1",
       supplierId: "supplier-1",
+      supplierDisplayName: "Cervecería Nacional",
+      supplierIdentification: "0999999999001",
       packagingLevelId: "paca-12",
       code: "3172",
       isPrimary: true,

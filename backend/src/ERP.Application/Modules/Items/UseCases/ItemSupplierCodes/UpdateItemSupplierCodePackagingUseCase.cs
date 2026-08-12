@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -35,13 +36,15 @@ public sealed class UpdateItemSupplierCodePackagingCommandHandler
     private readonly ICurrentUser _currentUser;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
+    private readonly IBusinessPartnerRepository _businessPartnerRepo;
 
     public UpdateItemSupplierCodePackagingCommandHandler(
         IItemRepository repository,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         ISriCatalogResolver sri,
-        IItemTypeRepository itemTypeRepo
+        IItemTypeRepository itemTypeRepo,
+        IBusinessPartnerRepository businessPartnerRepo
     )
     {
         _repository = repository;
@@ -49,6 +52,7 @@ public sealed class UpdateItemSupplierCodePackagingCommandHandler
         _currentUser = currentUser;
         _sri = sri;
         _itemTypeRepo = itemTypeRepo;
+        _businessPartnerRepo = businessPartnerRepo;
     }
 
     public async Task<Result<ItemDetailDto>> Handle(
@@ -103,7 +107,8 @@ public sealed class UpdateItemSupplierCodePackagingCommandHandler
                 _sri,
                 _itemTypeRepo,
                 _currentTenant.TenantId,
-                cancellationToken
+                cancellationToken,
+                _businessPartnerRepo
             )
         );
     }

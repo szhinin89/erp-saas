@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
 
@@ -16,18 +17,21 @@ public sealed class GetItemByIdQueryHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
+    private readonly IBusinessPartnerRepository _businessPartnerRepo;
 
     public GetItemByIdQueryHandler(
         IItemRepository repository,
         ICurrentTenant tenant,
         ISriCatalogResolver sri,
-        IItemTypeRepository itemTypeRepo
+        IItemTypeRepository itemTypeRepo,
+        IBusinessPartnerRepository businessPartnerRepo
     )
     {
         _repository = repository;
         _currentTenant = tenant;
         _sri = sri;
         _itemTypeRepo = itemTypeRepo;
+        _businessPartnerRepo = businessPartnerRepo;
     }
 
     public async Task<Result<ItemDetailDto>> Handle(
@@ -69,9 +73,13 @@ public sealed class GetItemByIdQueryHandler
         var itemTypeNames = itemType is null
             ? new Dictionary<Guid, string>()
             : new Dictionary<Guid, string> { [itemType.Id] = itemType.Name };
+        var supplierInfo = await _businessPartnerRepo.GetDisplayInfoByIdsAsync(
+            item.SupplierCodes.Where(s => s.IsActive).Select(s => s.SupplierId),
+            cancellationToken
+        );
 
         return Result<ItemDetailDto>.Success(
-            ItemMappingService.ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames)
+            ItemMappingService.ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames, supplierInfo)
         );
     }
 }

@@ -2636,6 +2636,8 @@
   "items.supplierCodes.noPresentation": "Mana presentación",
   "items.supplierCodes.presentationSelect": "Proveedor código presentación",
   "items.supplierCodes.presentationMissingWarning": "Mana watashka presentación; stock XML rantiy takyachishpa harkarinka.",
+  "items.supplierCodes.unnamedSupplier": "Mana shutiyuk proveedor",
+  "items.supplierCodes.identificationPrefix": "RUC",
   "items.tabs.packaging": "Maytu kaqkuna",
   "items.packaging.sectionTitle": "Maytu kaqkuna nivelninkuna",
   "items.packaging.add": "Maytu kaqta yapay",
