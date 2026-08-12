@@ -130,9 +130,13 @@ export function GeneralTab({
           </ZhSelect>
         </ZHField>
         <ZHField
-          label={t("items.form.uom", "UOM base")}
+          label={t("items.form.uom", "Unidad base de inventario")}
           required
           fieldError={fe(errors.defaultUomCode?.message)}
+          hint={t(
+            "items.form.uomHint",
+            "Es la unidad mínima en la que se controla stock, costo y Kardex.",
+          )}
         >
           <ZhSelect {...register("defaultUomCode")} disabled={disabled}>
             <option value="">

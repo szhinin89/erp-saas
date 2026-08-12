@@ -530,7 +530,7 @@ export function PackagingLevelsSection({
             inventory_2
           </span>
           <span className="pg-section-label">
-            {t("items.packaging.sectionTitle", "Niveles de Empaque")} (
+            {t("items.packaging.sectionTitle", "Presentaciones y empaques")} (
             {active.length})
           </span>
         </div>
@@ -546,7 +546,7 @@ export function PackagingLevelsSection({
             setSaveError(null);
           }}
         >
-          {t("items.packaging.add", "Agregar empaque")}
+          {t("items.packaging.add", "Agregar presentación")}
         </ZHBtn>
       </div>
 
@@ -592,11 +592,18 @@ export function PackagingLevelsSection({
             <thead>
               <tr>
                 <th>{t("items.packaging.col.name", "Nombre")}</th>
-                <th>{t("items.packaging.col.uom", "UOM")}</th>
-                <th>{t("items.packaging.col.baseQuantity", "Cantidad Base")}</th>
+                <th>
+                  {t("items.packaging.col.uom", "Unidad de presentación")}
+                </th>
+                <th>
+                  {t(
+                    "items.packaging.col.baseQuantity",
+                    "Equivalencia en unidad base",
+                  )}
+                </th>
                 <th>{t("items.packaging.col.barcode", "Barcode")}</th>
                 <th>{t("items.packaging.col.weight", "Peso")}</th>
-                <th>{t("items.packaging.col.isBaseUnit", "Unidad Base")}</th>
+                <th>{t("items.packaging.col.isBaseUnit", "Es unidad base")}</th>
                 <th>{t("items.packaging.col.isPurchaseDefault", "Compra")}</th>
                 <th>{t("items.packaging.col.isSaleDefault", "Venta")}</th>
                 <th className="pg-th-right">
@@ -1016,7 +1023,7 @@ export function SupplierCodesDetailSection({
     const packaging = activePackaging.find((p) => p.id === id);
     return packaging
       ? `${packaging.name} × ${packaging.baseQuantity} ${baseUomAbbrev}`
-      : t("items.supplierCodes.noPresentation", "Sin presentación");
+      : t("items.supplierCodes.noPresentation", "Sin presentación asociada");
   };
   const supplierDisplay = (supplier: ItemSupplierCodeDto) => {
     const displayName = supplier.supplierDisplayName?.trim();
@@ -1029,7 +1036,10 @@ export function SupplierCodesDetailSection({
 
   return (
     <SectionWrapper
-      title={t("items.supplierCodes.detailTitle", "Códigos de proveedor")}
+      title={t(
+        "items.supplierCodes.detailTitle",
+        "Códigos del proveedor y presentaciones",
+      )}
       icon="local_shipping"
       emptyMessage={t(
         "items.supplierCodes.empty",
@@ -1088,7 +1098,10 @@ export function SupplierCodesDetailSection({
                     }
                   >
                     <option value="">
-                      {t("items.supplierCodes.noPresentation", "Sin presentación")}
+                      {t(
+                        "items.supplierCodes.noPresentation",
+                        "Sin presentación asociada",
+                      )}
                     </option>
                     {activePackaging.map((p) => (
                       <option key={p.id} value={p.id}>

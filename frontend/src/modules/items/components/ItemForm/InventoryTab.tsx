@@ -46,7 +46,7 @@ export function InventoryTab({
           "Cómo se controla el stock de este ítem: si se rastrea cantidad, por lote/serie, y en qué unidades.",
         )}
       >
-        <ZHGrid cols={1}>
+        <div className="items-option-grid">
           <Controller
             name="stockConfig.tracksStock"
             control={control}
@@ -127,7 +127,7 @@ export function InventoryTab({
               />
             )}
           />
-        </ZHGrid>
+        </div>
         <ZHGrid cols={2}>
           <ZHField
             label={t("items.stock.minStockQty", "Stock mínimo")}
@@ -181,8 +181,11 @@ export function InventoryTab({
 
       {isEditMode && itemId && (
         <ZHFormSection
-          title="Trazabilidad"
-          description="Historial completo de movimientos de inventario de este producto."
+          title={t("items.traceability.title", "Trazabilidad")}
+          description={t(
+            "items.traceability.desc",
+            "Historial completo de movimientos de inventario de este producto.",
+          )}
         >
           <ZHBtn
             type="button"
@@ -192,7 +195,7 @@ export function InventoryTab({
             <span className="material-symbols-outlined zh-icon-md">
               history
             </span>
-            Ver Kardex de este producto
+            {t("items.traceability.viewKardex", "Ver Kardex de este producto")}
           </ZHBtn>
         </ZHFormSection>
       )}

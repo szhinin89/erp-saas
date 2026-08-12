@@ -23,7 +23,7 @@ export function SupplierCodesSection({ t, disabled }: Props) {
     name: "supplierCodes",
   });
   const supplierCodes = watch("supplierCodes") ?? [];
-  const [open, setOpen] = useState(fields.length > 0);
+  const [open, setOpen] = useState(true);
 
   const listErrorMessage = errors.supplierCodes?.message;
   const listError =
@@ -44,7 +44,10 @@ export function SupplierCodesSection({ t, disabled }: Props) {
         onClick={() => setOpen((o) => !o)}
       >
         <span className="items-accordion-header__title">
-          {t("items.supplierCodes.title", "Códigos de proveedor (opcional)")}
+          {t(
+            "items.supplierCodes.title",
+            "Códigos del proveedor para compras",
+          )}
         </span>
         <span className="material-symbols-outlined items-accordion-header__chevron">
           expand_more
@@ -56,13 +59,13 @@ export function SupplierCodesSection({ t, disabled }: Props) {
           <p className="zh-form-section-desc">
             {t(
               "items.supplierCodes.sectionDesc",
-              "Código con el que cada proveedor identifica este ítem en sus propios documentos. Se usa en Compras para resolver el código correcto según el proveedor de la factura.",
+              "Código con el que el proveedor identifica este producto en sus facturas/XML.",
             )}
           </p>
           <p className="zh-field-hint">
             {t(
               "items.supplierCodes.hint",
-              "No es obligatorio para crear el ítem. Puede agregarse también más adelante desde Compras.",
+              "Puede agregar el código del proveedor ahora. Después de guardar el ítem, asocie la presentación en Inventario y presentaciones.",
             )}
           </p>
 

@@ -5,6 +5,8 @@ import {
   ZHGrid,
   ZHToggle,
 } from "../../../../components/zh/ZHForm";
+import { ZhDecimalInput } from "../../../../components/zh/inputs";
+import { getDecimalConfig } from "../../../../lib/config/decimal.config";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
 type Props = {
@@ -13,7 +15,13 @@ type Props = {
 };
 
 export function SettingsTab({ t, disabled }: Props) {
-  const { register, control } = useFormContext<CreateItemFormValues>();
+  const {
+    register,
+    control,
+    formState: { errors },
+  } = useFormContext<CreateItemFormValues>();
+  const fe = (msg?: string) => (msg ? t(msg, msg) : null);
+  const dc = getDecimalConfig();
 
   return (
     <>
@@ -24,7 +32,7 @@ export function SettingsTab({ t, disabled }: Props) {
           "En qué canales está disponible este ítem para la venta.",
         )}
       >
-        <ZHGrid cols={1}>
+        <div className="items-option-grid">
           <Controller
             name="saleConfig.isForSale"
             control={control}
@@ -108,6 +116,26 @@ export function SettingsTab({ t, disabled }: Props) {
               />
             )}
           />
+        </div>
+        <ZHGrid cols={2}>
+          <ZHField
+            label={t(
+              "items.pricing.maxDiscount",
+              "Descuento máximo permitido (%)",
+            )}
+            fieldError={fe(errors.saleConfig?.maxDiscountPercent?.message)}
+          >
+            <ZhDecimalInput
+              decimals={dc.percentage}
+              positiveOnly
+              placeholder={t("items.pricing.maxDiscountPlaceholder", "0")}
+              {...register("saleConfig.maxDiscountPercent", {
+                valueAsNumber: true,
+                setValueAs: (v) => (v === "" ? null : Number(v)),
+              })}
+              disabled={disabled}
+            />
+          </ZHField>
         </ZHGrid>
       </ZHFormSection>
 

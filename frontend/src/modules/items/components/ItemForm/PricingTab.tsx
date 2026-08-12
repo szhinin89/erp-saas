@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import {
   ZHField,
@@ -6,42 +6,87 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
-import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
+import { ZhDecimalInput, ZhSelect } from "../../../../components/zh/inputs";
 import { getDecimalConfig } from "../../../../lib/config/decimal.config";
 import { formatMoney } from "../../../../lib/sanitizers";
 import { useAsync } from "../../../../hooks/useAsync";
-import { useDebounce } from "../../../../hooks/useDebounce";
-import { formatApiError } from "../../../lib/formatApiError";
 import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
 import { companyProfileLookupFacade } from "../../../configuracion/empresa/facades/companyProfileLookupFacade";
-import {
-  itemService,
-  type ItemPricingSimulationRow,
-} from "../../api/itemService";
-import type { PriceSource } from "../../../pricing/facades/priceListLookupFacade";
+import { itemService } from "../../api/itemService";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
-
-const SOURCE_LABELS: Record<PriceSource, string> = {
-  BasePrice: "Precio Base",
-  GeneralRule: "Regla General",
-  Exception: "Excepción",
-};
 
 type Props = {
   t: (key: string, fallback?: string) => string;
   disabled: boolean;
-  isEditMode: boolean;
   itemId?: string;
+  vatRateOptions: { code: string; name: string; percentage: number }[];
 };
 
-export function PricingTab({ t, disabled, isEditMode, itemId }: Props) {
+type PriceInputMode = "net" | "gross";
+
+function toNullableNumber(value: unknown): number | null {
+  if (value === "" || value == null) return null;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function roundTo(value: number, decimals: number) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function formatInputValue(value: number | null, decimals: number) {
+  if (value == null || !Number.isFinite(value)) return "";
+  return String(roundTo(value, decimals));
+}
+
+function formatOptionalMoney(
+  value: number | null,
+  currencyCode: string,
+  decimals: number,
+) {
+  return value == null ? "—" : `${currencyCode} ${formatMoney(value, decimals)}`;
+}
+
+function formatOptionalPercent(value: number | null, decimals: number) {
+  return value == null ? "—" : `${formatMoney(value * 100, decimals)}%`;
+}
+
+function Metric({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "warning" | "error" | "neutral";
+}) {
+  return (
+    <div className="items-metric-card items-metric-card--small">
+      <span className="items-metric-card__label">{label}</span>
+      <strong className={`items-metric-card__value items-metric-card__value--${tone}`}>
+        {value}
+      </strong>
+    </div>
+  );
+}
+
+export function PricingTab({
+  t,
+  disabled,
+  itemId,
+  vatRateOptions,
+}: Props) {
   const {
-    register,
     watch,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateItemFormValues>();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
   const dc = getDecimalConfig();
+  const [priceMode, setPriceMode] = useState<PriceInputMode>("net");
+  const [enteredPrice, setEnteredPrice] = useState("");
+  const syncedBasePrice = useRef<number | null>(null);
 
   // Moneda real de la lista de precios predeterminada; si aún no existe una lista
   // (ítem nuevo), se usa la moneda configurada en el perfil de la empresa
@@ -57,34 +102,148 @@ export function PricingTab({ t, disabled, isEditMode, itemId }: Props) {
   const currencyCode =
     defaultList?.currencyCode ?? companyProfileState.data?.currencyCode ?? "";
 
-  const basePrice = watch("baseSalePrice");
+  const basePrice = toNullableNumber(watch("baseSalePrice"));
+  const saleVatCode = watch("taxConfig.saleVatCode");
   const maxDiscount = watch("saleConfig.maxDiscountPercent");
+  const selectedVatRate =
+    vatRateOptions.find((rate) => rate.code === saleVatCode) ?? null;
+  const vatPercent = selectedVatRate?.percentage ?? null;
+  const vatDecimal = vatPercent != null ? vatPercent / 100 : null;
+
+  const profitabilityState = useAsync(
+    () =>
+      itemId
+        ? itemService.getProfitability(itemId).catch(() => null)
+        : Promise.resolve(null),
+    !!itemId,
+    [itemId],
+  );
+  const averageCost = profitabilityState.data?.averageCost ?? null;
+  const hasCost = averageCost != null && averageCost > 0;
+  const lastCost: number | null = null;
+
+  const parsedEnteredPrice = toNullableNumber(enteredPrice);
+  const priceSinIva =
+    parsedEnteredPrice == null
+      ? null
+      : priceMode === "net"
+        ? parsedEnteredPrice
+        : vatDecimal == null
+          ? null
+          : parsedEnteredPrice / (1 + vatDecimal);
+  const priceConIva =
+    parsedEnteredPrice == null
+      ? null
+      : priceMode === "gross"
+        ? parsedEnteredPrice
+        : vatDecimal == null
+          ? null
+          : parsedEnteredPrice * (1 + vatDecimal);
+  const ivaValor =
+    priceSinIva != null && priceConIva != null
+      ? priceConIva - priceSinIva
+      : null;
+  const utilidad =
+    hasCost && priceSinIva != null ? priceSinIva - averageCost : null;
+  const margen =
+    utilidad != null && priceSinIva != null && priceSinIva > 0
+      ? utilidad / priceSinIva
+      : null;
+  const markup =
+    utilidad != null && averageCost != null && averageCost > 0
+      ? utilidad / averageCost
+      : null;
+  const isLoss = utilidad != null && utilidad < 0;
+  const lowMargin = margen != null && margen >= 0 && margen < 0.1;
+  const status = !hasCost
+    ? {
+        label: t("items.pricing.status.noCost", "Sin costo disponible"),
+        tone: "neutral" as const,
+      }
+    : isLoss
+      ? {
+          label: t("items.pricing.status.loss", "Pérdida"),
+          tone: "error" as const,
+        }
+      : lowMargin
+        ? {
+            label: t("items.pricing.status.lowMargin", "Margen bajo"),
+            tone: "warning" as const,
+          }
+        : {
+            label: t("items.pricing.status.healthy", "Saludable"),
+            tone: "success" as const,
+          };
+
+  const valueFromBasePrice = (
+    persistedBasePrice: number | null,
+    mode: PriceInputMode,
+  ) => {
+    if (persistedBasePrice == null) return "";
+    if (mode === "gross" && vatDecimal != null) {
+      return formatInputValue(
+        persistedBasePrice * (1 + vatDecimal),
+        dc.salesUnitPrice,
+      );
+    }
+    return formatInputValue(persistedBasePrice, dc.salesUnitPrice);
+  };
+
+  useEffect(() => {
+    if (syncedBasePrice.current === basePrice) return;
+    syncedBasePrice.current = basePrice;
+    setEnteredPrice(valueFromBasePrice(basePrice, priceMode));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basePrice, priceMode]);
+
+  useEffect(() => {
+    if (priceMode !== "gross") return;
+    setEnteredPrice(valueFromBasePrice(basePrice, "gross"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vatDecimal]);
+
+  const persistNetPrice = (netPrice: number | null) => {
+    const next = netPrice == null ? null : roundTo(netPrice, dc.salesUnitPrice);
+    syncedBasePrice.current = next;
+    setValue("baseSalePrice", next, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handlePriceChange = (nextValue: string) => {
+    setEnteredPrice(nextValue);
+    const parsed = toNullableNumber(nextValue);
+    if (parsed == null) {
+      persistNetPrice(null);
+      return;
+    }
+    if (priceMode === "net") {
+      persistNetPrice(parsed);
+      return;
+    }
+    persistNetPrice(vatDecimal == null ? null : parsed / (1 + vatDecimal));
+  };
+
+  const handleModeChange = (nextMode: PriceInputMode) => {
+    setPriceMode(nextMode);
+    setEnteredPrice(valueFromBasePrice(basePrice, nextMode));
+  };
 
   return (
-    <>
-      <ZHFormSection
-        title={t("items.pricing.title", "Precio de venta")}
-        description={t(
-          "items.pricing.sectionDesc",
-          "Precio base (PVP) sin impuestos y el descuento máximo que se le puede aplicar en una venta.",
-        )}
-      >
-        {!isEditMode && (
-          <ZHFormAlert
-            type="info"
-            message={t(
-              "items.pricing.hint",
-              "Podrás marcar a qué listas pertenece este ítem después de guardarlo.",
-            )}
-          />
-        )}
-
+    <ZHFormSection
+      title={t(
+        "items.pricing.title",
+        "Precio de venta, costo y rentabilidad",
+      )}
+      description={t(
+        "items.pricing.sectionDesc",
+        "El sistema guarda siempre el precio sin IVA. Si ingresa un precio con IVA, se calculará automáticamente el precio sin IVA.",
+      )}
+    >
         <ZHGrid cols={2}>
           <ZHField
-            label={t(
-              "items.pricing.pvp",
-              `PVP — Precio base sin IVA (${currencyCode})`,
-            )}
+            label={t("items.pricing.enteredPrice", "Precio ingresado")}
             fieldError={fe(errors.baseSalePrice?.message)}
           >
             <div className="items-currency-input">
@@ -95,10 +254,8 @@ export function PricingTab({ t, disabled, isEditMode, itemId }: Props) {
                 decimals={dc.salesUnitPrice}
                 positiveOnly
                 placeholder={t("items.pricing.pvpPlaceholder", "0.00")}
-                {...register("baseSalePrice", {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === "" ? null : Number(v)),
-                })}
+                value={enteredPrice}
+                onChange={(event) => handlePriceChange(event.target.value)}
                 disabled={disabled}
                 className="items-currency-input__field"
               />
@@ -106,233 +263,148 @@ export function PricingTab({ t, disabled, isEditMode, itemId }: Props) {
           </ZHField>
 
           <ZHField
-            label={t(
-              "items.pricing.maxDiscount",
-              "Descuento máximo permitido (%)",
-            )}
+            label={t("items.pricing.enteredPriceIs", "El precio ingresado es")}
           >
-            <ZhDecimalInput
-              decimals={dc.percentage}
-              positiveOnly
-              placeholder={t("items.pricing.maxDiscountPlaceholder", "0")}
-              {...register("saleConfig.maxDiscountPercent", {
-                valueAsNumber: true,
-                setValueAs: (v) => (v === "" ? null : Number(v)),
-              })}
+            <ZhSelect
+              value={priceMode}
+              onChange={(event) =>
+                handleModeChange(event.target.value as PriceInputMode)
+              }
               disabled={disabled}
-            />
+            >
+              <option value="net">{t("items.pricing.net", "Sin IVA")}</option>
+              <option value="gross">
+                {t("items.pricing.gross", "Con IVA")}
+              </option>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
-      </ZHFormSection>
 
-      <PriceListSimulationTable
-        t={t}
-        itemId={itemId}
-        disabled={disabled}
-        basePrice={basePrice ?? null}
-        maxDiscount={maxDiscount ?? null}
-      />
-    </>
-  );
-}
+        {!selectedVatRate && (
+          <ZHFormAlert
+            type="attention"
+            message={t(
+              "items.pricing.needsVat",
+              "Seleccione el IVA de venta para calcular el precio final con IVA.",
+            )}
+          />
+        )}
+        {!hasCost && (
+          <ZHFormAlert
+            type="neutral"
+            message={t(
+              "items.pricing.noCost",
+              "No hay costo disponible. El margen se calculará cuando exista una compra confirmada.",
+            )}
+          />
+        )}
+        {isLoss && (
+          <ZHFormAlert
+            type="error"
+            message={t(
+              "items.pricing.loss",
+              "El precio está por debajo del costo. Esta venta generaría pérdida.",
+            )}
+          />
+        )}
+        {!isLoss && lowMargin && (
+          <ZHFormAlert
+            type="warning"
+            message={t(
+              "items.pricing.lowMargin",
+              "Margen bajo. Revise si el precio es correcto.",
+            )}
+          />
+        )}
 
-/**
- * Tabla única de simulación de precios: una fila por cada PriceList activa y vigente,
- * escalable a cualquier cantidad de listas sin cambios de código. El precio (sin impuestos)
- * y el precio mínimo permitido se calculan 100% en el backend (mismo motor que
- * PricingResolver) — aquí no se reimplementa ninguna fórmula de negocio. Pricing nunca
- * calcula IVA/ICE (frontera con la infraestructura tributaria) — por eso esta tabla no
- * muestra un precio final con impuestos.
- *
- * Funciona en ambos modos:
- * - Creación (sin itemId): simulación "qué pasaría si" contra las reglas generales de cada
- *   lista — no hay ItemId todavía, así que no puede haber reglas por-ítem ni asignación.
- *   La columna "Activa" queda deshabilitada (no hay nada a qué asignar aún).
- * - Edición (con itemId): además de la simulación, "Activa" persiste la pertenencia
- *   Item↔PriceList (mismo endpoint que antes usaba el botón "Guardar asignación") —
- *   se dispara sola al marcar/desmarcar, sin botón.
- *
- * En ambos modos, la tabla reacciona automáticamente (debounced) a cambios en precio base
- * y descuento máximo, aunque el formulario todavía no se haya guardado.
- */
-function PriceListSimulationTable({
-  t,
-  itemId,
-  disabled,
-  basePrice,
-  maxDiscount,
-}: {
-  t: (key: string, fallback?: string) => string;
-  itemId?: string;
-  disabled: boolean;
-  basePrice: number | null;
-  maxDiscount: number | null;
-}) {
-  const dc = getDecimalConfig();
-  const debouncedBasePrice = useDebounce(basePrice, 400);
-  const debouncedMaxDiscount = useDebounce(maxDiscount, 400);
-
-  const overrides = {
-    baseSalePrice: debouncedBasePrice,
-    maxDiscountPercent: debouncedMaxDiscount,
-  };
-  const hasBasePrice = debouncedBasePrice != null && debouncedBasePrice > 0;
-
-  const simState = useAsync(
-    () =>
-      itemId
-        ? itemService.getPricingSimulation(itemId, overrides)
-        : itemService.previewPricingSimulation(overrides),
-    hasBasePrice,
-    [itemId, debouncedBasePrice, debouncedMaxDiscount],
-  );
-
-  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-  const [toggleError, setToggleError] = useState("");
-
-  const rows = simState.data ?? [];
-
-  const handleToggle = async (row: ItemPricingSimulationRow) => {
-    if (!itemId) return;
-    setToggleError("");
-    const currentlyAssigned = rows
-      .filter((r) => r.isAssigned)
-      .map((r) => r.priceListId);
-    const nextAssigned = row.isAssigned
-      ? currentlyAssigned.filter((id) => id !== row.priceListId)
-      : [...currentlyAssigned, row.priceListId];
-
-    setPendingIds((prev) => new Set(prev).add(row.priceListId));
-    try {
-      await itemService.setPriceLists(itemId, nextAssigned);
-      simState.refetch();
-    } catch (e: unknown) {
-      setToggleError(formatApiError(e));
-    } finally {
-      setPendingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(row.priceListId);
-        return next;
-      });
-    }
-  };
-
-  return (
-    <ZHFormSection
-      title={t(
-        "items.pricing.simulation.title",
-        "Simulación de listas de precios",
-      )}
-      description={
-        itemId
-          ? t(
-              "items.pricing.simulation.desc",
-              "Marca a qué listas pertenece el ítem. El precio de cada lista se recalcula automáticamente — no hay nada que guardar salvo la pertenencia.",
-            )
-          : t(
-              "items.pricing.simulation.descPreview",
-              "Así quedaría el precio en cada lista activa. Podrás marcar a cuáles pertenece el ítem después de guardarlo.",
-            )
-      }
-    >
-      {toggleError && <ZHFormAlert type="error" message={toggleError} />}
-      {simState.error && <ZHFormAlert type="error" message={simState.error} />}
-
-      {!hasBasePrice ? (
-        <p>
-          {t(
-            "items.pricing.simulation.needsPrice",
-            "Ingresa un precio base para ver la simulación.",
+        <div className="items-metric-grid">
+          <Metric
+            label={t(
+              "items.pricing.netToSave",
+              "Precio sin IVA que se guardará",
+            )}
+            value={formatOptionalMoney(
+              priceSinIva,
+              currencyCode,
+              dc.salesUnitPrice,
+            )}
+          />
+          <Metric
+            label={t("items.pricing.vatCalculated", "IVA calculado")}
+            value={formatOptionalMoney(ivaValor, currencyCode, dc.salesUnitPrice)}
+          />
+          <Metric
+            label={t(
+              "items.pricing.grossFinal",
+              "Precio final con IVA",
+            )}
+            value={formatOptionalMoney(
+              priceConIva,
+              currencyCode,
+              dc.salesUnitPrice,
+            )}
+          />
+          <Metric
+            label={t("items.pricing.currentBaseCost", "Costo base actual")}
+            value={formatOptionalMoney(
+              hasCost ? averageCost : null,
+              currencyCode,
+              dc.purchaseUnitPrice,
+            )}
+          />
+          <Metric
+            label={t("items.pricing.lastCost", "Último costo")}
+            value={formatOptionalMoney(
+              lastCost,
+              currencyCode,
+              dc.purchaseUnitPrice,
+            )}
+          />
+          <Metric
+            label={t("items.pricing.averageCost", "Costo promedio")}
+            value={formatOptionalMoney(
+              hasCost ? averageCost : null,
+              currencyCode,
+              dc.purchaseUnitPrice,
+            )}
+          />
+          <Metric
+            label={t(
+              "items.pricing.estimatedProfit",
+              "Utilidad estimada por unidad",
+            )}
+            value={formatOptionalMoney(
+              utilidad,
+              currencyCode,
+              dc.salesUnitPrice,
+            )}
+            tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
+          />
+          <Metric
+            label={t("items.pricing.salesMargin", "Margen sobre venta")}
+            value={formatOptionalPercent(margen, dc.percentage)}
+            tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
+          />
+          <Metric
+            label={t("items.pricing.costMarkup", "Markup sobre costo")}
+            value={formatOptionalPercent(markup, dc.percentage)}
+            tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
+          />
+          <Metric
+            label={t("items.pricing.status", "Estado")}
+            value={status.label}
+            tone={status.tone}
+          />
+          {maxDiscount != null && (
+            <Metric
+              label={t(
+                "items.pricing.maxDiscount",
+                "Descuento máximo permitido (%)",
+              )}
+              value={`${formatMoney(maxDiscount, dc.percentage)}%`}
+            />
           )}
-        </p>
-      ) : simState.loading && rows.length === 0 ? (
-        <p>{t("common.loading", "Cargando...")}</p>
-      ) : rows.length === 0 ? (
-        <p>
-          {t(
-            "items.pricing.simulation.empty",
-            "No hay listas de precios activas y vigentes. Créalas desde el módulo Precios.",
-          )}
-        </p>
-      ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("items.pricing.simulation.col.active", "Activa")}</th>
-                <th>{t("items.pricing.simulation.col.list", "Lista")}</th>
-                <th>{t("items.pricing.simulation.col.origin", "Origen")}</th>
-                <th>
-                  {t("items.pricing.simulation.col.rule", "Regla aplicada")}
-                </th>
-                <th>
-                  {t("items.pricing.simulation.col.net", "Precio sin IVA")}
-                </th>
-                <th>
-                  {t(
-                    "items.pricing.simulation.col.maxDiscount",
-                    "Descuento máximo",
-                  )}
-                </th>
-                <th>
-                  {t(
-                    "items.pricing.simulation.col.minAllowed",
-                    "Precio mínimo permitido",
-                  )}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.priceListId}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={row.isAssigned}
-                      disabled={
-                        !itemId || disabled || pendingIds.has(row.priceListId)
-                      }
-                      onChange={() => handleToggle(row)}
-                    />
-                  </td>
-                  <td>{row.priceListName}</td>
-                  <td>{SOURCE_LABELS[row.ruleSummary.source]}</td>
-                  <td>
-                    {row.ruleSummary.description}
-                    {row.ruleSummary.source === "Exception" && (
-                      <>
-                        {" "}
-                        <a
-                          href="/pricing"
-                          title="Administrar en el módulo Precios"
-                        >
-                          {t(
-                            "items.pricing.simulation.viewException",
-                            "Ver excepción",
-                          )}
-                        </a>
-                      </>
-                    )}
-                  </td>
-                  <td>
-                    {row.currencyCode}{" "}
-                    {formatMoney(row.netPrice, dc.salesUnitPrice)}
-                  </td>
-                  <td>
-                    {row.maxDiscountPercent != null
-                      ? `${row.maxDiscountPercent}%`
-                      : "—"}
-                  </td>
-                  <td>
-                    {row.currencyCode}{" "}
-                    {formatMoney(row.minAllowedPrice, dc.salesUnitPrice)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      )}
     </ZHFormSection>
   );
 }

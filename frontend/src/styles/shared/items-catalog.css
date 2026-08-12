@@ -773,6 +773,106 @@
   padding-left: 52px;
 }
 
+/* ── Items admin — responsive layout utilities ───────────── */
+.items-option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.items-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+/* ── Items admin — resumen accionable de códigos en Principal ───────── */
+.items-principal-code-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.items-principal-code-summary__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.items-principal-code-summary__item,
+.items-principal-code-summary__empty {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-container-low);
+  padding: var(--space-3);
+}
+
+.items-principal-code-summary__empty {
+  border-style: dashed;
+}
+
+.items-principal-code-summary__main,
+.items-principal-code-summary__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.items-principal-code-summary__main {
+  justify-content: space-between;
+}
+
+.items-principal-code-summary__code,
+.items-principal-code-summary__supplier,
+.items-principal-code-summary__empty-title {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.items-principal-code-summary__code {
+  font-size: 12px;
+}
+
+.items-principal-code-summary__supplier {
+  font-size: 13px;
+}
+
+.items-principal-code-summary__meta,
+.items-principal-code-summary__empty-desc,
+.items-principal-code-summary__warning {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.items-principal-code-summary__warning {
+  color: var(--color-warning);
+}
+
+@media (max-width: 1200px) {
+  .items-metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .items-option-grid,
+  .items-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .items-option-grid,
+  .items-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Items — tabla de simulación de listas de precio ─────── */
 /* .prd-status-badge/--active/--inactive/--muted ELIMINADOS (Bloque 4B) —
    sin consumidores; equivalente vigente es <Badge> (components/PageShell.tsx). */

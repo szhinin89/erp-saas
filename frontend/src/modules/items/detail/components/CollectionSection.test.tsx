@@ -62,7 +62,9 @@ describe("SupplierCodesDetailSection", () => {
       />,
     );
 
-    expect(screen.getByText("Códigos de proveedor (1)")).toBeTruthy();
+    expect(
+      screen.getByText("Códigos del proveedor y presentaciones (1)"),
+    ).toBeTruthy();
     expect(screen.getByText("Proveedor")).toBeTruthy();
     expect(screen.getByText("Código")).toBeTruthy();
     expect(screen.getByText("Presentación")).toBeTruthy();
@@ -189,7 +191,7 @@ const baseUnitLevel: ItemPackagingLevelDto = {
 };
 
 describe("PackagingLevelsSection", () => {
-  it("renderiza estado vacío con botón Agregar empaque", () => {
+  it("renderiza estado vacío con botón Agregar presentación", () => {
     render(
       <PackagingLevelsSection
         t={t}
@@ -208,7 +210,7 @@ describe("PackagingLevelsSection", () => {
       ),
     ).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "Agregar empaque" }),
+      screen.getByRole("button", { name: "Agregar presentación" }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Crear UNIDAD X1" })).toBeTruthy();
   });
@@ -227,7 +229,9 @@ describe("PackagingLevelsSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Agregar empaque" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar presentación" }),
+    );
 
     const nameInput = screen.getByPlaceholderText("PACA x12");
     fireEvent.change(nameInput, { target: { value: "PACA x12" } });
@@ -279,7 +283,9 @@ describe("PackagingLevelsSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Agregar empaque" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar presentación" }),
+    );
     fireEvent.change(screen.getByPlaceholderText("PACA x12"), {
       target: { value: "PACA x12" },
     });
@@ -443,7 +449,9 @@ describe("PackagingLevelsSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Agregar empaque" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar presentación" }),
+    );
     fireEvent.change(screen.getByPlaceholderText("PACA x12"), {
       target: { value: "PACA x12" },
     });
@@ -470,7 +478,9 @@ describe("PackagingLevelsSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Agregar empaque" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar presentación" }),
+    );
     fireEvent.change(screen.getByPlaceholderText("PACA x12"), {
       target: { value: "PACA x12" },
     });
@@ -490,7 +500,7 @@ describe("PackagingLevelsSection", () => {
     ).toBeTruthy();
   });
 
-  it("no permite duplicar UOM + BaseQuantity en el mismo ítem", () => {
+  it("no permite duplicar unidad y equivalencia en el mismo ítem", () => {
     render(
       <PackagingLevelsSection
         t={t}
@@ -503,7 +513,9 @@ describe("PackagingLevelsSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Agregar empaque" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar presentación" }),
+    );
     fireEvent.change(screen.getByPlaceholderText("PACA x12"), {
       target: { value: "UNIDAD duplicada" },
     });
@@ -570,7 +582,9 @@ describe("PackagingLevelsSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Agregar empaque" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar presentación" }),
+    );
     fireEvent.change(screen.getByPlaceholderText("PACA x12"), {
       target: { value: "CAJA x48" },
     });

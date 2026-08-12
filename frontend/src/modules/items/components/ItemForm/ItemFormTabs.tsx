@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
-import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHBtn, ZHFormSection } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 import { LoadingState } from "../../../../components/PageShell";
@@ -19,7 +19,6 @@ import {
   PackagingLevelsSection,
   SupplierCodesDetailSection,
 } from "../../detail/components/CollectionSection";
-import { ProfitabilitySection } from "../../detail/components/ProfitabilitySection";
 import {
   createItemSchema,
   updateItemSchema,
@@ -33,40 +32,17 @@ import { SettingsTab } from "./SettingsTab";
 import { InventoryTab } from "./InventoryTab";
 import { BarcodeListEditor } from "./BarcodeListEditor";
 import { SupplierCodesSection } from "./SupplierCodesSection";
+import {
+  BarcodePrincipalSummary,
+  SupplierCodesPrincipalSummary,
+} from "./PrincipalCodesSummary";
+import {
+  ITEM_FORM_TABS,
+  type ItemFormTabId,
+} from "./itemFormTabConfig";
 import type { ItemDetailDto } from "../../../../types/items";
 
-type TabId =
-  | "general"
-  | "settings"
-  | "inventory"
-  | "variants"
-  | "images"
-  | "packaging"
-  | "substitutes"
-  | "profitability";
-
-const TABS: { id: TabId; labelKey: string; labelFb: string }[] = [
-  {
-    id: "general",
-    labelKey: "items.tabs.general",
-    labelFb: "Información General",
-  },
-  { id: "settings", labelKey: "items.tabs.settings", labelFb: "Configuración" },
-  { id: "inventory", labelKey: "items.tabs.inventory", labelFb: "Inventario" },
-  { id: "variants", labelKey: "items.tabs.variants", labelFb: "Variantes" },
-  { id: "images", labelKey: "items.tabs.images", labelFb: "Imágenes" },
-  { id: "packaging", labelKey: "items.tabs.packaging", labelFb: "Empaques" },
-  {
-    id: "substitutes",
-    labelKey: "items.tabs.substitutes",
-    labelFb: "Sustitutos",
-  },
-  {
-    id: "profitability",
-    labelKey: "items.tabs.profitability",
-    labelFb: "Rentabilidad",
-  },
-];
+type TabId = ItemFormTabId;
 
 /** Mapea el DTO ya cargado (fuente única) a los valores del formulario RHF. */
 function toFormValues(item: ItemDetailDto): CreateItemFormValues {
@@ -133,7 +109,7 @@ export function ItemFormTabs({
   onCancel,
 }: Props) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<TabId>("general");
+  const [activeTab, setActiveTab] = useState<TabId>("principal");
   const [formError, setFormError] = useState<string | null>(null);
   const isEditMode = !!itemId;
 
@@ -295,32 +271,19 @@ export function ItemFormTabs({
   };
 
   const handleSubmitError = () => {
-    // Move to first tab that has errors — casi todos los campos viven en 'general'
-    // (Información + Identificación + Comercial + Tributación); 'settings' cubre
-    // canales de venta/observaciones, e 'inventory' cubre stock/UOM.
+    // Move to first tab that has errors. Principal concentra identidad,
+    // tributación y precio; Avanzado conserva configuración comercial secundaria.
     const errors = form.formState.errors;
     const errorKeys = Object.keys(errors) as (keyof CreateItemFormValues)[];
-    // maxDiscountPercent vive en 'general' (Comercial); el resto de saleConfig (canales) en 'settings'.
-    const saleConfigErrorKeys = errors.saleConfig
-      ? (Object.keys(
-          errors.saleConfig,
-        ) as (keyof CreateItemFormValues["saleConfig"])[])
-      : [];
-    const maxDiscountKey: keyof CreateItemFormValues["saleConfig"] =
-      "maxDiscountPercent";
-    const onlyMaxDiscountError =
-      saleConfigErrorKeys.length > 0 &&
-      saleConfigErrorKeys.every((k) => k === maxDiscountKey);
-
     const stockConfigKey: keyof CreateItemFormValues = "stockConfig";
     const saleConfigKey: keyof CreateItemFormValues = "saleConfig";
 
     if (errorKeys.includes(stockConfigKey)) {
-      setActiveTab("inventory");
-    } else if (errorKeys.includes(saleConfigKey) && !onlyMaxDiscountError) {
-      setActiveTab("settings");
+      setActiveTab("inventory-presentations");
+    } else if (errorKeys.includes(saleConfigKey)) {
+      setActiveTab("advanced");
     } else {
-      setActiveTab("general");
+      setActiveTab("principal");
     }
   };
 
@@ -336,7 +299,7 @@ export function ItemFormTabs({
         {formError && <ZHPageNotice variant="error" message={formError} />}
 
         <ZHTabBar
-          tabs={TABS.map((tab) => ({
+          tabs={ITEM_FORM_TABS.map((tab) => ({
             id: tab.id,
             label: t(tab.labelKey, tab.labelFb),
           }))}
@@ -352,7 +315,7 @@ export function ItemFormTabs({
               : form.handleSubmit(handleSubmit, handleSubmitError)
           }
         >
-          {activeTab === "general" && (
+          {activeTab === "principal" && (
             <>
               <GeneralTab
                 t={t}
@@ -363,15 +326,29 @@ export function ItemFormTabs({
                 sriUomOptions={sriUomOptions}
                 itemTypeOptions={itemTypeOptions}
               />
-              {!isEditMode && (
-                <>
-                  <BarcodeListEditor
-                    t={t}
-                    disabled={fieldsDisabled}
-                    barcodeTypeOptions={barcodeTypeOptions}
-                  />
-                  <SupplierCodesSection t={t} disabled={fieldsDisabled} />
-                </>
+              {!isEditMode ? (
+                <BarcodeListEditor
+                  t={t}
+                  disabled={fieldsDisabled}
+                  barcodeTypeOptions={barcodeTypeOptions}
+                />
+              ) : (
+                <BarcodePrincipalSummary
+                  t={t}
+                  item={detail.item}
+                  onManageBarcodes={() => setActiveTab("advanced")}
+                />
+              )}
+              {!isEditMode ? (
+                <SupplierCodesSection t={t} disabled={fieldsDisabled} />
+              ) : (
+                <SupplierCodesPrincipalSummary
+                  t={t}
+                  item={detail.item}
+                  onManageSupplierPresentations={() =>
+                    setActiveTab("inventory-presentations")
+                  }
+                />
               )}
               <TaxConfigTab
                 t={t}
@@ -382,59 +359,21 @@ export function ItemFormTabs({
               <PricingTab
                 t={t}
                 disabled={fieldsDisabled}
-                isEditMode={isEditMode}
                 itemId={itemId}
+                vatRateOptions={vatRateOptions}
               />
             </>
           )}
-          {activeTab === "settings" && (
-            <SettingsTab t={t} disabled={fieldsDisabled} />
-          )}
-          {activeTab === "inventory" && (
-            <InventoryTab
-              t={t}
-              disabled={fieldsDisabled}
-              isEditMode={isEditMode}
-              itemId={itemId}
-              unitConversions={detail.item?.unitConversions}
-            />
-          )}
-          {activeTab === "variants" &&
-            (isEditMode && itemId && detail.item ? (
-              <VariantsSection
-                itemId={itemId}
-                variants={detail.item.variants}
-                disabled={fieldsDisabled}
-                onToggle={detail.toggleVariant}
-                onRefresh={detail.refetch}
-              />
-            ) : (
-              <AfterCreateNotice
-                message={t(
-                  "items.variants.availableAfterCreate",
-                  "Guarda el ítem primero para agregar variantes.",
-                )}
-              />
-            ))}
-          {activeTab === "images" &&
-            (isEditMode && detail.item ? (
-              <ImagesSection
+          {activeTab === "inventory-presentations" && (
+            <>
+              <InventoryTab
                 t={t}
-                images={detail.item.images}
                 disabled={fieldsDisabled}
-                onDisable={detail.disableImage}
+                isEditMode={isEditMode}
+                itemId={itemId}
+                unitConversions={detail.item?.unitConversions}
               />
-            ) : (
-              <AfterCreateNotice
-                message={t(
-                  "items.images.availableAfterCreate",
-                  "Guarda el ítem primero para agregar imágenes.",
-                )}
-              />
-            ))}
-          {activeTab === "packaging" &&
-            (isEditMode && detail.item ? (
-              <>
+              {isEditMode && detail.item ? (
                 <PackagingLevelsSection
                   t={t}
                   levels={detail.item.packagingLevels}
@@ -451,6 +390,26 @@ export function ItemFormTabs({
                   disabled={fieldsDisabled}
                   onSave={detail.replacePackagingLevels}
                 />
+              ) : (
+                <ZHFormSection
+                  title={t(
+                    "items.packaging.sectionTitle",
+                    "Presentaciones y empaques",
+                  )}
+                  description={t(
+                    "items.packaging.sectionDesc",
+                    "Defina la unidad base X1 y las presentaciones de compra o venta, como PACA X12.",
+                  )}
+                >
+                  <AfterCreateNotice
+                    message={t(
+                      "items.packaging.availableAfterCreate",
+                      "Disponible después de guardar el ítem.",
+                    )}
+                  />
+                </ZHFormSection>
+              )}
+              {isEditMode && detail.item ? (
                 <SupplierCodesDetailSection
                   t={t}
                   supplierCodes={detail.item.supplierCodes}
@@ -459,37 +418,93 @@ export function ItemFormTabs({
                   disabled={fieldsDisabled}
                   onUpdatePresentation={detail.updateSupplierCodePresentation}
                 />
-              </>
-            ) : (
-              <AfterCreateNotice
-                message={t(
-                  "items.packaging.availableAfterCreate",
-                  "Guarda el ítem primero para configurar empaques.",
-                )}
-              />
-            ))}
-          {activeTab === "substitutes" &&
+              ) : (
+                <ZHFormSection
+                  title={t(
+                    "items.supplierCodes.detailTitle",
+                    "Códigos del proveedor y presentaciones",
+                  )}
+                  description={t(
+                    "items.supplierCodes.detailDesc",
+                    "Muestre el proveedor, su código y la presentación que llega en compras XML.",
+                  )}
+                >
+                  <AfterCreateNotice
+                    message={t(
+                      "items.supplierCodes.availableAfterCreate",
+                      "Disponible después de guardar el ítem.",
+                    )}
+                  />
+                </ZHFormSection>
+              )}
+            </>
+          )}
+          {activeTab === "images" &&
             (isEditMode && detail.item ? (
-              <SubstitutesSection t={t} substitutes={detail.item.substitutes} />
+              <ImagesSection
+                t={t}
+                images={detail.item.images}
+                disabled={fieldsDisabled}
+                onDisable={detail.disableImage}
+              />
             ) : (
               <AfterCreateNotice
                 message={t(
-                  "items.substitutes.availableAfterCreate",
-                  "Guarda el ítem primero para configurar sustitutos.",
+                  "items.images.availableAfterCreate",
+                  "Guarda el ítem primero para agregar imágenes.",
                 )}
               />
             ))}
-          {activeTab === "profitability" &&
-            (isEditMode && itemId ? (
-              <ProfitabilitySection itemId={itemId} disabled={fieldsDisabled} />
-            ) : (
-              <AfterCreateNotice
-                message={t(
-                  "items.profitability.availableAfterCreate",
-                  "Guarda el ítem primero para ver su rentabilidad.",
-                )}
-              />
-            ))}
+          {activeTab === "advanced" && (
+            <>
+              <SettingsTab t={t} disabled={fieldsDisabled} />
+              {isEditMode && itemId && detail.item ? (
+                <VariantsSection
+                  itemId={itemId}
+                  variants={detail.item.variants}
+                  disabled={fieldsDisabled}
+                  onToggle={detail.toggleVariant}
+                  onRefresh={detail.refetch}
+                />
+              ) : (
+                <ZHFormSection
+                  title={t("items.tabs.variants", "Variantes")}
+                  description={t(
+                    "items.variants.sectionDesc",
+                    "Opciones internas del ítem cuando aplica.",
+                  )}
+                >
+                  <AfterCreateNotice
+                    message={t(
+                      "items.variants.availableAfterCreate",
+                      "Disponible después de guardar el ítem.",
+                    )}
+                  />
+                </ZHFormSection>
+              )}
+              {isEditMode && detail.item ? (
+                <SubstitutesSection
+                  t={t}
+                  substitutes={detail.item.substitutes}
+                />
+              ) : (
+                <ZHFormSection
+                  title={t("items.substitutes.sectionTitle", "Sustitutos")}
+                  description={t(
+                    "items.substitutes.sectionDesc",
+                    "Ítems alternativos para consulta operativa.",
+                  )}
+                >
+                  <AfterCreateNotice
+                    message={t(
+                      "items.substitutes.availableAfterCreate",
+                      "Disponible después de guardar el ítem.",
+                    )}
+                  />
+                </ZHFormSection>
+              )}
+            </>
+          )}
 
           {/* Actions */}
           <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--lg">

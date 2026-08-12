@@ -5,6 +5,7 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useMarkPrimaryField } from "../../hooks/useMarkPrimaryField";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
@@ -39,7 +40,7 @@ export function BarcodeListEditor({ t, disabled, barcodeTypeOptions }: Props) {
       title={t("items.barcodes.title", "Códigos de barras")}
       description={t(
         "items.barcodes.sectionDesc",
-        'Al menos un código es obligatorio. El código marcado como "Principal" es el que se usa por defecto al escanear o buscar el ítem.',
+        "Código usado para escanear o buscar el ítem.",
       )}
     >
       {listError && (
@@ -80,7 +81,7 @@ export function BarcodeListEditor({ t, disabled, barcodeTypeOptions }: Props) {
                 : null
             }
           >
-            <select
+            <ZhSelect
               {...register(`barcodes.${index}.barcodeType`)}
               disabled={disabled}
             >
@@ -92,7 +93,7 @@ export function BarcodeListEditor({ t, disabled, barcodeTypeOptions }: Props) {
                   {bt.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label={t("items.barcodes.primary", "Principal")}>
             <div className="items-row-actions">
