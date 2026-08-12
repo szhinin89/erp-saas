@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { BarcodeListEditor } from "./BarcodeListEditor";
 import { SupplierCodesSection } from "./SupplierCodesSection";
@@ -50,12 +50,20 @@ describe("Item Principal create code sections", () => {
     render(<CodesHarness />);
 
     expect(
-      screen.queryByText("Use el detalle del ítem para revisar o mantener códigos de barras."),
+      screen.queryByText(
+        "Use el detalle del ítem para revisar o mantener códigos de barras.",
+      ),
     ).toBeNull();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Puede agregar el código del proveedor ahora. Después de guardar el ítem, asocie la presentación en Inventario y presentaciones.",
       ),
-    ).toBeTruthy();
+    ).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Agregar código de proveedor" }),
+    );
+
+    expect(screen.getByText("Presentación pendiente")).toBeTruthy();
   });
 });

@@ -45,7 +45,9 @@ function formatOptionalMoney(
   currencyCode: string,
   decimals: number,
 ) {
-  return value == null ? "—" : `${currencyCode} ${formatMoney(value, decimals)}`;
+  return value == null
+    ? "—"
+    : `${currencyCode} ${formatMoney(value, decimals)}`;
 }
 
 function formatOptionalPercent(value: number | null, decimals: number) {
@@ -64,19 +66,16 @@ function Metric({
   return (
     <div className="items-metric-card items-metric-card--small">
       <span className="items-metric-card__label">{label}</span>
-      <strong className={`items-metric-card__value items-metric-card__value--${tone}`}>
+      <strong
+        className={`items-metric-card__value items-metric-card__value--${tone}`}
+      >
         {value}
       </strong>
     </div>
   );
 }
 
-export function PricingTab({
-  t,
-  disabled,
-  itemId,
-  vatRateOptions,
-}: Props) {
+export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
   const {
     watch,
     setValue,
@@ -104,7 +103,6 @@ export function PricingTab({
 
   const basePrice = toNullableNumber(watch("baseSalePrice"));
   const saleVatCode = watch("taxConfig.saleVatCode");
-  const maxDiscount = watch("saleConfig.maxDiscountPercent");
   const selectedVatRate =
     vatRateOptions.find((rate) => rate.code === saleVatCode) ?? null;
   const vatPercent = selectedVatRate?.percentage ?? null;
@@ -232,179 +230,153 @@ export function PricingTab({
 
   return (
     <ZHFormSection
-      title={t(
-        "items.pricing.title",
-        "Precio de venta, costo y rentabilidad",
-      )}
+      title={t("items.pricing.title", "Precio de venta, costo y rentabilidad")}
       description={t(
         "items.pricing.sectionDesc",
         "El sistema guarda siempre el precio sin IVA. Si ingresa un precio con IVA, se calculará automáticamente el precio sin IVA.",
       )}
     >
-        <ZHGrid cols={2}>
-          <ZHField
-            label={t("items.pricing.enteredPrice", "Precio ingresado")}
-            fieldError={fe(errors.baseSalePrice?.message)}
-          >
-            <div className="items-currency-input">
-              <span className="items-currency-input__prefix">
-                {currencyCode}
-              </span>
-              <ZhDecimalInput
-                decimals={dc.salesUnitPrice}
-                positiveOnly
-                placeholder={t("items.pricing.pvpPlaceholder", "0.00")}
-                value={enteredPrice}
-                onChange={(event) => handlePriceChange(event.target.value)}
-                disabled={disabled}
-                className="items-currency-input__field"
-              />
-            </div>
-          </ZHField>
-
-          <ZHField
-            label={t("items.pricing.enteredPriceIs", "El precio ingresado es")}
-          >
-            <ZhSelect
-              value={priceMode}
-              onChange={(event) =>
-                handleModeChange(event.target.value as PriceInputMode)
-              }
+      <ZHGrid cols={2}>
+        <ZHField
+          label={t("items.pricing.enteredPrice", "Precio ingresado")}
+          fieldError={fe(errors.baseSalePrice?.message)}
+        >
+          <div className="items-currency-input">
+            <span className="items-currency-input__prefix">{currencyCode}</span>
+            <ZhDecimalInput
+              decimals={dc.salesUnitPrice}
+              positiveOnly
+              placeholder={t("items.pricing.pvpPlaceholder", "0.00")}
+              value={enteredPrice}
+              onChange={(event) => handlePriceChange(event.target.value)}
               disabled={disabled}
-            >
-              <option value="net">{t("items.pricing.net", "Sin IVA")}</option>
-              <option value="gross">
-                {t("items.pricing.gross", "Con IVA")}
-              </option>
-            </ZhSelect>
-          </ZHField>
-        </ZHGrid>
-
-        {!selectedVatRate && (
-          <ZHFormAlert
-            type="attention"
-            message={t(
-              "items.pricing.needsVat",
-              "Seleccione el IVA de venta para calcular el precio final con IVA.",
-            )}
-          />
-        )}
-        {!hasCost && (
-          <ZHFormAlert
-            type="neutral"
-            message={t(
-              "items.pricing.noCost",
-              "No hay costo disponible. El margen se calculará cuando exista una compra confirmada.",
-            )}
-          />
-        )}
-        {isLoss && (
-          <ZHFormAlert
-            type="error"
-            message={t(
-              "items.pricing.loss",
-              "El precio está por debajo del costo. Esta venta generaría pérdida.",
-            )}
-          />
-        )}
-        {!isLoss && lowMargin && (
-          <ZHFormAlert
-            type="warning"
-            message={t(
-              "items.pricing.lowMargin",
-              "Margen bajo. Revise si el precio es correcto.",
-            )}
-          />
-        )}
-
-        <div className="items-metric-grid">
-          <Metric
-            label={t(
-              "items.pricing.netToSave",
-              "Precio sin IVA que se guardará",
-            )}
-            value={formatOptionalMoney(
-              priceSinIva,
-              currencyCode,
-              dc.salesUnitPrice,
-            )}
-          />
-          <Metric
-            label={t("items.pricing.vatCalculated", "IVA calculado")}
-            value={formatOptionalMoney(ivaValor, currencyCode, dc.salesUnitPrice)}
-          />
-          <Metric
-            label={t(
-              "items.pricing.grossFinal",
-              "Precio final con IVA",
-            )}
-            value={formatOptionalMoney(
-              priceConIva,
-              currencyCode,
-              dc.salesUnitPrice,
-            )}
-          />
-          <Metric
-            label={t("items.pricing.currentBaseCost", "Costo base actual")}
-            value={formatOptionalMoney(
-              hasCost ? averageCost : null,
-              currencyCode,
-              dc.purchaseUnitPrice,
-            )}
-          />
-          <Metric
-            label={t("items.pricing.lastCost", "Último costo")}
-            value={formatOptionalMoney(
-              lastCost,
-              currencyCode,
-              dc.purchaseUnitPrice,
-            )}
-          />
-          <Metric
-            label={t("items.pricing.averageCost", "Costo promedio")}
-            value={formatOptionalMoney(
-              hasCost ? averageCost : null,
-              currencyCode,
-              dc.purchaseUnitPrice,
-            )}
-          />
-          <Metric
-            label={t(
-              "items.pricing.estimatedProfit",
-              "Utilidad estimada por unidad",
-            )}
-            value={formatOptionalMoney(
-              utilidad,
-              currencyCode,
-              dc.salesUnitPrice,
-            )}
-            tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
-          />
-          <Metric
-            label={t("items.pricing.salesMargin", "Margen sobre venta")}
-            value={formatOptionalPercent(margen, dc.percentage)}
-            tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
-          />
-          <Metric
-            label={t("items.pricing.costMarkup", "Markup sobre costo")}
-            value={formatOptionalPercent(markup, dc.percentage)}
-            tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
-          />
-          <Metric
-            label={t("items.pricing.status", "Estado")}
-            value={status.label}
-            tone={status.tone}
-          />
-          {maxDiscount != null && (
-            <Metric
-              label={t(
-                "items.pricing.maxDiscount",
-                "Descuento máximo permitido (%)",
-              )}
-              value={`${formatMoney(maxDiscount, dc.percentage)}%`}
+              className="items-currency-input__field"
             />
+          </div>
+        </ZHField>
+
+        <ZHField
+          label={t("items.pricing.enteredPriceIs", "El precio ingresado es")}
+        >
+          <ZhSelect
+            value={priceMode}
+            onChange={(event) =>
+              handleModeChange(event.target.value as PriceInputMode)
+            }
+            disabled={disabled}
+          >
+            <option value="net">{t("items.pricing.net", "Sin IVA")}</option>
+            <option value="gross">{t("items.pricing.gross", "Con IVA")}</option>
+          </ZhSelect>
+        </ZHField>
+      </ZHGrid>
+
+      {!selectedVatRate && (
+        <ZHFormAlert
+          type="attention"
+          message={t(
+            "items.pricing.needsVat",
+            "Seleccione el IVA de venta para calcular el precio final con IVA.",
           )}
-        </div>
+        />
+      )}
+      {!hasCost && (
+        <ZHFormAlert
+          type="neutral"
+          message={t(
+            "items.pricing.noCost",
+            "No hay costo disponible. El margen se calculará cuando exista una compra confirmada.",
+          )}
+        />
+      )}
+      {isLoss && (
+        <ZHFormAlert
+          type="error"
+          message={t(
+            "items.pricing.loss",
+            "El precio está por debajo del costo. Esta venta generaría pérdida.",
+          )}
+        />
+      )}
+      {!isLoss && lowMargin && (
+        <ZHFormAlert
+          type="warning"
+          message={t(
+            "items.pricing.lowMargin",
+            "Margen bajo. Revise si el precio es correcto.",
+          )}
+        />
+      )}
+
+      <div className="items-metric-grid">
+        <Metric
+          label={t("items.pricing.netToSave", "Precio sin IVA que se guardará")}
+          value={formatOptionalMoney(
+            priceSinIva,
+            currencyCode,
+            dc.salesUnitPrice,
+          )}
+        />
+        <Metric
+          label={t("items.pricing.vatCalculated", "IVA calculado")}
+          value={formatOptionalMoney(ivaValor, currencyCode, dc.salesUnitPrice)}
+        />
+        <Metric
+          label={t("items.pricing.grossFinal", "Precio final con IVA")}
+          value={formatOptionalMoney(
+            priceConIva,
+            currencyCode,
+            dc.salesUnitPrice,
+          )}
+        />
+        <Metric
+          label={t("items.pricing.currentBaseCost", "Costo base actual")}
+          value={formatOptionalMoney(
+            hasCost ? averageCost : null,
+            currencyCode,
+            dc.purchaseUnitPrice,
+          )}
+        />
+        <Metric
+          label={t("items.pricing.lastCost", "Último costo")}
+          value={formatOptionalMoney(
+            lastCost,
+            currencyCode,
+            dc.purchaseUnitPrice,
+          )}
+        />
+        <Metric
+          label={t("items.pricing.averageCost", "Costo promedio")}
+          value={formatOptionalMoney(
+            hasCost ? averageCost : null,
+            currencyCode,
+            dc.purchaseUnitPrice,
+          )}
+        />
+        <Metric
+          label={t(
+            "items.pricing.estimatedProfit",
+            "Utilidad estimada por unidad",
+          )}
+          value={formatOptionalMoney(utilidad, currencyCode, dc.salesUnitPrice)}
+          tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
+        />
+        <Metric
+          label={t("items.pricing.salesMargin", "Margen sobre venta")}
+          value={formatOptionalPercent(margen, dc.percentage)}
+          tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
+        />
+        <Metric
+          label={t("items.pricing.costMarkup", "Markup sobre costo")}
+          value={formatOptionalPercent(markup, dc.percentage)}
+          tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
+        />
+        <Metric
+          label={t("items.pricing.status", "Estado")}
+          value={status.label}
+          tone={status.tone}
+        />
+      </div>
     </ZHFormSection>
   );
 }

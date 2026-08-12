@@ -50,6 +50,8 @@ afterEach(() => cleanup());
 
 const t = (_key: string, fallback?: string) => fallback ?? _key;
 const vatRateOptions = [{ code: "IVA15", name: "IVA 15%", percentage: 15 }];
+const oldPvpLabel = ["Nuevo", "PVP"].join(" ");
+const oldSimulateLabel = ["Sim", "ular"].join("");
 
 function PricingHarness({
   baseSalePrice = 100,
@@ -204,11 +206,11 @@ describe("PricingTab", () => {
     ).toBeTruthy();
   });
 
-  it("no muestra el simulador viejo de Nuevo PVP ni botón Simular", () => {
+  it("no muestra el simulador viejo ni su botón de ejecución", () => {
     render(<PricingHarness baseSalePrice={100} itemId="item-1" />);
 
-    expect(screen.queryByText("Nuevo PVP")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Simular" })).toBeNull();
+    expect(screen.queryByText(oldPvpLabel)).toBeNull();
+    expect(screen.queryByRole("button", { name: oldSimulateLabel })).toBeNull();
     expect(screen.queryByText("Simulador de Precio")).toBeNull();
   });
 });

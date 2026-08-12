@@ -1,8 +1,10 @@
-import { Badge } from "../../../../components/PageShell";
+import { useState } from "react";
+import { Badge, EmptyState } from "../../../../components/PageShell";
 import { ZHBtn, ZHFormSection } from "../../../../components/zh/ZHForm";
+import { ZhSelect, ZhTextInput } from "../../../../components/zh/inputs";
+import { itemService } from "../../api/itemService";
 import type {
   ItemDetailDto,
-  ItemPackagingLevelDto,
   ItemSupplierCodeDto,
   ItemVariantDto,
   VariantBarcodeDto,
@@ -11,33 +13,24 @@ import type {
 type TFunc = (key: string, fallback?: string) => string;
 
 type BarcodeSummary = VariantBarcodeDto & {
+  variantId: string;
   variantName: string;
 };
 
-type Props = {
+type ManagerProps = {
   t: TFunc;
   item: ItemDetailDto | null;
-  onManageBarcodes: () => void;
-  onManageSupplierPresentations: () => void;
+  disabled?: boolean;
 };
 
 function flattenBarcodes(variants: ItemVariantDto[]): BarcodeSummary[] {
   return variants.flatMap((variant) =>
     variant.barcodes.map((barcode) => ({
       ...barcode,
+      variantId: variant.id,
       variantName: variant.name || variant.sku,
     })),
   );
-}
-
-function packagingLabel(
-  packagingLevels: ItemPackagingLevelDto[],
-  packagingLevelId: string | null,
-  fallback: string,
-) {
-  const level = packagingLevels.find((p) => p.id === packagingLevelId);
-  if (!level) return fallback;
-  return `${level.name} x ${level.baseQuantity} ${level.uomAbbrev}`;
 }
 
 function supplierLabel(supplierCode: ItemSupplierCodeDto, fallback: string) {
@@ -48,12 +41,60 @@ function supplierLabel(supplierCode: ItemSupplierCodeDto, fallback: string) {
   );
 }
 
-export function BarcodePrincipalSummary({
+export function BarcodePrincipalManager({
   t,
   item,
-  onManageBarcodes,
-}: Pick<Props, "t" | "item" | "onManageBarcodes">) {
+  disabled = false,
+  barcodeTypeOptions,
+  onRefresh,
+}: ManagerProps & {
+  barcodeTypeOptions: { code: string; name: string }[];
+  onRefresh: () => void;
+}) {
   const barcodes = item ? flattenBarcodes(item.variants) : [];
+  const activeVariants =
+    item?.variants.filter((variant) => variant.isActive) ?? [];
+  const defaultVariantId = activeVariants[0]?.id ?? item?.variants[0]?.id ?? "";
+  const [adding, setAdding] = useState(false);
+  const [variantId, setVariantId] = useState(defaultVariantId);
+  const [code, setCode] = useState("");
+  const [barcodeType, setBarcodeType] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const resetAdd = () => {
+    setAdding(false);
+    setVariantId(defaultVariantId);
+    setCode("");
+    setBarcodeType("");
+  };
+
+  const handleAdd = async () => {
+    if (!item || !variantId || !code.trim() || !barcodeType) return;
+    setBusy(true);
+    try {
+      await itemService.addBarcode(
+        item.id,
+        variantId,
+        code.trim(),
+        barcodeType,
+      );
+      resetAdd();
+      onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDisable = async (barcode: BarcodeSummary) => {
+    if (!item) return;
+    setBusy(true);
+    try {
+      await itemService.disableBarcode(item.id, barcode.variantId, barcode.id);
+      onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <ZHFormSection
@@ -63,73 +104,179 @@ export function BarcodePrincipalSummary({
         "Código usado para escanear o buscar el ítem.",
       )}
     >
-      <div className="items-principal-code-summary">
-        {barcodes.length > 0 ? (
-          <div className="items-principal-code-summary__list">
-            {barcodes.map((barcode) => (
-              <div
-                key={barcode.id}
-                className="items-principal-code-summary__item"
-              >
-                <div className="items-principal-code-summary__main">
-                  <code className="items-principal-code-summary__code">
-                    {barcode.code}
-                  </code>
-                  {barcode.isPrimary ? (
-                    <Badge
-                      label={t("items.barcodes.isPrimary", "Principal")}
-                      variant="info"
-                      size="md"
+      {barcodes.length > 0 || adding ? (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{t("items.barcodes.code", "Código")}</th>
+                <th>{t("items.barcodes.type", "Tipo")}</th>
+                <th>{t("items.barcodes.primary", "Principal")}</th>
+                <th className="pg-th-right">
+                  {t("common.actions", "Acciones")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {barcodes.map((barcode) => (
+                <tr key={barcode.id}>
+                  <td>
+                    <code>{barcode.code}</code>
+                    {item && item.variants.length > 1 ? (
+                      <p className="zh-field-hint">{barcode.variantName}</p>
+                    ) : null}
+                  </td>
+                  <td>{barcode.barcodeType}</td>
+                  <td>
+                    {barcode.isPrimary ? (
+                      <Badge
+                        label={t("items.barcodes.isPrimary", "Principal")}
+                        variant="info"
+                        size="md"
+                      />
+                    ) : (
+                      t("common.no", "No")
+                    )}
+                  </td>
+                  <td className="pg-td-right">
+                    <ZHBtn
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={disabled || busy}
+                      onClick={() => void handleDisable(barcode)}
+                    >
+                      {t("common.remove", "Quitar")}
+                    </ZHBtn>
+                  </td>
+                </tr>
+              ))}
+              {adding && (
+                <tr>
+                  <td>
+                    <ZhTextInput
+                      density="compact"
+                      value={code}
+                      onChange={(event) => setCode(event.target.value)}
+                      placeholder={t(
+                        "items.barcodes.codePlaceholder",
+                        "7501234567890",
+                      )}
+                      disabled={busy}
                     />
-                  ) : null}
-                </div>
-                <div className="items-principal-code-summary__meta">
-                  <span>{barcode.barcodeType}</span>
-                  <span>{barcode.variantName}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="items-principal-code-summary__empty">
-            <div>
-              <p className="items-principal-code-summary__empty-title">
-                {t(
-                  "items.barcodes.empty",
-                  "No hay códigos de barras registrados.",
-                )}
-              </p>
-              <p className="items-principal-code-summary__empty-desc">
-                {t(
-                  "items.barcodes.emptyHint",
-                  "Agregue un código de barras si el producto será escaneado en compras o ventas.",
-                )}
-              </p>
-            </div>
-          </div>
-        )}
+                  </td>
+                  <td>
+                    <ZhSelect
+                      value={barcodeType}
+                      onChange={(event) => setBarcodeType(event.target.value)}
+                      disabled={busy}
+                    >
+                      <option value="">
+                        {t("common.selectOption", "— Seleccionar —")}
+                      </option>
+                      {barcodeTypeOptions.map((type) => (
+                        <option key={type.code} value={type.code}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </ZhSelect>
+                  </td>
+                  <td>
+                    {activeVariants.length > 1 ? (
+                      <ZhSelect
+                        value={variantId}
+                        onChange={(event) => setVariantId(event.target.value)}
+                        disabled={busy}
+                      >
+                        {activeVariants.map((variant) => (
+                          <option key={variant.id} value={variant.id}>
+                            {variant.name || variant.sku}
+                          </option>
+                        ))}
+                      </ZhSelect>
+                    ) : (
+                      t(
+                        "items.barcodes.pendingPrimary",
+                        "Se marcará según regla existente",
+                      )
+                    )}
+                  </td>
+                  <td className="pg-td-right">
+                    <div className="items-row-actions">
+                      <ZHBtn
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        disabled={
+                          busy || !variantId || !code.trim() || !barcodeType
+                        }
+                        onClick={() => void handleAdd()}
+                      >
+                        {t("common.save", "Guardar")}
+                      </ZHBtn>
+                      <ZHBtn
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        onClick={resetAdd}
+                      >
+                        {t("common.cancel", "Cancelar")}
+                      </ZHBtn>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="pg-pad-40">
+          <EmptyState
+            message={t(
+              "items.barcodes.empty",
+              "No hay códigos de barras registrados.",
+            )}
+          />
+        </div>
+      )}
+
+      {!adding && (
         <ZHBtn
           type="button"
           variant="secondary"
           size="sm"
-          onClick={onManageBarcodes}
+          disabled={disabled || busy || !defaultVariantId}
+          onClick={() => {
+            setVariantId(defaultVariantId);
+            setAdding(true);
+          }}
         >
-          {t(
-            "items.barcodes.manageInDetail",
-            "Gestionar códigos de barras en detalle del ítem",
-          )}
+          {t("items.barcodes.add", "Agregar código de barras")}
         </ZHBtn>
-      </div>
+      )}
     </ZHFormSection>
   );
 }
 
-export function SupplierCodesPrincipalSummary({
+export function SupplierCodesPrincipalManager({
   t,
   item,
-  onManageSupplierPresentations,
-}: Pick<Props, "t" | "item" | "onManageSupplierPresentations">) {
+  disabled = false,
+  onUpdatePresentation,
+}: ManagerProps & {
+  onUpdatePresentation: (
+    supplierId: string,
+    code: string,
+    packagingLevelId: string | null,
+  ) => Promise<void>;
+}) {
   const supplierCodes = item?.supplierCodes.filter((s) => s.isActive) ?? [];
+  const activePackaging = item?.packagingLevels.filter((p) => p.isActive) ?? [];
+  const pendingPresentationLabel = t(
+    "items.supplierCodes.presentationPending",
+    "Presentación pendiente",
+  );
   const noPresentationLabel = t(
     "items.supplierCodes.noPresentation",
     "Sin presentación asociada",
@@ -142,106 +289,158 @@ export function SupplierCodesPrincipalSummary({
     "items.supplierCodes.identificationPrefix",
     "RUC",
   );
+  const packagingLabel = (id: string | null) => {
+    const packaging = activePackaging.find((p) => p.id === id);
+    if (packaging) {
+      return `${packaging.name} x ${packaging.baseQuantity} ${packaging.uomAbbrev}`;
+    }
+    return activePackaging.length === 0
+      ? pendingPresentationLabel
+      : noPresentationLabel;
+  };
 
   return (
     <ZHFormSection
       title={t(
-        "items.supplierCodes.createTitle",
+        "items.supplierCodes.title",
         "Códigos del proveedor para compras",
       )}
       description={t(
-        "items.supplierCodes.editDesc",
-        "Los códigos proveedor se completan en Inventario y presentaciones para vincular cada código con su presentación.",
+        "items.supplierCodes.sectionDesc",
+        "Código con el que el proveedor identifica este producto en sus facturas/XML.",
       )}
     >
-      <div className="items-principal-code-summary">
-        {supplierCodes.length > 0 ? (
-          <div className="items-principal-code-summary__list">
-            {supplierCodes.map((supplierCode) => {
-              const presentation = packagingLabel(
-                item?.packagingLevels ?? [],
-                supplierCode.packagingLevelId,
-                noPresentationLabel,
-              );
-              const missingPresentation = !supplierCode.packagingLevelId;
-
-              return (
-                <div
-                  key={supplierCode.id}
-                  className="items-principal-code-summary__item"
-                >
-                  <div className="items-principal-code-summary__main">
-                    <span className="items-principal-code-summary__supplier">
-                      {supplierLabel(supplierCode, unnamedSupplierLabel)}
-                    </span>
-                    {supplierCode.isPrimary ? (
-                      <Badge
-                        label={t(
-                          "items.supplierCodes.isPrimary",
-                          "Principal",
-                        )}
-                        variant="info"
-                        size="md"
-                      />
-                    ) : null}
-                  </div>
-                  {supplierCode.supplierIdentification ? (
-                    <div className="items-principal-code-summary__meta">
-                      <span>
+      {supplierCodes.length > 0 ? (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{t("items.supplierCodes.col.supplier", "Proveedor")}</th>
+                <th>
+                  {t(
+                    "items.supplierCodes.col.identification",
+                    "RUC/Identificación",
+                  )}
+                </th>
+                <th>{t("items.supplierCodes.col.code", "Código proveedor")}</th>
+                <th>
+                  {t("items.supplierCodes.col.presentation", "Presentación")}
+                </th>
+                <th>{t("items.supplierCodes.col.primary", "Principal")}</th>
+                <th className="pg-th-right">
+                  {t("common.actions", "Acciones")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {supplierCodes.map((supplierCode) => (
+                <tr key={supplierCode.id}>
+                  <td>{supplierLabel(supplierCode, unnamedSupplierLabel)}</td>
+                  <td>
+                    {supplierCode.supplierIdentification ? (
+                      <>
                         {identificationPrefix}:{" "}
                         {supplierCode.supplierIdentification}
-                      </span>
-                    </div>
-                  ) : null}
-                  <div className="items-principal-code-summary__meta">
-                    <span>
-                      {t("items.supplierCodes.code", "Código")}:{" "}
-                      {supplierCode.code}
-                    </span>
-                    <span>{presentation}</span>
-                  </div>
-                  {missingPresentation ? (
-                    <p className="items-principal-code-summary__warning">
-                      {t(
-                        "items.supplierCodes.presentationMissingWarning",
-                        "Sin presentación vinculada; una compra XML inventariable se bloqueará al confirmar.",
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>
+                    <code>{supplierCode.code}</code>
+                  </td>
+                  <td>{packagingLabel(supplierCode.packagingLevelId)}</td>
+                  <td>
+                    {supplierCode.isPrimary
+                      ? t("common.yes", "Sí")
+                      : t("common.no", "No")}
+                  </td>
+                  <td className="pg-td-right">
+                    <ZhSelect
+                      value={supplierCode.packagingLevelId ?? ""}
+                      aria-label={t(
+                        "items.supplierCodes.presentationSelect",
+                        "Presentación del código proveedor",
                       )}
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="items-principal-code-summary__empty">
-            <div>
-              <p className="items-principal-code-summary__empty-title">
-                {t(
-                  "items.supplierCodes.empty",
-                  "No hay códigos de proveedor configurados.",
-                )}
-              </p>
-              <p className="items-principal-code-summary__empty-desc">
-                {t(
-                  "items.supplierCodes.emptyHint",
-                  "Agregue el código si el proveedor lo informa en facturas o XML.",
-                )}
-              </p>
-            </div>
-          </div>
-        )}
-        <ZHBtn
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onManageSupplierPresentations}
-        >
-          {t(
-            "items.supplierCodes.completePresentationCta",
-            "Completar presentación en Inventario y presentaciones",
-          )}
-        </ZHBtn>
-      </div>
+                      disabled={
+                        disabled ||
+                        activePackaging.length === 0 ||
+                        !supplierCode.supplierId
+                      }
+                      onChange={(event) =>
+                        void onUpdatePresentation(
+                          supplierCode.supplierId ?? "",
+                          supplierCode.code,
+                          event.target.value || null,
+                        )
+                      }
+                    >
+                      <option value="">
+                        {activePackaging.length === 0
+                          ? pendingPresentationLabel
+                          : noPresentationLabel}
+                      </option>
+                      {activePackaging.map((packaging) => (
+                        <option key={packaging.id} value={packaging.id}>
+                          {packagingLabel(packaging.id)}
+                        </option>
+                      ))}
+                    </ZhSelect>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="pg-pad-40">
+          <EmptyState
+            message={t(
+              "items.supplierCodes.empty",
+              "No hay códigos de proveedor configurados.",
+            )}
+          />
+        </div>
+      )}
     </ZHFormSection>
+  );
+}
+
+export function BarcodePrincipalSummary({
+  t,
+  item,
+  onManageBarcodes,
+}: {
+  t: TFunc;
+  item: ItemDetailDto | null;
+  onManageBarcodes: () => void;
+}) {
+  return (
+    <BarcodePrincipalManager
+      t={t}
+      item={item}
+      disabled
+      barcodeTypeOptions={[]}
+      onRefresh={onManageBarcodes}
+    />
+  );
+}
+
+export function SupplierCodesPrincipalSummary({
+  t,
+  item,
+  onManageSupplierPresentations,
+}: {
+  t: TFunc;
+  item: ItemDetailDto | null;
+  onManageSupplierPresentations: () => void;
+}) {
+  return (
+    <SupplierCodesPrincipalManager
+      t={t}
+      item={item}
+      disabled
+      onUpdatePresentation={async () => onManageSupplierPresentations()}
+    />
   );
 }

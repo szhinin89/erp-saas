@@ -17,7 +17,6 @@ import {
   ImagesSection,
   SubstitutesSection,
   PackagingLevelsSection,
-  SupplierCodesDetailSection,
 } from "../../detail/components/CollectionSection";
 import {
   createItemSchema,
@@ -33,13 +32,10 @@ import { InventoryTab } from "./InventoryTab";
 import { BarcodeListEditor } from "./BarcodeListEditor";
 import { SupplierCodesSection } from "./SupplierCodesSection";
 import {
-  BarcodePrincipalSummary,
-  SupplierCodesPrincipalSummary,
+  BarcodePrincipalManager,
+  SupplierCodesPrincipalManager,
 } from "./PrincipalCodesSummary";
-import {
-  ITEM_FORM_TABS,
-  type ItemFormTabId,
-} from "./itemFormTabConfig";
+import { ITEM_FORM_TABS, type ItemFormTabId } from "./itemFormTabConfig";
 import type { ItemDetailDto } from "../../../../types/items";
 
 type TabId = ItemFormTabId;
@@ -326,6 +322,12 @@ export function ItemFormTabs({
                 sriUomOptions={sriUomOptions}
                 itemTypeOptions={itemTypeOptions}
               />
+              <TaxConfigTab
+                t={t}
+                disabled={fieldsDisabled}
+                vatRateOptions={vatRateOptions}
+                iceRateOptions={iceRateOptions}
+              />
               {!isEditMode ? (
                 <BarcodeListEditor
                   t={t}
@@ -333,29 +335,24 @@ export function ItemFormTabs({
                   barcodeTypeOptions={barcodeTypeOptions}
                 />
               ) : (
-                <BarcodePrincipalSummary
+                <BarcodePrincipalManager
                   t={t}
                   item={detail.item}
-                  onManageBarcodes={() => setActiveTab("advanced")}
+                  disabled={fieldsDisabled}
+                  barcodeTypeOptions={barcodeTypeOptions}
+                  onRefresh={detail.refetch}
                 />
               )}
               {!isEditMode ? (
                 <SupplierCodesSection t={t} disabled={fieldsDisabled} />
               ) : (
-                <SupplierCodesPrincipalSummary
+                <SupplierCodesPrincipalManager
                   t={t}
                   item={detail.item}
-                  onManageSupplierPresentations={() =>
-                    setActiveTab("inventory-presentations")
-                  }
+                  disabled={fieldsDisabled}
+                  onUpdatePresentation={detail.updateSupplierCodePresentation}
                 />
               )}
-              <TaxConfigTab
-                t={t}
-                disabled={fieldsDisabled}
-                vatRateOptions={vatRateOptions}
-                iceRateOptions={iceRateOptions}
-              />
               <PricingTab
                 t={t}
                 disabled={fieldsDisabled}
@@ -409,34 +406,6 @@ export function ItemFormTabs({
                   />
                 </ZHFormSection>
               )}
-              {isEditMode && detail.item ? (
-                <SupplierCodesDetailSection
-                  t={t}
-                  supplierCodes={detail.item.supplierCodes}
-                  packagingLevels={detail.item.packagingLevels}
-                  baseUomAbbrev={detail.item.defaultUomAbbrev}
-                  disabled={fieldsDisabled}
-                  onUpdatePresentation={detail.updateSupplierCodePresentation}
-                />
-              ) : (
-                <ZHFormSection
-                  title={t(
-                    "items.supplierCodes.detailTitle",
-                    "Códigos del proveedor y presentaciones",
-                  )}
-                  description={t(
-                    "items.supplierCodes.detailDesc",
-                    "Muestre el proveedor, su código y la presentación que llega en compras XML.",
-                  )}
-                >
-                  <AfterCreateNotice
-                    message={t(
-                      "items.supplierCodes.availableAfterCreate",
-                      "Disponible después de guardar el ítem.",
-                    )}
-                  />
-                </ZHFormSection>
-              )}
             </>
           )}
           {activeTab === "images" &&
@@ -463,6 +432,7 @@ export function ItemFormTabs({
                   itemId={itemId}
                   variants={detail.item.variants}
                   disabled={fieldsDisabled}
+                  showBarcodes={false}
                   onToggle={detail.toggleVariant}
                   onRefresh={detail.refetch}
                 />

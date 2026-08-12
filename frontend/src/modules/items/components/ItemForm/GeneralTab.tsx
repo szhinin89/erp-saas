@@ -34,7 +34,7 @@ export function GeneralTab({
 
   return (
     <ZHFormSection
-      title={t("items.section.identity", "Información")}
+      title={t("items.section.identity", "Identificación")}
       description={t(
         "items.section.identityDesc",
         "Datos que identifican y clasifican el ítem: cómo se llama, de qué tipo es, a qué marca/categoría pertenece, y su unidad de medida base.",
@@ -54,7 +54,7 @@ export function GeneralTab({
           />
         </ZHField>
         <ZHField
-          label={t("items.form.shortName", "Nombre corto")}
+          label={t("items.form.shortName", "Nombre comercial")}
           required
           fieldError={fe(errors.shortName?.message)}
         >
@@ -69,7 +69,10 @@ export function GeneralTab({
           required
           fieldError={fe(errors.itemTypeId?.message)}
         >
-          <ZhSelect {...register("itemTypeId")} disabled={disabled || isEditMode}>
+          <ZhSelect
+            {...register("itemTypeId")}
+            disabled={disabled || isEditMode}
+          >
             <option value="">
               {t("common.selectOption", "— Seleccionar —")}
             </option>
@@ -82,7 +85,7 @@ export function GeneralTab({
         </ZHField>
       </ZHGrid>
       <ZHField
-        label={t("items.form.description", "Descripción")}
+        label={t("items.form.description", "Descripción completa")}
         required
         fieldError={fe(errors.description?.message)}
       >
@@ -135,7 +138,7 @@ export function GeneralTab({
           fieldError={fe(errors.defaultUomCode?.message)}
           hint={t(
             "items.form.uomHint",
-            "Es la unidad mínima en la que se controla stock, costo y Kardex.",
+            "Unidad mínima en la que se controla el stock, el costo y el Kardex.",
           )}
         >
           <ZhSelect {...register("defaultUomCode")} disabled={disabled}>

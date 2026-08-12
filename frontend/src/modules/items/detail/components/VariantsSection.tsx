@@ -40,6 +40,7 @@ interface Props {
   variants: ItemVariantDto[];
   /** Único contrato de modo del módulo Items — true bloquea toda mutación (alta, barcodes, toggle). */
   disabled?: boolean;
+  showBarcodes?: boolean;
   onToggle: (variantId: string, enable: boolean) => Promise<void>;
   onRefresh: () => void;
 }
@@ -48,6 +49,7 @@ export function VariantsSection({
   itemId,
   variants,
   disabled = false,
+  showBarcodes = true,
   onToggle,
   onRefresh,
 }: Props) {
@@ -202,7 +204,9 @@ export function VariantsSection({
                 <th>{t("items.variants.col.sku", "SKU")}</th>
                 <th>{t("items.variants.col.name", "Nombre")}</th>
                 <th>{t("items.variants.col.attributes", "Atributos")}</th>
-                <th>{t("items.variants.col.barcodes", "Barcodes")}</th>
+                {showBarcodes && (
+                  <th>{t("items.variants.col.barcodes", "Barcodes")}</th>
+                )}
                 <th>{t("items.variants.col.status", "Estado")}</th>
                 <th className="pg-th-right">
                   {t("items.variants.col.actions", "Acciones")}
@@ -233,99 +237,103 @@ export function VariantsSection({
                       <span className="subtle">—</span>
                     )}
                   </td>
-                  <td>
-                    <div className="items-barcode-list">
-                      {v.barcodes.map((b) => (
-                        <span key={b.id} className="items-barcode-chip">
-                          <code className="items-barcode-chip__code">
-                            {b.code}
-                          </code>
+                  {showBarcodes && (
+                    <td>
+                      <div className="items-barcode-list">
+                        {v.barcodes.map((b) => (
+                          <span key={b.id} className="items-barcode-chip">
+                            <code className="items-barcode-chip__code">
+                              {b.code}
+                            </code>
+                            <button
+                              type="button"
+                              title={t("common.deactivate", "Desactivar")}
+                              className="items-barcode-chip__remove"
+                              onClick={() =>
+                                void handleDisableBarcode(v.id, b.id)
+                              }
+                              disabled={disabled}
+                            >
+                              <span className="material-symbols-outlined">
+                                close
+                              </span>
+                            </button>
+                          </span>
+                        ))}
+                        {bcVariantId === v.id ? (
+                          <span className="items-barcode-add">
+                            <input
+                              value={bcCode}
+                              onChange={(e) => setBcCode(e.target.value)}
+                              placeholder={t("items.barcodes.code", "Código")}
+                              disabled={bcSaving}
+                              className="items-barcode-add__input"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  void handleAddBarcode();
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <select
+                              value={bcType}
+                              onChange={(e) => setBcType(e.target.value)}
+                              disabled={bcSaving}
+                              className="items-barcode-add__select"
+                            >
+                              <option value="">
+                                {t("items.barcodes.typeShort", "— Tipo —")}
+                              </option>
+                              {barcodeTypes.map((bt) => (
+                                <option key={bt.code} value={bt.code}>
+                                  {bt.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => void handleAddBarcode()}
+                              disabled={bcSaving || !bcCode.trim() || !bcType}
+                              className="items-barcode-add__confirm"
+                            >
+                              <span className="material-symbols-outlined">
+                                check
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBcVariantId(null)}
+                              className="items-barcode-add__cancel"
+                            >
+                              <span className="material-symbols-outlined">
+                                close
+                              </span>
+                            </button>
+                          </span>
+                        ) : (
                           <button
                             type="button"
-                            title={t("common.deactivate", "Desactivar")}
-                            className="items-barcode-chip__remove"
-                            onClick={() =>
-                              void handleDisableBarcode(v.id, b.id)
-                            }
+                            title={t(
+                              "items.variants.addBarcode",
+                              "Agregar código de barras",
+                            )}
+                            onClick={() => {
+                              setBcVariantId(v.id);
+                              setBcCode("");
+                              setBcType("");
+                            }}
+                            className="items-barcode-add-trigger"
                             disabled={disabled}
                           >
                             <span className="material-symbols-outlined">
-                              close
+                              add
                             </span>
                           </button>
-                        </span>
-                      ))}
-                      {bcVariantId === v.id ? (
-                        <span className="items-barcode-add">
-                          <input
-                            value={bcCode}
-                            onChange={(e) => setBcCode(e.target.value)}
-                            placeholder={t("items.barcodes.code", "Código")}
-                            disabled={bcSaving}
-                            className="items-barcode-add__input"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                void handleAddBarcode();
-                              }
-                            }}
-                            autoFocus
-                          />
-                          <select
-                            value={bcType}
-                            onChange={(e) => setBcType(e.target.value)}
-                            disabled={bcSaving}
-                            className="items-barcode-add__select"
-                          >
-                            <option value="">
-                              {t("items.barcodes.typeShort", "— Tipo —")}
-                            </option>
-                            {barcodeTypes.map((bt) => (
-                              <option key={bt.code} value={bt.code}>
-                                {bt.name}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => void handleAddBarcode()}
-                            disabled={bcSaving || !bcCode.trim() || !bcType}
-                            className="items-barcode-add__confirm"
-                          >
-                            <span className="material-symbols-outlined">
-                              check
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setBcVariantId(null)}
-                            className="items-barcode-add__cancel"
-                          >
-                            <span className="material-symbols-outlined">
-                              close
-                            </span>
-                          </button>
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          title={t(
-                            "items.variants.addBarcode",
-                            "Agregar código de barras",
-                          )}
-                          onClick={() => {
-                            setBcVariantId(v.id);
-                            setBcCode("");
-                            setBcType("");
-                          }}
-                          className="items-barcode-add-trigger"
-                          disabled={disabled}
-                        >
-                          <span className="material-symbols-outlined">add</span>
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                        )}
+                      </div>
+                    </td>
+                  )}
                   <td>
                     <span
                       className={
