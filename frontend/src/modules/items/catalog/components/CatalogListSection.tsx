@@ -58,7 +58,7 @@ export function CatalogListSection<
             layout="horizontal"
             icon={icon}
             tone="primary"
-            label="Total"
+            label={t("common.total", "Total")}
             value={String(totals.total)}
           />
           <ReportKpiCard
@@ -125,7 +125,10 @@ export function CatalogListSection<
           </div>
           <div className="pg-table-controls-right">
             <span>
-              Mostrando {filtered.length} de {items.length}
+              {t("common.showingCount", {
+                count: filtered.length,
+                total: items.length,
+              })}
             </span>
           </div>
         </div>
@@ -140,7 +143,12 @@ export function CatalogListSection<
           </div>
         ) : filtered.length === 0 ? (
           <div className="pg-pad-40">
-            <EmptyState message="No se encontraron resultados." />
+            <EmptyState
+              message={t(
+                "common.noSearchResults",
+                "No se encontraron resultados.",
+              )}
+            />
           </div>
         ) : (
           <div className="table-scroll">
@@ -190,7 +198,7 @@ export function CatalogListSection<
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                title="Editar"
+                                title={t("common.edit", "Editar")}
                                 onClick={() => openEditModal(row as never)}
                               >
                                 <span className="material-symbols-outlined">
@@ -203,7 +211,11 @@ export function CatalogListSection<
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                title={isActive ? "Desactivar" : "Activar"}
+                                title={
+                                  isActive
+                                    ? t("common.deactivate", "Desactivar")
+                                    : t("common.activate", "Activar")
+                                }
                                 onClick={() => void toggleDisable(row as never)}
                               >
                                 <span className="material-symbols-outlined">
@@ -224,7 +236,7 @@ export function CatalogListSection<
 
         <div className="pg-table-footer">
           <p className="subtle br-list-footer-note">
-            {filtered.length} registros
+            {t("common.recordsCount", { count: filtered.length })}
           </p>
         </div>
       </div>

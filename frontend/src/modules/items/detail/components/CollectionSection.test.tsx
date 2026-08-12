@@ -8,28 +8,12 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { PackagingLevelsSection, SupplierCodesDetailSection } from "./CollectionSection";
-import type {
-  ItemPackagingLevelDto,
-  ItemSupplierCodeDto,
-} from "../../../../types/items";
+import { PackagingLevelsSection } from "./CollectionSection";
+import type { ItemPackagingLevelDto } from "../../../../types/items";
 
 afterEach(() => cleanup());
 
 const t = (_key: string, fallback?: string) => fallback ?? _key;
-
-const supplierCodes: ItemSupplierCodeDto[] = [
-  {
-    id: "supplier-code-1",
-    supplierId: "11111111-1111-1111-1111-111111111111",
-    supplierDisplayName: "Cervecería Nacional",
-    supplierIdentification: "0999999999001",
-    packagingLevelId: null,
-    code: "3172",
-    isPrimary: true,
-    isActive: true,
-  },
-];
 
 const packagingLevels: ItemPackagingLevelDto[] = [
   {
@@ -47,128 +31,6 @@ const packagingLevels: ItemPackagingLevelDto[] = [
     isActive: true,
   },
 ];
-
-describe("SupplierCodesDetailSection", () => {
-  it("muestra códigos proveedor con columna presentación y edita con select", () => {
-    const onUpdate = vi.fn().mockResolvedValue(undefined);
-
-    render(
-      <SupplierCodesDetailSection
-        t={t}
-        supplierCodes={supplierCodes}
-        packagingLevels={packagingLevels}
-        baseUomAbbrev="UND"
-        onUpdatePresentation={onUpdate}
-      />,
-    );
-
-    expect(
-      screen.getByText("Códigos del proveedor y presentaciones (1)"),
-    ).toBeTruthy();
-    expect(screen.getByText("Proveedor")).toBeTruthy();
-    expect(screen.getByText("Código")).toBeTruthy();
-    expect(screen.getByText("Presentación")).toBeTruthy();
-    expect(screen.getByText("Cervecería Nacional")).toBeTruthy();
-    expect(screen.getByText("RUC: 0999999999001")).toBeTruthy();
-    expect(
-      screen.queryByText("11111111-1111-1111-1111-111111111111"),
-    ).toBeNull();
-    expect(screen.getByText("3172")).toBeTruthy();
-
-    fireEvent.change(screen.getByRole("combobox"), {
-      target: { value: "paca-12" },
-    });
-
-    expect(onUpdate).toHaveBeenCalledWith(
-      "11111111-1111-1111-1111-111111111111",
-      "3172",
-      "paca-12",
-    );
-  });
-
-  it("muestra el factor contra la unidad base actualizada", () => {
-    render(
-      <SupplierCodesDetailSection
-        t={t}
-        supplierCodes={[
-          { ...supplierCodes[0], packagingLevelId: "paca-12" },
-        ]}
-        packagingLevels={packagingLevels}
-        baseUomAbbrev="UND"
-        onUpdatePresentation={vi.fn()}
-      />,
-    );
-
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(select.options[select.selectedIndex].textContent).toBe(
-      "PACA × 12 UND",
-    );
-  });
-
-  it("muestra warning cuando el código proveedor no tiene presentación", () => {
-    render(
-      <SupplierCodesDetailSection
-        t={t}
-        supplierCodes={supplierCodes}
-        packagingLevels={packagingLevels}
-        baseUomAbbrev="UND"
-        onUpdatePresentation={vi.fn()}
-      />,
-    );
-
-    expect(
-      screen.getByText(
-        "Sin presentación vinculada; una compra XML inventariable se bloqueará al confirmar.",
-      ),
-    ).toBeTruthy();
-  });
-
-  it("usa fallback controlado cuando no hay nombre ni identificación", () => {
-    render(
-      <SupplierCodesDetailSection
-        t={t}
-        supplierCodes={[
-          {
-            ...supplierCodes[0],
-            supplierDisplayName: null,
-            supplierIdentification: null,
-          },
-        ]}
-        packagingLevels={packagingLevels}
-        baseUomAbbrev="UND"
-        onUpdatePresentation={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Proveedor sin nombre")).toBeTruthy();
-    expect(
-      screen.queryByText("11111111-1111-1111-1111-111111111111"),
-    ).toBeNull();
-  });
-
-  it("usa la identificación como proveedor visible cuando no hay nombre", () => {
-    render(
-      <SupplierCodesDetailSection
-        t={t}
-        supplierCodes={[
-          {
-            ...supplierCodes[0],
-            supplierDisplayName: null,
-            supplierIdentification: "0999999999001",
-          },
-        ]}
-        packagingLevels={packagingLevels}
-        baseUomAbbrev="UND"
-        onUpdatePresentation={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("0999999999001")).toBeTruthy();
-    expect(
-      screen.queryByText("11111111-1111-1111-1111-111111111111"),
-    ).toBeNull();
-  });
-});
 
 const uomOptions = [
   { code: "UNIDAD", name: "Unidad", abbrev: "UND" },

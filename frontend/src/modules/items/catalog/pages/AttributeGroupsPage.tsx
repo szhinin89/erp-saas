@@ -3,6 +3,7 @@ import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { ZhTextInput, ZhNumberInput } from "../../../../components/zh/inputs";
+import { useI18n } from "../../../../i18n/i18n";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -20,6 +21,7 @@ import {
 } from "../schemas/catalogSchemas";
 
 export function AttributeGroupsPage() {
+  const { t } = useI18n();
   const ctx = useCatalogCrud<
     AttributeGroupDto,
     AttributeGroupFormValues,
@@ -42,59 +44,94 @@ export function AttributeGroupsPage() {
     permissionPrefix: "catalog",
   });
 
-  if (!ctx.canView) return <NoAccessPage title="Grupos de Atributos" />;
+  if (!ctx.canView)
+    return (
+      <NoAccessPage
+        title={t(
+          "catalog.attributeGroups.title",
+          "Grupos de atributos",
+        )}
+      />
+    );
 
   return (
-    <ErpPageTemplate kicker="Catálogo" title="Grupos de Atributos">
+    <ErpPageTemplate
+      kicker={t("catalog.kicker", "Catálogo")}
+      title={t("catalog.attributeGroups.title", "Grupos de atributos")}
+    >
       {ctx.error && (
-        <ZHPageNotice variant="error" message="Error" detail={ctx.error} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.error", "Error")}
+          detail={ctx.error}
+        />
       )}
       <CatalogListSection
         ctx={ctx}
-        title="Grupos Registrados"
+        title={t("catalog.attributeGroups.registered", "Grupos registrados")}
         icon="tune"
-        createLabel="Nuevo Grupo"
-        searchPlaceholder="Buscar grupos..."
+        createLabel={t("catalog.attributeGroups.new", "Nuevo grupo")}
+        searchPlaceholder={t(
+          "catalog.attributeGroups.search",
+          "Buscar grupos...",
+        )}
         columns={[
           {
             key: "code",
-            label: "Código",
+            label: t("catalog.col.code", "Código"),
             render: (r) => (
               <Badge label={r.code as string} variant="neutral" className="mono" />
             ),
           },
           {
             key: "name",
-            label: "Nombre",
+            label: t("catalog.col.name", "Nombre"),
             render: (r) => <strong>{r.name as string}</strong>,
           },
           {
             key: "sortOrder",
-            label: "Orden",
+            label: t("catalog.col.sortOrder", "Orden"),
             render: (r) => <span>{r.sortOrder as number}</span>,
           },
         ]}
       />
-      <CatalogFormModal ctx={ctx} entityLabel="Grupo de Atributos">
+      <CatalogFormModal
+        ctx={ctx}
+        entityLabel={t("catalog.attributeGroups.entity", "Grupo de atributos")}
+      >
         <ZHGrid cols={2}>
-          <ZHField label="Código *" required error={ctx.errors.code?.message}>
+          <ZHField
+            label={t("catalog.form.codeRequired", "Código *")}
+            required
+            error={ctx.errors.code?.message}
+          >
             <ZhTextInput
               className="zh-input mono"
-              placeholder="DIM"
+              placeholder={t("catalog.attributeGroups.codePlaceholder", "DIM")}
               disabled={ctx.saving || !!ctx.editingId}
               {...ctx.register("code")}
             />
           </ZHField>
-          <ZHField label="Nombre *" required error={ctx.errors.name?.message}>
+          <ZHField
+            label={t("catalog.form.nameRequired", "Nombre *")}
+            required
+            error={ctx.errors.name?.message}
+          >
             <ZhTextInput
               className="zh-input"
-              placeholder="Dimensiones"
+              placeholder={t(
+                "catalog.attributeGroups.namePlaceholder",
+                "Dimensiones",
+              )}
               disabled={ctx.saving}
               {...ctx.register("name")}
             />
           </ZHField>
         </ZHGrid>
-        <ZHField label="Orden" error={ctx.errors.sortOrder?.message}>
+        <ZHField
+          label={t("catalog.col.sortOrder", "Orden")}
+          error={ctx.errors.sortOrder?.message}
+        >
           <ZhNumberInput
             className="zh-input"
             positiveOnly

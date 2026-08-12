@@ -3,6 +3,7 @@ import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../../components/zh/inputs";
+import { useI18n } from "../../../../i18n/i18n";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -20,6 +21,7 @@ import {
 } from "../schemas/catalogSchemas";
 
 export function BrandsPage() {
+  const { t } = useI18n();
   const ctx = useCatalogCrud<
     BrandDto,
     BrandFormValues,
@@ -43,35 +45,43 @@ export function BrandsPage() {
     permissionPrefix: "catalog",
   });
 
-  if (!ctx.canView) return <NoAccessPage title="Marcas" />;
+  if (!ctx.canView)
+    return <NoAccessPage title={t("catalog.brands.title", "Marcas")} />;
 
   return (
-    <ErpPageTemplate kicker="Catálogo" title="Marcas">
+    <ErpPageTemplate
+      kicker={t("catalog.kicker", "Catálogo")}
+      title={t("catalog.brands.title", "Marcas")}
+    >
       {ctx.error && (
-        <ZHPageNotice variant="error" message="Error" detail={ctx.error} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.error", "Error")}
+          detail={ctx.error}
+        />
       )}
       <CatalogListSection
         ctx={ctx}
-        title="Marcas Registradas"
+        title={t("catalog.brands.registered", "Marcas registradas")}
         icon="sell"
-        createLabel="Nueva Marca"
-        searchPlaceholder="Buscar marcas..."
+        createLabel={t("catalog.brands.new", "Nueva marca")}
+        searchPlaceholder={t("catalog.brands.search", "Buscar marcas...")}
         columns={[
           {
             key: "code",
-            label: "Código",
+            label: t("catalog.col.code", "Código"),
             render: (r) => (
               <Badge label={r.code as string} variant="neutral" className="mono" />
             ),
           },
           {
             key: "name",
-            label: "Nombre",
+            label: t("catalog.col.name", "Nombre"),
             render: (r) => <strong>{r.name as string}</strong>,
           },
           {
             key: "manufacturer",
-            label: "Fabricante",
+            label: t("catalog.brands.manufacturer", "Fabricante"),
             render: (r) => (
               <span className="subtle">
                 {(r.manufacturer as string) || "—"}
@@ -80,41 +90,61 @@ export function BrandsPage() {
           },
         ]}
       />
-      <CatalogFormModal ctx={ctx} entityLabel="Marca">
+      <CatalogFormModal ctx={ctx} entityLabel={t("catalog.brands.entity", "Marca")}>
         <ZHGrid cols={2}>
-          <ZHField label="Código *" required error={ctx.errors.code?.message}>
+          <ZHField
+            label={t("catalog.form.codeRequired", "Código *")}
+            required
+            error={ctx.errors.code?.message}
+          >
             <ZhTextInput
               className="zh-input mono"
-              placeholder="SAMSUNG"
+              placeholder={t("catalog.brands.codePlaceholder", "SAMSUNG")}
               disabled={ctx.saving || !!ctx.editingId}
               {...ctx.register("code")}
             />
           </ZHField>
-          <ZHField label="Nombre *" required error={ctx.errors.name?.message}>
+          <ZHField
+            label={t("catalog.form.nameRequired", "Nombre *")}
+            required
+            error={ctx.errors.name?.message}
+          >
             <ZhTextInput
               className="zh-input"
-              placeholder="Samsung Electronics"
+              placeholder={t(
+                "catalog.brands.namePlaceholder",
+                "Samsung Electronics",
+              )}
               disabled={ctx.saving}
               {...ctx.register("name")}
             />
           </ZHField>
         </ZHGrid>
         <ZHGrid cols={2}>
-          <ZHField label="Fabricante" error={ctx.errors.manufacturer?.message}>
+          <ZHField
+            label={t("catalog.brands.manufacturer", "Fabricante")}
+            error={ctx.errors.manufacturer?.message}
+          >
             <ZhTextInput
               className="zh-input"
-              placeholder="Samsung Corp."
+              placeholder={t(
+                "catalog.brands.manufacturerPlaceholder",
+                "Samsung Corp.",
+              )}
               disabled={ctx.saving}
               {...ctx.register("manufacturer")}
             />
           </ZHField>
           <ZHField
-            label="País de origen"
+            label={t("catalog.brands.countryOfOrigin", "País de origen")}
             error={ctx.errors.countryOfOrigin?.message}
           >
             <ZhTextInput
               className="zh-input"
-              placeholder="Corea del Sur"
+              placeholder={t(
+                "catalog.brands.countryPlaceholder",
+                "Corea del Sur",
+              )}
               disabled={ctx.saving}
               {...ctx.register("countryOfOrigin")}
             />

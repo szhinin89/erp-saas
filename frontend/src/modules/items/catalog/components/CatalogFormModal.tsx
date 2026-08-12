@@ -2,6 +2,7 @@ import type { FieldValues } from "react-hook-form";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHFormActions } from "../../../../components/zh/ZHForm";
 import { ZHModal } from "../../../../components/zh/ZHModal";
+import { useI18n } from "../../../../i18n/i18n";
 import type { CatalogCrudContext } from "../hooks/useCatalogCrud";
 
 interface Props<
@@ -18,15 +19,21 @@ export function CatalogFormModal<
   TForm extends FieldValues,
 >({ ctx, entityLabel, children }: Props<TDto, TForm>) {
   const { modalOpen, editingId, saving, saveError, closeModal, save } = ctx;
+  const { t } = useI18n();
 
   const isEdit = Boolean(editingId);
+  const entity = entityLabel.toLocaleLowerCase();
 
   return (
     <ZHModal
       open={modalOpen}
       onClose={closeModal}
-      title={isEdit ? `Editar ${entityLabel}` : `Nuevo ${entityLabel}`}
-      subtitle={`Configure los datos del ${entityLabel.toLowerCase()}.`}
+      title={
+        isEdit
+          ? t("catalog.modal.editTitle", { entity: entityLabel })
+          : t("catalog.modal.newTitle", { entity: entityLabel })
+      }
+      subtitle={t("catalog.modal.subtitle", { entity })}
       footer={
         <ZHFormActions
           onCancel={closeModal}
@@ -34,18 +41,22 @@ export function CatalogFormModal<
           hideDraft
           disableSave={saving}
           labels={{
-            cancel: "Cancelar",
+            cancel: t("common.cancel", "Cancelar"),
             save: saving
-              ? "Guardando…"
+              ? t("common.saving", "Guardando...")
               : isEdit
-                ? "Guardar cambios"
-                : `Crear ${entityLabel.toLowerCase()}`,
+                ? t("common.saveChanges", "Guardar cambios")
+                : t("catalog.modal.createAction", { entity }),
           }}
         />
       }
     >
       {saveError && (
-        <ZHPageNotice variant="error" message="Error" detail={saveError} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.error", "Error")}
+          detail={saveError}
+        />
       )}
       <div className="pg-section">
         <div className="pg-section-body">{children}</div>

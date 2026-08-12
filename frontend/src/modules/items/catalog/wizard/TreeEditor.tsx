@@ -11,8 +11,10 @@ import {
   ZHFormActions,
   ZHBtn,
 } from "../../../../components/zh/ZHForm";
+import { ZhNumberInput, ZhTextInput } from "../../../../components/zh/inputs";
 import { Badge } from "../../../../components/PageShell";
 import { ZHModal } from "../../../../components/zh/ZHModal";
+import { useI18n } from "../../../../i18n/i18n";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { readApiErrorMessage } from "../../../lib/apiError";
 import {
@@ -21,19 +23,13 @@ import {
 } from "../api/categoryNodeService";
 import "./catalog-wizard.css";
 
-const nodeSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .min(1, "Codigo obligatorio.")
-    .max(20)
-    .regex(/^[A-Za-z0-9\-_]+$/, "Solo letras, numeros, guiones."),
-  name: z.string().trim().min(1, "Nombre obligatorio.").max(120),
-  description: z.string().max(500).nullable().optional(),
-  level: z.string().min(1),
-  sortOrder: z.number().min(0).default(0),
-});
-type NodeFormValues = z.infer<typeof nodeSchema>;
+type NodeFormValues = {
+  code: string;
+  name: string;
+  description?: string | null;
+  level: string;
+  sortOrder: number;
+};
 
 const LEVEL_ICONS: Record<string, { icon: string; className: string }> = {
   Family: { icon: "account_tree", className: "cat-te-icon--family" },
@@ -52,6 +48,7 @@ type ModalTarget =
   | { action: "edit"; node: CategoryNodeDto };
 
 export function TreeEditorPage() {
+  const { t } = useI18n();
   const [nodes, setNodes] = useState<CategoryNodeDto[]>([]);
   const [maxDepth, setMaxDepth] = useState(3);
   const [loading, setLoading] = useState(true);
@@ -61,6 +58,32 @@ export function TreeEditorPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [showInactive, setShowInactive] = useState(true);
+  const nodeSchema = useMemo(
+    () =>
+      z.object({
+        code: z
+          .string()
+          .trim()
+          .min(1, t("catalog.tree.validation.codeRequired", "Código obligatorio."))
+          .max(20)
+          .regex(
+            /^[A-Za-z0-9\-_]+$/,
+            t(
+              "catalog.tree.validation.codeFormat",
+              "Solo letras, números y guiones.",
+            ),
+          ),
+        name: z
+          .string()
+          .trim()
+          .min(1, t("catalog.tree.validation.nameRequired", "Nombre obligatorio."))
+          .max(120),
+        description: z.string().max(500).nullable().optional(),
+        level: z.string().min(1),
+        sortOrder: z.number().min(0).default(0),
+      }),
+    [t],
+  );
 
   const form = useForm<NodeFormValues>({
     resolver: zodResolver(nodeSchema),
@@ -80,17 +103,17 @@ export function TreeEditorPage() {
       const result = await categoryNodeService.getTree(true);
       setNodes(result.nodes);
       setMaxDepth(result.maxDepth);
-      if (expanded.size === 0) {
-        setExpanded(
-          new Set(result.nodes.filter((n) => !n.parentId).map((n) => n.id)),
-        );
-      }
+      setExpanded((prev) =>
+        prev.size === 0
+          ? new Set(result.nodes.filter((n) => !n.parentId).map((n) => n.id))
+          : prev,
+      );
     } catch {
-      setError("Error al cargar el catalogo.");
+      setError(t("catalog.tree.loadError", "Error al cargar el catálogo."));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadTree();
@@ -176,7 +199,10 @@ export function TreeEditorPage() {
         setSaveError(msg),
       );
       if (!applied)
-        setSaveError(readApiErrorMessage(err) ?? "Error al guardar.");
+        setSaveError(
+          readApiErrorMessage(err) ??
+            t("catalog.tree.saveError", "Error al guardar."),
+        );
     } finally {
       setSaving(false);
     }
@@ -189,7 +215,9 @@ export function TreeEditorPage() {
       else await categoryNodeService.enable(id);
       await loadTree();
     } catch {
-      setError("Error al cambiar el estado.");
+      setError(
+        t("catalog.tree.toggleError", "Error al cambiar el estado."),
+      );
     }
   };
 
@@ -231,7 +259,7 @@ export function TreeEditorPage() {
           <span
             className={`cat-te-level-badge cat-te-level-badge--${node.level.toLowerCase()}`}
           >
-            {node.level}
+            {t(`catalog.tree.level.${node.level}`, node.level)}
           </span>
           <span
             className={
@@ -240,14 +268,16 @@ export function TreeEditorPage() {
                 : "zh-status zh-status--inactive"
             }
           >
-            {node.isActive ? "Activo" : "Inactivo"}
+            {node.isActive
+              ? t("common.active", "Activo")
+              : t("common.inactive", "Inactivo")}
           </span>
           <div className="cat-te-actions">
             <ZHBtn
               type="button"
               variant="ghost"
               size="sm"
-              title="Editar"
+              title={t("common.edit", "Editar")}
               onClick={() => openEdit(node)}
             >
               <span className="material-symbols-outlined">edit</span>
@@ -256,7 +286,11 @@ export function TreeEditorPage() {
               type="button"
               variant="ghost"
               size="sm"
-              title={node.isActive ? "Desactivar" : "Activar"}
+              title={
+                node.isActive
+                  ? t("common.deactivate", "Desactivar")
+                  : t("common.activate", "Activar")
+              }
               onClick={() => void handleToggleStatus(node.id, node.isActive)}
             >
               <span className="material-symbols-outlined">
@@ -268,7 +302,7 @@ export function TreeEditorPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                title="Agregar hijo"
+                title={t("catalog.tree.addChild", "Agregar hijo")}
                 onClick={() =>
                   openAdd(node.id, node.name, getChildLevel(node.level))
                 }
@@ -278,9 +312,11 @@ export function TreeEditorPage() {
             )}
             {node.isActive && node.depth >= maxDepth && (
               <Badge
-                label="Máx. nivel"
+                label={t("catalog.tree.maxLevel", "Máx. nivel")}
                 variant="neutral"
-                title={`Profundidad máxima alcanzada (${maxDepth} niveles)`}
+                title={t("catalog.tree.maxDepthReached", {
+                  maxDepth,
+                })}
               />
             )}
           </div>
@@ -294,17 +330,29 @@ export function TreeEditorPage() {
   const roots = filterNodes(childrenOf.get("__root__") ?? []);
 
   return (
-    <ErpPageTemplate kicker="Catalogo" title="Arbol de Catalogo">
-      {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
+    <ErpPageTemplate
+      kicker={t("catalog.kicker", "Catálogo")}
+      title={t("catalog.tree.title", "Árbol de catálogo")}
+    >
+      {error && (
+        <ZHPageNotice
+          variant="error"
+          message={t("common.error", "Error")}
+          detail={error}
+        />
+      )}
 
       <div className="cat-te-toolbar">
         <ZHBtn
           variant="primary"
           size="sm"
           type="button"
-          onClick={() => openAdd(null, "Raiz", "Family")}
+          onClick={() =>
+            openAdd(null, t("catalog.tree.root", "Raíz"), "Family")
+          }
         >
-          <span className="material-symbols-outlined">add</span> Nueva Familia
+          <span className="material-symbols-outlined">add</span>
+          {t("catalog.tree.newFamily", "Nueva familia")}
         </ZHBtn>
         <ZHBtn
           variant="secondary"
@@ -313,7 +361,8 @@ export function TreeEditorPage() {
           onClick={() => void loadTree()}
           disabled={loading}
         >
-          <span className="material-symbols-outlined">refresh</span> Actualizar
+          <span className="material-symbols-outlined">refresh</span>
+          {t("common.refresh", "Actualizar")}
         </ZHBtn>
         <label className="zh-checkbox-label cat-te-toolbar__toggle">
           <input
@@ -321,15 +370,22 @@ export function TreeEditorPage() {
             checked={showInactive}
             onChange={(e) => setShowInactive(e.target.checked)}
           />
-          <span>Mostrar inactivos</span>
+          <span>{t("catalog.tree.showInactive", "Mostrar inactivos")}</span>
         </label>
-        <span className="cat-te-toolbar__count">{nodes.length} nodos</span>
+        <span className="cat-te-toolbar__count">
+          {t("catalog.tree.nodesCount", { count: nodes.length })}
+        </span>
       </div>
 
       {loading ? (
         <LoadingState />
       ) : roots.length === 0 ? (
-        <EmptyState message="No hay nodos de catalogo. Crea la primera familia." />
+        <EmptyState
+          message={t(
+            "catalog.tree.empty",
+            "No hay nodos de catálogo. Cree la primera familia.",
+          )}
+        />
       ) : (
         <div className="cat-te-tree">
           {roots.map((node) => renderNode(node, 0))}
@@ -342,15 +398,27 @@ export function TreeEditorPage() {
         title={
           modal
             ? modal.action === "add"
-              ? `Nuevo nodo en ${(modal as { parentName: string }).parentName}`
-              : `Editar ${modal.node.name}`
+              ? t("catalog.tree.modal.newNodeIn", {
+                  parent: (modal as { parentName: string }).parentName,
+                })
+              : t("catalog.tree.modal.editNode", { name: modal.node.name })
             : ""
         }
         subtitle={
           modal
             ? modal.action === "add"
-              ? `Nivel: ${(modal as { level: string }).level}`
-              : `Nivel: ${modal.node.level}`
+              ? t("catalog.tree.modal.level", {
+                  level: t(
+                    `catalog.tree.level.${(modal as { level: string }).level}`,
+                    (modal as { level: string }).level,
+                  ),
+                })
+              : t("catalog.tree.modal.level", {
+                  level: t(
+                    `catalog.tree.level.${modal.node.level}`,
+                    modal.node.level,
+                  ),
+                })
             : ""
         }
         footer={
@@ -360,42 +428,49 @@ export function TreeEditorPage() {
             hideDraft
             disableSave={saving}
             labels={{
-              cancel: "Cancelar",
+              cancel: t("common.cancel", "Cancelar"),
               save: saving
-                ? "Guardando..."
+                ? t("common.saving", "Guardando...")
                 : modal?.action === "edit"
-                  ? "Guardar cambios"
-                  : "Crear nodo",
+                  ? t("common.saveChanges", "Guardar cambios")
+                  : t("catalog.tree.createNode", "Crear nodo"),
             }}
           />
         }
       >
         {saveError && (
-          <ZHPageNotice variant="error" message="Error" detail={saveError} />
+          <ZHPageNotice
+            variant="error"
+            message={t("common.error", "Error")}
+            detail={saveError}
+          />
         )}
         <div className="pg-section-body">
           <ZHGrid cols={2}>
             <ZHField
-              label="Codigo *"
+              label={t("catalog.form.codeRequired", "Código *")}
               required
               error={form.formState.errors.code?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input mono zh-input--upper"
-                placeholder="CODIGO"
+                placeholder={t("catalog.tree.codePlaceholder", "CÓDIGO")}
                 autoFocus
                 disabled={saving || modal?.action === "edit"}
                 {...form.register("code")}
               />
             </ZHField>
             <ZHField
-              label="Nombre *"
+              label={t("catalog.form.nameRequired", "Nombre *")}
               required
               error={form.formState.errors.name?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
-                placeholder="Nombre del nodo"
+                placeholder={t(
+                  "catalog.tree.namePlaceholder",
+                  "Nombre del nodo",
+                )}
                 disabled={saving}
                 {...form.register("name")}
               />
@@ -403,24 +478,26 @@ export function TreeEditorPage() {
           </ZHGrid>
           <ZHGrid cols={2}>
             <ZHField
-              label="Descripcion"
+              label={t("catalog.tree.description", "Descripción")}
               error={form.formState.errors.description?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
-                placeholder="Descripcion opcional"
+                placeholder={t(
+                  "catalog.tree.descriptionPlaceholder",
+                  "Descripción opcional",
+                )}
                 disabled={saving}
                 {...form.register("description")}
               />
             </ZHField>
             <ZHField
-              label="Orden"
+              label={t("catalog.col.sortOrder", "Orden")}
               error={form.formState.errors.sortOrder?.message}
             >
-              <input
-                type="number"
+              <ZhNumberInput
                 className="zh-input"
-                min={0}
+                positiveOnly
                 disabled={saving}
                 {...form.register("sortOrder", { valueAsNumber: true })}
               />

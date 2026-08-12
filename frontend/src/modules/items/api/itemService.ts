@@ -233,11 +233,6 @@ export const itemService = {
   getProfitability: (itemId: string) =>
     apiGet<ItemProfitabilityDto>(`/api/v1/items/${itemId}/profitability`),
 
-  simulatePrice: (itemId: string, newPvp: number) =>
-    apiPost<PriceSimulationDto>(`/api/v1/items/${itemId}/simulate-price`, {
-      newPvp,
-    }),
-
   /** Listas de precios a las que pertenece el ítem — asignación administrativa, sin reglas ni precios. */
   getPriceLists: (itemId: string) =>
     apiGet<string[]>(`/api/v1/items/${itemId}/price-lists`),
@@ -312,18 +307,4 @@ export interface ItemProfitabilityDto {
   marginAmount: number;
   marginPercent: number;
   marginStatus: MarginStatusCode;
-}
-
-export interface PriceSimulationDto {
-  itemId: string;
-  averageCost: number;
-  currentSalePrice: number;
-  currencyCode: string | null;
-  currentMarginAmount: number;
-  currentMarginPercent: number;
-  simulatedPrice: number;
-  simulatedMarginAmount: number;
-  simulatedMarginPercent: number;
-  marginDifference: number;
-  simulatedMarginStatus: MarginStatusCode;
 }

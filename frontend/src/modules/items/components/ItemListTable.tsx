@@ -74,30 +74,35 @@ export function ItemListTable({
               <td>
                 <div className="prd-badge-wrap">
                   {item.tracksLot && (
-                    <Badge label="LOT" variant="info" size="md" title="Lotes" />
+                    <Badge
+                      label={t("items.flags.lot", "LOT")}
+                      variant="info"
+                      size="md"
+                      title={t("items.flags.lotTitle", "Lotes")}
+                    />
                   )}
                   {item.tracksSeries && (
                     <Badge
-                      label="SER"
+                      label={t("items.flags.series", "SER")}
                       variant="info"
                       size="md"
-                      title="Series"
+                      title={t("items.flags.seriesTitle", "Series")}
                     />
                   )}
                   {item.isForSale && (
                     <Badge
-                      label="VENTA"
+                      label={t("items.flags.sale", "VENTA")}
                       variant="success"
                       size="md"
-                      title="En venta"
+                      title={t("items.flags.saleTitle", "En venta")}
                     />
                   )}
                   {item.isEcommerceActive && (
                     <Badge
-                      label="EC"
+                      label={t("items.flags.ecommerce", "EC")}
                       variant="neutral"
                       size="md"
-                      title="eCommerce"
+                      title={t("items.flags.ecommerceTitle", "eCommerce")}
                     />
                   )}
                 </div>
@@ -161,5 +166,4 @@ export function ItemListTable({
     </div>
   );
 }
-
 

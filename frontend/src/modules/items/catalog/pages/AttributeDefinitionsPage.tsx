@@ -8,6 +8,7 @@ import {
   ZhTextInput,
   ZhNumberInput,
 } from "../../../../components/zh/inputs";
+import { useI18n } from "../../../../i18n/i18n";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -28,8 +29,16 @@ import {
 import { Controller } from "react-hook-form";
 
 const DATA_TYPES = ["Text", "Number", "Boolean", "Date", "Select"] as const;
+const DATA_TYPE_LABEL_KEYS: Record<(typeof DATA_TYPES)[number], string> = {
+  Text: "catalog.attributeDefinitions.dataType.text",
+  Number: "catalog.attributeDefinitions.dataType.number",
+  Boolean: "catalog.attributeDefinitions.dataType.boolean",
+  Date: "catalog.attributeDefinitions.dataType.date",
+  Select: "catalog.attributeDefinitions.dataType.select",
+};
 
 export function AttributeDefinitionsPage() {
+  const { t } = useI18n();
   const [groups, setGroups] = useState<AttributeGroupDto[]>([]);
 
   const loadGroups = useCallback(async () => {
@@ -70,52 +79,110 @@ export function AttributeDefinitionsPage() {
     permissionPrefix: "catalog",
   });
 
-  if (!ctx.canView) return <NoAccessPage title="Definiciones de Atributos" />;
+  if (!ctx.canView)
+    return (
+      <NoAccessPage
+        title={t(
+          "catalog.attributeDefinitions.title",
+          "Definiciones de atributos",
+        )}
+      />
+    );
 
   return (
-    <ErpPageTemplate kicker="Catálogo" title="Definiciones de Atributos">
+    <ErpPageTemplate
+      kicker={t("catalog.kicker", "Catálogo")}
+      title={t(
+        "catalog.attributeDefinitions.title",
+        "Definiciones de atributos",
+      )}
+    >
       {ctx.error && (
-        <ZHPageNotice variant="error" message="Error" detail={ctx.error} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.error", "Error")}
+          detail={ctx.error}
+        />
       )}
       <CatalogListSection
         ctx={ctx}
-        title="Definiciones Registradas"
+        title={t(
+          "catalog.attributeDefinitions.registered",
+          "Definiciones registradas",
+        )}
         icon="settings_input_component"
-        createLabel="Nueva Definición"
-        searchPlaceholder="Buscar definiciones..."
+        createLabel={t(
+          "catalog.attributeDefinitions.new",
+          "Nueva definición",
+        )}
+        searchPlaceholder={t(
+          "catalog.attributeDefinitions.search",
+          "Buscar definiciones...",
+        )}
         columns={[
           {
             key: "code",
-            label: "Código",
+            label: t("catalog.col.code", "Código"),
             render: (r) => (
               <Badge label={r.code as string} variant="neutral" className="mono" />
             ),
           },
           {
             key: "name",
-            label: "Nombre",
+            label: t("catalog.col.name", "Nombre"),
             render: (r) => <strong>{r.name as string}</strong>,
           },
           {
             key: "dataType",
-            label: "Tipo",
+            label: t("catalog.attributeDefinitions.dataType", "Tipo"),
             render: (r) => (
-              <Badge label={r.dataType as string} variant="neutral" size="md" />
+              <Badge
+                label={t(
+                  DATA_TYPE_LABEL_KEYS[
+                    r.dataType as (typeof DATA_TYPES)[number]
+                  ] ?? "catalog.attributeDefinitions.dataType.unknown",
+                  r.dataType as string,
+                )}
+                variant="neutral"
+                size="md"
+              />
             ),
           },
           {
             key: "isVariantAxis",
-            label: "Eje variante",
+            label: t(
+              "catalog.attributeDefinitions.variantAxis",
+              "Eje variante",
+            ),
             render: (r) => (
-              <span>{(r.isVariantAxis as boolean) ? "Sí" : "No"}</span>
+              <span>
+                {(r.isVariantAxis as boolean)
+                  ? t("common.yes", "Sí")
+                  : t("common.no", "No")}
+              </span>
             ),
           },
         ]}
       />
-      <CatalogFormModal ctx={ctx} entityLabel="Definición de Atributo">
-        <ZHField label="Grupo *" required error={ctx.errors.groupId?.message}>
+      <CatalogFormModal
+        ctx={ctx}
+        entityLabel={t(
+          "catalog.attributeDefinitions.entity",
+          "Definición de atributo",
+        )}
+      >
+        <ZHField
+          label={t("catalog.attributeDefinitions.groupRequired", "Grupo *")}
+          required
+          error={ctx.errors.groupId?.message}
+        >
           <ZhSelect disabled={ctx.saving} {...ctx.register("groupId")}>
-            <option value="">— Seleccionar grupo —</option>
+            <option value="">
+              {t(
+                "catalog.attributeDefinitions.selectGroup",
+                "— Seleccionar grupo —",
+              )}
+            </option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.code} — {g.name}
@@ -124,18 +191,32 @@ export function AttributeDefinitionsPage() {
           </ZhSelect>
         </ZHField>
         <ZHGrid cols={2}>
-          <ZHField label="Código *" required error={ctx.errors.code?.message}>
+          <ZHField
+            label={t("catalog.form.codeRequired", "Código *")}
+            required
+            error={ctx.errors.code?.message}
+          >
             <ZhTextInput
               className="zh-input mono"
-              placeholder="COLOR"
+              placeholder={t(
+                "catalog.attributeDefinitions.codePlaceholder",
+                "COLOR",
+              )}
               disabled={ctx.saving || !!ctx.editingId}
               {...ctx.register("code")}
             />
           </ZHField>
-          <ZHField label="Nombre *" required error={ctx.errors.name?.message}>
+          <ZHField
+            label={t("catalog.form.nameRequired", "Nombre *")}
+            required
+            error={ctx.errors.name?.message}
+          >
             <ZhTextInput
               className="zh-input"
-              placeholder="Color"
+              placeholder={t(
+                "catalog.attributeDefinitions.namePlaceholder",
+                "Color",
+              )}
               disabled={ctx.saving}
               {...ctx.register("name")}
             />
@@ -143,19 +224,25 @@ export function AttributeDefinitionsPage() {
         </ZHGrid>
         <ZHGrid cols={2}>
           <ZHField
-            label="Tipo de dato *"
+            label={t(
+              "catalog.attributeDefinitions.dataTypeRequired",
+              "Tipo de dato *",
+            )}
             required
             error={ctx.errors.dataType?.message}
           >
             <ZhSelect disabled={ctx.saving} {...ctx.register("dataType")}>
               {DATA_TYPES.map((dt) => (
                 <option key={dt} value={dt}>
-                  {dt}
+                  {t(DATA_TYPE_LABEL_KEYS[dt], dt)}
                 </option>
               ))}
             </ZhSelect>
           </ZHField>
-          <ZHField label="Orden" error={ctx.errors.sortOrder?.message}>
+          <ZHField
+            label={t("catalog.col.sortOrder", "Orden")}
+            error={ctx.errors.sortOrder?.message}
+          >
             <ZhNumberInput
               className="zh-input"
               positiveOnly
@@ -165,7 +252,12 @@ export function AttributeDefinitionsPage() {
           </ZHField>
         </ZHGrid>
         <ZHGrid cols={2}>
-          <ZHField label="Eje de variante">
+          <ZHField
+            label={t(
+              "catalog.attributeDefinitions.variantAxisField",
+              "Eje de variante",
+            )}
+          >
             <Controller
               name="isVariantAxis"
               control={ctx.control}
@@ -177,12 +269,17 @@ export function AttributeDefinitionsPage() {
                     onChange={field.onChange}
                     disabled={ctx.saving}
                   />
-                  <span>Usar como eje de variante</span>
+                  <span>
+                    {t(
+                      "catalog.attributeDefinitions.useAsVariantAxis",
+                      "Usar como eje de variante",
+                    )}
+                  </span>
                 </label>
               )}
             />
           </ZHField>
-          <ZHField label="Requerido">
+          <ZHField label={t("catalog.attributeDefinitions.required", "Requerido")}>
             <Controller
               name="isRequired"
               control={ctx.control}
@@ -194,7 +291,12 @@ export function AttributeDefinitionsPage() {
                     onChange={field.onChange}
                     disabled={ctx.saving}
                   />
-                  <span>Este atributo es obligatorio</span>
+                  <span>
+                    {t(
+                      "catalog.attributeDefinitions.isRequiredHelp",
+                      "Este atributo es obligatorio",
+                    )}
+                  </span>
                 </label>
               )}
             />

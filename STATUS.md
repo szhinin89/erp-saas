@@ -4,6 +4,18 @@
 
 ---
 
+## FLOW-READY-02F.10-CLEAN01 — Items Admin SSOT cleanup (2026-08-12)
+
+**Estado: COMPLETADO.** Auditoría y limpieza acotada del Admin de Ítems sin cambios de backend.
+
+- Códigos de barras y códigos proveedor quedan gestionados solo en Principal; se eliminó la sección duplicada no consumida de códigos proveedor en detalle.
+- Presentaciones/empaques quedan en Inventario y presentaciones; se conserva `ItemPackagingLevel` como SSOT y no se infieren factores desde nombres.
+- Precio/costo/rentabilidad queda en una sola sección de Principal; se eliminó el componente antiguo de simulación “Nuevo PVP / Simular” y su cliente frontend.
+- Textos visibles tocados en catálogo/listado/árbol se pasaron a i18n `es/en/qu`; se removió CSS huérfano del simulador viejo y se mantuvo cero `style=`.
+- Validado con `npx vitest run src/modules/items`, `npx tsc --noEmit`, `npm run lint`, `npm run build` y `git diff --check`.
+
+---
+
 ## FLOW-READY-02F.7 — Controles preventivos empaques / XML (2026-08-11)
 
 **Estado: COMPLETADO.** Controles fail-closed para evitar configuraciones peligrosas de presentación, código proveedor y compra XML.
