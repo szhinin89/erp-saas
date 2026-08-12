@@ -766,7 +766,7 @@
   color: var(--color-text-secondary);
   font-weight: 600;
   font-size: 13px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
   pointer-events: none;
 }
 .items-currency-input__field {
@@ -1152,71 +1152,8 @@ tr.cfg-row--selected:hover > td {
 }
 
 /* ============================================================
-   Rentabilidad (ProfitabilitySection)
+   Items — tarjetas métricas de precio/costo/rentabilidad
    ============================================================ */
-.items-profitability {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.items-profitability__loading {
-  padding: 16px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.items-profitability__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--space-3);
-}
-
-.items-profitability__simulator {
-  padding: var(--space-4);
-  background: var(--color-surface-container-low);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-}
-
-.items-profitability__simulator-title {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: var(--space-3);
-  color: var(--color-text-primary);
-}
-
-.items-profitability__simulator-row {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.items-profitability__simulator-label {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.items-profitability__simulator-input {
-  width: 140px;
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-
-/* .items-profitability__simulate-btn ELIMINADO (Bloque 13H) — migrado a
-   <ZHBtn variant="primary" size="sm"> en ProfitabilitySection.tsx. */
-
-.items-profitability__sim-grid {
-  margin-top: var(--space-4);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--space-3);
-}
-
 .items-metric-card {
   padding: 14px 16px;
   border-radius: var(--radius-lg);
@@ -1240,7 +1177,7 @@ tr.cfg-row--selected:hover > td {
   font-size: 20px;
   font-weight: 800;
   font-family: var(--font-family-mono);
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .items-metric-card__value--success {
@@ -1261,12 +1198,6 @@ tr.cfg-row--selected:hover > td {
 
 .items-metric-card--small .items-metric-card__value {
   font-size: 16px;
-}
-
-.items-metric-card__sublabel {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin-top: 2px;
 }
 
 .prd-icon-btn--primary {

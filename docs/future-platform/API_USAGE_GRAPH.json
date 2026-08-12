@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-12T02:31:19.810Z",
+  "generatedAt": "2026-08-12T19:48:08.910Z",
   "summary": {
-    "total": 97,
-    "allowed": 97,
+    "total": 96,
+    "allowed": 96,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -228,14 +228,6 @@
       "endpoint": "/api/v1/catalog/classifications",
       "files": [
         "frontend/src/modules/masterData/api/classificationCatalogService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/catalog/item-margin-statuses",
-      "files": [
-        "frontend/src/modules/items/detail/components/ProfitabilitySection.tsx"
       ],
       "legacy": false,
       "allowed": true
