@@ -157,7 +157,10 @@ export function PurchaseReceptionPage() {
             variant={row.purchaseExists ? "success" : "warning"}
             label={
               row.purchaseExists
-                ? t("purchases.reception.purchaseErp.entered", "Compra ingresada")
+                ? t(
+                    "purchases.reception.actions.purchaseAlreadyEntered",
+                    "Compra ya ingresada al sistema",
+                  )
                 : t(
                     "purchases.reception.purchaseErp.notEntered",
                     "Compra no ingresada",

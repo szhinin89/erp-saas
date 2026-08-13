@@ -40,6 +40,38 @@ export function PurchaseReceptionActionsCell({
     </ZHBtn>
   );
 
+  if (row.purchaseExists && row.purchaseId) {
+    return (
+      <div className="pur-actions-cell">
+        <Badge
+          variant="success"
+          label={t(
+            "purchases.reception.actions.purchaseAlreadyEntered",
+            "Compra ya ingresada al sistema",
+          )}
+        />
+        <ZHBtn
+          variant="secondary"
+          size="xs"
+          type="button"
+          onClick={() =>
+            window.open(
+              `/purchases?invoiceId=${row.purchaseId}`,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
+        >
+          {t(
+            "purchases.duplicate.viewExisting",
+            "Ver compra existente",
+          )}
+        </ZHBtn>
+        {viewXmlButton}
+      </div>
+    );
+  }
+
   if (row.sourceDocType === "CREDIT_NOTE") {
     if (row.affectedPurchaseExists && row.affectedPurchaseId) {
       return (
@@ -126,7 +158,7 @@ export function PurchaseReceptionActionsCell({
               // documentos recibidos y debe permanecer abierta con su lista cargada mientras
               // la compra se arma en /purchases.
               window.open(
-                `/purchases?fromReceptionId=${row.documentId}`,
+                `/purchases?fromReceptionId=${row.documentId}&accessKey=${encodeURIComponent(row.accessKey)}`,
                 "_blank",
                 "noopener,noreferrer",
               )

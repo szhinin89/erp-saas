@@ -69,12 +69,13 @@ export function PurchasesPage() {
   useEffect(() => {
     const invoiceId = searchParams.get("invoiceId");
     const fromReceptionId = searchParams.get("fromReceptionId");
+    const accessKey = searchParams.get("accessKey");
     if (invoiceId && !openedFromParam.current) {
       openedFromParam.current = true;
       void ctx.loadForEdit(invoiceId);
     } else if (fromReceptionId && !openedFromParam.current) {
       openedFromParam.current = true;
-      void ctx.loadFromReception(fromReceptionId);
+      void ctx.loadFromReception(fromReceptionId, accessKey);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -275,6 +276,35 @@ export function PurchasesPage() {
               variant="warning"
               message={ctx.receptionProcessingNotice}
             />
+          )}
+          {ctx.isDuplicateAccessKeyBlocking && (
+            <div>
+              <ZHPageNotice
+                variant="error"
+                message={ctx.duplicateAccessKeyTitle}
+                detail={ctx.duplicateAccessKeyDetail}
+              />
+              {ctx.duplicateAccessKey?.purchaseId && (
+                <ZHBtn
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const purchaseId = ctx.duplicateAccessKey?.purchaseId;
+                    if (!purchaseId) return;
+                    navigate(`/purchases?invoiceId=${purchaseId}`);
+                    void ctx.loadForEdit(purchaseId);
+                  }}
+                >
+                  <span className="material-symbols-outlined zh-icon-md">
+                    open_in_new
+                  </span>
+                  {t(
+                    "purchases.duplicate.viewExisting",
+                    "Ver compra existente",
+                  )}
+                </ZHBtn>
+              )}
+            </div>
           )}
           {ctx.errors.supplierId && (
             <ZHPageNotice
@@ -928,6 +958,7 @@ export function PurchasesPage() {
                 !ctx.formWatch.docTypeCode.trim() ||
                 !ctx.formWatch.issueDate ||
                 !ctx.canUseSriDocTypes ||
+                ctx.isDuplicateAccessKeyBlocking ||
                 ctx.lines.length === 0
               }
             >

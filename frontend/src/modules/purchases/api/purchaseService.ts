@@ -171,6 +171,14 @@ export interface PurchaseListResponse {
   pageSize: number;
 }
 
+export interface PurchaseAccessKeyLookupDto {
+  exists: boolean;
+  purchaseId: string | null;
+  invoiceNumber: string | null;
+  supplierName: string | null;
+  accessKey: string | null;
+}
+
 export interface PurchasesReportRowDto {
   id: string;
   issueDate: string;
@@ -300,6 +308,10 @@ export const purchaseService = {
     return apiGet<PurchaseListResponse>(`${BASE}?${params}`);
   },
   getById: (id: string) => apiGet<PurchaseInvoiceDto>(`${BASE}/${id}`),
+  getByAccessKey: (accessKey: string) =>
+    apiGet<PurchaseAccessKeyLookupDto>(
+      `${BASE}/by-access-key/${encodeURIComponent(accessKey.trim())}`,
+    ),
   create: (p: CreatePurchasePayload) => apiPost<PurchaseInvoiceDto>(BASE, p),
   update: (id: string, p: UpdatePurchasePayload) =>
     apiPut<PurchaseInvoiceDto>(`${BASE}/${id}`, p),

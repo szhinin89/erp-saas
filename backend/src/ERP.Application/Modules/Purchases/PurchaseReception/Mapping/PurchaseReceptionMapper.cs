@@ -25,6 +25,7 @@ public static class PurchaseReceptionMapper
             item.Record.Total,
             item.SupplierExists,
             item.PurchaseExists,
+            item.PurchaseId,
             item.AffectedPurchaseExists,
             item.AffectedPurchaseId,
             ToStatusCode(item.Status),

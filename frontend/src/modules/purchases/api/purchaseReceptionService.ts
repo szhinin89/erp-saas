@@ -71,6 +71,7 @@ export interface PurchaseReceptionItem {
   total: number;
   supplierExists: boolean;
   purchaseExists: boolean;
+  purchaseId: string | null;
   /** Solo notas de crédito: si `modifiedDocumentNumber` ya existe como compra del mismo proveedor. False en Factura. */
   affectedPurchaseExists: boolean;
   /** Id de la compra afectada, para abrirla en `/purchases?invoiceId=<id>` — null si no existe o no aplica. */
@@ -106,6 +107,8 @@ export interface DownloadXmlResult {
   linesDetectedCount: number;
   linesProcessedCount: number;
   processingNotes: string | null;
+  purchaseExists: boolean;
+  purchaseId: string | null;
   /** infoTributaria/nombreComercial del emisor — null si el XML no lo declara. */
   supplierTradeName: string | null;
 }

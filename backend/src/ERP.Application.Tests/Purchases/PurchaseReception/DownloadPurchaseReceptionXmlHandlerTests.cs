@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -50,11 +51,13 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
     private static (
         DownloadPurchaseReceptionXmlHandler handler,
         Mock<IPurchaseReceptionDocumentRepository> repo,
+        Mock<IPurchaseInvoiceRepository> purchaseRepo,
         Mock<ISriReceptionXmlProvider> provider,
         Mock<IPurchaseReceptionDetailProcessor> detailProcessor
     ) BuildHandler()
     {
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
+        var purchaseRepo = new Mock<IPurchaseInvoiceRepository>();
         var provider = new Mock<ISriReceptionXmlProvider>();
         var detailProcessor = new Mock<IPurchaseReceptionDetailProcessor>();
 
@@ -82,6 +85,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
 
         var handler = new DownloadPurchaseReceptionXmlHandler(
             repo.Object,
+            purchaseRepo.Object,
             provider.Object,
             detailProcessor.Object,
             tenant.Object,
@@ -90,14 +94,14 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
             logger.Object
         );
 
-        return (handler, repo, provider, detailProcessor);
+        return (handler, repo, purchaseRepo, provider, detailProcessor);
     }
 
     [Fact]
     public async Task Handle_downloads_and_persists_xml_for_an_existing_imported_document()
     {
         var document = SampleDocument();
-        var (handler, repo, provider, _) = BuildHandler();
+        var (handler, repo, _, provider, _) = BuildHandler();
 
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
@@ -145,7 +149,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         var supplierId = Guid.NewGuid();
         var itemId = Guid.NewGuid();
         var document = SampleDocument(supplierId);
-        var (handler, repo, provider, detailProcessor) = BuildHandler();
+        var (handler, repo, _, provider, detailProcessor) = BuildHandler();
 
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
@@ -230,7 +234,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
     [Fact]
     public async Task Handle_returns_not_found_for_a_nonexistent_document()
     {
-        var (handler, repo, provider, _) = BuildHandler();
+        var (handler, repo, _, provider, _) = BuildHandler();
         var missingId = Guid.NewGuid();
         repo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseReceptionDocument?)null);
@@ -258,7 +262,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
     public async Task Handle_keeps_previous_status_when_sri_query_fails()
     {
         var document = SampleDocument();
-        var (handler, repo, provider, _) = BuildHandler();
+        var (handler, repo, _, provider, _) = BuildHandler();
 
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
@@ -317,7 +321,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         );
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
 
-        var (handler, repo, provider, _) = BuildHandler();
+        var (handler, repo, _, provider, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 

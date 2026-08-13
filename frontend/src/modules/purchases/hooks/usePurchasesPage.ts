@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type {
+  PurchaseAccessKeyLookupDto,
   PurchaseInvoiceDto,
   PurchaseListItemDto,
   RetentionPreviewDto,
@@ -17,7 +18,6 @@ import { useItemTypeOptions } from "../../items/hooks/useItemTypeOptions";
 import type { ItemDto } from "../../../types/items";
 import type {
   SupplierPickerRow,
-  SupplierRoleConfigDto,
 } from "../../masterData/types/businessPartner.types";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
@@ -50,24 +50,14 @@ import {
   type PurchaseInvoiceFormValues,
   type PurchaseLineFormValues,
 } from "../schemas/purchaseInvoiceSchema";
+import {
+  buildSupplierProfile,
+  type SupplierProfile,
+} from "../utils/supplierProfile";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type Tab = "listado" | "nuevo";
-
-export type SupplierProfile = {
-  ruc: string;
-  name: string;
-  config: SupplierRoleConfigDto | null;
-  isRequiredToKeepAccounting: boolean;
-};
-
-// `isRequiredToKeepAccounting` no forma parte del contrato SupplierRoleConfigDto
-// declarado en masterData; el backend lo incluye en la respuesta de supplierConfig
-// como campo adicional. Tipo local mínimo para leerlo sin `any`.
-type SupplierConfigWithAccounting = SupplierRoleConfigDto & {
-  isRequiredToKeepAccounting?: boolean;
-};
 
 // Forma mínima esperada de un error HTTP (axios) para extraer un mensaje legible;
 // todos los accesos son opcionales porque el shape real puede variar según el catch.
@@ -91,6 +81,10 @@ export type ScheduleRow = {
 // 'all' o un ItemTypeId (Guid) del catálogo tenant-editable /api/v1/item-types.
 type SearchFilter = "all" | string;
 
+const DUPLICATE_PURCHASE_TITLE = "No se puede crear esta compra.";
+const DUPLICATE_PURCHASE_DETAIL =
+  "Ya existe una compra registrada con esta clave de acceso SRI.";
+
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function usePurchasesPage() {
@@ -108,6 +102,11 @@ export function usePurchasesPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saveErrorDetails, setSaveErrorDetails] = useState<string[]>([]);
+  const [duplicateAccessKey, setDuplicateAccessKey] =
+    useState<PurchaseAccessKeyLookupDto | null>(null);
+  const [duplicateAccessKeyChecking, setDuplicateAccessKeyChecking] =
+    useState(false);
+  const duplicateAccessKeySeq = useRef(0);
   const [editing, setEditing] = useState<PurchaseInvoiceDto | null>(null);
   // Aviso no bloqueante cuando el borrador viene de una Recepción Electrónica con
   // ProcessingStatus PROCESSED_WITH_WARNINGS (algunas líneas del XML no se pudieron interpretar).
@@ -205,6 +204,7 @@ export function usePurchasesPage() {
 
   const formWatch = watch();
   const lines = watch("lines");
+  const accessKeyValue = watch("accessKey");
 
   // ── Derived state ──────────────────────────────────────────────────
   const isDraft = !editing || editing.status === "Draft";
@@ -244,6 +244,67 @@ export function usePurchasesPage() {
   const sriDocTypesUnavailable =
     sriDocTypesLoaded && (sriDocTypesLoadFailed || sriDocTypes.length === 0);
   const canUseSriDocTypes = sriDocTypesLoaded && !sriDocTypesUnavailable;
+  const isDuplicateAccessKeyBlocking =
+    !!duplicateAccessKey?.exists &&
+    duplicateAccessKey.purchaseId !== editing?.id;
+
+  const duplicateAccessKeyTitle = t(
+    "purchases.duplicate.title",
+    DUPLICATE_PURCHASE_TITLE,
+  );
+  const duplicateAccessKeyDetail = t(
+    "purchases.duplicate.detail",
+    DUPLICATE_PURCHASE_DETAIL,
+  );
+
+  const checkAccessKeyDuplicate = useCallback(
+    async (accessKey: string, showMessage = false) => {
+      const normalized = accessKey.trim();
+      if (!normalized) {
+        setDuplicateAccessKey(null);
+        return null;
+      }
+
+      const seq = duplicateAccessKeySeq.current + 1;
+      duplicateAccessKeySeq.current = seq;
+      setDuplicateAccessKeyChecking(true);
+      try {
+        const lookup = await purchaseService.getByAccessKey(normalized);
+        if (duplicateAccessKeySeq.current !== seq) return null;
+
+        const blocks =
+          lookup.exists && lookup.purchaseId !== editing?.id;
+        setDuplicateAccessKey(blocks ? lookup : null);
+        if (blocks && showMessage) {
+          showSaveError(duplicateAccessKeyTitle, [duplicateAccessKeyDetail]);
+          message.error(`${duplicateAccessKeyTitle} ${duplicateAccessKeyDetail}`);
+        }
+        return blocks ? lookup : null;
+      } catch {
+        if (duplicateAccessKeySeq.current === seq) setDuplicateAccessKey(null);
+        return null;
+      } finally {
+        if (duplicateAccessKeySeq.current === seq) {
+          setDuplicateAccessKeyChecking(false);
+        }
+      }
+    },
+    [duplicateAccessKeyDetail, duplicateAccessKeyTitle, editing?.id, showSaveError],
+  );
+
+  useEffect(() => {
+    const normalized = (accessKeyValue ?? "").trim();
+    if (!normalized || readOnly) {
+      setDuplicateAccessKey(null);
+      setDuplicateAccessKeyChecking(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void checkAccessKeyDuplicate(normalized);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [accessKeyValue, checkAccessKeyDuplicate, readOnly]);
 
   // ── Init reference data ────────────────────────────────────────────
   useEffect(() => {
@@ -735,6 +796,16 @@ export function usePurchasesPage() {
     [setValue, getValues, localTotal],
   );
 
+  const resolveSupplierProfile = useCallback(async (supplierId: string) => {
+    const cached = profileCache.current.get(supplierId);
+    if (cached) return cached;
+
+    const bp = await businessPartnerFacade.getBusinessPartner(supplierId);
+    const profile = buildSupplierProfile(bp);
+    profileCache.current.set(supplierId, profile);
+    return profile;
+  }, []);
+
   const handleSupplierChange = useCallback(
     async (s: SupplierPickerRow | null) => {
       setValue("supplierId", s?.id ?? "", { shouldValidate: true });
@@ -742,33 +813,15 @@ export function usePurchasesPage() {
         setSupplierProfile(null);
         return;
       }
-      const cached = profileCache.current.get(s.id);
-      if (cached) {
-        setSupplierProfile(cached);
-        applySupplierDefaults(cached);
-        return;
-      }
       try {
-        const bp = await businessPartnerFacade.getBusinessPartner(s.id);
-        const role = bp.roles?.find(
-          (r) => r.roleType === "Supplier" && r.isActive,
-        );
-        const profile: SupplierProfile = {
-          ruc: bp.identificationNumber,
-          name: bp.tradeName || bp.legalName,
-          config: role?.supplierConfig ?? null,
-          isRequiredToKeepAccounting:
-            (role?.supplierConfig as SupplierConfigWithAccounting | null)
-              ?.isRequiredToKeepAccounting ?? false,
-        };
-        profileCache.current.set(s.id, profile);
+        const profile = await resolveSupplierProfile(s.id);
         setSupplierProfile(profile);
         applySupplierDefaults(profile);
       } catch {
         /* profile load failed */
       }
     },
-    [setValue, applySupplierDefaults],
+    [setValue, applySupplierDefaults, resolveSupplierProfile],
   );
 
   // ── Form reset ─────────────────────────────────────────────────────
@@ -776,6 +829,8 @@ export function usePurchasesPage() {
     reset(emptyPurchaseInvoiceForm());
     setEditing(null);
     showSaveError("");
+    setDuplicateAccessKey(null);
+    setDuplicateAccessKeyChecking(false);
     setLineKey(1);
     setSupplierProfile(null);
     setWhPreview(null);
@@ -794,35 +849,18 @@ export function usePurchasesPage() {
   const loadForEdit = useCallback(
     async (id: string) => {
       try {
+        setDuplicateAccessKey(null);
+        setDuplicateAccessKeyChecking(false);
         const inv = await purchaseService.getById(id);
         setEditing(inv);
 
         // Supplier profile
         if (inv.supplierId) {
-          const cached = profileCache.current.get(inv.supplierId);
-          if (cached) {
-            setSupplierProfile(cached);
-          } else {
-            try {
-              const bp = await businessPartnerFacade.getBusinessPartner(
-                inv.supplierId,
-              );
-              const role = bp.roles?.find(
-                (r) => r.roleType === "Supplier" && r.isActive,
-              );
-              const profile: SupplierProfile = {
-                ruc: bp.identificationNumber,
-                name: bp.tradeName || bp.legalName,
-                config: role?.supplierConfig ?? null,
-                isRequiredToKeepAccounting:
-                  (role?.supplierConfig as SupplierConfigWithAccounting | null)
-                    ?.isRequiredToKeepAccounting ?? false,
-              };
-              profileCache.current.set(inv.supplierId, profile);
-              setSupplierProfile(profile);
-            } catch {
-              /* profile load failed */
-            }
+          try {
+            const profile = await resolveSupplierProfile(inv.supplierId);
+            setSupplierProfile(profile);
+          } catch {
+            /* profile load failed */
           }
         }
 
@@ -941,16 +979,40 @@ export function usePurchasesPage() {
         message.error(t("purchases.messages.loadFailed", "No se pudo cargar la compra."));
       }
     },
-    [reset, fetchItemContext, getValues, setValue, showSaveError, t],
+    [
+      reset,
+      fetchItemContext,
+      getValues,
+      setValue,
+      showSaveError,
+      t,
+      resolveSupplierProfile,
+    ],
   );
 
   // ── Load from Recepción Electrónica (PurchaseReceptionDocument → draft) ────
   const loadFromReception = useCallback(
-    async (receptionDocumentId: string) => {
+    async (receptionDocumentId: string, accessKey?: string | null) => {
       setReceptionProcessingNotice(null);
+      showSaveError("");
+      setDuplicateAccessKey(null);
+      if (accessKey?.trim()) {
+        const duplicate = await checkAccessKeyDuplicate(accessKey, true);
+        if (duplicate) {
+          setTab("nuevo");
+          return;
+        }
+      }
       try {
         const draft: PurchaseDraftDto =
           await purchaseReceptionService.createDraft(receptionDocumentId);
+        if (!accessKey?.trim() && draft.accessKey?.trim()) {
+          const duplicate = await checkAccessKeyDuplicate(draft.accessKey, true);
+          if (duplicate) {
+            setTab("nuevo");
+            return;
+          }
+        }
         setEditing(null);
         if (
           draft.processingStatus === "PROCESSED_WITH_WARNINGS" &&
@@ -964,30 +1026,11 @@ export function usePurchasesPage() {
         }
 
         if (draft.supplierId) {
-          const cached = profileCache.current.get(draft.supplierId);
-          if (cached) {
-            setSupplierProfile(cached);
-          } else {
-            try {
-              const bp = await businessPartnerFacade.getBusinessPartner(
-                draft.supplierId,
-              );
-              const role = bp.roles?.find(
-                (r) => r.roleType === "Supplier" && r.isActive,
-              );
-              const profile: SupplierProfile = {
-                ruc: bp.identificationNumber,
-                name: bp.tradeName || bp.legalName,
-                config: role?.supplierConfig ?? null,
-                isRequiredToKeepAccounting:
-                  (role?.supplierConfig as SupplierConfigWithAccounting | null)
-                    ?.isRequiredToKeepAccounting ?? false,
-              };
-              profileCache.current.set(draft.supplierId, profile);
-              setSupplierProfile(profile);
-            } catch {
-              /* profile load failed */
-            }
+          try {
+            const profile = await resolveSupplierProfile(draft.supplierId);
+            setSupplierProfile(profile);
+          } catch {
+            /* profile load failed */
           }
         } else {
           setSupplierProfile(null);
@@ -1047,28 +1090,44 @@ export function usePurchasesPage() {
         setTab("nuevo");
       } catch (err) {
         const backendMessage = readApiErrorMessage(err);
-        showSaveError(
-          backendMessage ??
-            t(
-              "purchases.errors.receptionDraftFailed",
-              "No se pudo generar el borrador de compra desde el documento de recepción.",
-            ),
-        );
+        if (backendMessage === DUPLICATE_PURCHASE_DETAIL) {
+          showSaveError(duplicateAccessKeyTitle, [duplicateAccessKeyDetail]);
+        } else {
+          showSaveError(
+            backendMessage ??
+              t(
+                "purchases.errors.receptionDraftFailed",
+                "No se pudo generar el borrador de compra desde el documento de recepción.",
+              ),
+          );
+        }
         message.error(
-          backendMessage ??
-            t(
-              "purchases.messages.receptionDraftFailed",
-              "No se pudo generar el borrador de compra.",
-            ),
+          backendMessage === DUPLICATE_PURCHASE_DETAIL
+            ? `${duplicateAccessKeyTitle} ${duplicateAccessKeyDetail}`
+            : backendMessage ??
+              t(
+                "purchases.messages.receptionDraftFailed",
+                "No se pudo generar el borrador de compra.",
+              ),
         );
       }
     },
-    [reset, showSaveError, t],
+    [
+      reset,
+      showSaveError,
+      t,
+      resolveSupplierProfile,
+      checkAccessKeyDuplicate,
+      duplicateAccessKeyTitle,
+      duplicateAccessKeyDetail,
+    ],
   );
 
   // ── Save (create/update) ───────────────────────────────────────────
   const handleSave = handleSubmit(async (data) => {
     showSaveError("");
+    const duplicate = await checkAccessKeyDuplicate(data.accessKey ?? "", true);
+    if (duplicate) return;
     if (!canUseSriDocTypes) {
       const title = t(
         "purchases.validation.sriDocTypesUnavailableTitle",
@@ -1152,10 +1211,17 @@ export function usePurchasesPage() {
       const applied = applyServerErrors(err, setFieldError);
       const apiMessages = readApiErrorMessages(err);
       if (apiMessages.length > 0) {
-        const title = t(
-          "purchases.validation.saveBlocked",
-          "No se puede guardar la compra.",
+        const isDuplicateAccessKeyError = apiMessages.some(
+          (msg) =>
+            msg === duplicateAccessKeyDetail ||
+            msg === DUPLICATE_PURCHASE_DETAIL,
         );
+        const title = isDuplicateAccessKeyError
+          ? duplicateAccessKeyTitle
+          : t(
+              "purchases.validation.saveBlocked",
+              "No se puede guardar la compra.",
+            );
         showSaveError(title, apiMessages);
         message.error(`${title} ${apiMessages[0]}`);
       } else if (!applied) {
@@ -1462,6 +1528,11 @@ export function usePurchasesPage() {
     saveError,
     saveErrorDetails,
     setSaveError: showSaveError,
+    duplicateAccessKey,
+    duplicateAccessKeyChecking,
+    isDuplicateAccessKeyBlocking,
+    duplicateAccessKeyTitle,
+    duplicateAccessKeyDetail,
     editing,
     receptionProcessingNotice,
     setReceptionProcessingNotice,

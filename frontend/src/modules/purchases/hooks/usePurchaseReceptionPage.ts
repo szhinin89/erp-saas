@@ -95,6 +95,8 @@ export function usePurchaseReceptionPage() {
                       documentStatus: download.status,
                       processingStatus: download.processingStatus,
                       processingNotes: download.processingNotes,
+                      purchaseExists: download.purchaseExists,
+                      purchaseId: download.purchaseId,
                       supplierTradeName:
                         download.supplierTradeName ?? item.supplierTradeName,
                     }

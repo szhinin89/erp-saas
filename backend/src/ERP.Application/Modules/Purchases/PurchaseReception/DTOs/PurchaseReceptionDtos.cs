@@ -17,6 +17,7 @@ public sealed record PurchaseReceptionItemDto(
     decimal Total,
     bool SupplierExists,
     bool PurchaseExists,
+    Guid? PurchaseId,
     // Solo aplica a notas de crédito: si la factura afectada (ModifiedDocumentNumber) ya está
     // ingresada como compra del mismo proveedor. False/null en Factura.
     bool AffectedPurchaseExists,

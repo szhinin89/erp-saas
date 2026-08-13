@@ -47,6 +47,11 @@ public sealed class PurchasesController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetPurchaseByIdQuery(id), ct));
 
+    [HttpGet("by-access-key/{accessKey}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    public async Task<IActionResult> GetByAccessKey(string accessKey, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPurchaseByAccessKeyQuery(accessKey), ct));
+
     [HttpGet]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     public async Task<IActionResult> GetList(

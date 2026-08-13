@@ -3,6 +3,7 @@ import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { useI18n } from "../../../i18n/i18n";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import { buildSupplierPickerRow } from "../utils/supplierProfile";
 
 type Props = {
   value: string | null;
@@ -51,19 +52,7 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
     if (value && !selected) {
       businessPartnerFacade
         .getBusinessPartner(value)
-        .then((bp) => {
-          const role = bp.roles?.find(
-            (r) => r.roleType === "Supplier" && r.isActive,
-          );
-          setSelected({
-            id: bp.id,
-            identificationNumber: bp.identificationNumber,
-            fullName: bp.tradeName || bp.legalName,
-            isActive: bp.isActive,
-            hasSupplierRole: !!role,
-            supplierConfig: role?.supplierConfig ?? null,
-          });
-        })
+        .then((bp) => setSelected(buildSupplierPickerRow(bp)))
         .catch(() => {});
     }
     if (!value && selected) {

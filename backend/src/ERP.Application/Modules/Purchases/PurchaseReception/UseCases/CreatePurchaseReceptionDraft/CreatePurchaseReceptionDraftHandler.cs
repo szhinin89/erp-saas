@@ -3,6 +3,7 @@ using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -25,6 +26,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     : IRequestHandler<CreatePurchaseReceptionDraftCommand, Result<PurchaseDraftDto>>
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
+    private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
     private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _tenant;
@@ -32,6 +34,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
 
     public CreatePurchaseReceptionDraftHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
+        IPurchaseInvoiceRepository purchaseRepo,
         IPurchaseReceptionDetailProcessor detailProcessor,
         IItemRepository itemRepo,
         ICurrentTenant tenant,
@@ -39,6 +42,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     )
     {
         _documentRepo = documentRepo;
+        _purchaseRepo = purchaseRepo;
         _detailProcessor = detailProcessor;
         _itemRepo = itemRepo;
         _tenant = tenant;
@@ -67,6 +71,16 @@ public sealed class CreatePurchaseReceptionDraftHandler
                 "Solo se puede generar un borrador de compra desde documentos con XML autorizado (estado Verificado)."
             );
         }
+
+        var existingPurchase = await _purchaseRepo.GetByAccessKeyAsync(
+            _tenant.TenantId,
+            document.AccessKey,
+            cancellationToken
+        );
+        if (existingPurchase is not null)
+            return Result<PurchaseDraftDto>.Conflict(
+                "Ya existe una compra registrada con esta clave de acceso SRI."
+            );
 
         // Caso recuperable: el detalle nunca se interpretó con éxito (p. ej. porque el parser
         // vigente al momento de la descarga original era menos tolerante que el actual). Se

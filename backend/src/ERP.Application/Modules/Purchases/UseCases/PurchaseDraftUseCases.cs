@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.MasterData.Interfaces;
@@ -178,6 +179,39 @@ file static class ReceptionTaxLookup
     }
 }
 
+file static class PurchaseAccessKeyDuplicateGuard
+{
+    public const string ConstraintName = "uq_purchase_invoices_tenant_access_key";
+    public const string DuplicateAccessKeyMessage =
+        "Ya existe una compra registrada con esta clave de acceso SRI.";
+
+    public static async Task<PurchaseInvoice?> FindDuplicateAsync(
+        IPurchaseInvoiceRepository repo,
+        Guid tenantId,
+        string? accessKey,
+        Guid? currentInvoiceId,
+        CancellationToken ct
+    )
+    {
+        if (string.IsNullOrWhiteSpace(accessKey))
+            return null;
+
+        var existing = await repo.GetByAccessKeyAsync(tenantId, accessKey.Trim(), ct);
+        if (existing is null || existing.Id == currentInvoiceId)
+            return null;
+
+        return existing;
+    }
+
+    public static Result<T>? ToConflictIfDuplicate<T>(PurchaseInvoice? duplicate) =>
+        duplicate is null ? null : Result<T>.Conflict(DuplicateAccessKeyMessage);
+
+    public static string? MapUniqueViolation(string? constraintName) =>
+        string.Equals(constraintName, ConstraintName, StringComparison.Ordinal)
+            ? DuplicateAccessKeyMessage
+            : null;
+}
+
 // ── Commands & Queries ──────────────────────────────────────────────────
 
 public sealed record CreatePurchaseDraftCommand(
@@ -223,6 +257,10 @@ public sealed record GetPurchaseByIdQuery(Guid Id)
     : IRequest<Result<PurchaseInvoiceDto>>,
         IBranchScopedRequest;
 
+public sealed record GetPurchaseByAccessKeyQuery(string AccessKey)
+    : IRequest<Result<PurchaseAccessKeyLookupDto>>,
+        IBranchScopedRequest;
+
 /// <summary>
 /// Cierre de gap BranchScopeBehavior — mismo criterio que GetSalesInvoiceListQuery: exige
 /// contexto de sucursal (defensa en profundidad vía BranchScopeBehavior/IBranchAccessGuard),
@@ -241,6 +279,14 @@ public sealed record PurchaseListResponse(
     int Total,
     int Page,
     int PageSize
+);
+
+public sealed record PurchaseAccessKeyLookupDto(
+    bool Exists,
+    Guid? PurchaseId,
+    string? InvoiceNumber,
+    string? SupplierName,
+    string? AccessKey
 );
 
 // ── Validators ──────────────────────────────────────────────────────────
@@ -366,6 +412,7 @@ public sealed class CreatePurchaseDraftHandler
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public CreatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
@@ -379,7 +426,8 @@ public sealed class CreatePurchaseDraftHandler
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        IDatabaseExceptionTranslator dbEx
     )
     {
         _repo = repo;
@@ -394,6 +442,7 @@ public sealed class CreatePurchaseDraftHandler
         _c = c;
         _b = b;
         _u = u;
+        _dbEx = dbEx;
     }
 
     public async Task<Result<PurchaseInvoiceDto>> Handle(
@@ -401,6 +450,19 @@ public sealed class CreatePurchaseDraftHandler
         CancellationToken ct
     )
     {
+        var tid = _t.TenantId;
+        var duplicate = await PurchaseAccessKeyDuplicateGuard.FindDuplicateAsync(
+            _repo,
+            tid,
+            cmd.AccessKey,
+            currentInvoiceId: null,
+            ct
+        );
+        var duplicateResult =
+            PurchaseAccessKeyDuplicateGuard.ToConflictIfDuplicate<PurchaseInvoiceDto>(duplicate);
+        if (duplicateResult is not null)
+            return duplicateResult;
+
         var supplier = await _bpRepo.GetByIdAsync(cmd.SupplierId, ct);
         if (supplier is null)
             return Result<PurchaseInvoiceDto>.NotFound("Proveedor no encontrado.");
@@ -424,7 +486,6 @@ public sealed class CreatePurchaseDraftHandler
         if (pt is null)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La condición de pago no existe.");
 
-        var tid = _t.TenantId;
         string? pmName = null;
         if (!string.IsNullOrWhiteSpace(cmd.SriPaymentMethodCode))
             pmName = await _tax.GetPaymentMethodNameAsync(cmd.SriPaymentMethodCode.Trim(), ct);
@@ -471,7 +532,17 @@ public sealed class CreatePurchaseDraftHandler
             inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
 
         await _repo.AddAsync(inv, ct);
-        await _repo.SaveChangesAsync(ct);
+        try
+        {
+            await _repo.SaveChangesAsync(ct);
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
+        {
+            var mapped = PurchaseAccessKeyDuplicateGuard.MapUniqueViolation(info.ConstraintName);
+            if (mapped is not null)
+                return Result<PurchaseInvoiceDto>.Conflict(mapped);
+            throw;
+        }
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
     }
 
@@ -623,6 +694,7 @@ public sealed class UpdatePurchaseDraftHandler
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public UpdatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
@@ -634,7 +706,8 @@ public sealed class UpdatePurchaseDraftHandler
         ISriTaxResolver tax,
         IPurchaseReceptionDocumentRepository receptionRepo,
         ICurrentTenant t,
-        ICurrentUser u
+        ICurrentUser u,
+        IDatabaseExceptionTranslator dbEx
     )
     {
         _repo = repo;
@@ -647,6 +720,7 @@ public sealed class UpdatePurchaseDraftHandler
         _receptionRepo = receptionRepo;
         _t = t;
         _u = u;
+        _dbEx = dbEx;
     }
 
     public async Task<Result<PurchaseInvoiceDto>> Handle(
@@ -665,6 +739,18 @@ public sealed class UpdatePurchaseDraftHandler
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (inv is null)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+
+        var duplicate = await PurchaseAccessKeyDuplicateGuard.FindDuplicateAsync(
+            _repo,
+            _t.TenantId,
+            cmd.AccessKey,
+            currentInvoiceId: inv.Id,
+            ct
+        );
+        var duplicateResult =
+            PurchaseAccessKeyDuplicateGuard.ToConflictIfDuplicate<PurchaseInvoiceDto>(duplicate);
+        if (duplicateResult is not null)
+            return duplicateResult;
 
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTermId)
         {
@@ -845,7 +931,17 @@ public sealed class UpdatePurchaseDraftHandler
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }
 
-        await _repo.SaveChangesAsync(ct);
+        try
+        {
+            await _repo.SaveChangesAsync(ct);
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
+        {
+            var mapped = PurchaseAccessKeyDuplicateGuard.MapUniqueViolation(info.ConstraintName);
+            if (mapped is not null)
+                return Result<PurchaseInvoiceDto>.Conflict(mapped);
+            throw;
+        }
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
     }
 }
@@ -1035,6 +1131,44 @@ public sealed class GetPurchaseByIdHandler
         return inv is null
             ? Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.")
             : Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+    }
+}
+
+public sealed class GetPurchaseByAccessKeyHandler
+    : IRequestHandler<GetPurchaseByAccessKeyQuery, Result<PurchaseAccessKeyLookupDto>>
+{
+    private readonly IPurchaseInvoiceRepository _repo;
+    private readonly ICurrentTenant _t;
+
+    public GetPurchaseByAccessKeyHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t)
+    {
+        _repo = repo;
+        _t = t;
+    }
+
+    public async Task<Result<PurchaseAccessKeyLookupDto>> Handle(
+        GetPurchaseByAccessKeyQuery q,
+        CancellationToken ct
+    )
+    {
+        if (string.IsNullOrWhiteSpace(q.AccessKey))
+            return Result<PurchaseAccessKeyLookupDto>.ValidationFailure(
+                "La clave de acceso es obligatoria."
+            );
+
+        var accessKey = q.AccessKey.Trim();
+        var inv = await _repo.GetByAccessKeyAsync(_t.TenantId, accessKey, ct);
+        return Result<PurchaseAccessKeyLookupDto>.Success(
+            inv is null
+                ? new PurchaseAccessKeyLookupDto(false, null, null, null, accessKey)
+                : new PurchaseAccessKeyLookupDto(
+                    true,
+                    inv.Id,
+                    inv.InvoiceNumber,
+                    inv.SupplierName,
+                    inv.AccessKey
+                )
+        );
     }
 }
 

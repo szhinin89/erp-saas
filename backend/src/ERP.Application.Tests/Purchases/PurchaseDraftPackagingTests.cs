@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
@@ -64,7 +65,8 @@ public sealed class PurchaseDraftPackagingTests
             tax.Object,
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            Mock.Of<IDatabaseExceptionTranslator>()
         );
 
         var command = new UpdatePurchaseDraftCommand(
@@ -137,7 +139,8 @@ public sealed class PurchaseDraftPackagingTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            Mock.Of<IDatabaseExceptionTranslator>()
         );
 
         var result = await handler.Handle(
@@ -188,7 +191,8 @@ public sealed class PurchaseDraftPackagingTests
             Mock.Of<PurchaseTaxResolver>(),
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            Mock.Of<IDatabaseExceptionTranslator>()
         );
 
         var result = await handler.Handle(

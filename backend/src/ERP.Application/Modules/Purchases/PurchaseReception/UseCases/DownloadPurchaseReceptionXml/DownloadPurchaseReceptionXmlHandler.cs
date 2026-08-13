@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using MediatR;
@@ -15,6 +16,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     >
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
+    private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly ISriReceptionXmlProvider _xmlProvider;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
     private readonly ICurrentTenant _tenant;
@@ -24,6 +26,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
 
     public DownloadPurchaseReceptionXmlHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
+        IPurchaseInvoiceRepository purchaseRepo,
         ISriReceptionXmlProvider xmlProvider,
         IPurchaseReceptionDetailProcessor detailProcessor,
         ICurrentTenant tenant,
@@ -33,6 +36,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     )
     {
         _documentRepo = documentRepo;
+        _purchaseRepo = purchaseRepo;
         _xmlProvider = xmlProvider;
         _detailProcessor = detailProcessor;
         _tenant = tenant;
@@ -128,6 +132,12 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         );
         await _documentRepo.SaveChangesAsync(cancellationToken);
 
+        var existingPurchase = await _purchaseRepo.GetByAccessKeyAsync(
+            _tenant.TenantId,
+            document.AccessKey,
+            cancellationToken
+        );
+
         var dto = new DownloadPurchaseReceptionXmlResultDto(
             document.Id,
             PurchaseReceptionMapper.ToDocumentStatusCode(document.Status),
@@ -138,6 +148,8 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.LinesDetectedCount,
             document.LinesProcessedCount,
             document.ProcessingNotes,
+            existingPurchase is not null,
+            existingPurchase?.Id,
             processed.SupplierTradeName
         );
 
