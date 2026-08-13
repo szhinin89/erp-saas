@@ -29,12 +29,15 @@ export function ItemListTable({
 
   if (items.length === 0) {
     return (
-      <p className="empty-state">
-        {t(
-          "items.list.empty",
-          "No se encontraron ítems con los filtros actuales.",
-        )}
-      </p>
+      <div className="empty-state">
+        <p>{t("items.emptyFilteredTitle", "No se encontraron ítems.")}</p>
+        <p>
+          {t(
+            "items.emptyFilteredMessage",
+            "Cambie la búsqueda, estado o tipo para ver más resultados.",
+          )}
+        </p>
+      </div>
     );
   }
 
@@ -109,13 +112,13 @@ export function ItemListTable({
               </td>
               <td>
                 <Badge
-  label={
-    item.isActive
-      ? t("common.active", "Activo")
-      : t("common.inactive", "Inactivo")
-  }
-  variant={item.isActive ? "success" : "neutral"}
-/>
+                  label={
+                    item.isActive
+                      ? t("common.active", "Activo")
+                      : t("common.inactive", "Inactivo")
+                  }
+                  variant={item.isActive ? "success" : "neutral"}
+                />
               </td>
               <td>
                 <div className="prd-row-actions">
@@ -166,4 +169,3 @@ export function ItemListTable({
     </div>
   );
 }
-

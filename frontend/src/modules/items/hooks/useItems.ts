@@ -10,7 +10,35 @@ import type { GetItemsParams } from "../api/itemService";
 import type { ItemDto } from "../../../types/items";
 
 export function useItems(params: GetItemsParams = {}) {
-  const itemsState = useAsync(() => itemService.getAll(params));
+  const {
+    search,
+    sku,
+    isActive,
+    isForSale,
+    isFavorite,
+    isEcommerce,
+    itemTypeId,
+    categoryNodeId,
+    brandId,
+    barcode,
+    pageNumber,
+    pageSize,
+  } = params;
+
+  const itemsState = useAsync(() => itemService.getAll(params), true, [
+    search,
+    sku,
+    isActive,
+    isForSale,
+    isFavorite,
+    isEcommerce,
+    itemTypeId,
+    categoryNodeId,
+    brandId,
+    barcode,
+    pageNumber,
+    pageSize,
+  ]);
 
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);

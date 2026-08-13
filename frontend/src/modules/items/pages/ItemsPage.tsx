@@ -249,7 +249,7 @@ export function ItemsPage() {
                   {t("common.inactive", "Inactivos")}
                 </option>
               </ZhSelect>
-              <select
+              <ZhSelect
                 className="zh-select"
                 value={filterItemTypeId ?? ""}
                 onChange={(e) =>
@@ -264,7 +264,7 @@ export function ItemsPage() {
                     {it.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </div>
 
             <ItemListTable
