@@ -4,6 +4,18 @@
 
 ---
 
+## FLOW-READY-02F.11-FIX01 — Compras: proveedor inactivo y reactivación visible (2026-08-13)
+
+**Estado: COMPLETADO.** Corrección acotada del bloqueo de compras con proveedor inactivo y de la visibilidad operativa en Administración de proveedores.
+
+- Compras muestra el mensaje específico de `data.errors` antes que el genérico de `VALIDATION_ERROR`, con resumen visible de errores en `ZHPageNotice`.
+- Backend mantiene el bloqueo fail-closed de proveedor inactivo y ahora devuelve el nombre legal del proveedor en el mensaje específico cuando está disponible.
+- Administración de proveedores expone filtro explícito `Todos / Activos / Inactivos`, muestra el estado real `BusinessPartner.IsActive` y reutiliza `PATCH /activate` / `DELETE` soft-disable existentes.
+- No se tocaron PricingResolver, Kardex, IStockRepository, posting/accounting, PurchaseCreditNote, PurchaseReturn ni SupplierCredit.
+- Validado con `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npx vitest run src/modules/purchases src/modules/masterData src/modules/items`, `dotnet build backend/src/ERP.slnx`, `dotnet test backend/src/ERP.slnx --filter Purchase`, `dotnet test backend/src/ERP.slnx --filter BusinessPartner`, `dotnet test backend/src/ERP.slnx --filter Items` y `git diff --check`.
+
+---
+
 ## FLOW-READY-02F.10-CLEAN01 — Items Admin SSOT cleanup (2026-08-12)
 
 **Estado: COMPLETADO.** Auditoría y limpieza acotada del Admin de Ítems sin cambios de backend.

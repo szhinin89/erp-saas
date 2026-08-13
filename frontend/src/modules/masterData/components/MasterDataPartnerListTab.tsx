@@ -1,8 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { LoadingState } from "../../../components/PageShell";
-import { ZHBtn, ZHToggle } from "../../../components/zh/ZHForm";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { useI18n } from "../../../i18n/i18n";
-import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
+import type {
+  BusinessPartnerStatusFilter,
+  BusinessPartnerSummaryDto,
+} from "../types/businessPartner.types";
 import type { PartnerUiState } from "../store/masterDataPartnerUiStore";
 import type { StoreApi, UseBoundStore } from "zustand";
 
@@ -22,8 +26,8 @@ export interface MasterDataPartnerListTabProps {
   totalCount: number;
   search: string;
   setSearch: (v: string) => void;
-  showInactive: boolean;
-  setShowInactive: (v: boolean) => void;
+  statusFilter: BusinessPartnerStatusFilter;
+  setStatusFilter: (v: BusinessPartnerStatusFilter) => void;
   page: number;
   totalPages: number;
   setPage: (n: number) => void;
@@ -50,8 +54,8 @@ export function MasterDataPartnerListTab({
   totalCount,
   search,
   setSearch,
-  showInactive,
-  setShowInactive,
+  statusFilter,
+  setStatusFilter,
   page,
   totalPages,
   setPage,
@@ -120,15 +124,28 @@ export function MasterDataPartnerListTab({
             <strong>{partners.length}</strong> {t("masterdata.list.of", "de")}{" "}
             <strong>{totalCount}</strong>
           </span>
-          <ZHToggle
-            label={t(`${prefix}.list.includeInactive`, "Incluir inactivos")}
-            description={t(
-              "masterdata.list.includeInactive.desc",
-              "Muestra también los registros desactivados en la lista.",
-            )}
-            value={showInactive}
-            onChange={setShowInactive}
-          />
+          <label className="md-status-filter">
+            <span className="md-status-filter__label">
+              {t("masterdata.list.statusFilter", "Estado")}
+            </span>
+            <ZhSelect
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as BusinessPartnerStatusFilter)
+              }
+              aria-label={t("masterdata.list.statusFilter", "Estado")}
+            >
+              <option value="all">
+                {t("masterdata.list.status.all", "Todos")}
+              </option>
+              <option value="active">
+                {t("masterdata.list.status.active", "Activos")}
+              </option>
+              <option value="inactive">
+                {t("masterdata.list.status.inactive", "Inactivos")}
+              </option>
+            </ZhSelect>
+          </label>
         </div>
       </div>
 
@@ -257,7 +274,12 @@ export function MasterDataPartnerListTab({
                           disabled={saving}
                           onClick={() => void onActivate(bp.id)}
                         >
-                          {t("common.enable", "Activar")}
+                          {role === "supplier"
+                            ? t(
+                                "masterdata.suppliers.action.activate",
+                                "Activar proveedor",
+                              )
+                            : t("common.enable", "Activar")}
                         </ZHBtn>
                       )}
                       {role === "customer" && canUpdate && onAddAsSupplier && (
@@ -295,7 +317,12 @@ export function MasterDataPartnerListTab({
                           disabled={saving}
                           onClick={() => void onDisable(bp.id)}
                         >
-                          {t("common.disable", "Desactivar")}
+                          {role === "supplier"
+                            ? t(
+                                "masterdata.suppliers.action.deactivate",
+                                "Desactivar proveedor",
+                              )
+                            : t("common.disable", "Desactivar")}
                         </ZHBtn>
                       )}
                     </td>

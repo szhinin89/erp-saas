@@ -36,7 +36,7 @@ const enc = encodeURIComponent;
 
 // ── Query string helpers ──────────────────────────────────────────────────────
 
-function buildSearchQuery(p: SearchBusinessPartnersParams): string {
+export function buildSearchQuery(p: SearchBusinessPartnersParams): string {
   const q = new URLSearchParams();
   if (p.q?.trim()) q.set("q", p.q.trim());
   if (p.isActive !== undefined) q.set("isActive", String(p.isActive));

@@ -406,7 +406,7 @@ public sealed class CreatePurchaseDraftHandler
             return Result<PurchaseInvoiceDto>.NotFound("Proveedor no encontrado.");
         if (!supplier.IsActive)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
-                "El proveedor se encuentra inactivo."
+                $"El proveedor '{supplier.Name.LegalName}' se encuentra inactivo."
             );
 
         var supplierRole = await _roleRepo.GetByTypeAsync(
@@ -659,7 +659,7 @@ public sealed class UpdatePurchaseDraftHandler
             return Result<PurchaseInvoiceDto>.NotFound("Proveedor no encontrado.");
         if (!supplier.IsActive)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
-                "El proveedor se encuentra inactivo."
+                $"El proveedor '{supplier.Name.LegalName}' se encuentra inactivo."
             );
 
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);

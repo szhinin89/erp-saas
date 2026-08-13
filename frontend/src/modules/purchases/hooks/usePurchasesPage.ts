@@ -36,8 +36,9 @@ import {
   roundToTotalAmount,
 } from "../utils/purchaseCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
-import { readApiErrorMessage } from "../../lib/apiError";
+import { readApiErrorMessage, readApiErrorMessages } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
+import { useI18n } from "../../../i18n/i18n";
 import {
   todayIso,
   toLocalIsoDate,
@@ -93,6 +94,7 @@ type SearchFilter = "all" | string;
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function usePurchasesPage() {
+  const { t } = useI18n();
   // ── Page state ─────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("nuevo");
   const [listItems, setListItems] = useState<PurchaseListItemDto[]>([]);
@@ -105,6 +107,7 @@ export function usePurchasesPage() {
   const listPageSize = 25;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [saveErrorDetails, setSaveErrorDetails] = useState<string[]>([]);
   const [editing, setEditing] = useState<PurchaseInvoiceDto | null>(null);
   // Aviso no bloqueante cuando el borrador viene de una Recepción Electrónica con
   // ProcessingStatus PROCESSED_WITH_WARNINGS (algunas líneas del XML no se pudieron interpretar).
@@ -171,6 +174,11 @@ export function usePurchasesPage() {
 
   // ── Line key counter ───────────────────────────────────────────────
   const [lineKey, setLineKey] = useState(1);
+
+  const showSaveError = useCallback((error: string, details: string[] = []) => {
+    setSaveError(error);
+    setSaveErrorDetails(details);
+  }, []);
 
   // ── React Hook Form ────────────────────────────────────────────────
   const form = useForm<PurchaseInvoiceFormValues>({
@@ -748,7 +756,7 @@ export function usePurchasesPage() {
   const resetForm = useCallback(() => {
     reset(emptyPurchaseInvoiceForm());
     setEditing(null);
-    setSaveError("");
+    showSaveError("");
     setLineKey(1);
     setSupplierProfile(null);
     setWhPreview(null);
@@ -761,7 +769,7 @@ export function usePurchasesPage() {
     setGlobalResults([]);
     setGlobalOpen(false);
     setGlobalFilter("all");
-  }, [reset]);
+  }, [reset, showSaveError]);
 
   // ── Load for edit ──────────────────────────────────────────────────
   const loadForEdit = useCallback(
@@ -909,11 +917,11 @@ export function usePurchasesPage() {
 
         setTab("nuevo");
       } catch {
-        setSaveError("Error al cargar la compra.");
+        showSaveError("Error al cargar la compra.");
         message.error("No se pudo cargar la compra.");
       }
     },
-    [reset, fetchItemContext, getValues, setValue],
+    [reset, fetchItemContext, getValues, setValue, showSaveError],
   );
 
   // ── Load from Recepción Electrónica (PurchaseReceptionDocument → draft) ────
@@ -1017,7 +1025,7 @@ export function usePurchasesPage() {
         setTab("nuevo");
       } catch (err) {
         const backendMessage = readApiErrorMessage(err);
-        setSaveError(
+        showSaveError(
           backendMessage ??
             "No se pudo generar el borrador de compra desde el documento de recepción.",
         );
@@ -1026,12 +1034,12 @@ export function usePurchasesPage() {
         );
       }
     },
-    [reset],
+    [reset, showSaveError],
   );
 
   // ── Save (create/update) ───────────────────────────────────────────
   const handleSave = handleSubmit(async (data) => {
-    setSaveError("");
+    showSaveError("");
     setSaving(true);
     try {
       const payload = {
@@ -1079,12 +1087,18 @@ export function usePurchasesPage() {
       setTab("listado");
       fetchList();
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, setFieldError, (msg) =>
-        setSaveError(msg),
-      );
-      if (!applied) {
+      const applied = applyServerErrors(err, setFieldError);
+      const apiMessages = readApiErrorMessages(err);
+      if (apiMessages.length > 0) {
+        const title = t(
+          "purchases.validation.saveBlocked",
+          "No se puede guardar la compra.",
+        );
+        showSaveError(title, apiMessages);
+        message.error(`${title} ${apiMessages[0]}`);
+      } else if (!applied) {
         const e = err as ApiErrorLike;
-        setSaveError(
+        showSaveError(
           e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
             e?.message ??
@@ -1117,7 +1131,7 @@ export function usePurchasesPage() {
       fetchList();
     } catch (err: unknown) {
       const e = err as ApiErrorLike;
-      setSaveError(
+      showSaveError(
         e?.response?.data?.message?.user ??
           e?.response?.data?.data?.errors?.[0] ??
           e?.message ??
@@ -1125,7 +1139,7 @@ export function usePurchasesPage() {
       );
     }
     setSaving(false);
-  }, [editing, ptRows, resetForm, fetchList]);
+  }, [editing, ptRows, resetForm, fetchList, showSaveError]);
 
   // ── Cancel purchase ────────────────────────────────────────────────
   const handleCancel = useCallback(
@@ -1141,7 +1155,7 @@ export function usePurchasesPage() {
         fetchList();
       } catch (err: unknown) {
         const e = err as ApiErrorLike;
-        setSaveError(
+        showSaveError(
           e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
             e?.message ??
@@ -1150,7 +1164,7 @@ export function usePurchasesPage() {
       }
       setSaving(false);
     },
-    [editing, resetForm, fetchList],
+    [editing, resetForm, fetchList, showSaveError],
   );
 
   // ── Discount ───────────────────────────────────────────────────────
@@ -1164,10 +1178,10 @@ export function usePurchasesPage() {
         await loadForEdit(editing.id);
         message.success("Descuento aplicado correctamente.");
       } catch {
-        setSaveError("Error al aplicar descuento.");
+      showSaveError("Error al aplicar descuento.");
       }
     },
-    [editing, loadForEdit],
+    [editing, loadForEdit, showSaveError],
   );
 
   // ── Freight/Recalculate ────────────────────────────────────────────
@@ -1180,9 +1194,9 @@ export function usePurchasesPage() {
       await loadForEdit(editing.id);
       message.success("Flete distribuido correctamente.");
     } catch {
-      setSaveError("Error al distribuir flete.");
+      showSaveError("Error al distribuir flete.");
     }
-  }, [editing, loadForEdit]);
+  }, [editing, loadForEdit, showSaveError]);
 
   const handleRecalculate = useCallback(async () => {
     if (!editing) return;
@@ -1193,9 +1207,9 @@ export function usePurchasesPage() {
       await loadForEdit(editing.id);
       message.success("Compra recalculada correctamente.");
     } catch {
-      setSaveError("Error al recalcular.");
+      showSaveError("Error al recalcular.");
     }
-  }, [editing, loadForEdit]);
+  }, [editing, loadForEdit, showSaveError]);
 
   // ── Withholding ────────────────────────────────────────────────────
   const handleCalcRetention = useCallback(async () => {
@@ -1204,10 +1218,10 @@ export function usePurchasesPage() {
     try {
       setWhPreview(await purchaseService.retentionPreview(editing.id));
     } catch {
-      setSaveError("Error al calcular retención.");
+      showSaveError("Error al calcular retención.");
     }
     setWhLoading(false);
-  }, [editing]);
+  }, [editing, showSaveError]);
 
   const handleIssueWithholding = useCallback(
     async (epId: string) => {
@@ -1228,7 +1242,7 @@ export function usePurchasesPage() {
         message.success("Retención emitida correctamente.");
       } catch (err: unknown) {
         const e = err as ApiErrorLike;
-        setSaveError(
+        showSaveError(
           e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
             "Error al emitir retención.",
@@ -1236,7 +1250,7 @@ export function usePurchasesPage() {
       }
       setWhLoading(false);
     },
-    [editing],
+    [editing, showSaveError],
   );
 
   const handleCancelWithholding = useCallback(
@@ -1253,13 +1267,13 @@ export function usePurchasesPage() {
         message.success("Retención anulada correctamente.");
       } catch (err: unknown) {
         const e = err as ApiErrorLike;
-        setSaveError(
+        showSaveError(
           e?.response?.data?.message?.user ?? "Error al anular retención.",
         );
       }
       setWhLoading(false);
     },
-    [withholding],
+    [withholding, showSaveError],
   );
 
   // ── Schedule operations ────────────────────────────────────────────
@@ -1360,7 +1374,8 @@ export function usePurchasesPage() {
     listPageSize,
     saving,
     saveError,
-    setSaveError,
+    saveErrorDetails,
+    setSaveError: showSaveError,
     editing,
     receptionProcessingNotice,
     setReceptionProcessingNotice,

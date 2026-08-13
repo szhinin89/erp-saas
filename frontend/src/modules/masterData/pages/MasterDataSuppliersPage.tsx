@@ -572,8 +572,8 @@ export function MasterDataSuppliersPage() {
             totalCount={page.totalCount}
             search={page.search}
             setSearch={page.setSearch}
-            showInactive={page.showInactive}
-            setShowInactive={page.setShowInactive}
+            statusFilter={page.statusFilter}
+            setStatusFilter={page.setStatusFilter}
             page={page.page}
             totalPages={page.totalPages}
             setPage={page.setPage}

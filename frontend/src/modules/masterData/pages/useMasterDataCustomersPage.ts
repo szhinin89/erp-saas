@@ -4,6 +4,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
+  BusinessPartnerStatusFilter,
   BusinessPartnerSummaryDto,
   CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
@@ -12,6 +13,12 @@ import type {
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
+
+function toIsActiveParam(status: BusinessPartnerStatusFilter): boolean | undefined {
+  if (status === "active") return true;
+  if (status === "inactive") return false;
+  return undefined;
+}
 
 export function useMasterDataCustomersPage() {
   const { canShow } = usePermissionsUi();
@@ -23,7 +30,8 @@ export function useMasterDataCustomersPage() {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
-  const [showInactive, setShowInactive] = useState(false);
+  const [statusFilter, setStatusFilter] =
+    useState<BusinessPartnerStatusFilter>("active");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 50;
 
@@ -45,13 +53,13 @@ export function useMasterDataCustomersPage() {
     () =>
       businessPartnerFacade.searchBusinessPartnersPaged({
         q: debouncedSearch || undefined,
-        isActive: showInactive ? undefined : true,
+        isActive: toIsActiveParam(statusFilter),
         roles: [RoleTypeEnum.Customer], // replaces legacy isCustomer: true
         skip: (page - 1) * PAGE_SIZE,
         take: PAGE_SIZE,
       }),
     canView,
-    [debouncedSearch, showInactive, page],
+    [debouncedSearch, statusFilter, page],
   );
 
   const customers = listState.data?.items ?? [];
@@ -63,8 +71,8 @@ export function useMasterDataCustomersPage() {
     setSearch(v);
     setPage(1);
   };
-  const setInactiveReset = (v: boolean) => {
-    setShowInactive(v);
+  const setStatusFilterReset = (v: BusinessPartnerStatusFilter) => {
+    setStatusFilter(v);
     setPage(1);
   };
 
@@ -317,8 +325,8 @@ export function useMasterDataCustomersPage() {
     canConfigure,
     search,
     setSearch: setSearchReset,
-    showInactive,
-    setShowInactive: setInactiveReset,
+    statusFilter,
+    setStatusFilter: setStatusFilterReset,
     page,
     setPage,
     totalCount,

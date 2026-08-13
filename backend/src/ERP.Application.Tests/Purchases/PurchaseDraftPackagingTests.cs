@@ -105,6 +105,114 @@ public sealed class PurchaseDraftPackagingTests
         dtoLine.BaseUomCode.Should().Be("UNIT");
     }
 
+    [Fact]
+    public async Task CreateDraft_con_proveedor_inactivo_retorna_error_especifico_y_no_persiste()
+    {
+        const string supplierName = "Proveedor Inactivo S.A.";
+        var supplier = BusinessPartner.Create(
+            TenantId,
+            "04",
+            "1791352688001",
+            2,
+            supplierName,
+            UserId
+        );
+        supplier.Deactivate(UserId);
+
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+        var bpRepo = new Mock<IBusinessPartnerRepository>();
+        bpRepo
+            .Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(supplier);
+
+        var handler = new CreatePurchaseDraftHandler(
+            repo.Object,
+            bpRepo.Object,
+            Mock.Of<IBusinessPartnerRoleRepository>(),
+            Mock.Of<IPaymentTermRepository>(),
+            Mock.Of<IItemRepository>(),
+            Mock.Of<IWarehouseRepository>(),
+            Mock.Of<PurchaseTaxResolver>(),
+            Mock.Of<IPurchaseReceptionDocumentRepository>(),
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+        );
+
+        var result = await handler.Handle(
+            new CreatePurchaseDraftCommand(
+                SupplierId,
+                "01",
+                "001-001-000000001",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                [new PurchaseLineInput(null, "Servicio", 1m, 10m, "10")]
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Be($"El proveedor '{supplierName}' se encuentra inactivo.");
+        repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateDraft_con_proveedor_inactivo_retorna_error_especifico_y_no_modifica_compra()
+    {
+        const string supplierName = "Proveedor Inactivo S.A.";
+        var supplier = BusinessPartner.Create(
+            TenantId,
+            "04",
+            "1791352688001",
+            2,
+            supplierName,
+            UserId
+        );
+        supplier.Deactivate(UserId);
+
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+        var bpRepo = new Mock<IBusinessPartnerRepository>();
+        bpRepo
+            .Setup(r => r.GetByIdAsync(SupplierId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(supplier);
+
+        var handler = new UpdatePurchaseDraftHandler(
+            repo.Object,
+            bpRepo.Object,
+            Mock.Of<IBusinessPartnerRoleRepository>(),
+            Mock.Of<IPaymentTermRepository>(),
+            Mock.Of<IItemRepository>(),
+            Mock.Of<IWarehouseRepository>(),
+            Mock.Of<PurchaseTaxResolver>(),
+            Mock.Of<IPurchaseReceptionDocumentRepository>(),
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+        );
+
+        var result = await handler.Handle(
+            new UpdatePurchaseDraftCommand(
+                Guid.NewGuid(),
+                SupplierId,
+                "01",
+                "001-001-000000001",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                [new PurchaseLineInput(null, "Servicio", 1m, 10m, "10")]
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Be($"El proveedor '{supplierName}' se encuentra inactivo.");
+        repo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static Item CreateItemWithPackagedPurchasePresentation()
     {
         var item = Item.Create(

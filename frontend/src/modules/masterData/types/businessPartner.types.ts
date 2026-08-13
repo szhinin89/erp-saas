@@ -392,6 +392,8 @@ export type SearchBusinessPartnersParams = {
   take?: number;
 };
 
+export type BusinessPartnerStatusFilter = "all" | "active" | "inactive";
+
 // ── Picker types (simplificados — sin legacyId) ───────────────────────────────
 
 /**

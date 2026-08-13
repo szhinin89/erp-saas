@@ -5,18 +5,25 @@ function pickString(v: unknown): string | null {
   return null;
 }
 
-function pickArrayString(
-  record: Record<string, unknown>,
-  ...keys: string[]
-): string | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (Array.isArray(value) && value.length > 0) {
-      const m = pickString(value[0]);
-      if (m) return m;
-    }
-  }
-  return null;
+function pickStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const message = pickString(item);
+    return message ? [message] : [];
+  });
+}
+
+function pickErrorMapStrings(value: unknown): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.values(value as Record<string, unknown>).flatMap((entry) =>
+    pickStringArray(entry),
+  );
+}
+
+function pickErrors(value: unknown): string[] {
+  const fromArray = pickStringArray(value);
+  if (fromArray.length > 0) return fromArray;
+  return pickErrorMapStrings(value);
 }
 
 function pickNestedString(
@@ -31,52 +38,31 @@ function pickNestedString(
   return null;
 }
 
-function pickNestedErrors(
+function pickNestedErrorStrings(
   o: Record<string, unknown>,
   container: string,
   field: string,
-): string | null {
+): string[] {
   const nested = o[container];
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-    return pickArrayString(nested as Record<string, unknown>, field);
+    return pickErrors((nested as Record<string, unknown>)[field]);
   }
-  return null;
+  return [];
 }
 
-/** Extrae el primer mensaje de un mapa { campo: string[] } anidado en container.field */
-function pickNestedErrorMap(
-  o: Record<string, unknown>,
-  container: string,
-  field: string,
-): string | null {
-  const nested = o[container];
-  if (!nested || typeof nested !== "object" || Array.isArray(nested))
-    return null;
-  const map = (nested as Record<string, unknown>)[field];
-  if (!map || typeof map !== "object" || Array.isArray(map)) return null;
-  for (const value of Object.values(map as Record<string, unknown>)) {
-    if (Array.isArray(value) && value.length > 0) {
-      const m = pickString(value[0]);
-      if (m) return m;
-    }
-  }
-  return null;
-}
-
-function messageFromRecord(o: Record<string, unknown>): string | null {
+function messagesFromRecord(o: Record<string, unknown>): string[] {
   // 1. data.errors — array plano o mapa campo→[msgs] (formato 422 estructurado).
-  const dataErrors =
-    pickNestedErrors(o, "data", "errors") ??
-    pickNestedErrors(o, "Data", "Errors") ??
-    pickNestedErrorMap(o, "data", "errors") ??
-    pickNestedErrorMap(o, "Data", "Errors");
-  if (dataErrors) return dataErrors;
+  const dataErrors = [
+    ...pickNestedErrorStrings(o, "data", "errors"),
+    ...pickNestedErrorStrings(o, "Data", "Errors"),
+  ];
+  if (dataErrors.length > 0) return dataErrors;
 
   // 2. message.user (o Message.User) — mensaje genérico del catálogo por code.
   const catalogMessage =
     pickNestedString(o, "message", "user") ??
     pickNestedString(o, "Message", "User");
-  if (catalogMessage) return catalogMessage;
+  if (catalogMessage) return [catalogMessage];
 
   // 3. Fallbacks para respuestas que no pasan por ResponseFactory.
   const direct =
@@ -85,21 +71,15 @@ function messageFromRecord(o: Record<string, unknown>): string | null {
     pickString(o.title) ??
     pickString(o.detail) ??
     pickString(o.error);
-  if (direct) return direct;
+  if (direct) return [direct];
 
   // 4. Compatibilidad con respuestas ModelState de ASP.NET (errors: { field: [msgs] })
-  const errors = o.errors;
-  if (errors && typeof errors === "object" && !Array.isArray(errors)) {
-    const firstKey = Object.keys(errors as Record<string, unknown>)[0];
-    if (firstKey) {
-      const arr = (errors as Record<string, unknown>)[firstKey];
-      if (Array.isArray(arr) && arr.length > 0) {
-        const m = pickString(arr[0]);
-        if (m) return m;
-      }
-    }
-  }
-  return null;
+  const modelStateErrors = pickErrorMapStrings(o.errors);
+  return modelStateErrors;
+}
+
+function messageFromRecord(o: Record<string, unknown>): string | null {
+  return messagesFromRecord(o)[0] ?? null;
 }
 
 /**
@@ -134,6 +114,38 @@ export function readApiErrorMessage(err: unknown): string | null {
 }
 
 /**
+ * Extrae todos los mensajes legibles del cuerpo de error de la API.
+ * Prioriza data.errors sobre message.user para no ocultar validaciones específicas
+ * detrás del mensaje genérico del catálogo.
+ */
+export function readApiErrorMessages(err: unknown): string[] {
+  if (!axios.isAxiosError(err) || !err.response) return [];
+
+  const data = err.response.data;
+  if (data == null) return [];
+
+  if (typeof data === "string") {
+    const s = data.trim();
+    if (!s || s.startsWith("<")) return [];
+    try {
+      const j = JSON.parse(s) as unknown;
+      if (j && typeof j === "object" && !Array.isArray(j)) {
+        return messagesFromRecord(j as Record<string, unknown>);
+      }
+    } catch {
+      return s.length < 400 ? [s] : [];
+    }
+    return [];
+  }
+
+  if (typeof data === "object" && !Array.isArray(data)) {
+    return messagesFromRecord(data as Record<string, unknown>);
+  }
+
+  return [];
+}
+
+/**
  * Extrae el mapa campo→mensajes de un error 422 del backend.
  * Formato esperado en data.errors: { fieldName: string[] }
  * Retorna null si el error no es 422 o no tiene ese formato.
@@ -147,8 +159,11 @@ export function parseValidationErrors(
   const inner = responseData["data"];
   if (!inner || typeof inner !== "object" || Array.isArray(inner)) return null;
   const errors = (inner as Record<string, unknown>)["errors"];
-  if (!errors || typeof errors !== "object" || Array.isArray(errors))
-    return null;
+  if (Array.isArray(errors)) {
+    const messages = pickStringArray(errors);
+    return messages.length > 0 ? { _: messages } : null;
+  }
+  if (!errors || typeof errors !== "object") return null;
   return errors as Record<string, string[]>;
 }
 

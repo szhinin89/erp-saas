@@ -243,7 +243,20 @@ export function PurchasesPage() {
         <div>
           {/* Error/Validation Banners */}
           {ctx.saveError && (
-            <ZHPageNotice variant="error" message={ctx.saveError} />
+            <ZHPageNotice
+              variant="error"
+              message={ctx.saveError}
+              detail={
+                ctx.saveErrorDetails.length > 0
+                  ? ctx.saveErrorDetails.map((err) => `- ${err}`).join("\n")
+                  : null
+              }
+              className={
+                ctx.saveErrorDetails.length > 0
+                  ? "pf-validation-summary"
+                  : undefined
+              }
+            />
           )}
           {ctx.receptionProcessingNotice && (
             <ZHPageNotice
