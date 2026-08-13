@@ -59,6 +59,10 @@ import {
   buildPurchaseLineFromItem,
   normalizePurchaseLinePresentation,
 } from "../utils/purchaseItemProfile";
+import {
+  getPurchaseLineBlockingReasons,
+  getPurchaseLineReadiness,
+} from "../utils/purchaseLineReadiness";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -89,6 +93,8 @@ type SearchFilter = "all" | string;
 const DUPLICATE_PURCHASE_TITLE = "No se puede crear esta compra.";
 const DUPLICATE_PURCHASE_DETAIL =
   "Ya existe una compra registrada con esta clave de acceso SRI.";
+const SUPPLIER_CODE_CONFLICT_DETAIL =
+  "El código de proveedor ya está asociado a otro ítem.";
 
 // ── Hook ───────────────────────────────────────────────────────────────
 
@@ -239,6 +245,43 @@ export function usePurchasesPage() {
         .filter((l) => l.purchaseReceptionLineId && !l.itemId)
         .map((l) => l.description || "(sin descripción)"),
     [lines],
+  );
+
+  const lineReadinessByKey = useMemo(() => {
+    const entries = lines.map((line) => [
+      line._key,
+      getPurchaseLineReadiness(line, {
+        globalWarehouseId: formWatch.globalWarehouseId,
+        vatRates: vatRatesMap,
+        iceRates: iceRatesMap,
+        t,
+      }),
+    ] as const);
+    return Object.fromEntries(entries);
+  }, [formWatch.globalWarehouseId, iceRatesMap, lines, t, vatRatesMap]);
+
+  const lineReadinessBlockers = useMemo(
+    () =>
+      getPurchaseLineBlockingReasons(lines, {
+        globalWarehouseId: formWatch.globalWarehouseId,
+        vatRates: vatRatesMap,
+        iceRates: iceRatesMap,
+        t,
+      }),
+    [formWatch.globalWarehouseId, iceRatesMap, lines, t, vatRatesMap],
+  );
+  const hasLineReadinessBlockers = lineReadinessBlockers.length > 0;
+  const lineReadinessBlockerDetails = useMemo(
+    () =>
+      lineReadinessBlockers.map(
+        ({ index, readiness }) =>
+          `${t("purchases.lines.lineNumber", "Línea")} ${index + 1}: ${readiness.label}`,
+      ),
+    [lineReadinessBlockers, t],
+  );
+  const lineReadinessBlockedTitle = t(
+    "purchases.lineReadiness.saveBlockedTitle",
+    "No se puede guardar la compra.",
   );
 
   const ptRowsSum = ptRows.reduce((s, r) => s + r.amount, 0);
@@ -517,9 +560,11 @@ export function usePurchasesPage() {
       const currentLines = getValues("lines");
       const src = currentLines.find((l) => l._key === key);
       if (src) {
+        const { _readinessIssue: _discard, ...copy } = src;
+        void _discard;
         setValue("lines", [
           ...currentLines,
-          { ...src, _key: lineKey, context: undefined },
+          { ...copy, _key: lineKey, context: undefined },
         ]);
         setLineKey((k) => k + 1);
       }
@@ -607,6 +652,7 @@ export function usePurchasesPage() {
                   itemId: updated.itemId ?? undefined,
                   itemMatchStatus: updated.matchStatus,
                   description: itemLabel,
+                  _readinessIssue: undefined,
                 }
               : l,
           ),
@@ -615,9 +661,19 @@ export function usePurchasesPage() {
         if (updated.itemId && wh)
           void fetchItemContext(key, updated.itemId, wh);
       } catch (err) {
-        message.error(
-          readApiErrorMessage(err) ?? "No se pudo vincular el ítem.",
-        );
+        const errorMessage = readApiErrorMessage(err);
+        if (errorMessage === SUPPLIER_CODE_CONFLICT_DETAIL) {
+          const latest = getValues("lines");
+          setValue(
+            "lines",
+            latest.map((l) =>
+              l._key === key
+                ? { ...l, _readinessIssue: "SUPPLIER_CODE_CONFLICT" }
+                : l,
+            ),
+          );
+        }
+        message.error(errorMessage ?? "No se pudo vincular el ítem.");
       }
       setMatchingKey(null);
     },
@@ -656,14 +712,27 @@ export function usePurchasesPage() {
                   baseUomCode: line.context?.baseUomCode ?? line.baseUomCode,
                   conversionFactor,
                   quantityInBaseUom: line.quantity * conversionFactor,
+                  _readinessIssue: undefined,
                 }
               : l,
           ),
         );
         message.success("Presentación guardada para este proveedor.");
       } catch (err) {
+        const errorMessage = readApiErrorMessage(err);
+        if (errorMessage === SUPPLIER_CODE_CONFLICT_DETAIL) {
+          const latest = getValues("lines");
+          setValue(
+            "lines",
+            latest.map((l) =>
+              l._key === key
+                ? { ...l, _readinessIssue: "SUPPLIER_CODE_CONFLICT" }
+                : l,
+            ),
+          );
+        }
         message.error(
-          readApiErrorMessage(err) ??
+          errorMessage ??
             "No se pudo guardar la presentación para este proveedor.",
         );
       }
@@ -703,6 +772,7 @@ export function usePurchasesPage() {
                   itemMatchStatus: updated.matchStatus,
                   description: "",
                   context: undefined,
+                  _readinessIssue: undefined,
                 }
               : l,
           ),
@@ -1174,6 +1244,13 @@ export function usePurchasesPage() {
       true,
     );
     if (inactiveSupplier) return;
+    if (hasLineReadinessBlockers) {
+      showSaveError(lineReadinessBlockedTitle, lineReadinessBlockerDetails);
+      message.error(
+        `${lineReadinessBlockedTitle} ${lineReadinessBlockerDetails[0] ?? ""}`,
+      );
+      return;
+    }
     if (!canUseSriDocTypes) {
       const title = t(
         "purchases.validation.sriDocTypesUnavailableTitle",
@@ -1641,6 +1718,11 @@ export function usePurchasesPage() {
       ? formatSupplierInactiveMessage(supplierProfile.name)
       : "",
     supplierInactiveDetail,
+    lineReadinessByKey,
+    lineReadinessBlockers,
+    hasLineReadinessBlockers,
+    lineReadinessBlockerDetails,
+    lineReadinessBlockedTitle,
     localSummary,
     localTotal,
     hasPersistedSchedule,

@@ -42,6 +42,7 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   // Runtime-only context (not sent to API)
   context: z.custom<PurchaseItemContextDto>().optional(),
   _contextLoading: z.boolean().optional(),
+  _readinessIssue: z.enum(["SUPPLIER_CODE_CONFLICT"]).optional(),
   // Detalle XML de solo lectura (Recepción Electrónica → Crear compra) — nunca se envía al API.
   // itemMatchStatus solo viene informado en líneas de Recepción ya conciliadas (Item Matching);
   // las líneas de Compra Manual nunca lo traen.

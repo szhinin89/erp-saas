@@ -48,6 +48,7 @@ import {
   buildPurchaseItemProfile,
   resolvePurchaseItemSelection,
 } from "../utils/purchaseItemProfile";
+import type { PurchaseLineReadinessAction } from "../utils/purchaseLineReadiness";
 import "../../../styles/shared/items-catalog.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../styles/purchases-invoice.css";
@@ -315,6 +316,16 @@ export function PurchasesPage() {
               variant="error"
               message={ctx.supplierInactiveMessage}
               detail={ctx.supplierInactiveDetail}
+            />
+          )}
+          {ctx.hasLineReadinessBlockers && (
+            <ZHPageNotice
+              variant="warning"
+              message={ctx.lineReadinessBlockedTitle}
+              detail={ctx.lineReadinessBlockerDetails
+                .map((detail) => `- ${detail}`)
+                .join("\n")}
+              className="pf-validation-summary"
             />
           )}
           {ctx.errors.supplierId && (
@@ -980,6 +991,7 @@ export function PurchasesPage() {
                 !ctx.canUseSriDocTypes ||
                 ctx.isDuplicateAccessKeyBlocking ||
                 ctx.isSupplierInactiveBlocking ||
+                ctx.hasLineReadinessBlockers ||
                 ctx.lines.length === 0
               }
             >
@@ -1158,6 +1170,35 @@ type XmlConfirmChecklistSummary = {
     icon: string;
   }[];
 };
+
+function readinessActionLabel(
+  action: PurchaseLineReadinessAction | undefined,
+  t: TFunction,
+) {
+  switch (action) {
+    case "SELECT_ITEM":
+      return t("purchases.lineReadiness.action.selectItem", "Seleccionar ítem");
+    case "CREATE_ITEM":
+      return t("purchases.lineReadiness.action.createItem", "Crear ítem");
+    case "SELECT_PRESENTATION":
+      return t(
+        "purchases.lineReadiness.action.selectPresentation",
+        "Seleccionar presentación",
+      );
+    case "SAVE_PRESENTATION":
+      return t(
+        "purchases.lineReadiness.action.savePresentation",
+        "Guardar presentación",
+      );
+    case "SELECT_WAREHOUSE":
+      return t("purchases.lineReadiness.action.selectWarehouse", "Asignar bodega");
+    case "REVIEW_TAX":
+      return t("purchases.lineReadiness.action.reviewTax", "Revisar impuesto");
+    case "NONE":
+    case undefined:
+      return "";
+  }
+}
 
 function buildXmlConfirmChecklist(
   lines: PurchaseLineDraft[],
@@ -1408,6 +1449,15 @@ function PurchaseLineCard({
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
   const vm = buildPurchaseLinePresentation(l, t);
+  const readiness = ctx.lineReadinessByKey[l._key];
+  const primaryReadinessAction = readinessActionLabel(readiness?.primaryAction, t);
+  const secondaryReadinessAction = readinessActionLabel(
+    readiness?.secondaryAction,
+    t,
+  );
+  const readinessActions = [primaryReadinessAction, secondaryReadinessAction]
+    .filter(Boolean)
+    .join(" / ");
   const packagingLevels = ctxData?.packagingLevels ?? [];
   const handlePackagingChange = (packagingLevelId: string) => {
     const selected = packagingLevels.find((p) => p.id === packagingLevelId);
@@ -1436,6 +1486,7 @@ function PurchaseLineCard({
                   const patch = resolvePurchaseItemSelection(p, {
                     existingLine: l,
                   });
+                  ctx.updateLine(l._key, "_readinessIssue", undefined);
                   if (patch.vatCode !== undefined)
                     ctx.updateLine(l._key, "vatCode", patch.vatCode);
                   if (patch.iceCode !== undefined)
@@ -1515,6 +1566,7 @@ function PurchaseLineCard({
                       ctx.updateLine(l._key, "itemId", undefined);
                       ctx.updateLine(l._key, "description", "");
                       ctx.updateLine(l._key, "context", undefined);
+                      ctx.updateLine(l._key, "_readinessIssue", undefined);
                     }}
                   >
                     <span
@@ -1626,12 +1678,38 @@ function PurchaseLineCard({
         </div>
       </div>
 
-      {/* Resumen de estado — interpreta visualmente estados ya existentes, ninguno nuevo. */}
+      {/* Resumen de estado de preparación: solo interpreta datos ya presentes en la línea. */}
       <div className="pdl-line__status">
-        <Badge
-          variant={STATUS_TONE_VARIANT[vm.status.tone]}
-          label={`${vm.status.icon} ${vm.status.label}`}
-        />
+        {readiness ? (
+          <>
+            <Badge
+              variant={STATUS_TONE_VARIANT[readiness.tone]}
+              label={readiness.label}
+            />
+            {readiness.blocking && (
+              <div className="pdl-cost-alert">
+                <span className="material-symbols-outlined pdl-cost-alert__icon">
+                  warning
+                </span>
+                <span>
+                  {readiness.detail}
+                  {readinessActions && (
+                    <>
+                      {" "}
+                      {t("purchases.lineReadiness.nextAction", "Acción")}:{" "}
+                      {readinessActions}
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <Badge
+            variant={STATUS_TONE_VARIANT[vm.status.tone]}
+            label={`${vm.status.icon} ${vm.status.label}`}
+          />
+        )}
       </div>
 
       {/* 1. Qué llegó del proveedor — siempre visible, con nota cuando la línea no viene de XML. */}
@@ -1997,6 +2075,7 @@ function CreateItemLineAction({
       "description",
       patch.description ?? `${item.sku} — ${item.shortName}`,
     );
+    ctx.updateLine(l._key, "_readinessIssue", undefined);
     // El Item recién creado desde Compras trae su propio IVA de compra (ahora obligatorio en
     // ItemEditorModal) — se refleja de inmediato en la línea, sin depender de fetchItemContext
     // (que solo llena `context` para mostrar, no el campo `vatCode` del formulario).
@@ -2069,6 +2148,7 @@ function UpdateItemAction({
       "description",
       patch.description ?? `${item.sku} — ${item.shortName}`,
     );
+    ctx.updateLine(l._key, "_readinessIssue", undefined);
     // Si el usuario cambió el IVA de compra al editar el Item desde esta línea, la línea debe
     // reflejar el valor vigente del Item de inmediato.
     ctx.updateLine(l._key, "vatCode", patch.vatCode ?? "");
@@ -2154,6 +2234,7 @@ function ReceptionCreateItemAction({
               itemId,
               itemMatchStatus: matchStatus,
               description: label,
+              _readinessIssue: undefined,
               // Solo se pisa si viene un IVA de compra real — el matching manual (sin `item`
               // recién creado) no debe borrar un vatCode ya cargado en la línea.
               ...(vatCode !== undefined ? { vatCode: vatCode ?? "" } : {}),
