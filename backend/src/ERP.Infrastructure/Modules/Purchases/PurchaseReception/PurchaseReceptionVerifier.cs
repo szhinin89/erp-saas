@@ -44,6 +44,7 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
         foreach (var record in records)
         {
             var supplierExists = false;
+            bool? supplierIsActive = null;
 
             var businessPartner = await _bpRepo.GetByIdentificationAsync(
                 TaxIdentification.SriRuc,
@@ -52,6 +53,7 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
             );
             if (businessPartner is not null)
             {
+                supplierIsActive = businessPartner.IsActive;
                 var supplierRole = await _roleRepo.GetByTypeAsync(
                     businessPartner.Id,
                     RoleType.Supplier,
@@ -108,7 +110,8 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                     supplierId,
                     purchaseId,
                     affectedPurchaseExists,
-                    affectedPurchaseId
+                    affectedPurchaseId,
+                    supplierIsActive
                 )
             );
         }

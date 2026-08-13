@@ -40,7 +40,7 @@ export function PurchaseReceptionActionsCell({
     </ZHBtn>
   );
 
-  if (row.purchaseExists && row.purchaseId) {
+  if (row.purchaseExists) {
     return (
       <div className="pur-actions-cell">
         <Badge
@@ -50,23 +50,56 @@ export function PurchaseReceptionActionsCell({
             "Compra ya ingresada al sistema",
           )}
         />
-        <ZHBtn
-          variant="secondary"
-          size="xs"
-          type="button"
-          onClick={() =>
-            window.open(
-              `/purchases?invoiceId=${row.purchaseId}`,
-              "_blank",
-              "noopener,noreferrer",
-            )
-          }
-        >
-          {t(
-            "purchases.duplicate.viewExisting",
-            "Ver compra existente",
+        {row.purchaseId && (
+          <ZHBtn
+            variant="secondary"
+            size="xs"
+            type="button"
+            onClick={() =>
+              window.open(
+                `/purchases?invoiceId=${row.purchaseId}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            {t(
+              "purchases.duplicate.viewExisting",
+              "Ver compra existente",
+            )}
+          </ZHBtn>
+        )}
+        {viewXmlButton}
+      </div>
+    );
+  }
+
+  if (row.supplierExists && row.supplierIsActive === false) {
+    return (
+      <div className="pur-actions-cell">
+        <Badge
+          variant="warning"
+          label={t(
+            "purchases.reception.supplier.inactive",
+            "Proveedor inactivo",
           )}
-        </ZHBtn>
+        />
+        {row.supplierId && (
+          <ZHBtn
+            variant="secondary"
+            size="xs"
+            type="button"
+            onClick={() =>
+              window.open(
+                `/masterdata/business-partners/${row.supplierId}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            {t("purchases.reception.supplier.viewButton", "Ver proveedor")}
+          </ZHBtn>
+        )}
         {viewXmlButton}
       </div>
     );
@@ -144,9 +177,14 @@ export function PurchaseReceptionActionsCell({
             variant="primary"
             size="xs"
             type="button"
-            disabled={!row.supplierExists}
+            disabled={!row.supplierExists || row.supplierIsActive === false}
             title={
-              row.supplierExists
+              row.supplierIsActive === false
+                ? t(
+                    "purchases.reception.actions.createPurchaseDisabledSupplierInactive",
+                    "Active primero el proveedor",
+                  )
+                : row.supplierExists
                 ? undefined
                 : t(
                     "purchases.reception.actions.createPurchaseDisabledSupplierMissing",
@@ -171,6 +209,14 @@ export function PurchaseReceptionActionsCell({
               {t(
                 "purchases.reception.actions.createPurchaseDisabledSupplierMissing",
                 "Cree primero el proveedor",
+              )}
+            </p>
+          )}
+          {row.supplierExists && row.supplierIsActive === false && (
+            <p className="pur-actions-hint">
+              {t(
+                "purchases.reception.actions.createPurchaseDisabledSupplierInactive",
+                "Active primero el proveedor",
               )}
             </p>
           )}

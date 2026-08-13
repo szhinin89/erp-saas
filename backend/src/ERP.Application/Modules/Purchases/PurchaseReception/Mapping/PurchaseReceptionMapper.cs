@@ -24,6 +24,8 @@ public static class PurchaseReceptionMapper
             item.Record.VatAmount,
             item.Record.Total,
             item.SupplierExists,
+            item.SupplierId,
+            item.SupplierIsActive,
             item.PurchaseExists,
             item.PurchaseId,
             item.AffectedPurchaseExists,

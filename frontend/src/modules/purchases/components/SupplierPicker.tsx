@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Badge } from "../../../components/PageShell";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { useI18n } from "../../../i18n/i18n";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
-import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import {
+  RoleTypeEnum,
+  type SupplierPickerRow,
+} from "../../masterData/types/businessPartner.types";
 import { buildSupplierPickerRow } from "../utils/supplierProfile";
 
 type Props = {
@@ -30,10 +34,21 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
     }
     setLoading(true);
     try {
-      const rows = await businessPartnerFacade.searchSuppliersForPicker(
-        q.trim(),
+      const rows = await businessPartnerFacade.searchBusinessPartners({
+        q: q.trim(),
+        roles: [RoleTypeEnum.Supplier],
+        take: 100,
+      });
+      setResults(
+        rows.map((bp) => ({
+          id: bp.id,
+          identificationNumber: bp.identificationNumber,
+          fullName: bp.tradeName?.trim() || bp.legalName,
+          isActive: bp.isActive,
+          hasSupplierRole: true,
+          supplierConfig: null,
+        })),
       );
-      setResults(rows);
       setFocusIdx(-1);
     } catch {
       setResults([]);
@@ -113,6 +128,12 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
           <div className="zh-picker__selected-id">
             {selected.identificationNumber}
           </div>
+          {!selected.isActive && (
+            <Badge
+              variant="warning"
+              label={t("purchases.supplier.inactiveBadge", "Proveedor inactivo")}
+            />
+          )}
         </div>
         {!disabled && (
           <button
@@ -192,6 +213,11 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
               <div className="zh-picker__result-meta">
                 {row.identificationNumber}
               </div>
+              {!row.isActive && (
+                <div className="zh-picker__result-meta">
+                  {t("purchases.supplier.inactiveBadge", "Proveedor inactivo")}
+                </div>
+              )}
             </button>
           ))}
         </div>

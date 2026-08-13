@@ -12,6 +12,7 @@ public sealed record DownloadPurchaseReceptionXmlResultDto(
     string? ProcessingNotes,
     bool PurchaseExists,
     Guid? PurchaseId,
+    bool? SupplierIsActive,
     // infoTributaria/nombreComercial del emisor — solo para precargar el formulario de creación de
     // proveedor cuando el BP todavía no existe en el ERP; null si el XML no lo trae o no se pudo
     // interpretar la cabecera.

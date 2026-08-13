@@ -5,20 +5,12 @@ import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { ItemDto } from "../../../types/items";
 import { useI18n } from "../../../i18n/i18n";
+import {
+  buildPurchaseItemProfile,
+  type ProductProfile as PurchaseProductProfile,
+} from "../utils/purchaseItemProfile";
 
-export type ProductProfile = {
-  id: string;
-  sku: string;
-  name: string;
-  description: string;
-  purchaseVatCode: string | null;
-  appliesExciseTax: boolean;
-  exciseTaxCode: string | null;
-  minStockQty: number | null;
-  currentPvp: number;
-  lastCost?: number;
-  vatRate?: string;
-};
+export type ProductProfile = PurchaseProductProfile;
 
 type Props = {
   onSelect: (profile: ProductProfile) => void;
@@ -89,35 +81,11 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
 
     try {
       const detail = await itemLookupFacade.getById(item.id);
-
-      const vatCode = detail.taxConfig.purchaseVatCode;
-      const vatPct = vatCode ? vatRates?.[vatCode] : undefined;
-      const profile: ProductProfile = {
-        id: detail.id,
-        sku: detail.sku,
-        name: detail.shortName,
-        description: detail.description,
-        purchaseVatCode: vatCode,
-        appliesExciseTax: detail.taxConfig.exciseTaxCode != null,
-        exciseTaxCode: detail.taxConfig.exciseTaxCode,
-        minStockQty: detail.stockConfig.minStockQty,
-        currentPvp: detail.baseSalePrice ?? 0,
-        vatRate: vatPct !== undefined ? `${vatPct}%` : undefined,
-      };
+      const profile = buildPurchaseItemProfile(detail, { vatRates });
       profileCache.set(item.id, profile);
       onSelect(profile);
     } catch {
-      onSelect({
-        id: item.id,
-        sku: item.sku,
-        name: item.shortName,
-        description: item.description,
-        purchaseVatCode: null,
-        appliesExciseTax: false,
-        exciseTaxCode: null,
-        minStockQty: null,
-        currentPvp: 0,
-      });
+      onSelect(buildPurchaseItemProfile(item));
     }
   };
 

@@ -70,6 +70,8 @@ export interface PurchaseReceptionItem {
   vatAmount: number;
   total: number;
   supplierExists: boolean;
+  supplierId: string | null;
+  supplierIsActive: boolean | null;
   purchaseExists: boolean;
   purchaseId: string | null;
   /** Solo notas de crédito: si `modifiedDocumentNumber` ya existe como compra del mismo proveedor. False en Factura. */
@@ -109,6 +111,7 @@ export interface DownloadXmlResult {
   processingNotes: string | null;
   purchaseExists: boolean;
   purchaseId: string | null;
+  supplierIsActive: boolean | null;
   /** infoTributaria/nombreComercial del emisor — null si el XML no lo declara. */
   supplierTradeName: string | null;
 }
@@ -161,6 +164,7 @@ export interface PurchaseDraftLineDto {
 /** Borrador de compra armado desde el PurchaseReceptionDocument ya verificado — para precargar el formulario de Nueva Compra. */
 export interface PurchaseDraftDto {
   supplierId: string | null;
+  supplierIsActive?: boolean | null;
   supplierRuc: string;
   supplierName: string;
   docTypeCode: string | null;

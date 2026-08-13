@@ -51,9 +51,14 @@ import {
   type PurchaseLineFormValues,
 } from "../schemas/purchaseInvoiceSchema";
 import {
+  buildSupplierInactiveMessage,
   buildSupplierProfile,
   type SupplierProfile,
 } from "../utils/supplierProfile";
+import {
+  buildPurchaseLineFromItem,
+  normalizePurchaseLinePresentation,
+} from "../utils/purchaseItemProfile";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -722,17 +727,7 @@ export function usePurchasesPage() {
       setGlobalResults([]);
       const key = lineKey;
       const detail = await itemLookupFacade.getById(item.id);
-      const newLine: PurchaseLineFormValues = {
-        _key: key,
-        itemId: item.id,
-        description: `${item.sku} — ${item.shortName}`,
-        quantity: 1,
-        unitPrice: 0,
-        vatCode: detail.taxConfig?.purchaseVatCode ?? "",
-        discountPct: 0,
-        iceCode:
-          normalizeOptionalCode(detail.taxConfig?.exciseTaxCode) ?? undefined,
-      };
+      const newLine = buildPurchaseLineFromItem(detail, { key });
       const currentLines = getValues("lines");
       setValue("lines", [...currentLines, newLine], { shouldValidate: true });
       setLineKey((k) => k + 1);
@@ -796,9 +791,23 @@ export function usePurchasesPage() {
     [setValue, getValues, localTotal],
   );
 
-  const resolveSupplierProfile = useCallback(async (supplierId: string) => {
+  const supplierInactiveDetail = t(
+    "purchases.supplier.inactiveDetail",
+    "Debe activarlo antes de crear la compra.",
+  );
+
+  const formatSupplierInactiveMessage = useCallback(
+    (supplierName: string) =>
+      t("purchases.supplier.inactiveMessage", { name: supplierName }),
+    [t],
+  );
+
+  const resolveSupplierProfile = useCallback(async (
+    supplierId: string,
+    options?: { forceRefresh?: boolean },
+  ) => {
     const cached = profileCache.current.get(supplierId);
-    if (cached) return cached;
+    if (cached && !options?.forceRefresh) return cached;
 
     const bp = await businessPartnerFacade.getBusinessPartner(supplierId);
     const profile = buildSupplierProfile(bp);
@@ -818,10 +827,42 @@ export function usePurchasesPage() {
         setSupplierProfile(profile);
         applySupplierDefaults(profile);
       } catch {
-        /* profile load failed */
+        setSupplierProfile({
+          ruc: s.identificationNumber,
+          name: s.fullName,
+          isActive: s.isActive,
+          config: s.supplierConfig,
+          isRequiredToKeepAccounting: false,
+        });
       }
     },
     [setValue, applySupplierDefaults, resolveSupplierProfile],
+  );
+
+  const validateSupplierIsActive = useCallback(
+    async (supplierId: string, showMessage = false) => {
+      if (!supplierId.trim()) return null;
+      const profile = await resolveSupplierProfile(supplierId, {
+        forceRefresh: true,
+      });
+      setSupplierProfile(profile);
+      if (profile.isActive) return null;
+
+      const text =
+        formatSupplierInactiveMessage(profile.name) ||
+        buildSupplierInactiveMessage(profile.name);
+      if (showMessage) {
+        showSaveError(text, [supplierInactiveDetail]);
+        message.error(`${text} ${supplierInactiveDetail}`);
+      }
+      return profile;
+    },
+    [
+      formatSupplierInactiveMessage,
+      resolveSupplierProfile,
+      showSaveError,
+      supplierInactiveDetail,
+    ],
   );
 
   // ── Form reset ─────────────────────────────────────────────────────
@@ -877,11 +918,7 @@ export function usePurchasesPage() {
           warehouseId: l.warehouseId,
           notes: l.notes,
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
-          packagingLevelId: l.packagingLevelId ?? undefined,
-          uomCode: l.uomCode,
-          baseUomCode: l.baseUomCode,
-          conversionFactor: l.conversionFactor,
-          quantityInBaseUom: l.quantityInBaseUom,
+          ...normalizePurchaseLinePresentation(l),
         }));
 
         // SRI codes
@@ -1049,11 +1086,7 @@ export function usePurchasesPage() {
             warehouseId: l.warehouseId ?? undefined,
             notes: l.notes ?? undefined,
             purchaseReceptionLineId: l.purchaseReceptionLineId,
-            packagingLevelId: l.packagingLevelId ?? undefined,
-            uomCode: l.uomCode,
-            baseUomCode: l.baseUomCode,
-            conversionFactor: l.conversionFactor,
-            quantityInBaseUom: l.quantityInBaseUom,
+            ...normalizePurchaseLinePresentation(l),
             itemMatchStatus: l.itemMatchStatus,
             xmlSupplierCode: l.supplierCode ?? undefined,
             xmlSupplierAuxCode: l.supplierAuxCode,
@@ -1090,8 +1123,13 @@ export function usePurchasesPage() {
         setTab("nuevo");
       } catch (err) {
         const backendMessage = readApiErrorMessage(err);
+        const supplierInactiveBackendMessage = backendMessage ?? "";
+        const isSupplierInactiveError =
+          supplierInactiveBackendMessage.includes("se encuentra inactivo");
         if (backendMessage === DUPLICATE_PURCHASE_DETAIL) {
           showSaveError(duplicateAccessKeyTitle, [duplicateAccessKeyDetail]);
+        } else if (isSupplierInactiveError) {
+          showSaveError(supplierInactiveBackendMessage, [supplierInactiveDetail]);
         } else {
           showSaveError(
             backendMessage ??
@@ -1104,6 +1142,8 @@ export function usePurchasesPage() {
         message.error(
           backendMessage === DUPLICATE_PURCHASE_DETAIL
             ? `${duplicateAccessKeyTitle} ${duplicateAccessKeyDetail}`
+            : isSupplierInactiveError
+              ? `${supplierInactiveBackendMessage} ${supplierInactiveDetail}`
             : backendMessage ??
               t(
                 "purchases.messages.receptionDraftFailed",
@@ -1120,6 +1160,7 @@ export function usePurchasesPage() {
       checkAccessKeyDuplicate,
       duplicateAccessKeyTitle,
       duplicateAccessKeyDetail,
+      supplierInactiveDetail,
     ],
   );
 
@@ -1128,6 +1169,11 @@ export function usePurchasesPage() {
     showSaveError("");
     const duplicate = await checkAccessKeyDuplicate(data.accessKey ?? "", true);
     if (duplicate) return;
+    const inactiveSupplier = await validateSupplierIsActive(
+      data.supplierId,
+      true,
+    );
+    if (inactiveSupplier) return;
     if (!canUseSriDocTypes) {
       const title = t(
         "purchases.validation.sriDocTypesUnavailableTitle",
@@ -1216,6 +1262,14 @@ export function usePurchasesPage() {
             msg === duplicateAccessKeyDetail ||
             msg === DUPLICATE_PURCHASE_DETAIL,
         );
+        const supplierInactiveMessage = apiMessages.find((msg) =>
+          msg.includes("se encuentra inactivo"),
+        );
+        if (!isDuplicateAccessKeyError && supplierInactiveMessage) {
+          showSaveError(supplierInactiveMessage, [supplierInactiveDetail]);
+          message.error(`${supplierInactiveMessage} ${supplierInactiveDetail}`);
+          return;
+        }
         const title = isDuplicateAccessKeyError
           ? duplicateAccessKeyTitle
           : t(
@@ -1582,6 +1636,11 @@ export function usePurchasesPage() {
     isDraft,
     readOnly,
     fieldDisabled,
+    isSupplierInactiveBlocking: supplierProfile?.isActive === false,
+    supplierInactiveMessage: supplierProfile
+      ? formatSupplierInactiveMessage(supplierProfile.name)
+      : "",
+    supplierInactiveDetail,
     localSummary,
     localTotal,
     hasPersistedSchedule,

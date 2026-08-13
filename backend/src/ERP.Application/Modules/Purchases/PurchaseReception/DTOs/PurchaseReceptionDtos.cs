@@ -16,6 +16,8 @@ public sealed record PurchaseReceptionItemDto(
     decimal VatAmount,
     decimal Total,
     bool SupplierExists,
+    Guid? SupplierId,
+    bool? SupplierIsActive,
     bool PurchaseExists,
     Guid? PurchaseId,
     // Solo aplica a notas de crédito: si la factura afectada (ModifiedDocumentNumber) ya está

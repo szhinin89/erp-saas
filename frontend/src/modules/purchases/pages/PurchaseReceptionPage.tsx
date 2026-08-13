@@ -41,10 +41,14 @@ export function PurchaseReceptionPage() {
           <p className="pur-supplier-ruc">{row.supplierRuc}</p>
           {row.supplierExists ? (
             <Badge
-              variant="success"
+              variant={row.supplierIsActive === false ? "warning" : "success"}
               label={t(
-                "purchases.reception.supplier.registered",
-                "Proveedor registrado",
+                row.supplierIsActive === false
+                  ? "purchases.reception.supplier.inactive"
+                  : "purchases.reception.supplier.registered",
+                row.supplierIsActive === false
+                  ? "Proveedor inactivo"
+                  : "Proveedor registrado",
               )}
             />
           ) : (

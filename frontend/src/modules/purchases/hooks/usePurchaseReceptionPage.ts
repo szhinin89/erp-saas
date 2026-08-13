@@ -63,6 +63,7 @@ export function usePurchaseReceptionPage() {
         items: importResult.items.map((item) => ({
           ...item,
           supplierTradeName: item.supplierTradeName ?? null,
+          supplierIsActive: item.supplierIsActive ?? null,
         })),
       });
       setFileName(file.name);
@@ -97,6 +98,7 @@ export function usePurchaseReceptionPage() {
                       processingNotes: download.processingNotes,
                       purchaseExists: download.purchaseExists,
                       purchaseId: download.purchaseId,
+                      supplierIsActive: download.supplierIsActive,
                       supplierTradeName:
                         download.supplierTradeName ?? item.supplierTradeName,
                     }
@@ -192,6 +194,7 @@ export function usePurchaseReceptionPage() {
                   ? {
                       ...item,
                       supplierExists: true,
+                      supplierIsActive: true,
                       status: item.purchaseExists ? item.status : "PENDING",
                     }
                   : item,

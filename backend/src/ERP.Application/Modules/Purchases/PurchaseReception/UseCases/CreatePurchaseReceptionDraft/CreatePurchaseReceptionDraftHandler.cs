@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -27,6 +28,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
     private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _tenant;
@@ -35,6 +37,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     public CreatePurchaseReceptionDraftHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
         IPurchaseInvoiceRepository purchaseRepo,
+        IBusinessPartnerRepository bpRepo,
         IPurchaseReceptionDetailProcessor detailProcessor,
         IItemRepository itemRepo,
         ICurrentTenant tenant,
@@ -43,6 +46,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     {
         _documentRepo = documentRepo;
         _purchaseRepo = purchaseRepo;
+        _bpRepo = bpRepo;
         _detailProcessor = detailProcessor;
         _itemRepo = itemRepo;
         _tenant = tenant;
@@ -81,6 +85,15 @@ public sealed class CreatePurchaseReceptionDraftHandler
             return Result<PurchaseDraftDto>.Conflict(
                 "Ya existe una compra registrada con esta clave de acceso SRI."
             );
+
+        if (document.SupplierId is { } documentSupplierId)
+        {
+            var supplier = await _bpRepo.GetByIdAsync(documentSupplierId, cancellationToken);
+            if (supplier is not null && !supplier.IsActive)
+                return Result<PurchaseDraftDto>.ValidationFailure(
+                    $"El proveedor '{supplier.Name.LegalName}' se encuentra inactivo."
+                );
+        }
 
         // Caso recuperable: el detalle nunca se interpretó con éxito (p. ej. porque el parser
         // vigente al momento de la descarga original era menos tolerante que el actual). Se

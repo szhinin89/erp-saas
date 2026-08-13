@@ -7,6 +7,7 @@ import type {
 export type SupplierProfile = {
   ruc: string;
   name: string;
+  isActive: boolean;
   config: SupplierRoleConfigDto | null;
   isRequiredToKeepAccounting: boolean;
 };
@@ -30,6 +31,7 @@ export function buildSupplierProfile(
   return {
     ruc: bp.identificationNumber,
     name: bp.tradeName || bp.legalName,
+    isActive: bp.isActive,
     config,
     isRequiredToKeepAccounting:
       (config as SupplierConfigWithAccounting | null)
@@ -50,4 +52,8 @@ export function buildSupplierPickerRow(
     hasSupplierRole: !!role,
     supplierConfig: role?.supplierConfig ?? null,
   };
+}
+
+export function buildSupplierInactiveMessage(supplierName: string) {
+  return `El proveedor '${supplierName}' se encuentra inactivo.`;
 }

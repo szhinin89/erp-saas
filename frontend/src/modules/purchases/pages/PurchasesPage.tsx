@@ -44,6 +44,10 @@ import {
   buildPurchaseLinePresentation,
   type LineStatusTone,
 } from "../utils/purchaseLinePresentation";
+import {
+  buildPurchaseItemProfile,
+  resolvePurchaseItemSelection,
+} from "../utils/purchaseItemProfile";
 import "../../../styles/shared/items-catalog.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../styles/purchases-invoice.css";
@@ -306,6 +310,13 @@ export function PurchasesPage() {
               )}
             </div>
           )}
+          {ctx.isSupplierInactiveBlocking && (
+            <ZHPageNotice
+              variant="error"
+              message={ctx.supplierInactiveMessage}
+              detail={ctx.supplierInactiveDetail}
+            />
+          )}
           {ctx.errors.supplierId && (
             <ZHPageNotice
               variant="error"
@@ -434,6 +445,15 @@ export function PurchasesPage() {
                             )}
                           </>
                         }
+                      />
+                    )}
+                    {!ctx.supplierProfile.isActive && (
+                      <Badge
+                        variant="warning"
+                        label={t(
+                          "purchases.supplier.inactiveBadge",
+                          "Proveedor inactivo",
+                        )}
                       />
                     )}
                   </div>
@@ -959,6 +979,7 @@ export function PurchasesPage() {
                 !ctx.formWatch.issueDate ||
                 !ctx.canUseSriDocTypes ||
                 ctx.isDuplicateAccessKeyBlocking ||
+                ctx.isSupplierInactiveBlocking ||
                 ctx.lines.length === 0
               }
             >
@@ -1412,20 +1433,27 @@ function PurchaseLineCard({
                 disabled={ctx.fieldDisabled || ctx.matchingKey === l._key}
                 vatRates={ctx.vatRatesMap}
                 onSelect={(p: ProductProfile) => {
-                  if (!l.vatCode)
-                    ctx.updateLine(l._key, "vatCode", p.purchaseVatCode ?? "");
-                  if (p.appliesExciseTax && p.exciseTaxCode)
-                    ctx.updateLine(l._key, "iceCode", p.exciseTaxCode);
+                  const patch = resolvePurchaseItemSelection(p, {
+                    existingLine: l,
+                  });
+                  if (patch.vatCode !== undefined)
+                    ctx.updateLine(l._key, "vatCode", patch.vatCode);
+                  if (patch.iceCode !== undefined)
+                    ctx.updateLine(l._key, "iceCode", patch.iceCode);
                   if (l.purchaseReceptionLineId) {
                     void ctx.handleMatchItem(
                       l._key,
                       p.id,
-                      `${p.sku} — ${p.name}`,
+                      patch.description ?? p.label,
                     );
                     return;
                   }
-                  ctx.updateLine(l._key, "itemId", p.id);
-                  ctx.updateLine(l._key, "description", `${p.sku} — ${p.name}`);
+                  ctx.updateLine(l._key, "itemId", patch.itemId ?? p.id);
+                  ctx.updateLine(
+                    l._key,
+                    "description",
+                    patch.description ?? p.label,
+                  );
                   const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
                   if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
                 }}
@@ -1959,12 +1987,20 @@ function CreateItemLineAction({
 
   const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
-    ctx.updateLine(l._key, "itemId", item.id);
-    ctx.updateLine(l._key, "description", `${item.sku} — ${item.shortName}`);
+    const patch = resolvePurchaseItemSelection(buildPurchaseItemProfile(item), {
+      existingLine: l,
+      overwriteVatCode: true,
+    });
+    ctx.updateLine(l._key, "itemId", patch.itemId ?? item.id);
+    ctx.updateLine(
+      l._key,
+      "description",
+      patch.description ?? `${item.sku} — ${item.shortName}`,
+    );
     // El Item recién creado desde Compras trae su propio IVA de compra (ahora obligatorio en
     // ItemEditorModal) — se refleja de inmediato en la línea, sin depender de fetchItemContext
     // (que solo llena `context` para mostrar, no el campo `vatCode` del formulario).
-    ctx.updateLine(l._key, "vatCode", item.purchaseVatCode ?? "");
+    ctx.updateLine(l._key, "vatCode", patch.vatCode ?? "");
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
     if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
   };
@@ -2024,10 +2060,18 @@ function UpdateItemAction({
 
   const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
-    ctx.updateLine(l._key, "description", `${item.sku} — ${item.shortName}`);
+    const patch = resolvePurchaseItemSelection(buildPurchaseItemProfile(item), {
+      existingLine: l,
+      overwriteVatCode: true,
+    });
+    ctx.updateLine(
+      l._key,
+      "description",
+      patch.description ?? `${item.sku} — ${item.shortName}`,
+    );
     // Si el usuario cambió el IVA de compra al editar el Item desde esta línea, la línea debe
     // reflejar el valor vigente del Item de inmediato.
-    ctx.updateLine(l._key, "vatCode", item.purchaseVatCode ?? "");
+    ctx.updateLine(l._key, "vatCode", patch.vatCode ?? "");
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
     if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
   };
@@ -2149,12 +2193,13 @@ function ReceptionCreateItemAction({
         onClose={() => setOpen(false)}
         onCreated={(updatedLine, item) => {
           setOpen(false);
+          const profile = buildPurchaseItemProfile(item);
           if (updatedLine.itemId)
             applyLinked(
               updatedLine.itemId,
               updatedLine.matchStatus,
-              `${item.sku} — ${item.shortName}`,
-              item.purchaseVatCode,
+              profile.label,
+              profile.purchaseVatCode,
             );
         }}
         onCreatedButNotLinked={() => setOpen(false)}

@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -17,6 +18,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISriReceptionXmlProvider _xmlProvider;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
     private readonly ICurrentTenant _tenant;
@@ -27,6 +29,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     public DownloadPurchaseReceptionXmlHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
         IPurchaseInvoiceRepository purchaseRepo,
+        IBusinessPartnerRepository bpRepo,
         ISriReceptionXmlProvider xmlProvider,
         IPurchaseReceptionDetailProcessor detailProcessor,
         ICurrentTenant tenant,
@@ -37,6 +40,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     {
         _documentRepo = documentRepo;
         _purchaseRepo = purchaseRepo;
+        _bpRepo = bpRepo;
         _xmlProvider = xmlProvider;
         _detailProcessor = detailProcessor;
         _tenant = tenant;
@@ -137,6 +141,12 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.AccessKey,
             cancellationToken
         );
+        bool? supplierIsActive = null;
+        if (document.SupplierId is { } supplierId)
+        {
+            var supplier = await _bpRepo.GetByIdAsync(supplierId, cancellationToken);
+            supplierIsActive = supplier?.IsActive;
+        }
 
         var dto = new DownloadPurchaseReceptionXmlResultDto(
             document.Id,
@@ -150,6 +160,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.ProcessingNotes,
             existingPurchase is not null,
             existingPurchase?.Id,
+            supplierIsActive,
             processed.SupplierTradeName
         );
 

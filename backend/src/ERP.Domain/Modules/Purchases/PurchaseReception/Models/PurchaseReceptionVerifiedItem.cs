@@ -14,5 +14,6 @@ public sealed record PurchaseReceptionVerifiedItem(
     // que la NC afecta (Record.ModifiedDocumentNumber) ya está ingresada como PurchaseInvoice del
     // mismo proveedor. False/null para cualquier otro tipo de comprobante.
     bool AffectedPurchaseExists = false,
-    Guid? AffectedPurchaseId = null
+    Guid? AffectedPurchaseId = null,
+    bool? SupplierIsActive = null
 );
