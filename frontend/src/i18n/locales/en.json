@@ -2762,6 +2762,7 @@
   "items.pricing.noCost": "No cost is available. Margin will be calculated after a confirmed purchase exists.",
   "items.pricing.loss": "The price is below cost. This sale would generate a loss.",
   "items.pricing.lowMargin": "Low margin. Check whether the price is correct.",
+  "items.pricing.saleVatRate": "Sale VAT rate",
   "items.pricing.netToSave": "VAT-excluded price to save",
   "items.pricing.vatCalculated": "Calculated VAT",
   "items.pricing.grossFinal": "Final price with VAT",

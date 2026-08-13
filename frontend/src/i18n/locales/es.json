@@ -2764,6 +2764,7 @@
   "items.pricing.noCost": "No hay costo disponible. El margen se calculará cuando exista una compra confirmada.",
   "items.pricing.loss": "El precio está por debajo del costo. Esta venta generaría pérdida.",
   "items.pricing.lowMargin": "Margen bajo. Revise si el precio es correcto.",
+  "items.pricing.saleVatRate": "Tarifa IVA venta",
   "items.pricing.netToSave": "Precio sin IVA que se guardará",
   "items.pricing.vatCalculated": "IVA calculado",
   "items.pricing.grossFinal": "Precio final con IVA",

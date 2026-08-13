@@ -5,7 +5,6 @@ import type {
   ItemVariantDto,
   GetItemsResponse,
 } from "../../../types/items";
-import type { PricingRuleSummaryDto } from "../../pricing/types";
 
 export interface GetItemsParams {
   search?: string;
@@ -239,54 +238,7 @@ export const itemService = {
 
   setPriceLists: (itemId: string, priceListIds: string[]) =>
     apiPut<string[]>(`/api/v1/items/${itemId}/price-lists`, { priceListIds }),
-
-  /**
-   * Simulación de precio contra todas las listas activas y vigentes del ítem — 100% calculada
-   * en el backend (misma precedencia de reglas que PricingResolver). Los overrides son
-   * "qué pasaría si" (valores aún no guardados del formulario); si se omiten, usa lo persistido.
-   * No persiste nada.
-   */
-  getPricingSimulation: (
-    itemId: string,
-    overrides: PricingSimulationOverrides = {},
-  ) =>
-    apiPost<ItemPricingSimulationRow[]>(
-      `/api/v1/items/${itemId}/pricing-simulation`,
-      overrides,
-    ),
-
-  /**
-   * Misma simulación, para un ítem que todavía no existe (formulario de creación) — sin
-   * reglas por-ítem ni asignaciones posibles, solo reglas generales de cada lista.
-   * `baseSalePrice` es obligatorio aquí (no hay ítem persistido del cual heredarlo).
-   */
-  previewPricingSimulation: (overrides: PricingSimulationOverrides) =>
-    apiPost<ItemPricingSimulationRow[]>(
-      "/api/v1/items/pricing-simulation-preview",
-      overrides,
-    ),
 };
-
-export interface PricingSimulationOverrides {
-  baseSalePrice?: number | null;
-  maxDiscountPercent?: number | null;
-}
-
-/** netPrice/minAllowedPrice son precios ANTES de impuestos — Pricing nunca calcula IVA/ICE
- *  (frontera con la infraestructura tributaria). Si se necesita un precio final con impuestos,
- *  se calcula en la capa que sí es dueña de esa lógica, nunca aquí. */
-export interface ItemPricingSimulationRow {
-  priceListId: string;
-  priceListCode: string;
-  priceListName: string;
-  currencyCode: string;
-  isAssigned: boolean;
-  /** Encapsula origen (Precio Base/Regla General/Excepción) + descripción — nunca RuleType/RuleValue sueltos. */
-  ruleSummary: PricingRuleSummaryDto;
-  netPrice: number;
-  maxDiscountPercent: number | null;
-  minAllowedPrice: number;
-}
 
 // Refleja los 5 códigos que produce ItemProfitabilityUseCases.CalcMargin() (backend) —
 // única función que decide estos valores. El label/color de cada uno se resuelve en

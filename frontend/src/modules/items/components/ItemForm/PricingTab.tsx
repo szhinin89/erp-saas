@@ -54,6 +54,37 @@ function formatOptionalPercent(value: number | null, decimals: number) {
   return value == null ? "—" : `${formatMoney(value * 100, decimals)}%`;
 }
 
+function formatVatRate(
+  rate: { name: string; percentage: number } | null,
+  decimals: number,
+) {
+  if (!rate) return "—";
+  return `${rate.name} (${formatMoney(rate.percentage, decimals)}%)`;
+}
+
+function calculateNetPrice(
+  inputPriceValue: number | null,
+  inputPriceMode: PriceInputMode,
+  vatDecimal: number | null,
+) {
+  if (inputPriceValue == null) return null;
+  if (inputPriceMode === "net") return inputPriceValue;
+  if (vatDecimal == null) return null;
+  if (vatDecimal === 0) return inputPriceValue;
+  return inputPriceValue / (1 + vatDecimal);
+}
+
+function calculateGrossPrice(
+  inputPriceValue: number | null,
+  inputPriceMode: PriceInputMode,
+  vatDecimal: number | null,
+) {
+  if (inputPriceValue == null) return null;
+  if (inputPriceMode === "gross") return inputPriceValue;
+  if (vatDecimal == null) return null;
+  return inputPriceValue * (1 + vatDecimal);
+}
+
 function Metric({
   label,
   value,
@@ -69,6 +100,7 @@ function Metric({
       <strong
         className={`items-metric-card__value items-metric-card__value--${tone}`}
       >
+        {" "}
         {value}
       </strong>
     </div>
@@ -83,9 +115,11 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
   } = useFormContext<CreateItemFormValues>();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
   const dc = getDecimalConfig();
-  const [priceMode, setPriceMode] = useState<PriceInputMode>("net");
-  const [enteredPrice, setEnteredPrice] = useState("");
+  const [inputPriceMode, setInputPriceMode] =
+    useState<PriceInputMode>("net");
+  const [inputPriceValue, setInputPriceValue] = useState("");
   const syncedBasePrice = useRef<number | null>(null);
+  const skipNextDerivedPersist = useRef(true);
 
   // Moneda real de la lista de precios predeterminada; si aún no existe una lista
   // (ítem nuevo), se usa la moneda configurada en el perfil de la empresa
@@ -120,32 +154,26 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
   const hasCost = averageCost != null && averageCost > 0;
   const lastCost: number | null = null;
 
-  const parsedEnteredPrice = toNullableNumber(enteredPrice);
-  const priceSinIva =
-    parsedEnteredPrice == null
-      ? null
-      : priceMode === "net"
-        ? parsedEnteredPrice
-        : vatDecimal == null
-          ? null
-          : parsedEnteredPrice / (1 + vatDecimal);
-  const priceConIva =
-    parsedEnteredPrice == null
-      ? null
-      : priceMode === "gross"
-        ? parsedEnteredPrice
-        : vatDecimal == null
-          ? null
-          : parsedEnteredPrice * (1 + vatDecimal);
-  const ivaValor =
-    priceSinIva != null && priceConIva != null
-      ? priceConIva - priceSinIva
+  const parsedInputPriceValue = toNullableNumber(inputPriceValue);
+  const computedNetPrice = calculateNetPrice(
+    parsedInputPriceValue,
+    inputPriceMode,
+    vatDecimal,
+  );
+  const computedGrossPrice = calculateGrossPrice(
+    parsedInputPriceValue,
+    inputPriceMode,
+    vatDecimal,
+  );
+  const computedTaxAmount =
+    computedNetPrice != null && computedGrossPrice != null
+      ? computedGrossPrice - computedNetPrice
       : null;
   const utilidad =
-    hasCost && priceSinIva != null ? priceSinIva - averageCost : null;
+    hasCost && computedNetPrice != null ? computedNetPrice - averageCost : null;
   const margen =
-    utilidad != null && priceSinIva != null && priceSinIva > 0
-      ? utilidad / priceSinIva
+    utilidad != null && computedNetPrice != null && computedNetPrice > 0
+      ? utilidad / computedNetPrice
       : null;
   const markup =
     utilidad != null && averageCost != null && averageCost > 0
@@ -173,32 +201,18 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
             tone: "success" as const,
           };
 
-  const valueFromBasePrice = (
-    persistedBasePrice: number | null,
-    mode: PriceInputMode,
-  ) => {
+  const valueFromBasePrice = (persistedBasePrice: number | null) => {
     if (persistedBasePrice == null) return "";
-    if (mode === "gross" && vatDecimal != null) {
-      return formatInputValue(
-        persistedBasePrice * (1 + vatDecimal),
-        dc.salesUnitPrice,
-      );
-    }
     return formatInputValue(persistedBasePrice, dc.salesUnitPrice);
   };
 
   useEffect(() => {
     if (syncedBasePrice.current === basePrice) return;
     syncedBasePrice.current = basePrice;
-    setEnteredPrice(valueFromBasePrice(basePrice, priceMode));
+    setInputPriceMode("net");
+    setInputPriceValue(valueFromBasePrice(basePrice));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basePrice, priceMode]);
-
-  useEffect(() => {
-    if (priceMode !== "gross") return;
-    setEnteredPrice(valueFromBasePrice(basePrice, "gross"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vatDecimal]);
+  }, [basePrice]);
 
   const persistNetPrice = (netPrice: number | null) => {
     const next = netPrice == null ? null : roundTo(netPrice, dc.salesUnitPrice);
@@ -209,23 +223,23 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
     });
   };
 
+  useEffect(() => {
+    if (skipNextDerivedPersist.current) {
+      skipNextDerivedPersist.current = false;
+      return;
+    }
+    persistNetPrice(computedNetPrice);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputPriceMode, vatDecimal]);
+
   const handlePriceChange = (nextValue: string) => {
-    setEnteredPrice(nextValue);
+    setInputPriceValue(nextValue);
     const parsed = toNullableNumber(nextValue);
-    if (parsed == null) {
-      persistNetPrice(null);
-      return;
-    }
-    if (priceMode === "net") {
-      persistNetPrice(parsed);
-      return;
-    }
-    persistNetPrice(vatDecimal == null ? null : parsed / (1 + vatDecimal));
+    persistNetPrice(calculateNetPrice(parsed, inputPriceMode, vatDecimal));
   };
 
   const handleModeChange = (nextMode: PriceInputMode) => {
-    setPriceMode(nextMode);
-    setEnteredPrice(valueFromBasePrice(basePrice, nextMode));
+    setInputPriceMode(nextMode);
   };
 
   return (
@@ -247,7 +261,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
               decimals={dc.salesUnitPrice}
               positiveOnly
               placeholder={t("items.pricing.pvpPlaceholder", "0.00")}
-              value={enteredPrice}
+              value={inputPriceValue}
               onChange={(event) => handlePriceChange(event.target.value)}
               disabled={disabled}
               className="items-currency-input__field"
@@ -259,7 +273,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           label={t("items.pricing.enteredPriceIs", "El precio ingresado es")}
         >
           <ZhSelect
-            value={priceMode}
+            value={inputPriceMode}
             onChange={(event) =>
               handleModeChange(event.target.value as PriceInputMode)
             }
@@ -310,21 +324,29 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
 
       <div className="items-metric-grid">
         <Metric
+          label={t("items.pricing.saleVatRate", "Tarifa IVA venta")}
+          value={formatVatRate(selectedVatRate, dc.percentage)}
+        />
+        <Metric
           label={t("items.pricing.netToSave", "Precio sin IVA que se guardará")}
           value={formatOptionalMoney(
-            priceSinIva,
+            computedNetPrice,
             currencyCode,
             dc.salesUnitPrice,
           )}
         />
         <Metric
           label={t("items.pricing.vatCalculated", "IVA calculado")}
-          value={formatOptionalMoney(ivaValor, currencyCode, dc.salesUnitPrice)}
+          value={formatOptionalMoney(
+            computedTaxAmount,
+            currencyCode,
+            dc.salesUnitPrice,
+          )}
         />
         <Metric
           label={t("items.pricing.grossFinal", "Precio final con IVA")}
           value={formatOptionalMoney(
-            priceConIva,
+            computedGrossPrice,
             currencyCode,
             dc.salesUnitPrice,
           )}

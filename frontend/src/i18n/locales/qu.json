@@ -2763,6 +2763,7 @@
   "items.pricing.noCost": "Costo illan. Margen shuk rantiy takyachishka kaptin yupakunqa.",
   "items.pricing.loss": "Precio costo urapi kachkan. Kay venta pérdida ruranka.",
   "items.pricing.lowMargin": "Margen uchilla. Precio allikashkata rikuy.",
+  "items.pricing.saleVatRate": "Venta IVA tarifa",
   "items.pricing.netToSave": "Sin IVA precio waqaychana",
   "items.pricing.vatCalculated": "IVA yupashka",
   "items.pricing.grossFinal": "IVAwan tukuy precio",
