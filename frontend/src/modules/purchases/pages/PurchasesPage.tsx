@@ -61,6 +61,8 @@ export function PurchasesPage() {
     ctx.iceRatesMap,
     t,
   );
+  const statusLabel = (status: string) =>
+    t(`purchases.status.${status.toLowerCase()}`, status);
 
   // Entrada cruzada desde el Kardex ("Ver documento origen"): abre la factura referida.
   // Entrada cruzada desde Recepción Electrónica ("Crear compra"): precarga un borrador desde el XML.
@@ -78,18 +80,20 @@ export function PurchasesPage() {
   }, [searchParams]);
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: "listado", label: "Listado", icon: "view_list" },
+    { id: "listado", label: t("purchases.tabs.list", "Listado"), icon: "view_list" },
     {
       id: "nuevo",
-      label: ctx.editing ? "Editar Compra" : "Nueva Compra",
+      label: ctx.editing
+        ? t("purchases.tabs.edit", "Editar compra")
+        : t("purchases.tabs.new", "Nueva compra"),
       icon: ctx.editing ? "edit" : "add_box",
     },
   ];
 
   return (
     <ErpPageTemplate
-      title="Facturas de Compra"
-      subtitle="Gestión de compras en borrador."
+      title={t("purchases.page.title", "Facturas de compra")}
+      subtitle={t("purchases.page.subtitle", "Gestión de compras en borrador.")}
     >
       <div className="prd-tabs">
         {tabs.map((t) => (
@@ -116,7 +120,10 @@ export function PurchasesPage() {
         <div className="prd-section">
           <div className="pg-table-controls zh-mb-16">
             <ZhTextInput
-              placeholder="Buscar por número de factura..."
+              placeholder={t(
+                "purchases.list.searchPlaceholder",
+                "Buscar por número de factura...",
+              )}
               value={ctx.listSearchInput}
               onChange={(e) => ctx.setListSearchInput(e.target.value)}
             />
@@ -124,10 +131,10 @@ export function PurchasesPage() {
               value={ctx.listStatus}
               onChange={(e) => ctx.setListStatus(e.target.value)}
             >
-              <option value="">Todos los estados</option>
-              <option value="Draft">Borrador</option>
-              <option value="Confirmed">Confirmada</option>
-              <option value="Cancelled">Anulada</option>
+              <option value="">{t("purchases.list.allStatuses", "Todos los estados")}</option>
+              <option value="Draft">{t("purchases.status.draft", "Borrador")}</option>
+              <option value="Confirmed">{t("purchases.status.confirmed", "Confirmada")}</option>
+              <option value="Cancelled">{t("purchases.status.cancelled", "Anulada")}</option>
             </ZhSelect>
             <ZHBtn
               variant="secondary"
@@ -142,16 +149,16 @@ export function PurchasesPage() {
             </ZHBtn>
           </div>
           {ctx.listLoading ? (
-            <p>Cargando...</p>
+            <p>{t("common.loading", "Cargando...")}</p>
           ) : (
             <table className="table table--compact table--neutral">
               <thead>
                 <tr>
-                  <th>Nro. Factura</th>
-                  <th>Fecha</th>
-                  <th className="zh-text-align-center">Líneas</th>
-                  <th>Estado</th>
-                  <th className="zh-text-align-center">Acciones</th>
+                  <th>{t("purchases.list.invoiceNumber", "Nro. factura")}</th>
+                  <th>{t("purchases.list.date", "Fecha")}</th>
+                  <th className="zh-text-align-center">{t("purchases.list.lines", "Líneas")}</th>
+                  <th>{t("purchases.list.status", "Estado")}</th>
+                  <th className="zh-text-align-center">{t("purchases.list.actions", "Acciones")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,21 +178,24 @@ export function PurchasesPage() {
                               ? "success"
                               : "error"
                         }
-                        label={inv.status}
+                        label={statusLabel(inv.status)}
                       />
                     </td>
                     <td className="zh-text-align-center">
                       <ZHIconButton
                         icon="edit"
                         variant="ghost"
-                        title="Editar"
+                        title={t("common.edit", "Editar")}
                         onClick={() => void ctx.loadForEdit(inv.id)}
                       />
                       {inv.status === "Confirmed" && (
                         <ZHIconButton
                           icon="history"
                           variant="ghost"
-                          title="Ver Movimiento de Inventario"
+                          title={t(
+                            "purchases.actions.viewInventoryMovement",
+                            "Ver movimiento de inventario",
+                          )}
                           onClick={() =>
                             navigate(
                               `/inventory/kardex?docId=${inv.id}&docType=PurchaseInvoice`,
@@ -199,7 +209,7 @@ export function PurchasesPage() {
                 {ctx.listItems.length === 0 && (
                   <tr>
                     <td colSpan={5} className="zh-table-empty">
-                      Sin compras registradas.
+                      {t("purchases.list.empty", "Sin compras registradas.")}
                     </td>
                   </tr>
                 )}
@@ -209,9 +219,11 @@ export function PurchasesPage() {
           {!ctx.listLoading && ctx.listTotal > ctx.listPageSize && (
             <div className="pf-pagination">
               <span className="pf-pagination__summary">
-                Página {ctx.listPage} de{" "}
+                {t("purchases.pagination.page", "Página")} {ctx.listPage} {t("purchases.pagination.of", "de")}{" "}
                 {Math.max(1, Math.ceil(ctx.listTotal / ctx.listPageSize))} —{" "}
-                {ctx.listTotal} compra(s)
+                {t("purchases.pagination.purchaseCount", {
+                  count: ctx.listTotal,
+                })}
               </span>
               <div className="pf-pagination__actions">
                 <ZHBtn
@@ -220,7 +232,7 @@ export function PurchasesPage() {
                   disabled={ctx.listPage <= 1}
                   onClick={() => ctx.setListPage((p) => p - 1)}
                 >
-                  Anterior
+                  {t("common.previous", "Anterior")}
                 </ZHBtn>
                 <ZHBtn
                   type="button"
@@ -230,7 +242,7 @@ export function PurchasesPage() {
                   }
                   onClick={() => ctx.setListPage((p) => p + 1)}
                 >
-                  Siguiente
+                  {t("common.next", "Siguiente")}
                 </ZHBtn>
               </div>
             </div>
@@ -278,6 +290,19 @@ export function PurchasesPage() {
               }
             />
           )}
+          {ctx.sriDocTypesUnavailable && (
+            <ZHPageNotice
+              variant="error"
+              message={t(
+                "purchases.validation.sriDocTypesUnavailableTitle",
+                "No se puede guardar la compra.",
+              )}
+              detail={t(
+                "purchases.validation.sriDocTypesUnavailableDetail",
+                "El catálogo SRI de tipos de documento no está disponible. Recargue la página o inténtelo nuevamente.",
+              )}
+            />
+          )}
 
           {ctx.readOnly && (
             <ZHPageNotice
@@ -286,8 +311,16 @@ export function PurchasesPage() {
               }
               message={
                 ctx.editing?.status === "Cancelled"
-                  ? `Compra anulada el ${formatDate(ctx.editing.cancelledAt)}. Motivo: ${ctx.editing.cancelReason ?? "Sin motivo"}`
-                  : "Compra confirmada — solo lectura."
+                  ? t("purchases.notices.cancelledReadOnly", {
+                      date: formatDate(ctx.editing.cancelledAt),
+                      reason:
+                        ctx.editing.cancelReason ??
+                        t("purchases.notices.noReason", "Sin motivo"),
+                    })
+                  : t(
+                      "purchases.notices.confirmedReadOnly",
+                      "Compra confirmada — solo lectura.",
+                    )
               }
             />
           )}
@@ -300,10 +333,14 @@ export function PurchasesPage() {
                 <span className="material-symbols-outlined pf-mini-card__icon">
                   storefront
                 </span>
-                Datos del Proveedor
+                {t("purchases.supplier.title", "Datos del proveedor")}
               </h4>
               <div className="pf-mini-card__body">
-                <ZHField density="compact" label="RUC o Nombre" required>
+                <ZHField
+                  density="compact"
+                  label={t("purchases.supplier.searchLabel", "RUC o nombre")}
+                  required
+                >
                   <SupplierPicker
                     value={ctx.formWatch.supplierId || null}
                     onChange={ctx.handleSupplierChange}
@@ -311,7 +348,10 @@ export function PurchasesPage() {
                   />
                 </ZHField>
                 {ctx.supplierProfile && (
-                  <ZHField density="compact" label="Razón Social">
+                  <ZHField
+                    density="compact"
+                    label={t("purchases.supplier.legalName", "Razón social")}
+                  >
                     <div className="pf-mini-card__readonly">
                       {ctx.supplierProfile.name}
                     </div>
@@ -327,7 +367,10 @@ export function PurchasesPage() {
                             <span className="material-symbols-outlined pf-badge__icon">
                               check_circle
                             </span>
-                            Obligado Contabilidad
+                            {t(
+                              "purchases.supplier.accountingRequired",
+                              "Obligado contabilidad",
+                            )}
                           </>
                         }
                       />
@@ -339,7 +382,10 @@ export function PurchasesPage() {
                             <span className="material-symbols-outlined pf-badge__icon">
                               cancel
                             </span>
-                            No Obligado
+                            {t(
+                              "purchases.supplier.accountingNotRequired",
+                              "No obligado",
+                            )}
                           </>
                         }
                       />
@@ -352,7 +398,10 @@ export function PurchasesPage() {
                             <span className="material-symbols-outlined pf-badge__icon">
                               shield
                             </span>
-                            Exento Retención
+                            {t(
+                              "purchases.supplier.retentionExempt",
+                              "Exento retención",
+                            )}
                           </>
                         }
                       />
@@ -368,12 +417,12 @@ export function PurchasesPage() {
                 <span className="material-symbols-outlined pf-mini-card__icon">
                   description
                 </span>
-                Datos del Documento
+                {t("purchases.document.title", "Datos del documento")}
               </h4>
               <div className="pf-mini-card__body">
                 <ZHField
                   density="compact"
-                  label="Tipo de Documento"
+                  label={t("purchases.document.docType", "Tipo de documento")}
                   required
                   fieldError={ctx.errors.docTypeCode?.message}
                 >
@@ -382,35 +431,46 @@ export function PurchasesPage() {
                     onChange={(e) =>
                       ctx.setValue("docTypeCode", e.target.value)
                     }
-                    disabled={ctx.fieldDisabled}
+                    disabled={ctx.fieldDisabled || !ctx.canUseSriDocTypes}
                   >
+                    <option value="">
+                      {!ctx.sriDocTypesLoaded
+                        ? t(
+                            "purchases.document.docTypesLoading",
+                            "Cargando tipos de documento...",
+                          )
+                        : t(
+                            "purchases.document.docTypePlaceholder",
+                            "Seleccione tipo de documento",
+                          )}
+                    </option>
                     {ctx.sriDocTypes.map((d) => (
                       <option key={d.code} value={d.code}>
                         {d.code} — {d.name}
                       </option>
                     ))}
-                    {ctx.sriDocTypes.length === 0 && (
-                      <option value="01">01 — FACTURA</option>
-                    )}
                   </ZhSelect>
                 </ZHField>
                 <div className="pf-mini-card__row">
                   <ZHField
                     density="compact"
-                    label="Nro. Documento"
+                    label={t("purchases.document.number", "Nro. documento")}
                     required
                     fieldError={ctx.errors.invoiceNumber?.message}
                   >
                     <ZhTextInput
                       {...ctx.register("invoiceNumber")}
-                      placeholder="001-001..."
+                      placeholder={t(
+                        "purchases.document.numberPlaceholder",
+                        "001-001...",
+                      )}
                       maxLength={30}
                       disabled={ctx.fieldDisabled}
                     />
                   </ZHField>
                   <ZHField
                     density="compact"
-                    label="Fecha Emisión"
+                    label={t("purchases.document.issueDate", "Fecha emisión")}
                     required
                     fieldError={ctx.errors.issueDate?.message}
                   >
@@ -429,10 +489,13 @@ export function PurchasesPage() {
                 <span className="material-symbols-outlined pf-mini-card__icon">
                   handshake
                 </span>
-                Condiciones
+                {t("purchases.conditions.title", "Condiciones")}
               </h4>
               <div className="pf-mini-card__body">
-                <ZHField density="compact" label="Forma de Pago SRI">
+                <ZHField
+                  density="compact"
+                  label={t("purchases.conditions.sriPaymentMethod", "Forma de pago SRI")}
+                >
                   <ZhSelect
                     value={ctx.formWatch.sriPaymentMethodCode}
                     onChange={(e) =>
@@ -440,7 +503,9 @@ export function PurchasesPage() {
                     }
                     disabled={ctx.fieldDisabled}
                   >
-                    <option value="">— Seleccionar —</option>
+                    <option value="">
+                      {t("common.selectPlaceholder", "— Seleccionar —")}
+                    </option>
                     {ctx.sriPaymentMethods.map((m) => (
                       <option key={m.code} value={m.code}>
                         {m.code} — {m.name}
@@ -452,7 +517,10 @@ export function PurchasesPage() {
                     Tributario) — no participa en cálculo de impuestos/retenciones,
                     solo se persiste como dato del comprobante. Migración visual
                     únicamente, ver reporte 14B-2. */}
-                <ZHField density="compact" label="Sustento Tributario">
+                <ZHField
+                  density="compact"
+                  label={t("purchases.conditions.taxSupport", "Sustento tributario")}
+                >
                   <ZhSelect
                     value={ctx.formWatch.taxSupportCode}
                     onChange={(e) =>
@@ -460,7 +528,9 @@ export function PurchasesPage() {
                     }
                     disabled={ctx.fieldDisabled}
                   >
-                    <option value="">— Seleccionar —</option>
+                    <option value="">
+                      {t("common.selectPlaceholder", "— Seleccionar —")}
+                    </option>
                     {ctx.sriTaxSupports.map((s) => (
                       <option key={s.code} value={s.code}>
                         {s.code} — {s.name}
@@ -468,19 +538,20 @@ export function PurchasesPage() {
                     ))}
                   </ZhSelect>
                 </ZHField>
-                <ZHField density="compact" label="Condición de Pago">
-                  {/* paymentTermId: NO migrado — ver reporte 14B-2. onChange
-                      dispara ctx.handlePaymentTermChange(), que regenera el
-                      cronograma de cuotas — dominio excluido explícitamente
-                      de este bloque. */}
-                  <select
+                <ZHField
+                  density="compact"
+                  label={t("purchases.conditions.paymentTerm", "Condición de pago")}
+                >
+                  <ZhSelect
                     value={ctx.formWatch.paymentTermId}
                     onChange={(e) =>
                       ctx.handlePaymentTermChange(e.target.value)
                     }
                     disabled={ctx.fieldDisabled}
                   >
-                    <option value="">— Del proveedor —</option>
+                    <option value="">
+                      {t("purchases.conditions.supplierDefault", "— Del proveedor —")}
+                    </option>
                     {ctx.paymentTermsList
                       .filter((p) => p.isActive)
                       .map((p) => (
@@ -488,7 +559,7 @@ export function PurchasesPage() {
                           {p.name} ({p.summary})
                         </option>
                       ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
               </div>
             </div>
@@ -506,7 +577,7 @@ export function PurchasesPage() {
               >
                 qr_code_2
               </span>
-              <span>Información Electrónica</span>
+              <span>{t("purchases.electronic.title", "Información electrónica")}</span>
               <span
                 className={`material-symbols-outlined pf-collapsible__chevron ${ctx.showElectronic ? "pf-collapsible__chevron--open" : ""}`}
               >
@@ -517,7 +588,7 @@ export function PurchasesPage() {
                   ctx.formWatch.authorizationNumber) && (
                   <Badge
                     variant="info"
-                    label="Con datos"
+                    label={t("purchases.electronic.hasData", "Con datos")}
                     className="pf-collapsible__status"
                   />
                 )}
@@ -525,15 +596,21 @@ export function PurchasesPage() {
             {ctx.showElectronic && (
               <div className="pf-collapsible__body">
                 <div className="pf-mini-card__row pf-mini-card__row--3col">
-                  <ZHField density="compact" label="Clave de Acceso">
+                  <ZHField
+                    density="compact"
+                    label={t("purchases.electronic.accessKey", "Clave de acceso")}
+                  >
                     <ZhTextInput
                       {...ctx.register("accessKey")}
-                      placeholder="49 dígitos"
+                      placeholder={t("purchases.electronic.accessKeyPlaceholder", "49 dígitos")}
                       maxLength={49}
                       disabled={ctx.fieldDisabled}
                     />
                   </ZHField>
-                  <ZHField density="compact" label="Nro. Autorización">
+                  <ZHField
+                    density="compact"
+                    label={t("purchases.electronic.authorizationNumber", "Nro. autorización")}
+                  >
                     <ZhTextInput
                       {...ctx.register("authorizationNumber")}
                       maxLength={49}
@@ -543,9 +620,13 @@ export function PurchasesPage() {
                   {/* authorizationDate: type="datetime-local" (fecha + hora) —
                       ZhDateInput fuerza type="date" (sin hora); no es
                       equivalente, se excluye de este bloque. Ver reporte 14B-2. */}
-                  <ZHField density="compact" label="Fecha y Hora Autorización">
+                  <ZHField
+                    density="compact"
+                    label={t("purchases.electronic.authorizationDate", "Fecha y hora autorización")}
+                  >
                     <input
                       type="datetime-local"
+                      className="zh-input--compact"
                       {...ctx.register("authorizationDate")}
                       disabled={ctx.fieldDisabled}
                     />
@@ -561,26 +642,27 @@ export function PurchasesPage() {
                 <span className="material-symbols-outlined pf-mini-card__icon">
                   inventory
                 </span>
-                Logística &amp; Totales
+                {t("purchases.logistics.title", "Logística y totales")}
               </h4>
               <div className="pf-mini-card__body">
-                {/* globalWarehouseId: NO migrado — ver reporte 14B-2. onChange
-                    dispara ctx.applyGlobalWarehouse(), que propaga la bodega a
-                    todas las líneas — operación de stock/logística, dominio
-                    excluido explícitamente de este bloque. */}
-                <ZHField density="compact" label="Bodega Destino">
-                  <select
+                <ZHField
+                  density="compact"
+                  label={t("purchases.logistics.destinationWarehouse", "Bodega destino")}
+                >
+                  <ZhSelect
                     value={ctx.formWatch.globalWarehouseId}
                     onChange={(e) => ctx.applyGlobalWarehouse(e.target.value)}
                     disabled={ctx.fieldDisabled}
                   >
-                    <option value="">— Seleccionar bodega —</option>
+                    <option value="">
+                      {t("purchases.logistics.selectWarehouse", "— Seleccionar bodega —")}
+                    </option>
                     {ctx.warehouses.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.code ? `${w.code} — ${w.name}` : w.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
               </div>
             </div>
@@ -598,7 +680,7 @@ export function PurchasesPage() {
               >
                 notes
               </span>
-              <span>Observaciones</span>
+              <span>{t("purchases.notes.title", "Observaciones")}</span>
               <span
                 className={`material-symbols-outlined pf-collapsible__chevron ${ctx.showNotes ? "pf-collapsible__chevron--open" : ""}`}
               >
@@ -607,7 +689,7 @@ export function PurchasesPage() {
               {!ctx.showNotes && ctx.formWatch.notes && (
                 <Badge
                   variant="info"
-                  label="Con notas"
+                  label={t("purchases.notes.hasNotes", "Con notas")}
                   className="pf-collapsible__status"
                 />
               )}
@@ -618,7 +700,10 @@ export function PurchasesPage() {
                   <ZhTextarea
                     {...ctx.register("notes")}
                     rows={3}
-                    placeholder="Ingrese notas adicionales o descripciones del servicio/producto..."
+                    placeholder={t(
+                      "purchases.notes.placeholder",
+                      "Ingrese notas adicionales o descripciones del servicio/producto...",
+                    )}
                     disabled={ctx.fieldDisabled}
                   />
                 </ZHField>
@@ -638,21 +723,19 @@ export function PurchasesPage() {
                     >
                       inventory_2
                     </span>
-                    Detalle de Productos
+                    {t("purchases.lines.title", "Detalle de productos")}
                   </h4>
-                  {/* pdl-search__input: NO migrado — ver reporte 14B-2. Buscador
-                      especializado con navegación por teclado (onKeyDown) y
-                      dropdown de resultados — Categoría C, no equivalente a
-                      ZhTextInput. */}
                   <div className="pdl-search__wrap" ref={ctx.globalSearchRef}>
                     <div className="pdl-search__input-wrap">
                       <span className="material-symbols-outlined pdl-search__icon">
                         search
                       </span>
-                      <input
+                      <ZhTextInput
                         className="pdl-search__input"
-                        type="text"
-                        placeholder="Buscar producto por nombre o SKU..."
+                        placeholder={t(
+                          "purchases.lines.globalSearchPlaceholder",
+                          "Buscar producto por nombre o SKU...",
+                        )}
                         value={ctx.globalQuery}
                         onChange={(e) => {
                           ctx.setGlobalQuery(e.target.value);
@@ -670,7 +753,9 @@ export function PurchasesPage() {
                       <div className="pdl-search__dropdown">
                         {ctx.globalResults.length === 0 ? (
                           <div className="pdl-search__empty">
-                            Sin resultados para &ldquo;{ctx.globalQuery}&rdquo;
+                            {t("purchases.lines.noResults", {
+                              query: ctx.globalQuery,
+                            })}
                           </div>
                         ) : (
                           ctx.globalResults.map((item, i) => (
@@ -704,7 +789,7 @@ export function PurchasesPage() {
                       if (ctx.globalQuery.length >= 2) ctx.setGlobalOpen(true);
                     }}
                   >
-                    <option value="all">Todo</option>
+                    <option value="all">{t("common.all", "Todo")}</option>
                     {ctx.itemTypeOptions.map((it) => (
                       <option key={it.id} value={it.id}>
                         {it.name}
@@ -720,22 +805,22 @@ export function PurchasesPage() {
                     #
                   </span>
                   <span className="pdl-header__col pdl-header__col--product">
-                    Producto / Código
+                    {t("purchases.lines.productCode", "Producto / código")}
                   </span>
                   <span className="pdl-header__col pdl-header__col--qty">
-                    Cantidad
+                    {t("purchases.lines.quantity", "Cantidad")}
                   </span>
                   <span className="pdl-header__col pdl-header__col--finance">
-                    Financiero (Costo/Desc)
+                    {t("purchases.lines.finance", "Financiero (costo/desc.)")}
                   </span>
                   <span className="pdl-header__col pdl-header__col--tax">
-                    Impuestos
+                    {t("purchases.lines.taxes", "Impuestos")}
                   </span>
                   <span className="pdl-header__col pdl-header__col--total">
-                    Total Neto
+                    {t("purchases.lines.netTotal", "Total neto")}
                   </span>
                   <span className="pdl-header__col pdl-header__col--actions">
-                    Acciones
+                    {t("purchases.lines.actions", "Acciones")}
                   </span>
                 </div>
 
@@ -756,7 +841,7 @@ export function PurchasesPage() {
                       >
                         add_shopping_cart
                       </span>
-                      <p>Sin productos agregados</p>
+                      <p>{t("purchases.lines.empty", "Sin productos agregados")}</p>
                     </div>
                   )}
                 </div>
@@ -775,10 +860,16 @@ export function PurchasesPage() {
                     </span>
                     <div>
                       <div className="pdl-add__title">
-                        Agregar Nuevo Producto o Servicio
+                        {t(
+                          "purchases.lines.addTitle",
+                          "Agregar nuevo producto o servicio",
+                        )}
                       </div>
                       <div className="pdl-add__hint">
-                        Presione para desplegar el catálogo o búsqueda rápida
+                        {t(
+                          "purchases.lines.addHint",
+                          "Presione para desplegar el catálogo o búsqueda rápida",
+                        )}
                       </div>
                     </div>
                   </button>
@@ -803,7 +894,10 @@ export function PurchasesPage() {
             ctx.pendingReceptionItems.length > 0 && (
               <ZHPageNotice
                 variant="warning"
-                message="No se puede confirmar la compra: productos pendientes de vinculación"
+                message={t(
+                  "purchases.validation.pendingReceptionItemsTitle",
+                  "No se puede confirmar la compra: productos pendientes de vinculación",
+                )}
                 detail={ctx.pendingReceptionItems.join(", ")}
               />
             )}
@@ -821,7 +915,7 @@ export function PurchasesPage() {
               <span className="material-symbols-outlined zh-icon-md">
                 arrow_back
               </span>
-              Cancelar
+              {t("common.cancel", "Cancelar")}
             </ZHBtn>
             <ZHBtn
               type="button"
@@ -831,7 +925,9 @@ export function PurchasesPage() {
                 ctx.saving ||
                 !ctx.formWatch.invoiceNumber.trim() ||
                 !ctx.formWatch.supplierId.trim() ||
+                !ctx.formWatch.docTypeCode.trim() ||
                 !ctx.formWatch.issueDate ||
+                !ctx.canUseSriDocTypes ||
                 ctx.lines.length === 0
               }
             >
@@ -839,10 +935,10 @@ export function PurchasesPage() {
                 save
               </span>
               {ctx.saving
-                ? "Guardando..."
+                ? t("common.saving", "Guardando...")
                 : ctx.editing
-                  ? "Actualizar Borrador"
-                  : "Guardar Borrador"}
+                  ? t("purchases.actions.updateDraft", "Actualizar borrador")
+                  : t("purchases.actions.saveDraft", "Guardar borrador")}
             </ZHBtn>
             {ctx.editing && ctx.editing.status === "Draft" && (
               <ZHBtn
@@ -854,14 +950,17 @@ export function PurchasesPage() {
                 }
                 title={
                   ctx.pendingReceptionItems.length > 0
-                    ? "Resuelva los productos pendientes de vinculación antes de confirmar."
+                    ? t(
+                        "purchases.validation.resolvePendingItemsBeforeConfirm",
+                        "Resuelva los productos pendientes de vinculación antes de confirmar.",
+                      )
                     : undefined
                 }
               >
                 <span className="material-symbols-outlined zh-icon-md">
                   check_circle
                 </span>
-                Confirmar Compra
+                {t("purchases.actions.confirm", "Confirmar compra")}
               </ZHBtn>
             )}
             {ctx.editing && ctx.editing.status === "Confirmed" && (
@@ -875,7 +974,7 @@ export function PurchasesPage() {
                 <span className="material-symbols-outlined zh-icon-md">
                   assignment_return
                 </span>
-                Devolución
+                {t("purchases.actions.return", "Devolución")}
               </ZHBtn>
             )}
             {ctx.editing && ctx.editing.status === "Confirmed" && (
@@ -910,7 +1009,7 @@ export function PurchasesPage() {
                 <span className="material-symbols-outlined zh-icon-md">
                   block
                 </span>
-                Anular Compra
+                {t("purchases.actions.cancelPurchase", "Anular compra")}
               </ZHBtn>
             )}
           </div>
@@ -920,14 +1019,14 @@ export function PurchasesPage() {
       {/* ══════════════════════════════════════════════════════════ MODALS */}
       <ZHPromptModal
         open={ctx.modalDiscount}
-        title="Descuento Global"
-        label="Porcentaje (%)"
+        title={t("purchases.discount.title", "Descuento global")}
+        label={t("purchases.discount.percentage", "Porcentaje (%)")}
         type="decimal"
         decimals={getDecimalConfig().percentage}
         positiveOnly
         placeholder={formatMoney(0, getDecimalConfig().percentage)}
         variant="default"
-        confirmLabel="Aplicar"
+        confirmLabel={t("purchases.discount.apply", "Aplicar")}
         onCancel={() => ctx.setModalDiscount(false)}
         onConfirm={ctx.handleApplyDiscount}
       />
@@ -945,26 +1044,28 @@ export function PurchasesPage() {
       <ZHPromptModal
         open={ctx.modalCancelReason}
         variant="danger"
-        title="Anular Compra"
+        title={t("purchases.cancel.title", "Anular compra")}
         message={
           ctx.editing
-            ? `¿ANULAR compra ${ctx.editing.invoiceNumber}? Esto revertirá stock, cuentas por pagar y retenciones. Esta acción NO se puede deshacer.`
+            ? t("purchases.cancel.message", {
+                invoiceNumber: ctx.editing.invoiceNumber,
+              })
             : ""
         }
-        label="Motivo de anulación"
-        placeholder="Ingrese el motivo..."
-        confirmLabel="Anular"
+        label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
+        placeholder={t("purchases.cancel.reasonPlaceholder", "Ingrese el motivo...")}
+        confirmLabel={t("purchases.cancel.confirm", "Anular")}
         onCancel={() => ctx.setModalCancelReason(false)}
         onConfirm={ctx.handleCancel}
       />
 
       <ZHPromptModal
         open={ctx.modalWhIssue}
-        title="Emitir Retención"
+        title={t("purchases.withholding.issueTitle", "Emitir retención")}
         variant="default"
-        label="ID del Punto de Emisión"
-        placeholder="ID del punto de emisión"
-        confirmLabel="Emitir"
+        label={t("purchases.withholding.emissionPointId", "ID del punto de emisión")}
+        placeholder={t("purchases.withholding.emissionPointPlaceholder", "ID del punto de emisión")}
+        confirmLabel={t("purchases.withholding.issue", "Emitir")}
         onCancel={() => ctx.setModalWhIssue(false)}
         onConfirm={ctx.handleIssueWithholding}
       />
@@ -972,10 +1073,10 @@ export function PurchasesPage() {
       <ZHPromptModal
         open={ctx.modalWhCancel}
         variant="danger"
-        title="Anular Retención"
-        label="Motivo de anulación"
-        placeholder="Ingrese el motivo..."
-        confirmLabel="Anular"
+        title={t("purchases.withholding.cancelTitle", "Anular retención")}
+        label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
+        placeholder={t("purchases.cancel.reasonPlaceholder", "Ingrese el motivo...")}
+        confirmLabel={t("purchases.cancel.confirm", "Anular")}
         onCancel={() => ctx.setModalWhCancel(false)}
         onConfirm={ctx.handleCancelWithholding}
       />
@@ -1330,7 +1431,7 @@ function PurchaseLineCard({
                   type="button"
                   onClick={() => viewMatchedItem(l.itemId as string)}
                 >
-                  Ver Item
+                  {t("purchases.lines.viewItem", "Ver ítem")}
                 </ZHBtn>
                 {!ctx.fieldDisabled && <UpdateItemAction line={l} ctx={ctx} />}
                 {!ctx.fieldDisabled && l.purchaseReceptionLineId && (
@@ -1342,15 +1443,15 @@ function PurchaseLineCard({
                     onClick={() => void ctx.handleUnmatchItem(l._key)}
                   >
                     {ctx.matchingKey === l._key
-                      ? "Desvinculando..."
-                      : "Desvincular Item"}
+                      ? t("purchases.lines.unlinkingItem", "Desvinculando...")
+                      : t("purchases.lines.unlinkItem", "Desvincular ítem")}
                   </ZHBtn>
                 )}
                 {!ctx.fieldDisabled && !l.purchaseReceptionLineId && (
                   <button
                     type="button"
                     className="pdl-line__clear"
-                    title="Cambiar producto"
+                    title={t("purchases.lines.changeProduct", "Cambiar producto")}
                     onClick={() => {
                       ctx.updateLine(l._key, "itemId", undefined);
                       ctx.updateLine(l._key, "description", "");
@@ -1365,10 +1466,7 @@ function PurchaseLineCard({
                   </button>
                 )}
               </div>
-              {/* pdl-line__wh-select: NO migrado — ver reporte 14B-2. Control
-                  de bodega por línea del detalle de productos (tabla) —
-                  "no migrar tablas", dominio excluido explícitamente. */}
-              <select
+              <ZhSelect
                 className="pdl-line__wh-select"
                 value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ""}
                 onChange={(e) =>
@@ -1376,13 +1474,15 @@ function PurchaseLineCard({
                 }
                 disabled={ctx.fieldDisabled}
               >
-                <option value="">— Seleccionar bodega —</option>
+                <option value="">
+                  {t("purchases.logistics.selectWarehouse", "— Seleccionar bodega —")}
+                </option>
                 {ctx.warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.code ? `${w.code} — ${w.name}` : w.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </>
           )}
         </div>
@@ -1400,7 +1500,9 @@ function PurchaseLineCard({
         </div>
         <div className="pdl-line__finance">
           <div className="pdl-line__cost-row">
-            <span className="pdl-line__cost-label">COSTO: $</span>
+            <span className="pdl-line__cost-label">
+              {t("purchases.lines.costShort", "COSTO")}: $
+            </span>
             <ZhDecimalInput
               className="pdl-input pdl-input--cost"
               decimals={getDecimalConfig().purchaseUnitPrice}
@@ -1413,7 +1515,9 @@ function PurchaseLineCard({
             />
           </div>
           <div className="pdl-line__cost-row">
-            <span className="pdl-line__cost-label">DESC: %</span>
+            <span className="pdl-line__cost-label">
+              {t("purchases.lines.discountShort", "DESC")}: %
+            </span>
             <ZhDecimalInput
               className="pdl-input pdl-input--disc"
               decimals={getDecimalConfig().percentage}
@@ -1451,13 +1555,13 @@ function PurchaseLineCard({
           <ZHIconButton
             icon="content_copy"
             variant="ghost"
-            title="Duplicar"
+            title={t("purchases.lines.duplicate", "Duplicar")}
             onClick={() => ctx.duplicateLine(l._key)}
           />
           <ZHIconButton
             icon="delete"
             variant="danger"
-            title="Eliminar"
+            title={t("purchases.lines.delete", "Eliminar")}
             onClick={() => ctx.removeLine(l._key)}
           />
         </div>
@@ -1480,35 +1584,42 @@ function PurchaseLineCard({
             >
               description
             </span>
-            <h4 className="pdl-block__title">Producto recibido (XML)</h4>
+            <h4 className="pdl-block__title">
+              {t("purchases.lines.receivedProduct", "Producto recibido (XML)")}
+            </h4>
           </header>
           {!vm.xml.hasOrigin && (
             <p className="pdl-block__hint">
-              Compra manual — no proviene de Recepción Electrónica.
+              {t(
+                "purchases.lines.manualPurchaseHint",
+                "Compra manual — no proviene de recepción electrónica.",
+              )}
             </p>
           )}
           <div className="pdl-ctx-col__badges">
             <span className="pdl-tag">
-              Cód. proveedor: {vm.xml.supplierCode}
+              {t("purchases.lines.supplierCode", "Cód. proveedor")}:{" "}
+              {vm.xml.supplierCode}
             </span>
             <span
               className={`pdl-tag ${vm.xml.hasSupplierAuxCode ? "pdl-tag--accent" : ""}`}
             >
-              Cód. auxiliar: {vm.xml.supplierAuxCode}
+              {t("purchases.lines.auxCode", "Cód. auxiliar")}:{" "}
+              {vm.xml.supplierAuxCode}
             </span>
           </div>
           <div className="pdl-ctx-col__desc">{vm.xml.description}</div>
           <div className="pdl-ctx-col__costs">
             <div>
-              <span className="pdl-cost-label">Cantidad</span>
+              <span className="pdl-cost-label">{t("purchases.lines.quantity", "Cantidad")}</span>
               <span className="pdl-cost-val">{vm.xml.quantity}</span>
             </div>
             <div>
-              <span className="pdl-cost-label">Precio</span>
+              <span className="pdl-cost-label">{t("purchases.lines.price", "Precio")}</span>
               <span className="pdl-cost-val">{vm.xml.unitPrice}</span>
             </div>
             <div>
-              <span className="pdl-cost-label">Descuento</span>
+              <span className="pdl-cost-label">{t("purchases.lines.discount", "Descuento")}</span>
               <span className="pdl-cost-val">{vm.xml.discount}</span>
             </div>
             <div>
@@ -1519,7 +1630,7 @@ function PurchaseLineCard({
             </div>
             <div>
               <span className="pdl-cost-label pdl-cost-label--strong">
-                Total línea
+                {t("purchases.lines.lineTotal", "Total línea")}
               </span>
               <span className="pdl-cost-val pdl-cost-val--strong">
                 {vm.xml.totalLine}
@@ -1536,11 +1647,13 @@ function PurchaseLineCard({
             >
               badge
             </span>
-            <h4 className="pdl-block__title">Item ERP</h4>
+            <h4 className="pdl-block__title">
+              {t("purchases.lines.erpItem", "Ítem ERP")}
+            </h4>
             {vm.item.isLoading && (
               <span
                 className="pdl-ctx-col__loading"
-                title="Cargando contexto..."
+                title={t("purchases.lines.loadingContext", "Cargando contexto...")}
               >
                   <span
                   className="material-symbols-outlined pdl-ctx-col__loading-icon"
@@ -1557,8 +1670,8 @@ function PurchaseLineCard({
               variant={vm.item.hasItem ? "green" : "orange"}
               label={
                 vm.item.hasItem
-                  ? "🟢 Item seleccionado"
-                  : "🟡 Pendiente de vincular Item"
+                  ? t("purchases.lines.itemSelected", "🟢 Ítem seleccionado")
+                  : t("purchases.lines.itemPending", "🟡 Pendiente de vincular ítem")
               }
             />
           )}
@@ -1568,11 +1681,11 @@ function PurchaseLineCard({
               <span className="pdl-cost-val">{vm.item.sku}</span>
             </div>
             <div>
-              <span className="pdl-cost-label">Nombre</span>
+              <span className="pdl-cost-label">{t("purchases.lines.name", "Nombre")}</span>
               <span className="pdl-cost-val">{vm.item.name}</span>
             </div>
             <div>
-              <span className="pdl-cost-label">Unidad</span>
+              <span className="pdl-cost-label">{t("purchases.lines.unit", "Unidad")}</span>
               <span className="pdl-cost-val">{vm.item.uom}</span>
             </div>
             {packagingLevels.length > 0 && (
@@ -1703,7 +1816,9 @@ function PurchaseLineCard({
             >
               insights
             </span>
-            <h4 className="pdl-block__title">Información Comercial</h4>
+            <h4 className="pdl-block__title">
+              {t("purchases.lines.commercialInfo", "Información comercial")}
+            </h4>
           </header>
           <div className="pdl-ctx-col__stock">
             <div className="pdl-stock-item">
@@ -1717,13 +1832,17 @@ function PurchaseLineCard({
               </span>
             </div>
             <div className="pdl-stock-item">
-              <span className="pdl-stock-head">Disp.</span>
+              <span className="pdl-stock-head">
+                {t("purchases.lines.availableShort", "Disp.")}
+              </span>
               <span className="pdl-stock-val">
                 {vm.commercial.stock.available}
               </span>
             </div>
             <div className="pdl-stock-item">
-              <span className="pdl-stock-head">Reserva</span>
+              <span className="pdl-stock-head">
+                {t("purchases.lines.reserved", "Reserva")}
+              </span>
               <span className="pdl-stock-val">
                 {vm.commercial.stock.reserved}
               </span>
@@ -1731,13 +1850,17 @@ function PurchaseLineCard({
           </div>
           <div className="pdl-ctx-col__costs">
             <div>
-              <span className="pdl-cost-label">Costo promedio</span>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.averageCost", "Costo promedio")}
+              </span>
               <span className="pdl-cost-val">
                 {vm.commercial.costs.average}
               </span>
             </div>
             <div>
-              <span className="pdl-cost-label">Último costo</span>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.lastCost", "Último costo")}
+              </span>
               <span className="pdl-cost-val">{vm.commercial.costs.last}</span>
             </div>
           </div>
@@ -1754,7 +1877,7 @@ function PurchaseLineCard({
           <div className="pdl-ctx-col__margin">
             <div className="pdl-margin-row">
               <span className="pdl-margin-label">
-                Rentabilidad (margen neto)
+                {t("purchases.lines.profitability", "Rentabilidad (margen neto)")}
               </span>
               <span
                 className={`pdl-margin-pct ${vm.commercial.profitability.marginPctValue >= 0 ? "" : "pdl-margin-pct--neg"}`}
@@ -1766,12 +1889,16 @@ function PurchaseLineCard({
               className="pdl-margin-bar pdl-margin-bar--progress"
               value={Math.min(100, Math.max(0, vm.commercial.profitability.marginPctValue))}
               max={100}
-              aria-label="Rentabilidad margen neto"
+              aria-label={t("purchases.lines.profitabilityAria", "Rentabilidad margen neto")}
             />
             <div className="pdl-margin-meta">
-              <span>Precio de venta: {vm.commercial.profitability.pvp}</span>
               <span>
-                Desc Máx: {vm.commercial.profitability.maxDiscountPercent}%
+                {t("purchases.lines.salePrice", "Precio de venta")}:{" "}
+                {vm.commercial.profitability.pvp}
+              </span>
+              <span>
+                {t("purchases.lines.maxDiscount", "Desc. máx.")}:{" "}
+                {vm.commercial.profitability.maxDiscountPercent}%
               </span>
             </div>
           </div>
@@ -1797,6 +1924,7 @@ function CreateItemLineAction({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
 
   const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
@@ -1819,7 +1947,7 @@ function CreateItemLineAction({
         disabled={disabled}
         onClick={() => setOpen(true)}
       >
-        Crear Item
+        {t("purchases.lines.createItem", "Crear ítem")}
       </ZHBtn>
       <ItemEditorModal
         open={open}
@@ -1860,6 +1988,7 @@ function UpdateItemAction({
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
   if (!l.itemId) return null;
 
   const handleSaved = (item: ItemCreatedResult) => {
@@ -1880,7 +2009,7 @@ function UpdateItemAction({
         type="button"
         onClick={() => setOpen(true)}
       >
-        Actualizar Item
+        {t("purchases.lines.updateItem", "Actualizar ítem")}
       </ZHBtn>
       <ItemEditorModal
         open={open}
@@ -1918,6 +2047,7 @@ function ReceptionCreateItemAction({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
 
   const receptionLine: PurchaseReceptionLineMatch = {
     lineId: l.purchaseReceptionLineId as string,
@@ -1969,7 +2099,7 @@ function ReceptionCreateItemAction({
         disabled={disabled}
         onClick={() => setOpen(true)}
       >
-        Crear Item
+        {t("purchases.lines.createItem", "Crear ítem")}
       </ZHBtn>
       <CreateItemFromReceptionLineModal
         open={open}
@@ -2003,6 +2133,7 @@ function ReceptionCreateItemAction({
 }
 
 function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
+  const { t } = useI18n();
   return (
     <div className="pdl-topbar__right" ref={ctx.costsMenuRef}>
       <button
@@ -2013,7 +2144,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         <span className="material-symbols-outlined pdl-costs-toggle__icon">
           tune
         </span>
-        Gastos y Acciones
+        {t("purchases.costs.title", "Gastos y acciones")}
         <span
           className={`material-symbols-outlined pdl-costs-toggle__chevron${ctx.showCostsMenu ? " pdl-costs-toggle__chevron--open" : ""}`}
         >
@@ -2023,7 +2154,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
       {ctx.showCostsMenu && (
         <div className="pdl-costs-dropdown">
           <div className="pdl-costs-dropdown__row">
-            <ZHField density="compact" label="Flete ($)">
+            <ZHField density="compact" label={t("purchases.costs.freight", "Flete ($)")}>
               <ZhDecimalInput
                 decimals={getDecimalConfig().totalAmount}
                 positiveOnly
@@ -2034,7 +2165,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
                 disabled={ctx.fieldDisabled}
               />
             </ZHField>
-            <ZHField density="compact" label="Otros Gastos ($)">
+            <ZHField density="compact" label={t("purchases.costs.other", "Otros gastos ($)")}>
               <ZhDecimalInput
                 decimals={getDecimalConfig().totalAmount}
                 positiveOnly
@@ -2061,7 +2192,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             >
               percent
             </span>
-            Desc. Global
+            {t("purchases.costs.globalDiscount", "Desc. global")}
           </ZHBtn>
           <ZHBtn
             type="button"
@@ -2075,7 +2206,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             >
               local_shipping
             </span>
-            Calc. Flete
+            {t("purchases.costs.calculateFreight", "Calc. flete")}
           </ZHBtn>
           <ZHBtn
             type="button"
@@ -2089,7 +2220,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             >
               sync
             </span>
-            Recalcular
+            {t("purchases.costs.recalculate", "Recalcular")}
           </ZHBtn>
         </div>
       )}
@@ -2102,6 +2233,7 @@ function PaymentScheduleSection({
 }: {
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
+  const { t } = useI18n();
   return (
     <div className="pf-card">
       <div className="pf-card__header">
@@ -2109,7 +2241,7 @@ function PaymentScheduleSection({
           <span className="material-symbols-outlined pf-card__title-icon">
             calendar_month
           </span>
-          Plazos de Pago
+          {t("purchases.schedule.title", "Plazos de pago")}
           {ctx.hasPersistedSchedule && (
             <Badge
               variant="success"
@@ -2119,7 +2251,7 @@ function PaymentScheduleSection({
                   <span className="material-symbols-outlined pf-badge__icon">
                     lock
                   </span>{" "}
-                  Confirmado
+                  {t("purchases.schedule.confirmed", "Confirmado")}
                 </>
               }
             />
@@ -2128,7 +2260,7 @@ function PaymentScheduleSection({
             <Badge
               variant="warning"
               className="pf-badge--offset"
-              label="Preview"
+              label={t("purchases.schedule.preview", "Preview")}
             />
           )}
         </h4>
@@ -2146,7 +2278,7 @@ function PaymentScheduleSection({
               >
                 autorenew
               </span>
-              Regenerar
+              {t("purchases.schedule.regenerate", "Regenerar")}
             </ZHBtn>
             <ZHBtn
               type="button"
@@ -2160,7 +2292,7 @@ function PaymentScheduleSection({
               >
                 add
               </span>
-              Cuota
+              {t("purchases.schedule.installment", "Cuota")}
             </ZHBtn>
           </div>
         )}
@@ -2170,7 +2302,7 @@ function PaymentScheduleSection({
           <div className="pf-schedule-setup">
             <ZHField
               density="compact"
-              label="Nro. Cuotas"
+              label={t("purchases.schedule.installmentCount", "Nro. cuotas")}
               className="pf-schedule-field--installments"
             >
               <ZhNumberInput
@@ -2186,7 +2318,7 @@ function PaymentScheduleSection({
             </ZHField>
             <ZHField
               density="compact"
-              label="Días entre cuotas"
+              label={t("purchases.schedule.daysBetween", "Días entre cuotas")}
               className="pf-schedule-field--days-between"
             >
               <ZhNumberInput
@@ -2199,8 +2331,12 @@ function PaymentScheduleSection({
               />
             </ZHField>
             <div className="pf-schedule-total">
-              Total plazo:{" "}
-              <strong>{ctx.ptInstallments * ctx.ptDaysBetween} días</strong>
+              {t("purchases.schedule.totalTerm", "Total plazo")}:{" "}
+              <strong>
+                {t("purchases.schedule.daysValue", {
+                  days: ctx.ptInstallments * ctx.ptDaysBetween,
+                })}
+              </strong>
             </div>
           </div>
         )}
@@ -2208,7 +2344,12 @@ function PaymentScheduleSection({
         {ctx.ptMismatch && ctx.ptRows.length > 0 && (
           <ZHPageNotice
             variant="warning"
-            message={`Las cuotas no cuadran con el total. Diferencia: $${formatMoney(roundToTotalAmount(ctx.localTotal - ctx.ptRowsSum), getDecimalConfig().totalAmount)}`}
+            message={t("purchases.schedule.mismatch", {
+              amount: formatMoney(
+                roundToTotalAmount(ctx.localTotal - ctx.ptRowsSum),
+                getDecimalConfig().totalAmount,
+              ),
+            })}
           />
         )}
 
@@ -2217,9 +2358,9 @@ function PaymentScheduleSection({
             <thead>
               <tr>
                 <th className="pf-schedule-col--number">#</th>
-                <th>Vencimiento</th>
-                <th className="zh-text-align-right">Monto</th>
-                <th>Notas</th>
+                <th>{t("purchases.schedule.dueDate", "Vencimiento")}</th>
+                <th className="zh-text-align-right">{t("purchases.schedule.amount", "Monto")}</th>
+                <th>{t("purchases.schedule.notes", "Notas")}</th>
               </tr>
             </thead>
             <tbody>
@@ -2250,12 +2391,12 @@ function PaymentScheduleSection({
               <thead>
                 <tr>
                   <th className="pf-schedule-col--number">#</th>
-                  <th>Vencimiento</th>
+                  <th>{t("purchases.schedule.dueDate", "Vencimiento")}</th>
                   <th className="zh-text-align-right pf-schedule-col--amount">
-                    Monto ($)
+                    {t("purchases.schedule.amountCurrency", "Monto ($)")}
                   </th>
-                  <th>Notas</th>
-                  <th>Estado</th>
+                  <th>{t("purchases.schedule.notes", "Notas")}</th>
+                  <th>{t("purchases.schedule.status", "Estado")}</th>
                   <th className="zh-text-align-center pf-schedule-col--actions"></th>
                 </tr>
               </thead>
@@ -2297,7 +2438,7 @@ function PaymentScheduleSection({
                       <ZhTextInput
                         density="compact"
                         className="pf-schedule-input--notes"
-                        placeholder="Observación..."
+                        placeholder={t("purchases.schedule.notePlaceholder", "Observación...")}
                         value={r.notes}
                         onChange={(e) =>
                           ctx.updateScheduleRow(idx, "notes", e.target.value)
@@ -2307,14 +2448,17 @@ function PaymentScheduleSection({
                       />
                     </td>
                     <td>
-                      <Badge variant="warning" label="Pendiente" />
+                      <Badge
+                        variant="warning"
+                        label={t("purchases.schedule.pending", "Pendiente")}
+                      />
                     </td>
                     <td className="zh-text-align-center">
                       {ctx.isDraft && ctx.ptRows.length > 1 && (
                         <ZHIconButton
                           icon="close"
                           variant="danger"
-                          title="Eliminar cuota"
+                          title={t("purchases.schedule.deleteInstallment", "Eliminar cuota")}
                           onClick={() => ctx.removeInstallment(idx)}
                           disabled={ctx.fieldDisabled}
                         />
@@ -2326,10 +2470,12 @@ function PaymentScheduleSection({
             </table>
             <div className="pf-schedule-footer">
               <span className="pf-schedule-footer__count">
-                {ctx.ptRows.length} cuota(s)
+                {t("purchases.schedule.installmentCountValue", {
+                  count: ctx.ptRows.length,
+                })}
               </span>
               <span>
-                Total cuotas:{" "}
+                {t("purchases.schedule.installmentsTotal", "Total cuotas")}:{" "}
                 <strong
                   className={`pf-schedule-footer__amount ${ctx.ptMismatch ? "pf-schedule-footer__amount--error" : "pf-schedule-footer__amount--default"}`}
                 >
@@ -2338,7 +2484,8 @@ function PaymentScheduleSection({
                     getDecimalConfig().totalAmount,
                   )}
                 </strong>
-                {" / "}Total compra:{" "}
+                {" / "}
+                {t("purchases.schedule.purchaseTotal", "Total compra")}:{" "}
                 <strong className="pf-schedule-footer__purchase-total">
                   {formatMoneyWithSymbol(
                     ctx.localTotal,
@@ -2358,10 +2505,19 @@ function PaymentScheduleSection({
               event_busy
             </span>
             {!ctx.ptLoaded
-              ? "Seleccione un proveedor para cargar la condición de pago"
+              ? t(
+                  "purchases.schedule.emptySelectSupplier",
+                  "Seleccione un proveedor para cargar la condición de pago",
+                )
               : !ctx.formWatch.issueDate
-                ? "Ingrese la fecha de emisión para calcular vencimientos"
-                : "Configure cuotas arriba para generar el cronograma"}
+                ? t(
+                    "purchases.schedule.emptyIssueDate",
+                    "Ingrese la fecha de emisión para calcular vencimientos",
+                  )
+                : t(
+                    "purchases.schedule.emptyConfigure",
+                    "Configure cuotas arriba para generar el cronograma",
+                  )}
           </div>
         )}
       </div>
@@ -2374,6 +2530,7 @@ function RetentionSection({
 }: {
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
+  const { t } = useI18n();
   return (
     <div className="pf-card pf-retention">
       <div className="pf-card__header">
@@ -2381,7 +2538,7 @@ function RetentionSection({
           <span className="material-symbols-outlined pf-card__title-icon">
             receipt
           </span>{" "}
-          Retenciones
+          {t("purchases.retention.title", "Retenciones")}
         </h4>
         <div className="pf-retention-actions">
           {!ctx.withholding && (
@@ -2398,7 +2555,7 @@ function RetentionSection({
                 >
                   calculate
                 </span>
-                Calcular
+                {t("purchases.retention.calculate", "Calcular")}
               </ZHBtn>
               {ctx.whPreview && ctx.whPreview.lines.length > 0 && (
                 <ZHBtn
@@ -2413,7 +2570,7 @@ function RetentionSection({
                   >
                     receipt_long
                   </span>
-                  Emitir
+                  {t("purchases.retention.issue", "Emitir")}
                 </ZHBtn>
               )}
             </>
@@ -2431,7 +2588,7 @@ function RetentionSection({
               >
                 cancel
               </span>
-              Anular
+              {t("purchases.retention.cancel", "Anular")}
             </ZHBtn>
           )}
         </div>
@@ -2448,12 +2605,12 @@ function RetentionSection({
               <table className="table table--compact table--neutral">
                 <thead>
                   <tr>
-                    <th>Tipo</th>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th className="zh-text-align-right">Base</th>
+                    <th>{t("purchases.retention.type", "Tipo")}</th>
+                    <th>{t("purchases.retention.code", "Código")}</th>
+                    <th>{t("purchases.retention.description", "Descripción")}</th>
+                    <th className="zh-text-align-right">{t("purchases.retention.base", "Base")}</th>
                     <th className="zh-text-align-right">%</th>
-                    <th className="zh-text-align-right">Retenido</th>
+                    <th className="zh-text-align-right">{t("purchases.retention.withheld", "Retenido")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2489,7 +2646,7 @@ function RetentionSection({
             )}
             {ctx.whPreview.totalRetained > 0 && (
               <div className="pf-retention__total">
-                Total a retener:{" "}
+                {t("purchases.retention.totalToWithhold", "Total a retener")}:{" "}
                 {formatMoneyWithSymbol(
                   ctx.whPreview.totalRetained,
                   getDecimalConfig().totalAmount,
@@ -2502,10 +2659,11 @@ function RetentionSection({
           <>
             <div className="pf-retention__issued-meta">
               <span className="pf-retention__issued-item">
-                Número: <strong>{ctx.withholding.withholdingNumber}</strong>
+                {t("purchases.retention.number", "Número")}:{" "}
+                <strong>{ctx.withholding.withholdingNumber}</strong>
               </span>
               <span className="pf-retention__issued-item">
-                Estado:{" "}
+                {t("purchases.retention.status", "Estado")}:{" "}
                 <Badge
                   variant={
                     ctx.withholding.status === "Issued" ? "success" : "error"
@@ -2514,18 +2672,19 @@ function RetentionSection({
                 />
               </span>
               <span className="pf-retention__issued-item">
-                Fecha: <strong>{formatDate(ctx.withholding.issueDate)}</strong>
+                {t("purchases.retention.date", "Fecha")}:{" "}
+                <strong>{formatDate(ctx.withholding.issueDate)}</strong>
               </span>
             </div>
             <table className="table table--compact table--neutral">
               <thead>
                 <tr>
-                  <th>Tipo</th>
-                  <th>Código</th>
-                  <th>Descripción</th>
-                  <th className="zh-text-align-right">Base</th>
+                  <th>{t("purchases.retention.type", "Tipo")}</th>
+                  <th>{t("purchases.retention.code", "Código")}</th>
+                  <th>{t("purchases.retention.description", "Descripción")}</th>
+                  <th className="zh-text-align-right">{t("purchases.retention.base", "Base")}</th>
                   <th className="zh-text-align-right">%</th>
-                  <th className="zh-text-align-right">Retenido</th>
+                  <th className="zh-text-align-right">{t("purchases.retention.withheld", "Retenido")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2560,17 +2719,17 @@ function RetentionSection({
             </table>
             <div className="pf-retention__issued-totals">
               <TotalMiniCard
-                label="Ret. IVA"
+                label={t("purchases.retention.vat", "Ret. IVA")}
                 value={ctx.withholding.totalRetainedVat}
                 color="var(--color-primary)"
               />
               <TotalMiniCard
-                label="Ret. Renta"
+                label={t("purchases.retention.income", "Ret. renta")}
                 value={ctx.withholding.totalRetainedIncome}
                 color="var(--color-warning)"
               />
               <TotalMiniCard
-                label="TOTAL RETENIDO"
+                label={t("purchases.retention.totalWithheld", "TOTAL RETENIDO")}
                 value={ctx.withholding.totalRetained}
                 color="var(--color-error)"
                 highlight
@@ -2584,6 +2743,7 @@ function RetentionSection({
 }
 
 function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
+  const { t } = useI18n();
   return (
     <div className="pf-totals">
       <div className="pf-totals__header">
@@ -2593,12 +2753,12 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           >
             summarize
           </span>{" "}
-          Resumen
+          {t("purchases.summary.title", "Resumen")}
         </h4>
       </div>
       <div className="pf-totals__body">
         <div className="pf-totals__row">
-          <span className="pf-totals__label">Subtotal</span>
+          <span className="pf-totals__label">{t("purchases.summary.subtotal", "Subtotal")}</span>
           <span className="pf-totals__value">
             {formatMoneyWithSymbol(
               ctx.editing ? ctx.editing.subtotal : ctx.localSummary.subtotal,
@@ -2607,7 +2767,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </span>
         </div>
         <div className="pf-totals__row">
-          <span className="pf-totals__label">Descuento</span>
+          <span className="pf-totals__label">{t("purchases.summary.discount", "Descuento")}</span>
           <span
             className="pf-totals__value pf-totals__value--warning"
           >
@@ -2642,7 +2802,13 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <div className="pf-totals__row">
             <span className="pf-totals__label">
               IRBPNR{" "}
-              <span className="pf-totals__value--warning" title="Informativo — no incluido en el Gran Total mientras no exista soporte contable.">
+              <span
+                className="pf-totals__value--warning"
+                title={t(
+                  "purchases.summary.irbpnrHint",
+                  "Informativo — no incluido en el Gran Total mientras no exista soporte contable.",
+                )}
+              >
                 (i)
               </span>
             </span>
@@ -2655,7 +2821,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </div>
         )}
         <div className="pf-totals__row">
-          <span className="pf-totals__label">Flete</span>
+          <span className="pf-totals__label">{t("purchases.summary.freight", "Flete")}</span>
           <span className="pf-totals__value">
             {formatMoneyWithSymbol(
               ctx.editing
@@ -2666,7 +2832,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </span>
         </div>
         <div className="pf-totals__row">
-          <span className="pf-totals__label">Otros Costos</span>
+          <span className="pf-totals__label">{t("purchases.summary.otherCosts", "Otros costos")}</span>
           <span className="pf-totals__value">
             {formatMoneyWithSymbol(
               ctx.editing
@@ -2679,13 +2845,13 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         <div className="pf-totals__divider" />
         <div className="pf-totals__row">
           <span className="pf-totals__label pf-totals__label--strong">
-            Líneas
+            {t("purchases.summary.lines", "Líneas")}
           </span>
           <span className="pf-totals__value">{ctx.lines.length}</span>
         </div>
       </div>
       <div className="pf-totals__grand">
-        <span className="pf-totals__grand-label">TOTAL</span>
+        <span className="pf-totals__grand-label">{t("purchases.summary.total", "TOTAL")}</span>
         <span className="pf-totals__grand-value">
           {formatMoneyWithSymbol(
             ctx.editing ? ctx.editing.grandTotal : ctx.localTotal,

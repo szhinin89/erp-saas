@@ -1,15 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
 import { useItemUiStore } from "../../items/store/itemUiStore";
 import type { ItemMatchStatus } from "../api/purchaseReceptionService";
-
-// Estado nunca depende solo del color: badge + icono + texto siempre juntos (accesibilidad).
-const STATUS_LABEL: Record<ItemMatchStatus, string> = {
-  PENDING: "Sin Item",
-  NEEDS_REVIEW: "Revisar",
-  AUTO_MATCHED: "Auto",
-  MANUALLY_MATCHED: "Manual",
-};
 
 const STATUS_ICON: Record<ItemMatchStatus, string> = {
   PENDING: "🔴",
@@ -29,10 +22,13 @@ const STATUS_VARIANT: Record<
 };
 
 export function ItemMatchStatusBadge({ status }: { status: ItemMatchStatus }) {
+  const { t } = useI18n();
+  const label = t(`purchases.itemMatchStatus.${status}`, status);
+
   return (
     <Badge
       variant={STATUS_VARIANT[status]}
-      label={`${STATUS_ICON[status]} ${STATUS_LABEL[status]}`}
+      label={`${STATUS_ICON[status]} ${label}`}
     />
   );
 }

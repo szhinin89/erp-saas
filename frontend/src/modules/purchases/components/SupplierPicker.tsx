@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
+import { useI18n } from "../../../i18n/i18n";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 
@@ -9,6 +11,7 @@ type Props = {
 };
 
 export function SupplierPicker({ value, onChange, disabled }: Props) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SupplierPickerRow[]>([]);
   const [selected, setSelected] = useState<SupplierPickerRow | null>(null);
@@ -66,7 +69,7 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
     if (!value && selected) {
       setSelected(null);
     }
-  }, [value]);
+  }, [selected, value]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -126,7 +129,8 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
           <button
             type="button"
             onClick={handleClear}
-            title="Cambiar proveedor" className="zh-picker__clear"
+            title={t("purchases.supplierPicker.change", "Cambiar proveedor")}
+            className="zh-picker__clear"
           >
             <span
               className="material-symbols-outlined zh-picker__clear-icon"
@@ -142,7 +146,7 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
   return (
     <div ref={wrapRef} className="zh-picker">
       <div className="zh-picker__input-wrap">
-        <input
+        <ZhTextInput
           ref={inputRef}
           value={query}
           onChange={(e) => {
@@ -153,12 +157,15 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
             if (query.length >= 2) setOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Buscar por RUC, razón social o nombre..."
+          placeholder={t(
+            "purchases.supplierPicker.placeholder",
+            "Buscar por RUC, razón social o nombre...",
+          )}
           disabled={disabled}
         />
         {loading && (
           <span className="zh-picker__loading">
-            Buscando...
+            {t("common.searching", "Buscando...")}
           </span>
         )}
       </div>
@@ -167,14 +174,17 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
         <div className="zh-picker__dropdown">
           {results.length === 0 && !loading && (
             <div className="zh-picker__empty">
-              <div>Sin resultados para "{query}"</div>
+              <div>{t("purchases.supplierPicker.noResults", { query })}</div>
               <div className="zh-picker__empty-help">
-                ¿Aún no tiene proveedores registrados?{" "}
+                {t(
+                  "purchases.supplierPicker.emptyHelp",
+                  "¿Aún no tiene proveedores registrados?",
+                )}{" "}
                 <a
                   href="/masterdata/suppliers"
                   className="zh-picker__link"
                 >
-                  Registre un proveedor
+                  {t("purchases.supplierPicker.register", "Registre un proveedor")}
                 </a>
               </div>
             </div>

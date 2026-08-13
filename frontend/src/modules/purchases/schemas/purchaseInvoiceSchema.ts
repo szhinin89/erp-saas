@@ -1,18 +1,29 @@
 import { z } from "zod";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
 
+type TFunction = (key: string, fallback: string) => string;
+
+const passthroughT: TFunction = (_key, fallback) => fallback;
+
 // ── Line sub-schema ────────────────────────────────────────────────────
-export const purchaseLineSchema = z.object({
+export const createPurchaseLineSchema = (t: TFunction) => z.object({
   _key: z.number(),
   itemId: z.string().nullable().optional(),
-  description: z.string().min(1, "La descripción es obligatoria.").max(300),
-  quantity: z.coerce.number().positive("La cantidad debe ser mayor a 0."),
-  unitPrice: z.coerce.number().min(0, "El costo no puede ser negativo."),
-  vatCode: z.string().min(1, "Seleccione el código IVA."),
+  description: z
+    .string()
+    .min(1, t("purchases.validation.descriptionRequired", "La descripción es obligatoria."))
+    .max(300),
+  quantity: z.coerce
+    .number()
+    .positive(t("purchases.validation.quantityPositive", "La cantidad debe ser mayor a 0.")),
+  unitPrice: z.coerce
+    .number()
+    .min(0, t("purchases.validation.unitPriceNonNegative", "El costo no puede ser negativo.")),
+  vatCode: z.string().min(1, t("purchases.validation.vatCodeRequired", "Seleccione el código IVA.")),
   discountPct: z.coerce
     .number()
     .min(0)
-    .max(100, "El descuento no puede superar 100%.")
+    .max(100, t("purchases.validation.discountMax", "El descuento no puede superar 100%."))
     .default(0),
   iceCode: z.string().nullable().optional(),
   warehouseId: z.string().nullable().optional(),
@@ -47,17 +58,19 @@ export const purchaseLineSchema = z.object({
   xmlTotalLine: z.number().optional(),
 });
 
+export const purchaseLineSchema = createPurchaseLineSchema(passthroughT);
+
 export type PurchaseLineFormValues = z.infer<typeof purchaseLineSchema>;
 
 // ── Main purchase invoice form schema ──────────────────────────────────
-export const purchaseInvoiceSchema = z.object({
-  supplierId: z.string().min(1, "Seleccione un proveedor."),
+export const createPurchaseInvoiceSchema = (t: TFunction) => z.object({
+  supplierId: z.string().min(1, t("purchases.validation.supplierRequired", "Seleccione un proveedor.")),
   docTypeCode: z
     .string()
-    .min(1, "Seleccione el tipo de documento.")
-    .default("01"),
-  invoiceNumber: z.string().min(1, "Ingrese el número de factura."),
-  issueDate: z.string().min(1, "La fecha de emisión es obligatoria."),
+    .min(1, t("purchases.validation.docTypeRequired", "Seleccione el tipo de documento."))
+    .default(""),
+  invoiceNumber: z.string().min(1, t("purchases.validation.invoiceNumberRequired", "Ingrese el número de factura.")),
+  issueDate: z.string().min(1, t("purchases.validation.issueDateRequired", "La fecha de emisión es obligatoria.")),
   accessKey: z.string().optional().default(""),
   authorizationNumber: z.string().optional().default(""),
   authorizationDate: z.string().optional().default(""),
@@ -69,16 +82,20 @@ export const purchaseInvoiceSchema = z.object({
   sriPaymentMethodCode: z.string().optional().default(""),
   taxSupportCode: z.string().optional().default(""),
   paymentTermId: z.string().optional().default(""),
-  lines: z.array(purchaseLineSchema).min(1, "Agregue al menos una línea."),
+  lines: z
+    .array(createPurchaseLineSchema(t))
+    .min(1, t("purchases.validation.linesRequired", "Agregue al menos una línea.")),
 });
+
+export const purchaseInvoiceSchema = createPurchaseInvoiceSchema(passthroughT);
 
 export type PurchaseInvoiceFormValues = z.infer<typeof purchaseInvoiceSchema>;
 
 // ── Defaults ───────────────────────────────────────────────────────────
 export function emptyPurchaseInvoiceForm(): PurchaseInvoiceFormValues {
-  return {
+    return {
     supplierId: "",
-    docTypeCode: "01",
+    docTypeCode: "",
     invoiceNumber: "",
     issueDate: "",
     accessKey: "",

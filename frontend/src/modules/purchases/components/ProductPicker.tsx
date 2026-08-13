@@ -4,6 +4,7 @@ import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { ItemDto } from "../../../types/items";
+import { useI18n } from "../../../i18n/i18n";
 
 export type ProductProfile = {
   id: string;
@@ -29,6 +30,7 @@ type Props = {
 const profileCache = new Map<string, ProductProfile>();
 
 export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ItemDto[]>([]);
   const [open, setOpen] = useState(false);
@@ -149,7 +151,7 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
           if (query.length >= 2) setOpen(true);
         }}
         onKeyDown={handleKeyDown}
-        placeholder="Buscar por SKU, nombre..."
+        placeholder={t("purchases.productPicker.placeholder", "Buscar por SKU, nombre...")}
         disabled={disabled}
       />
 
@@ -157,12 +159,12 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
         <div className="zh-picker__dropdown">
           {loading && (
             <div className="zh-picker__empty">
-              Buscando...
+              {t("common.searching", "Buscando...")}
             </div>
           )}
           {!loading && results.length === 0 && (
             <div className="zh-picker__empty">
-              Sin resultados para &ldquo;{query}&rdquo;
+              {t("purchases.productPicker.noResults", { query })}
             </div>
           )}
           {results.map((item, i) => {
@@ -184,7 +186,9 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
                 </div>
                 {cached && (
                   <div className="zh-picker__result-extra">
-                    <span className="zh-picker__result-extra-label">PVP:</span>
+                    <span className="zh-picker__result-extra-label">
+                      {t("purchases.productPicker.pvp", "PVP")}:
+                    </span>
                     <span className="zh-picker__result-extra-value">
                       $
                       {formatMoney(
@@ -192,7 +196,9 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
                         getDecimalConfig().salesUnitPrice,
                       )}
                     </span>
-                    <span className="zh-picker__result-extra-label">IVA:</span>
+                    <span className="zh-picker__result-extra-label">
+                      {t("purchases.productPicker.vat", "IVA")}:
+                    </span>
                     <span className="zh-picker__result-extra-value">
                       {cached.vatRate ?? cached.purchaseVatCode ?? "..."}
                     </span>

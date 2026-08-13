@@ -45,7 +45,7 @@ import {
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import {
-  purchaseInvoiceSchema,
+  createPurchaseInvoiceSchema,
   emptyPurchaseInvoiceForm,
   type PurchaseInvoiceFormValues,
   type PurchaseLineFormValues,
@@ -123,6 +123,8 @@ export function usePurchasesPage() {
   // ── Reference data ─────────────────────────────────────────────────
   const [warehouses, setWarehouses] = useState<WarehouseDto[]>([]);
   const [sriDocTypes, setSriDocTypes] = useState<SriDocTypeLookup[]>([]);
+  const [sriDocTypesLoaded, setSriDocTypesLoaded] = useState(false);
+  const [sriDocTypesLoadFailed, setSriDocTypesLoadFailed] = useState(false);
   const [sriPaymentMethods, setSriPaymentMethods] = useState<
     SriPaymentMethodLookup[]
   >([]);
@@ -179,6 +181,8 @@ export function usePurchasesPage() {
     setSaveError(error);
     setSaveErrorDetails(details);
   }, []);
+
+  const purchaseInvoiceSchema = useMemo(() => createPurchaseInvoiceSchema(t), [t]);
 
   // ── React Hook Form ────────────────────────────────────────────────
   const form = useForm<PurchaseInvoiceFormValues>({
@@ -237,6 +241,9 @@ export function usePurchasesPage() {
     ptRows.length > 0 &&
     localTotal > 0 &&
     roundToTotalAmount(ptRowsSum) !== roundToTotalAmount(localTotal);
+  const sriDocTypesUnavailable =
+    sriDocTypesLoaded && (sriDocTypesLoadFailed || sriDocTypes.length === 0);
+  const canUseSriDocTypes = sriDocTypesLoaded && !sriDocTypesUnavailable;
 
   // ── Init reference data ────────────────────────────────────────────
   useEffect(() => {
@@ -246,8 +253,15 @@ export function usePurchasesPage() {
       .catch(() => {});
     sriLookupFacade
       .docTypes()
-      .then(setSriDocTypes)
-      .catch(() => {});
+      .then((types) => {
+        setSriDocTypes(types);
+        setSriDocTypesLoadFailed(false);
+      })
+      .catch(() => {
+        setSriDocTypes([]);
+        setSriDocTypesLoadFailed(true);
+      })
+      .finally(() => setSriDocTypesLoaded(true));
     sriLookupFacade
       .paymentMethods()
       .then(setSriPaymentMethods)
@@ -345,10 +359,15 @@ export function usePurchasesPage() {
       setListItems(r.items);
       setListTotal(r.total);
     } catch {
-      message.error("No se pudo cargar el listado de compras.");
+      message.error(
+        t(
+          "purchases.messages.listLoadFailed",
+          "No se pudo cargar el listado de compras.",
+        ),
+      );
     }
     setListLoading(false);
-  }, [listSearch, listStatus, listPage]);
+  }, [listSearch, listStatus, listPage, t]);
 
   useEffect(() => {
     fetchList();
@@ -917,11 +936,12 @@ export function usePurchasesPage() {
 
         setTab("nuevo");
       } catch {
-        showSaveError("Error al cargar la compra.");
-        message.error("No se pudo cargar la compra.");
+        const error = t("purchases.errors.loadFailed", "Error al cargar la compra.");
+        showSaveError(error);
+        message.error(t("purchases.messages.loadFailed", "No se pudo cargar la compra."));
       }
     },
-    [reset, fetchItemContext, getValues, setValue, showSaveError],
+    [reset, fetchItemContext, getValues, setValue, showSaveError, t],
   );
 
   // ── Load from Recepción Electrónica (PurchaseReceptionDocument → draft) ────
@@ -937,7 +957,9 @@ export function usePurchasesPage() {
           draft.processingNotes
         ) {
           setReceptionProcessingNotice(
-            `Algunas líneas del XML no se pudieron interpretar y quedaron fuera del borrador: ${draft.processingNotes}`,
+            t("purchases.receptionDraft.processingWarnings", {
+              notes: draft.processingNotes,
+            }),
           );
         }
 
@@ -1004,7 +1026,7 @@ export function usePurchasesPage() {
         reset({
           ...emptyPurchaseInvoiceForm(),
           supplierId: draft.supplierId ?? "",
-          docTypeCode: draft.docTypeCode || "01",
+          docTypeCode: draft.docTypeCode ?? "",
           invoiceNumber: draft.invoiceNumber,
           issueDate: draft.issueDate,
           accessKey: draft.accessKey ?? "",
@@ -1027,19 +1049,52 @@ export function usePurchasesPage() {
         const backendMessage = readApiErrorMessage(err);
         showSaveError(
           backendMessage ??
-            "No se pudo generar el borrador de compra desde el documento de recepción.",
+            t(
+              "purchases.errors.receptionDraftFailed",
+              "No se pudo generar el borrador de compra desde el documento de recepción.",
+            ),
         );
         message.error(
-          backendMessage ?? "No se pudo generar el borrador de compra.",
+          backendMessage ??
+            t(
+              "purchases.messages.receptionDraftFailed",
+              "No se pudo generar el borrador de compra.",
+            ),
         );
       }
     },
-    [reset, showSaveError],
+    [reset, showSaveError, t],
   );
 
   // ── Save (create/update) ───────────────────────────────────────────
   const handleSave = handleSubmit(async (data) => {
     showSaveError("");
+    if (!canUseSriDocTypes) {
+      const title = t(
+        "purchases.validation.sriDocTypesUnavailableTitle",
+        "No se puede guardar la compra.",
+      );
+      const detail = t(
+        "purchases.validation.sriDocTypesUnavailableDetail",
+        "El catálogo SRI de tipos de documento no está disponible. Recargue la página o inténtelo nuevamente.",
+      );
+      showSaveError(title, [detail]);
+      message.error(`${title} ${detail}`);
+      return;
+    }
+    if (!sriDocTypes.some((d) => d.code === data.docTypeCode)) {
+      const title = t(
+        "purchases.validation.sriDocTypeInvalidTitle",
+        "No se puede guardar la compra.",
+      );
+      const detail = t(
+        "purchases.validation.sriDocTypeInvalidDetail",
+        "Seleccione un tipo de documento SRI activo del catálogo.",
+      );
+      showSaveError(title, [detail]);
+      message.error(`${title} ${detail}`);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -1078,10 +1133,17 @@ export function usePurchasesPage() {
           ...payload,
           id: editing.id,
         });
-        message.success("Compra actualizada correctamente.");
+        message.success(
+          t(
+            "purchases.messages.updated",
+            "Compra actualizada correctamente.",
+          ),
+        );
       } else {
         await purchaseService.create(payload);
-        message.success("Borrador guardado correctamente.");
+        message.success(
+          t("purchases.messages.draftSaved", "Borrador guardado correctamente."),
+        );
       }
       resetForm();
       setTab("listado");
@@ -1099,10 +1161,10 @@ export function usePurchasesPage() {
       } else if (!applied) {
         const e = err as ApiErrorLike;
         showSaveError(
-          e?.response?.data?.message?.user ??
+            e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
             e?.message ??
-            "Error al guardar.",
+            t("purchases.errors.saveFailed", "Error al guardar."),
         );
       }
     }
@@ -1125,21 +1187,23 @@ export function usePurchasesPage() {
             }))
           : undefined;
       await purchaseService.confirm(editing.id, schedule);
-      message.success("Compra confirmada correctamente.");
+      message.success(
+        t("purchases.messages.confirmed", "Compra confirmada correctamente."),
+      );
       resetForm();
       setTab("listado");
       fetchList();
     } catch (err: unknown) {
       const e = err as ApiErrorLike;
       showSaveError(
-        e?.response?.data?.message?.user ??
+          e?.response?.data?.message?.user ??
           e?.response?.data?.data?.errors?.[0] ??
           e?.message ??
-          "Error al confirmar.",
+          t("purchases.errors.confirmFailed", "Error al confirmar."),
       );
     }
     setSaving(false);
-  }, [editing, ptRows, resetForm, fetchList, showSaveError]);
+  }, [editing, ptRows, resetForm, fetchList, showSaveError, t]);
 
   // ── Cancel purchase ────────────────────────────────────────────────
   const handleCancel = useCallback(
@@ -1149,22 +1213,24 @@ export function usePurchasesPage() {
       setSaving(true);
       try {
         await purchaseService.cancel(editing.id, reason);
-        message.success("Compra anulada correctamente.");
+        message.success(
+          t("purchases.messages.cancelled", "Compra anulada correctamente."),
+        );
         resetForm();
         setTab("listado");
         fetchList();
       } catch (err: unknown) {
         const e = err as ApiErrorLike;
         showSaveError(
-          e?.response?.data?.message?.user ??
+            e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
             e?.message ??
-            "Error al anular.",
+            t("purchases.errors.cancelFailed", "Error al anular."),
         );
       }
       setSaving(false);
     },
-    [editing, resetForm, fetchList, showSaveError],
+    [editing, resetForm, fetchList, showSaveError, t],
   );
 
   // ── Discount ───────────────────────────────────────────────────────
@@ -1176,12 +1242,19 @@ export function usePurchasesPage() {
         const r = await purchaseService.applyDiscount(editing.id, Number(val));
         setEditing(r);
         await loadForEdit(editing.id);
-        message.success("Descuento aplicado correctamente.");
+        message.success(
+          t(
+            "purchases.messages.discountApplied",
+            "Descuento aplicado correctamente.",
+          ),
+        );
       } catch {
-      showSaveError("Error al aplicar descuento.");
+      showSaveError(
+        t("purchases.errors.discountFailed", "Error al aplicar descuento."),
+      );
       }
     },
-    [editing, loadForEdit, showSaveError],
+    [editing, loadForEdit, showSaveError, t],
   );
 
   // ── Freight/Recalculate ────────────────────────────────────────────
@@ -1192,11 +1265,15 @@ export function usePurchasesPage() {
       const r = await purchaseService.allocateFreight(editing.id);
       setEditing(r);
       await loadForEdit(editing.id);
-      message.success("Flete distribuido correctamente.");
+      message.success(
+        t("purchases.messages.freightAllocated", "Flete distribuido correctamente."),
+      );
     } catch {
-      showSaveError("Error al distribuir flete.");
+      showSaveError(
+        t("purchases.errors.freightFailed", "Error al distribuir flete."),
+      );
     }
-  }, [editing, loadForEdit, showSaveError]);
+  }, [editing, loadForEdit, showSaveError, t]);
 
   const handleRecalculate = useCallback(async () => {
     if (!editing) return;
@@ -1205,11 +1282,13 @@ export function usePurchasesPage() {
       const r = await purchaseService.recalculate(editing.id);
       setEditing(r);
       await loadForEdit(editing.id);
-      message.success("Compra recalculada correctamente.");
+      message.success(
+        t("purchases.messages.recalculated", "Compra recalculada correctamente."),
+      );
     } catch {
-      showSaveError("Error al recalcular.");
+      showSaveError(t("purchases.errors.recalculateFailed", "Error al recalcular."));
     }
-  }, [editing, loadForEdit, showSaveError]);
+  }, [editing, loadForEdit, showSaveError, t]);
 
   // ── Withholding ────────────────────────────────────────────────────
   const handleCalcRetention = useCallback(async () => {
@@ -1218,10 +1297,12 @@ export function usePurchasesPage() {
     try {
       setWhPreview(await purchaseService.retentionPreview(editing.id));
     } catch {
-      showSaveError("Error al calcular retención.");
+      showSaveError(
+        t("purchases.errors.retentionPreviewFailed", "Error al calcular retención."),
+      );
     }
     setWhLoading(false);
-  }, [editing, showSaveError]);
+  }, [editing, showSaveError, t]);
 
   const handleIssueWithholding = useCallback(
     async (epId: string) => {
@@ -1239,18 +1320,20 @@ export function usePurchasesPage() {
         );
         setWithholding(wh);
         setWhPreview(null);
-        message.success("Retención emitida correctamente.");
+        message.success(
+          t("purchases.messages.withholdingIssued", "Retención emitida correctamente."),
+        );
       } catch (err: unknown) {
         const e = err as ApiErrorLike;
         showSaveError(
-          e?.response?.data?.message?.user ??
+            e?.response?.data?.message?.user ??
             e?.response?.data?.data?.errors?.[0] ??
-            "Error al emitir retención.",
+            t("purchases.errors.withholdingIssueFailed", "Error al emitir retención."),
         );
       }
       setWhLoading(false);
     },
-    [editing, showSaveError],
+    [editing, showSaveError, t],
   );
 
   const handleCancelWithholding = useCallback(
@@ -1264,16 +1347,19 @@ export function usePurchasesPage() {
           reason,
         );
         setWithholding(wh);
-        message.success("Retención anulada correctamente.");
+        message.success(
+          t("purchases.messages.withholdingCancelled", "Retención anulada correctamente."),
+        );
       } catch (err: unknown) {
         const e = err as ApiErrorLike;
         showSaveError(
-          e?.response?.data?.message?.user ?? "Error al anular retención.",
+          e?.response?.data?.message?.user ??
+            t("purchases.errors.withholdingCancelFailed", "Error al anular retención."),
         );
       }
       setWhLoading(false);
     },
-    [withholding, showSaveError],
+    [withholding, showSaveError, t],
   );
 
   // ── Schedule operations ────────────────────────────────────────────
@@ -1412,6 +1498,9 @@ export function usePurchasesPage() {
     // Reference data
     warehouses,
     sriDocTypes,
+    sriDocTypesLoaded,
+    sriDocTypesUnavailable,
+    canUseSriDocTypes,
     sriPaymentMethods,
     sriTaxSupports,
     paymentTermsList,
