@@ -396,6 +396,65 @@
 .pdl-container .pdl-line__total {
   font-size: 20px;
 }
+/* Margen en cabecera — mismo valor ya calculado que "Información comercial"
+   (vm.commercial.profitability), solo se repite visualmente aquí como badge
+   compacto para que sea visible siempre, incluso con la línea colapsada.
+   Reutiliza los tokens de éxito/error ya usados por .pdl-margin-pct. */
+.pdl-line__margin-badge {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  line-height: 1.4;
+}
+.pdl-line__margin-badge--neg {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+/* Barra de "detalle colapsado" — reemplaza visualmente a .pdl-blocks cuando
+   la línea está colapsada, para que no se sienta como un hueco vacío. Mismo
+   criterio de color informativo que Badge variant="blue" (--color-info),
+   clickeable para expandir (mismo estado que el chevron de la banda
+   izquierda). */
+.pdl-line__collapsed-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* Antes: width:100% sin margen horizontal, quedaba pegada al riel
+     izquierdo/derecho a diferencia de .pdl-line__main/.pdl-blocks, que sí
+     respetan el gutter var(--space-5). Con margin horizontal + width auto
+     (default de un flex block-level) queda alineada sin riesgo de overflow. */
+  margin: var(--space-2) var(--space-5) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-info) 8%, transparent);
+  color: var(--color-info);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.pdl-line__collapsed-bar:hover,
+.pdl-line__collapsed-bar:focus-visible {
+  background: color-mix(in srgb, var(--color-info) 14%, transparent);
+}
+.pdl-line__collapsed-bar-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.pdl-line__collapsed-bar-text {
+  flex: 1;
+  /* Blindaje: sin esto, el min-width por defecto de un flex item ("auto")
+     podría impedir que encoja bien con textos largos según el idioma. */
+  min-width: 0;
+}
+.pdl-line__collapsed-bar-chevron {
+  font-size: 18px;
+  flex-shrink: 0;
+}
 /* Cada acción: ícono + texto visible apilados y centrados. */
 .pdl-line__action {
   display: flex;
@@ -429,6 +488,14 @@
   .pdl-line__metrics {
     flex-wrap: wrap;
     row-gap: var(--space-2);
+  }
+  /* Al envolver, cualquier métrica puede caer como primera de una nueva fila
+     y conservar su border-left (:first-child solo apunta al primer hijo real
+     del DOM, "Cantidad") — se ve una rayita huérfana. Solo en <=1100px se
+     quitan todos los separadores verticales; desktop (>1100px) los conserva. */
+  .pdl-line__metric {
+    border-left: none;
+    padding-left: 0;
   }
   /* .pdl-blocks pasa a 2 columnas (erp-form-core.css) — el 3er bloque
      ("Información comercial") cae a una fila nueva en la columna 1, así
@@ -825,32 +892,6 @@
   justify-content: center;
 }
 
-/* Column Headers */
-.pdl-header {
-  display: grid;
-  grid-template-columns: 40px 2fr 90px 1.2fr 1fr 110px 80px;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-/* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — encabezados de columnas numéricas alineados con su dato (derecha). */
-.pdl-header__col--qty,
-.pdl-header__col--finance,
-.pdl-header__col--tax,
-.pdl-header__col--total {
-  text-align: right;
-}
-.pdl-header__col--actions {
-  text-align: center;
-}
-
 .pdl-tag {
   display: inline-block;
   font-size: 10px;
@@ -1027,11 +1068,6 @@
 }
 
 /* ── Responsive (solo selectores exclusivos de Compras) ── */
-@media (max-width: 1100px) {
-  .pdl-header {
-    display: none;
-  }
-}
 @media (max-width: 640px) {
   .pdl-costs-dropdown {
     min-width: 240px;

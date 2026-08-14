@@ -861,31 +861,6 @@ export function PurchasesPage() {
                   <CostsDropdown ctx={ctx} />
                 </div>
 
-                {/* Column Headers */}
-                <div className="pdl-header">
-                  <span className="pdl-header__col pdl-header__col--num">
-                    #
-                  </span>
-                  <span className="pdl-header__col pdl-header__col--product">
-                    {t("purchases.lines.productCode", "Producto / código")}
-                  </span>
-                  <span className="pdl-header__col pdl-header__col--qty">
-                    {t("purchases.lines.quantity", "Cantidad")}
-                  </span>
-                  <span className="pdl-header__col pdl-header__col--finance">
-                    {t("purchases.lines.finance", "Financiero (costo/desc.)")}
-                  </span>
-                  <span className="pdl-header__col pdl-header__col--tax">
-                    {t("purchases.lines.taxes", "Impuestos")}
-                  </span>
-                  <span className="pdl-header__col pdl-header__col--total">
-                    {t("purchases.lines.netTotal", "Total neto")}
-                  </span>
-                  <span className="pdl-header__col pdl-header__col--actions">
-                    {t("purchases.lines.actions", "Acciones")}
-                  </span>
-                </div>
-
                 {/* Line Cards */}
                 <div className="pdl-lines">
                   {ctx.lines.map((l, idx) => (
@@ -1845,6 +1820,16 @@ function PurchaseLineCard({
             </div>
             <div className="pdl-line__metric">
               <span className="pdl-line__metric-label">
+                {t("purchases.lines.marginShort", "Margen")}
+              </span>
+              <span
+                className={`pdl-line__margin-badge ${vm.commercial.profitability.marginPctValue >= 0 ? "" : "pdl-line__margin-badge--neg"}`}
+              >
+                {vm.commercial.profitability.marginPct}%
+              </span>
+            </div>
+            <div className="pdl-line__metric">
+              <span className="pdl-line__metric-label">
                 {t("purchases.lines.netTotal", "Total neto")}
               </span>
               <div className="pdl-line__total">
@@ -2195,6 +2180,31 @@ function PurchaseLineCard({
           </div>
         </section>
       </div>
+      )}
+      {/* Barra compacta que reemplaza visualmente a .pdl-blocks cuando la línea
+          está colapsada — evita que se sienta como un espacio vacío y deja
+          claro que hay detalle oculto (XML / presentación / info comercial).
+          Mismo estado/handler que el chevron de la banda izquierda, solo un
+          segundo disparador para expandir. */}
+      {collapsed && (
+        <button
+          type="button"
+          className="pdl-line__collapsed-bar"
+          onClick={() => setCollapsed(false)}
+        >
+          <span className="material-symbols-outlined pdl-line__collapsed-bar-icon">
+            info
+          </span>
+          <span className="pdl-line__collapsed-bar-text">
+            {t(
+              "purchases.lines.collapsedBar",
+              "Detalle colapsado — Ver XML, presentación e información comercial",
+            )}
+          </span>
+          <span className="material-symbols-outlined pdl-line__collapsed-bar-chevron">
+            expand_more
+          </span>
+        </button>
       )}
       </div>
       {/* Banda lateral derecha de la línea — solo acciones (duplicar/eliminar),
