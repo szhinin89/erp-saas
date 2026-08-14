@@ -582,6 +582,13 @@
   margin-bottom: var(--space-2);
   color: var(--color-text-secondary);
 }
+/* Empuja badges/acciones de estado al extremo del header, al mismo nivel del
+   título — reutilizable por cualquier consumidor de .pdl-block__header. */
+.pdl-block__header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
 .pdl-block__title {
   font-size: 10px;
   font-weight: 700;

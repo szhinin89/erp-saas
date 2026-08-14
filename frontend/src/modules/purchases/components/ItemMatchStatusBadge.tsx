@@ -34,8 +34,8 @@ export function ItemMatchStatusBadge({ status }: { status: ItemMatchStatus }) {
 }
 
 /**
- * Navega a la ficha del ítem ya conciliado — mismo patrón en PurchasesPage para no duplicar la
- * integración con useItemUiStore/react-router en cada lugar que muestra un ítem ya emparejado.
+ * Navega a la ficha del producto ya conciliado — mismo patrón en PurchasesPage para no duplicar la
+ * integración con useItemUiStore/react-router en cada lugar que muestra un producto emparejado.
  */
 export function useViewMatchedItem(onBeforeNavigate?: () => void) {
   const navigate = useNavigate();

@@ -77,11 +77,11 @@ function message(
       return {
         label: t(
           "purchases.lineReadiness.missingItem",
-          "Falta seleccionar o crear el ítem",
+          "Sin producto vinculado",
         ),
         detail: t(
           "purchases.lineReadiness.missingItemDetail",
-          "Vincule esta línea XML/TXT con un ítem ERP antes de guardar.",
+          "Esta línea del XML todavía no está vinculada a un producto del sistema. Seleccione un producto existente o cree uno nuevo para continuar.",
         ),
       };
     case "SUPPLIER_CODE_CONFLICT":
@@ -97,10 +97,13 @@ function message(
       };
     case "MISSING_PRESENTATION":
       return {
-        label: t("purchases.lineReadiness.missingPresentation", "Falta presentación"),
+        label: t(
+          "purchases.lineReadiness.missingPresentation",
+          "Sin presentación vinculada",
+        ),
         detail: t(
           "purchases.lineReadiness.missingPresentationDetail",
-          "Seleccione una presentación y guárdela para este proveedor.",
+          "Este producto ya está vinculado, pero falta indicar la presentación que entrega el proveedor. Seleccione una presentación y guárdela para continuar.",
         ),
       };
     case "MISSING_WAREHOUSE":
@@ -121,7 +124,7 @@ function message(
       };
     case "READY":
       return {
-        label: t("purchases.lineReadiness.ready", "Ítem listo"),
+        label: t("purchases.lineReadiness.ready", "Producto listo"),
         detail: t(
           "purchases.lineReadiness.readyDetail",
           "La línea tiene los datos operativos necesarios para continuar.",

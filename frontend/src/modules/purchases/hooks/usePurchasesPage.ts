@@ -271,12 +271,18 @@ export function usePurchasesPage() {
     [formWatch.globalWarehouseId, iceRatesMap, lines, t, vatRatesMap],
   );
   const hasLineReadinessBlockers = lineReadinessBlockers.length > 0;
+  // El detalle por línea (número + motivo) ya se muestra dentro de cada línea;
+  // el aviso superior solo debe indicar que hay líneas por revisar, sin repetirlo.
   const lineReadinessBlockerDetails = useMemo(
     () =>
-      lineReadinessBlockers.map(
-        ({ index, readiness }) =>
-          `${t("purchases.lines.lineNumber", "Línea")} ${index + 1}: ${readiness.label}`,
-      ),
+      lineReadinessBlockers.length > 0
+        ? [
+            t(
+              "purchases.lineReadiness.reviewLinesDetail",
+              "Revise las líneas marcadas antes de continuar.",
+            ),
+          ]
+        : [],
     [lineReadinessBlockers, t],
   );
   const lineReadinessBlockedTitle = t(

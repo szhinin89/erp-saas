@@ -318,16 +318,16 @@ export function PurchasesPage() {
               detail={ctx.supplierInactiveDetail}
             />
           )}
-          {ctx.hasLineReadinessBlockers && (
-            <ZHPageNotice
-              variant="warning"
-              message={ctx.lineReadinessBlockedTitle}
-              detail={ctx.lineReadinessBlockerDetails
-                .map((detail) => `- ${detail}`)
-                .join("\n")}
-              className="pf-validation-summary"
-            />
-          )}
+          {ctx.hasLineReadinessBlockers &&
+            !ctx.saveError &&
+            !ctx.isDuplicateAccessKeyBlocking &&
+            !ctx.isSupplierInactiveBlocking && (
+              <ZHPageNotice
+                variant="warning"
+                message={ctx.lineReadinessBlockedTitle}
+                detail={ctx.lineReadinessBlockerDetails.join("\n")}
+              />
+            )}
           {ctx.errors.supplierId && (
             <ZHPageNotice
               variant="error"
@@ -1177,9 +1177,9 @@ function readinessActionLabel(
 ) {
   switch (action) {
     case "SELECT_ITEM":
-      return t("purchases.lineReadiness.action.selectItem", "Seleccionar ítem");
+      return t("purchases.lineReadiness.action.selectItem", "Seleccionar producto");
     case "CREATE_ITEM":
-      return t("purchases.lineReadiness.action.createItem", "Crear ítem");
+      return t("purchases.lineReadiness.action.createItem", "Crear producto");
     case "SELECT_PRESENTATION":
       return t(
         "purchases.lineReadiness.action.selectPresentation",
@@ -1423,6 +1423,167 @@ function XmlConfirmChecklist({
   );
 }
 
+function ProductLineActionMenu({
+  line: l,
+  ctx,
+  disabled,
+  onProductSelect,
+  onViewProduct,
+  onUnlinkProduct,
+}: {
+  line: PurchaseLineDraft;
+  ctx: ReturnType<typeof usePurchasesPage>;
+  disabled: boolean;
+  onProductSelect: (product: ProductProfile) => void;
+  onViewProduct: () => void;
+  onUnlinkProduct: () => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const hasProduct = !!l.itemId;
+  const canEditProduct = !disabled;
+  const triggerDisabled = !hasProduct && !canEditProduct;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: MouseEvent) => {
+      if (productModalOpen) return;
+      if (menuRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+      setSelectorOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, productModalOpen]);
+
+  const closeAfterModal = () => {
+    setProductModalOpen(false);
+    setOpen(false);
+    setSelectorOpen(false);
+  };
+
+  return (
+    <div className="pdl-product-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="pdl-product-menu__trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={t("purchases.lines.productActions", "Acciones del producto")}
+        disabled={triggerDisabled}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="material-symbols-outlined pdl-product-menu__trigger-icon">
+          more_vert
+        </span>
+      </button>
+      {open && (
+        <div className="pdl-product-menu__panel" role="menu">
+          {!hasProduct ? (
+            <>
+              <button
+                type="button"
+                className="pdl-product-menu__item"
+                role="menuitem"
+                disabled={disabled || ctx.matchingKey === l._key}
+                onClick={() => setSelectorOpen((current) => !current)}
+              >
+                <span className="material-symbols-outlined pdl-product-menu__item-icon">
+                  search
+                </span>
+                {t("purchases.lines.selectProduct", "Seleccionar producto")}
+              </button>
+              {selectorOpen && (
+                <div className="pdl-product-menu__picker">
+                  <ProductPicker
+                    disabled={disabled || ctx.matchingKey === l._key}
+                    vatRates={ctx.vatRatesMap}
+                    onSelect={(product) => {
+                      onProductSelect(product);
+                      setOpen(false);
+                      setSelectorOpen(false);
+                    }}
+                  />
+                </div>
+              )}
+              {l.purchaseReceptionLineId ? (
+                <ReceptionCreateItemAction
+                  line={l}
+                  ctx={ctx}
+                  disabled={disabled}
+                  buttonClassName="pdl-product-menu__item"
+                  label={t("purchases.lines.createProduct", "Crear producto")}
+                  onModalOpenChange={setProductModalOpen}
+                  onAfterModalClose={closeAfterModal}
+                />
+              ) : (
+                <CreateItemLineAction
+                  line={l}
+                  ctx={ctx}
+                  disabled={disabled}
+                  buttonClassName="pdl-product-menu__item"
+                  label={t("purchases.lines.createProduct", "Crear producto")}
+                  onModalOpenChange={setProductModalOpen}
+                  onAfterModalClose={closeAfterModal}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="pdl-product-menu__item"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onViewProduct();
+                }}
+              >
+                <span className="material-symbols-outlined pdl-product-menu__item-icon">
+                  visibility
+                </span>
+                {t("purchases.lines.viewProduct", "Ver producto")}
+              </button>
+              {canEditProduct && (
+                <UpdateItemAction
+                  line={l}
+                  ctx={ctx}
+                  buttonClassName="pdl-product-menu__item"
+                  label={t("purchases.lines.updateProduct", "Actualizar producto")}
+                  onModalOpenChange={setProductModalOpen}
+                  onAfterModalClose={closeAfterModal}
+                />
+              )}
+              {canEditProduct && (
+                <button
+                  type="button"
+                  className="pdl-product-menu__item"
+                  role="menuitem"
+                  disabled={ctx.matchingKey === l._key}
+                  onClick={() => {
+                    setOpen(false);
+                    onUnlinkProduct();
+                  }}
+                >
+                  <span className="material-symbols-outlined pdl-product-menu__item-icon">
+                    link_off
+                  </span>
+                  {ctx.matchingKey === l._key
+                    ? t("purchases.lines.unlinkingProduct", "Desvinculando...")
+                    : t("purchases.lines.unlinkProduct", "Desvincular producto")}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PurchaseLineCard({
   line: l,
   idx,
@@ -1458,6 +1619,10 @@ function PurchaseLineCard({
   const readinessActions = [primaryReadinessAction, secondaryReadinessAction]
     .filter(Boolean)
     .join(" / ");
+  const showReadinessActions =
+    readiness?.status !== "MISSING_ITEM" &&
+    readiness?.status !== "MISSING_PRESENTATION" &&
+    readinessActions;
   const packagingLevels = ctxData?.packagingLevels ?? [];
   const handlePackagingChange = (packagingLevelId: string) => {
     const selected = packagingLevels.find((p) => p.id === packagingLevelId);
@@ -1471,111 +1636,73 @@ function PurchaseLineCard({
       l.quantity * (selected?.baseQuantity ?? 1),
     );
   };
+  const handleProductSelect = (p: ProductProfile) => {
+    const patch = resolvePurchaseItemSelection(p, {
+      existingLine: l,
+    });
+    ctx.updateLine(l._key, "_readinessIssue", undefined);
+    if (patch.vatCode !== undefined)
+      ctx.updateLine(l._key, "vatCode", patch.vatCode);
+    if (patch.iceCode !== undefined)
+      ctx.updateLine(l._key, "iceCode", patch.iceCode);
+    if (l.purchaseReceptionLineId) {
+      void ctx.handleMatchItem(
+        l._key,
+        p.id,
+        patch.description ?? p.label,
+      );
+      return;
+    }
+    ctx.updateLine(l._key, "itemId", patch.itemId ?? p.id);
+    ctx.updateLine(
+      l._key,
+      "description",
+      patch.description ?? p.label,
+    );
+    const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
+    if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
+  };
+  const handleUnlinkProduct = () => {
+    if (l.purchaseReceptionLineId) {
+      void ctx.handleUnmatchItem(l._key);
+      return;
+    }
+    ctx.updateLine(l._key, "itemId", undefined);
+    ctx.updateLine(l._key, "description", "");
+    ctx.updateLine(l._key, "context", undefined);
+    ctx.updateLine(l._key, "_readinessIssue", undefined);
+  };
+  const productName =
+    ctxData?.shortName || l.description?.split(" — ")[1] || l.description;
 
   return (
     <div className="pdl-line">
       <div className="pdl-line__main">
-        <div className="pdl-line__num">{String(idx + 1).padStart(2, "0")}</div>
+        <div className="pdl-line__num-wrap">
+          <span className="pdl-line__num">
+            {String(idx + 1).padStart(2, "0")}
+          </span>
+          <ProductLineActionMenu
+            line={l}
+            ctx={ctx}
+            disabled={ctx.fieldDisabled}
+            onProductSelect={handleProductSelect}
+            onViewProduct={() => viewMatchedItem(l.itemId as string)}
+            onUnlinkProduct={handleUnlinkProduct}
+          />
+        </div>
         <div className="pdl-line__product">
           {!l.itemId ? (
-            <>
-              <ProductPicker
-                disabled={ctx.fieldDisabled || ctx.matchingKey === l._key}
-                vatRates={ctx.vatRatesMap}
-                onSelect={(p: ProductProfile) => {
-                  const patch = resolvePurchaseItemSelection(p, {
-                    existingLine: l,
-                  });
-                  ctx.updateLine(l._key, "_readinessIssue", undefined);
-                  if (patch.vatCode !== undefined)
-                    ctx.updateLine(l._key, "vatCode", patch.vatCode);
-                  if (patch.iceCode !== undefined)
-                    ctx.updateLine(l._key, "iceCode", patch.iceCode);
-                  if (l.purchaseReceptionLineId) {
-                    void ctx.handleMatchItem(
-                      l._key,
-                      p.id,
-                      patch.description ?? p.label,
-                    );
-                    return;
-                  }
-                  ctx.updateLine(l._key, "itemId", patch.itemId ?? p.id);
-                  ctx.updateLine(
-                    l._key,
-                    "description",
-                    patch.description ?? p.label,
-                  );
-                  const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
-                  if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
-                }}
-              />
-              {l.purchaseReceptionLineId ? (
-                <ReceptionCreateItemAction
-                  line={l}
-                  ctx={ctx}
-                  disabled={ctx.fieldDisabled}
-                />
-              ) : (
-                <CreateItemLineAction
-                  line={l}
-                  ctx={ctx}
-                  disabled={ctx.fieldDisabled}
-                />
+            <div className="pdl-line__product-name pdl-line__product-name--muted">
+              {t(
+                "purchases.lines.noLinkedProduct",
+                "Sin producto vinculado",
               )}
-              {l.itemMatchStatus && (
-                <ItemMatchStatusBadge status={l.itemMatchStatus} />
-              )}
-            </>
+            </div>
           ) : (
             <>
               <div className="pdl-line__product-name">
-                {ctxData?.shortName ||
-                  l.description?.split(" — ")[1] ||
-                  l.description}
-                {l.itemMatchStatus && (
-                  <ItemMatchStatusBadge status={l.itemMatchStatus} />
-                )}
-                <ZHBtn
-                  variant="ghost"
-                  size="xs"
-                  type="button"
-                  onClick={() => viewMatchedItem(l.itemId as string)}
-                >
-                  {t("purchases.lines.viewItem", "Ver ítem")}
-                </ZHBtn>
-                {!ctx.fieldDisabled && <UpdateItemAction line={l} ctx={ctx} />}
-                {!ctx.fieldDisabled && l.purchaseReceptionLineId && (
-                  <ZHBtn
-                    variant="ghost"
-                    size="xs"
-                    type="button"
-                    disabled={ctx.matchingKey === l._key}
-                    onClick={() => void ctx.handleUnmatchItem(l._key)}
-                  >
-                    {ctx.matchingKey === l._key
-                      ? t("purchases.lines.unlinkingItem", "Desvinculando...")
-                      : t("purchases.lines.unlinkItem", "Desvincular ítem")}
-                  </ZHBtn>
-                )}
-                {!ctx.fieldDisabled && !l.purchaseReceptionLineId && (
-                  <button
-                    type="button"
-                    className="pdl-line__clear"
-                    title={t("purchases.lines.changeProduct", "Cambiar producto")}
-                    onClick={() => {
-                      ctx.updateLine(l._key, "itemId", undefined);
-                      ctx.updateLine(l._key, "description", "");
-                      ctx.updateLine(l._key, "context", undefined);
-                      ctx.updateLine(l._key, "_readinessIssue", undefined);
-                    }}
-                  >
-                    <span
-                      className="material-symbols-outlined zh-icon-sm"
-                    >
-                      close
-                    </span>
-                  </button>
-                )}
+                {productName}
               </div>
               <ZhSelect
                 className="pdl-line__wh-select"
@@ -1682,10 +1809,13 @@ function PurchaseLineCard({
       <div className="pdl-line__status">
         {readiness ? (
           <>
-            <Badge
-              variant={STATUS_TONE_VARIANT[readiness.tone]}
-              label={readiness.label}
-            />
+            {readiness.status !== "MISSING_ITEM" &&
+              readiness.status !== "READY" && (
+                <Badge
+                  variant={STATUS_TONE_VARIANT[readiness.tone]}
+                  label={readiness.label}
+                />
+              )}
             {readiness.blocking && (
               <div className="pdl-cost-alert">
                 <span className="material-symbols-outlined pdl-cost-alert__icon">
@@ -1693,11 +1823,11 @@ function PurchaseLineCard({
                 </span>
                 <span>
                   {readiness.detail}
-                  {readinessActions && (
+                  {showReadinessActions && (
                     <>
                       {" "}
                       {t("purchases.lineReadiness.nextAction", "Acción")}:{" "}
-                      {readinessActions}
+                      {showReadinessActions}
                     </>
                   )}
                 </span>
@@ -1776,7 +1906,7 @@ function PurchaseLineCard({
           </div>
         </section>
 
-        {/* 2. Con qué Item del ERP está relacionado — siempre visible, incluso sin Item aún. */}
+        {/* 2. Con qué producto del sistema está relacionado — siempre visible, incluso sin producto aún. */}
         <section className="pdl-block">
           <header className="pdl-block__header">
             <span
@@ -1785,7 +1915,7 @@ function PurchaseLineCard({
               badge
             </span>
             <h4 className="pdl-block__title">
-              {t("purchases.lines.erpItem", "Ítem ERP")}
+              {t("purchases.lines.systemProduct", "Producto del sistema")}
             </h4>
             {vm.item.isLoading && (
               <span
@@ -1799,19 +1929,20 @@ function PurchaseLineCard({
                 </span>
               </span>
             )}
+            {vm.item.hasItem &&
+              (vm.item.matchStatus || readiness?.status !== "READY") && (
+                <span className="pdl-block__header-actions">
+                  {vm.item.matchStatus ? (
+                    <ItemMatchStatusBadge status={vm.item.matchStatus} />
+                  ) : (
+                    <Badge
+                      variant="green"
+                      label={t("purchases.lines.productLinked", "Producto vinculado")}
+                    />
+                  )}
+                </span>
+              )}
           </header>
-          {vm.item.matchStatus ? (
-            <ItemMatchStatusBadge status={vm.item.matchStatus} />
-          ) : (
-            <Badge
-              variant={vm.item.hasItem ? "green" : "orange"}
-              label={
-                vm.item.hasItem
-                  ? t("purchases.lines.itemSelected", "🟢 Ítem seleccionado")
-                  : t("purchases.lines.itemPending", "🟡 Pendiente de vincular ítem")
-              }
-            />
-          )}
           <div className="pdl-ctx-col__costs">
             <div>
               <span className="pdl-cost-label">SKU</span>
@@ -1831,7 +1962,7 @@ function PurchaseLineCard({
                   {t("purchases.lines.presentation", "Presentación")}
                 </span>
                 <ZhSelect
-                  className="pdl-line__wh-select"
+                  density="compact"
                   value={l.packagingLevelId ?? ""}
                   onChange={(e) => handlePackagingChange(e.target.value)}
                   disabled={ctx.fieldDisabled}
@@ -1860,28 +1991,12 @@ function PurchaseLineCard({
                   </span>
                   <span className="pdl-cost-val">
                     {t(
-                      "purchases.lines.presentationCreateInMaster",
-                      "Cree la presentación en el maestro del ítem o use factor 1 temporalmente.",
+                      "purchases.lines.presentationNotLinked",
+                      "Sin presentación vinculada",
                     )}
                   </span>
                 </div>
               )}
-            {vm.item.hasItem && vm.xml.hasOrigin && !vm.inventory.hasPresentation && (
-              <div className="pdl-cost-wide">
-                <span className="pdl-cost-label">
-                  {t(
-                    "purchases.lines.supplierPresentationWarningTitle",
-                    "Código proveedor",
-                  )}
-                </span>
-                <span className="pdl-cost-val">
-                  {t(
-                    "purchases.lines.supplierPresentationWarning",
-                    "Código proveedor sin presentación asociada. Se usará factor 1.",
-                  )}
-                </span>
-              </div>
-            )}
             {vm.inventory.hasPresentation && (
               <div className="pdl-cost-wide">
                 <span className="pdl-cost-label">
@@ -1925,9 +2040,15 @@ function PurchaseLineCard({
                       )
                     : t(
                         "purchases.lines.saveSupplierPresentation",
-                        "Guardar presentación para este proveedor",
+                        "Guardar esta presentación para este proveedor",
                       )}
                 </ZHBtn>
+                <p className="pdl-block__hint">
+                  {t(
+                    "purchases.lines.saveSupplierPresentationHint",
+                    "Se usará automáticamente la próxima vez que llegue este código proveedor.",
+                  )}
+                </p>
               </div>
             )}
             <div>
@@ -2055,16 +2176,26 @@ function CreateItemLineAction({
   line: l,
   ctx,
   disabled,
+  buttonClassName,
+  label,
+  onModalOpenChange,
+  onAfterModalClose,
 }: {
   line: PurchaseLineDraft;
   ctx: ReturnType<typeof usePurchasesPage>;
   disabled?: boolean;
+  buttonClassName?: string;
+  label?: string;
+  onModalOpenChange?: (open: boolean) => void;
+  onAfterModalClose?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useI18n();
 
   const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
+    onModalOpenChange?.(false);
+    onAfterModalClose?.();
     const patch = resolvePurchaseItemSelection(buildPurchaseItemProfile(item), {
       existingLine: l,
       overwriteVatCode: true,
@@ -2090,10 +2221,14 @@ function CreateItemLineAction({
         variant="ghost"
         size="xs"
         type="button"
+        className={buttonClassName}
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onModalOpenChange?.(true);
+          setOpen(true);
+        }}
       >
-        {t("purchases.lines.createItem", "Crear ítem")}
+        {label ?? t("purchases.lines.createProduct", "Crear producto")}
       </ZHBtn>
       <ItemEditorModal
         open={open}
@@ -2113,7 +2248,11 @@ function CreateItemLineAction({
                 }
               : undefined,
         }}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          onModalOpenChange?.(false);
+          onAfterModalClose?.();
+        }}
         onSaved={handleSaved}
       />
     </>
@@ -2129,9 +2268,17 @@ function CreateItemLineAction({
 function UpdateItemAction({
   line: l,
   ctx,
+  buttonClassName,
+  label,
+  onModalOpenChange,
+  onAfterModalClose,
 }: {
   line: PurchaseLineFormValues;
   ctx: ReturnType<typeof usePurchasesPage>;
+  buttonClassName?: string;
+  label?: string;
+  onModalOpenChange?: (open: boolean) => void;
+  onAfterModalClose?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useI18n();
@@ -2139,6 +2286,8 @@ function UpdateItemAction({
 
   const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
+    onModalOpenChange?.(false);
+    onAfterModalClose?.();
     const patch = resolvePurchaseItemSelection(buildPurchaseItemProfile(item), {
       existingLine: l,
       overwriteVatCode: true,
@@ -2162,9 +2311,13 @@ function UpdateItemAction({
         variant="ghost"
         size="xs"
         type="button"
-        onClick={() => setOpen(true)}
+        className={buttonClassName}
+        onClick={() => {
+          onModalOpenChange?.(true);
+          setOpen(true);
+        }}
       >
-        {t("purchases.lines.updateItem", "Actualizar ítem")}
+        {label ?? t("purchases.lines.updateProduct", "Actualizar producto")}
       </ZHBtn>
       <ItemEditorModal
         open={open}
@@ -2180,7 +2333,11 @@ function UpdateItemAction({
                 }
               : undefined,
         }}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          onModalOpenChange?.(false);
+          onAfterModalClose?.();
+        }}
         onSaved={handleSaved}
       />
     </>
@@ -2196,10 +2353,18 @@ function ReceptionCreateItemAction({
   line: l,
   ctx,
   disabled,
+  buttonClassName,
+  label,
+  onModalOpenChange,
+  onAfterModalClose,
 }: {
   line: PurchaseLineDraft;
   ctx: ReturnType<typeof usePurchasesPage>;
   disabled?: boolean;
+  buttonClassName?: string;
+  label?: string;
+  onModalOpenChange?: (open: boolean) => void;
+  onAfterModalClose?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useI18n();
@@ -2252,10 +2417,14 @@ function ReceptionCreateItemAction({
         variant="ghost"
         size="xs"
         type="button"
+        className={buttonClassName}
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onModalOpenChange?.(true);
+          setOpen(true);
+        }}
       >
-        {t("purchases.lines.createItem", "Crear ítem")}
+        {label ?? t("purchases.lines.createProduct", "Crear producto")}
       </ZHBtn>
       <CreateItemFromReceptionLineModal
         open={open}
@@ -2271,9 +2440,15 @@ function ReceptionCreateItemAction({
               }
             : undefined
         }
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          onModalOpenChange?.(false);
+          onAfterModalClose?.();
+        }}
         onCreated={(updatedLine, item) => {
           setOpen(false);
+          onModalOpenChange?.(false);
+          onAfterModalClose?.();
           const profile = buildPurchaseItemProfile(item);
           if (updatedLine.itemId)
             applyLinked(
@@ -2283,7 +2458,11 @@ function ReceptionCreateItemAction({
               profile.purchaseVatCode,
             );
         }}
-        onCreatedButNotLinked={() => setOpen(false)}
+        onCreatedButNotLinked={() => {
+          setOpen(false);
+          onModalOpenChange?.(false);
+          onAfterModalClose?.();
+        }}
       />
     </>
   );

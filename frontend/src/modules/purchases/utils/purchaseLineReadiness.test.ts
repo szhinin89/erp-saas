@@ -53,7 +53,7 @@ describe("purchaseLineReadiness", () => {
     const readiness = getPurchaseLineReadiness(line({ itemId: undefined }));
 
     expect(readiness.status).toBe("MISSING_ITEM");
-    expect(readiness.label).toBe("Falta seleccionar o crear el ítem");
+    expect(readiness.label).toBe("Sin producto vinculado");
     expect(readiness.primaryAction).toBe("SELECT_ITEM");
     expect(readiness.secondaryAction).toBe("CREATE_ITEM");
     expect(readiness.blocking).toBe(true);
