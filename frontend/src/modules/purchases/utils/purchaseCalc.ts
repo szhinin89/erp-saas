@@ -3,6 +3,7 @@ import type {
   PurchaseItemContextDto,
   PurchaseLineDto,
 } from "../api/purchaseService";
+import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { toLocalIsoDate } from "../../../lib/formatters/dateFormatters";
 
@@ -96,18 +97,81 @@ export type DistributeCostPreviewLine = {
   newLineTotal: number;
 };
 
+/**
+ * Forma normalizada que consume `simulateCostDistribution`, sea el origen una compra ya
+ * persistida (`PurchaseLineDto`, `id` = GUID real de línea) o una compra nueva sin guardar aún
+ * (`PurchaseLineFormValues`, `id` = `_key` local del formulario — ver `buildCostDistributionInputFromFormLines`).
+ */
+export type DistributeCostSourceLine = {
+  id: string;
+  description: string;
+  quantity: number;
+  quantityInBaseUom: number;
+  unitPrice: number;
+  discountAmount: number;
+  landedUnitCost: number;
+  totalLineCost: number;
+};
+
+export function buildCostDistributionInputFromPersistedLines(
+  lines: PurchaseLineDto[],
+): DistributeCostSourceLine[] {
+  return lines.map((l) => ({
+    id: l.id,
+    description: l.description,
+    quantity: l.quantity,
+    quantityInBaseUom: l.quantityInBaseUom,
+    unitPrice: l.unitPrice,
+    discountAmount: l.discountAmount,
+    landedUnitCost: l.landedUnitCost,
+    totalLineCost: l.totalLineCost,
+  }));
+}
+
+/**
+ * PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — equivalente a `buildCostDistributionInputFromPersistedLines`
+ * para una compra NUEVA sin guardar: no hay `PurchaseInvoiceDetail.Id` real todavía, así que se usa
+ * `_key` (identificador estable del formulario) como `id`. `discountAmount`/`landedUnitCost`/
+ * `totalLineCost` no existen como campos del formulario — se derivan aquí con la misma fórmula que
+ * el backend (`RecalcDiscount`/`RecalcCosts` en `PurchaseInvoiceDetail`), incluyendo cualquier
+ * `freightAllocated`/`otherCostsAllocated` ya aplicado en una vuelta previa del modal en esta misma
+ * sesión (aditivo, nunca se pierde entre aplicaciones sucesivas antes de guardar).
+ */
+export function buildCostDistributionInputFromFormLines(
+  lines: PurchaseLineFormValues[],
+): DistributeCostSourceLine[] {
+  return lines.map((l) => {
+    const quantity = l.quantity ?? 0;
+    const unitPrice = l.unitPrice ?? 0;
+    const discountPct = l.discountPct ?? 0;
+    const discountAmount = round2((quantity * unitPrice * discountPct) / 100);
+    const quantityInBaseUom =
+      l.quantityInBaseUom && l.quantityInBaseUom > 0
+        ? l.quantityInBaseUom
+        : quantity;
+    const freightAllocated = l.freightAllocated ?? 0;
+    const otherCostsAllocated = l.otherCostsAllocated ?? 0;
+    const taxableBase = quantity * unitPrice - discountAmount;
+    const totalLineCost = round2(
+      taxableBase + freightAllocated + otherCostsAllocated,
+    );
+    const landedUnitCost =
+      quantityInBaseUom > 0 ? round2(totalLineCost / quantityInBaseUom) : 0;
+    return {
+      id: String(l._key),
+      description: l.description,
+      quantity,
+      quantityInBaseUom,
+      unitPrice,
+      discountAmount,
+      landedUnitCost,
+      totalLineCost,
+    };
+  });
+}
+
 export function simulateCostDistribution(
-  lines: Pick<
-    PurchaseLineDto,
-    | "id"
-    | "description"
-    | "quantity"
-    | "quantityInBaseUom"
-    | "unitPrice"
-    | "discountAmount"
-    | "landedUnitCost"
-    | "totalLineCost"
-  >[],
+  lines: DistributeCostSourceLine[],
   includedIds: Set<string>,
   amountToDistribute: number,
 ): DistributeCostPreviewLine[] {

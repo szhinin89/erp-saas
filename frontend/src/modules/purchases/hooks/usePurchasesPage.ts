@@ -7,6 +7,7 @@ import type {
   PurchaseListItemDto,
   RetentionPreviewDto,
   IssuedWithholdingDto,
+  PurchaseCostDistributionType,
 } from "../api/purchaseService";
 import { purchaseService } from "../api/purchaseService";
 import {
@@ -36,6 +37,8 @@ import {
   calcSummary,
   generateScheduleRows,
   roundToTotalAmount,
+  buildCostDistributionInputFromFormLines,
+  simulateCostDistribution,
 } from "../utils/purchaseCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { readApiErrorMessage, readApiErrorMessages } from "../../lib/apiError";
@@ -304,6 +307,71 @@ export function usePurchasesPage() {
   const isDuplicateAccessKeyBlocking =
     !!duplicateAccessKey?.exists &&
     duplicateAccessKey.purchaseId !== editing?.id;
+  const isSupplierInactiveBlocking = supplierProfile?.isActive === false;
+
+  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — el botón "Distribuir flete/gasto" NO depende de
+  // `editing` (compra ya persistida): se habilita apenas la compra esté lista para guardar, sin
+  // forzar guardar/reabrir. Reutiliza EXACTAMENTE los mismos chequeos que bloquean handleSave, para
+  // que el botón y "Guardar" queden siempre en sincronía.
+  const distributeCostDisabledReason = useMemo(() => {
+    if (!isDraft)
+      return t(
+        "purchases.distributeCost.disabled.notEditable",
+        "Solo puede distribuir flete/gasto en compras editables.",
+      );
+    if (saving)
+      return t(
+        "purchases.distributeCost.disabled.saving",
+        "Espere a que termine la operación en curso.",
+      );
+    if (lines.length === 0)
+      return t(
+        "purchases.distributeCost.disabled.noLines",
+        "Agregue al menos un ítem antes de distribuir flete/gasto.",
+      );
+    if (hasLineReadinessBlockers)
+      return t(
+        "purchases.distributeCost.disabled.linesIncomplete",
+        "Complete las líneas antes de distribuir flete/gasto.",
+      );
+    if (!formWatch.supplierId)
+      return t(
+        "purchases.distributeCost.disabled.supplier",
+        "Seleccione un proveedor antes de distribuir flete/gasto.",
+      );
+    if (!formWatch.docTypeCode)
+      return t(
+        "purchases.distributeCost.disabled.docType",
+        "Seleccione el tipo de documento antes de distribuir flete/gasto.",
+      );
+    if (isDuplicateAccessKeyBlocking)
+      return t(
+        "purchases.distributeCost.disabled.duplicate",
+        "Resuelva la clave de acceso duplicada antes de distribuir flete/gasto.",
+      );
+    if (isSupplierInactiveBlocking)
+      return t(
+        "purchases.distributeCost.disabled.supplierInactive",
+        "El proveedor está inactivo.",
+      );
+    if (!canUseSriDocTypes)
+      return t(
+        "purchases.distributeCost.disabled.sriCatalog",
+        "El catálogo de tipos de documento SRI no está disponible.",
+      );
+    return null;
+  }, [
+    isDraft,
+    saving,
+    lines.length,
+    hasLineReadinessBlockers,
+    formWatch.supplierId,
+    formWatch.docTypeCode,
+    isDuplicateAccessKeyBlocking,
+    isSupplierInactiveBlocking,
+    canUseSriDocTypes,
+    t,
+  ]);
 
   const duplicateAccessKeyTitle = t(
     "purchases.duplicate.title",
@@ -1309,6 +1377,8 @@ export function usePurchasesPage() {
           notes: l.notes,
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
           packagingLevelId: l.packagingLevelId ?? undefined,
+          freightAllocated: l.freightAllocated ?? undefined,
+          otherCostsAllocated: l.otherCostsAllocated ?? undefined,
         })),
         accessKey: normalizeOptionalCode(data.accessKey),
         authorizationNumber: normalizeOptionalCode(data.authorizationNumber),
@@ -1533,6 +1603,52 @@ export function usePurchasesPage() {
       }
     },
     [editing, loadForEdit, showSaveError, t],
+  );
+
+  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — misma fórmula/simulación que handleDistributeCost,
+  // pero para una compra NUEVA sin guardar (sin PurchaseInvoice.Id todavía): no llama al backend,
+  // aplica el prorrateo directo sobre el formulario (líneas + total documento) usando `_key` como
+  // identificador estable de línea. Aditivo — respeta cualquier freightAllocated/otherCostsAllocated
+  // ya aplicado en una vuelta previa del modal en esta misma sesión de edición.
+  const handleDistributeCostToForm = useCallback(
+    (
+      costType: PurchaseCostDistributionType,
+      amount: number,
+      includedLineIds: string[],
+    ): boolean => {
+      const currentLines = getValues("lines");
+      const sourceLines = buildCostDistributionInputFromFormLines(currentLines);
+      const includedSet = new Set(includedLineIds);
+      const preview = simulateCostDistribution(sourceLines, includedSet, amount);
+
+      const field = costType === "Freight" ? "freightAllocated" : "otherCostsAllocated";
+      const totalField = costType === "Freight" ? "freightCost" : "otherCosts";
+      let totalAllocated = 0;
+
+      preview.forEach((p) => {
+        if (!p.included || p.allocatedAmount === 0) return;
+        const idx = currentLines.findIndex((l) => String(l._key) === p.lineId);
+        if (idx === -1) return;
+        const prevAllocated =
+          (currentLines[idx][field] as number | undefined) ?? 0;
+        setValue(`lines.${idx}.${field}`, prevAllocated + p.allocatedAmount, {
+          shouldDirty: true,
+        });
+        totalAllocated += p.allocatedAmount;
+      });
+
+      setValue(
+        totalField,
+        roundToTotalAmount((getValues(totalField) || 0) + totalAllocated),
+        { shouldDirty: true },
+      );
+
+      message.success(
+        t("purchases.messages.costDistributed", "Valor distribuido correctamente."),
+      );
+      return true;
+    },
+    [getValues, setValue, t],
   );
 
   // ── Withholding ────────────────────────────────────────────────────
@@ -1761,7 +1877,8 @@ export function usePurchasesPage() {
     isDraft,
     readOnly,
     fieldDisabled,
-    isSupplierInactiveBlocking: supplierProfile?.isActive === false,
+    isSupplierInactiveBlocking,
+    distributeCostDisabledReason,
     supplierInactiveMessage: supplierProfile
       ? formatSupplierInactiveMessage(supplierProfile.name)
       : "",
@@ -1812,6 +1929,7 @@ export function usePurchasesPage() {
     handleAllocateFreight,
     handleRecalculate,
     handleDistributeCost,
+    handleDistributeCostToForm,
 
     // Modals
     modalConfirm,

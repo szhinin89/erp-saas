@@ -153,7 +153,12 @@ export function buildPurchaseLinePresentation(
       : "";
   const baseUnitCost =
     quantityInBase > 0 ? (quantity * unitPrice) / quantityInBase : 0;
-  const marginPctValue = hasContext ? calcMarginPercent(unitPrice, pvp) : 0;
+  // PURCHASE-PRESENTATION-MARGIN-AUDIT-01 — el margen siempre debe comparar valores en la misma
+  // unidad: pvp es por unidad base, así que el costo comparado debe ser baseUnitCost (por unidad
+  // base), nunca unitPrice (costo por unidad de presentación — p. ej. por SIXPACK). Comparar
+  // unitPrice contra pvp mezcla unidades y produce márgenes absurdos (ej. -447%) en cualquier
+  // línea con presentación (conversionFactor > 1).
+  const marginPctValue = hasContext ? calcMarginPercent(baseUnitCost, pvp) : 0;
 
   const referenceCost =
     hasContext && (ctx?.lastPurchaseCost ?? 0) > 0

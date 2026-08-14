@@ -224,6 +224,10 @@ export interface PurchaseLineInput {
   orderedQuantity?: number | null;
   purchaseReceptionLineId?: string | null;
   packagingLevelId?: string | null;
+  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo ya revisado en el modal "Distribuir
+  // flete/gasto" antes de guardar; el backend lo aplica directo por línea sin reprorratear.
+  freightAllocated?: number | null;
+  otherCostsAllocated?: number | null;
 }
 
 export interface CreatePurchasePayload {

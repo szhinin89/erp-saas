@@ -35,6 +35,11 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   baseUomCode: z.string().nullable().optional(),
   conversionFactor: z.number().optional(),
   quantityInBaseUom: z.number().optional(),
+  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo aplicado en el modal "Distribuir
+  // flete/gasto" ANTES de guardar (compra nueva sin Id persistido). Viaja en el payload
+  // create/update; el backend lo aplica directo por línea y omite el reprorrateo automático.
+  freightAllocated: z.number().optional(),
+  otherCostsAllocated: z.number().optional(),
   // Id de la PurchaseReceptionLine de origen — presente solo en líneas que vienen de Recepción
   // Electrónica (recién cargadas con loadFromReception o reabiertas con loadForEdit). Permite que
   // Vincular/Desvincular en /purchases reutilice el mismo backend de Item Matching de Recepción.

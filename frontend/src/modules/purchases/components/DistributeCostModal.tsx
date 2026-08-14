@@ -7,15 +7,15 @@ import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { useI18n } from "../../../i18n/i18n";
-import type {
-  PurchaseCostDistributionType,
-  PurchaseLineDto,
-} from "../api/purchaseService";
-import { simulateCostDistribution } from "../utils/purchaseCalc";
+import type { PurchaseCostDistributionType } from "../api/purchaseService";
+import {
+  simulateCostDistribution,
+  type DistributeCostSourceLine,
+} from "../utils/purchaseCalc";
 
 interface Props {
   open: boolean;
-  lines: PurchaseLineDto[];
+  lines: DistributeCostSourceLine[];
   totalFreight: number;
   totalOtherCosts: number;
   grandTotal: number;
@@ -24,7 +24,7 @@ interface Props {
     costType: PurchaseCostDistributionType,
     amount: number,
     includedLineIds: string[],
-  ) => Promise<boolean>;
+  ) => Promise<boolean> | boolean;
 }
 
 /**

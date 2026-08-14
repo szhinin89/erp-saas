@@ -125,4 +125,40 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       "Revise presentación/factor",
     );
   });
+
+  it("PURCHASE-PRESENTATION-MARGIN-AUDIT-01 — el margen usa el costo por unidad base, no el costo por presentación", () => {
+    // Caso reportado: CLUB PLATINO LATA 355CC NRB X6 TERMO — costo por SIXPACK X6 = 5.9125,
+    // factor 6, PVP por unidad base = 1.08. Antes del fix, calcMarginPercent(unitPrice, pvp)
+    // comparaba 5.9125 (costo por presentación) contra 1.08 (precio por unidad base) y daba
+    // -447.45%. baseUnitCost = (8 * 5.9125) / 48 ≈ 0.9854 → margen esperado ≈ 8.76%.
+    const vm = buildPurchaseLinePresentation(
+      line({
+        quantity: 8,
+        unitPrice: 5.9125,
+        packagingLevelId: "sixpack-6",
+        uomCode: "SIXPACK",
+        baseUomCode: "UNIT",
+        conversionFactor: 6,
+        quantityInBaseUom: 48,
+        context: {
+          ...context,
+          packagingLevels: [
+            {
+              id: "sixpack-6",
+              name: "SIXPACK X6",
+              baseQuantity: 6,
+              uomCode: "SIXPACK",
+              isBaseUnit: false,
+              isPurchaseDefault: true,
+            },
+          ],
+          pvp: 1.08,
+        },
+      }),
+    );
+
+    expect(vm.inventory.baseUnitCost).toBe("$0.9854");
+    expect(vm.commercial.profitability.marginPctValue).toBeCloseTo(8.76, 1);
+    expect(vm.commercial.profitability.marginPctValue).toBeGreaterThan(0);
+  });
 });

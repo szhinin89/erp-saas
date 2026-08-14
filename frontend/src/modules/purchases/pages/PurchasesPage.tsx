@@ -29,6 +29,8 @@ import {
   lineNet,
   calcLineTax,
   roundToTotalAmount,
+  buildCostDistributionInputFromPersistedLines,
+  buildCostDistributionInputFromFormLines,
 } from "../utils/purchaseCalc";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
 import { useI18n } from "../../../i18n/i18n";
@@ -863,7 +865,8 @@ export function PurchasesPage() {
                     type="button"
                     variant="secondary"
                     onClick={() => ctx.setModalDistributeCost(true)}
-                    disabled={ctx.fieldDisabled || !ctx.editing}
+                    disabled={!!ctx.distributeCostDisabledReason}
+                    title={ctx.distributeCostDisabledReason ?? undefined}
                   >
                     <span className="material-symbols-outlined zh-icon-md">
                       local_shipping
@@ -1073,14 +1076,27 @@ export function PurchasesPage() {
           handleApplyDiscount/modalDiscount se conservan en el hook por si se integra al flujo
           de "Distribuir flete/gasto" en una iteración futura. */}
 
+      {/* PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — dos orígenes de datos según si la compra ya
+          existe persistida (ctx.editing) o es nueva sin guardar (ctx.lines del formulario):
+          mismo modal, mismo cálculo, distinto destino al aplicar (backend vs. formulario). */}
       <DistributeCostModal
         open={ctx.modalDistributeCost}
-        lines={ctx.editing?.lines ?? []}
-        totalFreight={ctx.editing?.totalFreight ?? 0}
-        totalOtherCosts={ctx.editing?.totalOtherCosts ?? 0}
-        grandTotal={ctx.editing?.grandTotal ?? 0}
+        lines={
+          ctx.editing
+            ? buildCostDistributionInputFromPersistedLines(ctx.editing.lines)
+            : buildCostDistributionInputFromFormLines(ctx.lines)
+        }
+        totalFreight={ctx.editing ? ctx.editing.totalFreight : ctx.formWatch.freightCost}
+        totalOtherCosts={
+          ctx.editing ? ctx.editing.totalOtherCosts : ctx.formWatch.otherCosts
+        }
+        grandTotal={ctx.localTotal}
         onCancel={() => ctx.setModalDistributeCost(false)}
-        onApply={ctx.handleDistributeCost}
+        onApply={(costType, amount, includedIds) =>
+          ctx.editing
+            ? ctx.handleDistributeCost(costType, amount, includedIds)
+            : ctx.handleDistributeCostToForm(costType, amount, includedIds)
+        }
       />
 
       <ZHConfirmModal

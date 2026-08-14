@@ -32,7 +32,15 @@ public sealed record PurchaseLineInput(
     Guid? PurchaseOrderDetailId = null,
     decimal? OrderedQuantity = null,
     Guid? PurchaseReceptionLineId = null,
-    Guid? PackagingLevelId = null
+    Guid? PackagingLevelId = null,
+    // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo ya revisado por el usuario en el modal
+    // "Distribuir flete/gasto" ANTES de guardar (compra nueva sin Id persistido todavía). Cuando
+    // vienen informados, el handler los aplica directamente por línea (SetFreightAllocated/
+    // SetOtherCostsAllocated) y omite el reprorrateo automático por DistributeCosts — evita que
+    // ese reprorrateo (que opera sobre TODAS las líneas, sin respetar inclusión/exclusión manual)
+    // pise la distribución ya revisada y aceptada por el usuario.
+    decimal? FreightAllocated = null,
+    decimal? OtherCostsAllocated = null
 );
 
 /// <summary>
@@ -389,6 +397,14 @@ public sealed class CreatePurchaseDraftValidator : AbstractValidator<CreatePurch
                     .NotEmpty()
                     .WithMessage("El código IVA es obligatorio por línea.");
                 line.RuleFor(l => l.DiscountPct).InclusiveBetween(0, 100);
+                line.RuleFor(l => l.FreightAllocated)
+                    .GreaterThanOrEqualTo(0)
+                    .When(l => l.FreightAllocated.HasValue)
+                    .WithMessage("El flete asignado no puede ser negativo.");
+                line.RuleFor(l => l.OtherCostsAllocated)
+                    .GreaterThanOrEqualTo(0)
+                    .When(l => l.OtherCostsAllocated.HasValue)
+                    .WithMessage("Los otros costos asignados no pueden ser negativos.");
             });
         RuleFor(x => x.FreightCost).GreaterThanOrEqualTo(0);
         RuleFor(x => x.OtherCosts).GreaterThanOrEqualTo(0);
@@ -430,6 +446,14 @@ public sealed class UpdatePurchaseDraftValidator : AbstractValidator<UpdatePurch
                     .NotEmpty()
                     .WithMessage("El código IVA es obligatorio por línea.");
                 line.RuleFor(l => l.DiscountPct).InclusiveBetween(0, 100);
+                line.RuleFor(l => l.FreightAllocated)
+                    .GreaterThanOrEqualTo(0)
+                    .When(l => l.FreightAllocated.HasValue)
+                    .WithMessage("El flete asignado no puede ser negativo.");
+                line.RuleFor(l => l.OtherCostsAllocated)
+                    .GreaterThanOrEqualTo(0)
+                    .When(l => l.OtherCostsAllocated.HasValue)
+                    .WithMessage("Los otros costos asignados no pueden ser negativos.");
             });
         RuleFor(x => x.FreightCost).GreaterThanOrEqualTo(0);
         RuleFor(x => x.OtherCosts).GreaterThanOrEqualTo(0);
@@ -583,7 +607,15 @@ public sealed class CreatePurchaseDraftHandler
             return linesResult.Error;
 
         inv.ReplaceLines(linesResult.Lines, _u.UserId);
-        if (cmd.FreightCost > 0 || cmd.OtherCosts > 0)
+        // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — si el cliente ya envió FreightAllocated/
+        // OtherCostsAllocated explícitos por línea (modal "Distribuir flete/gasto" revisado antes
+        // de guardar), esos valores ya quedaron aplicados en BuildLines y son la fuente de verdad:
+        // NO reprorratear con DistributeCosts, que ignora la inclusión/exclusión manual del usuario
+        // y redistribuiría por TODAS las líneas desde cero.
+        var hasExplicitLineCosts = cmd.Lines.Any(l =>
+            l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
+        );
+        if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
             inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
 
         await _repo.AddAsync(inv, ct);
@@ -703,6 +735,10 @@ public sealed class CreatePurchaseDraftHandler
                 baseUomCode: packaging.BaseUomCode,
                 packagingLevelId: packaging.PackagingLevelId
             );
+            if (l.FreightAllocated.HasValue)
+                line.SetFreightAllocated(l.FreightAllocated.Value);
+            if (l.OtherCostsAllocated.HasValue)
+                line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
 
             var taxResult = await ResolveLineTaxesAsync(line, l.PurchaseReceptionLineId, tid, ct);
             if (taxResult is not null)
@@ -978,6 +1014,10 @@ public sealed class UpdatePurchaseDraftHandler
                     baseUomCode: packaging.BaseUomCode,
                     packagingLevelId: packaging.PackagingLevelId
                 );
+                if (l.FreightAllocated.HasValue)
+                    line.SetFreightAllocated(l.FreightAllocated.Value);
+                if (l.OtherCostsAllocated.HasValue)
+                    line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
 
                 Result<PurchaseInvoiceDto>? taxResult = null;
                 if (l.PurchaseReceptionLineId.HasValue)
@@ -1008,7 +1048,12 @@ public sealed class UpdatePurchaseDraftHandler
             }
             await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
             inv.ReplaceLines(lines, _u.UserId);
-            if (cmd.FreightCost > 0 || cmd.OtherCosts > 0)
+            // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — mismo criterio que CreatePurchaseDraftHandler:
+            // no reprorratear si el cliente ya envió FreightAllocated/OtherCostsAllocated explícitos.
+            var hasExplicitLineCosts = cmd.Lines.Any(l =>
+                l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
+            );
+            if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
                 inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
         }
         catch (InvalidOperationException ex)
