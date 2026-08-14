@@ -2851,6 +2851,8 @@
   "purchases.lines.selectProduct": "Seleccionar producto",
   "purchases.lines.costShort": "COSTO",
   "purchases.lines.discountShort": "DESC",
+  "purchases.lines.vatShort": "IVA",
+  "purchases.lines.iceShort": "ICE",
   "purchases.lines.duplicate": "Duplicar",
   "purchases.lines.delete": "Eliminar",
   "purchases.lines.receivedProduct": "Producto recibido (XML)",

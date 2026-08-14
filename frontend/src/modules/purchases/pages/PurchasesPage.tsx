@@ -1799,12 +1799,14 @@ function PurchaseLineCard({
             </div>
             <div className="pdl-line__metric">
               <div className="pdl-line__tax">
-                <div className="pdl-line__tax-head">IVA {vatPct}%: $</div>
+                <div className="pdl-line__tax-head">
+                  {t("purchases.lines.vatShort", "IVA")} {vatPct}%: $
+                </div>
                 <div className="pdl-line__tax-amount">
                   {formatMoney(vatAmt, getDecimalConfig().totalAmount)}
                 </div>
                 <div className="pdl-line__tax-ice">
-                  ICE: $ {formatMoney(iceAmt, getDecimalConfig().totalAmount)}
+                  {t("purchases.lines.iceShort", "ICE")}: $ {formatMoney(iceAmt, getDecimalConfig().totalAmount)}
                 </div>
                 {irbpnrAmt > 0 && (
                   <div className="pdl-line__tax-ice">
@@ -3154,7 +3156,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </span>
         </div>
         <div className="pf-totals__row">
-          <span className="pf-totals__label">ICE</span>
+          <span className="pf-totals__label">{t("purchases.lines.iceShort", "ICE")}</span>
           <span className="pf-totals__value">
             {formatMoneyWithSymbol(
               ctx.editing ? ctx.editing.totalIce : ctx.localSummary.ice,
@@ -3163,7 +3165,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </span>
         </div>
         <div className="pf-totals__row">
-          <span className="pf-totals__label">IVA</span>
+          <span className="pf-totals__label">{t("purchases.lines.vatShort", "IVA")}</span>
           <span className="pf-totals__value">
             {formatMoneyWithSymbol(
               ctx.editing ? ctx.editing.totalVat : ctx.localSummary.vat,

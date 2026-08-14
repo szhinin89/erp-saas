@@ -2850,6 +2850,8 @@
   "purchases.lines.selectProduct": "Productota akllay",
   "purchases.lines.costShort": "COSTO",
   "purchases.lines.discountShort": "DESC",
+  "purchases.lines.vatShort": "IVA",
+  "purchases.lines.iceShort": "ICE",
   "purchases.lines.duplicate": "Iskaychay",
   "purchases.lines.delete": "Chinkachiy",
   "purchases.lines.receivedProduct": "Chaskishka producto (XML)",
