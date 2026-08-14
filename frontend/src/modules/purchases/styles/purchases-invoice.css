@@ -507,15 +507,71 @@
     padding-top: var(--space-3);
   }
 }
+/* ── Móvil real (<=640px): .pdl-line-row deja de ser 3 columnas rígidas ──
+   Causa raíz del fix anterior (FIX-02) siendo insuficiente: .pdl-line-row
+   seguía siendo un flex-row con TRES hermanos lado a lado (rail izq 36px +
+   .pdl-line flex:1 + rail der 48-72px) EN TODOS los anchos — nunca se dejó
+   de "ver como tabla horizontal". Angostar el rail derecho no alcanzaba
+   porque el problema era la estructura de 3 columnas en sí, no el ancho de
+   una de ellas. Se convierte a CSS Grid de 2 columnas (rail izq | contenido)
+   y el rail derecho se reubica, vía posicionamiento explícito de grid (no
+   requiere reordenar el JSX/DOM), como una fila propia DEBAJO de .pdl-line,
+   dentro de la misma columna 2 — deja de robar ancho horizontal. */
 @media (max-width: 640px) {
+  .pdl-line-row {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    align-items: stretch;
+  }
+  .pdl-line-row__rail {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: auto;
+  }
+  .pdl-line-row .pdl-line {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  /* Rail derecho: pasa de columna lateral fija a fila compacta horizontal
+     debajo del contenido de la línea — mismos botones/handlers, solo se
+     reordena visualmente vía grid-row/grid-column (la posición en el DOM
+     no cambia). */
+  .pdl-line-row__actions-rail {
+    grid-column: 2;
+    grid-row: 2;
+    width: auto;
+    flex-direction: row;
+    justify-content: flex-end;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-2) var(--space-4);
+  }
   /* Solo en pantallas angostas: las métricas caen debajo de la identidad
      en vez de mantenerse en franja horizontal, y el selector de bodega
-     recupera el ancho completo de la columna. */
+     recupera el ancho completo de la columna. align-items:stretch (en vez
+     del flex-start heredado, pensado para la fila horizontal de desktop)
+     evita que el eje cruzado (el ancho, en modo columna) quede en
+     "fit-content" angosto — causa de que el nombre de producto se viera
+     partido casi palabra por palabra. */
   .pdl-line__summary {
     flex-direction: column;
+    align-items: stretch;
   }
   .pdl-line__wh-select-compact {
     max-width: none;
+  }
+  /* Métricas en grid de 2 columnas (Cantidad/Costo/Desc/IVA/Margen/Total) —
+     reemplaza el flex-wrap heredado de <=1100px, que las apilaba en una fila
+     larga sin relación visual entre pares. Los separadores verticales ya se
+     quitan a este ancho (regla <=1100px arriba). */
+  .pdl-line__metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2) var(--space-4);
+    width: 100%;
+  }
+  .pdl-line__metric {
+    align-items: flex-start;
   }
   /* .pdl-blocks pasa a 1 columna (erp-form-core.css) — las 3 secciones se
      apilan, así que todos los separadores entre columnas se vuelven
@@ -525,6 +581,14 @@
     padding-left: 0;
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-3);
+  }
+}
+/* Ancho realmente angosto (390/430px): ni siquiera 2 columnas de métricas
+   caben con margen — se apilan en 1 columna para que inputs/valores no
+   queden comprimidos ni se solapen. */
+@media (max-width: 480px) {
+  .pdl-line__metrics {
+    grid-template-columns: 1fr;
   }
 }
 .pf-schedule-actions {
