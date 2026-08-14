@@ -23,6 +23,7 @@ import type {
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
 import type { WarehouseDto } from "../../inventory/facades/warehouseLookupFacade";
+import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { paymentTermService } from "../../masterData/api/paymentTermService";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
@@ -101,6 +102,7 @@ const SUPPLIER_CODE_CONFLICT_DETAIL =
 
 export function usePurchasesPage() {
   const { t } = useI18n();
+  const activeBranchId = useActiveBranchStore((s) => s.branch)?.id ?? null;
   // ── Page state ─────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("nuevo");
   const [listItems, setListItems] = useState<PurchaseListItemDto[]>([]);
@@ -361,12 +363,21 @@ export function usePurchasesPage() {
     return () => clearTimeout(timer);
   }, [accessKeyValue, checkAccessKeyDuplicate, readOnly]);
 
-  // ── Init reference data ────────────────────────────────────────────
+  // Solo bodegas de la sucursal activa (Branch Ownership Rule): una compra
+  // solo puede enviar mercadería a bodegas de su propia sucursal.
   useEffect(() => {
+    if (!activeBranchId) {
+      setWarehouses([]);
+      return;
+    }
     warehouseLookupFacade
-      .list("active")
+      .list("active", undefined, activeBranchId)
       .then(setWarehouses)
       .catch(() => {});
+  }, [activeBranchId]);
+
+  // ── Init reference data ────────────────────────────────────────────
+  useEffect(() => {
     sriLookupFacade
       .docTypes()
       .then((types) => {

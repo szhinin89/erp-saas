@@ -179,6 +179,47 @@ file static class ReceptionTaxLookup
     }
 }
 
+/// <summary>
+/// PURCHASE-WAREHOUSE-BRANCH-GUARD-01 — regla de negocio: una compra solo puede enviar
+/// mercadería a bodegas de su propia sucursal (Warehouse.BranchId == PurchaseInvoice.BranchId).
+/// Compartida entre Create/Update/ConfirmPurchaseHandler (no "file" porque Confirm vive en otro
+/// archivo del mismo módulo). Cross-branch purchase warehouses require an explicit audited
+/// permission in a future feature — no implementar aquí.
+/// </summary>
+public static class WarehouseBranchGuard
+{
+    public const string CrossBranchMessage =
+        "La bodega seleccionada no pertenece a la sucursal de la compra.";
+    public const string NotFoundMessage = "La bodega seleccionada no existe.";
+
+    public static async Task<WarehouseBranchCheckResult> ValidateAsync(
+        IWarehouseRepository whRepo,
+        Guid tenantId,
+        Guid warehouseId,
+        Guid invoiceBranchId,
+        CancellationToken ct
+    )
+    {
+        var wh = await whRepo.GetByIdAsync(tenantId, warehouseId, ct);
+        if (wh is null)
+            return new(
+                null,
+                Result<PurchaseInvoiceDto>.ValidationFailure(NotFoundMessage)
+            );
+        if (wh.BranchId != invoiceBranchId)
+            return new(
+                wh,
+                Result<PurchaseInvoiceDto>.ValidationFailure(CrossBranchMessage)
+            );
+        return new(wh, null);
+    }
+}
+
+public sealed record WarehouseBranchCheckResult(
+    ERP.Domain.Modules.Inventory.Entities.Warehouse? Warehouse,
+    Result<PurchaseInvoiceDto>? Error
+);
+
 file static class PurchaseAccessKeyDuplicateGuard
 {
     public const string ConstraintName = "uq_purchase_invoices_tenant_access_key";
@@ -486,6 +527,19 @@ public sealed class CreatePurchaseDraftHandler
         if (pt is null)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La condición de pago no existe.");
 
+        if (cmd.GlobalWarehouseId.HasValue)
+        {
+            var whCheck = await WarehouseBranchGuard.ValidateAsync(
+                _whRepo,
+                tid,
+                cmd.GlobalWarehouseId.Value,
+                _b.BranchId,
+                ct
+            );
+            if (whCheck.Error is not null)
+                return whCheck.Error;
+        }
+
         string? pmName = null;
         if (!string.IsNullOrWhiteSpace(cmd.SriPaymentMethodCode))
             pmName = await _tax.GetPaymentMethodNameAsync(cmd.SriPaymentMethodCode.Trim(), ct);
@@ -521,6 +575,7 @@ public sealed class CreatePurchaseDraftHandler
             inv.Id,
             tid,
             cmd.GlobalWarehouseId,
+            _b.BranchId,
             ct,
             cmd.SupplierId
         );
@@ -551,6 +606,7 @@ public sealed class CreatePurchaseDraftHandler
         Guid invoiceId,
         Guid tid,
         Guid? globalWhId,
+        Guid invoiceBranchId,
         CancellationToken ct,
         Guid? supplierId = null
     )
@@ -611,8 +667,16 @@ public sealed class CreatePurchaseDraftHandler
             var whId = l.WarehouseId ?? globalWhId;
             if (whId.HasValue)
             {
-                var wh = await _whRepo.GetByIdAsync(tid, whId.Value, ct);
-                snapshotWhCode = wh?.Code;
+                var whCheck = await WarehouseBranchGuard.ValidateAsync(
+                    _whRepo,
+                    tid,
+                    whId.Value,
+                    invoiceBranchId,
+                    ct
+                );
+                if (whCheck.Error is not null)
+                    return new(null!, whCheck.Error);
+                snapshotWhCode = whCheck.Warehouse?.Code;
             }
 
             var line = PurchaseInvoiceDetail.Create(
@@ -787,6 +851,19 @@ public sealed class UpdatePurchaseDraftHandler
             }
         }
 
+        if (cmd.GlobalWarehouseId.HasValue)
+        {
+            var whCheck = await WarehouseBranchGuard.ValidateAsync(
+                _whRepo,
+                _t.TenantId,
+                cmd.GlobalWarehouseId.Value,
+                inv.BranchId,
+                ct
+            );
+            if (whCheck.Error is not null)
+                return whCheck.Error;
+        }
+
         try
         {
             string? pmName = null;
@@ -865,8 +942,16 @@ public sealed class UpdatePurchaseDraftHandler
                 var whId = l.WarehouseId ?? cmd.GlobalWarehouseId;
                 if (whId.HasValue)
                 {
-                    var wh = await _whRepo.GetByIdAsync(_t.TenantId, whId.Value, ct);
-                    snapshotWhCode = wh?.Code;
+                    var whCheck = await WarehouseBranchGuard.ValidateAsync(
+                        _whRepo,
+                        _t.TenantId,
+                        whId.Value,
+                        inv.BranchId,
+                        ct
+                    );
+                    if (whCheck.Error is not null)
+                        return whCheck.Error;
+                    snapshotWhCode = whCheck.Warehouse?.Code;
                 }
 
                 var line = PurchaseInvoiceDetail.Create(

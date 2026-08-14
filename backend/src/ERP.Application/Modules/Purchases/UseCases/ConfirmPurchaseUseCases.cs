@@ -31,6 +31,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IStockRepository _stockRepo;
     private readonly IItemRepository _itemRepo;
+    private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPostingEngine _postingEngine;
     private readonly ILogger<ConfirmPurchaseHandler> _logger;
@@ -42,6 +43,7 @@ public sealed class ConfirmPurchaseHandler
         IPurchaseInvoiceRepository repo,
         IStockRepository stockRepo,
         IItemRepository itemRepo,
+        IWarehouseRepository whRepo,
         ISriTaxResolver tax,
         IPostingEngine postingEngine,
         ILogger<ConfirmPurchaseHandler> logger,
@@ -53,6 +55,7 @@ public sealed class ConfirmPurchaseHandler
         _repo = repo;
         _stockRepo = stockRepo;
         _itemRepo = itemRepo;
+        _whRepo = whRepo;
         _tax = tax;
         _postingEngine = postingEngine;
         _logger = logger;
@@ -76,6 +79,27 @@ public sealed class ConfirmPurchaseHandler
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");
+
+        // ── STEP 0: Guard bodega↔sucursal (PURCHASE-WAREHOUSE-BRANCH-GUARD-01) ──
+        // Defensa en profundidad: aunque Create/UpdatePurchaseDraft ya validan esto al guardar,
+        // un borrador persistido antes de este guard (o alterado fuera del flujo normal) no debe
+        // poder confirmarse con una bodega de otra sucursal.
+        foreach (var line in inv.Lines)
+        {
+            var warehouseId = line.WarehouseId ?? inv.GlobalWarehouseId;
+            if (warehouseId is null)
+                continue;
+
+            var whCheck = await WarehouseBranchGuard.ValidateAsync(
+                _whRepo,
+                tid,
+                warehouseId.Value,
+                inv.BranchId,
+                ct
+            );
+            if (whCheck.Error is not null)
+                return whCheck.Error;
+        }
 
         // ── STEP 0a: Guard de presentación en compras XML ───────────────
         // Las líneas provenientes de Recepción Electrónica impactan inventario y auditoría fiscal.

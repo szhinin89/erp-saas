@@ -271,6 +271,28 @@ public sealed class ConfirmPurchaseHandlerTests
             .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
+        var warehouse = Warehouse.Create(
+            TenantId,
+            BranchId,
+            "Bodega Principal",
+            "WH-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            UserId,
+            CompanyId
+        );
+        var whRepo = new Mock<IWarehouseRepository>();
+        whRepo
+            .Setup(r => r.GetByIdAsync(TenantId, WhId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouse);
+
         var itemRepo = new Mock<IItemRepository>();
         if (itemForXmlLines is not null)
         {
@@ -325,6 +347,7 @@ public sealed class ConfirmPurchaseHandlerTests
             repo.Object,
             stockRepo.Object,
             itemRepo.Object,
+            whRepo.Object,
             tax.Object,
             postingEngine.Object,
             logger.Object,
@@ -771,6 +794,7 @@ public sealed class ConfirmPurchaseHandlerTests
             repoOverride.Object,
             new Mock<IStockRepository>().Object,
             new Mock<IItemRepository>().Object,
+            new Mock<IWarehouseRepository>().Object,
             new Mock<ISriTaxResolver>().Object,
             new Mock<IPostingEngine>().Object,
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,

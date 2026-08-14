@@ -4,6 +4,7 @@ using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -55,13 +56,35 @@ public sealed class PurchaseDraftPackagingTests
         tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
 
+        var warehouse = Warehouse.Create(
+            TenantId,
+            BranchId,
+            "Bodega Principal",
+            "WH-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            UserId,
+            CompanyId
+        );
+        var whRepo = new Mock<IWarehouseRepository>();
+        whRepo
+            .Setup(r => r.GetByIdAsync(TenantId, WhId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouse);
+
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
             bpRepo.Object,
             Mock.Of<IBusinessPartnerRoleRepository>(),
             Mock.Of<IPaymentTermRepository>(),
             itemRepo.Object,
-            Mock.Of<IWarehouseRepository>(),
+            whRepo.Object,
             tax.Object,
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
