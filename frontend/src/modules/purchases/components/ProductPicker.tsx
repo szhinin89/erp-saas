@@ -17,15 +17,23 @@ type Props = {
   disabled?: boolean;
   /** Catálogo SRI code→porcentaje (sriLookupService.vatRates()) — única fuente del % mostrado. */
   vatRates?: Record<string, number>;
+  /** Precarga la búsqueda con este texto al montar (p.ej. la descripción XML/TXT
+   * de una línea sin producto vinculado) y dispara la búsqueda inicial. Solo se
+   * usa como valor inicial de useState — no se vuelve a sincronizar en renders
+   * posteriores, así que el usuario puede editar/borrar libremente sin que se
+   * pise lo que escribe. No selecciona ni vincula nada automáticamente. */
+  initialQuery?: string;
 };
 
 const profileCache = new Map<string, ProductProfile>();
 
-export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
+export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Props) {
   const { t } = useI18n();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery ?? "");
   const [results, setResults] = useState<ItemDto[]>([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(
+    () => (initialQuery ?? "").trim().length >= 2,
+  );
   const [loading, setLoading] = useState(false);
   const [focusIdx, setFocusIdx] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);

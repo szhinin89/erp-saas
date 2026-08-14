@@ -1507,6 +1507,7 @@ function ProductLineActionMenu({
                   <ProductPicker
                     disabled={disabled || ctx.matchingKey === l._key}
                     vatRates={ctx.vatRatesMap}
+                    initialQuery={l.description?.trim() || undefined}
                     onSelect={(product) => {
                       onProductSelect(product);
                       setOpen(false);
@@ -1682,7 +1683,7 @@ function PurchaseLineCard({
     ctxData?.shortName || l.description?.split(" — ")[1] || l.description;
 
   return (
-    <div className="pdl-line-row">
+    <div className="zh-detail-line pdl-line-row">
       {/* Control lateral del componente de línea — solo el menú, separado del
           número/contenido (ver reporte de ajuste visual del trigger por línea). */}
       <div className="pdl-line-row__rail">
@@ -1694,125 +1695,158 @@ function PurchaseLineCard({
           onViewProduct={() => viewMatchedItem(l.itemId as string)}
           onUnlinkProduct={handleUnlinkProduct}
         />
+        <span className="pdl-line-row__num">
+          {String(idx + 1).padStart(2, "0")}
+        </span>
       </div>
       <div className="pdl-line">
       <div className="pdl-line__main">
-        <div className="pdl-line__num-wrap">
-          <span className="pdl-line__num">
-            {String(idx + 1).padStart(2, "0")}
-          </span>
-        </div>
-        <div className="pdl-line__product">
-          {!l.itemId ? (
-            <div className="pdl-line__product-name pdl-line__product-name--muted">
-              {t(
-                "purchases.lines.noLinkedProduct",
-                "Sin producto vinculado",
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="pdl-line__product-name">
-                {productName}
+        <div className="pdl-line__summary">
+          <div className="pdl-line__identity">
+            {!l.itemId ? (
+              <div className="pdl-line__product-name pdl-line__product-name--muted">
+                {t(
+                  "purchases.lines.noLinkedProduct",
+                  "Sin producto vinculado",
+                )}
               </div>
-              <ZhSelect
-                density="compact"
-                value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ""}
-                onChange={(e) =>
-                  ctx.updateLineWarehouse(l._key, e.target.value || null)
+            ) : (
+              <>
+                <div className="pdl-line__product-name">
+                  {productName}
+                </div>
+                <div className="pdl-line__product-meta">
+                  SKU: {vm.item.sku} ·{" "}
+                  {t("purchases.lines.supplierCode", "Cód. proveedor")}:{" "}
+                  {vm.xml.supplierCode}
+                </div>
+                <ZhSelect
+                  className="pdl-line__wh-select-compact"
+                  density="compact"
+                  value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ""}
+                  onChange={(e) =>
+                    ctx.updateLineWarehouse(l._key, e.target.value || null)
+                  }
+                  disabled={ctx.fieldDisabled}
+                >
+                  <option value="">
+                    {t("purchases.logistics.selectWarehouse", "— Seleccionar bodega —")}
+                  </option>
+                  {ctx.warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.code ? `${w.code} — ${w.name}` : w.name}
+                    </option>
+                  ))}
+                </ZhSelect>
+              </>
+            )}
+          </div>
+          <div className="pdl-line__metrics">
+            <div className="pdl-line__metric">
+              <span className="pdl-line__metric-label">
+                {t("purchases.lines.quantity", "Cantidad")}
+              </span>
+              <ZhDecimalInput
+                className="pdl-input pdl-input--qty"
+                decimals={getDecimalConfig().quantity}
+                positiveOnly
+                defaultValue={l.quantity}
+                onBlur={(e) =>
+                  ctx.updateLine(l._key, "quantity", Number(e.target.value) || 1)
                 }
                 disabled={ctx.fieldDisabled}
-              >
-                <option value="">
-                  {t("purchases.logistics.selectWarehouse", "— Seleccionar bodega —")}
-                </option>
-                {ctx.warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.code ? `${w.code} — ${w.name}` : w.name}
-                  </option>
-                ))}
-              </ZhSelect>
-            </>
-          )}
-        </div>
-        <div className="pdl-line__qty">
-          <ZhDecimalInput
-            className="pdl-input pdl-input--qty"
-            decimals={getDecimalConfig().quantity}
-            positiveOnly
-            defaultValue={l.quantity}
-            onBlur={(e) =>
-              ctx.updateLine(l._key, "quantity", Number(e.target.value) || 1)
-            }
-            disabled={ctx.fieldDisabled}
-          />
-        </div>
-        <div className="pdl-line__finance">
-          <div className="pdl-line__cost-row">
-            <span className="pdl-line__cost-label">
-              {t("purchases.lines.costShort", "COSTO")}: $
-            </span>
-            <ZhDecimalInput
-              className="pdl-input pdl-input--cost"
-              decimals={getDecimalConfig().purchaseUnitPrice}
-              positiveOnly
-              defaultValue={l.unitPrice}
-              onBlur={(e) =>
-                ctx.updateLine(l._key, "unitPrice", Number(e.target.value) || 0)
-              }
-              disabled={ctx.fieldDisabled}
-            />
-          </div>
-          <div className="pdl-line__cost-row">
-            <span className="pdl-line__cost-label">
-              {t("purchases.lines.discountShort", "DESC")}: %
-            </span>
-            <ZhDecimalInput
-              className="pdl-input pdl-input--disc"
-              decimals={getDecimalConfig().percentage}
-              positiveOnly
-              defaultValue={l.discountPct ?? 0}
-              onBlur={(e) =>
-                ctx.updateLine(
-                  l._key,
-                  "discountPct",
-                  Math.min(100, Math.max(0, Number(e.target.value) || 0)),
-                )
-              }
-              disabled={ctx.fieldDisabled}
-            />
-          </div>
-        </div>
-        <div className="pdl-line__tax">
-          <div className="pdl-line__tax-head">IVA {vatPct}%: $</div>
-          <div className="pdl-line__tax-amount">
-            {formatMoney(vatAmt, getDecimalConfig().totalAmount)}
-          </div>
-          <div className="pdl-line__tax-ice">
-            ICE: $ {formatMoney(iceAmt, getDecimalConfig().totalAmount)}
-          </div>
-          {irbpnrAmt > 0 && (
-            <div className="pdl-line__tax-ice">
-              IRBPNR: $ {formatMoney(irbpnrAmt, getDecimalConfig().totalAmount)}
+              />
             </div>
-          )}
+            <div className="pdl-line__metric">
+              <span className="pdl-line__metric-label">
+                {t("purchases.lines.costShort", "COSTO")}
+              </span>
+              <div className="pdl-line__metric-value">
+                <span className="pdl-line__metric-unit">$</span>
+                <ZhDecimalInput
+                  className="pdl-input pdl-input--cost"
+                  decimals={getDecimalConfig().purchaseUnitPrice}
+                  positiveOnly
+                  defaultValue={l.unitPrice}
+                  onBlur={(e) =>
+                    ctx.updateLine(l._key, "unitPrice", Number(e.target.value) || 0)
+                  }
+                  disabled={ctx.fieldDisabled}
+                />
+              </div>
+            </div>
+            <div className="pdl-line__metric">
+              <span className="pdl-line__metric-label">
+                {t("purchases.lines.discountShort", "DESC")}
+              </span>
+              <div className="pdl-line__metric-value">
+                <ZhDecimalInput
+                  className="pdl-input pdl-input--disc"
+                  decimals={getDecimalConfig().percentage}
+                  positiveOnly
+                  defaultValue={l.discountPct ?? 0}
+                  onBlur={(e) =>
+                    ctx.updateLine(
+                      l._key,
+                      "discountPct",
+                      Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+                    )
+                  }
+                  disabled={ctx.fieldDisabled}
+                />
+                <span className="pdl-line__metric-unit">%</span>
+              </div>
+            </div>
+            <div className="pdl-line__metric">
+              <div className="pdl-line__tax">
+                <div className="pdl-line__tax-head">IVA {vatPct}%: $</div>
+                <div className="pdl-line__tax-amount">
+                  {formatMoney(vatAmt, getDecimalConfig().totalAmount)}
+                </div>
+                <div className="pdl-line__tax-ice">
+                  ICE: $ {formatMoney(iceAmt, getDecimalConfig().totalAmount)}
+                </div>
+                {irbpnrAmt > 0 && (
+                  <div className="pdl-line__tax-ice">
+                    IRBPNR: $ {formatMoney(irbpnrAmt, getDecimalConfig().totalAmount)}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="pdl-line__metric">
+              <span className="pdl-line__metric-label">
+                {t("purchases.lines.netTotal", "Total neto")}
+              </span>
+              <div className="pdl-line__total">
+                $ {formatMoney(total, getDecimalConfig().totalAmount)}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="pdl-line__total">
-          $ {formatMoney(total, getDecimalConfig().totalAmount)}
-        </div>
-        <div className="pdl-line__actions">
-          <ZHIconButton
-            icon="content_copy"
-            variant="ghost"
-            title={t("purchases.lines.duplicate", "Duplicar")}
-            onClick={() => ctx.duplicateLine(l._key)}
-          />
-          <ZHIconButton
-            icon="delete"
-            variant="danger"
-            title={t("purchases.lines.delete", "Eliminar")}
-            onClick={() => ctx.removeLine(l._key)}
-          />
+        <div className="pdl-line__actions pdl-line__actions--vertical">
+          <div className="pdl-line__action">
+            <ZHIconButton
+              icon="content_copy"
+              variant="ghost"
+              title={t("purchases.lines.duplicate", "Duplicar")}
+              onClick={() => ctx.duplicateLine(l._key)}
+            />
+            <span className="pdl-line__action-label">
+              {t("purchases.lines.duplicate", "Duplicar")}
+            </span>
+          </div>
+          <div className="pdl-line__action">
+            <ZHIconButton
+              icon="delete"
+              variant="danger"
+              className="pdl-line__delete-btn"
+              title={t("purchases.lines.delete", "Eliminar")}
+              onClick={() => ctx.removeLine(l._key)}
+            />
+            <span className="pdl-line__action-label pdl-line__action-label--danger">
+              {t("purchases.lines.delete", "Eliminar")}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -2031,6 +2065,18 @@ function PurchaseLineCard({
                 </span>
               </div>
             )}
+            <div>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.inventory", "Inventario")}
+              </span>
+              <span className="pdl-cost-val">{vm.inventory.baseQuantity}</span>
+            </div>
+            <div>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.baseCost", "Costo base")}
+              </span>
+              <span className="pdl-cost-val">{vm.inventory.baseUnitCost}</span>
+            </div>
             {vm.item.hasItem && vm.xml.hasOrigin && (
               <div className="pdl-cost-wide">
                 <ZHBtn
@@ -2053,18 +2099,6 @@ function PurchaseLineCard({
                 </ZHBtn>
               </div>
             )}
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.inventory", "Inventario")}
-              </span>
-              <span className="pdl-cost-val">{vm.inventory.baseQuantity}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.baseCost", "Costo base")}
-              </span>
-              <span className="pdl-cost-val">{vm.inventory.baseUnitCost}</span>
-            </div>
           </div>
         </section>
 
