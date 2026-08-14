@@ -2716,7 +2716,7 @@
   "purchases.lines.linkedPresentation": "Presentación vinculada",
   "purchases.lines.baseConversion": "Conversión",
   "purchases.lines.savingSupplierPresentation": "Guardando presentación...",
-  "purchases.lines.saveSupplierPresentation": "Guardar esta presentación para este proveedor",
+  "purchases.lines.saveSupplierPresentation": "Guardar presentación",
   "purchases.lines.saveSupplierPresentationHint": "Se usará automáticamente la próxima vez que llegue este código proveedor.",
   "purchases.lineReadiness.saveBlockedTitle": "No se puede guardar la compra.",
   "purchases.lineReadiness.reviewLinesDetail": "Revise las líneas marcadas antes de continuar.",

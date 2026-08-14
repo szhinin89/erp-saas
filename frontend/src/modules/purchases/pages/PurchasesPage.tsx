@@ -12,6 +12,7 @@ import type { ItemCreatedResult } from "../../../components/items/ItemEditorModa
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
+import { ZhDateTimeInput } from "../../../components/zh/inputs/ZhDateTimeInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
@@ -678,16 +679,16 @@ export function PurchasesPage() {
                       disabled={ctx.fieldDisabled}
                     />
                   </ZHField>
-                  {/* authorizationDate: type="datetime-local" (fecha + hora) —
-                      ZhDateInput fuerza type="date" (sin hora); no es
-                      equivalente, se excluye de este bloque. Ver reporte 14B-2. */}
+                  {/* authorizationDate: ZhDateTimeInput (type="datetime-local", fecha + hora)
+                      — ZhDateInput fuerza type="date" (sin hora); no es equivalente.
+                      El valor debe llegar ya normalizado a yyyy-MM-ddTHH:mm vía
+                      toDateTimeLocalInputValue() al poblar el formulario (reset()). */}
                   <ZHField
                     density="compact"
                     label={t("purchases.electronic.authorizationDate", "Fecha y hora autorización")}
                   >
-                    <input
-                      type="datetime-local"
-                      className="zh-input--compact"
+                    <ZhDateTimeInput
+                      density="compact"
                       {...ctx.register("authorizationDate")}
                       disabled={ctx.fieldDisabled}
                     />
@@ -2024,7 +2025,7 @@ function PurchaseLineCard({
               <div className="pdl-cost-wide">
                 <ZHBtn
                   type="button"
-                  variant="secondary"
+                  variant="primary"
                   size="xs"
                   disabled={
                     ctx.fieldDisabled ||
@@ -2038,17 +2039,8 @@ function PurchaseLineCard({
                         "purchases.lines.savingSupplierPresentation",
                         "Guardando presentación...",
                       )
-                    : t(
-                        "purchases.lines.saveSupplierPresentation",
-                        "Guardar esta presentación para este proveedor",
-                      )}
+                    : t("purchases.lines.saveSupplierPresentation", "Guardar presentación")}
                 </ZHBtn>
-                <p className="pdl-block__hint">
-                  {t(
-                    "purchases.lines.saveSupplierPresentationHint",
-                    "Se usará automáticamente la próxima vez que llegue este código proveedor.",
-                  )}
-                </p>
               </div>
             )}
             <div>

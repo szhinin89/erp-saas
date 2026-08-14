@@ -2714,7 +2714,7 @@
   "purchases.lines.linkedPresentation": "Linked presentation",
   "purchases.lines.baseConversion": "Conversion",
   "purchases.lines.savingSupplierPresentation": "Saving presentation...",
-  "purchases.lines.saveSupplierPresentation": "Save this presentation for this supplier",
+  "purchases.lines.saveSupplierPresentation": "Save presentation",
   "purchases.lines.saveSupplierPresentationHint": "It will be used automatically the next time this supplier code arrives.",
   "purchases.lineReadiness.saveBlockedTitle": "The purchase cannot be saved.",
   "purchases.lineReadiness.reviewLinesDetail": "Review the marked lines before continuing.",

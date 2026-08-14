@@ -6,6 +6,7 @@ export { ZhDecimalInput } from "./ZhDecimalInput";
 export { ZhCurrencyInput } from "./ZhCurrencyInput";
 export { ZhPhoneInput } from "./ZhPhoneInput";
 export { ZhDateInput } from "./ZhDateInput";
+export { ZhDateTimeInput } from "./ZhDateTimeInput";
 export { ZhSelect } from "./ZhSelect";
 export { ZhTextarea } from "./ZhTextarea";
 

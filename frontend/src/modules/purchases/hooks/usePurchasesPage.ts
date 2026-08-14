@@ -13,6 +13,7 @@ import {
   purchaseReceptionService,
   type PurchaseDraftDto,
 } from "../api/purchaseReceptionService";
+import { toDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
 import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { useItemTypeOptions } from "../../items/hooks/useItemTypeOptions";
 import type { ItemDto } from "../../../types/items";
@@ -1009,7 +1010,7 @@ export function usePurchasesPage() {
           issueDate: inv.issueDate,
           accessKey: inv.accessKey ?? "",
           authorizationNumber: inv.authorizationNumber ?? "",
-          authorizationDate: inv.authorizationDate ?? "",
+          authorizationDate: toDateTimeLocalInputValue(inv.authorizationDate),
           globalWarehouseId: inv.globalWarehouseId ?? "",
           freightCost: inv.totalFreight,
           otherCosts: inv.totalOtherCosts,
@@ -1183,7 +1184,7 @@ export function usePurchasesPage() {
           issueDate: draft.issueDate,
           accessKey: draft.accessKey ?? "",
           authorizationNumber: draft.authorizationNumber ?? "",
-          authorizationDate: draft.authorizationDate ?? "",
+          authorizationDate: toDateTimeLocalInputValue(draft.authorizationDate),
           sriPaymentMethodCode: draft.sriPaymentMethodCode ?? "",
           lines: mappedLines,
         });

@@ -57,3 +57,32 @@ export function isValidIsoDate(value: string): boolean {
     !isNaN(new Date(value + "T00:00:00Z").getTime())
   );
 }
+
+/**
+ * Normaliza un valor de fecha/hora al formato exigido por
+ * `<input type="datetime-local">`: `yyyy-MM-ddTHH:mm`. Acepta ISO del backend
+ * (UTC o sin offset) y el formato SRI/XML `dd/MM/yyyy HH:mm[:ss]`. Usa los
+ * mismos getters UTC* que formatDate/formatDateTime (fechas ISO del backend
+ * son UTC — sin conversión a la zona horaria del navegador).
+ * Devuelve "" si no hay dato o no se puede interpretar — nunca inventa una
+ * fecha; el input queda vacío en vez de romper.
+ */
+export function toDateTimeLocalInputValue(
+  value: string | null | undefined,
+): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const sriMatch = trimmed.match(
+    /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})(?::\d{2})?$/,
+  );
+  if (sriMatch) {
+    const [, dd, mm, yyyy, hh, min] = sriMatch;
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  }
+
+  const d = parseIso(trimmed);
+  if (!d) return "";
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
