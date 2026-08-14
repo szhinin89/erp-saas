@@ -34,14 +34,6 @@
 .pdl-product-menu__trigger-icon { font-size: 18px; }
 .pdl-product-menu__item-icon { font-size: 16px; }
 
-.pdl-costs-toggle__icon { font-size: 18px; }
-.pdl-costs-toggle__chevron {
-  font-size: 16px;
-  transition: transform .2s;
-}
-.pdl-costs-toggle__chevron--open { transform: rotate(180deg); }
-.pdl-costs-dropdown__icon { font-size: 16px; }
-
 .pf-badge--offset { margin-left: 8px; }
 .pf-validation-summary .zh-form-alert-detail { white-space: pre-line; }
 /* Cabecera de línea: ahora una sola columna — solo datos (.pdl-line__summary).
@@ -910,52 +902,6 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-.pdl-topbar__right {
-  position: relative;
-  margin-left: auto;
-}
-.pdl-costs-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  border: none;
-  background: var(--color-text-primary);
-  color: var(--color-on-primary);
-  font-size: var(--text-body-md-size);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-.pdl-costs-toggle:hover {
-  opacity: 0.9;
-}
-.pdl-costs-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 50;
-  min-width: 280px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.pdl-costs-dropdown__row {
-  display: flex;
-  gap: var(--space-3);
-}
-.pdl-costs-dropdown__btn {
-  width: 100%;
-  justify-content: center;
-}
-
 .pdl-tag {
   display: inline-block;
   font-size: 10px;
@@ -1131,13 +1077,6 @@
   font-size: 13px;
 }
 
-/* ── Responsive (solo selectores exclusivos de Compras) ── */
-@media (max-width: 640px) {
-  .pdl-costs-dropdown {
-    min-width: 240px;
-  }
-}
-
 .pf-schedule-footer__amount--error {
   color: var(--color-error);
 }
@@ -1203,4 +1142,34 @@
 .pdl-margin-bar--progress::-moz-progress-bar {
   background: var(--color-success);
   border-radius: inherit;
+}
+
+/* ── Distribuir flete/gasto (modal) — PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 ── */
+.pdc-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+.pdc-table {
+  margin-bottom: var(--space-4);
+}
+.pdc-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-1) var(--space-6);
+}
+.pdc-totals__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+.pdc-totals__row strong {
+  color: var(--color-text-primary);
 }

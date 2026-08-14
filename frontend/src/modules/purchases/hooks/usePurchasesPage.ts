@@ -169,12 +169,12 @@ export function usePurchasesPage() {
   const [modalCancelReason, setModalCancelReason] = useState(false);
   const [modalWhCancel, setModalWhCancel] = useState(false);
   const [modalWhIssue, setModalWhIssue] = useState(false);
+  // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
+  const [modalDistributeCost, setModalDistributeCost] = useState(false);
 
   // ── Collapsible sections ───────────────────────────────────────────
   const [showElectronic, setShowElectronic] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
-  const [showCostsMenu, setShowCostsMenu] = useState(false);
-  const costsMenuRef = useRef<HTMLDivElement>(null);
 
   // ── Global search ──────────────────────────────────────────────────
   const [globalQuery, setGlobalQuery] = useState("");
@@ -450,11 +450,6 @@ export function usePurchasesPage() {
         !globalSearchRef.current.contains(e.target as Node)
       )
         setGlobalOpen(false);
-      if (
-        costsMenuRef.current &&
-        !costsMenuRef.current.contains(e.target as Node)
-      )
-        setShowCostsMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -1475,7 +1470,6 @@ export function usePurchasesPage() {
   // ── Freight/Recalculate ────────────────────────────────────────────
   const handleAllocateFreight = useCallback(async () => {
     if (!editing) return;
-    setShowCostsMenu(false);
     try {
       const r = await purchaseService.allocateFreight(editing.id);
       setEditing(r);
@@ -1492,7 +1486,6 @@ export function usePurchasesPage() {
 
   const handleRecalculate = useCallback(async () => {
     if (!editing) return;
-    setShowCostsMenu(false);
     try {
       const r = await purchaseService.recalculate(editing.id);
       setEditing(r);
@@ -1504,6 +1497,43 @@ export function usePurchasesPage() {
       showSaveError(t("purchases.errors.recalculateFailed", "Error al recalcular."));
     }
   }, [editing, loadForEdit, showSaveError, t]);
+
+  // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo revisado por el usuario en el
+  // modal "Distribuir flete/gasto" (suma amount solo entre includedLineIds). Retorna true/false
+  // para que el modal sepa si debe cerrarse.
+  const handleDistributeCost = useCallback(
+    async (
+      costType: "Freight" | "OtherCost",
+      amount: number,
+      includedLineIds: string[],
+    ): Promise<boolean> => {
+      if (!editing) return false;
+      try {
+        const r = await purchaseService.distributeCost(
+          editing.id,
+          costType,
+          amount,
+          includedLineIds,
+        );
+        setEditing(r);
+        await loadForEdit(editing.id);
+        message.success(
+          t(
+            "purchases.messages.costDistributed",
+            "Valor distribuido correctamente.",
+          ),
+        );
+        return true;
+      } catch (err) {
+        showSaveError(
+          t("purchases.errors.distributeCostFailed", "Error al distribuir el valor."),
+          readApiErrorMessages(err as ApiErrorLike),
+        );
+        return false;
+      }
+    },
+    [editing, loadForEdit, showSaveError, t],
+  );
 
   // ── Withholding ────────────────────────────────────────────────────
   const handleCalcRetention = useCallback(async () => {
@@ -1781,6 +1811,7 @@ export function usePurchasesPage() {
     handleApplyDiscount,
     handleAllocateFreight,
     handleRecalculate,
+    handleDistributeCost,
 
     // Modals
     modalConfirm,
@@ -1793,15 +1824,14 @@ export function usePurchasesPage() {
     setModalWhCancel,
     modalWhIssue,
     setModalWhIssue,
+    modalDistributeCost,
+    setModalDistributeCost,
 
     // UI toggles
     showElectronic,
     setShowElectronic,
     showNotes,
     setShowNotes,
-    showCostsMenu,
-    setShowCostsMenu,
-    costsMenuRef,
 
     // Global search
     globalQuery,

@@ -5,6 +5,7 @@ import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { SupplierPicker } from "../components/SupplierPicker";
+import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
 import { ItemEditorModal } from "../../../components/items/ItemEditorModal/ItemEditorModal";
@@ -858,7 +859,17 @@ export function PurchasesPage() {
                       </option>
                     ))}
                   </ZhSelect>
-                  <CostsDropdown ctx={ctx} />
+                  <ZHBtn
+                    type="button"
+                    variant="secondary"
+                    onClick={() => ctx.setModalDistributeCost(true)}
+                    disabled={ctx.fieldDisabled || !ctx.editing}
+                  >
+                    <span className="material-symbols-outlined zh-icon-md">
+                      local_shipping
+                    </span>
+                    {t("purchases.distributeCost.trigger", "Distribuir flete/gasto")}
+                  </ZHBtn>
                 </div>
 
                 {/* Line Cards */}
@@ -1057,18 +1068,19 @@ export function PurchasesPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════ MODALS */}
-      <ZHPromptModal
-        open={ctx.modalDiscount}
-        title={t("purchases.discount.title", "Descuento global")}
-        label={t("purchases.discount.percentage", "Porcentaje (%)")}
-        type="decimal"
-        decimals={getDecimalConfig().percentage}
-        positiveOnly
-        placeholder={formatMoney(0, getDecimalConfig().percentage)}
-        variant="default"
-        confirmLabel={t("purchases.discount.apply", "Aplicar")}
-        onCancel={() => ctx.setModalDiscount(false)}
-        onConfirm={ctx.handleApplyDiscount}
+      {/* Modal de descuento global (Desc. global del antiguo dropdown "Gastos y acciones",
+          PURCHASE-LANDED-COST-PANEL-REMOVE-01) sigue sin disparador propio en esta pantalla;
+          handleApplyDiscount/modalDiscount se conservan en el hook por si se integra al flujo
+          de "Distribuir flete/gasto" en una iteración futura. */}
+
+      <DistributeCostModal
+        open={ctx.modalDistributeCost}
+        lines={ctx.editing?.lines ?? []}
+        totalFreight={ctx.editing?.totalFreight ?? 0}
+        totalOtherCosts={ctx.editing?.totalOtherCosts ?? 0}
+        grandTotal={ctx.editing?.grandTotal ?? 0}
+        onCancel={() => ctx.setModalDistributeCost(false)}
+        onApply={ctx.handleDistributeCost}
       />
 
       <ZHConfirmModal
@@ -2538,102 +2550,6 @@ function ReceptionCreateItemAction({
         }}
       />
     </>
-  );
-}
-
-function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
-  const { t } = useI18n();
-  return (
-    <div className="pdl-topbar__right" ref={ctx.costsMenuRef}>
-      <button
-        type="button"
-        className="pdl-costs-toggle"
-        onClick={() => ctx.setShowCostsMenu((v) => !v)}
-      >
-        <span className="material-symbols-outlined pdl-costs-toggle__icon">
-          tune
-        </span>
-        {t("purchases.costs.title", "Gastos y acciones")}
-        <span
-          className={`material-symbols-outlined pdl-costs-toggle__chevron${ctx.showCostsMenu ? " pdl-costs-toggle__chevron--open" : ""}`}
-        >
-          expand_more
-        </span>
-      </button>
-      {ctx.showCostsMenu && (
-        <div className="pdl-costs-dropdown">
-          <div className="pdl-costs-dropdown__row">
-            <ZHField density="compact" label={t("purchases.costs.freight", "Flete ($)")}>
-              <ZhDecimalInput
-                decimals={getDecimalConfig().totalAmount}
-                positiveOnly
-                defaultValue={ctx.formWatch.freightCost}
-                onBlur={(e) =>
-                  ctx.setValue("freightCost", Number(e.target.value) || 0)
-                }
-                disabled={ctx.fieldDisabled}
-              />
-            </ZHField>
-            <ZHField density="compact" label={t("purchases.costs.other", "Otros gastos ($)")}>
-              <ZhDecimalInput
-                decimals={getDecimalConfig().totalAmount}
-                positiveOnly
-                defaultValue={ctx.formWatch.otherCosts}
-                onBlur={(e) =>
-                  ctx.setValue("otherCosts", Number(e.target.value) || 0)
-                }
-                disabled={ctx.fieldDisabled}
-              />
-            </ZHField>
-          </div>
-          <ZHBtn
-            type="button"
-            variant="secondary"
-            className="pdl-costs-dropdown__btn"
-            onClick={() => {
-              ctx.setModalDiscount(true);
-              ctx.setShowCostsMenu(false);
-            }}
-            disabled={ctx.fieldDisabled || !ctx.editing}
-          >
-            <span
-              className="material-symbols-outlined pdl-costs-dropdown__icon"
-            >
-              percent
-            </span>
-            {t("purchases.costs.globalDiscount", "Desc. global")}
-          </ZHBtn>
-          <ZHBtn
-            type="button"
-            variant="secondary"
-            className="pdl-costs-dropdown__btn"
-            onClick={ctx.handleAllocateFreight}
-            disabled={ctx.fieldDisabled || !ctx.editing}
-          >
-            <span
-              className="material-symbols-outlined pdl-costs-dropdown__icon"
-            >
-              local_shipping
-            </span>
-            {t("purchases.costs.calculateFreight", "Calc. flete")}
-          </ZHBtn>
-          <ZHBtn
-            type="button"
-            variant="primary"
-            className="pdl-costs-dropdown__btn"
-            onClick={ctx.handleRecalculate}
-            disabled={ctx.fieldDisabled || !ctx.editing}
-          >
-            <span
-              className="material-symbols-outlined pdl-costs-dropdown__icon"
-            >
-              sync
-            </span>
-            {t("purchases.costs.recalculate", "Recalcular")}
-          </ZHBtn>
-        </div>
-      )}
-    </div>
   );
 }
 

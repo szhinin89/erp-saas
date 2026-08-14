@@ -1,6 +1,7 @@
 import type {
   PurchaseLineInput,
   PurchaseItemContextDto,
+  PurchaseLineDto,
 } from "../api/purchaseService";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { toLocalIsoDate } from "../../../lib/formatters/dateFormatters";
@@ -67,6 +68,101 @@ type ScheduleRow = {
 export function roundToTotalAmount(value: number): number {
   const factor = 10 ** getDecimalConfig().totalAmount;
   return Math.round(value * factor) / factor;
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — previsualización del modal "Distribuir flete/gasto".
+ * Espeja EXACTAMENTE el algoritmo de PurchaseInvoice.DistributeAdditionalCost (backend): prorrateo
+ * proporcional por base imponible (subtotal - descuento) entre las líneas incluidas, redondeo a
+ * 2 decimales, la última línea incluida absorbe el residuo. Es solo una simulación local — el
+ * valor real se aplica y persiste vía purchaseService.distributeCost (misma fórmula server-side).
+ */
+export type DistributeCostPreviewLine = {
+  lineId: string;
+  description: string;
+  quantity: number;
+  quantityInBaseUom: number;
+  currentUnitCost: number;
+  subtotalBase: number;
+  included: boolean;
+  participationPct: number;
+  allocatedAmount: number;
+  allocatedPerUnit: number;
+  newUnitCost: number;
+  newLineTotal: number;
+};
+
+export function simulateCostDistribution(
+  lines: Pick<
+    PurchaseLineDto,
+    | "id"
+    | "description"
+    | "quantity"
+    | "quantityInBaseUom"
+    | "unitPrice"
+    | "discountAmount"
+    | "landedUnitCost"
+    | "totalLineCost"
+  >[],
+  includedIds: Set<string>,
+  amountToDistribute: number,
+): DistributeCostPreviewLine[] {
+  const included = lines.filter((l) => includedIds.has(l.id));
+  const baseTotal = included.reduce(
+    (s, l) => s + (l.quantity * l.unitPrice - l.discountAmount),
+    0,
+  );
+  const canDistribute = amountToDistribute > 0 && baseTotal > 0;
+  let allocated = 0;
+
+  return lines.map((l) => {
+    const subtotalBase = l.quantity * l.unitPrice - l.discountAmount;
+    const isIncluded = includedIds.has(l.id);
+
+    if (!isIncluded || !canDistribute) {
+      return {
+        lineId: l.id,
+        description: l.description,
+        quantity: l.quantity,
+        quantityInBaseUom: l.quantityInBaseUom,
+        currentUnitCost: l.landedUnitCost,
+        subtotalBase,
+        included: isIncluded,
+        participationPct: 0,
+        allocatedAmount: 0,
+        allocatedPerUnit: 0,
+        newUnitCost: l.landedUnitCost,
+        newLineTotal: l.totalLineCost,
+      };
+    }
+
+    const isLastIncluded = included.at(-1)?.id === l.id;
+    const share = isLastIncluded
+      ? round2(amountToDistribute - allocated)
+      : round2((amountToDistribute * subtotalBase) / baseTotal);
+    if (!isLastIncluded) allocated += share;
+
+    const perUnit = l.quantityInBaseUom > 0 ? share / l.quantityInBaseUom : 0;
+
+    return {
+      lineId: l.id,
+      description: l.description,
+      quantity: l.quantity,
+      quantityInBaseUom: l.quantityInBaseUom,
+      currentUnitCost: l.landedUnitCost,
+      subtotalBase,
+      included: true,
+      participationPct: (subtotalBase / baseTotal) * 100,
+      allocatedAmount: share,
+      allocatedPerUnit: perUnit,
+      newUnitCost: round2(l.landedUnitCost + perUnit),
+      newLineTotal: round2(l.totalLineCost + share),
+    };
+  });
 }
 
 export function generateScheduleRows(

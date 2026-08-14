@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -21,6 +22,19 @@ public sealed record RecalculatePurchaseCommand(Guid InvoiceId)
     : IRequest<Result<PurchaseInvoiceDto>>,
         IBranchScopedRequest;
 
+/// <summary>
+/// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo aditivo revisado por el usuario en
+/// el modal "Distribuir flete/gasto". <c>CostType</c> es "Freight" u "OtherCost". A diferencia de
+/// <see cref="AllocateFreightCommand"/> (redistribuye el total ya persistido entre TODAS las
+/// líneas), este comando suma un monto nuevo únicamente entre <c>IncludedLineIds</c>.
+/// </summary>
+public sealed record DistributePurchaseCostCommand(
+    Guid InvoiceId,
+    string CostType,
+    decimal Amount,
+    List<Guid> IncludedLineIds
+) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
+
 // ── Validators ──────────────────────────────────────────────────────────
 
 public sealed class ApplyGlobalDiscountValidator : AbstractValidator<ApplyGlobalDiscountCommand>
@@ -39,6 +53,22 @@ public sealed class AllocateFreightValidator : AbstractValidator<AllocateFreight
     public AllocateFreightValidator()
     {
         RuleFor(x => x.InvoiceId).NotEmpty();
+    }
+}
+
+public sealed class DistributePurchaseCostValidator
+    : AbstractValidator<DistributePurchaseCostCommand>
+{
+    public DistributePurchaseCostValidator()
+    {
+        RuleFor(x => x.InvoiceId).NotEmpty();
+        RuleFor(x => x.CostType)
+            .Must(t => t is "Freight" or "OtherCost")
+            .WithMessage("El tipo de costo debe ser 'Freight' u 'OtherCost'.");
+        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("El valor a distribuir debe ser mayor a cero.");
+        RuleFor(x => x.IncludedLineIds)
+            .NotEmpty()
+            .WithMessage("Debe incluir al menos una línea.");
     }
 }
 
@@ -198,6 +228,51 @@ public sealed class RecalculatePurchaseHandler
             inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
         }
         catch (InvalidOperationException ex)
+        {
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+        }
+
+        await _repo.SaveChangesAsync(ct);
+        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+    }
+}
+
+public sealed class DistributePurchaseCostHandler
+    : IRequestHandler<DistributePurchaseCostCommand, Result<PurchaseInvoiceDto>>
+{
+    private readonly IPurchaseInvoiceRepository _repo;
+    private readonly ICurrentTenant _t;
+    private readonly ICurrentUser _u;
+
+    public DistributePurchaseCostHandler(
+        IPurchaseInvoiceRepository repo,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
+    {
+        _repo = repo;
+        _t = t;
+        _u = u;
+    }
+
+    public async Task<Result<PurchaseInvoiceDto>> Handle(
+        DistributePurchaseCostCommand cmd,
+        CancellationToken ct
+    )
+    {
+        var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
+        if (inv is null)
+            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        if (inv.Lines.Count == 0)
+            return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
+
+        var costType =
+            cmd.CostType == "Freight" ? PurchaseCostType.Freight : PurchaseCostType.OtherCost;
+        try
+        {
+            inv.DistributeAdditionalCost(costType, cmd.Amount, cmd.IncludedLineIds, _u.UserId);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }

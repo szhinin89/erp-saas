@@ -313,6 +313,82 @@ public sealed class PurchaseInvoice
         SetUpdated(updatedBy);
     }
 
+    /// <summary>
+    /// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — distribuye un monto ADICIONAL de flete/otros
+    /// gastos (aún no registrado en el documento, p. ej. el valor de una línea de transporte que
+    /// el usuario acaba de eliminar) únicamente entre las líneas incluidas por el usuario, SUMÁNDOLO
+    /// a su FreightAllocated/OtherCostsAllocated actual. A diferencia de <see cref="DistributeCosts"/>
+    /// (que fija el total absoluto del documento y reprorratea TODAS las líneas desde cero), este
+    /// método es aditivo y deja intactas las líneas no incluidas — soporta el flujo del modal
+    /// "Distribuir flete/gasto", donde el usuario decide manualmente qué ítems reciben el costo.
+    /// Redondeo: 2 decimales por línea, la última línea incluida absorbe el residuo — igual regla
+    /// que la simulación mostrada en el modal antes de aplicar.
+    /// </summary>
+    public void DistributeAdditionalCost(
+        PurchaseCostType costType,
+        decimal amount,
+        IReadOnlyCollection<Guid> includedLineIds,
+        Guid updatedBy
+    )
+    {
+        EnsureDraft();
+        if (amount <= 0)
+            throw new ArgumentException(
+                "El valor a distribuir debe ser mayor a cero.",
+                nameof(amount)
+            );
+        if (includedLineIds.Count == 0)
+            throw new ArgumentException(
+                "Debe incluir al menos una línea.",
+                nameof(includedLineIds)
+            );
+
+        var included = _lines.Where(l => includedLineIds.Contains(l.Id)).ToList();
+        if (included.Count != includedLineIds.Count)
+            throw new ArgumentException(
+                "Alguna línea incluida no pertenece a esta compra.",
+                nameof(includedLineIds)
+            );
+        if (included.Any(l => l.QuantityInBaseUom <= 0))
+            throw new InvalidOperationException(
+                "Todas las líneas incluidas deben tener cantidad base mayor a cero."
+            );
+
+        var totalBase = included.Sum(l => l.LineSubtotal - l.DiscountAmount);
+        if (totalBase <= 0)
+            throw new InvalidOperationException(
+                "La base imponible de las líneas incluidas debe ser mayor a cero."
+            );
+
+        Action<PurchaseInvoiceDetail, decimal> add =
+            costType == PurchaseCostType.Freight
+                ? (line, share) => line.SetFreightAllocated(line.FreightAllocated + share)
+                : (line, share) => line.SetOtherCostsAllocated(line.OtherCostsAllocated + share);
+
+        decimal allocated = 0;
+        for (var i = 0; i < included.Count; i++)
+        {
+            var line = included[i];
+            if (i == included.Count - 1)
+            {
+                add(line, amount - allocated);
+            }
+            else
+            {
+                var lineBase = line.LineSubtotal - line.DiscountAmount;
+                var share = Math.Round(
+                    amount * lineBase / totalBase,
+                    2,
+                    MidpointRounding.AwayFromZero
+                );
+                add(line, share);
+                allocated += share;
+            }
+        }
+
+        SetUpdated(updatedBy);
+    }
+
     private void RedistributeCosts(decimal freightCost, decimal otherCosts)
     {
         if (_lines.Count == 0)

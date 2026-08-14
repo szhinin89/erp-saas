@@ -262,6 +262,9 @@ export interface ApplyDiscountPayload {
   discountPct: number;
 }
 
+/** PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — debe coincidir con PurchaseCostType (backend). */
+export type PurchaseCostDistributionType = "Freight" | "OtherCost";
+
 export interface PurchaseItemContextDto {
   itemId: string;
   sku: string;
@@ -323,6 +326,20 @@ export const purchaseService = {
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/allocate-freight`, {}),
   recalculate: (id: string) =>
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/recalculate`, {}),
+  // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — suma `amount` (flete/otro gasto aún no registrado)
+  // solo entre `includedLineIds`, sin tocar el resto de líneas. Distinto de allocateFreight (que
+  // reprorratea el total ya persistido entre TODAS las líneas).
+  distributeCost: (
+    id: string,
+    costType: PurchaseCostDistributionType,
+    amount: number,
+    includedLineIds: string[],
+  ) =>
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/distribute-cost`, {
+      costType,
+      amount,
+      includedLineIds,
+    }),
   confirm: (id: string, schedule?: ConfirmScheduleInput[]) =>
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/confirm`, {
       schedule: schedule ?? null,

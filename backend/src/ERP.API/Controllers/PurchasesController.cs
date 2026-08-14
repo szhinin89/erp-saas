@@ -110,6 +110,30 @@ public sealed class PurchasesController : ControllerBase
     public async Task<IActionResult> Recalculate(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new RecalculatePurchaseCommand(id), ct));
 
+    /// <summary>
+    /// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo revisado en el modal
+    /// "Distribuir flete/gasto": suma <c>Amount</c> a las líneas de <c>IncludedLineIds</c>,
+    /// proporcional a su base imponible. No toca líneas fuera de la selección.
+    /// </summary>
+    [HttpPost("{id:guid}/distribute-cost")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
+    public async Task<IActionResult> DistributeCost(
+        Guid id,
+        [FromBody] DistributeCostRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new DistributePurchaseCostCommand(
+                    id,
+                    request.CostType,
+                    request.Amount,
+                    request.IncludedLineIds
+                ),
+                ct
+            )
+        );
+
     [HttpPost("{id:guid}/load-pvp")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
     public async Task<IActionResult> LoadPvpSnapshots(Guid id, CancellationToken ct) =>
@@ -241,6 +265,8 @@ public sealed class PurchasesController : ControllerBase
 public record UpdatePvpRequest(decimal NewPvp);
 
 public record ApplyDiscountRequest(decimal DiscountPct);
+
+public record DistributeCostRequest(string CostType, decimal Amount, List<Guid> IncludedLineIds);
 
 public record IssueWithholdingRequest(Guid EmissionPointId, DateOnly IssueDate);
 
