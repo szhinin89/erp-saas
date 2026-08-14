@@ -44,26 +44,19 @@
 
 .pf-badge--offset { margin-left: 8px; }
 .pf-validation-summary .zh-form-alert-detail { white-space: pre-line; }
-/* Cabecera de línea: columna de producto/resumen (flexible) + acciones
- * (columna angosta y fija a la derecha). El número de línea salió de este
- * grid — ahora vive en la banda lateral (.pdl-line-row__rail). Cantidad/
- * costo/descuento/IVA/ICE/total ya no son columnas propias: se agrupan
- * dentro de .pdl-line__metrics, dentro de la columna de producto. */
+/* Cabecera de línea: ahora una sola columna — solo datos (.pdl-line__summary).
+ * Duplicar/Eliminar salieron de este grid, viven en .pdl-line-row__actions-rail
+ * (hermana de .pdl-line__main dentro de .pdl-line-row), igual que el menú y el
+ * número ya viven en .pdl-line-row__rail. El número de línea tampoco está acá
+ * — vive en la banda izquierda. Cantidad/costo/descuento/IVA/ICE/total se
+ * agrupan dentro de .pdl-line__metrics, dentro de .pdl-line__summary. */
 .pdl-container .pdl-line__main {
-  grid-template-columns: 1fr 64px;
+  grid-template-columns: 1fr;
   /* Compacta el padding vertical del wrapper principal (base: erp-form-core.css
    * .pdl-line__main, compartida con Kardex/Sales) solo dentro de compras —
-   * el horizontal (var(--space-5)) no se toca. space-2: el ajuste anterior
-   * (space-3) seguía dejando aire perceptible arriba/abajo de la cabecera. */
+   * el horizontal (var(--space-5)) no se toca. */
   padding-top: var(--space-2);
   padding-bottom: var(--space-2);
-  /* start (no stretch): summary y acciones ocupan solo su altura natural de
-   * contenido — con "stretch", .pdl-line__actions--vertical (más alta que
-   * identidad por el space-between que la separaba de punta a punta) forzaba
-   * la fila entera a esa altura mayor, dejando aire vacío debajo de
-   * producto/bodega/métricas antes de los bloques inferiores. Con "start"
-   * la fila mide lo que realmente necesita su contenido más alto. */
-  align-items: start;
 }
 /* Compacta el margen inferior de los bloques inferiores (base: erp-form-core.css
  * .pdl-blocks, compartida con Kardex/Sales) solo dentro de compras — es el
@@ -124,6 +117,22 @@
   font-weight: 700;
   color: var(--color-text-secondary);
   text-align: center;
+}
+/* Banda lateral derecha: solo Duplicar/Eliminar, hermana de .pdl-line__main
+   (no la contiene) — mismo criterio que la banda izquierda: separa las
+   acciones del contenido/datos de la línea. Sin fondo propio (a diferencia
+   de .pdl-line-row__rail) para no duplicar visualmente el borde/superficie
+   que ya aporta .zh-detail-line; solo un separador de un lado. */
+.pdl-line-row__actions-rail {
+  flex-shrink: 0;
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-left: 1px solid var(--color-border);
 }
 .pdl-product-menu {
   position: relative;
@@ -324,26 +333,6 @@
 .pdl-container .pdl-line__total {
   font-size: 20px;
 }
-/* Acciones de línea en columna vertical (duplicar arriba, eliminar abajo),
-   a la derecha de la cabecera, separadas del bloque de métricas por un
-   borde izquierdo — mismo .pdl-line__actions compartido (erp-form-core.css),
-   solo se cambia la dirección del flex en compras. */
-.pdl-line__actions--vertical {
-  flex-direction: column;
-  align-items: center;
-  /* flex-start + gap (no space-between): con .pdl-line__main en
-     align-items:stretch, space-between forzaba esta columna a ocupar toda
-     la altura de la fila (identidad incluida), y esa altura mayor terminaba
-     definiendo el alto real de toda la cabecera — quedaba aire vacío debajo
-     de producto/bodega/métricas. Ahora la columna mide solo lo que necesita
-     su propio contenido (dos acciones + gap chico), igual que el resto. */
-  justify-content: flex-start;
-  gap: var(--space-2);
-  /* Más aire respecto al borde derecho de la tarjeta — antes se sentían
-     pegadas al no tener padding propio más allá del borde izquierdo. */
-  padding: 0 var(--space-2) 0 var(--space-4);
-  border-left: 1px solid var(--color-border);
-}
 /* Cada acción: ícono + texto visible apilados y centrados. */
 .pdl-line__action {
   display: flex;
@@ -380,9 +369,6 @@
   }
 }
 @media (max-width: 640px) {
-  .pdl-container .pdl-line__main {
-    grid-template-columns: 1fr;
-  }
   /* Solo en pantallas angostas: las métricas caen debajo de la identidad
      en vez de mantenerse en franja horizontal, y el selector de bodega
      recupera el ancho completo de la columna. */

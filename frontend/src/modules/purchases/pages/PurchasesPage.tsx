@@ -1825,31 +1825,6 @@ function PurchaseLineCard({
             </div>
           </div>
         </div>
-        <div className="pdl-line__actions pdl-line__actions--vertical">
-          <div className="pdl-line__action">
-            <ZHIconButton
-              icon="content_copy"
-              variant="ghost"
-              title={t("purchases.lines.duplicate", "Duplicar")}
-              onClick={() => ctx.duplicateLine(l._key)}
-            />
-            <span className="pdl-line__action-label">
-              {t("purchases.lines.duplicate", "Duplicar")}
-            </span>
-          </div>
-          <div className="pdl-line__action">
-            <ZHIconButton
-              icon="delete"
-              variant="danger"
-              className="pdl-line__delete-btn"
-              title={t("purchases.lines.delete", "Eliminar")}
-              onClick={() => ctx.removeLine(l._key)}
-            />
-            <span className="pdl-line__action-label pdl-line__action-label--danger">
-              {t("purchases.lines.delete", "Eliminar")}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Resumen de estado de preparación: solo interpreta datos ya presentes en la línea. */}
@@ -2200,6 +2175,34 @@ function PurchaseLineCard({
           </div>
         </section>
       </div>
+      </div>
+      {/* Banda lateral derecha de la línea — solo acciones (duplicar/eliminar),
+          separadas del contenido/datos igual que el menú quedó separado en la
+          banda izquierda. Hermana de .pdl-line__main, no la contiene. */}
+      <div className="pdl-line-row__actions-rail">
+        <div className="pdl-line__action">
+          <ZHIconButton
+            icon="content_copy"
+            variant="ghost"
+            title={t("purchases.lines.duplicate", "Duplicar")}
+            onClick={() => ctx.duplicateLine(l._key)}
+          />
+          <span className="pdl-line__action-label">
+            {t("purchases.lines.duplicate", "Duplicar")}
+          </span>
+        </div>
+        <div className="pdl-line__action">
+          <ZHIconButton
+            icon="delete"
+            variant="danger"
+            className="pdl-line__delete-btn"
+            title={t("purchases.lines.delete", "Eliminar")}
+            onClick={() => ctx.removeLine(l._key)}
+          />
+          <span className="pdl-line__action-label pdl-line__action-label--danger">
+            {t("purchases.lines.delete", "Eliminar")}
+          </span>
+        </div>
       </div>
     </div>
   );
