@@ -1602,6 +1602,12 @@ function PurchaseLineCard({
 }) {
   const { t } = useI18n();
   const viewMatchedItem = useViewMatchedItem();
+  // Estado local de expandir/colapsar SOLO la banda inferior de detalle
+  // (Producto recibido XML / Presentación e inventario / Información
+  // comercial) — no se persiste (ni backend ni localStorage), vive por
+  // instancia de línea (key={l._key} en el .map() que renderiza esta
+  // card). Inicia expandido para no ocultar información por defecto.
+  const [collapsed, setCollapsed] = useState(false);
   const sub = lineNet(l);
   const editLine = ctx.editing?.lines?.[idx];
   const localTax = calcLineTax(l, ctx.vatRatesMap, ctx.iceRatesMap);
@@ -1698,6 +1704,28 @@ function PurchaseLineCard({
         <span className="pdl-line-row__num">
           {String(idx + 1).padStart(2, "0")}
         </span>
+        <button
+          type="button"
+          className="pdl-line-row__collapse-toggle"
+          aria-expanded={!collapsed}
+          aria-label={
+            collapsed
+              ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
+              : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
+          }
+          title={
+            collapsed
+              ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
+              : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
+          }
+          onClick={() => setCollapsed((current) => !current)}
+        >
+          <span
+            className={`material-symbols-outlined pdl-line-row__collapse-icon${collapsed ? "" : " pdl-line-row__collapse-icon--open"}`}
+          >
+            expand_more
+          </span>
+        </button>
       </div>
       <div className="pdl-line">
       <div className="pdl-line__main">
@@ -1864,7 +1892,11 @@ function PurchaseLineCard({
         )}
       </div>
 
-      {/* 1. Qué llegó del proveedor — siempre visible, con nota cuando la línea no viene de XML. */}
+      {/* 1. Qué llegó del proveedor — visible mientras la línea no esté colapsada,
+          con nota cuando la línea no viene de XML. Solo esta banda se oculta al
+          colapsar: el aviso de estado/readiness de arriba (.pdl-line__status)
+          queda siempre visible, incluso colapsado. */}
+      {!collapsed && (
       <div className="pdl-blocks">
         <section className="pdl-block">
           <header className="pdl-block__header">
@@ -1937,7 +1969,7 @@ function PurchaseLineCard({
               badge
             </span>
             <h4 className="pdl-block__title">
-              {t("purchases.lines.systemProduct", "Producto del sistema")}
+              {t("purchases.lines.systemProduct", "Presentación e inventario")}
             </h4>
             {vm.item.isLoading && (
               <span
@@ -1966,18 +1998,6 @@ function PurchaseLineCard({
               )}
           </header>
           <div className="pdl-ctx-col__costs">
-            <div>
-              <span className="pdl-cost-label">SKU</span>
-              <span className="pdl-cost-val">{vm.item.sku}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">{t("purchases.lines.name", "Nombre")}</span>
-              <span className="pdl-cost-val">{vm.item.name}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">{t("purchases.lines.unit", "Unidad")}</span>
-              <span className="pdl-cost-val">{vm.item.uom}</span>
-            </div>
             {packagingLevels.length > 0 && (
               <div>
                 <span className="pdl-cost-label">
@@ -2032,25 +2052,25 @@ function PurchaseLineCard({
                 </span>
               </div>
             )}
-            {vm.item.hasItem && vm.inventory.hasPresentation && (
+            {vm.item.hasItem && !!vm.inventory.equivalenceDetail && (
               <div className="pdl-cost-wide">
                 <span className="pdl-cost-label">
-                  {t("purchases.lines.baseConversion", "Conversión")}
+                  {t("purchases.lines.baseConversion", "Equivalencia")}
                 </span>
                 <span className="pdl-cost-val">
-                  {vm.inventory.conversionDetail}
+                  {vm.inventory.equivalenceDetail}
                 </span>
               </div>
             )}
             <div>
               <span className="pdl-cost-label">
-                {t("purchases.lines.inventory", "Inventario")}
+                {t("purchases.lines.inventory", "Ingreso a inventario")}
               </span>
               <span className="pdl-cost-val">{vm.inventory.baseQuantity}</span>
             </div>
             <div>
               <span className="pdl-cost-label">
-                {t("purchases.lines.baseCost", "Costo base")}
+                {t("purchases.lines.baseCost", "Costo unitario base")}
               </span>
               <span className="pdl-cost-val">{vm.inventory.baseUnitCost}</span>
             </div>
@@ -2175,6 +2195,7 @@ function PurchaseLineCard({
           </div>
         </section>
       </div>
+      )}
       </div>
       {/* Banda lateral derecha de la línea — solo acciones (duplicar/eliminar),
           separadas del contenido/datos igual que el menú quedó separado en la

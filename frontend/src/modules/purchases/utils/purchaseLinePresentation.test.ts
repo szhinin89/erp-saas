@@ -78,6 +78,11 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     expect(vm.status.label).toBe("Ítem + PACA");
     expect(vm.inventory.hasPresentation).toBe(true);
     expect(vm.inventory.conversionDetail).toBe("2.0000 PACA -> 24.0000 UNIT");
+    // Redacción legible para el usuario (PURCHASE-UI-P4): nunca expone el
+    // código técnico crudo de UOM ("UNIT"/"04"/"19"), usa la palabra
+    // genérica "unidades" en su lugar.
+    expect(vm.inventory.equivalenceDetail).toBe("1 PACA = 12.0000 unidades");
+    expect(vm.inventory.baseQuantity).toBe("24.0000 unidades");
   });
 
   it("muestra presentación rehidratada aunque el contexto de bodega aún no haya cargado", () => {

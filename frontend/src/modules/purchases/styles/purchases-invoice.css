@@ -72,6 +72,37 @@
   margin-top: 0;
   margin-bottom: var(--space-3);
   align-items: start;
+  /* Banda única de detalle (Producto recibido XML / Presentación e
+     inventario / Información comercial) en vez de 3 tarjetas sueltas con
+     gap entre ellas — separador horizontal contra la cabecera de arriba y
+     sin gap propio (los separadores entre columnas van en .pdl-block). */
+  gap: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+/* Cada sección deja de ser una tarjeta independiente (sin fondo/borde/radio
+   propios) para leerse como una columna dentro de la misma franja — mismo
+   criterio ya usado en .pdl-line__metric / .pdl-line-row__actions-rail:
+   separador de un solo lado (border-left), no un contorno completo
+   duplicado. Solo dentro de compras — .pdl-block es compartido con
+   Kardex/Sales. */
+.pdl-container .pdl-block {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  /* Top en 0: las 3 columnas arrancan a la misma altura, justo debajo del
+     padding-top ya aplicado una sola vez en .pdl-blocks (evita headers
+     desalineados si cada columna sumara su propio padding-top). */
+  padding: 0 var(--space-4) var(--space-3);
+}
+.pdl-container .pdl-blocks .pdl-block:first-child {
+  padding-left: 0;
+}
+.pdl-container .pdl-blocks .pdl-block:last-child {
+  padding-right: 0;
+}
+.pdl-container .pdl-blocks .pdl-block + .pdl-block {
+  border-left: 1px solid var(--color-border);
 }
 /* Fila de línea con control lateral: banda externa (solo el trigger del menú)
    + componente de detalle de la línea (.pdl-line, sin cambios internos).
@@ -117,6 +148,38 @@
   font-weight: 700;
   color: var(--color-text-secondary);
   text-align: center;
+}
+/* Expandir/colapsar SOLO la banda inferior de detalle (.pdl-blocks) — vive
+   debajo del número, dentro de la misma banda lateral, sin mezclarse con
+   los datos de la línea. Mismo criterio visual que el trigger del menú de
+   arriba (icono + hover con tokens), pero neutro (no primary) porque no es
+   una acción de producto. */
+.pdl-line-row__collapse-toggle {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.pdl-line-row__collapse-toggle:hover,
+.pdl-line-row__collapse-toggle:focus-visible {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+.pdl-line-row__collapse-icon {
+  font-size: 18px;
+  transition: transform var(--transition);
+}
+/* Colapsado = flecha apuntando hacia abajo (expandir); abierto = rotada
+   180° (colapsar) — mismo patrón de rotación que el chevron del menú. */
+.pdl-line-row__collapse-icon--open {
+  transform: rotate(180deg);
 }
 /* Banda lateral derecha: solo Duplicar/Eliminar, hermana de .pdl-line__main
    (no la contiene) — mismo criterio que la banda izquierda: separa las
@@ -367,6 +430,15 @@
     flex-wrap: wrap;
     row-gap: var(--space-2);
   }
+  /* .pdl-blocks pasa a 2 columnas (erp-form-core.css) — el 3er bloque
+     ("Información comercial") cae a una fila nueva en la columna 1, así
+     que su separador cambia de vertical (izquierda) a horizontal (arriba). */
+  .pdl-container .pdl-blocks .pdl-block:nth-child(3) {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+  }
 }
 @media (max-width: 640px) {
   /* Solo en pantallas angostas: las métricas caen debajo de la identidad
@@ -377,6 +449,15 @@
   }
   .pdl-line__wh-select-compact {
     max-width: none;
+  }
+  /* .pdl-blocks pasa a 1 columna (erp-form-core.css) — las 3 secciones se
+     apilan, así que todos los separadores entre columnas se vuelven
+     horizontales (arriba), no verticales. */
+  .pdl-container .pdl-blocks .pdl-block + .pdl-block {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
   }
 }
 .pf-schedule-actions {

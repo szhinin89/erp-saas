@@ -52,6 +52,11 @@ export interface PurchaseLinePresentationVM {
     hasPresentation: boolean;
     presentationLabel: string;
     conversionDetail: string;
+    /** Redacción legible de la conversión (p. ej. "1 PACA X12 = 12 unidades") —
+     * "" cuando no hay presentación con nombre legible y factor > 1; nunca
+     * expone el código técnico crudo de UOM. Usar en vez de conversionDetail
+     * para mostrar al usuario. */
+    equivalenceDetail: string;
     baseQuantity: string;
     baseUnitCost: string;
   };
@@ -128,6 +133,24 @@ export function buildPurchaseLinePresentation(
     (hasPresentation && conversionFactor > 1
       ? `${presentationUom} x ${formatMoney(conversionFactor, decimals.quantity)}`
       : presentationUom);
+  // Palabra genérica para expresar cantidades en unidad base al usuario —
+  // nunca el código técnico crudo (p. ej. "04"/"19"): el DTO de contexto no
+  // trae un nombre legible de UOM, solo el código, así que no se muestra
+  // el código suelto (ver purchases.lines.baseUnitGeneric).
+  const baseUnitWord =
+    t?.("purchases.lines.baseUnitGeneric", "unidades") ?? "unidades";
+  // Solo se arma cuando hay una presentación real con nombre legible y un
+  // factor de conversión mayor a 1 — si no hay datos legibles, se deja
+  // vacío en vez de inventar una equivalencia con el código técnico.
+  const equivalenceDetail =
+    hasItem && selectedPackaging && conversionFactor > 1
+      ? (t?.("purchases.lines.equivalenceDetail", {
+          package: selectedPackaging.name,
+          qty: formatMoney(conversionFactor, decimals.quantity),
+          unit: baseUnitWord,
+        }) ??
+        `1 ${selectedPackaging.name} = ${formatMoney(conversionFactor, decimals.quantity)} ${baseUnitWord}`)
+      : "";
   const baseUnitCost =
     quantityInBase > 0 ? (quantity * unitPrice) / quantityInBase : 0;
   const marginPctValue = hasContext ? calcMarginPercent(unitPrice, pvp) : 0;
@@ -210,8 +233,9 @@ export function buildPurchaseLinePresentation(
       conversionDetail: hasItem
         ? `${formatMoney(quantity, decimals.quantity)} ${presentationUom} -> ${formatMoney(quantityInBase, decimals.quantity)} ${baseUom}`
         : UNKNOWN,
+      equivalenceDetail,
       baseQuantity: hasItem
-        ? `${formatMoney(quantityInBase, decimals.quantity)} ${baseUom}`
+        ? `${formatMoney(quantityInBase, decimals.quantity)} ${baseUnitWord}`
         : UNKNOWN,
       baseUnitCost:
         hasItem && quantityInBase > 0
