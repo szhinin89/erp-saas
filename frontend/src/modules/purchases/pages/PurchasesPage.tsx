@@ -1478,7 +1478,12 @@ function ProductLineActionMenu({
         onClick={() => setOpen((current) => !current)}
       >
         <span className="material-symbols-outlined pdl-product-menu__trigger-icon">
-          more_vert
+          menu
+        </span>
+        <span
+          className={`material-symbols-outlined pdl-product-menu__trigger-chevron${open ? " pdl-product-menu__trigger-chevron--open" : ""}`}
+        >
+          expand_more
         </span>
       </button>
       {open && (
@@ -1677,20 +1682,25 @@ function PurchaseLineCard({
     ctxData?.shortName || l.description?.split(" — ")[1] || l.description;
 
   return (
-    <div className="pdl-line">
+    <div className="pdl-line-row">
+      {/* Control lateral del componente de línea — solo el menú, separado del
+          número/contenido (ver reporte de ajuste visual del trigger por línea). */}
+      <div className="pdl-line-row__rail">
+        <ProductLineActionMenu
+          line={l}
+          ctx={ctx}
+          disabled={ctx.fieldDisabled}
+          onProductSelect={handleProductSelect}
+          onViewProduct={() => viewMatchedItem(l.itemId as string)}
+          onUnlinkProduct={handleUnlinkProduct}
+        />
+      </div>
+      <div className="pdl-line">
       <div className="pdl-line__main">
         <div className="pdl-line__num-wrap">
           <span className="pdl-line__num">
             {String(idx + 1).padStart(2, "0")}
           </span>
-          <ProductLineActionMenu
-            line={l}
-            ctx={ctx}
-            disabled={ctx.fieldDisabled}
-            onProductSelect={handleProductSelect}
-            onViewProduct={() => viewMatchedItem(l.itemId as string)}
-            onUnlinkProduct={handleUnlinkProduct}
-          />
         </div>
         <div className="pdl-line__product">
           {!l.itemId ? (
@@ -1706,7 +1716,7 @@ function PurchaseLineCard({
                 {productName}
               </div>
               <ZhSelect
-                className="pdl-line__wh-select"
+                density="compact"
                 value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ""}
                 onChange={(e) =>
                   ctx.updateLineWarehouse(l._key, e.target.value || null)
@@ -2153,6 +2163,7 @@ function PurchaseLineCard({
             </div>
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

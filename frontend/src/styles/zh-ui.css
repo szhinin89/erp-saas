@@ -991,6 +991,28 @@ select.zh-input--compact {
   overflow-x: auto;
 }
 
+/* Fila/registro de detalle compacta con delimitación visual por borde/sombra.
+   Distinta de .card: esta es una unidad de LISTA (un registro entre varios,
+   ej. una línea de compra/venta expandible con sub-bloques), más liviana
+   (radius-md + shadow-xs en vez de radius-lg + shadow-sm) y sin header/body
+   ni overflow:hidden — el consumidor define su propio padding/gutter interno
+   y horizontal. Pensada para que varios registros consecutivos queden juntos
+   sin perder separación visual (borde+sombra, no margen grande) — validado
+   primero en Compras (.pdl-line-row). Aplicar solo a listas donde cada
+   registro es un bloque/tarjeta con contenido variable, no a filas de tabla
+   densa ni a componentes que ya tengan su propia tarjeta. Sin hover/focus:
+   no es una fila clickeable/interactiva por sí sola. */
+.zh-detail-line {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  margin-bottom: var(--space-2);
+}
+.zh-detail-line:last-child {
+  margin-bottom: 0;
+}
+
 /* ── 10. TABLAS ──────────────────────────────────────────── */
 .table {
   width: 100%;

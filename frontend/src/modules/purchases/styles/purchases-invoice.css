@@ -46,6 +46,17 @@
 .pf-validation-summary .zh-form-alert-detail { white-space: pre-line; }
 .pdl-container .pdl-line__main {
   grid-template-columns: 72px 2fr 90px 1.2fr 1fr 110px 80px;
+  /* Compacta el padding vertical del wrapper principal (base: erp-form-core.css
+   * .pdl-line__main, compartida con Kardex/Sales) solo dentro de compras —
+   * el horizontal (var(--space-5)) no se toca. */
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+/* Compacta el margen inferior de los bloques inferiores (base: erp-form-core.css
+ * .pdl-blocks, compartida con Kardex/Sales) solo dentro de compras — es el
+ * espacio "no esencial" antes del borde inferior de cada tarjeta de línea. */
+.pdl-container .pdl-blocks {
+  margin-bottom: var(--space-3);
 }
 .pdl-line__num-wrap {
   display: flex;
@@ -54,27 +65,79 @@
   gap: var(--space-1);
   position: relative;
 }
+/* Fila de línea con control lateral: banda externa (solo el trigger del menú)
+   + componente de detalle de la línea (.pdl-line, sin cambios internos).
+   Reutilizable por cualquier otra lista de líneas con menú por fila, no
+   exclusiva de compras. Contorno completo (en vez de solo border-top) para
+   que se note dónde empieza y termina cada línea completa, incluida la
+   banda lateral — mismos tokens de borde/radio/superficie que .pdl-block. */
+.pdl-line-row {
+  display: flex;
+  align-items: stretch;
+  /* Separación mínima entre líneas: la delimitación de cada bloque la da el
+     borde + sombra mínima de abajo, no el espacio vacío. Mismo contrato
+     visual que el patrón global .zh-detail-line (zh-ui.css) — border-radius/
+     background/box-shadow/margin-bottom ya alineados a esos mismos tokens;
+     el margen horizontal (var(--space-5), gutter de página) y la banda
+     lateral del menú son la variante local de esta pantalla. */
+  margin: 0 var(--space-5) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+.pdl-line-row .pdl-line {
+  flex: 1;
+  min-width: 0;
+  border-top: none;
+}
+.pdl-line-row__rail {
+  flex-shrink: 0;
+  width: 36px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* Alineado con el nuevo padding-top compacto de .pdl-line__main (arriba). */
+  padding-top: var(--space-3);
+  background: var(--color-surface-container-low);
+  border-right: 1px solid var(--color-border);
+  /* Redondea solo el borde izquierdo para que el relleno de la banda no se
+     salga del contorno redondeado de .pdl-line-row (sin overflow:hidden,
+     que recortaría el panel del menú al abrirse). */
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
 .pdl-product-menu {
   position: relative;
   display: inline-flex;
 }
 .pdl-product-menu__trigger {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  min-height: 40px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-primary);
   cursor: pointer;
 }
+.pdl-product-menu__trigger-chevron {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform var(--transition);
+}
+.pdl-product-menu__trigger-chevron--open {
+  transform: rotate(180deg);
+}
 .pdl-product-menu__trigger:hover,
-.pdl-product-menu__trigger:focus-visible {
-  border-color: var(--color-border);
-  background: var(--color-surface-container-low);
-  color: var(--color-text-primary);
+.pdl-product-menu__trigger:focus-visible,
+.pdl-product-menu__trigger[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
 }
 .pdl-product-menu__trigger:disabled {
   cursor: not-allowed;
