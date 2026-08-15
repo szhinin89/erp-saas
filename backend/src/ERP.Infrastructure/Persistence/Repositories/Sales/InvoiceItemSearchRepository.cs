@@ -9,6 +9,12 @@ namespace ERP.Infrastructure.Persistence.Repositories.Sales;
 /// Returns raw InvoiceItemMatch records — no tax display strings, no FinalSalePrice.
 /// Tax enrichment is performed by SearchItemsForInvoiceHandler via ISriCatalogResolver
 /// + SriTaxCalculator to maintain a single source of truth for tax arithmetic.
+///
+/// Matches by SKU/name/description AND by real product barcode (ItemVariantBarcode.Code) —
+/// a POS/retail cashier scans the barcode printed on the product, which is independent from
+/// the internal SKU. ItemVariantBarcode does not implement ITenantScopedEntity (unlike Item),
+/// so it has no automatic global tenant query filter — every subquery below filters TenantId
+/// explicitly (fail-closed, see CLAUDE.md multi-tenant rule).
 /// </summary>
 public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
 {
@@ -25,7 +31,8 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
         CancellationToken ct = default
     )
     {
-        var pattern = $"%{query}%";
+        var trimmedQuery = query.Trim();
+        var pattern = $"%{trimmedQuery}%";
 
         // Warehouse name resolved once — constant for all rows in this search
         var warehouseName = warehouseId.HasValue
@@ -35,19 +42,56 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 .FirstOrDefaultAsync(ct)
             : null;
 
-        return await _db
-            .Items.Where(i =>
-                i.TenantId == tenantId
-                && i.IsActive
-                && i.SaleConfig.IsForSale
-                && (
-                    EF.Functions.ILike(i.Code.SKU, pattern)
-                    || EF.Functions.ILike(i.Code.ShortName, pattern)
-                    || EF.Functions.ILike(i.Code.Description, pattern)
-                )
-            )
-            .OrderBy(i => i.Code.ShortName)
+        // Rank 0 = barcode exacto, 1 = SKU exacto, 2 = barcode/SKU parcial, 3 = nombre/descripción —
+        // así un escaneo de código de barras real nunca pierde contra una coincidencia parcial de
+        // texto en otro producto (riesgo de agregar el ítem equivocado en caja). Se resuelve en una
+        // consulta separada, liviana, y luego se re-ordena el resultado final en memoria — evita
+        // traducir "ToList().IndexOf(...)" dentro de la consulta pesada de abajo (no traducible a SQL).
+        var rankedIds = await _db
+            .Items.Where(i => i.TenantId == tenantId && i.IsActive && i.SaleConfig.IsForSale)
+            .Select(i => new
+            {
+                i.Id,
+                HasBarcodeExact = _db.ItemVariantBarcodes.Any(b =>
+                    b.ItemId == i.Id
+                    && b.TenantId == tenantId
+                    && b.IsActive
+                    && EF.Functions.ILike(b.Code, trimmedQuery)
+                ),
+                HasBarcodePartial = _db.ItemVariantBarcodes.Any(b =>
+                    b.ItemId == i.Id
+                    && b.TenantId == tenantId
+                    && b.IsActive
+                    && EF.Functions.ILike(b.Code, pattern)
+                ),
+                SkuExact = EF.Functions.ILike(i.Code.SKU, trimmedQuery),
+                SkuPartial = EF.Functions.ILike(i.Code.SKU, pattern),
+                NamePartial =
+                    EF.Functions.ILike(i.Code.ShortName, pattern)
+                    || EF.Functions.ILike(i.Code.Description, pattern),
+                ShortNameForSort = i.Code.ShortName,
+            })
+            .Where(x => x.HasBarcodePartial || x.SkuPartial || x.NamePartial)
+            .Select(x => new
+            {
+                x.Id,
+                x.ShortNameForSort,
+                Rank = x.HasBarcodeExact ? 0
+                    : x.SkuExact ? 1
+                    : (x.HasBarcodePartial || x.SkuPartial) ? 2
+                    : 3,
+            })
+            .OrderBy(x => x.Rank)
+            .ThenBy(x => x.ShortNameForSort)
             .Take(pageSize)
+            .Select(x => x.Id)
+            .ToListAsync(ct);
+
+        if (rankedIds.Count == 0)
+            return Array.Empty<InvoiceItemMatch>();
+
+        var matches = await _db
+            .Items.Where(i => rankedIds.Contains(i.Id))
             .Select(i => new InvoiceItemMatch(
                 i.Id,
                 i.Code.SKU,
@@ -96,5 +140,13 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 i.TaxConfig.ExciseTaxCode
             ))
             .ToListAsync(ct);
+
+        // Contains() no garantiza el orden de rankedIds — se reordena en memoria (pageSize
+        // acotado a 20 por SearchItemsForInvoiceHandler, sin costo real).
+        var order = rankedIds
+            .Select((id, idx) => (id, idx))
+            .ToDictionary(t => t.id, t => t.idx);
+        matches.Sort((a, b) => order[a.Id].CompareTo(order[b.Id]));
+        return matches;
     }
 }

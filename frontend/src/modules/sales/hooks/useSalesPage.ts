@@ -656,17 +656,50 @@ export function useSalesPage() {
           ? item.averageCost
           : undefined;
       const stockQty = item.availableStock ?? undefined;
+      const unitPrice = pvp ?? 0;
+      const vatCode = pricing.vatCode ?? "";
+      const iceCode = normalizeOptionalCode(pricing.iceCode);
+      const lineWarehouseId = item.tracksStock ? selectedWarehouseId : null;
+
+      const currentLines = getValues("lines");
+
+      // Reescaneo del mismo producto (código de barras o texto) bajo condiciones idénticas —
+      // acumula cantidad en la línea existente en vez de duplicar la línea (flujo POS: escanear
+      // 3 veces el mismo producto suma 3 unidades, no crea 3 filas). Solo aplica si precio,
+      // descuento, impuestos y bodega coinciden exactamente; cualquier diferencia crea una línea
+      // separada, igual que hoy — evita fusionar por error un precio/descuento ya negociado.
+      const matchIndex = currentLines.findIndex(
+        (l) =>
+          l.itemId === item.id &&
+          l.unitPrice === unitPrice &&
+          (l.discountPct ?? 0) === 0 &&
+          l.vatCode === vatCode &&
+          normalizeOptionalCode(l.iceCode ?? null) === iceCode &&
+          (l.warehouseId ?? null) === lineWarehouseId,
+      );
+
+      if (matchIndex >= 0) {
+        setValue(
+          "lines",
+          currentLines.map((l, idx) =>
+            idx === matchIndex ? { ...l, quantity: l.quantity + 1 } : l,
+          ),
+          { shouldValidate: true, shouldDirty: true },
+        );
+        setProductSearchFocusKey((k) => k + 1); // reenfoca "buscar producto" — flujo continuo POS
+        return;
+      }
 
       const newLine: SalesLineFormValues = {
         _key: lineKey,
         itemId: item.id,
-        warehouseId: item.tracksStock ? selectedWarehouseId : null,
+        warehouseId: lineWarehouseId,
         description: `${item.sku} — ${item.description}`,
         quantity: 1,
-        unitPrice: pvp ?? 0,
-        vatCode: pricing.vatCode ?? "",
+        unitPrice,
+        vatCode,
         discountPct: 0,
-        iceCode: normalizeOptionalCode(pricing.iceCode) ?? undefined,
+        iceCode: iceCode ?? undefined,
         _sku: item.sku,
         _name: item.description,
         _pvp: pvp,
@@ -676,7 +709,6 @@ export function useSalesPage() {
         _tracksStock: item.tracksStock,
       };
 
-      const currentLines = getValues("lines");
       setValue("lines", [...currentLines, newLine], {
         shouldValidate: true,
         shouldDirty: true,
