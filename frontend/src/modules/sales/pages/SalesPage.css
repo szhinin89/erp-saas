@@ -17,9 +17,8 @@
 .sales-page-invoice-number {
   font-weight: var(--text-label-md-weight);
 }
-.sales-page-list-action-icon {
-  font-size: 20px;
-}
+/* .sales-page-list-action-icon ELIMINADO (FIX02) — sin consumidores TSX; los íconos de
+   acciones del listado usan zh-icon-md/zh-icon-lg. */
 
 .sales-form-customer-profile {
   margin-top: var(--space-2);
@@ -298,9 +297,8 @@
   font-size: var(--text-help-size);
 }
 
-.sales-invoice-details-delete-icon {
-  font-size: 20px;
-}
+/* .sales-invoice-details-delete-icon ELIMINADO (FIX02) — sin consumidores TSX; el botón
+   eliminar línea usa ZHIconButton (ver SalesInvoiceDetailsSection.tsx). */
 
 .sales-invoice-details-pvp-label {
   font-weight: 700;

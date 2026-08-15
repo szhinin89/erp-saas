@@ -72,6 +72,22 @@ function CashSessionNotice({ ctx }: { ctx: SalesPageContext }) {
   return null;
 }
 
+/** Saldo pendiente de cobro excluyendo los pagos ya asignados a una forma de pago específica —
+ * único punto de este cálculo (redondeo a la precisión configurada), usado tanto para el
+ * disponible mostrado en PaymentDetailModal como para precargar el monto de un nuevo pago en
+ * la grilla de formas de cobro. Puede devolver negativo (ya se cobró de más con otras formas);
+ * cada llamador decide si clamplear a 0 según su propio uso. */
+function remainingToCollect(
+  ctx: SalesPageContext,
+  excludePaymentMethodId: string,
+): number {
+  const factor = 10 ** getDecimalConfig().totalAmount;
+  const othersTotal = ctx.payments
+    .filter((p) => p.paymentMethodId !== excludePaymentMethodId)
+    .reduce((s, p) => s + (p.amount || 0), 0);
+  return Math.round((ctx.summary.total - othersTotal) * factor) / factor;
+}
+
 export function SalesPage() {
   const ctx = useSalesPage();
   const ride = useRideActions();
@@ -648,16 +664,7 @@ export function SalesPage() {
         detailType={ctx.detailMethodType}
         initialRows={ctx.detailRows}
         initialKey={ctx.detailKey}
-        available={
-          Math.round(
-            (ctx.summary.total -
-              ctx.payments
-                .filter((p) => p.paymentMethodId !== ctx.detailMethodId)
-                .reduce((s, p) => s + (p.amount || 0), 0)) *
-              10 ** getDecimalConfig().totalAmount,
-          ) /
-          10 ** getDecimalConfig().totalAmount
-        }
+        available={remainingToCollect(ctx, ctx.detailMethodId)}
         onConfirm={(rows) => {
           ctx.setInvoicePayments((prev) => {
             const without = prev.filter(
@@ -809,7 +816,7 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
   const hasCustomer = !!ctx.formWatch.customerId.trim();
   const hasLines = ctx.lines.length > 0;
   const hasEmissionPoint = ctx.hasCashSession === true;
-  const paid = ctx.payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const paid = ctx.paidTotal;
   const total = ctx.summary.total;
   const paymentOk = ctx.paymentOk;
   const paymentExceeds = paid > total + PAYMENT_EXCEEDS_TOLERANCE;
@@ -990,19 +997,8 @@ function PaymentMethodsSection({
               );
               const hasValue = totalForMethod > 0;
               const isCredit = pm.isCreditAllowed;
-              const calcRemaining = () => {
-                const factor = 10 ** getDecimalConfig().totalAmount;
-                return Math.max(
-                  0,
-                  Math.round(
-                    (ctx.summary.total -
-                      ctx.payments
-                        .filter((p) => p.paymentMethodId !== pm.id)
-                        .reduce((s, p) => s + (p.amount || 0), 0)) *
-                      factor,
-                  ) / factor,
-                );
-              };
+              const calcRemaining = () =>
+                Math.max(0, remainingToCollect(ctx, pm.id));
 
               return (
                 <div
@@ -1189,7 +1185,7 @@ function PaymentMethodsSection({
             </div>
           )}
           {(() => {
-            const paid = ctx.payments.reduce((s, p) => s + (p.amount || 0), 0);
+            const paid = ctx.paidTotal;
             const total = ctx.summary.total;
             const factor = 10 ** getDecimalConfig().totalAmount;
             const diff = Math.round((total - paid) * factor) / factor;

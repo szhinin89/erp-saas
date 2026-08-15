@@ -11,7 +11,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
-import { lineNet, calcLineTax } from "../utils/salesCalc";
+import { lineNet, calcLineTax, formatVatLabel } from "../utils/salesCalc";
 import "../styles/sales-product-card.css";
 
 // ── Resaltado de coincidencias ────────────────────────────────────────────────
@@ -219,7 +219,7 @@ export function SalesInvoiceDetailsSection({
   const vatLabel = (code: string) => {
     if (!code) return "Sin IVA configurado";
     const rate = vatRates?.[code];
-    if (rate !== undefined) return rate === 0 ? "IVA 0%" : `IVA ${rate}%`;
+    if (rate !== undefined) return formatVatLabel(rate);
     // Catálogo aún no cargado — nunca se infiere el porcentaje desde el código.
     return "Cargando...";
   };

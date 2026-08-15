@@ -46,7 +46,11 @@ import {
   toLocalIsoDate,
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
-import { calcSummary, type TaxBreakdownEntry } from "../utils/salesCalc";
+import {
+  calcSummary,
+  formatVatLabel,
+  type TaxBreakdownEntry,
+} from "../utils/salesCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { cajaSessionLookupFacade } from "../../caja/facades/cajaSessionLookupFacade";
 import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade";
@@ -420,7 +424,7 @@ export function useSalesPage() {
       return Array.from(byRate.entries())
         .sort((a, b) => a[0] - b[0])
         .map(([rate, v]) => ({
-          label: rate === 0 ? "IVA 0%" : `IVA ${rate}%`,
+          label: formatVatLabel(rate),
           rate,
           base: v.base,
           tax: v.tax,
@@ -1521,6 +1525,9 @@ export function useSalesPage() {
     payKey,
     setPayKey,
     paymentMethods,
+    // Único cómputo de "total ya cobrado" — evita que el checklist y la grilla de formas de
+    // cobro recalculen el mismo reduce() por separado (ver SalesPage.tsx).
+    paidTotal,
 
     // Customer
     customerProfile,

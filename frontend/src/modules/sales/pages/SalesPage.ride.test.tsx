@@ -150,6 +150,7 @@ function buildCtx(
     payKey: 0,
     setPayKey: vi.fn(),
     paymentMethods: [],
+    paidTotal: 0,
 
     customerProfile: null,
     setCustomerProfile: vi.fn(),

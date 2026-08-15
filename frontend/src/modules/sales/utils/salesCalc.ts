@@ -34,6 +34,13 @@ export type TaxBreakdownEntry = {
   tax: number;
 };
 
+/** Único punto de formato de la etiqueta de IVA por tasa ("IVA 0%" / "IVA 15%") — usado por el
+ * resumen de impuestos, el detalle de factura en modo solo-lectura y el badge por línea, para
+ * no repetir la misma regla de formato en tres lugares. */
+export function formatVatLabel(rate: number): string {
+  return rate === 0 ? "IVA 0%" : `IVA ${rate}%`;
+}
+
 export function calcSummary(
   lines: SalesLineInput[],
   vatRates?: Record<string, number>,
@@ -69,7 +76,7 @@ export function calcSummary(
   const taxBreakdown: TaxBreakdownEntry[] = Array.from(byRate.entries())
     .sort((a, b) => a[0] - b[0])
     .map(([rate, v]) => ({
-      label: rate === 0 ? "IVA 0%" : `IVA ${rate}%`,
+      label: formatVatLabel(rate),
       rate,
       base: roundTotal(v.base),
       tax: roundTotal(v.tax),

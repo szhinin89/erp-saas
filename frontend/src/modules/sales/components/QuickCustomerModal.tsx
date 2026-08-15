@@ -1,7 +1,11 @@
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhTextInput, ZhPhoneInput } from "../../../components/zh/inputs";
+import {
+  ZhTextInput,
+  ZhPhoneInput,
+  ZhSelect,
+} from "../../../components/zh/inputs";
 
 interface Props {
   open: boolean;
@@ -77,7 +81,7 @@ export function QuickCustomerModal({
 
       <ZHGrid cols={2}>
         <ZHField label="Tipo ID">
-          <select
+          <ZhSelect
             value={custIdType}
             onChange={(e) => onCustIdTypeChange(e.target.value)}
             disabled={isEdit}
@@ -87,10 +91,10 @@ export function QuickCustomerModal({
                 {t.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField label="Número" required>
-          <input
+          <ZhTextInput
             value={custId}
             onChange={(e) => onCustIdChange(e.target.value)}
             placeholder="0302126842"
