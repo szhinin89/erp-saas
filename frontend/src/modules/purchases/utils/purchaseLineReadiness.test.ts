@@ -142,6 +142,96 @@ describe("purchaseLineReadiness", () => {
     expect(getPurchaseLineBlockingReasons([suspiciousLine])).toHaveLength(1);
   });
 
+  it("PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — avisa (no bloquea) cuando falta precio de venta en item inventariable", () => {
+    const readyLine = line({
+      itemId: "item-1",
+      packagingLevelId: "box-1",
+      uomCode: "BOX",
+      baseUomCode: "UNIT",
+      conversionFactor: 12,
+      quantityInBaseUom: 12,
+      context: { ...line().context!, pvp: 0 },
+    });
+
+    const readiness = getPurchaseLineReadiness(readyLine, { vatRates: { "2": 15 } });
+
+    expect(readiness.status).toBe("READY");
+    expect(readiness.blocking).toBe(false);
+    expect(readiness.warning?.status).toBe("MISSING_SALE_PRICE_FOR_MARGIN");
+    expect(readiness.warning?.detail).toContain("no tiene precio de venta configurado");
+    expect(getPurchaseLineBlockingReasons([readyLine], { vatRates: { "2": 15 } }))
+      .toHaveLength(0);
+  });
+
+  it("no genera warning de precio de venta cuando el margen extremo ya bloquea (SUSPICIOUS_PACKAGING_COST)", () => {
+    const suspiciousLine = line({
+      itemId: "item-1",
+      packagingLevelId: "unidad-x1",
+      quantity: 8,
+      unitPrice: 5.109,
+      context: {
+        ...line().context!,
+        pvp: 1.08,
+        packagingLevels: [
+          {
+            id: "unidad-x1",
+            name: "UNIDAD X1",
+            baseQuantity: 1,
+            uomCode: "UNIDAD",
+            isBaseUnit: true,
+            isPurchaseDefault: false,
+          },
+        ],
+      },
+    });
+
+    const readiness = getPurchaseLineReadiness(suspiciousLine);
+
+    expect(readiness.status).toBe("SUSPICIOUS_PACKAGING_COST");
+    expect(readiness.blocking).toBe(true);
+    expect(readiness.warning).toBeUndefined();
+  });
+
+  it("no genera warning de precio de venta con precio de venta correcto (margen normal)", () => {
+    const readyLine = line({
+      itemId: "item-1",
+      packagingLevelId: "box-1",
+      uomCode: "BOX",
+      baseUomCode: "UNIT",
+      conversionFactor: 12,
+      quantityInBaseUom: 12,
+      context: { ...line().context!, pvp: 100 },
+    });
+
+    const readiness = getPurchaseLineReadiness(readyLine, { vatRates: { "2": 15 } });
+
+    expect(readiness.warning).toBeUndefined();
+  });
+
+  it("no genera warning de precio de venta en servicio/no inventariable", () => {
+    const serviceLine = line({
+      itemId: "item-1",
+      packagingLevelId: "box-1",
+      uomCode: "BOX",
+      baseUomCode: "UNIT",
+      conversionFactor: 12,
+      quantityInBaseUom: 12,
+      context: { ...line().context!, tracksStock: false, pvp: 0 },
+    });
+
+    const readiness = getPurchaseLineReadiness(serviceLine, { vatRates: { "2": 15 } });
+
+    expect(readiness.warning).toBeUndefined();
+  });
+
+  it("no genera warning de precio de venta sin producto vinculado (itemId ausente)", () => {
+    const noItemLine = line({ itemId: undefined });
+
+    const readiness = getPurchaseLineReadiness(noItemLine);
+
+    expect(readiness.warning).toBeUndefined();
+  });
+
   it("marca lista una linea con item, presentacion, bodega e impuesto valido", () => {
     const readyLine = line({
       itemId: "item-1",

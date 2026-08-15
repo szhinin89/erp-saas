@@ -518,6 +518,36 @@ export function buildSuspiciousPackagingCostWarning(
 }
 
 /**
+ * PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — complemento no bloqueante de
+ * `buildSuspiciousPackagingCostWarning`: cuando un producto inventariable con costo base ya
+ * calculado no tiene precio de venta (pvp) configurado, el guard de margen extremo no puede
+ * evaluarse (nunca se ejecuta, por el `return null` temprano en `salePrice > 0`). Este aviso
+ * informa al usuario de esa laguna sin impedir guardar el borrador ni confirmar la compra —
+ * mutuamente excluyente con el warning bloqueante de arriba (uno exige pvp > 0, este exige
+ * pvp <= 0/ausente).
+ */
+export function buildMissingSalePriceForMarginWarning(
+  line: PurchaseLineFormValues,
+  t?: TFunction,
+): { blocking: false; message: string } | null {
+  const ctx = line.context;
+  if (!line.itemId || !ctx || ctx.tracksStock !== true) return null;
+  const salePrice = ctx.pvp ?? 0;
+  if (salePrice > 0) return null;
+
+  const vm = buildPurchaseLinePresentation(line, t);
+  const baseUnitCostValue = vm.inventory.baseUnitCostValue;
+  if (!(baseUnitCostValue > 0)) return null;
+
+  const description = vm.xml.description !== "—" ? vm.xml.description : vm.item.name;
+  const message =
+    t?.("purchases.lineReadiness.missingSalePriceForMarginDetail", { description }) ??
+    `No se puede calcular margen para '${description}' porque el producto no tiene precio de venta configurado. Revise el precio de venta para validar si el costo y la presentación son correctos.`;
+
+  return { blocking: false, message };
+}
+
+/**
  * PURCHASE-LINE-HEADER-PACKAGING-CHANGE-SYNC-01 — key de remount para los inputs no controlados
  * (`defaultValue`) de Cantidad/Costo de la cabecera de línea. `vm.inventory.hasPresentation` por sí
  * solo NO alcanza: es `true` tanto para "SIXPACK X6" como para "UNIDAD X1" (ambas son presentaciones

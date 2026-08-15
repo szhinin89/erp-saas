@@ -1,5 +1,8 @@
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
-import { buildSuspiciousPackagingCostWarning } from "./purchaseLinePresentation";
+import {
+  buildMissingSalePriceForMarginWarning,
+  buildSuspiciousPackagingCostWarning,
+} from "./purchaseLinePresentation";
 
 type TFunction = (
   key: string,
@@ -26,6 +29,20 @@ export type PurchaseLineReadinessAction =
 
 export type PurchaseLineReadinessTone = "success" | "warning" | "danger";
 
+/**
+ * PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — aviso no bloqueante, independiente del `status`
+ * principal (que solo admite un valor mutuamente excluyente por línea). Se calcula y adjunta
+ * aparte para no competir por prioridad con MISSING_WAREHOUSE/INVALID_TAX/etc.: una línea puede
+ * estar bloqueada por otra razón y, a la vez, no tener precio de venta configurado para evaluar
+ * margen — ambas cosas deben poder verse.
+ */
+export interface PurchaseLineReadinessWarning {
+  status: "MISSING_SALE_PRICE_FOR_MARGIN";
+  label: string;
+  detail: string;
+  tone: "warning";
+}
+
 export interface PurchaseLineReadiness {
   status: PurchaseLineReadinessStatus;
   label: string;
@@ -34,6 +51,8 @@ export interface PurchaseLineReadiness {
   blocking: boolean;
   primaryAction: PurchaseLineReadinessAction;
   secondaryAction?: PurchaseLineReadinessAction;
+  /** No bloqueante — ver PurchaseLineReadinessWarning. Ausente si no aplica. */
+  warning?: PurchaseLineReadinessWarning;
 }
 
 export interface PurchaseLineReadinessOptions {
@@ -143,12 +162,43 @@ function message(
   }
 }
 
+function buildMissingSalePriceWarning(
+  line: PurchaseLineFormValues,
+  t: TFunction,
+  rawT?: TFunction,
+): PurchaseLineReadinessWarning | undefined {
+  const built = buildMissingSalePriceForMarginWarning(line, rawT);
+  if (!built) return undefined;
+  return {
+    status: "MISSING_SALE_PRICE_FOR_MARGIN",
+    label: t(
+      "purchases.lineReadiness.missingSalePriceForMargin",
+      "Sin precio de venta configurado",
+    ),
+    detail: built.message,
+    tone: "warning",
+  };
+}
+
 export function getPurchaseLineReadiness(
   line: PurchaseLineFormValues,
   options: PurchaseLineReadinessOptions = {},
 ): PurchaseLineReadiness {
   const t = options.t ?? fallbackT;
+  // Igual que con buildSuspiciousPackagingCostWarning más abajo: se le pasa options.t crudo
+  // (no el `t` ya resuelto con el fallback de este archivo) para que distinga "sin traductor
+  // real" de "hay traductor real" y use su propio fallback interpolado en el primer caso.
+  const warning = buildMissingSalePriceWarning(line, t, options.t);
 
+  const primary = computePrimaryReadiness(line, options, t);
+  return warning ? { ...primary, warning } : primary;
+}
+
+function computePrimaryReadiness(
+  line: PurchaseLineFormValues,
+  options: PurchaseLineReadinessOptions,
+  t: TFunction,
+): PurchaseLineReadiness {
   if (hasXmlOrigin(line) && !line.itemId) {
     return {
       status: "MISSING_ITEM",

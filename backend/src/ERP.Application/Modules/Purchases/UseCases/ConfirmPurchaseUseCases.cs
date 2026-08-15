@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -34,6 +35,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPostingEngine _postingEngine;
+    private readonly IPricingResolver _pricingResolver;
     private readonly ILogger<ConfirmPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -46,6 +48,7 @@ public sealed class ConfirmPurchaseHandler
         IWarehouseRepository whRepo,
         ISriTaxResolver tax,
         IPostingEngine postingEngine,
+        IPricingResolver pricingResolver,
         ILogger<ConfirmPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -58,6 +61,7 @@ public sealed class ConfirmPurchaseHandler
         _whRepo = whRepo;
         _tax = tax;
         _postingEngine = postingEngine;
+        _pricingResolver = pricingResolver;
         _logger = logger;
         _t = t;
         _c = c;
@@ -199,6 +203,41 @@ public sealed class ConfirmPurchaseHandler
             );
         }
         inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, uid);
+
+        // ── STEP 1b: Guard de presentación/costo sospechoso (PURCHASE-BACKEND-SUSPICIOUS-PACKAGING-COST-GUARD-01) ──
+        // Defensa en profundidad del guard equivalente en frontend
+        // (PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01): una presentación de proveedor mal
+        // configurada (ej. factor de conversión incorrecto) puede dejar LandedUnitCost muy por
+        // encima del precio de venta vigente. Confirmar así arrastra ese costo erróneo a
+        // StockMovement/Kardex/costo promedio de forma irreversible, así que se bloquea aquí,
+        // antes de STEP 2 (Confirm/FreezeCosts) y de STEP 3 (movimientos de inventario).
+        // LandedUnitCost ya está calculado por inv.DistributeCosts()/RecalcCosts() en este punto.
+        foreach (var line in inv.Lines)
+        {
+            if (line.ItemId is not { } marginItemId || line.LandedUnitCost <= 0)
+                continue;
+
+            var marginItem = await _itemRepo.GetByIdLightAsync(marginItemId, tid, ct);
+            if (marginItem is null || !marginItem.StockConfig.TracksStock)
+                continue;
+
+            var pricingResult = await _pricingResolver.ResolveAsync(marginItemId, ct: ct);
+            if (!pricingResult.IsSuccess || pricingResult.Value is null)
+                continue;
+
+            var salePrice = pricingResult.Value.UnitPrice;
+            if (salePrice <= 0)
+                continue;
+
+            var marginPct = (salePrice - line.LandedUnitCost) / salePrice * 100m;
+            if (marginPct < -50m)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"No se puede confirmar la compra. La línea '{line.Description}' tiene una "
+                        + $"presentación/costo sospechoso: costo unitario {line.LandedUnitCost:0.####}, "
+                        + $"precio de venta {salePrice:0.####}, margen {marginPct:0.##}%. "
+                        + "Revise la presentación del proveedor antes de confirmar."
+                );
+        }
 
         // ── STEP 2: Confirmar (cambia estado, valida invariantes, congela costos) ─
         try

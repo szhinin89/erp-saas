@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -309,6 +310,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
             whRepo.Object,
             Mock.Of<PurchaseTaxResolver>(),
             Mock.Of<IPostingEngine>(),
+            Mock.Of<IPricingResolver>(),
             Mock.Of<ILogger<ConfirmPurchaseHandler>>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),

@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Pricing.DTOs;
+using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -152,6 +154,46 @@ public sealed class ConfirmPurchaseHandlerTests
         return inv;
     }
 
+    private static PurchaseInvoice CreateDraftInvoiceWithCustomLine(
+        Guid itemId,
+        decimal quantity,
+        decimal unitPrice,
+        string description = "Producto margen"
+    )
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000004",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
+
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            description,
+            quantity: quantity,
+            unitPrice: unitPrice,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: itemId,
+            warehouseId: WhId
+        );
+        inv.ReplaceLines([line], UserId);
+        return inv;
+    }
+
     private static Item CreateItem(bool tracksStock = true)
     {
         var item = Item.Create(
@@ -183,7 +225,9 @@ public sealed class ConfirmPurchaseHandlerTests
     ) BuildHandler(
         PurchaseInvoice inv,
         bool irbpnrConfigured = false,
-        Item? itemForXmlLines = null
+        Item? itemForXmlLines = null,
+        Item? itemForMarginGuard = null,
+        decimal? marginGuardSalePrice = null
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -311,6 +355,53 @@ public sealed class ConfirmPurchaseHandlerTests
                 r.GetByIdLightAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((ERP.Domain.Modules.Items.Entities.Item?)null);
+        if (itemForMarginGuard is not null)
+        {
+            itemRepo
+                .Setup(r =>
+                    r.GetByIdLightAsync(
+                        itemForMarginGuard.Id,
+                        TenantId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(itemForMarginGuard);
+        }
+
+        var pricingResolver = new Mock<IPricingResolver>();
+        if (itemForMarginGuard is not null && marginGuardSalePrice is not null)
+        {
+            pricingResolver
+                .Setup(p =>
+                    p.ResolveAsync(itemForMarginGuard.Id, null, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(
+                    Result<PricingResult>.Success(
+                        new PricingResult(
+                            itemForMarginGuard.Id,
+                            Guid.NewGuid(),
+                            "GEN",
+                            "Lista General",
+                            "USD",
+                            marginGuardSalePrice.Value,
+                            null,
+                            marginGuardSalePrice.Value
+                        )
+                    )
+                );
+        }
+        else
+        {
+            pricingResolver
+                .Setup(p =>
+                    p.ResolveAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(Result<PricingResult>.Failure("Sin precio configurado."));
+        }
 
         var tax = new Mock<ISriTaxResolver>();
         tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
@@ -350,6 +441,7 @@ public sealed class ConfirmPurchaseHandlerTests
             whRepo.Object,
             tax.Object,
             postingEngine.Object,
+            pricingResolver.Object,
             logger.Object,
             tenant.Object,
             company.Object,
@@ -797,6 +889,7 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<IWarehouseRepository>().Object,
             new Mock<ISriTaxResolver>().Object,
             new Mock<IPostingEngine>().Object,
+            new Mock<IPricingResolver>().Object,
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
             tenant.Object,
             company.Object,
@@ -1048,5 +1141,194 @@ public sealed class ConfirmPurchaseHandlerTests
 
         // 9. Todas las líneas congeladas
         inv.Lines.Should().OnlyContain(l => l.IsFrozen);
+    }
+
+    // ── PURCHASE-BACKEND-SUSPICIOUS-PACKAGING-COST-GUARD-01 ─────────────────
+
+    [Fact]
+    public async Task Confirm_bloquea_presentacion_con_costo_sospechoso()
+    {
+        // Caso real: CLUB PLATINO LATA 355CC NRB X6 TERMO cargado como UNIDAD X1
+        // en vez de SIXPACK X6 -> LandedUnitCost muy por encima del PVP (margen ≈ -373.05%).
+        var item = CreateItem(tracksStock: true);
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
+        var (handler, _, stockRepo) = BuildHandler(
+            inv,
+            itemForMarginGuard: item,
+            marginGuardSalePrice: 1.08m
+        );
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("presentación/costo sospechoso");
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_permite_presentacion_con_costo_correcto()
+    {
+        // Mismo producto cargado como SIXPACK X6 -> margen ≈ 21.16%, no bloquea.
+        var item = CreateItem(tracksStock: true);
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 0.8515m);
+        var (handler, _, stockRepo) = BuildHandler(
+            inv,
+            itemForMarginGuard: item,
+            marginGuardSalePrice: 1.08m
+        );
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    item.Id,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    1m,
+                    "UNIT",
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Confirm_no_bloquea_por_margen_sin_precio_de_venta_conocido()
+    {
+        // Sin precio de venta resuelto (pricing resolver falla / sin PricingRule/BaseSalePrice)
+        // el guard no puede evaluar margen -> no bloquea.
+        var item = CreateItem(tracksStock: true);
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
+        var (handler, _, _) = BuildHandler(inv, itemForMarginGuard: item, marginGuardSalePrice: null);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+    }
+
+    [Fact]
+    public async Task Confirm_no_bloquea_item_no_inventariable_aunque_margen_sea_extremo()
+    {
+        var item = CreateItem(tracksStock: false);
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
+        var (handler, _, _) = BuildHandler(
+            inv,
+            itemForMarginGuard: item,
+            marginGuardSalePrice: 1.08m
+        );
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+    }
+
+    [Fact]
+    public async Task Confirm_no_bloquea_margen_negativo_leve()
+    {
+        // marginPct = -10% (costo 1.10 vs venta 1.00) — leve, no cruza el umbral de -50%.
+        var item = CreateItem(tracksStock: true);
+        var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 1.10m);
+        var (handler, _, _) = BuildHandler(
+            inv,
+            itemForMarginGuard: item,
+            marginGuardSalePrice: 1.00m
+        );
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+    }
+
+    [Fact]
+    public async Task Confirm_no_bloquea_linea_sin_itemId()
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000005",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Servicio de transporte",
+            quantity: 1m,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: null,
+            warehouseId: null
+        );
+        inv.ReplaceLines([line], UserId);
+        var (handler, _, _) = BuildHandler(inv);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
     }
 }

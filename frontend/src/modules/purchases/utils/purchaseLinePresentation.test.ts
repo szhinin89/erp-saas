@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
+  buildMissingSalePriceForMarginWarning,
   buildPurchaseLinePresentation,
   buildSuspiciousPackagingCostWarning,
   computeUnitPriceFromBaseUnitCost,
@@ -790,6 +791,104 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
           unitPrice: 1.2,
           packagingLevelId: "unidad-x1",
           context: { ...clubPlatinoContext, pvp: 1.08 },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+  });
+
+  describe("PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — buildMissingSalePriceForMarginWarning", () => {
+    // Mismo producto real (CLUB PLATINO LATA 355CC NRB X6 TERMO), redeclarado localmente porque
+    // los fixtures del describe de SUSPICIOUS-COST-GUARD no son visibles fuera de su callback.
+    const noPvpContext: PurchaseItemContextDto = {
+      ...context,
+      packagingLevels: [
+        {
+          id: "sixpack-x6",
+          name: "SIXPACK X6",
+          baseQuantity: 6,
+          uomCode: "SIXPACK",
+          isBaseUnit: false,
+          isPurchaseDefault: true,
+        },
+        {
+          id: "unidad-x1",
+          name: "UNIDAD X1",
+          baseQuantity: 1,
+          uomCode: "UNIDAD",
+          isBaseUnit: true,
+          isPurchaseDefault: false,
+        },
+      ],
+      pvp: 0,
+    };
+
+    it("avisa (no bloquea) cuando el producto inventariable no tiene precio de venta configurado", () => {
+      const warning = buildMissingSalePriceForMarginWarning(
+        line({
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: noPvpContext,
+        }),
+      );
+
+      expect(warning).not.toBeNull();
+      expect(warning?.blocking).toBe(false);
+      expect(warning?.message).toContain("no tiene precio de venta configurado");
+    });
+
+    it("no avisa cuando SÍ hay precio de venta (aunque el margen sea extremo — eso es SUSPICIOUS_PACKAGING_COST)", () => {
+      const warning = buildMissingSalePriceForMarginWarning(
+        line({
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: { ...noPvpContext, pvp: 1.08 },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no avisa con precio de venta correcto (margen normal)", () => {
+      const warning = buildMissingSalePriceForMarginWarning(
+        line({
+          quantity: 8,
+          unitPrice: 0.8515,
+          packagingLevelId: "sixpack-x6",
+          uomCode: "SIXPACK",
+          baseUomCode: "UNIT",
+          conversionFactor: 6,
+          context: { ...noPvpContext, pvp: 1.08 },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no avisa en servicio/no inventariable sin precio de venta", () => {
+      const warning = buildMissingSalePriceForMarginWarning(
+        line({
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: { ...noPvpContext, tracksStock: false },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no avisa sin producto vinculado (itemId ausente)", () => {
+      const warning = buildMissingSalePriceForMarginWarning(
+        line({
+          itemId: undefined,
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: noPvpContext,
         }),
       );
 

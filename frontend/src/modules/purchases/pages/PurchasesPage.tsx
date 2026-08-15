@@ -834,15 +834,31 @@ export function PurchasesPage() {
                               onClick={() => void ctx.addLineWithItem(item)}
                               onMouseEnter={() => ctx.setGlobalFocusIdx(i)}
                             >
-                              <span className="pdl-search__result-sku">
-                                {item.sku}
-                              </span>
-                              <span className="pdl-search__result-name">
-                                {item.shortName}
-                              </span>
-                              <span className="pdl-search__result-type">
-                                {item.itemTypeName}
-                              </span>
+                              <div className="pdl-search__result-row">
+                                <span className="pdl-search__result-name">
+                                  {item.shortName}
+                                </span>
+                                {item.baseSalePrice != null && (
+                                  <span className="pdl-search__result-price">
+                                    {formatMoneyWithSymbol(
+                                      item.baseSalePrice,
+                                      getDecimalConfig().salesUnitPrice,
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="pdl-search__result-row pdl-search__result-row--meta">
+                                <span className="pdl-search__result-sku">
+                                  {item.sku}
+                                </span>
+                                <Badge
+                                  variant="neutral"
+                                  size="md"
+                                  upper
+                                  label={item.itemTypeName}
+                                  className="pdl-search__result-type"
+                                />
+                              </div>
                             </button>
                           ))
                         )}
@@ -890,43 +906,58 @@ export function PurchasesPage() {
                   ))}
                   {ctx.lines.length === 0 && (
                     <div className="pdl-empty">
-                      <span
-                        className="material-symbols-outlined pdl-empty__icon"
-                      >
-                        add_shopping_cart
+                      <span className="pdl-empty__icon-wrap">
+                        <span className="material-symbols-outlined pdl-empty__icon">
+                          add_shopping_cart
+                        </span>
                       </span>
-                      <p>{t("purchases.lines.empty", "Sin productos agregados")}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pdl-add-wrap">
-                  <button
-                    type="button"
-                    className="pdl-add"
-                    onClick={ctx.addLine}
-                    disabled={ctx.fieldDisabled}
-                  >
-                    <span
-                      className="material-symbols-outlined pf-icon--28"
-                    >
-                      add_circle
-                    </span>
-                    <div>
-                      <div className="pdl-add__title">
+                      <div className="pdl-empty__body">
+                        <p className="pdl-empty__title">
+                          {t("purchases.lines.empty", "Sin productos agregados")}
+                        </p>
+                        <p className="pdl-empty__desc">
+                          {t(
+                            "purchases.lines.emptyDetail",
+                            "Comience añadiendo ítems a esta transacción.",
+                          )}
+                        </p>
+                      </div>
+                      <ZHBtn
+                        type="button"
+                        variant="primary"
+                        className="pdl-empty__cta"
+                        onClick={ctx.addLine}
+                        disabled={ctx.fieldDisabled}
+                      >
+                        <span className="material-symbols-outlined zh-icon-md">
+                          add_circle
+                        </span>
                         {t(
                           "purchases.lines.addTitle",
                           "Agregar nuevo producto o servicio",
                         )}
-                      </div>
-                      <div className="pdl-add__hint">
-                        {t(
-                          "purchases.lines.addHint",
-                          "Presione para desplegar el catálogo o búsqueda rápida",
-                        )}
-                      </div>
+                      </ZHBtn>
                     </div>
-                  </button>
+                  )}
+                  {ctx.lines.length > 0 && (
+                    <div className="pdl-add-inline">
+                      <ZHBtn
+                        type="button"
+                        variant="primary"
+                        className="pdl-add-inline__cta"
+                        onClick={ctx.addLine}
+                        disabled={ctx.fieldDisabled}
+                      >
+                        <span className="material-symbols-outlined zh-icon-md">
+                          add_circle
+                        </span>
+                        {t(
+                          "purchases.lines.addTitle",
+                          "Agregar nuevo producto o servicio",
+                        )}
+                      </ZHBtn>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1924,6 +1955,17 @@ function PurchaseLineCard({
                     </>
                   )}
                 </span>
+              </div>
+            )}
+            {/* PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — no bloqueante, independiente del
+                bloqueo de arriba: ambos pueden coexistir (p. ej. falta bodega Y falta precio de
+                venta a la vez). */}
+            {readiness.warning && (
+              <div className="pdl-cost-alert">
+                <span className="material-symbols-outlined pdl-cost-alert__icon">
+                  warning
+                </span>
+                <span>{readiness.warning.detail}</span>
               </div>
             )}
           </>

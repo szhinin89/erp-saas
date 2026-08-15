@@ -24,8 +24,8 @@
 }
 
 .pdl-empty__icon {
-  font-size: 40px;
-  color: var(--color-surface-container-high);
+  font-size: 22px;
+  color: var(--color-text-secondary);
 }
 
 .pdl-block__icon { font-size: 16px; }
@@ -1109,44 +1109,65 @@
   color: var(--color-text-secondary);
 }
 
-/* ── Add Product (prominent) ── */
-.pdl-add-wrap {
-  padding: var(--space-5);
+/* PURCHASE-ADD-LINE-CTA-REUSE-AFTER-LAST-LINE-01 — misma acción/botón que .pdl-empty__cta
+   (ctx.addLine), reutilizada como continuación compacta de la lista cuando ya hay líneas —
+   sin caja/borde punteado grande: solo un borde superior sutil como el resto de las filas
+   (.pdl-line ya usa border-top: 1px solid var(--color-border) entre ítems). */
+.pdl-add-inline {
+  display: flex;
+  padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--color-border);
 }
-.pdl-add {
+/* PURCHASE-EMPTY-LINES-STATE-DESIGN-01 — tarjeta compacta horizontal (icono | texto | CTA),
+   reemplaza el bloque grande de borde punteado centrado. Mismo botón/acción que .pdl-add
+   (ctx.addLine) — solo cambia presentación, nunca se duplica la lógica de agregar línea. */
+.pdl-empty {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.pdl-empty__icon-wrap {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-6) var(--space-5);
-  background: var(--color-surface);
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-xl);
-  cursor: pointer;
-  transition: all var(--transition);
-  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-container-low);
+  border: 1px dashed var(--color-border);
 }
-.pdl-add:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: var(--color-primary-fixed);
+.pdl-empty__body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.pdl-add__title {
-  font-size: 15px;
+.pdl-empty__title {
+  margin: 0;
+  font-size: 14px;
   font-weight: 700;
+  color: var(--color-text-primary);
 }
-.pdl-add__hint {
-  font-size: 12px;
-  opacity: 0.7;
-}
-.pdl-empty {
-  text-align: center;
-  padding: var(--space-8);
+.pdl-empty__desc {
+  margin: 2px 0 0;
+  font-size: 12.5px;
   color: var(--color-text-secondary);
-  font-size: 13px;
+}
+.pdl-empty__cta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .pdl-empty {
+    flex-wrap: wrap;
+  }
+  .pdl-empty__cta {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .pf-schedule-footer__amount--error {

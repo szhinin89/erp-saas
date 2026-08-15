@@ -224,8 +224,8 @@
   gap: var(--space-5);
 }
 
-/* .pf-btn/.pf-btn--*/.pf-btn__icon ELIMINADOS (Bloque 4B) — sin consumidores;
-   equivalente vigente es <ZHBtn> (components/zh/ZHForm.tsx + .zh-btn/.zh-btn--* en zh-ui.css). */
+/* .pf-btn / .pf-btn--* / .pf-btn__icon ELIMINADOS (Bloque 4B) — sin consumidores;
+   equivalente vigente es <ZHBtn> (components/zh/ZHForm.tsx + .zh-btn / .zh-btn--* en zh-ui.css). */
 
 /* .pdl-container/.pdl-topbar* movidos a modules/purchases/styles/purchases-invoice.css */
 
@@ -292,8 +292,8 @@
 }
 .pdl-search__result {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-1);
   width: 100%;
   padding: var(--space-3) var(--space-4);
   border: none;
@@ -310,6 +310,14 @@
 .pdl-search__result:hover,
 .pdl-search__result--focused {
   background: var(--color-surface-container-low);
+}
+.pdl-search__result-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pdl-search__result-row--meta {
+  gap: var(--space-2);
 }
 .pdl-search__result-sku {
   font-size: 11px;
@@ -329,12 +337,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pdl-search__result-type {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
+.pdl-search__result-price {
   flex-shrink: 0;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: var(--font-family-mono);
+}
+.pdl-search__result-type {
+  margin-left: auto;
 }
 
 /* .pdl-topbar__right/.pdl-costs-*/
@@ -544,9 +554,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* .pdl-ctx-col__stock/.pdl-stock-*/
-.pdl-ctx-col__costs/.pdl-cost-*/
-   .pdl-ctx-col__margin/.pdl-margin-*/.pdl-add*/.pdl-empty movidos a
+/* .pdl-ctx-col__stock / .pdl-stock-* /
+   .pdl-ctx-col__costs / .pdl-cost-* /
+   .pdl-ctx-col__margin / .pdl-margin-* / .pdl-add* / .pdl-empty movidos a
    modules/purchases/styles/purchases-invoice.css */
 
 /* ── Bloques de presentación por línea (Producto XML / Item ERP / Info. Comercial) ── */
