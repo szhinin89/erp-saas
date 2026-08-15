@@ -1092,15 +1092,35 @@ file static class TaxHelper
 
         decimal iceRate = 0;
         string? iceName = null;
+        var iceCalculationType = SriTaxCalculationType.Percentage;
+        decimal? iceExactAmount = null;
         if (!string.IsNullOrWhiteSpace(line.IceCode))
         {
-            var iceResult = await tax.GetIceRateWithNameAsync(line.IceCode, ct);
-            if (iceResult is null)
+            // FLOW-READY-02F.1 — catalog-aware (no el legacy GetIceRateWithNameAsync, que exige
+            // Percentage y por eso nunca resuelve ICE "específico" como el código 3053; para un
+            // código Specific ese método devuelve null y bloquea la línea con un falso "no encontrado").
+            var iceEntry = await tax.GetIceCatalogEntryAsync(line.IceCode, ct);
+            if (iceEntry is null)
                 return Result<PurchaseInvoiceDto>.ValidationFailure(
                     $"Código ICE '{line.IceCode}' no encontrado o inactivo."
                 );
-            iceRate = iceResult.Rate;
-            iceName = iceResult.Name;
+            iceName = iceEntry.Name;
+            iceCalculationType = iceEntry.CalculationType;
+            if (iceEntry.CalculationType == SriTaxCalculationType.Specific)
+            {
+                // Línea manual (sin XML): el monto específico se deriva del valor unitario del
+                // catálogo (UnitValue, USD por unidad/base física) por la cantidad en UoM base —
+                // única fuente disponible cuando no hay un monto exacto declarado en un documento.
+                iceExactAmount = Math.Round(
+                    (iceEntry.UnitValue ?? 0m) * line.QuantityInBaseUom,
+                    ERP.Domain.Common.FiscalPrecision.TaxAmount,
+                    MidpointRounding.AwayFromZero
+                );
+            }
+            else
+            {
+                iceRate = iceEntry.Percentage ?? 0m;
+            }
         }
 
         line.ApplyTaxes(
@@ -1109,7 +1129,9 @@ file static class TaxHelper
             vatResult.Name,
             line.IceCode,
             iceRate,
-            iceName
+            iceName,
+            iceCalculationType,
+            iceExactAmount
         );
         return null;
     }

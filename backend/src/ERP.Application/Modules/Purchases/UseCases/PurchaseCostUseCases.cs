@@ -204,15 +204,32 @@ public sealed class RecalculatePurchaseHandler
 
                 decimal iceRate = 0;
                 string? iceName = null;
+                var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+                decimal? iceExactAmount = null;
                 if (!string.IsNullOrWhiteSpace(line.IceCode))
                 {
-                    var iceResult = await _tax.GetIceRateWithNameAsync(line.IceCode, ct);
-                    if (iceResult is null)
+                    // FLOW-READY-02F.1 — catalog-aware (no el legacy GetIceRateWithNameAsync, que exige
+                    // Percentage y por eso nunca resuelve ICE "específico" como el código 3053). Mismo
+                    // criterio que ConfirmPurchaseUseCases.
+                    var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
+                    if (iceEntry is null)
                         return Result<PurchaseInvoiceDto>.ValidationFailure(
                             $"Código ICE '{line.IceCode}' no encontrado."
                         );
-                    iceRate = iceResult.Rate;
-                    iceName = iceResult.Name;
+                    iceName = iceEntry.Name;
+                    iceCalculationType = iceEntry.CalculationType;
+                    if (iceEntry.CalculationType
+                        == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
+                    {
+                        // El monto ya fue fijado al valor exacto (XML o catálogo) al crear/actualizar
+                        // la línea — Recalculate lo preserva, igual que Confirm, nunca lo recalcula
+                        // desde una tarifa porcentual.
+                        iceExactAmount = line.IceAmount;
+                    }
+                    else
+                    {
+                        iceRate = iceEntry.Percentage ?? 0m;
+                    }
                 }
 
                 line.ApplyTaxes(
@@ -221,7 +238,9 @@ public sealed class RecalculatePurchaseHandler
                     vatResult.Name,
                     line.IceCode,
                     iceRate,
-                    iceName
+                    iceName,
+                    iceCalculationType,
+                    iceExactAmount
                 );
             }
 
