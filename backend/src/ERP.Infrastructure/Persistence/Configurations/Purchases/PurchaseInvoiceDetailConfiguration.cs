@@ -18,7 +18,7 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.InvoiceId).HasColumnName("invoice_id").IsRequired();
+        builder.Property(x => x.InvoiceId).HasColumnName("purchase_invoice_id").IsRequired();
 
         // ── Product Snapshot ────────────────────────────────────────────
         builder.Property(x => x.ItemId).HasColumnName("item_id");

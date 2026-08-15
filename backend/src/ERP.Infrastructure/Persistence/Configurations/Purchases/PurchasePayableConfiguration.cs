@@ -8,7 +8,14 @@ public sealed class PurchasePayableConfiguration : IEntityTypeConfiguration<Purc
 {
     public void Configure(EntityTypeBuilder<PurchasePayable> builder)
     {
-        builder.ToTable("purchase_payables");
+        builder.ToTable(
+            "purchase_payables",
+            t =>
+                t.HasCheckConstraint(
+                    "ck_purchase_payables_status",
+                    "status IN ('pending', 'cancelled')"
+                )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();

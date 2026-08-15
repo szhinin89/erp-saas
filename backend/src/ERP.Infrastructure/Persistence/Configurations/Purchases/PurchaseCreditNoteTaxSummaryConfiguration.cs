@@ -12,7 +12,7 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
 {
     public void Configure(EntityTypeBuilder<PurchaseCreditNoteTaxSummary> builder)
     {
-        builder.ToTable("purchase_cn_tax_summaries");
+        builder.ToTable("purchase_credit_note_tax_summaries");
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -120,19 +120,19 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
                 x.CompanyId,
                 x.BranchId,
             })
-            .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_company_branch");
+            .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_company_branch");
 
         builder
             .HasIndex(x => new { x.TenantId, x.PurchaseCreditNoteId })
-            .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_credit_note");
+            .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_credit_note");
 
         builder
             .HasIndex(x => new { x.TenantId, x.PurchaseInvoiceId })
-            .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_invoice");
+            .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_invoice");
 
         builder
             .HasIndex(x => new { x.TenantId, x.SourcePurchaseInvoiceTaxSummaryId })
-            .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_source_summary");
+            .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_source_summary");
 
         builder
             .HasIndex(x => new
@@ -142,6 +142,6 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
                 x.VatCode,
                 x.IceCode,
             })
-            .HasDatabaseName("ix_purchase_cn_tax_summaries_tenant_credit_note_vat_ice");
+            .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_credit_note_vat_ice");
     }
 }

@@ -150,7 +150,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     )
     {
         await _db.Database.ExecuteSqlInterpolatedAsync(
-            $"DELETE FROM purchase_invoice_details WHERE invoice_id = {invoiceId}",
+            $"DELETE FROM purchase_invoice_details WHERE purchase_invoice_id = {invoiceId}",
             ct
         );
 
