@@ -6,6 +6,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -1146,9 +1147,9 @@ file static class TaxHelper
 /// </summary>
 file static class ReceptionTaxHelper
 {
-    private const string SriVatTaxCode = "2";
-    private const string SriIceTaxCode = "3";
-    private const string SriIrbpnrTaxCode = "5";
+    private const string SriVatTaxCode = SriTaxCategoryCodes.Vat;
+    private const string SriIceTaxCode = SriTaxCategoryCodes.Ice;
+    private const string SriIrbpnrTaxCode = SriTaxCategoryCodes.Irbpnr;
 
     public static async Task<Result<PurchaseInvoiceDto>?> ApplyReceptionTaxesAsync(
         PurchaseInvoiceDetail line,

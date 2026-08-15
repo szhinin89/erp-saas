@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
@@ -11,7 +12,7 @@ import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { purchaseReturnService, type PurchaseReturnDto } from "../api/purchaseReturnService";
 import {
-  PURCHASE_RETURN_STATUS_LABEL as STATUS_LABEL,
+  getPurchaseReturnStatusLabel,
   PURCHASE_RETURN_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/purchaseReturnStatus";
 import "../../sales/styles/sales-return.css";
@@ -27,6 +28,7 @@ const PAGE_SIZE = 25;
  * filtro de texto libre: `GetPurchaseReturnListQuery` solo admite `status`.
  */
 export function PurchaseReturnListPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [items, setItems] = useState<PurchaseReturnDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -66,7 +68,7 @@ export function PurchaseReturnListPage() {
       header: "Estado",
       render: (row) => (
         <Badge
-          label={STATUS_LABEL[row.status] ?? row.status}
+          label={getPurchaseReturnStatusLabel(row.status, t)}
           variant={STATUS_BADGE[row.status] ?? "gray"}
         />
       ),

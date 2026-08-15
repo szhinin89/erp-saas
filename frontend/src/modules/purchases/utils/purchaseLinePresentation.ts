@@ -7,6 +7,11 @@ import { lineNet, calcLineTax } from "./purchaseCalc";
 
 /** Dato desconocido — nunca se confunde con un valor real (p. ej. stock 0). */
 const UNKNOWN = "—";
+
+// PURCHASE-P2-P3-CLEANUP-CLOSE-01 — mismo criterio semántico que el guard equivalente en backend
+// (ConfirmPurchaseUseCases.cs: SuspiciousPurchaseMarginThresholdPct), sin compartir archivo físico
+// entre frontend/backend — solo el nombre y el valor deben mantenerse alineados.
+const SUSPICIOUS_PURCHASE_MARGIN_THRESHOLD_PCT = -50;
 type TFunction = (
   key: string,
   fallbackOrParams?: string | Record<string, string | number>,
@@ -361,8 +366,8 @@ export function buildPurchaseLinePresentation(
           : UNKNOWN,
         statusLabel: hasContext
           ? currentStock <= 0
-            ? "Crítico"
-            : "OK"
+            ? (t?.("purchases.lines.stockCritical", "Crítico") ?? "Crítico")
+            : (t?.("purchases.lines.stockOk", "OK") ?? "OK")
           : UNKNOWN,
         isCritical: hasContext && currentStock <= 0,
       },
@@ -392,49 +397,76 @@ export function buildPurchaseLinePresentation(
           : UNKNOWN,
       },
     },
-    status: buildLineStatus({
-      hasItem,
-      isLoading,
-      missingRequiredData,
-      hasOrigin,
-      hasPresentation,
-      presentationLabel,
-    }),
+    status: buildLineStatus(
+      {
+        hasItem,
+        isLoading,
+        missingRequiredData,
+        hasOrigin,
+        hasPresentation,
+        presentationLabel,
+      },
+      t,
+    ),
   };
 }
 
-function buildLineStatus(input: {
-  hasItem: boolean;
-  isLoading: boolean;
-  missingRequiredData: boolean;
-  hasOrigin: boolean;
-  hasPresentation: boolean;
-  presentationLabel: string;
-}): PurchaseLinePresentationVM["status"] {
+function buildLineStatus(
+  input: {
+    hasItem: boolean;
+    isLoading: boolean;
+    missingRequiredData: boolean;
+    hasOrigin: boolean;
+    hasPresentation: boolean;
+    presentationLabel: string;
+  },
+  t?: TFunction,
+): PurchaseLinePresentationVM["status"] {
   if (!input.hasItem) {
-    return { icon: "🟡", label: "Sin ítem vinculado", tone: "warning" };
+    return {
+      icon: "🟡",
+      label: t?.("purchases.lines.statusNoItem", "Sin ítem vinculado") ?? "Sin ítem vinculado",
+      tone: "warning",
+    };
   }
   if (input.isLoading) {
-    return { icon: "🟡", label: "Contexto cargando", tone: "warning" };
+    return {
+      icon: "🟡",
+      label: t?.("purchases.lines.statusLoading", "Contexto cargando") ?? "Contexto cargando",
+      tone: "warning",
+    };
   }
   if (input.missingRequiredData) {
-    return { icon: "🔴", label: "Información incompleta", tone: "danger" };
+    return {
+      icon: "🔴",
+      label: t?.("purchases.lines.statusIncomplete", "Información incompleta") ?? "Información incompleta",
+      tone: "danger",
+    };
   }
   if (input.hasPresentation) {
     return {
       icon: "🟢",
-      label: `Ítem + ${input.presentationLabel}`,
+      label:
+        t?.("purchases.lines.statusItemWithPresentation", {
+          presentation: input.presentationLabel,
+        }) ?? `Ítem + ${input.presentationLabel}`,
       tone: "success",
     };
   }
   if (input.hasOrigin) {
     return {
       icon: "🟡",
-      label: "Ítem vinculado sin presentación",
+      label:
+        t?.("purchases.lines.statusItemNoPresentation", "Ítem vinculado sin presentación") ??
+        "Ítem vinculado sin presentación",
       tone: "warning",
     };
   }
-  return { icon: "🟢", label: "Ítem vinculado", tone: "success" };
+  return {
+    icon: "🟢",
+    label: t?.("purchases.lines.statusItemLinked", "Ítem vinculado") ?? "Ítem vinculado",
+    tone: "success",
+  };
 }
 
 /**
@@ -501,7 +533,7 @@ export function buildSuspiciousPackagingCostWarning(
   const baseUnitCostValue = vm.inventory.baseUnitCostValue;
   if (!(baseUnitCostValue > 0)) return null;
   const marginPctValue = vm.commercial.profitability.marginPctValue;
-  if (!(marginPctValue < -50)) return null;
+  if (!(marginPctValue < SUSPICIOUS_PURCHASE_MARGIN_THRESHOLD_PCT)) return null;
 
   const description = vm.xml.description !== "—" ? vm.xml.description : vm.item.name;
   const message =

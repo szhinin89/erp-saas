@@ -5,6 +5,7 @@ using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Application.Modules.Purchases.UseCases.GetPurchaseItemContext;
 using ERP.Application.Modules.Purchases.UseCases.GetPurchasesBySupplierReport;
 using ERP.Domain.Kernel.Permissions;
+using ERP.Domain.Modules.Purchases.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -121,18 +122,29 @@ public sealed class PurchasesController : ControllerBase
         Guid id,
         [FromBody] DistributeCostRequest request,
         CancellationToken ct
-    ) =>
-        this.ToOkOrBadRequest(
+    )
+    {
+        // PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — el payload sigue siendo string ("Freight"/
+        // "OtherCost", sin cambios frontend); se convierte acá a PurchaseCostType con un TryParse
+        // explícito y case-sensitive (no Enum.Parse sin control, no dejar que el model binder de
+        // MediatR/JSON falle con un error genérico si algún día CostType llegara mal tipado).
+        if (!Enum.TryParse<PurchaseCostType>(request.CostType, ignoreCase: false, out var costType))
+            return this.ApiBadRequest(
+                $"El tipo de costo '{request.CostType}' no es válido. Valores permitidos: Freight, OtherCost."
+            );
+
+        return this.ToOkOrBadRequest(
             await _mediator.Send(
                 new DistributePurchaseCostCommand(
                     id,
-                    request.CostType,
+                    costType,
                     request.Amount,
                     request.IncludedLineIds
                 ),
                 ct
             )
         );
+    }
 
     [HttpPost("{id:guid}/load-pvp")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]

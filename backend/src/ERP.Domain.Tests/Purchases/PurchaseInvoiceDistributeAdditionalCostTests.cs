@@ -167,13 +167,19 @@ public sealed class PurchaseInvoiceDistributeAdditionalCostTests
     }
 
     [Fact]
-    public void Base_imponible_total_incluida_en_cero_lanza_InvalidOperationException()
+    public void Base_imponible_total_incluida_en_cero_reparte_equitativamente_sin_lanzar()
     {
-        var inv = CreateDraftWithLines((1m, 0m));
-        var ids = new[] { inv.Lines[0].Id };
+        // PURCHASE-LANDED-COST-PRORATION-CONSISTENCY-01 — antes lanzaba InvalidOperationException;
+        // ahora, igual que ProrateCostToLines, cae a reparto equitativo entre las líneas incluidas
+        // en vez de bloquear la operación, siempre que exista al menos una línea elegible.
+        var inv = CreateDraftWithLines((1m, 0m), (1m, 0m), (1m, 0m));
+        var ids = inv.Lines.Select(l => l.Id).ToArray();
 
         var act = () => inv.DistributeAdditionalCost(PurchaseCostType.Freight, 10m, ids, UserId);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().NotThrow();
+        var total = inv.Lines.Sum(l => l.FreightAllocated);
+        total.Should().Be(10m);
+        inv.Lines[0].FreightAllocated.Should().Be(inv.Lines[1].FreightAllocated);
     }
 }

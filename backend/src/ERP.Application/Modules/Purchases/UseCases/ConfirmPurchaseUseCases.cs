@@ -29,6 +29,11 @@ public sealed record ConfirmPurchaseCommand(
 public sealed class ConfirmPurchaseHandler
     : IRequestHandler<ConfirmPurchaseCommand, Result<PurchaseInvoiceDto>>
 {
+    // PURCHASE-P2-P3-CLEANUP-CLOSE-01 — mismo criterio semántico que el guard equivalente en
+    // frontend (purchaseLinePresentation.ts: SUSPICIOUS_PURCHASE_MARGIN_THRESHOLD_PCT), sin
+    // compartir archivo físico entre capas — solo el nombre y el valor deben mantenerse alineados.
+    private const decimal SuspiciousPurchaseMarginThresholdPct = -50m;
+
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IStockRepository _stockRepo;
     private readonly IItemRepository _itemRepo;
@@ -230,7 +235,7 @@ public sealed class ConfirmPurchaseHandler
                 continue;
 
             var marginPct = (salePrice - line.LandedUnitCost) / salePrice * 100m;
-            if (marginPct < -50m)
+            if (marginPct < SuspiciousPurchaseMarginThresholdPct)
                 return Result<PurchaseInvoiceDto>.ValidationFailure(
                     $"No se puede confirmar la compra. La línea '{line.Description}' tiene una "
                         + $"presentación/costo sospechoso: costo unitario {line.LandedUnitCost:0.####}, "

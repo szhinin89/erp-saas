@@ -78,9 +78,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     private readonly List<PurchaseInvoiceDetailTax> _taxes = new();
     public IReadOnlyList<PurchaseInvoiceDetailTax> Taxes => _taxes.AsReadOnly();
 
-    private const string IrbpnrSriTaxCode = "5";
-    private const string VatSriTaxCode = "2";
-    private const string IceSriTaxCode = "3";
+    private const string IrbpnrSriTaxCode = SriTaxCategoryCodes.Irbpnr;
+    private const string VatSriTaxCode = SriTaxCategoryCodes.Vat;
+    private const string IceSriTaxCode = SriTaxCategoryCodes.Ice;
 
     /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
     public string? IrbpnrCode =>

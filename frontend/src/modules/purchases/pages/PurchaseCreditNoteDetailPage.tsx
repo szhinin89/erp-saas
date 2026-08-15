@@ -27,7 +27,7 @@ import {
   type CancelPurchaseCreditNoteFormValues,
 } from "../schemas/purchaseCreditNoteSchema";
 import {
-  PURCHASE_CREDIT_NOTE_STATUS_LABEL as STATUS_LABEL,
+  getPurchaseCreditNoteStatusLabel,
   PURCHASE_CREDIT_NOTE_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/purchaseCreditNoteStatus";
 import "../styles/purchase-credit-note.css";
@@ -255,7 +255,7 @@ export function PurchaseCreditNoteDetailPage() {
         title={t("purchases.creditNote.general.title", "Datos generales")}
         actions={
           <Badge
-            label={STATUS_LABEL[editing.status] ?? editing.status}
+            label={getPurchaseCreditNoteStatusLabel(editing.status, t)}
             variant={STATUS_BADGE[editing.status] ?? "gray"}
           />
         }

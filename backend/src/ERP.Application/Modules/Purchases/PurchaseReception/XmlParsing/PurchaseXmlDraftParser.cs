@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Purchases;
 using System.Globalization;
 using System.Xml.Linq;
 
@@ -108,8 +109,8 @@ public interface IPurchaseXmlDraftParser
 /// </summary>
 public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
 {
-    private const string SriVatTaxCode = "2";
-    private const string SriIceTaxCode = "3";
+    private const string SriVatTaxCode = SriTaxCategoryCodes.Vat;
+    private const string SriIceTaxCode = SriTaxCategoryCodes.Ice;
 
     public Result<ParsedPurchaseXml> Parse(string xmlContent)
     {

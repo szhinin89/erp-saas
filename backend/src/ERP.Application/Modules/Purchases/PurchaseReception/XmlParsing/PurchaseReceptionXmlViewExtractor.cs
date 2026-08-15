@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases;
 using System.Globalization;
 using System.Xml.Linq;
 
@@ -67,7 +68,7 @@ public sealed record PurchaseReceptionXmlViewAdditionalDetail(string Name, strin
 /// </summary>
 public static class PurchaseReceptionXmlViewExtractor
 {
-    private const string SriIceTaxCode = "3";
+    private const string SriIceTaxCode = SriTaxCategoryCodes.Ice;
 
     public static PurchaseReceptionXmlViewExtras Extract(string xmlContent)
     {

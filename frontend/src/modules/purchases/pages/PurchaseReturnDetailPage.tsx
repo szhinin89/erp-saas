@@ -3,6 +3,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -27,9 +28,9 @@ import {
   type CancelPurchaseReturnFormValues,
 } from "../schemas/purchaseReturnSchema";
 import {
-  PURCHASE_RETURN_STATUS_LABEL as STATUS_LABEL,
+  getPurchaseReturnStatusLabel,
+  getPurchaseReturnFiscalStatusLabel,
   PURCHASE_RETURN_STATUS_BADGE as STATUS_BADGE,
-  PURCHASE_RETURN_FISCAL_STATUS_LABEL as FISCAL_STATUS_LABEL,
 } from "../utils/purchaseReturnStatus";
 import "../../sales/styles/sales-return.css";
 
@@ -43,6 +44,7 @@ import "../../sales/styles/sales-return.css";
  * cancelación) — F-V1/F-V2.
  */
 export function PurchaseReturnDetailPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -229,7 +231,7 @@ export function PurchaseReturnDetailPage() {
         title="Datos generales"
         actions={
           <Badge
-            label={STATUS_LABEL[editing.status] ?? editing.status}
+            label={getPurchaseReturnStatusLabel(editing.status, t)}
             variant={STATUS_BADGE[editing.status] ?? "gray"}
           />
         }
@@ -242,7 +244,7 @@ export function PurchaseReturnDetailPage() {
           <div>
             <span className="sr-general-grid__label">Estado fiscal</span>
             <span className="sr-general-grid__value">
-              {FISCAL_STATUS_LABEL[editing.fiscalStatus] ?? editing.fiscalStatus}
+              {getPurchaseReturnFiscalStatusLabel(editing.fiscalStatus, t)}
             </span>
           </div>
           <div>

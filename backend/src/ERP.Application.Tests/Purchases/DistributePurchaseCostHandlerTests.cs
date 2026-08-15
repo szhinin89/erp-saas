@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
@@ -69,7 +70,7 @@ public sealed class DistributePurchaseCostHandlerTests
         var result = await handler.Handle(
             new DistributePurchaseCostCommand(
                 inv.Id,
-                "Freight",
+                PurchaseCostType.Freight,
                 40m,
                 inv.Lines.Select(l => l.Id).ToList()
             ),
@@ -91,7 +92,7 @@ public sealed class DistributePurchaseCostHandlerTests
         var result = await handler.Handle(
             new DistributePurchaseCostCommand(
                 inv.Id,
-                "OtherCost",
+                PurchaseCostType.OtherCost,
                 20m,
                 inv.Lines.Select(l => l.Id).ToList()
             ),
@@ -109,7 +110,7 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(null, out var repo);
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(Guid.NewGuid(), "Freight", 10m, new List<Guid> { Guid.NewGuid() }),
+            new DistributePurchaseCostCommand(Guid.NewGuid(), PurchaseCostType.Freight, 10m, new List<Guid> { Guid.NewGuid() }),
             CancellationToken.None
         );
 
@@ -125,7 +126,7 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(inv, out var repo);
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(inv.Id, "Freight", 10m, new List<Guid> { Guid.NewGuid() }),
+            new DistributePurchaseCostCommand(inv.Id, PurchaseCostType.Freight, 10m, new List<Guid> { Guid.NewGuid() }),
             CancellationToken.None
         );
 
@@ -140,7 +141,7 @@ public sealed class DistributePurchaseCostHandlerTests
         var handler = BuildHandler(inv, out _);
 
         var result = await handler.Handle(
-            new DistributePurchaseCostCommand(inv.Id, "Freight", 10m, new List<Guid> { inv.Lines[0].Id }),
+            new DistributePurchaseCostCommand(inv.Id, PurchaseCostType.Freight, 10m, new List<Guid> { inv.Lines[0].Id }),
             CancellationToken.None
         );
 

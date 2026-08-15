@@ -321,8 +321,9 @@ public sealed class PurchaseInvoice
     /// (que fija el total absoluto del documento y reprorratea TODAS las líneas desde cero), este
     /// método es aditivo y deja intactas las líneas no incluidas — soporta el flujo del modal
     /// "Distribuir flete/gasto", donde el usuario decide manualmente qué ítems reciben el costo.
-    /// Redondeo: 2 decimales por línea, la última línea incluida absorbe el residuo — igual regla
-    /// que la simulación mostrada en el modal antes de aplicar.
+    /// Redondeo: <see cref="CostAllocationPrecision"/> decimales por línea (vía
+    /// <see cref="ProrateAmount"/>), la última línea incluida absorbe el residuo — misma regla que
+    /// <see cref="ProrateCostToLines"/> y que la simulación mostrada en el modal antes de aplicar.
     /// </summary>
     public void DistributeAdditionalCost(
         PurchaseCostType costType,
@@ -354,37 +355,12 @@ public sealed class PurchaseInvoice
                 "Todas las líneas incluidas deben tener cantidad base mayor a cero."
             );
 
-        var totalBase = included.Sum(l => l.LineSubtotal - l.DiscountAmount);
-        if (totalBase <= 0)
-            throw new InvalidOperationException(
-                "La base imponible de las líneas incluidas debe ser mayor a cero."
-            );
-
         Action<PurchaseInvoiceDetail, decimal> add =
             costType == PurchaseCostType.Freight
                 ? (line, share) => line.SetFreightAllocated(line.FreightAllocated + share)
                 : (line, share) => line.SetOtherCostsAllocated(line.OtherCostsAllocated + share);
 
-        decimal allocated = 0;
-        for (var i = 0; i < included.Count; i++)
-        {
-            var line = included[i];
-            if (i == included.Count - 1)
-            {
-                add(line, amount - allocated);
-            }
-            else
-            {
-                var lineBase = line.LineSubtotal - line.DiscountAmount;
-                var share = Math.Round(
-                    amount * lineBase / totalBase,
-                    2,
-                    MidpointRounding.AwayFromZero
-                );
-                add(line, share);
-                allocated += share;
-            }
-        }
+        ProrateAmount(amount, included, add);
 
         SetUpdated(updatedBy);
     }
@@ -412,31 +388,64 @@ public sealed class PurchaseInvoice
             return;
         }
 
-        var totalBase = _lines.Sum(l => l.LineSubtotal - l.DiscountAmount);
-        if (totalBase <= 0)
+        ProrateAmount(totalCost, _lines, setter);
+    }
+
+    // PURCHASE-LANDED-COST-PRORATION-CONSISTENCY-01 — misma precisión que TotalLineCost/
+    // LandedUnitCost (FiscalPrecision.UnitCost), a los que este prorrateo alimenta directamente vía
+    // FreightAllocated/OtherCostsAllocated. Antes DistributeAdditionalCost redondeaba a 2 decimales
+    // y ProrateCostToLines a 6 — la misma operación conceptual con precisión distinta según el flujo
+    // que la disparara.
+    private const int CostAllocationPrecision = FiscalPrecision.UnitCost;
+
+    /// <summary>
+    /// PURCHASE-LANDED-COST-PRORATION-CONSISTENCY-01 — única lógica de prorrateo de un monto
+    /// (flete/otro gasto) entre líneas, compartida por <see cref="DistributeAdditionalCost"/>
+    /// (aditivo, subconjunto de líneas incluidas por el usuario) y <see cref="ProrateCostToLines"/>
+    /// (absoluto, todas las líneas del documento) — ambas llaman a <paramref name="applyShare"/>
+    /// con el share ya calculado, cada una decide si suma o reemplaza el campo de costo. Reparte
+    /// proporcionalmente a la base imponible de línea (LineSubtotal - DiscountAmount); si esa base
+    /// es &lt;= 0 en el conjunto de líneas recibido, reparte equitativamente en su lugar — nunca
+    /// lanza excepción por eso mientras haya al menos una línea elegible. La última línea absorbe
+    /// el residuo de redondeo para que la suma asignada sea exactamente igual a
+    /// <paramref name="totalAmount"/>, dentro de <see cref="CostAllocationPrecision"/> decimales.
+    /// </summary>
+    private static void ProrateAmount(
+        decimal totalAmount,
+        IReadOnlyList<PurchaseInvoiceDetail> lines,
+        Action<PurchaseInvoiceDetail, decimal> applyShare
+    )
+    {
+        if (lines.Count == 0)
+            throw new InvalidOperationException(
+                "No hay líneas elegibles para prorratear el costo."
+            );
+
+        var totalBase = lines.Sum(l => l.LineSubtotal - l.DiscountAmount);
+        decimal allocated = 0;
+        for (var i = 0; i < lines.Count; i++)
         {
-            var equal = Math.Round(totalCost / _lines.Count, 6);
-            foreach (var line in _lines)
-                setter(line, equal);
-        }
-        else
-        {
-            decimal allocated = 0;
-            for (var i = 0; i < _lines.Count; i++)
+            var line = lines[i];
+            if (i == lines.Count - 1)
             {
-                var line = _lines[i];
-                var lineBase = line.LineSubtotal - line.DiscountAmount;
-                if (i == _lines.Count - 1)
-                {
-                    setter(line, totalCost - allocated);
-                }
-                else
-                {
-                    var share = Math.Round(totalCost * lineBase / totalBase, 6);
-                    setter(line, share);
-                    allocated += share;
-                }
+                applyShare(line, totalAmount - allocated);
+                continue;
             }
+
+            var share =
+                totalBase > 0
+                    ? Math.Round(
+                        totalAmount * (line.LineSubtotal - line.DiscountAmount) / totalBase,
+                        CostAllocationPrecision,
+                        MidpointRounding.AwayFromZero
+                    )
+                    : Math.Round(
+                        totalAmount / lines.Count,
+                        CostAllocationPrecision,
+                        MidpointRounding.AwayFromZero
+                    );
+            applyShare(line, share);
+            allocated += share;
         }
     }
 

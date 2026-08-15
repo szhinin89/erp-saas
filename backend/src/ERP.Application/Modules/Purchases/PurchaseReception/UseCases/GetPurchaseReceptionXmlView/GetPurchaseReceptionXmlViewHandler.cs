@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -17,9 +18,9 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurcha
 public sealed class GetPurchaseReceptionXmlViewHandler
     : IRequestHandler<GetPurchaseReceptionXmlViewQuery, Result<PurchaseReceptionXmlViewDto>>
 {
-    private const string SriVatTaxCode = "2";
-    private const string SriIceTaxCode = "3";
-    private const string SriIrbpnrTaxCode = "5";
+    private const string SriVatTaxCode = SriTaxCategoryCodes.Vat;
+    private const string SriIceTaxCode = SriTaxCategoryCodes.Ice;
+    private const string SriIrbpnrTaxCode = SriTaxCategoryCodes.Irbpnr;
 
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly ICurrentTenant _tenant;

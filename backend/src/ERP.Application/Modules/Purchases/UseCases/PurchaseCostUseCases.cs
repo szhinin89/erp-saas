@@ -24,13 +24,18 @@ public sealed record RecalculatePurchaseCommand(Guid InvoiceId)
 
 /// <summary>
 /// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo aditivo revisado por el usuario en
-/// el modal "Distribuir flete/gasto". <c>CostType</c> es "Freight" u "OtherCost". A diferencia de
-/// <see cref="AllocateFreightCommand"/> (redistribuye el total ya persistido entre TODAS las
-/// líneas), este comando suma un monto nuevo únicamente entre <c>IncludedLineIds</c>.
+/// el modal "Distribuir flete/gasto". A diferencia de <see cref="AllocateFreightCommand"/>
+/// (redistribuye el total ya persistido entre TODAS las líneas), este comando suma un monto nuevo
+/// únicamente entre <c>IncludedLineIds</c>.
+/// PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — <c>CostType</c> es <see cref="PurchaseCostType"/>
+/// (antes <c>string</c> "Freight"/"OtherCost" re-validado a mano). El payload HTTP no cambió: sigue
+/// llegando como string ("Freight"/"OtherCost") en <c>DistributeCostRequest</c>, y
+/// <c>PurchasesController.DistributeCost</c> lo convierte con <c>Enum.TryParse</c> antes de construir
+/// este comando — un valor inválido nunca llega hasta acá.
 /// </summary>
 public sealed record DistributePurchaseCostCommand(
     Guid InvoiceId,
-    string CostType,
+    PurchaseCostType CostType,
     decimal Amount,
     List<Guid> IncludedLineIds
 ) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
@@ -62,9 +67,10 @@ public sealed class DistributePurchaseCostValidator
     public DistributePurchaseCostValidator()
     {
         RuleFor(x => x.InvoiceId).NotEmpty();
-        RuleFor(x => x.CostType)
-            .Must(t => t is "Freight" or "OtherCost")
-            .WithMessage("El tipo de costo debe ser 'Freight' u 'OtherCost'.");
+        // PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — el string original ("Freight"/"OtherCost")
+        // ya se validó y convirtió en PurchasesController.DistributeCost (Enum.TryParse, mensaje
+        // amigable si falla); acá solo queda el guard defensivo de que el enum llegue en rango.
+        RuleFor(x => x.CostType).IsInEnum();
         RuleFor(x => x.Amount).GreaterThan(0).WithMessage("El valor a distribuir debe ser mayor a cero.");
         RuleFor(x => x.IncludedLineIds)
             .NotEmpty()
@@ -285,11 +291,9 @@ public sealed class DistributePurchaseCostHandler
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
-        var costType =
-            cmd.CostType == "Freight" ? PurchaseCostType.Freight : PurchaseCostType.OtherCost;
         try
         {
-            inv.DistributeAdditionalCost(costType, cmd.Amount, cmd.IncludedLineIds, _u.UserId);
+            inv.DistributeAdditionalCost(cmd.CostType, cmd.Amount, cmd.IncludedLineIds, _u.UserId);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
