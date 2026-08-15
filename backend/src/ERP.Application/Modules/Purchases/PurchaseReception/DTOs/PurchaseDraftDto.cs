@@ -34,7 +34,10 @@ public sealed record PurchaseDraftLineDto(
     decimal QuantityInBaseUom,
     // FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (IVA/ICE/IRBPNR), para que la vista
     // previa "Producto recibido (XML)" del formulario de compra pueda mostrarlos sin adivinar.
-    List<PurchaseDraftLineTaxDto> Taxes
+    List<PurchaseDraftLineTaxDto> Taxes,
+    // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot fiel de detallesAdicionales/detAdicional
+    // (lote/serie/caducidad/unidad de proveedor/lo que declare el emisor), solo lectura.
+    List<PurchaseDraftLineAdditionalFieldDto> AdditionalFields
 );
 
 /// <summary>FLOW-READY-02F.1 — un impuesto crudo del XML, tal como quedó en <c>PurchaseReceptionLineTax</c>.</summary>
@@ -45,6 +48,13 @@ public sealed record PurchaseDraftLineTaxDto(
     decimal TaxableBase,
     decimal TaxAmount
 );
+
+/// <summary>
+/// PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — un dato adicional crudo del XML, tal como quedó en
+/// <c>PurchaseReceptionLineAdditionalField</c>. Nombre/valor nunca se traducen ni interpretan en el
+/// backend — la UI los muestra tal cual, en <c>SortOrder</c>.
+/// </summary>
+public sealed record PurchaseDraftLineAdditionalFieldDto(string Name, string Value, int SortOrder);
 
 /// <summary>
 /// Respuesta de <c>POST /api/v1/purchases/reception/{id}/create-draft</c> — precarga del formulario

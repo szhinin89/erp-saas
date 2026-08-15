@@ -24,6 +24,22 @@ public sealed record PurchaseDraftMergedLineTax(
 }
 
 /// <summary>
+/// PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — espejo plano (no EF) de un
+/// <see cref="PurchaseReceptionLineAdditionalField"/> o de un <see cref="ParsedPurchaseXmlLineAdditionalField"/>
+/// recién parseado. Nunca se persiste, nunca se interpreta.
+/// </summary>
+public sealed record PurchaseDraftMergedLineAdditionalField(string Name, string Value, int Position)
+{
+    public static PurchaseDraftMergedLineAdditionalField FromPersisted(
+        PurchaseReceptionLineAdditionalField field
+    ) => new(field.Name, field.Value, field.SortOrder);
+
+    public static PurchaseDraftMergedLineAdditionalField FromParsed(
+        ParsedPurchaseXmlLineAdditionalField field
+    ) => new(field.Name, field.Value, field.Position);
+}
+
+/// <summary>
 /// FLOW-READY-02F.2 — línea de borrador ya fusionada: datos fiscales/documentales frescos del XML
 /// re-parseado (fuente documental principal) + datos operativos (Item Matching: <see cref="ItemId"/>/
 /// <see cref="MatchStatus"/>) tal como quedaron persistidos en la recepción. Record inmutable, plano
@@ -48,12 +64,15 @@ public sealed record PurchaseDraftMergedLine(
     decimal VatPercentage,
     decimal TaxValue,
     decimal TotalLine,
-    IReadOnlyList<PurchaseDraftMergedLineTax> Taxes
+    IReadOnlyList<PurchaseDraftMergedLineTax> Taxes,
+    IReadOnlyList<PurchaseDraftMergedLineAdditionalField> AdditionalFields
 )
 {
     /// <summary>
     /// Camino "sin fusión": la línea persistida tal cual, sin ningún dato fresco del XML. Se usa
-    /// cuando no hay XML, cuando no parsea, o cuando una clave de correlación queda ambigua.
+    /// cuando no hay XML, cuando no parsea, o cuando una clave de correlación queda ambigua — en ese
+    /// caso los AdditionalFields persistidos (si existen) son los que se muestran, nunca se cruzan
+    /// con los de otra línea del mismo grupo ambiguo.
     /// </summary>
     public static PurchaseDraftMergedLine FromPersisted(PurchaseReceptionLine line) =>
         new(
@@ -74,12 +93,17 @@ public sealed record PurchaseDraftMergedLine(
             VatPercentage: line.VatPercentage,
             TaxValue: line.TaxValue,
             TotalLine: line.TotalLine,
-            Taxes: line.Taxes.Select(PurchaseDraftMergedLineTax.FromPersisted).ToList()
+            Taxes: line.Taxes.Select(PurchaseDraftMergedLineTax.FromPersisted).ToList(),
+            AdditionalFields: line
+                .AdditionalFields.Select(PurchaseDraftMergedLineAdditionalField.FromPersisted)
+                .ToList()
         );
 
     /// <summary>
-    /// Camino "fusionado": todos los campos fiscales/documentales vienen del XML recién parseado
-    /// (<paramref name="fresh"/>) — el ítem/matching viene de la línea persistida (<paramref name="persisted"/>).
+    /// Camino "fusionado": todos los campos fiscales/documentales (incl. AdditionalFields) vienen del
+    /// XML recién parseado (<paramref name="fresh"/>) — el ítem/matching viene de la línea persistida
+    /// (<paramref name="persisted"/>). AdditionalFields es documental, igual que Taxes: siempre
+    /// prefiere el XML fresco cuando hay fusión.
     /// </summary>
     public static PurchaseDraftMergedLine FromFreshXmlWithPersistedMatching(
         PurchaseReceptionLine persisted,
@@ -103,7 +127,10 @@ public sealed record PurchaseDraftMergedLine(
             VatPercentage: fresh.VatPercentage,
             TaxValue: fresh.TaxValue,
             TotalLine: fresh.TotalLine,
-            Taxes: fresh.Taxes.Select(PurchaseDraftMergedLineTax.FromParsed).ToList()
+            Taxes: fresh.Taxes.Select(PurchaseDraftMergedLineTax.FromParsed).ToList(),
+            AdditionalFields: fresh
+                .AdditionalFields.Select(PurchaseDraftMergedLineAdditionalField.FromParsed)
+                .ToList()
         );
 }
 

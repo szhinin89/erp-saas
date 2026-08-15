@@ -1,4 +1,5 @@
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
+import { buildSuspiciousPackagingCostWarning } from "./purchaseLinePresentation";
 
 type TFunction = (
   key: string,
@@ -9,6 +10,7 @@ export type PurchaseLineReadinessStatus =
   | "MISSING_ITEM"
   | "SUPPLIER_CODE_CONFLICT"
   | "MISSING_PRESENTATION"
+  | "SUSPICIOUS_PACKAGING_COST"
   | "MISSING_WAREHOUSE"
   | "INVALID_TAX"
   | "READY";
@@ -122,6 +124,14 @@ function message(
           "Revise el código IVA/ICE de la línea antes de guardar.",
         ),
       };
+    case "SUSPICIOUS_PACKAGING_COST":
+      return {
+        label: t(
+          "purchases.lineReadiness.suspiciousPackagingCost",
+          "Presentación sospechosa (margen extremo)",
+        ),
+        detail: "",
+      };
     case "READY":
       return {
         label: t("purchases.lineReadiness.ready", "Producto listo"),
@@ -168,6 +178,22 @@ export function getPurchaseLineReadiness(
       blocking: true,
       primaryAction: "SELECT_PRESENTATION",
       secondaryAction: "SAVE_PRESENTATION",
+    };
+  }
+
+  // t (arriba) siempre está definido (fallbackT como default) para el label/detail estáticos de
+  // este módulo — pero buildSuspiciousPackagingCostWarning necesita distinguir "sin traductor
+  // real" (usa su propio fallback interpolado) de "hay traductor real" (usa i18next), así que se
+  // le pasa options.t directamente, nunca el `t` ya resuelto con el default de este archivo.
+  const suspiciousPackagingCost = buildSuspiciousPackagingCostWarning(line, options.t);
+  if (suspiciousPackagingCost) {
+    return {
+      status: "SUSPICIOUS_PACKAGING_COST",
+      ...message(t, "SUSPICIOUS_PACKAGING_COST"),
+      detail: suspiciousPackagingCost.message,
+      tone: "danger",
+      blocking: true,
+      primaryAction: "SELECT_PRESENTATION",
     };
   }
 

@@ -112,6 +112,36 @@ describe("purchaseLineReadiness", () => {
     expect(readiness.status).toBe("INVALID_TAX");
   });
 
+  it("PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01 — bloquea presentacion con margen extremo (< -50%)", () => {
+    const suspiciousLine = line({
+      itemId: "item-1",
+      packagingLevelId: "unidad-x1",
+      quantity: 8,
+      unitPrice: 5.109,
+      context: {
+        ...line().context!,
+        pvp: 1.08,
+        packagingLevels: [
+          {
+            id: "unidad-x1",
+            name: "UNIDAD X1",
+            baseQuantity: 1,
+            uomCode: "UNIDAD",
+            isBaseUnit: true,
+            isPurchaseDefault: false,
+          },
+        ],
+      },
+    });
+
+    const readiness = getPurchaseLineReadiness(suspiciousLine);
+
+    expect(readiness.status).toBe("SUSPICIOUS_PACKAGING_COST");
+    expect(readiness.blocking).toBe(true);
+    expect(readiness.detail).toContain("1.08");
+    expect(getPurchaseLineBlockingReasons([suspiciousLine])).toHaveLength(1);
+  });
+
   it("marca lista una linea con item, presentacion, bodega e impuesto valido", () => {
     const readyLine = line({
       itemId: "item-1",

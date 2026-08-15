@@ -130,7 +130,8 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                             t.Tarifa,
                             t.TaxableBase,
                             t.TaxAmount
-                        ))
+                        )),
+                        parsedLine.AdditionalFields.Select(f => (f.Name, f.Value, f.Position))
                     );
 
                     // Si no hubo código exacto pero el motor de matching ya encuentra candidatos por

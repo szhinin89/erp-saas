@@ -425,6 +425,10 @@ public sealed class PurchaseXmlDraftParserTests
                   <precioUnitario>4.32817</precioUnitario>
                   <descuento>0.00</descuento>
                   <precioTotalSinImpuesto>12.98</precioTotalSinImpuesto>
+                  <detallesAdicionales>
+                    <detAdicional nombre="Unidad" valor="3 /  0"/>
+                    <detAdicional nombre="valor2" valor="0.72"/>
+                  </detallesAdicionales>
                   <impuestos>
                     <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>12.98</baseImponible><valor>1.95</valor></impuesto>
                     <impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa><baseImponible>36.00</baseImponible><valor>0.72</valor></impuesto>
@@ -455,6 +459,8 @@ public sealed class PurchaseXmlDraftParserTests
         sprite.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 1.61m);
         var spriteIrbpnr = sprite.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
         spriteIrbpnr.TaxAmount.Should().Be(0.24m);
+        // SPRITE no trae detallesAdicionales en el XML real — lista vacía, nunca null.
+        sprite.AdditionalFields.Should().BeEmpty();
 
         // Línea 2: INCA-KOLA ORGL 900ML PET NR 12 — codigoPrincipal 12469, el caso reportado.
         var incaKola = draft.Lines[1];
@@ -472,6 +478,94 @@ public sealed class PurchaseXmlDraftParserTests
         incaKolaIrbpnr.TaxAmount.Should().Be(0.72m);
         incaKolaIrbpnr.TaxableBase.Should().Be(36.00m);
         incaKolaIrbpnr.Tarifa.Should().Be(0.02m);
+
+        // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — caso real reportado: la línea INCA-KOLA trae
+        // detallesAdicionales que antes se descartaban por completo. "3 /  0" preserva el doble
+        // espacio tal como lo declaró el proveedor — no se recorta ni normaliza.
+        incaKola.AdditionalFields.Should().HaveCount(2);
+        incaKola.AdditionalFields.Should().ContainSingle(f => f.Name == "Unidad" && f.Value == "3 /  0" && f.Position == 0);
+        incaKola.AdditionalFields.Should().ContainSingle(f => f.Name == "valor2" && f.Value == "0.72" && f.Position == 1);
+    }
+
+    [Fact]
+    public void Returns_an_empty_additional_fields_list_when_the_line_has_no_detallesAdicionales()
+    {
+        const string xml =
+            "<factura><infoTributaria><ruc>1791352688001</ruc><razonSocial>QUALA ECUADOR S A</razonSocial>"
+            + "<codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000123</secuencial>"
+            + "</infoTributaria><infoFactura><fechaEmision>01/07/2026</fechaEmision></infoFactura>"
+            + "<detalles><detalle><codigoPrincipal>PROV-OK</codigoPrincipal><descripcion>Producto sin datos adicionales</descripcion>"
+            + "<cantidad>1.0000</cantidad><precioUnitario>10.000000</precioUnitario><descuento>0.00</descuento>"
+            + "<precioTotalSinImpuesto>10.00</precioTotalSinImpuesto>"
+            + "<impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>2</codigoPorcentaje><tarifa>15.00</tarifa>"
+            + "<baseImponible>10.00</baseImponible><valor>1.50</valor></impuesto></impuestos></detalle></detalles></factura>";
+        var parser = new PurchaseXmlDraftParser();
+
+        var result = parser.Parse(xml);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = result.Value!.Lines.Should().ContainSingle().Subject;
+        line.AdditionalFields.Should().NotBeNull();
+        line.AdditionalFields.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Preserves_repeated_detAdicional_names_without_overwriting_either_value()
+    {
+        // El esquema SRI permite hasta 3 <detAdicional> por línea, sin exigir nombres únicos — un
+        // emisor puede declarar el mismo "LOTE" dos veces (p. ej. mercadería de dos lotes en una
+        // sola línea de factura). Ambos valores deben preservarse, nunca sobrescribirse.
+        const string xml =
+            "<factura><infoTributaria><ruc>1791352688001</ruc><razonSocial>QUALA ECUADOR S A</razonSocial>"
+            + "<codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000123</secuencial>"
+            + "</infoTributaria><infoFactura><fechaEmision>01/07/2026</fechaEmision></infoFactura>"
+            + "<detalles><detalle><codigoPrincipal>PROV-LOTE</codigoPrincipal><descripcion>Producto con dos lotes</descripcion>"
+            + "<cantidad>1.0000</cantidad><precioUnitario>10.000000</precioUnitario><descuento>0.00</descuento>"
+            + "<precioTotalSinImpuesto>10.00</precioTotalSinImpuesto>"
+            + "<detallesAdicionales>"
+            + "<detAdicional nombre=\"LOTE\" valor=\"A4821\"/>"
+            + "<detAdicional nombre=\"LOTE\" valor=\"B1190\"/>"
+            + "</detallesAdicionales>"
+            + "<impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>2</codigoPorcentaje><tarifa>15.00</tarifa>"
+            + "<baseImponible>10.00</baseImponible><valor>1.50</valor></impuesto></impuestos></detalle></detalles></factura>";
+        var parser = new PurchaseXmlDraftParser();
+
+        var result = parser.Parse(xml);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = result.Value!.Lines.Should().ContainSingle().Subject;
+        line.AdditionalFields.Should().HaveCount(2);
+        line.AdditionalFields.Should().Contain(f => f.Name == "LOTE" && f.Value == "A4821" && f.Position == 0);
+        line.AdditionalFields.Should().Contain(f => f.Name == "LOTE" && f.Value == "B1190" && f.Position == 1);
+    }
+
+    [Fact]
+    public void Preserves_additional_field_names_and_values_with_accents_and_special_characters_as_is()
+    {
+        const string xml =
+            "<factura><infoTributaria><ruc>1791352688001</ruc><razonSocial>QUALA ECUADOR S A</razonSocial>"
+            + "<codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000123</secuencial>"
+            + "</infoTributaria><infoFactura><fechaEmision>01/07/2026</fechaEmision></infoFactura>"
+            + "<detalles><detalle><codigoPrincipal>PROV-CAD</codigoPrincipal><descripcion>Producto perecible</descripcion>"
+            + "<cantidad>1.0000</cantidad><precioUnitario>10.000000</precioUnitario><descuento>0.00</descuento>"
+            + "<precioTotalSinImpuesto>10.00</precioTotalSinImpuesto>"
+            + "<detallesAdicionales>"
+            + "<detAdicional nombre=\"FECHA VENCIMIENTO\" valor=\"31/12/2027\"/>"
+            + "<detAdicional nombre=\"Número de Serie\" valor=\"S/N° X-001 (línea A)\"/>"
+            + "</detallesAdicionales>"
+            + "<impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>2</codigoPorcentaje><tarifa>15.00</tarifa>"
+            + "<baseImponible>10.00</baseImponible><valor>1.50</valor></impuesto></impuestos></detalle></detalles></factura>";
+        var parser = new PurchaseXmlDraftParser();
+
+        var result = parser.Parse(xml);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = result.Value!.Lines.Should().ContainSingle().Subject;
+        line.AdditionalFields.Should().HaveCount(2);
+        line.AdditionalFields.Should().Contain(f => f.Name == "FECHA VENCIMIENTO" && f.Value == "31/12/2027");
+        line.AdditionalFields.Should().Contain(f =>
+            f.Name == "Número de Serie" && f.Value == "S/N° X-001 (línea A)"
+        );
     }
 
     [Fact]

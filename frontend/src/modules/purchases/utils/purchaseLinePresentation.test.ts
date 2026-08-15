@@ -3,7 +3,9 @@ import type { PurchaseItemContextDto } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   buildPurchaseLinePresentation,
+  buildSuspiciousPackagingCostWarning,
   computeUnitPriceFromBaseUnitCost,
+  headerInputKey,
 } from "./purchaseLinePresentation";
 
 const context: PurchaseItemContextDto = {
@@ -546,6 +548,462 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       );
 
       expect(vm.xml.hasIrbpnr).toBe(false);
+    });
+  });
+
+  describe("PURCHASE-LINE-HEADER-PACKAGING-CHANGE-SYNC-01 — cabecera sincronizada al cambiar presentación", () => {
+    // Caso real reportado: CLUB PLATINO LATA 355CC NRB X6 TERMO. quantity=8 (cantidad XML),
+    // unitPrice=5.109 fijo — solo cambia el factor de conversión (SIXPACK X6 → 6, UNIDAD X1 → 1).
+    const clubPlatinoContext: PurchaseItemContextDto = {
+      ...context,
+      packagingLevels: [
+        {
+          id: "sixpack-x6",
+          name: "SIXPACK X6",
+          baseQuantity: 6,
+          uomCode: "SIXPACK",
+          isBaseUnit: false,
+          isPurchaseDefault: true,
+        },
+        {
+          id: "unidad-x1",
+          name: "UNIDAD X1",
+          baseQuantity: 1,
+          uomCode: "UNIDAD",
+          isBaseUnit: true,
+          isPurchaseDefault: false,
+        },
+      ],
+      pvp: 1.08,
+    };
+
+    function clubPlatinoLine(packagingLevelId: string) {
+      return line({
+        quantity: 8,
+        unitPrice: 5.109,
+        discountPct: 0,
+        packagingLevelId,
+        context: clubPlatinoContext,
+      });
+    }
+
+    it("SIXPACK X6 (factor 6): cantidad base 48, costo base 0.8515, margen ~21.16%", () => {
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+
+      expect(vm.inventory.baseQuantityValue).toBe(48);
+      expect(vm.inventory.baseUnitCostValue).toBeCloseTo(0.8515, 4);
+      expect(vm.commercial.profitability.marginPctValue).toBeCloseTo(21.16, 1);
+    });
+
+    it("UNIDAD X1 (factor 1): cantidad base 8, costo base 5.1090, margen ~-373.05%", () => {
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"));
+
+      expect(vm.inventory.baseQuantityValue).toBe(8);
+      expect(vm.inventory.baseUnitCostValue).toBeCloseTo(5.109, 4);
+      expect(vm.commercial.profitability.marginPctValue).toBeCloseTo(-373.05, 0);
+    });
+
+    it("volver a SIXPACK X6 recupera exactamente 48 / 0.8515 (no queda pegado en UNIDAD X1)", () => {
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+
+      expect(vm.inventory.baseQuantityValue).toBe(48);
+      expect(vm.inventory.baseUnitCostValue).toBeCloseTo(0.8515, 4);
+    });
+
+    it("headerInputKey cambia entre SIXPACK X6 y UNIDAD X1 aunque ambas tengan hasPresentation=true", () => {
+      const sixpack = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const unidad = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"));
+
+      // Ambas presentaciones son reales (packagingLevelId siempre presente) — hasPresentation es
+      // true en las dos, por lo que la key NO puede depender solo de ese booleano (esa era la causa
+      // exacta del bug: el input no controlado nunca remonteaba al cambiar de presentación).
+      expect(sixpack.inventory.hasPresentation).toBe(true);
+      expect(unidad.inventory.hasPresentation).toBe(true);
+
+      const qtyKeySixpack = headerInputKey("qty", sixpack, "sixpack-x6");
+      const qtyKeyUnidad = headerInputKey("qty", unidad, "unidad-x1");
+      const costKeySixpack = headerInputKey("cost", sixpack, "sixpack-x6");
+      const costKeyUnidad = headerInputKey("cost", unidad, "unidad-x1");
+
+      expect(qtyKeySixpack).not.toBe(qtyKeyUnidad);
+      expect(costKeySixpack).not.toBe(costKeyUnidad);
+    });
+
+    it("headerInputKey es estable para la MISMA presentación (no fuerza remount en cada render)", () => {
+      const vm1 = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const vm2 = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+
+      expect(headerInputKey("qty", vm1, "sixpack-x6")).toBe(
+        headerInputKey("qty", vm2, "sixpack-x6"),
+      );
+      expect(headerInputKey("cost", vm1, "sixpack-x6")).toBe(
+        headerInputKey("cost", vm2, "sixpack-x6"),
+      );
+    });
+
+    it("headerInputKey distingue modo sin presentación (invoice) del modo con presentación (base)", () => {
+      const withPackaging = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+      const withoutPackaging = buildPurchaseLinePresentation(
+        line({ packagingLevelId: undefined }),
+      );
+
+      expect(
+        headerInputKey("qty", withPackaging, "sixpack-x6"),
+      ).not.toBe(headerInputKey("qty", withoutPackaging, undefined));
+    });
+
+    it("edición manual de cantidad con presentación sigue reversando a quantity/quantityInBaseUom (no rompe con la key nueva)", () => {
+      // Mismo cálculo que ya usa PurchasesPage.tsx en el onBlur del input de Cantidad —
+      // verifica que la fórmula de reversa sigue intacta, la key nueva no la afecta.
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("unidad-x1"));
+      const factor = vm.inventory.conversionFactorValue;
+      const entered = 10; // usuario teclea 10 unidades base
+      const reversedQuantity = entered / factor || 1;
+
+      expect(factor).toBe(1);
+      expect(reversedQuantity).toBe(10);
+    });
+
+    it("edición manual de costo con presentación sigue usando computeUnitPriceFromBaseUnitCost (no rompe con la key nueva)", () => {
+      const vm = buildPurchaseLinePresentation(clubPlatinoLine("sixpack-x6"));
+
+      const recalculated = computeUnitPriceFromBaseUnitCost({
+        newBaseUnitCost: 0.9,
+        quantity: 8,
+        quantityInBaseUom: vm.inventory.baseQuantityValue,
+        discountPct: 0,
+        freightAllocated: 0,
+        otherCostsAllocated: 0,
+      });
+
+      // 0.9 * 48 / 8 = 5.4 — el mismo cálculo que ya prueba
+      // PURCHASE-LINE-HEADER-BASE-QTY-COST-EDIT-01, sin ninguna dependencia de la key de remount.
+      expect(recalculated).toBeCloseTo(5.4, 6);
+    });
+  });
+
+  describe("PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01 — buildSuspiciousPackagingCostWarning", () => {
+    // Mismo caso real (CLUB PLATINO LATA 355CC NRB X6 TERMO) que
+    // "PURCHASE-LINE-HEADER-PACKAGING-CHANGE-SYNC-01" arriba, redeclarado localmente porque los
+    // fixtures de ese describe no son visibles fuera de su propio callback.
+    const clubPlatinoContext: PurchaseItemContextDto = {
+      ...context,
+      packagingLevels: [
+        {
+          id: "sixpack-x6",
+          name: "SIXPACK X6",
+          baseQuantity: 6,
+          uomCode: "SIXPACK",
+          isBaseUnit: false,
+          isPurchaseDefault: true,
+        },
+        {
+          id: "unidad-x1",
+          name: "UNIDAD X1",
+          baseQuantity: 1,
+          uomCode: "UNIDAD",
+          isBaseUnit: true,
+          isPurchaseDefault: false,
+        },
+      ],
+      pvp: 1.08,
+    };
+
+    function clubPlatinoLine(packagingLevelId: string) {
+      return line({
+        quantity: 8,
+        unitPrice: 5.109,
+        discountPct: 0,
+        packagingLevelId,
+        context: clubPlatinoContext,
+      });
+    }
+
+    it("bloquea UNIDAD X1: costo base 5.1090, precio venta 1.08, margen -373.05% (< -50%)", () => {
+      const warning = buildSuspiciousPackagingCostWarning(
+        clubPlatinoLine("unidad-x1"),
+      );
+
+      expect(warning).not.toBeNull();
+      expect(warning?.blocking).toBe(true);
+      expect(warning?.message).toContain("1.08");
+    });
+
+    it("no bloquea SIXPACK X6: costo base 0.8515, precio venta 1.08, margen 21.16%", () => {
+      const warning = buildSuspiciousPackagingCostWarning(
+        clubPlatinoLine("sixpack-x6"),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no bloquea sin precio de venta (pvp 0/null)", () => {
+      const warning = buildSuspiciousPackagingCostWarning(
+        line({
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: {
+            ...clubPlatinoContext,
+            pvp: 0,
+          },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no bloquea servicio/no inventariable (tracksStock false)", () => {
+      const warning = buildSuspiciousPackagingCostWarning(
+        line({
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: {
+            ...clubPlatinoContext,
+            tracksStock: false,
+          },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no bloquea sin producto vinculado (itemId ausente)", () => {
+      const warning = buildSuspiciousPackagingCostWarning(
+        line({
+          itemId: undefined,
+          quantity: 8,
+          unitPrice: 5.109,
+          packagingLevelId: "unidad-x1",
+          context: clubPlatinoContext,
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+
+    it("no bloquea margen negativo leve (-10%, no extremo)", () => {
+      const warning = buildSuspiciousPackagingCostWarning(
+        line({
+          quantity: 1,
+          unitPrice: 1.2,
+          packagingLevelId: "unidad-x1",
+          context: { ...clubPlatinoContext, pvp: 1.08 },
+        }),
+      );
+
+      expect(warning).toBeNull();
+    });
+  });
+
+  describe("PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — IVA/Total de cabecera recalculan al editar Cantidad/Costo", () => {
+    // Caso real: CLUB PLATINO LATA 355CC NRB X6 TERMO. Snapshot XML: cantidad 8, precio 5.9125,
+    // descuento $6.43 (≈13.594% sobre 47.30 bruto) → base 40.87, IVA 15% → 6.13, total 47.00.
+    // Mismo fixture numérico que "Base imponible de cabecera" en purchaseCalc.test.ts.
+    const xmlDiscountPct = (6.43 / 47.3) * 100;
+    const clubPlatinoXmlLine = (overrides: Partial<PurchaseLineFormValues> = {}) =>
+      line({
+        quantity: 8,
+        unitPrice: 5.9125,
+        discountPct: xmlDiscountPct,
+        vatCode: "2",
+        context: { ...context, vatPercent: 15, icePercent: 0 },
+        xmlQuantity: 8,
+        xmlUnitPrice: 5.9125,
+        xmlDiscount: 6.43,
+        xmlLineSubtotal: 40.87,
+        xmlVatPercentage: 15,
+        xmlTaxValue: 6.13,
+        xmlTotalLine: 47.0,
+        xmlTaxableBase: 40.87,
+        xmlIceAmount: 0,
+        xmlIrbpnrAmount: undefined,
+        ...overrides,
+      });
+
+    it("recién cargada (sin editar): editableHeader ya coincide con el snapshot XML (misma fórmula, base/IVA/total)", () => {
+      const vm = buildPurchaseLinePresentation(clubPlatinoXmlLine());
+
+      expect(vm.editableHeader.taxableBase).toBeCloseTo(40.87, 2);
+      expect(vm.editableHeader.vatAmount).toBeCloseTo(6.13, 2);
+      expect(vm.editableHeader.total).toBeCloseTo(47.0, 2);
+    });
+
+    it("caso real: editar a Cantidad 50 / Costo 2 → cabecera editable muestra Base 100 / IVA 15 / Total 115, NO el snapshot XML", () => {
+      const vm = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }),
+      );
+
+      expect(vm.editableHeader.taxableBase).toBe(100);
+      expect(vm.editableHeader.vatAmount).toBe(15);
+      expect(vm.editableHeader.iceAmount).toBe(0);
+      expect(vm.editableHeader.total).toBe(115);
+    });
+
+    it("el bloque 'Producto recibido (XML)' conserva el snapshot original (8 / 5.9125 / 40.87 / 6.13 / 0.00 / 47.00) después de la edición", () => {
+      const vm = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }),
+      );
+
+      // vm.xml.* nunca depende de quantity/unitPrice editados — solo de los campos xml* congelados.
+      expect(vm.xml.quantity).toBe("8.0000");
+      expect(vm.xml.unitPrice).toBe("$5.9125");
+      expect(vm.xml.taxableBase).toBe("$40.87");
+      expect(vm.xml.taxValue).toBe("$6.13");
+      expect(vm.xml.iceValue).toBe("$0.00");
+      expect(vm.xml.totalLine).toBe("$47.00");
+    });
+
+    it("PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01 — Producto recibido (XML) NUNCA muestra valores derivados de la edición manual (no 8.3333 / $13.8873 / $100 / $15 / $115)", () => {
+      const vm = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }),
+      );
+
+      expect(vm.xml.quantity).not.toBe("8.3333");
+      expect(vm.xml.unitPrice).not.toBe("$13.8873");
+      expect(vm.xml.taxableBase).not.toBe("$100.00");
+      expect(vm.xml.taxValue).not.toBe("$15.00");
+      expect(vm.xml.totalLine).not.toBe("$115.00");
+    });
+
+    it("datos adicionales XML no cambian tras editar cantidad/costo/presentación", () => {
+      const additionalFields = [{ name: "TIPO DE MATERIAL", value: "Liquido" }];
+      const before = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ xmlAdditionalFields: additionalFields }),
+      );
+      const afterEdit = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({
+          xmlAdditionalFields: additionalFields,
+          quantity: 50,
+          unitPrice: 2,
+          discountPct: 0,
+          packagingLevelId: "unidad-x1",
+          conversionFactor: 1,
+          quantityInBaseUom: 50,
+        }),
+      );
+
+      expect(before.xml.additionalFields).toEqual(additionalFields);
+      expect(afterEdit.xml.additionalFields).toEqual(additionalFields);
+    });
+
+    it("editar solo Cantidad recalcula IVA/Total de cabecera", () => {
+      const vm = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ quantity: 100, unitPrice: 2, discountPct: 0 }),
+      );
+
+      expect(vm.editableHeader.taxableBase).toBe(200);
+      expect(vm.editableHeader.vatAmount).toBe(30);
+      expect(vm.editableHeader.total).toBe(230);
+    });
+
+    it("editar solo Costo recalcula IVA/Total de cabecera", () => {
+      const vm = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ quantity: 50, unitPrice: 3, discountPct: 0 }),
+      );
+
+      expect(vm.editableHeader.taxableBase).toBe(150);
+      expect(vm.editableHeader.vatAmount).toBe(22.5);
+      expect(vm.editableHeader.total).toBe(172.5);
+    });
+
+    it("cambiar presentación y luego editar no deja IVA/Total pegados a un valor anterior", () => {
+      // Primer estado: presentación SIXPACK X6, sin editar (vm1 refleja quantity/unitPrice XML).
+      const vm1 = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({ packagingLevelId: "sixpack-x6" }),
+      );
+      // Segundo estado: el usuario cambió de presentación Y editó cabecera (quantity/unitPrice ya
+      // no son los del XML) — editableHeader debe reflejar el estado nuevo, no arrastrar vm1.
+      const vm2 = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({
+          packagingLevelId: "unidad-x1",
+          quantity: 50,
+          unitPrice: 2,
+          discountPct: 0,
+        }),
+      );
+
+      expect(vm1.editableHeader.total).toBeCloseTo(47.0, 2);
+      expect(vm2.editableHeader.total).toBe(115);
+      expect(vm2.editableHeader.total).not.toBeCloseTo(vm1.editableHeader.total, 2);
+
+      // El bloque XML es ajeno al cambio de presentación: sigue siendo el mismo en los dos estados.
+      expect(vm1.xml.quantity).toBe("8.0000");
+      expect(vm1.xml.totalLine).toBe("$47.00");
+      expect(vm2.xml.quantity).toBe("8.0000");
+      expect(vm2.xml.totalLine).toBe("$47.00");
+    });
+
+    it("IRBPNR se conserva del snapshot XML tras editar (no se inventa un recálculo proporcional)", () => {
+      const vm = buildPurchaseLinePresentation(
+        clubPlatinoXmlLine({
+          quantity: 50,
+          unitPrice: 2,
+          discountPct: 0,
+          xmlIrbpnrAmount: 0.72,
+        }),
+      );
+
+      expect(vm.editableHeader.irbpnrAmount).toBe(0.72);
+      expect(vm.editableHeader.total).toBe(100 + 15 + 0 + 0.72);
+      // El snapshot XML tampoco cambia.
+      expect(vm.xml.irbpnrValue).toBe("$0.72");
+    });
+
+    it("línea manual (sin origen XML) sigue recalculando igual que antes — sin regresión", () => {
+      const vm = buildPurchaseLinePresentation(
+        line({
+          purchaseReceptionLineId: undefined,
+          xmlSupplierCode: undefined,
+          quantity: 10,
+          unitPrice: 10,
+          discountPct: 0,
+          context: { ...context, vatPercent: 15, icePercent: 0 },
+        }),
+      );
+
+      expect(vm.editableHeader.taxableBase).toBe(100);
+      expect(vm.editableHeader.vatAmount).toBe(15);
+      expect(vm.editableHeader.irbpnrAmount).toBe(0);
+      expect(vm.editableHeader.total).toBe(115);
+    });
+  });
+
+  describe("PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — datos adicionales del XML (detAdicional)", () => {
+    it("expone additionalFields tal cual, sin traducir ni interpretar nombre/valor", () => {
+      const vm = buildPurchaseLinePresentation(
+        line({
+          xmlAdditionalFields: [
+            { name: "Unidad", value: "3 /  0" },
+            { name: "valor2", value: "0.72" },
+          ],
+        }),
+      );
+
+      expect(vm.xml.hasAdditionalFields).toBe(true);
+      expect(vm.xml.additionalFields).toEqual([
+        { name: "Unidad", value: "3 /  0" },
+        { name: "valor2", value: "0.72" },
+      ]);
+    });
+
+    it("hasAdditionalFields es false y additionalFields es [] cuando la línea no trae detAdicional", () => {
+      const vm = buildPurchaseLinePresentation(
+        line({ xmlAdditionalFields: undefined }),
+      );
+
+      expect(vm.xml.hasAdditionalFields).toBe(false);
+      expect(vm.xml.additionalFields).toEqual([]);
+    });
+
+    it("hasAdditionalFields es false cuando additionalFields es un arreglo vacío", () => {
+      const vm = buildPurchaseLinePresentation(
+        line({ xmlAdditionalFields: [] }),
+      );
+
+      expect(vm.xml.hasAdditionalFields).toBe(false);
+      expect(vm.xml.additionalFields).toEqual([]);
     });
   });
 

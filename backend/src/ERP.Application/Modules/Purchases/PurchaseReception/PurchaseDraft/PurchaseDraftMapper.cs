@@ -77,6 +77,13 @@ public static class PurchaseDraftMapper
                                 t.TaxableBase,
                                 t.TaxAmount
                             ))
+                            .ToList(),
+                        AdditionalFields: l.AdditionalFields
+                            .Select(f => new PurchaseDraftLineAdditionalFieldDto(
+                                f.Name,
+                                f.Value,
+                                f.Position
+                            ))
                             .ToList()
                     );
                 })

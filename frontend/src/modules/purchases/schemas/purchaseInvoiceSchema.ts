@@ -56,6 +56,13 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
     .optional(),
   xmlSupplierCode: z.string().optional(),
   xmlSupplierAuxCode: z.string().nullable().optional(),
+  // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — cantidad/precio del comprobante tal como
+  // llegó del XML, congelados al cargar el draft. Nunca se sobrescriben por `ctx.updateLine` (esa
+  // función solo escribe "quantity"/"unitPrice", los campos editables) — son la única fuente de
+  // "Producto recibido (XML)" para Cantidad/Precio, que antes reutilizaba por error los mismos
+  // "quantity"/"unitPrice" editables (ver purchaseLinePresentation.ts).
+  xmlQuantity: z.number().optional(),
+  xmlUnitPrice: z.number().optional(),
   xmlDiscount: z.number().optional(),
   xmlLineSubtotal: z.number().optional(),
   xmlTaxCode: z.string().optional(),
@@ -65,6 +72,11 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   xmlTaxableBase: z.number().optional(),
   xmlIceAmount: z.number().optional(),
   xmlIrbpnrAmount: z.number().optional(),
+  // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot de detallesAdicionales/detAdicional, solo
+  // lectura ("Datos adicionales XML") — nunca se envía al API, nunca se edita.
+  xmlAdditionalFields: z
+    .array(z.object({ name: z.string(), value: z.string() }))
+    .optional(),
 });
 
 export const purchaseLineSchema = createPurchaseLineSchema(passthroughT);

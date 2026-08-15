@@ -915,6 +915,10 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
               <precioUnitario>4.32817</precioUnitario>
               <descuento>0.00</descuento>
               <precioTotalSinImpuesto>12.98</precioTotalSinImpuesto>
+              <detallesAdicionales>
+                <detAdicional nombre="Unidad" valor="3 /  0"/>
+                <detAdicional nombre="valor2" valor="0.72"/>
+              </detallesAdicionales>
               <impuestos>
                 <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>12.98</baseImponible><valor>1.95</valor></impuesto>
                 <impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa><baseImponible>36.00</baseImponible><valor>0.72</valor></impuesto>
@@ -963,6 +967,71 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
               <precioTotalSinImpuesto>40.00</precioTotalSinImpuesto>
               <impuestos>
                 <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>40.00</baseImponible><valor>6.00</valor></impuesto>
+              </impuestos>
+            </detalle>
+          </detalles>
+        </factura>
+        """;
+
+    // Igual que DuplicateSupplierCodeXml, pero con un TERCER <detalle> del mismo grupo de
+    // correlación (codigoPrincipal="999" + misma descripción) — fuerza fresco(3) != persistido(2),
+    // el caso concreto que hace caer al merger al fallback "sin fusión" por ambigüedad.
+    private const string TripleDuplicateSupplierCodeXml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <factura id="comprobante" version="2.1.0">
+          <infoTributaria>
+            <razonSocial>PROVEEDOR DUPLICADOS S.A.</razonSocial>
+            <ruc>1790012345001</ruc>
+            <codDoc>01</codDoc>
+            <estab>001</estab>
+            <ptoEmi>001</ptoEmi>
+            <secuencial>000000456</secuencial>
+          </infoTributaria>
+          <infoFactura>
+            <fechaEmision>01/08/2026</fechaEmision>
+          </infoFactura>
+          <detalles>
+            <detalle>
+              <codigoPrincipal>999</codigoPrincipal>
+              <descripcion>PRODUCTO DUPLICADO</descripcion>
+              <cantidad>1.000000</cantidad>
+              <precioUnitario>10.00000</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>10.00</precioTotalSinImpuesto>
+              <detallesAdicionales>
+                <detAdicional nombre="LOTE" valor="AAA"/>
+              </detallesAdicionales>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>10.00</baseImponible><valor>1.50</valor></impuesto>
+              </impuestos>
+            </detalle>
+            <detalle>
+              <codigoPrincipal>999</codigoPrincipal>
+              <descripcion>PRODUCTO DUPLICADO</descripcion>
+              <cantidad>2.000000</cantidad>
+              <precioUnitario>20.00000</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>40.00</precioTotalSinImpuesto>
+              <detallesAdicionales>
+                <detAdicional nombre="LOTE" valor="BBB"/>
+              </detallesAdicionales>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>40.00</baseImponible><valor>6.00</valor></impuesto>
+              </impuestos>
+            </detalle>
+            <detalle>
+              <codigoPrincipal>999</codigoPrincipal>
+              <descripcion>PRODUCTO DUPLICADO</descripcion>
+              <cantidad>3.000000</cantidad>
+              <precioUnitario>30.00000</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>90.00</precioTotalSinImpuesto>
+              <detallesAdicionales>
+                <detAdicional nombre="LOTE" valor="CCC"/>
+              </detallesAdicionales>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>90.00</baseImponible><valor>13.50</valor></impuesto>
               </impuestos>
             </detalle>
           </detalles>
@@ -1248,5 +1317,134 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var irbpnr = incaKolaDto.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
         irbpnr.TaxAmount.Should().Be(0.72m);
         incaKolaDto.TotalLine.Should().Be(15.65m);
+
+        // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — el mismo caso real también debe mostrar los
+        // detAdicional de la línea, sin afectar los valores fiscales verificados arriba.
+        incaKolaDto.AdditionalFields.Should().HaveCount(2);
+        incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "Unidad" && f.Value == "3 /  0");
+        incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "valor2" && f.Value == "0.72");
+    }
+
+    // ── PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — recepción antigua: la línea persistida nunca tuvo
+    // AdditionalFields (no existía la columna cuando se importó), pero xml_content sí trae el detalle
+    // completo. El draft debe obtener los datos adicionales del re-parseo, igual que ya hace con
+    // Taxes/IRBPNR — sin necesidad de reimportar el XML ni de backfill. ──
+    [Fact]
+    public async Task Handle_recovers_missing_line_additional_fields_from_xml_content_while_preserving_matching()
+    {
+        var document = SampleDocument(SupplierId);
+        var itemId = Guid.NewGuid();
+        var incaKolaLine = SampleLine(
+            document.Id,
+            description: "INCA-KOLA ORGL 900ML PET NR 12",
+            supplierCode: "12469",
+            itemId: itemId,
+            matchStatus: ItemMatchStatus.ManuallyMatched,
+            taxes: null // recepción antigua: ni Taxes ni AdditionalFields se persistieron nunca
+        );
+        var spriteLine = SampleLine(
+            document.Id,
+            description: "SPRITE HARMONY 1350 PET(12)",
+            supplierCode: "0580",
+            taxes: null
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            ArcaContinentalXml,
+            DateTime.UtcNow,
+            [spriteLine, incaKolaLine],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                2,
+                2,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var incaKolaDto = result
+            .Value!.Lines.Should()
+            .ContainSingle(l => l.SupplierCode == "12469")
+            .Subject;
+
+        // Documental: viene del XML fresco re-parseado.
+        incaKolaDto.AdditionalFields.Should().HaveCount(2);
+        incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "Unidad" && f.Value == "3 /  0");
+        incaKolaDto.AdditionalFields.Should().Contain(f => f.Name == "valor2" && f.Value == "0.72");
+
+        // Operativo: el matching manual ya resuelto nunca se pierde por refrescar lo documental.
+        incaKolaDto.ItemId.Should().Be(itemId);
+        incaKolaDto.ItemMatchStatus.Should().Be("MANUALLY_MATCHED");
+
+        // SPRITE no trae detallesAdicionales en el XML real.
+        var spriteDto = result.Value.Lines.Single(l => l.SupplierCode == "0580");
+        spriteDto.AdditionalFields.Should().BeEmpty();
+    }
+
+    // ── PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — cuando el merger cae al fallback "sin fusión" por
+    // ambigüedad (mismo SupplierCode+Description, conteo N≠M), cada línea persistida debe conservar
+    // ÚNICAMENTE sus propios AdditionalFields — nunca los de la otra línea del mismo grupo. ──
+    [Fact]
+    public async Task Handle_does_not_cross_additional_fields_between_lines_sharing_the_same_correlation_key()
+    {
+        var document = SampleDocument(SupplierId);
+        var firstLine = SampleLine(
+            document.Id,
+            description: "PRODUCTO DUPLICADO",
+            supplierCode: "999",
+            taxes: null
+        );
+        var secondLine = SampleLine(
+            document.Id,
+            description: "PRODUCTO DUPLICADO",
+            supplierCode: "999",
+            taxes: null
+        );
+        // Solo UNA línea persistida trae XML nuevo con 2 <detalle> del mismo grupo (count=2 en ambos
+        // lados) — se prueba el otro camino: forzar el fallback agregando una TERCERA línea fresca
+        // al XML para que persistido(2) != fresco(3) en ese grupo, cayendo a "sin fusión".
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            TripleDuplicateSupplierCodeXml,
+            DateTime.UtcNow,
+            [firstLine, secondLine],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                2,
+                2,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var lines = result.Value!.Lines;
+        lines.Should().HaveCount(2);
+        // Fallback sin fusión: cada línea conserva su propio snapshot persistido (vacío, en este
+        // caso, porque nunca se le asignaron AdditionalFields) — nunca los del XML fresco ambiguo.
+        lines.Should().OnlyContain(l => l.AdditionalFields.Count == 0);
     }
 }

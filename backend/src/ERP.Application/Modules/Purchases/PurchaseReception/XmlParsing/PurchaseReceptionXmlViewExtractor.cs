@@ -198,18 +198,16 @@ public static class PurchaseReceptionXmlViewExtractor
             .ToList()
         ?? [];
 
+    // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — reutiliza PurchaseXmlAdditionalFieldReader (mismo
+    // lector que usa PurchaseXmlDraftParser para persistir el snapshot documental de línea) en vez
+    // de mantener una segunda copia de esta lógica solo para la vista.
     private static IReadOnlyList<PurchaseReceptionXmlViewAdditionalDetail> ParseAdditionalDetails(
         XElement? detallesAdicionales
     ) =>
-        detallesAdicionales
-            ?.Elements("detAdicional")
-            .Select(d => new PurchaseReceptionXmlViewAdditionalDetail(
-                OptionalText(d, "nombre") ?? d.Attribute("nombre")?.Value ?? string.Empty,
-                OptionalText(d, "valor") ?? d.Attribute("valor")?.Value ?? string.Empty
-            ))
-            .Where(d => !string.IsNullOrWhiteSpace(d.Name) || !string.IsNullOrWhiteSpace(d.Value))
-            .ToList()
-        ?? [];
+        PurchaseXmlAdditionalFieldReader
+            .Read(detallesAdicionales)
+            .Select(f => new PurchaseReceptionXmlViewAdditionalDetail(f.Name, f.Value))
+            .ToList();
 
     private static decimal SumIce(IReadOnlyList<PurchaseReceptionXmlViewExtraTax> taxSummaries) =>
         taxSummaries.Where(t => t.TaxCode == SriIceTaxCode).Sum(t => t.TaxAmount);

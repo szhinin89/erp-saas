@@ -28,6 +28,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   lineNet,
   calcLineTax,
+  calcVatBreakdown,
   roundToTotalAmount,
   buildCostDistributionInputFromPersistedLines,
   buildCostDistributionInputFromFormLines,
@@ -47,6 +48,7 @@ import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   buildPurchaseLinePresentation,
   computeUnitPriceFromBaseUnitCost,
+  headerInputKey,
   type LineStatusTone,
 } from "../utils/purchaseLinePresentation";
 import {
@@ -1612,31 +1614,21 @@ function PurchaseLineCard({
   // instancia de línea (key={l._key} en el .map() que renderiza esta
   // card). Inicia expandido para no ocultar información por defecto.
   const [collapsed, setCollapsed] = useState(false);
-  const sub = lineNet(l);
-  const editLine = ctx.editing?.lines?.[idx];
-  const hasXmlOrigin = !!l.purchaseReceptionLineId || !!l.xmlSupplierCode;
-  const localTax = calcLineTax(l, ctx.vatRatesMap, ctx.iceRatesMap);
-  const vatAmt =
-    editLine?.vatAmount ??
-    (hasXmlOrigin && l.xmlTaxValue !== undefined ? l.xmlTaxValue : localTax.vat);
-  const iceAmt =
-    editLine?.iceAmount ??
-    (hasXmlOrigin && l.xmlIceAmount !== undefined ? l.xmlIceAmount : localTax.ice);
-  // FLOW-READY-02F.2 — IRBPNR ya forma parte del valor real del XML y de la cuenta por pagar al
-  // proveedor (ver PurchaseInvoiceDetail.TaxInclusiveTotal), así que sí se suma al total de línea.
-  const irbpnrAmt =
-    editLine?.irbpnrAmount ?? (hasXmlOrigin ? (l.xmlIrbpnrAmount ?? 0) : 0);
-  const total = editLine
-    ? (editLine.totalLineCost ?? sub) +
-      editLine.vatAmount +
-      editLine.iceAmount +
-      irbpnrAmt
-    : hasXmlOrigin && l.xmlTotalLine !== undefined
-      ? l.xmlTotalLine
-      : sub + localTax.vat + localTax.ice + irbpnrAmt;
+  // PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — Base/IVA/ICE/Total de la cabecera
+  // editable viven en `vm.editableHeader`, recalculados en cada render desde quantity/unitPrice/
+  // discountPct/vatCode/iceCode actuales — nunca desde el snapshot XML (`vm.xml.*`, que se muestra
+  // aparte en "Producto recibido (XML)" y no cambia con la edición). Antes de este fix, una línea
+  // con origen XML mostraba xmlTaxValue/xmlTotalLine en cabecera sin importar que el usuario ya
+  // hubiera cambiado quantity/unitPrice — Base imp. sí se recalculaba pero IVA/Total quedaban
+  // pegados al valor documental original.
+  const vm = buildPurchaseLinePresentation(l, t, ctx.vatRatesMap, ctx.iceRatesMap);
+  const sub = vm.editableHeader.taxableBase;
+  const vatAmt = vm.editableHeader.vatAmount;
+  const iceAmt = vm.editableHeader.iceAmount;
+  const irbpnrAmt = vm.editableHeader.irbpnrAmount;
+  const total = vm.editableHeader.total;
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
-  const vm = buildPurchaseLinePresentation(l, t);
   const readiness = ctx.lineReadinessByKey[l._key];
   const primaryReadinessAction = readinessActionLabel(readiness?.primaryAction, t);
   const secondaryReadinessAction = readinessActionLabel(
@@ -1789,7 +1781,7 @@ function PurchaseLineCard({
                 {t("purchases.lines.quantity", "Cantidad")}
               </span>
               <ZhDecimalInput
-                key={vm.inventory.hasPresentation ? "base-qty" : "invoice-qty"}
+                key={headerInputKey("qty", vm, l.packagingLevelId)}
                 className="pdl-input pdl-input--qty"
                 decimals={getDecimalConfig().quantity}
                 positiveOnly
@@ -1822,7 +1814,7 @@ function PurchaseLineCard({
               <div className="pdl-line__metric-value">
                 <span className="pdl-line__metric-unit">$</span>
                 <ZhDecimalInput
-                  key={vm.inventory.hasPresentation ? "base-cost" : "invoice-cost"}
+                  key={headerInputKey("cost", vm, l.packagingLevelId)}
                   className="pdl-input pdl-input--cost"
                   decimals={getDecimalConfig().purchaseUnitPrice}
                   positiveOnly
@@ -2027,6 +2019,24 @@ function PurchaseLineCard({
               </span>
             </div>
           </div>
+          {vm.xml.hasAdditionalFields && (
+            <div className="pdl-additional-fields">
+              <span className="pdl-stock-head">
+                {t(
+                  "purchases.lines.additionalFieldsTitle",
+                  "Datos adicionales XML",
+                )}
+              </span>
+              <div className="pdl-ctx-col__costs">
+                {vm.xml.additionalFields.map((f, idx) => (
+                  <div key={`${f.name}-${idx}`} className="pdl-cost-wide">
+                    <span className="pdl-cost-label">{f.name}</span>
+                    <span className="pdl-cost-val">{f.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* 2. Con qué producto del sistema está relacionado — siempre visible, incluso sin producto aún. */}
@@ -3141,6 +3151,16 @@ function RetentionSection({
 
 function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
   const { t } = useI18n();
+  // PURCHASE-INVOICE-TOTALS-SUMMARY-PANEL-01 — desglose por tarifa IVA, calculado siempre desde
+  // el draft editable (ctx.lines: quantity/unitPrice/discountPct/vatCode/iceCode), nunca desde el
+  // snapshot XML (xmlQuantity/xmlUnitPrice/xmlTaxableBase/...), que solo se muestra por línea en
+  // "Producto recibido (XML)". Solo lectura — sin inputs, sin ajustes manuales (fase futura).
+  const vatBreakdown = calcVatBreakdown(
+    ctx.lines,
+    ctx.vatRatesMap,
+    ctx.iceRatesMap,
+  );
+  const hasIce = vatBreakdown.some((row) => row.ice !== 0);
   return (
     <div className="pf-totals">
       <div className="pf-totals__header">
@@ -3153,6 +3173,64 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           {t("purchases.summary.title", "Resumen")}
         </h4>
       </div>
+      {vatBreakdown.length > 0 && (
+        <div className="pf-totals__vat-breakdown">
+          <table className="table table--compact table--neutral">
+            <thead>
+              <tr>
+                <th>{t("purchases.summary.vatRate", "% IVA")}</th>
+                <th className="zh-table-cell--num">
+                  {t("purchases.summary.taxableBase", "Base imponible")}
+                </th>
+                <th className="zh-table-cell--num">
+                  {t("purchases.lines.vatShort", "IVA")}
+                </th>
+                {hasIce && (
+                  <th className="zh-table-cell--num">
+                    {t("purchases.lines.iceShort", "ICE")}
+                  </th>
+                )}
+                <th className="zh-table-cell--num">
+                  {t("purchases.summary.rowTotal", "Total")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {vatBreakdown.map((row) => (
+                <tr key={row.vatCode}>
+                  <td>{row.vatPercent}%</td>
+                  <td className="zh-table-cell--num">
+                    {formatMoneyWithSymbol(
+                      row.taxableBase,
+                      getDecimalConfig().totalAmount,
+                    )}
+                  </td>
+                  <td className="zh-table-cell--num">
+                    {formatMoneyWithSymbol(
+                      row.vat,
+                      getDecimalConfig().totalAmount,
+                    )}
+                  </td>
+                  {hasIce && (
+                    <td className="zh-table-cell--num">
+                      {formatMoneyWithSymbol(
+                        row.ice,
+                        getDecimalConfig().totalAmount,
+                      )}
+                    </td>
+                  )}
+                  <td className="zh-table-cell--num">
+                    {formatMoneyWithSymbol(
+                      row.total,
+                      getDecimalConfig().totalAmount,
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="pf-totals__body">
         <div className="pf-totals__row">
           <span className="pf-totals__label">{t("purchases.summary.subtotal", "Subtotal")}</span>

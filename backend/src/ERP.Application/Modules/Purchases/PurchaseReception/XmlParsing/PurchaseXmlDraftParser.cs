@@ -28,8 +28,17 @@ public sealed record ParsedPurchaseXmlLine(
     decimal VatPercentage,
     decimal TaxValue,
     decimal TotalLine,
-    IReadOnlyList<ParsedPurchaseXmlLineTax> Taxes
+    IReadOnlyList<ParsedPurchaseXmlLineTax> Taxes,
+    IReadOnlyList<ParsedPurchaseXmlLineAdditionalField> AdditionalFields
 );
+
+/// <summary>
+/// PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot fiel de un <c>&lt;detAdicional&gt;</c> de línea
+/// (SRI factura). Nunca interpretado (lote/serie/caducidad/unidad de proveedor pueden llegar aquí
+/// con nombre libre, según cada emisor) — solo nombre/valor/posición tal como vino, para no perder
+/// el dato mientras el sistema no tenga una funcionalidad específica que lo consuma.
+/// </summary>
+public sealed record ParsedPurchaseXmlLineAdditionalField(string Name, string Value, int Position);
 
 /// <summary>
 /// FLOW-READY-02F.1 — snapshot fiel de UN nodo &lt;impuesto&gt; del XML, sin interpretar (no
@@ -228,6 +237,13 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
         var supplierCode =
             OptionalText(detalle, "codigoPrincipal") ?? OptionalText(detalle, "codigoAuxiliar");
 
+        // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot documental de detallesAdicionales/
+        // detAdicional, vía el mismo lector que usa PurchaseReceptionXmlViewExtractor (no duplicado).
+        var additionalFields = PurchaseXmlAdditionalFieldReader
+            .Read(detalle.Element("detallesAdicionales"))
+            .Select(f => new ParsedPurchaseXmlLineAdditionalField(f.Name, f.Value, f.Position))
+            .ToList();
+
         return new ParsedPurchaseXmlLine(
             Description: RequireText(detalle, "descripcion"),
             Quantity: quantity,
@@ -244,7 +260,8 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
             VatPercentage: vatPercentage,
             TaxValue: taxValue,
             TotalLine: totalLine,
-            Taxes: taxes
+            Taxes: taxes,
+            AdditionalFields: additionalFields
         );
     }
 

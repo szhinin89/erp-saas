@@ -5,6 +5,7 @@ import {
   lineNet,
   calcLineTax,
   calcSummary,
+  calcVatBreakdown,
   generateScheduleRows,
 } from "./purchaseCalc";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
@@ -203,6 +204,66 @@ describe("múltiples líneas mixtas", () => {
 });
 
 // ────────────────────────────────────────────────────────
+// 8a. PURCHASE-INVOICE-TOTALS-SUMMARY-PANEL-01 — desglose por tarifa IVA (panel "Totales")
+// ────────────────────────────────────────────────────────
+describe("calcVatBreakdown — agrupación por tarifa IVA", () => {
+  it("agrupa dos líneas con la misma tarifa 15% en una sola fila", () => {
+    const lines = [
+      mkLine(10, 100, "10", 10, { vatPercent: 15, icePercent: 0 }),
+      mkLine(5, 50, "10", 0, { vatPercent: 15, icePercent: 0 }),
+    ];
+    const rows = calcVatBreakdown(lines);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].vatPercent).toBe(15);
+    expect(rows[0].taxableBase).toBe(1150);
+    expect(rows[0].discount).toBe(100);
+    expect(rows[0].vat).toBe(172.5);
+    expect(rows[0].ice).toBe(0);
+    expect(rows[0].total).toBe(1322.5);
+  });
+
+  it("separa filas distintas por tarifa IVA (15% vs 0%), con ICE/IRBPNR opcional por línea", () => {
+    const lines = [
+      mkLine(10, 100, "10", 5, { vatPercent: 15, icePercent: 0 }),
+      mkLine(20, 10, "0", 0, { vatPercent: 0, icePercent: 0 }),
+      mkLine(1, 500, "10", 10, { vatPercent: 15, icePercent: 2 }),
+    ];
+    const rows = calcVatBreakdown(lines);
+    expect(rows).toHaveLength(2);
+    // Orden descendente por tarifa: 15% primero, luego 0%.
+    expect(rows[0].vatPercent).toBe(15);
+    expect(rows[0].taxableBase).toBe(950 + 450);
+    expect(rows[0].vat).toBe(950 * 0.15 + 450 * 0.15);
+    expect(rows[0].ice).toBe(450 * 0.02);
+    expect(rows[0].total).toBeCloseTo(950 + 950 * 0.15 + 450 + 450 * 0.15 + 450 * 0.02, 6);
+    expect(rows[1].vatPercent).toBe(0);
+    expect(rows[1].taxableBase).toBe(200);
+    expect(rows[1].vat).toBe(0);
+    expect(rows[1].total).toBe(200);
+  });
+
+  it("no usa campos xml* — el desglose solo lee quantity/unitPrice/discountPct/vatCode/iceCode del draft", () => {
+    const l = {
+      ...mkLine(2, 50, "10", 0, { vatPercent: 15, icePercent: 0 }),
+      xmlQuantity: 999,
+      xmlUnitPrice: 999,
+      xmlTaxableBase: 999,
+      xmlTaxValue: 999,
+      xmlTotalLine: 999,
+    };
+    const rows = calcVatBreakdown([l]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].taxableBase).toBe(100);
+    expect(rows[0].vat).toBe(15);
+    expect(rows[0].total).toBe(115);
+  });
+
+  it("lista vacía retorna sin filas", () => {
+    expect(calcVatBreakdown([])).toEqual([]);
+  });
+});
+
+// ────────────────────────────────────────────────────────
 // 8b. PURCHASE-LINE-HEADER-TAXABLE-BASE-ORDER-01 — Base imponible de cabecera
 //     (8 SIXPACK / 48 unidades, mismo caso usado en purchaseLinePresentation.test.ts)
 // ────────────────────────────────────────────────────────
@@ -223,6 +284,37 @@ describe("Base imponible de cabecera — caso 8 SIXPACK / 48 unidades", () => {
     expect(vat).toBeCloseTo(6.13, 2);
     expect(ice).toBe(0);
     expect(lineNet(l) + vat + ice).toBeCloseTo(47.0, 2);
+  });
+});
+
+// ────────────────────────────────────────────────────────
+// 8c. PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — tras editar Cantidad/Costo en
+//     cabecera, la misma línea (CLUB PLATINO) debe recalcular IVA/Total, no arrastrar el
+//     snapshot XML (40.87/6.13/47.00) que probó el bloque anterior.
+// ────────────────────────────────────────────────────────
+describe("Recálculo de IVA/Total al editar Cantidad/Costo — base 100, IVA 15%", () => {
+  const edited = mkLine(50, 2, "10", 0, { vatPercent: 15, icePercent: 0 });
+
+  it("base 100, vatRate 15 => vat 15, total 115", () => {
+    expect(lineNet(edited)).toBe(100);
+    const { vat, ice } = calcLineTax(edited);
+    expect(vat).toBe(15);
+    expect(ice).toBe(0);
+    expect(lineNet(edited) + vat + ice).toBe(115);
+  });
+
+  it("editar solo Cantidad (50 -> 100) recalcula IVA y Total proporcionalmente", () => {
+    const l2 = mkLine(100, 2, "10", 0, { vatPercent: 15, icePercent: 0 });
+    expect(lineNet(l2)).toBe(200);
+    expect(calcLineTax(l2).vat).toBe(30);
+    expect(lineNet(l2) + calcLineTax(l2).vat).toBe(230);
+  });
+
+  it("editar solo Costo (2 -> 3) recalcula IVA y Total proporcionalmente", () => {
+    const l3 = mkLine(50, 3, "10", 0, { vatPercent: 15, icePercent: 0 });
+    expect(lineNet(l3)).toBe(150);
+    expect(calcLineTax(l3).vat).toBe(22.5);
+    expect(lineNet(l3) + calcLineTax(l3).vat).toBe(172.5);
   });
 });
 

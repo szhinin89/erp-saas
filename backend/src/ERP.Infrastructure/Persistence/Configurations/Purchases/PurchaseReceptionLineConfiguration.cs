@@ -126,5 +126,12 @@ public sealed class PurchaseReceptionLineConfiguration
             .WithOne()
             .HasForeignKey(x => x.PurchaseReceptionLineId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot fiel de detallesAdicionales/detAdicional.
+        builder
+            .HasMany(x => x.AdditionalFields)
+            .WithOne()
+            .HasForeignKey(x => x.PurchaseReceptionLineId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -58,6 +58,16 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
     private readonly List<PurchaseReceptionLineTax> _taxes = new();
     public IReadOnlyList<PurchaseReceptionLineTax> Taxes => _taxes.AsReadOnly();
 
+    /// <summary>
+    /// PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot fiel de todo &lt;detAdicional&gt; de la
+    /// línea (lote/serie/caducidad/unidad de proveedor/lo que el emisor declare) — persistido aquí
+    /// por el mismo motivo que <see cref="Taxes"/>: "Crear compra" puede ocurrir mucho después del
+    /// parseo del XML. Nunca interpretado ni convertido a una entidad operativa.
+    /// </summary>
+    private readonly List<PurchaseReceptionLineAdditionalField> _additionalFields = new();
+    public IReadOnlyList<PurchaseReceptionLineAdditionalField> AdditionalFields =>
+        _additionalFields.AsReadOnly();
+
     private PurchaseReceptionLine() { }
 
     public static PurchaseReceptionLine Create(
@@ -81,7 +91,8 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
         Guid? itemId = null,
         ItemMatchStatus matchStatus = ItemMatchStatus.Pending,
         IEnumerable<(string TaxCode, string TaxRateCode, decimal Tarifa, decimal TaxableBase, decimal TaxAmount)>? taxes =
-            null
+            null,
+        IEnumerable<(string Name, string Value, int Position)>? additionalFields = null
     )
     {
         if (documentId == Guid.Empty)
@@ -147,6 +158,20 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
                         t.Tarifa,
                         t.TaxableBase,
                         t.TaxAmount
+                    )
+                );
+        }
+
+        if (additionalFields is not null)
+        {
+            foreach (var f in additionalFields)
+                line._additionalFields.Add(
+                    PurchaseReceptionLineAdditionalField.Create(
+                        line.Id,
+                        tenantId,
+                        f.Name,
+                        f.Value,
+                        f.Position
                     )
                 );
         }

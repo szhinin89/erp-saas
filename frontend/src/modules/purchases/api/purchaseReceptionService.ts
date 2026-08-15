@@ -132,6 +132,17 @@ export interface PurchaseDraftLineTax {
   taxAmount: number;
 }
 
+/**
+ * PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — un dato adicional crudo del XML (detAdicional), tal como
+ * quedó en PurchaseReceptionLineAdditionalField. Nombre/valor nunca se traducen ni interpretan —
+ * solo lectura, en el mismo orden en que aparecen en el comprobante (sortOrder).
+ */
+export interface PurchaseDraftLineAdditionalField {
+  name: string;
+  value: string;
+  sortOrder: number;
+}
+
 export interface PurchaseDraftLineDto {
   purchaseReceptionLineId: string;
   itemId: string | null;
@@ -159,6 +170,8 @@ export interface PurchaseDraftLineDto {
   quantityInBaseUom: number;
   /** FLOW-READY-02F.1 — snapshot fiel de todo impuesto del XML (IVA/ICE/IRBPNR), solo lectura. */
   taxes: PurchaseDraftLineTax[];
+  /** PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — snapshot fiel de detallesAdicionales/detAdicional, solo lectura. */
+  additionalFields: PurchaseDraftLineAdditionalField[];
 }
 
 /** Borrador de compra armado desde el PurchaseReceptionDocument ya verificado — para precargar el formulario de Nueva Compra. */

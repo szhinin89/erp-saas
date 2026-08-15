@@ -59,6 +59,52 @@ export function calcSummary(
   return { subtotal, discount, netSubtotal, vat, ice, total };
 }
 
+/**
+ * PURCHASE-INVOICE-TOTALS-SUMMARY-PANEL-01 — agrupa las líneas editables del draft (nunca el
+ * snapshot xml*) por tarifa de IVA (`vatCode`), para el panel de solo lectura "Totales". Reusa
+ * `lineNet`/`lineDiscountAmt`/`calcLineTax` — misma fuente de verdad que `calcSummary`, sin
+ * duplicar la resolución de porcentaje (contexto del ítem > catálogo SRI > 0, nunca inferido).
+ */
+export type VatBreakdownRow = {
+  vatCode: string;
+  vatPercent: number;
+  taxableBase: number;
+  discount: number;
+  vat: number;
+  ice: number;
+  total: number;
+};
+
+export function calcVatBreakdown(
+  lines: LineWithContext[],
+  vatRates?: Record<string, number>,
+  iceRates?: Record<string, number>,
+): VatBreakdownRow[] {
+  const rows = new Map<string, VatBreakdownRow>();
+  for (const l of lines) {
+    const vatCode = l.vatCode ?? "";
+    const vatPercent = l.context?.vatPercent ?? vatRates?.[vatCode] ?? 0;
+    const { vat, ice } = calcLineTax(l, vatRates, iceRates);
+    const net = lineNet(l);
+    const row = rows.get(vatCode) ?? {
+      vatCode,
+      vatPercent,
+      taxableBase: 0,
+      discount: 0,
+      vat: 0,
+      ice: 0,
+      total: 0,
+    };
+    row.taxableBase += net;
+    row.discount += lineDiscountAmt(l);
+    row.vat += vat;
+    row.ice += ice;
+    row.total += net + vat + ice;
+    rows.set(vatCode, row);
+  }
+  return Array.from(rows.values()).sort((a, b) => b.vatPercent - a.vatPercent);
+}
+
 type ScheduleRow = {
   number: number;
   dueDate: string;

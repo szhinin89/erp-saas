@@ -1241,6 +1241,12 @@ export function usePurchasesPage() {
             itemMatchStatus: l.itemMatchStatus,
             xmlSupplierCode: l.supplierCode ?? undefined,
             xmlSupplierAuxCode: l.supplierAuxCode,
+            // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — copia congelada de
+            // quantity/unitPrice tal como vino del draft, ANTES de que el usuario edite la
+            // cabecera. `quantity`/`unitPrice` de arriba siguen siendo los campos editables
+            // (`ctx.updateLine` los sobrescribe); estos dos nunca se tocan de nuevo.
+            xmlQuantity: l.quantity,
+            xmlUnitPrice: l.unitPrice,
             xmlDiscount: l.discount,
             xmlLineSubtotal: l.lineSubtotal,
             xmlTaxCode: l.taxCode,
@@ -1252,6 +1258,10 @@ export function usePurchasesPage() {
               l.lineSubtotal - l.discount,
             xmlIceAmount: l.taxes.find((tx) => tx.taxCode === "3")?.taxAmount,
             xmlIrbpnrAmount: l.taxes.find((tx) => tx.taxCode === "5")?.taxAmount,
+            xmlAdditionalFields: l.additionalFields
+              .slice()
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((f) => ({ name: f.name, value: f.value })),
           }),
         );
 

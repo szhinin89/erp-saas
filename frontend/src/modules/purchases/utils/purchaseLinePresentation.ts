@@ -3,6 +3,7 @@ import type { ItemMatchStatus } from "../api/purchaseReceptionService";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginPercent } from "../../../lib/margin";
+import { lineNet, calcLineTax } from "./purchaseCalc";
 
 /** Dato desconocido — nunca se confunde con un valor real (p. ej. stock 0). */
 const UNKNOWN = "—";
@@ -39,6 +40,31 @@ export interface PurchaseLinePresentationVM {
     iceValue: string;
     irbpnrValue: string;
     hasIrbpnr: boolean;
+    /** PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — detallesAdicionales/detAdicional, solo lectura. */
+    additionalFields: { name: string; value: string }[];
+    hasAdditionalFields: boolean;
+  };
+  /**
+   * PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — cabecera editable de la línea (lo que se
+   * guardará como draft): SIEMPRE recalculada desde quantity/unitPrice/discountPct/vatCode/iceCode
+   * actuales — nunca desde `xml.*` de arriba (ese bloque es el snapshot documental, fijo). Editar
+   * Cantidad/Costo en cabecera cambia `line.quantity`/`line.unitPrice`, y este bloque recalcula en
+   * consecuencia en cada render — nunca queda pegado a un valor anterior.
+   */
+  editableHeader: {
+    taxableBase: number;
+    vatAmount: number;
+    iceAmount: number;
+    /**
+     * Única excepción: a diferencia de IVA/ICE (porcentuales sobre la base imponible), no hay
+     * tarifa/fórmula en el frontend para recalcular IRBPNR proporcionalmente a un cambio de
+     * cantidad/costo — es un monto específico del catálogo SRI que solo el backend conoce. Se
+     * conserva el monto documental del XML (`xml.irbpnrValue`) para no inventar un recálculo
+     * incorrecto; queda desactualizado si el usuario edita cantidad/costo de una línea con IRBPNR
+     * hasta que exista una tarifa IRBPNR expuesta al frontend.
+     */
+    irbpnrAmount: number;
+    total: number;
   };
   /** 2. Con qué Item del ERP está relacionado — siempre visible, incluso sin Item aún. */
   item: {
@@ -111,6 +137,8 @@ export interface PurchaseLinePresentationVM {
 export function buildPurchaseLinePresentation(
   line: PurchaseLineFormValues,
   t?: TFunction,
+  vatRates?: Record<string, number>,
+  iceRates?: Record<string, number>,
 ): PurchaseLinePresentationVM {
   const decimals = getDecimalConfig();
   const ctx = line.context;
@@ -118,6 +146,17 @@ export function buildPurchaseLinePresentation(
   const isLoading = !!line._contextLoading;
   const hasContext = hasItem && !isLoading && !!ctx;
   const hasOrigin = !!line.purchaseReceptionLineId || !!line.xmlSupplierCode;
+
+  // PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — mismas funciones que ya usaban las
+  // líneas manuales (purchaseCalc.ts), aplicadas también a líneas con origen XML: antes, una línea
+  // con `hasOrigin=true` siempre mostraba `xmlTaxValue`/`xmlTotalLine` (el snapshot documental)
+  // aunque el usuario ya hubiera editado quantity/unitPrice en cabecera — Base imp. sí se
+  // recalculaba (`lineNet`) pero IVA/Total quedaban pegados al valor original del XML.
+  const editableTaxableBase = lineNet(line);
+  const editableTax = calcLineTax(line, vatRates, iceRates);
+  const editableIrbpnrAmount = hasOrigin ? (line.xmlIrbpnrAmount ?? 0) : 0;
+  const editableTotal =
+    editableTaxableBase + editableTax.vat + editableTax.ice + editableIrbpnrAmount;
 
   const quantity = line.quantity ?? 0;
   const unitPrice = line.unitPrice ?? 0;
@@ -229,8 +268,20 @@ export function buildPurchaseLinePresentation(
       supplierAuxCode: line.xmlSupplierAuxCode || UNKNOWN,
       hasSupplierAuxCode: !!line.xmlSupplierAuxCode,
       description: line.description || UNKNOWN,
-      quantity: formatMoney(quantity, decimals.quantity),
-      unitPrice: formatMoneyWithSymbol(unitPrice, decimals.purchaseUnitPrice),
+      // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — Cantidad/Precio del snapshot
+      // documental, NUNCA los editables (`quantity`/`unitPrice` de arriba cambian con
+      // Cantidad/Costo de cabecera). Fallback a los editables solo cuando no hay snapshot
+      // (`xmlQuantity`/`xmlUnitPrice` undefined): línea manual sin origen XML, o una compra ya
+      // guardada reabierta para editar (`loadForEdit` no repuebla el snapshot XML) — en ambos
+      // casos no existe un original documental distinto que preservar.
+      quantity: formatMoney(
+        line.xmlQuantity ?? quantity,
+        decimals.quantity,
+      ),
+      unitPrice: formatMoneyWithSymbol(
+        line.xmlUnitPrice ?? unitPrice,
+        decimals.purchaseUnitPrice,
+      ),
       discount: hasOrigin
         ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.totalAmount)
         : UNKNOWN,
@@ -253,6 +304,15 @@ export function buildPurchaseLinePresentation(
         ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.totalAmount)
         : UNKNOWN,
       hasIrbpnr: hasOrigin && (line.xmlIrbpnrAmount ?? 0) > 0,
+      additionalFields: line.xmlAdditionalFields ?? [],
+      hasAdditionalFields: (line.xmlAdditionalFields?.length ?? 0) > 0,
+    },
+    editableHeader: {
+      taxableBase: editableTaxableBase,
+      vatAmount: editableTax.vat,
+      iceAmount: editableTax.ice,
+      irbpnrAmount: editableIrbpnrAmount,
+      total: editableTotal,
     },
     item: {
       hasItem,
@@ -413,4 +473,66 @@ export function computeUnitPriceFromBaseUnitCost(params: {
     denom;
   if (!Number.isFinite(unitPrice) || unitPrice < 0) return null;
   return unitPrice;
+}
+
+/**
+ * PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01 — detecta una presentación evidentemente
+ * incorrecta (p. ej. XML dice "UNIDAD X1" cuando en realidad el proveedor entregó "SIXPACK X6")
+ * ANTES de guardar el draft: ese error de presentación diluye/infla `baseUnitCost` (ver
+ * PURCHASE-PRESENTATION-MARGIN-AUDIT-01 arriba) y produce un margen absurdo (< -50%) que, si se
+ * confirma la compra, contamina Kardex/costo promedio. Reutiliza EXACTAMENTE
+ * `buildPurchaseLinePresentation` (mismos `baseUnitCostValue`/`marginPctValue` que ya pinta la
+ * cabecera) — nunca reimplementa la fórmula de costo/margen en paralelo.
+ *
+ * Deliberadamente NO bloquea: sin producto vinculado, sin precio de venta (pvp) conocido, en
+ * servicios/no inventariables (`tracksStock !== true`), o con margen negativo leve (>= -50%) —
+ * esos son negocios reales de bajo margen, no errores de presentación.
+ */
+export function buildSuspiciousPackagingCostWarning(
+  line: PurchaseLineFormValues,
+  t?: TFunction,
+): { blocking: true; message: string } | null {
+  const ctx = line.context;
+  if (!line.itemId || !ctx || ctx.tracksStock !== true) return null;
+  const salePrice = ctx.pvp ?? 0;
+  if (!(salePrice > 0)) return null;
+
+  const vm = buildPurchaseLinePresentation(line, t);
+  const baseUnitCostValue = vm.inventory.baseUnitCostValue;
+  if (!(baseUnitCostValue > 0)) return null;
+  const marginPctValue = vm.commercial.profitability.marginPctValue;
+  if (!(marginPctValue < -50)) return null;
+
+  const description = vm.xml.description !== "—" ? vm.xml.description : vm.item.name;
+  const message =
+    t?.("purchases.lineReadiness.suspiciousPackagingCostDetail", {
+      description,
+      presentation: vm.inventory.presentationLabel,
+      baseUnitCost: vm.inventory.baseUnitCost,
+      salePrice: vm.commercial.profitability.pvp,
+      marginPct: `${vm.commercial.profitability.marginPct}%`,
+    }) ??
+    `Presentación sospechosa en ${description}. La presentación seleccionada (${vm.inventory.presentationLabel}) produce un costo unitario base de ${vm.inventory.baseUnitCost} frente a un precio de venta de ${vm.commercial.profitability.pvp} (${vm.commercial.profitability.marginPct}%). Revise si corresponde usar unidad, pack, paca o caja.`;
+
+  return { blocking: true, message };
+}
+
+/**
+ * PURCHASE-LINE-HEADER-PACKAGING-CHANGE-SYNC-01 — key de remount para los inputs no controlados
+ * (`defaultValue`) de Cantidad/Costo de la cabecera de línea. `vm.inventory.hasPresentation` por sí
+ * solo NO alcanza: es `true` tanto para "SIXPACK X6" como para "UNIDAD X1" (ambas son presentaciones
+ * reales, cada una con su propio `packagingLevelId`), así que cambiar de una a otra no cambiaba la
+ * key — React reusaba el mismo nodo DOM y el `defaultValue` nunca se reaplicaba, dejando Cantidad/
+ * Costo de cabecera con el valor de la presentación anterior mientras Margen (que sí lee del
+ * view-model en cada render) ya reflejaba la nueva. Incluir `packagingLevelId` + el factor de
+ * conversión efectivo fuerza el remount exactamente cuando la presentación cambia — nunca en cada
+ * tecla/blur de edición manual, porque esos campos no tocan ninguno de los dos valores.
+ */
+export function headerInputKey(
+  field: "qty" | "cost",
+  vm: PurchaseLinePresentationVM,
+  packagingLevelId: string | null | undefined,
+): string {
+  const mode = vm.inventory.hasPresentation ? "base" : "invoice";
+  return `${field}-${mode}-${packagingLevelId ?? "none"}-${vm.inventory.conversionFactorValue}`;
 }
