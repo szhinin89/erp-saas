@@ -103,7 +103,7 @@ public sealed class PurchaseReceptionDocumentConfiguration
             .HasColumnType("numeric(18,2)")
             .IsRequired();
 
-        builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
+        builder.Property(x => x.Status).HasColumnName("document_status").HasConversion<int>().IsRequired();
 
         // P0-02 (diseño §18.1bis) — necesaria para validar la moneda de una NC recibida contra la
         // de la PurchaseInvoice/PurchaseReturn de origen.
