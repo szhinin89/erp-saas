@@ -62,6 +62,9 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   xmlVatPercentage: z.number().optional(),
   xmlTaxValue: z.number().optional(),
   xmlTotalLine: z.number().optional(),
+  xmlTaxableBase: z.number().optional(),
+  xmlIceAmount: z.number().optional(),
+  xmlIrbpnrAmount: z.number().optional(),
 });
 
 export const purchaseLineSchema = createPurchaseLineSchema(passthroughT);

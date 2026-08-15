@@ -46,6 +46,7 @@ import type {
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   buildPurchaseLinePresentation,
+  computeUnitPriceFromBaseUnitCost,
   type LineStatusTone,
 } from "../utils/purchaseLinePresentation";
 import {
@@ -1613,16 +1614,26 @@ function PurchaseLineCard({
   const [collapsed, setCollapsed] = useState(false);
   const sub = lineNet(l);
   const editLine = ctx.editing?.lines?.[idx];
+  const hasXmlOrigin = !!l.purchaseReceptionLineId || !!l.xmlSupplierCode;
   const localTax = calcLineTax(l, ctx.vatRatesMap, ctx.iceRatesMap);
-  const vatAmt = editLine?.vatAmount ?? localTax.vat;
-  const iceAmt = editLine?.iceAmount ?? localTax.ice;
-  // FLOW-READY-02F.1 — IRBPNR solo existe una vez persistido desde el XML (no hay cálculo local
-  // por tarifas, a diferencia de IVA/ICE); nunca se suma al total de línea (ver ConfirmPurchase:
-  // no forma parte de TaxInclusiveTotal mientras no exista soporte contable verificado).
-  const irbpnrAmt = editLine?.irbpnrAmount ?? 0;
+  const vatAmt =
+    editLine?.vatAmount ??
+    (hasXmlOrigin && l.xmlTaxValue !== undefined ? l.xmlTaxValue : localTax.vat);
+  const iceAmt =
+    editLine?.iceAmount ??
+    (hasXmlOrigin && l.xmlIceAmount !== undefined ? l.xmlIceAmount : localTax.ice);
+  // FLOW-READY-02F.2 — IRBPNR ya forma parte del valor real del XML y de la cuenta por pagar al
+  // proveedor (ver PurchaseInvoiceDetail.TaxInclusiveTotal), así que sí se suma al total de línea.
+  const irbpnrAmt =
+    editLine?.irbpnrAmount ?? (hasXmlOrigin ? (l.xmlIrbpnrAmount ?? 0) : 0);
   const total = editLine
-    ? (editLine.totalLineCost ?? sub) + editLine.vatAmount + editLine.iceAmount
-    : sub + localTax.vat + localTax.ice;
+    ? (editLine.totalLineCost ?? sub) +
+      editLine.vatAmount +
+      editLine.iceAmount +
+      irbpnrAmt
+    : hasXmlOrigin && l.xmlTotalLine !== undefined
+      ? l.xmlTotalLine
+      : sub + localTax.vat + localTax.ice + irbpnrAmt;
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
   const vm = buildPurchaseLinePresentation(l, t);
@@ -1778,13 +1789,29 @@ function PurchaseLineCard({
                 {t("purchases.lines.quantity", "Cantidad")}
               </span>
               <ZhDecimalInput
+                key={vm.inventory.hasPresentation ? "base-qty" : "invoice-qty"}
                 className="pdl-input pdl-input--qty"
                 decimals={getDecimalConfig().quantity}
                 positiveOnly
-                defaultValue={l.quantity}
-                onBlur={(e) =>
-                  ctx.updateLine(l._key, "quantity", Number(e.target.value) || 1)
+                defaultValue={
+                  vm.inventory.hasPresentation
+                    ? vm.inventory.baseQuantityValue
+                    : l.quantity
                 }
+                onBlur={(e) => {
+                  const entered = Number(e.target.value) || 0;
+                  if (vm.inventory.hasPresentation) {
+                    // PURCHASE-LINE-HEADER-INVENTORY-MODE-01 — con presentación vinculada, este
+                    // campo edita la cantidad real de inventario (unidad base), no la cantidad de
+                    // presentación — se reversa a `quantity` dividiendo por el factor de conversión
+                    // para no corromper el dato que el backend interpreta en unidades de presentación.
+                    const factor = vm.inventory.conversionFactorValue || 1;
+                    ctx.updateLine(l._key, "quantity", entered / factor || 1);
+                    ctx.updateLine(l._key, "quantityInBaseUom", entered);
+                  } else {
+                    ctx.updateLine(l._key, "quantity", entered || 1);
+                  }
+                }}
                 disabled={ctx.fieldDisabled}
               />
             </div>
@@ -1795,37 +1822,48 @@ function PurchaseLineCard({
               <div className="pdl-line__metric-value">
                 <span className="pdl-line__metric-unit">$</span>
                 <ZhDecimalInput
+                  key={vm.inventory.hasPresentation ? "base-cost" : "invoice-cost"}
                   className="pdl-input pdl-input--cost"
                   decimals={getDecimalConfig().purchaseUnitPrice}
                   positiveOnly
-                  defaultValue={l.unitPrice}
-                  onBlur={(e) =>
-                    ctx.updateLine(l._key, "unitPrice", Number(e.target.value) || 0)
+                  defaultValue={
+                    vm.inventory.hasPresentation
+                      ? vm.inventory.baseUnitCostValue
+                      : l.unitPrice
                   }
+                  onBlur={(e) => {
+                    const entered = Number(e.target.value) || 0;
+                    if (vm.inventory.hasPresentation) {
+                      // PURCHASE-LINE-HEADER-BASE-QTY-COST-EDIT-01 — con presentación vinculada este
+                      // campo edita el costo real unitario base; se reversa a `unitPrice` (fórmula
+                      // inversa de baseUnitCost, considerando descuento y flete/otros gastos ya
+                      // asignados) para que la línea siga cuadrando fiscalmente. Si el cálculo no es
+                      // seguro (cantidades en 0, descuento >= 100%, resultado negativo), no se aplica
+                      // — se conserva el unitPrice actual en vez de inventar un valor.
+                      const recalculatedUnitPrice = computeUnitPriceFromBaseUnitCost({
+                        newBaseUnitCost: entered,
+                        quantity: l.quantity ?? 0,
+                        quantityInBaseUom: vm.inventory.baseQuantityValue,
+                        discountPct: l.discountPct ?? 0,
+                        freightAllocated: l.freightAllocated ?? 0,
+                        otherCostsAllocated: l.otherCostsAllocated ?? 0,
+                      });
+                      if (recalculatedUnitPrice === null) return;
+                      ctx.updateLine(l._key, "unitPrice", recalculatedUnitPrice);
+                      return;
+                    }
+                    ctx.updateLine(l._key, "unitPrice", entered);
+                  }}
                   disabled={ctx.fieldDisabled}
                 />
               </div>
             </div>
             <div className="pdl-line__metric">
               <span className="pdl-line__metric-label">
-                {t("purchases.lines.discountShort", "DESC")}
+                {t("purchases.lines.taxableBaseShort", "BASE IMP.")}
               </span>
               <div className="pdl-line__metric-value">
-                <ZhDecimalInput
-                  className="pdl-input pdl-input--disc"
-                  decimals={getDecimalConfig().percentage}
-                  positiveOnly
-                  defaultValue={l.discountPct ?? 0}
-                  onBlur={(e) =>
-                    ctx.updateLine(
-                      l._key,
-                      "discountPct",
-                      Math.min(100, Math.max(0, Number(e.target.value) || 0)),
-                    )
-                  }
-                  disabled={ctx.fieldDisabled}
-                />
-                <span className="pdl-line__metric-unit">%</span>
+                $ {formatMoney(sub, getDecimalConfig().totalAmount)}
               </div>
             </div>
             <div className="pdl-line__metric">
@@ -1848,21 +1886,21 @@ function PurchaseLineCard({
             </div>
             <div className="pdl-line__metric">
               <span className="pdl-line__metric-label">
-                {t("purchases.lines.marginShort", "Margen")}
-              </span>
-              <span
-                className={`pdl-line__margin-badge ${vm.commercial.profitability.marginPctValue >= 0 ? "" : "pdl-line__margin-badge--neg"}`}
-              >
-                {vm.commercial.profitability.marginPct}%
-              </span>
-            </div>
-            <div className="pdl-line__metric">
-              <span className="pdl-line__metric-label">
                 {t("purchases.lines.netTotal", "Total neto")}
               </span>
               <div className="pdl-line__total">
                 $ {formatMoney(total, getDecimalConfig().totalAmount)}
               </div>
+            </div>
+            <div className="pdl-line__metric">
+              <span className="pdl-line__metric-label">
+                {t("purchases.lines.marginShort", "Margen")}
+              </span>
+              <span
+                className={`pdl-line__margin-badge pdl-line__margin-badge--lg ${vm.commercial.profitability.marginPctValue >= 0 ? "" : "pdl-line__margin-badge--neg"}`}
+              >
+                {vm.commercial.profitability.marginPct}%
+              </span>
             </div>
           </div>
         </div>
@@ -1958,10 +1996,28 @@ function PurchaseLineCard({
             </div>
             <div>
               <span className="pdl-cost-label">
+                {t("purchases.lines.taxableBase", "Base imponible")}
+              </span>
+              <span className="pdl-cost-val">{vm.xml.taxableBase}</span>
+            </div>
+            <div>
+              <span className="pdl-cost-label">
                 IVA ({vm.xml.vatPercentage}%)
               </span>
               <span className="pdl-cost-val">{vm.xml.taxValue}</span>
             </div>
+            <div>
+              <span className="pdl-cost-label">
+                {t("purchases.lines.iceShort", "ICE")}
+              </span>
+              <span className="pdl-cost-val">{vm.xml.iceValue}</span>
+            </div>
+            {vm.xml.hasIrbpnr && (
+              <div>
+                <span className="pdl-cost-label">IRBPNR</span>
+                <span className="pdl-cost-val">{vm.xml.irbpnrValue}</span>
+              </div>
+            )}
             <div>
               <span className="pdl-cost-label pdl-cost-label--strong">
                 {t("purchases.lines.lineTotal", "Total línea")}

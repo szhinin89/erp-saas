@@ -354,6 +354,127 @@ public sealed class PurchaseXmlDraftParserTests
     }
 
     [Fact]
+    public void Parses_the_real_ArcaContinental_XML_reported_by_the_user_with_IRBPNR_on_both_lines()
+    {
+        // Caso real de producción (no reconstruido con InvoiceXmlBuilder): factura 029-001-001293714,
+        // BEBIDAS ARCACONTINENTAL, reportada por el usuario porque la línea INCA-KOLA (codigoPrincipal
+        // 12469) no mostraba IRBPNR en "compra nueva". El XML se pega TAL CUAL vino (cabecera
+        // recortada a los nodos que PurchaseXmlDraftParser exige con RequireText/RequireElement).
+        //
+        // IMPORTANTE: el usuario originalmente atribuyó IVA=1.61/IRBPNR=0.24/Total=14.83 a INCA-KOLA,
+        // pero esos valores son en realidad de la PRIMERA línea del XML (SPRITE HARMONY 1350 PET(12)).
+        // INCA-KOLA (segunda línea) trae IVA=1.95/IRBPNR=0.72/Total=15.65. Este test verifica ambas
+        // líneas con sus valores reales correctos, sin mezclarlos.
+        const string xml =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <factura id="comprobante" version="2.1.0">
+              <infoTributaria>
+                <ambiente>2</ambiente>
+                <tipoEmision>1</tipoEmision>
+                <razonSocial>BEBIDAS ARCACONTINENTAL ECUADOR ARCADOR C.L.</razonSocial>
+                <nombreComercial>BEBIDAS ARCACONTINENTAL ECUADOR ARCADOR C.L.</nombreComercial>
+                <ruc>1792411149001</ruc>
+                <claveAcceso>0108202601179241114900120290010012937140129371419</claveAcceso>
+                <codDoc>01</codDoc>
+                <estab>029</estab>
+                <ptoEmi>001</ptoEmi>
+                <secuencial>001293714</secuencial>
+                <dirMatriz>PANAMERICANA NORTE OE9-166 Y JOSE VITERI KM 15</dirMatriz>
+              </infoTributaria>
+              <infoFactura>
+                <fechaEmision>01/08/2026</fechaEmision>
+                <dirEstablecimiento>AV. 16 DE ABRIL , Y CALLE S/N</dirEstablecimiento>
+                <contribuyenteEspecial>00082</contribuyenteEspecial>
+                <obligadoContabilidad>SI</obligadoContabilidad>
+                <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+                <razonSocialComprador>ZHININ ZHININ SEGUNDO FERNANDO - ZHININ ZHININ SEGUNDO FERNANDO</razonSocialComprador>
+                <identificacionComprador>0350016432</identificacionComprador>
+                <direccionComprador>CA AR                         CENTRO</direccionComprador>
+                <totalSinImpuestos>74.39</totalSinImpuestos>
+                <totalDescuento>0.00</totalDescuento>
+                <totalConImpuestos>
+                  <totalImpuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><baseImponible>80.84</baseImponible><tarifa>15.00</tarifa><valor>12.13</valor></totalImpuesto>
+                  <totalImpuesto><codigo>3</codigo><codigoPorcentaje>3053</codigoPorcentaje><baseImponible>35.81</baseImponible><tarifa>0.18</tarifa><valor>6.45</valor></totalImpuesto>
+                  <totalImpuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><baseImponible>132.00</baseImponible><tarifa>0.02</tarifa><valor>2.64</valor></totalImpuesto>
+                </totalConImpuestos>
+                <propina>0.00</propina>
+                <importeTotal>95.60</importeTotal>
+                <moneda>DOLAR</moneda>
+                <pagos><pago><formaPago>01</formaPago><total>95.60</total><plazo>8</plazo><unidadTiempo>dias</unidadTiempo></pago></pagos>
+                <valorRetIva>0</valorRetIva>
+                <valorRetRenta>0</valorRetRenta>
+              </infoFactura>
+              <detalles>
+                <detalle>
+                  <codigoPrincipal>0580</codigoPrincipal>
+                  <descripcion>SPRITE HARMONY 1350 PET(12)</descripcion>
+                  <cantidad>1.000000</cantidad>
+                  <precioUnitario>10.72130</precioUnitario>
+                  <descuento>0.00</descuento>
+                  <precioTotalSinImpuesto>10.72</precioTotalSinImpuesto>
+                  <impuestos>
+                    <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>10.72</baseImponible><valor>1.61</valor></impuesto>
+                    <impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa><baseImponible>12.00</baseImponible><valor>0.24</valor></impuesto>
+                  </impuestos>
+                </detalle>
+                <detalle>
+                  <codigoPrincipal>12469</codigoPrincipal>
+                  <descripcion>INCA-KOLA ORGL 900ML PET NR 12</descripcion>
+                  <cantidad>3.000000</cantidad>
+                  <precioUnitario>4.32817</precioUnitario>
+                  <descuento>0.00</descuento>
+                  <precioTotalSinImpuesto>12.98</precioTotalSinImpuesto>
+                  <impuestos>
+                    <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>12.98</baseImponible><valor>1.95</valor></impuesto>
+                    <impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa><baseImponible>36.00</baseImponible><valor>0.72</valor></impuesto>
+                  </impuestos>
+                </detalle>
+              </detalles>
+            </factura>
+            """;
+        var parser = new PurchaseXmlDraftParser();
+
+        var result = parser.Parse(xml);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var draft = result.Value!;
+        draft.LineErrors.Should().BeEmpty();
+        draft.Lines.Should().HaveCount(2);
+
+        // Línea 1: SPRITE HARMONY 1350 PET(12) — codigoPrincipal 0580.
+        var sprite = draft.Lines[0];
+        sprite.Description.Should().Be("SPRITE HARMONY 1350 PET(12)");
+        sprite.SupplierCode.Should().Be("0580");
+        sprite.Quantity.Should().Be(1m);
+        sprite.UnitPrice.Should().Be(10.72130m);
+        sprite.LineSubtotal.Should().Be(10.72m);
+        sprite.TaxValue.Should().Be(1.61m);
+        sprite.TotalLine.Should().Be(10.72m + 1.61m + 0.24m);
+        sprite.Taxes.Should().HaveCount(2);
+        sprite.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 1.61m);
+        var spriteIrbpnr = sprite.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        spriteIrbpnr.TaxAmount.Should().Be(0.24m);
+
+        // Línea 2: INCA-KOLA ORGL 900ML PET NR 12 — codigoPrincipal 12469, el caso reportado.
+        var incaKola = draft.Lines[1];
+        incaKola.Description.Should().Be("INCA-KOLA ORGL 900ML PET NR 12");
+        incaKola.SupplierCode.Should().Be("12469");
+        incaKola.Quantity.Should().Be(3m);
+        incaKola.UnitPrice.Should().Be(4.32817m);
+        incaKola.LineSubtotal.Should().Be(12.98m);
+        incaKola.TaxValue.Should().Be(1.95m);
+        incaKola.TotalLine.Should().Be(12.98m + 1.95m + 0.72m);
+        incaKola.Taxes.Should().HaveCount(2);
+        incaKola.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 1.95m);
+        var incaKolaIrbpnr = incaKola.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        incaKolaIrbpnr.TaxRateCode.Should().Be("5001");
+        incaKolaIrbpnr.TaxAmount.Should().Be(0.72m);
+        incaKolaIrbpnr.TaxableBase.Should().Be(36.00m);
+        incaKolaIrbpnr.Tarifa.Should().Be(0.02m);
+    }
+
+    [Fact]
     public void Fails_gracefully_when_the_xml_is_not_a_valid_factura()
     {
         var parser = new PurchaseXmlDraftParser();

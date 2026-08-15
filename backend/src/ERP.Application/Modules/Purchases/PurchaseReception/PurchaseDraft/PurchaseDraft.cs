@@ -6,8 +6,9 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
 /// <summary>
 /// Compra lista para editar en el formulario de Nueva Compra — modelo temporal, nunca persistido.
 /// Se arma exclusivamente desde el <see cref="PurchaseReceptionDocument"/> ya verificado: cabecera
-/// SRI y líneas (incl. Item Matching ya resuelto) fueron persistidas una única vez al descargar el
-/// XML (ver <c>DownloadPurchaseReceptionXmlHandler</c>) — este modelo nunca vuelve a tocar el XML.
+/// SRI persistida + líneas ya fusionadas (<see cref="PurchaseDraftMergedLine"/> — ver
+/// <see cref="PurchaseDraftLineMerger"/>: datos fiscales/documentales frescos del XML re-parseado
+/// cuando aplica, Item Matching siempre tomado de lo persistido). Este modelo nunca persiste nada.
 /// </summary>
 public sealed record PurchaseDraft(
     Guid? SupplierId,
@@ -20,12 +21,23 @@ public sealed record PurchaseDraft(
     string? AuthorizationNumber,
     DateTime? AuthorizationDate,
     string? SriPaymentMethodCode,
-    IReadOnlyList<PurchaseReceptionLine> Lines,
+    IReadOnlyList<PurchaseDraftMergedLine> Lines,
     PurchaseReceptionProcessingStatus ProcessingStatus,
     string? ProcessingNotes
 )
 {
+    /// <summary>Camino sin fusión: líneas persistidas tal cual, sin re-parsear el XML.</summary>
     public static PurchaseDraft FromReceptionDocument(PurchaseReceptionDocument document) =>
+        FromMergedLines(
+            document,
+            document.Lines.Select(PurchaseDraftMergedLine.FromPersisted).ToList()
+        );
+
+    /// <summary>Camino con fusión: <paramref name="lines"/> ya salió de <see cref="PurchaseDraftLineMerger.Merge"/> (o del fallback sin fusión).</summary>
+    public static PurchaseDraft FromMergedLines(
+        PurchaseReceptionDocument document,
+        IReadOnlyList<PurchaseDraftMergedLine> lines
+    ) =>
         new(
             SupplierId: document.SupplierId,
             SupplierRuc: document.SupplierRuc,
@@ -37,7 +49,7 @@ public sealed record PurchaseDraft(
             AuthorizationNumber: document.AuthorizationNumber,
             AuthorizationDate: document.AuthorizationDate,
             SriPaymentMethodCode: document.SriPaymentMethodCode,
-            Lines: document.Lines,
+            Lines: lines,
             ProcessingStatus: document.ProcessingStatus,
             ProcessingNotes: document.ProcessingNotes
         );

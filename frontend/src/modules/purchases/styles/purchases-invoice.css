@@ -374,6 +374,50 @@
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+/* PURCHASE-LINE-HEADER-METRICS-SPACING-01 — corrección v2. La v1 limitaba
+   max-width de identity para "correr" todo el grupo de métricas a la
+   izquierda, pero eso no resolvía el problema real: las columnas dentro del
+   grupo (Cantidad/Costo/Base imp./IVA-ICE/Total/Margen) seguían con gap
+   angosto (space-2) y sin min-width propio, así que se leían amontonadas
+   entre sí sin importar dónde arrancara el grupo — se revierte identity a su
+   comportamiento original (flex:1 1 auto, sin max-width, ver arriba) y en su
+   lugar se le da a cada columna más aire y ancho propio. Va DESPUÉS de las
+   reglas base de .pdl-line__metric (incluyendo :first-child) para poder
+   sobrescribir gap/padding con la misma especificidad de clase — :first-child
+   sigue ganando en Cantidad por mayor especificidad, así que no le agrega
+   padding-left de más. Solo desktop ancho (>1100px, mismo umbral que ya usa
+   la regla de wrap más abajo — por debajo de eso las métricas envuelven/pasan
+   a grid y ya tienen su propio tratamiento). Mismos datos/orden/fórmulas/JSX,
+   solo espaciado. */
+@media (min-width: 1101px) {
+  .pdl-line__metrics {
+    /* space-6 (24px, no space-4): separación real entre columnas — con
+       space-4 seguían leyéndose pegadas. */
+    gap: var(--space-6);
+  }
+  .pdl-line__metric {
+    padding-left: var(--space-4);
+    padding-right: var(--space-1);
+    min-width: 60px;
+  }
+  /* Columnas con más contenido/lectura (valores monetarios, dos líneas de
+     IVA/ICE, badge de margen) necesitan más ancho propio que Cantidad/Costo
+     para no sentirse comprimidas — mismo orden fijo del JSX (Cantidad=1,
+     Costo=2, Base imp.=3, IVA/ICE=4, Total neto=5, Margen=6), sin agregar
+     clases nuevas ni tocar el componente. */
+  .pdl-line__metric:nth-child(3) {
+    min-width: 92px;
+  }
+  .pdl-line__metric:nth-child(4) {
+    min-width: 100px;
+  }
+  .pdl-line__metric:nth-child(5) {
+    min-width: 92px;
+  }
+  .pdl-line__metric:nth-child(6) {
+    min-width: 84px;
+  }
+}
 /* Aligera el peso visual de los inputs dentro de las métricas — mismo
    .pdl-input compartido (erp-form-core.css), solo se reduce su padding/
    tamaño aquí para que la franja se vea como resumen compacto y no como
@@ -404,6 +448,14 @@
 .pdl-line__margin-badge--neg {
   color: var(--color-error);
   border-color: var(--color-error);
+}
+/* PURCHASE-LINE-HEADER-TAXABLE-BASE-ORDER-01 — el margen ahora cierra la cabecera
+   (Cantidad → Costo → Base imp. → IVA/ICE → Total → Margen); se refuerza un poco
+   más que el resto de las columnas para que sea el punto de lectura final, mismos
+   tokens de color que ya usaba el badge. */
+.pdl-line__margin-badge--lg {
+  font-size: 14px;
+  padding: 3px 8px;
 }
 /* Barra de "detalle colapsado" — reemplaza visualmente a .pdl-blocks cuando
    la línea está colapsada, para que no se sienta como un hueco vacío. Mismo

@@ -1234,8 +1234,8 @@ file static class ReceptionTaxHelper
                 "La línea no tiene impuesto IVA — no se puede resolver."
             );
 
-        line.ApplyTaxes(vatCode, vatRate, vatName, iceCode, iceRate, iceName, iceCalcType, iceExactAmount);
         line.ReplaceTaxes(built);
+        line.ApplyTaxes(vatCode, vatRate, vatName, iceCode, iceRate, iceName, iceCalcType, iceExactAmount);
         return null;
     }
 }

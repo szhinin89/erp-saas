@@ -35,6 +35,10 @@ export interface PurchaseLinePresentationVM {
     vatPercentage: string;
     taxValue: string;
     totalLine: string;
+    taxableBase: string;
+    iceValue: string;
+    irbpnrValue: string;
+    hasIrbpnr: boolean;
   };
   /** 2. Con qué Item del ERP está relacionado — siempre visible, incluso sin Item aún. */
   item: {
@@ -58,7 +62,19 @@ export interface PurchaseLinePresentationVM {
      * para mostrar al usuario. */
     equivalenceDetail: string;
     baseQuantity: string;
+    /** Valor numérico crudo de baseQuantity — usado por PurchaseLineCard para poblar/reversar
+     * el input de Cantidad de la cabecera cuando hay presentación vinculada (ver
+     * PURCHASE-LINE-HEADER-INVENTORY-MODE-01). */
+    baseQuantityValue: number;
+    /** Factor de conversión activo (presentación seleccionada o el persistido) — mismo valor
+     * usado internamente para calcular baseQuantityValue; expuesto para reversar la edición. */
+    conversionFactorValue: number;
     baseUnitCost: string;
+    /** Valor numérico crudo de baseUnitCost — usado por PurchaseLineCard para poblar el input de
+     * Costo de la cabecera en modo inventario (solo lectura, ver
+     * PURCHASE-LINE-HEADER-COST-BASE-MODE-01). Nunca se reversa a unitPrice: editar unitPrice se
+     * hace siempre en unidad de presentación/factura, nunca desde este valor derivado. */
+    baseUnitCostValue: number;
   };
   /** 3. Impacto para el negocio — "Información Comercial", menor peso visual, solo si hay contexto real. */
   commercial: {
@@ -151,8 +167,19 @@ export function buildPurchaseLinePresentation(
         }) ??
         `1 ${selectedPackaging.name} = ${formatMoney(conversionFactor, decimals.quantity)} ${baseUnitWord}`)
       : "";
+  // PURCHASE-LINE-HEADER-INVENTORY-MODE-01 — el costo real unitario base debe descontar el
+  // descuento de línea (y sumar flete/otros gastos ya asignados, si existen) antes de dividir
+  // entre la cantidad en unidad base — nunca el bruto sin descuento. Misma fórmula que
+  // `buildCostDistributionInputFromFormLines` (purchaseCalc.ts) para una sola línea.
+  const grossLineSubtotal = quantity * unitPrice;
+  const discountAmount = grossLineSubtotal * ((line.discountPct ?? 0) / 100);
+  const netLineSubtotal = grossLineSubtotal - discountAmount;
+  const freightAllocated = line.freightAllocated ?? 0;
+  const otherCostsAllocated = line.otherCostsAllocated ?? 0;
   const baseUnitCost =
-    quantityInBase > 0 ? (quantity * unitPrice) / quantityInBase : 0;
+    quantityInBase > 0
+      ? (netLineSubtotal + freightAllocated + otherCostsAllocated) / quantityInBase
+      : 0;
   // PURCHASE-PRESENTATION-MARGIN-AUDIT-01 — el margen siempre debe comparar valores en la misma
   // unidad: pvp es por unidad base, así que el costo comparado debe ser baseUnitCost (por unidad
   // base), nunca unitPrice (costo por unidad de presentación — p. ej. por SIXPACK). Comparar
@@ -216,6 +243,16 @@ export function buildPurchaseLinePresentation(
       totalLine: hasOrigin
         ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.totalAmount)
         : UNKNOWN,
+      taxableBase: hasOrigin
+        ? formatMoneyWithSymbol(line.xmlTaxableBase ?? 0, decimals.totalAmount)
+        : UNKNOWN,
+      iceValue: hasOrigin
+        ? formatMoneyWithSymbol(line.xmlIceAmount ?? 0, decimals.totalAmount)
+        : UNKNOWN,
+      irbpnrValue: hasOrigin
+        ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.totalAmount)
+        : UNKNOWN,
+      hasIrbpnr: hasOrigin && (line.xmlIrbpnrAmount ?? 0) > 0,
     },
     item: {
       hasItem,
@@ -242,10 +279,13 @@ export function buildPurchaseLinePresentation(
       baseQuantity: hasItem
         ? `${formatMoney(quantityInBase, decimals.quantity)} ${baseUnitWord}`
         : UNKNOWN,
+      baseQuantityValue: quantityInBase,
+      conversionFactorValue: conversionFactor,
       baseUnitCost:
         hasItem && quantityInBase > 0
           ? formatMoneyWithSymbol(baseUnitCost, decimals.purchaseUnitPrice)
           : UNKNOWN,
+      baseUnitCostValue: baseUnitCost,
     },
     commercial: {
       hasContext,
@@ -335,4 +375,42 @@ function buildLineStatus(input: {
     };
   }
   return { icon: "🟢", label: "Ítem vinculado", tone: "success" };
+}
+
+/**
+ * PURCHASE-LINE-HEADER-BASE-QTY-COST-EDIT-01 — fórmula inversa de `baseUnitCost`
+ * (ver arriba): dado un nuevo costo real unitario base tecleado en la cabecera
+ * (línea con presentación vinculada), despeja el `unitPrice` de factura/presentación
+ * que hace que la línea siga cuadrando fiscalmente. Único punto de esta fórmula —
+ * `PurchaseLineCard` la consume, no la reimplementa. Devuelve `null` cuando el
+ * cálculo no es seguro (cantidades en 0, descuento >= 100% o resultado negativo) —
+ * el llamador debe entonces no aplicar el cambio, nunca inventar un valor.
+ */
+export function computeUnitPriceFromBaseUnitCost(params: {
+  newBaseUnitCost: number;
+  quantity: number;
+  quantityInBaseUom: number;
+  discountPct?: number;
+  freightAllocated?: number;
+  otherCostsAllocated?: number;
+}): number | null {
+  const { newBaseUnitCost, quantity, quantityInBaseUom } = params;
+  const discountPct = params.discountPct ?? 0;
+  const freightAllocated = params.freightAllocated ?? 0;
+  const otherCostsAllocated = params.otherCostsAllocated ?? 0;
+  if (
+    !(quantity > 0) ||
+    !(quantityInBaseUom > 0) ||
+    !(discountPct < 100) ||
+    !(newBaseUnitCost >= 0)
+  ) {
+    return null;
+  }
+  const denom = quantity * (1 - discountPct / 100);
+  if (!(denom > 0)) return null;
+  const unitPrice =
+    (newBaseUnitCost * quantityInBaseUom - freightAllocated - otherCostsAllocated) /
+    denom;
+  if (!Number.isFinite(unitPrice) || unitPrice < 0) return null;
+  return unitPrice;
 }

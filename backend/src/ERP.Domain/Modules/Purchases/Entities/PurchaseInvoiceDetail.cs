@@ -79,6 +79,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public IReadOnlyList<PurchaseInvoiceDetailTax> Taxes => _taxes.AsReadOnly();
 
     private const string IrbpnrSriTaxCode = "5";
+    private const string VatSriTaxCode = "2";
+    private const string IceSriTaxCode = "3";
 
     /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
     public string? IrbpnrCode =>
@@ -87,6 +89,16 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public string? SnapshotIrbpnrName =>
         _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxName;
     public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+
+    /// <summary>Monto exacto de IVA tal como vino en el XML (Source=Xml) — snapshot fiel del comprobante.</summary>
+    public decimal? XmlVatAmount =>
+        _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode && t.Source == PurchaseTaxSource.Xml)
+            ?.TaxAmount;
+
+    /// <summary>Monto exacto de ICE tal como vino en el XML (Source=Xml) — snapshot fiel del comprobante.</summary>
+    public decimal? XmlIceAmount =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode && t.Source == PurchaseTaxSource.Xml)
+            ?.TaxAmount;
 
     // ── Warehouse (logistic reference) ──────────────────────────────────
     public Guid? WarehouseId { get; private set; }
@@ -267,6 +279,15 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         if (iceCalculationType == SriTaxCalculationType.Specific)
             IceAmount = iceExactAmount ?? 0m;
         RecalcTaxes();
+        // FLOW-READY-02F.1 — si la línea viene del XML y ya tiene el monto exacto documental para
+        // este impuesto, ese monto prevalece sobre el recálculo por tarifa (evita que redondeos o
+        // diferencias de tarifa entre el XML y el catálogo SRI hagan que la compra deje de cuadrar
+        // contra el comprobante original). Aplica en Create/Update/Confirm/DistributeCost por igual,
+        // sin tocar esos call sites: esta propiedad lee directamente del snapshot _taxes ya persistido.
+        if (XmlVatAmount.HasValue)
+            VatAmount = XmlVatAmount.Value;
+        if (iceCalculationType == SriTaxCalculationType.Percentage && XmlIceAmount.HasValue)
+            IceAmount = XmlIceAmount.Value;
     }
 
     /// <summary>

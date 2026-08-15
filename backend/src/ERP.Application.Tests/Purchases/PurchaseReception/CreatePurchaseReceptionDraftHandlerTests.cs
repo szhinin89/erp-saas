@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
+using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -10,6 +11,7 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.Models;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace ERP.Application.Tests.Purchases.PurchaseReception;
@@ -46,7 +48,14 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         string description = "Producto de prueba",
         string? supplierCode = "SKU-001",
         Guid? itemId = null,
-        ItemMatchStatus matchStatus = ItemMatchStatus.Pending
+        ItemMatchStatus matchStatus = ItemMatchStatus.Pending,
+        IEnumerable<(
+            string TaxCode,
+            string TaxRateCode,
+            decimal Tarifa,
+            decimal TaxableBase,
+            decimal TaxAmount
+        )>? taxes = null
     ) =>
         PurchaseReceptionLine.Create(
             documentId,
@@ -64,7 +73,8 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             totalLine: 23m,
             supplierCode: supplierCode,
             itemId: itemId,
-            matchStatus: matchStatus
+            matchStatus: matchStatus,
+            taxes: taxes
         );
 
     private static (
@@ -92,8 +102,10 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             bpRepo.Object,
             detailProcessor.Object,
             itemRepo.Object,
+            new PurchaseXmlDraftParser(),
             tenant.Object,
-            user.Object
+            user.Object,
+            NullLogger<CreatePurchaseReceptionDraftHandler>.Instance
         );
         return (handler, repo, purchaseRepo, bpRepo, detailProcessor, itemRepo);
     }
@@ -141,6 +153,59 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         lineDto.WarehouseId.Should().BeNull();
         lineDto.Description.Should().Be("Producto de prueba");
         lineDto.VatCode.Should().Be("2");
+    }
+
+    // ── Caso real reportado por el usuario: línea INCA-KOLA (factura Arca Continental) con IRBPNR
+    // (código "5") — verifica que el impuesto sobrevive TODO el pipeline (persistencia simulada del
+    // documento de recepción -> PurchaseDraft.FromReceptionDocument -> PurchaseDraftMapper.ToDto)
+    // hasta PurchaseDraftLineDto.Taxes, sin volver a parsear el XML. ──
+    [Fact]
+    public async Task Handle_preserves_the_IRBPNR_tax_of_a_line_all_the_way_to_the_draft_dto()
+    {
+        var document = SampleDocument(SupplierId);
+        var line = SampleLine(
+            document.Id,
+            description: "INCA-KOLA ORGL 900ML PET NR 12",
+            supplierCode: "12469",
+            taxes:
+            [
+                ("2", "4", 15.00m, 12.98m, 1.95m),
+                ("5", "5001", 0.02m, 36.00m, 0.72m),
+            ]
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var lineDto = result.Value!.Lines.Single();
+        lineDto.Taxes.Should().HaveCount(2);
+        var irbpnr = lineDto.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        irbpnr.TaxRateCode.Should().Be("5001");
+        irbpnr.TaxAmount.Should().Be(0.72m);
+        irbpnr.TaxableBase.Should().Be(36.00m);
+        irbpnr.Tarifa.Should().Be(0.02m);
     }
 
     [Fact]
@@ -783,5 +848,405 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         result.Value!.Lines.Should().ContainSingle();
         result.Value.ProcessingStatus.Should().Be("PROCESSED_WITH_WARNINGS");
         result.Value.ProcessingNotes.Should().Contain("SKU-999");
+    }
+
+    // ── FLOW-READY-02F.2: fusión en memoria de xml_content re-parseado + Item Matching persistido ──
+
+    // Mismo fixture real de producción que PurchaseXmlDraftParserTests
+    // ("Parses_the_real_ArcaContinental_XML_reported_by_the_user_with_IRBPNR_on_both_lines") —
+    // factura 029-001-001293714, BEBIDAS ARCACONTINENTAL. Reutilizado tal cual, no reinventado.
+    private const string ArcaContinentalXml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <factura id="comprobante" version="2.1.0">
+          <infoTributaria>
+            <ambiente>2</ambiente>
+            <tipoEmision>1</tipoEmision>
+            <razonSocial>BEBIDAS ARCACONTINENTAL ECUADOR ARCADOR C.L.</razonSocial>
+            <nombreComercial>BEBIDAS ARCACONTINENTAL ECUADOR ARCADOR C.L.</nombreComercial>
+            <ruc>1792411149001</ruc>
+            <claveAcceso>0108202601179241114900120290010012937140129371419</claveAcceso>
+            <codDoc>01</codDoc>
+            <estab>029</estab>
+            <ptoEmi>001</ptoEmi>
+            <secuencial>001293714</secuencial>
+            <dirMatriz>PANAMERICANA NORTE OE9-166 Y JOSE VITERI KM 15</dirMatriz>
+          </infoTributaria>
+          <infoFactura>
+            <fechaEmision>01/08/2026</fechaEmision>
+            <dirEstablecimiento>AV. 16 DE ABRIL , Y CALLE S/N</dirEstablecimiento>
+            <contribuyenteEspecial>00082</contribuyenteEspecial>
+            <obligadoContabilidad>SI</obligadoContabilidad>
+            <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+            <razonSocialComprador>ZHININ ZHININ SEGUNDO FERNANDO - ZHININ ZHININ SEGUNDO FERNANDO</razonSocialComprador>
+            <identificacionComprador>0350016432</identificacionComprador>
+            <direccionComprador>CA AR                         CENTRO</direccionComprador>
+            <totalSinImpuestos>74.39</totalSinImpuestos>
+            <totalDescuento>0.00</totalDescuento>
+            <totalConImpuestos>
+              <totalImpuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><baseImponible>80.84</baseImponible><tarifa>15.00</tarifa><valor>12.13</valor></totalImpuesto>
+              <totalImpuesto><codigo>3</codigo><codigoPorcentaje>3053</codigoPorcentaje><baseImponible>35.81</baseImponible><tarifa>0.18</tarifa><valor>6.45</valor></totalImpuesto>
+              <totalImpuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><baseImponible>132.00</baseImponible><tarifa>0.02</tarifa><valor>2.64</valor></totalImpuesto>
+            </totalConImpuestos>
+            <propina>0.00</propina>
+            <importeTotal>95.60</importeTotal>
+            <moneda>DOLAR</moneda>
+            <pagos><pago><formaPago>01</formaPago><total>95.60</total><plazo>8</plazo><unidadTiempo>dias</unidadTiempo></pago></pagos>
+            <valorRetIva>0</valorRetIva>
+            <valorRetRenta>0</valorRetRenta>
+          </infoFactura>
+          <detalles>
+            <detalle>
+              <codigoPrincipal>0580</codigoPrincipal>
+              <descripcion>SPRITE HARMONY 1350 PET(12)</descripcion>
+              <cantidad>1.000000</cantidad>
+              <precioUnitario>10.72130</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>10.72</precioTotalSinImpuesto>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>10.72</baseImponible><valor>1.61</valor></impuesto>
+                <impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa><baseImponible>12.00</baseImponible><valor>0.24</valor></impuesto>
+              </impuestos>
+            </detalle>
+            <detalle>
+              <codigoPrincipal>12469</codigoPrincipal>
+              <descripcion>INCA-KOLA ORGL 900ML PET NR 12</descripcion>
+              <cantidad>3.000000</cantidad>
+              <precioUnitario>4.32817</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>12.98</precioTotalSinImpuesto>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>12.98</baseImponible><valor>1.95</valor></impuesto>
+                <impuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><tarifa>0.02</tarifa><baseImponible>36.00</baseImponible><valor>0.72</valor></impuesto>
+              </impuestos>
+            </detalle>
+          </detalles>
+        </factura>
+        """;
+
+    // Sintético (no es el XML real) — dos <detalle> con el MISMO codigoPrincipal y la MISMA
+    // descripcion, para forzar un grupo de correlación con count>1 y probar que no se cruza
+    // matching/impuestos entre líneas del mismo grupo.
+    private const string DuplicateSupplierCodeXml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <factura id="comprobante" version="2.1.0">
+          <infoTributaria>
+            <razonSocial>PROVEEDOR DUPLICADOS S.A.</razonSocial>
+            <ruc>1790012345001</ruc>
+            <codDoc>01</codDoc>
+            <estab>001</estab>
+            <ptoEmi>001</ptoEmi>
+            <secuencial>000000456</secuencial>
+          </infoTributaria>
+          <infoFactura>
+            <fechaEmision>01/08/2026</fechaEmision>
+          </infoFactura>
+          <detalles>
+            <detalle>
+              <codigoPrincipal>999</codigoPrincipal>
+              <descripcion>PRODUCTO DUPLICADO</descripcion>
+              <cantidad>1.000000</cantidad>
+              <precioUnitario>10.00000</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>10.00</precioTotalSinImpuesto>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>10.00</baseImponible><valor>1.50</valor></impuesto>
+              </impuestos>
+            </detalle>
+            <detalle>
+              <codigoPrincipal>999</codigoPrincipal>
+              <descripcion>PRODUCTO DUPLICADO</descripcion>
+              <cantidad>2.000000</cantidad>
+              <precioUnitario>20.00000</precioUnitario>
+              <descuento>0.00</descuento>
+              <precioTotalSinImpuesto>40.00</precioTotalSinImpuesto>
+              <impuestos>
+                <impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15.00</tarifa><baseImponible>40.00</baseImponible><valor>6.00</valor></impuesto>
+              </impuestos>
+            </detalle>
+          </detalles>
+        </factura>
+        """;
+
+    // ── Caso 1: recepción antigua — purchase_reception_line_taxes vacío para INCA-KOLA, pero
+    // xml_content sí tiene el detalle completo. El impuesto IRBPNR debe salir del re-parseo. ──
+    [Fact]
+    public async Task Handle_recovers_missing_line_taxes_from_xml_content_when_the_persisted_snapshot_has_none()
+    {
+        var document = SampleDocument(SupplierId);
+        var incaKolaLine = SampleLine(
+            document.Id,
+            description: "INCA-KOLA ORGL 900ML PET NR 12",
+            supplierCode: "12469",
+            taxes: null // recepción antigua: nunca se persistió el detalle de impuestos
+        );
+        var spriteLine = SampleLine(
+            document.Id,
+            description: "SPRITE HARMONY 1350 PET(12)",
+            supplierCode: "0580",
+            taxes: null
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            ArcaContinentalXml,
+            DateTime.UtcNow,
+            [spriteLine, incaKolaLine],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                2,
+                2,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var incaKolaDto = result
+            .Value!.Lines.Should()
+            .ContainSingle(l => l.SupplierCode == "12469")
+            .Subject;
+        incaKolaDto.Taxes.Should().HaveCount(2);
+        var irbpnr = incaKolaDto.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        irbpnr.TaxAmount.Should().Be(0.72m);
+        irbpnr.TaxableBase.Should().Be(36.00m);
+    }
+
+    // ── Caso 2: preservación de matching — ItemId/MatchStatus ya resueltos por el usuario deben
+    // conservarse intactos aunque los datos fiscales vengan frescos del re-parseo del XML. ──
+    [Fact]
+    public async Task Handle_preserves_resolved_matching_while_refreshing_taxes_from_xml_content()
+    {
+        var document = SampleDocument(SupplierId);
+        var itemId = Guid.NewGuid();
+        var incaKolaLine = SampleLine(
+            document.Id,
+            description: "INCA-KOLA ORGL 900ML PET NR 12",
+            supplierCode: "12469",
+            itemId: itemId,
+            matchStatus: ItemMatchStatus.ManuallyMatched,
+            taxes: null
+        );
+        var spriteLine = SampleLine(
+            document.Id,
+            description: "SPRITE HARMONY 1350 PET(12)",
+            supplierCode: "0580",
+            taxes: null
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            ArcaContinentalXml,
+            DateTime.UtcNow,
+            [spriteLine, incaKolaLine],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                2,
+                2,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var incaKolaDto = result
+            .Value!.Lines.Should()
+            .ContainSingle(l => l.SupplierCode == "12469")
+            .Subject;
+        incaKolaDto.ItemId.Should().Be(itemId);
+        incaKolaDto.ItemMatchStatus.Should().Be("MANUALLY_MATCHED");
+        var irbpnr = incaKolaDto.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        irbpnr.TaxAmount.Should().Be(0.72m);
+    }
+
+    // ── Caso 3: dos líneas persistidas con el mismo SupplierCode/Description (grupo count=2) no se
+    // cruzan entre sí — cada una toma el matching y los impuestos frescos que le corresponden por
+    // orden de enumeración dentro del grupo. ──
+    [Fact]
+    public async Task Handle_does_not_cross_match_or_taxes_between_lines_sharing_the_same_correlation_key()
+    {
+        var document = SampleDocument(SupplierId);
+        var firstItemId = Guid.NewGuid();
+        var secondItemId = Guid.NewGuid();
+        var firstLine = SampleLine(
+            document.Id,
+            description: "PRODUCTO DUPLICADO",
+            supplierCode: "999",
+            itemId: firstItemId,
+            matchStatus: ItemMatchStatus.ManuallyMatched,
+            taxes: null
+        );
+        var secondLine = SampleLine(
+            document.Id,
+            description: "PRODUCTO DUPLICADO",
+            supplierCode: "999",
+            itemId: secondItemId,
+            matchStatus: ItemMatchStatus.AutoMatched,
+            taxes: null
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            DuplicateSupplierCodeXml,
+            DateTime.UtcNow,
+            [firstLine, secondLine],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                2,
+                2,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var lines = result.Value!.Lines;
+        lines.Should().HaveCount(2);
+
+        // Cada línea del grupo se fusiona con datos frescos (no se queda con el snapshot vacío) y
+        // conserva ÚNICAMENTE su propio ItemId — nunca el del otro miembro del grupo.
+        var itemIds = lines.Select(l => l.ItemId).ToList();
+        itemIds.Should().Contain(firstItemId);
+        itemIds.Should().Contain(secondItemId);
+
+        var firstDto = lines.Single(l => l.ItemId == firstItemId);
+        var secondDto = lines.Single(l => l.ItemId == secondItemId);
+        // Cada línea debe tener exactamente un impuesto IVA fresco (no ambos vacíos, no duplicados).
+        firstDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
+        secondDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
+        // Los montos de las dos líneas frescas son distintos (1.50 vs 6.00) — si hubiera cruce, una
+        // de las dos líneas repetiría el monto de la otra o quedaría con el snapshot vacío (0 impuestos).
+        var taxAmounts = lines.SelectMany(l => l.Taxes).Select(t => t.TaxAmount).OrderBy(v => v).ToList();
+        taxAmounts.Should().Equal(1.50m, 6.00m);
+    }
+
+    // ── Caso 5: XML no parseable — no debe fallar la operación ni perder las líneas persistidas. ──
+    [Fact]
+    public async Task Handle_falls_back_to_persisted_lines_when_xml_content_cannot_be_parsed()
+    {
+        var document = SampleDocument(SupplierId);
+        var line = SampleLine(
+            document.Id,
+            taxes: [("2", "4", 15.00m, 20.00m, 3.00m)]
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            "esto no es un XML valido en absoluto",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var lineDto = result.Value!.Lines.Single();
+        lineDto.Description.Should().Be("Producto de prueba");
+        lineDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2" && t.TaxAmount == 3.00m);
+        document.Lines.Should().ContainSingle();
+        document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
+    }
+
+    // ── Caso 6: caso real INCA-KOLA end-to-end — valores fiscales exactos que el usuario reportó. ──
+    [Fact]
+    public async Task Handle_produces_the_exact_fiscal_values_for_the_real_IncaKola_line()
+    {
+        var document = SampleDocument(SupplierId);
+        var incaKolaLine = SampleLine(
+            document.Id,
+            description: "INCA-KOLA ORGL 900ML PET NR 12",
+            supplierCode: "12469",
+            taxes: null
+        );
+        var spriteLine = SampleLine(
+            document.Id,
+            description: "SPRITE HARMONY 1350 PET(12)",
+            supplierCode: "0580",
+            taxes: null
+        );
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            ArcaContinentalXml,
+            DateTime.UtcNow,
+            [spriteLine, incaKolaLine],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                2,
+                2,
+                null
+            )
+        );
+        var (handler, repo, _, _, _, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var incaKolaDto = result
+            .Value!.Lines.Should()
+            .ContainSingle(l => l.SupplierCode == "12469")
+            .Subject;
+        incaKolaDto.VatPercentage.Should().Be(15.00m);
+        incaKolaDto.TaxValue.Should().Be(1.95m);
+        var vat = incaKolaDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2").Subject;
+        vat.TaxableBase.Should().Be(12.98m);
+        vat.TaxAmount.Should().Be(1.95m);
+        var irbpnr = incaKolaDto.Taxes.Should().ContainSingle(t => t.TaxCode == "5").Subject;
+        irbpnr.TaxAmount.Should().Be(0.72m);
+        incaKolaDto.TotalLine.Should().Be(15.65m);
     }
 }

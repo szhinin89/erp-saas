@@ -203,6 +203,30 @@ describe("múltiples líneas mixtas", () => {
 });
 
 // ────────────────────────────────────────────────────────
+// 8b. PURCHASE-LINE-HEADER-TAXABLE-BASE-ORDER-01 — Base imponible de cabecera
+//     (8 SIXPACK / 48 unidades, mismo caso usado en purchaseLinePresentation.test.ts)
+// ────────────────────────────────────────────────────────
+describe("Base imponible de cabecera — caso 8 SIXPACK / 48 unidades", () => {
+  const l = mkLine(8, 5.9125, "10", (6.43 / 47.3) * 100, {
+    vatPercent: 15,
+    icePercent: 0,
+  });
+
+  it("base imponible (lineNet) ≈ 40.87 — subtotal bruto menos descuento", () => {
+    expect(lineGross(l)).toBeCloseTo(47.3, 2);
+    expect(lineDiscountAmt(l)).toBeCloseTo(6.43, 2);
+    expect(lineNet(l)).toBeCloseTo(40.87, 2);
+  });
+
+  it("IVA sobre la base imponible ≈ 6.13 y total (base + IVA + ICE) ≈ 47.00", () => {
+    const { vat, ice } = calcLineTax(l);
+    expect(vat).toBeCloseTo(6.13, 2);
+    expect(ice).toBe(0);
+    expect(lineNet(l) + vat + ice).toBeCloseTo(47.0, 2);
+  });
+});
+
+// ────────────────────────────────────────────────────────
 // 9. Cuotas — generación
 // ────────────────────────────────────────────────────────
 describe("generación de cuotas", () => {

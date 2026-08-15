@@ -1247,6 +1247,11 @@ export function usePurchasesPage() {
             xmlVatPercentage: l.vatPercentage,
             xmlTaxValue: l.taxValue,
             xmlTotalLine: l.totalLine,
+            xmlTaxableBase:
+              l.taxes.find((tx) => tx.taxCode === "2")?.taxableBase ??
+              l.lineSubtotal - l.discount,
+            xmlIceAmount: l.taxes.find((tx) => tx.taxCode === "3")?.taxAmount,
+            xmlIrbpnrAmount: l.taxes.find((tx) => tx.taxCode === "5")?.taxAmount,
           }),
         );
 
