@@ -27,6 +27,23 @@ export function calcLineTax(
   return { vat: (taxableBase * vatRate) / 100, ice };
 }
 
+/** Advertencia preventiva de stock (UX únicamente): solo se activa cuando el frontend ya tiene
+ * el dato de disponibilidad (`_stockQty`, snapshot tomado al agregar el ítem o cambiar de
+ * bodega) — nunca infiere ni bloquea si ese dato no llegó a cargarse; en ese caso la única
+ * fuente de verdad sigue siendo el backend (`AuthorizeSalesUseCases`), cuyo error se muestra
+ * tal cual llega. No duplica la regla de stock, solo anticipa el mismo resultado en pantalla. */
+export function lineExceedsStock(line: {
+  _tracksStock?: boolean;
+  _stockQty?: number;
+  quantity: number;
+}): boolean {
+  return (
+    !!line._tracksStock &&
+    line._stockQty != null &&
+    line.quantity > line._stockQty
+  );
+}
+
 export type TaxBreakdownEntry = {
   label: string;
   rate: number;

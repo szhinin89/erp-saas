@@ -125,6 +125,18 @@ export function SalesPage() {
       {/* ── Aviso caja no abierta / no se pudo verificar ────────────── */}
       <CashSessionNotice ctx={ctx} />
 
+      {/* ── Aviso de error de guardado/emisión — área superior, siempre visible sin
+          depender del scroll del sidebar (ver SalesErrorNotice en useSalesPage.ts). */}
+      {ctx.tab === "nuevo" && ctx.saveError && (
+        <div className="sales-page-save-error">
+          <ZHPageNotice
+            variant="error"
+            message={ctx.saveError.title}
+            detail={ctx.saveError.detail}
+          />
+        </div>
+      )}
+
       {/* ═══════════════════════════ LISTADO ═══════════════════════════ */}
       {ctx.tab === "listado" && (
         <div className="prd-section">
@@ -514,11 +526,6 @@ export function SalesPage() {
                 />
               </div>
             )}
-            {ctx.saveError && (
-              <div className="sf-sidebar__section">
-                <ZHPageNotice variant="error" message={ctx.saveError} />
-              </div>
-            )}
           </div>
 
           {/* ── MAIN AREA ── */}
@@ -823,27 +830,33 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
 
   const canSaveDraft = hasCustomer && hasLines;
   const canEmit =
-    canSaveDraft && hasEmissionPoint && paymentOk && !ctx.cashInsufficient;
+    canSaveDraft &&
+    hasEmissionPoint &&
+    paymentOk &&
+    !ctx.cashInsufficient &&
+    !ctx.hasInsufficientStock;
 
   const nextStep = !hasCustomer
     ? "Seleccione un cliente para comenzar."
     : !hasLines
       ? "Agregue productos a la factura."
-      : !hasEmissionPoint
-        ? ctx.cashSessionCheckError
-          ? "No se pudo verificar la caja — reintente arriba antes de emitir."
-          : "Debe abrir una caja antes de emitir."
-        : paymentExceeds
-          ? "El cobro excede el total — ajuste las formas de pago."
-          : total > 0 && !paymentOk
-            ? "Configure las formas de cobro para poder emitir."
-            : ctx.cashInsufficient
-              ? "El monto recibido en efectivo es menor al total a cobrar."
-              : canSaveDraft && !ctx.editing
-                ? "Guarde el borrador primero. Luego podrá emitir la factura."
-                : canEmit && ctx.editing
-                  ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
-                  : null;
+      : ctx.hasInsufficientStock
+        ? "Hay líneas con cantidad mayor al stock disponible — ajústelas antes de emitir."
+        : !hasEmissionPoint
+          ? ctx.cashSessionCheckError
+            ? "No se pudo verificar la caja — reintente arriba antes de emitir."
+            : "Debe abrir una caja antes de emitir."
+          : paymentExceeds
+            ? "El cobro excede el total — ajuste las formas de pago."
+            : total > 0 && !paymentOk
+              ? "Configure las formas de cobro para poder emitir."
+              : ctx.cashInsufficient
+                ? "El monto recibido en efectivo es menor al total a cobrar."
+                : canSaveDraft && !ctx.editing
+                  ? "Guarde el borrador primero. Luego podrá emitir la factura."
+                  : canEmit && ctx.editing
+                    ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
+                    : null;
 
   type ItemStatus = "ok" | "missing" | "error";
   const item = (label: string, status: ItemStatus) => (
@@ -867,6 +880,8 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
         <div className="sf-checklist__title">Estado del formulario</div>
         {item("Cliente seleccionado", hasCustomer ? "ok" : "missing")}
         {item("Productos agregados", hasLines ? "ok" : "missing")}
+        {ctx.hasInsufficientStock &&
+          item("Cantidad supera el stock disponible en una línea", "error")}
         {item(
           ctx.cashSessionCheckError ? "Caja abierta (sin verificar)" : "Caja abierta",
           ctx.hasCashSession === true
@@ -917,6 +932,8 @@ function EmitButton({ ctx }: { ctx: SalesPageContext }) {
     reasons.push("Registre formas de pago por el total de la factura");
   if (ctx.cashInsufficient)
     reasons.push("El monto recibido en efectivo es menor al total a cobrar");
+  if (ctx.hasInsufficientStock)
+    reasons.push("Hay una línea con cantidad mayor al stock disponible");
 
   return (
     <div className="sales-emit-wrap">

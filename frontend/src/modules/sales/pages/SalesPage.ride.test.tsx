@@ -123,6 +123,7 @@ function buildCtx(
     saveError: null,
     setSaveError: vi.fn(),
     editing: null,
+    hasInsufficientStock: false,
 
     form: {},
     register: vi.fn(),

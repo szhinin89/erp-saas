@@ -11,7 +11,12 @@ import { Badge } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney } from "../../../lib/sanitizers";
-import { lineNet, calcLineTax, formatVatLabel } from "../utils/salesCalc";
+import {
+  lineNet,
+  calcLineTax,
+  formatVatLabel,
+  lineExceedsStock,
+} from "../utils/salesCalc";
 import "../styles/sales-product-card.css";
 
 // ── Resaltado de coincidencias ────────────────────────────────────────────────
@@ -486,6 +491,9 @@ function SalesProductCard({
   const pvp = line._pvp;
   const stockQty = line._stockQty;
   const stockWarehouse = line._stockWarehouse;
+  // Advertencia preventiva (UX) — solo con el dato de disponibilidad ya cargado en pantalla;
+  // el backend sigue siendo quien bloquea la emisión (ver lineExceedsStock, salesCalc.ts).
+  const exceedsStock = lineExceedsStock(line);
 
   return (
     <div className="sf-product">
@@ -591,19 +599,30 @@ function SalesProductCard({
             {line._tracksStock && stockQty != null && (
               <Badge
                 label={
-                  stockQty <= 0
-                    ? "Sin stock"
-                    : stockQty <= 5
-                      ? "Stock bajo"
-                      : "Disponible"
+                  exceedsStock
+                    ? "Cantidad excede stock"
+                    : stockQty <= 0
+                      ? "Sin stock"
+                      : stockQty <= 5
+                        ? "Stock bajo"
+                        : "Disponible"
                 }
                 variant={
-                  stockQty <= 0 ? "red" : stockQty <= 5 ? "orange" : "green"
+                  exceedsStock || stockQty <= 0
+                    ? "red"
+                    : stockQty <= 5
+                      ? "orange"
+                      : "green"
                 }
                 size="md"
               />
             )}
           </div>
+          {exceedsStock && (
+            <div className="sf-product__stock-warning">
+              Supera el disponible ({stockQty} UDS)
+            </div>
+          )}
           {line._tracksStock && !readOnly ? (
             <ZhWarehouseSelector
               value={line.warehouseId ?? null}

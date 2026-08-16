@@ -8,6 +8,9 @@
 .sales-page-listbar {
   margin-bottom: var(--space-4);
 }
+.sales-page-save-error {
+  margin-bottom: var(--space-3);
+}
 .sales-page-spacer {
   flex: 1;
 }

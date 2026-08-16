@@ -47,8 +47,14 @@ import {
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import {
+  readApiErrorMessage,
+  readApiErrorMessages,
+  logApiDevError,
+} from "../../lib/apiError";
+import {
   calcSummary,
   formatVatLabel,
+  lineExceedsStock,
   type TaxBreakdownEntry,
 } from "../utils/salesCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -157,18 +163,29 @@ export const ISSUE_STEPS = [
   "Consultando autorización",
 ] as const;
 
-/** Mensaje seguro para el usuario — nunca reenvía `e.message` (stack/técnico), solo texto de negocio ya sanitizado por el backend (B-V5) o un fallback en español. */
-function extractSafeMessage(e: unknown, fallback: string): string {
-  const err = e as {
-    response?: {
-      data?: { message?: { user?: string }; data?: { errors?: string[] } };
-    };
-  };
-  return (
-    err?.response?.data?.message?.user ??
-    err?.response?.data?.data?.errors?.[0] ??
-    fallback
-  );
+/** Aviso de error accionable para el formulario de ventas: título contextual (qué acción
+ * falló, p. ej. "No se puede emitir la factura.") + detalle. El detalle prioriza los
+ * `data.errors` específicos del backend (todos, no solo el primero) sobre el mensaje genérico
+ * `message.user` del catálogo — ver `readApiErrorMessages` (single source of truth compartida,
+ * ya usada en el resto del ERP). `message.dev` nunca llega al usuario: solo se registra en
+ * consola vía `logApiDevError`. */
+export type SalesErrorNotice = { title: string; detail: string };
+
+/** Todos los `data.errors` del backend unidos en un solo texto legible cuando existen (nunca
+ * solo el primero); si no hay ninguno, cae a `message.user` y luego al fallback local. */
+export function extractErrorText(err: unknown, fallback: string): string {
+  logApiDevError(err);
+  const details = readApiErrorMessages(err);
+  if (details.length > 0) return details.join(" • ");
+  return readApiErrorMessage(err) ?? fallback;
+}
+
+export function buildSalesErrorNotice(
+  err: unknown,
+  title: string,
+  fallback: string,
+): SalesErrorNotice {
+  return { title, detail: extractErrorText(err, fallback) };
 }
 
 function issueErrorStatus(e: unknown): number | undefined {
@@ -229,7 +246,7 @@ export function useSalesPage() {
   const [listSearch, setListSearch] = useState("");
 
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  const [saveError, setSaveError] = useState<SalesErrorNotice | null>(null);
   const [editing, setEditing] = useState<SalesInvoiceDto | null>(null);
   // undefined = todavía cargando (o no se pudo verificar, ver cashSessionCheckError); null =
   // confirmado por el backend (200 OK) que no hay caja abierta.
@@ -400,13 +417,22 @@ export function useSalesPage() {
   const cashInsufficient =
     cashDue > 0 && cashReceived + INVOICE_PAYMENT_TOLERANCE < cashDue;
 
+  // Advertencia preventiva de stock (UX) — nunca bloquea si el frontend no tiene el dato de
+  // disponibilidad (_stockQty), solo anticipa el mismo resultado que ya valida el backend al
+  // emitir (AuthorizeSalesUseCases). No duplica la regla de stock, solo evita el roundtrip.
+  const hasInsufficientStock = useMemo(
+    () => lines.some((l) => lineExceedsStock(l)),
+    [lines],
+  );
+
   const canEmit =
     !fieldDisabled &&
     hasCustomer &&
     hasLines &&
     hasCashSession === true &&
     paymentOk &&
-    !cashInsufficient;
+    !cashInsufficient &&
+    !hasInsufficientStock;
 
   const grandTotal = editing && readOnly ? editing.grandTotal : summary.total;
   const totalDiscount =
@@ -644,12 +670,8 @@ export function useSalesPage() {
       try {
         pricing = await salesItemPricingService.get(item.id);
       } catch (err: unknown) {
-        const apiErr = err as {
-          response?: { data?: { message?: { user?: string } } };
-        };
         message.error(
-          apiErr.response?.data?.message?.user ??
-            "No se pudo obtener el precio del producto.",
+          extractErrorText(err, "No se pudo obtener el precio del producto."),
         );
         return;
       }
@@ -863,7 +885,7 @@ export function useSalesPage() {
     }
     setCustomerProfile(null);
     setEditing(null);
-    setSaveError("");
+    setSaveError(null);
     setLineKey(1);
     setPayKey(1);
     setCashReceived(0);
@@ -996,8 +1018,14 @@ export function useSalesPage() {
         setLineKey(inv.lines.length + 1);
         setPayKey((inv.payments?.length ?? 0) + 1);
         setTab("nuevo");
-      } catch {
-        setSaveError("Error al cargar la factura.");
+      } catch (err: unknown) {
+        setSaveError(
+          buildSalesErrorNotice(
+            err,
+            "No se pudo cargar la información de ventas.",
+            "Error al cargar la factura.",
+          ),
+        );
       }
     },
     [reset, tenantDefaults],
@@ -1095,11 +1123,13 @@ export function useSalesPage() {
               }
             }
           }
-          setSaveError(
-            msgs.length > 0
-              ? msgs.join(". ") + "."
-              : "Revise los campos del formulario antes de emitir.",
-          );
+          setSaveError({
+            title: "No se puede emitir la factura.",
+            detail:
+              msgs.length > 0
+                ? msgs.join(". ") + "."
+                : "Revise los campos del formulario antes de emitir.",
+          });
           setIssuePhase("idle");
           return;
         }
@@ -1110,12 +1140,13 @@ export function useSalesPage() {
           saved = await persistDraft(getValues());
         } catch (err: unknown) {
           const applied = applyServerErrors(err, setFieldError, (msg) =>
-            setSaveError(msg),
+            setSaveError({ title: "No se puede guardar la venta.", detail: msg }),
           );
           if (!applied)
             setSaveError(
-              extractSafeMessage(
+              buildSalesErrorNotice(
                 err,
+                "No se puede guardar la venta.",
                 "No se pudieron guardar los cambios pendientes.",
               ),
             );
@@ -1146,10 +1177,13 @@ export function useSalesPage() {
         if (issueErrorStatus(err) === 422) {
           // Error de validación de negocio (stock insuficiente, punto de
           // emisión inválido, etc.) — mismo tratamiento que arriba: se
-          // resuelve en el formulario, no en el modal de emisión.
+          // resuelve en el formulario, no en el modal de emisión. El detalle
+          // prioriza siempre data.errors (p. ej. "Línea 'X': stock insuficiente...")
+          // sobre el mensaje genérico del catálogo — ver buildSalesErrorNotice.
           setSaveError(
-            extractSafeMessage(
+            buildSalesErrorNotice(
               err,
+              "No se puede emitir la factura.",
               "Revise los datos de la factura antes de emitir.",
             ),
           );
@@ -1163,7 +1197,7 @@ export function useSalesPage() {
         setIssueError({
           kind:
             issueErrorStatus(err) === undefined ? "communication" : "internal",
-          message: extractSafeMessage(
+          message: extractErrorText(
             err,
             "Ocurrió un error al emitir la factura. Intente nuevamente o contacte a soporte.",
           ),
@@ -1220,7 +1254,7 @@ export function useSalesPage() {
       );
       downloadTextFile(xml, `Factura-${issueResult.invoiceNumber}.xml`);
     } catch (e) {
-      message.error(extractSafeMessage(e, "No se pudo descargar el XML."));
+      message.error(extractErrorText(e, "No se pudo descargar el XML."));
     }
     setXmlDownloading(false);
   }, [issueResult, xmlDownloading]);
@@ -1267,7 +1301,11 @@ export function useSalesPage() {
       setEditing(refreshed);
     } catch (e: unknown) {
       setSaveError(
-        extractSafeMessage(e, "No se pudo generar el documento electrónico."),
+        buildSalesErrorNotice(
+          e,
+          "No se pudo generar el documento electrónico.",
+          "No se pudo generar el documento electrónico.",
+        ),
       );
     }
     setSaving(false);
@@ -1286,7 +1324,9 @@ export function useSalesPage() {
         setTab("listado");
         fetchList();
       } catch (e: unknown) {
-        setSaveError(extractSafeMessage(e, "Error al anular."));
+        setSaveError(
+          buildSalesErrorNotice(e, "No se pudo anular la factura.", "Error al anular."),
+        );
       }
       setSaving(false);
     },
@@ -1454,22 +1494,11 @@ export function useSalesPage() {
       setCustomerProfile(profile);
       setModalNewCustomer(false);
     } catch (err: unknown) {
-      const e = err as {
-        response?: {
-          data?: {
-            message?: { user?: string };
-            data?: { errors?: Record<string, string[]> };
-          };
-        };
-        message?: string;
-      };
       setNewCustError(
-        e?.response?.data?.message?.user ??
-          e?.response?.data?.data?.errors?.[
-            Object.keys(e?.response?.data?.data?.errors ?? {})[0]
-          ]?.[0] ??
-          e?.message ??
-          "Error al guardar.",
+        extractErrorText(
+          err,
+          err instanceof Error && err.message ? err.message : "Error al guardar.",
+        ),
       );
     }
     setNewCustSaving(false);
@@ -1642,6 +1671,9 @@ export function useSalesPage() {
     cashDue,
     cashChange,
     cashInsufficient,
+
+    // Stock (advertencia preventiva antes de emitir)
+    hasInsufficientStock,
   };
 }
 

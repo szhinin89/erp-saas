@@ -5,6 +5,7 @@ import {
   lineNet,
   calcLineTax,
   calcSummary,
+  lineExceedsStock,
 } from "./salesCalc";
 import type {
   SalesLineInput,
@@ -292,5 +293,38 @@ describe("salesCalc — UI preview layer", () => {
         expect(d.sortOrder).toBe(i + 1);
       });
     });
+  });
+});
+
+// ── lineExceedsStock — advertencia preventiva de stock (SALES-RETAIL-READY-01-FIX03) ──
+describe("lineExceedsStock", () => {
+  it("true cuando la cantidad supera el stock disponible en un ítem inventariable", () => {
+    expect(
+      lineExceedsStock({ _tracksStock: true, _stockQty: 0, quantity: 1 }),
+    ).toBe(true);
+    expect(
+      lineExceedsStock({ _tracksStock: true, _stockQty: 3, quantity: 5 }),
+    ).toBe(true);
+  });
+
+  it("false cuando la cantidad no supera el stock disponible", () => {
+    expect(
+      lineExceedsStock({ _tracksStock: true, _stockQty: 5, quantity: 5 }),
+    ).toBe(false);
+    expect(
+      lineExceedsStock({ _tracksStock: true, _stockQty: 10, quantity: 1 }),
+    ).toBe(false);
+  });
+
+  it("false para ítems que no controlan inventario, sin importar la cantidad", () => {
+    expect(
+      lineExceedsStock({ _tracksStock: false, _stockQty: 0, quantity: 100 }),
+    ).toBe(false);
+  });
+
+  it("false (no bloquea) cuando el dato de disponibilidad no está cargado — nunca inventa stock", () => {
+    expect(
+      lineExceedsStock({ _tracksStock: true, _stockQty: undefined, quantity: 100 }),
+    ).toBe(false);
   });
 });
