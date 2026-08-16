@@ -303,6 +303,5 @@
 /* .sales-invoice-details-delete-icon ELIMINADO (FIX02) — sin consumidores TSX; el botón
    eliminar línea usa ZHIconButton (ver SalesInvoiceDetailsSection.tsx). */
 
-.sales-invoice-details-pvp-label {
-  font-weight: 700;
-}
+/* .sales-invoice-details-pvp-label ELIMINADO (FIX06) — sin consumidores TSX; la etiqueta
+   "Precio lista" ahora usa el mismo estilo que las demás vía .sf-product__pricelist-label. */

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 
@@ -30,19 +31,21 @@ function baseLine(overrides: Partial<SalesLineFormValues>): SalesLineFormValues 
 
 function renderSection(lines: SalesLineFormValues[]) {
   return render(
-    <SalesInvoiceDetailsSection
-      lines={lines}
-      readOnly
-      disabled={false}
-      onRemoveLine={vi.fn()}
-      onUpdateLine={vi.fn()}
-      onAddItemLine={vi.fn()}
-      onUpdateLineWarehouse={vi.fn()}
-      warehouses={[]}
-      selectedWarehouseId=""
-      onWarehouseChange={vi.fn()}
-      vatRates={{ "0": 0 }}
-    />,
+    <MemoryRouter>
+      <SalesInvoiceDetailsSection
+        lines={lines}
+        readOnly
+        disabled={false}
+        onRemoveLine={vi.fn()}
+        onUpdateLine={vi.fn()}
+        onAddItemLine={vi.fn()}
+        onUpdateLineWarehouse={vi.fn()}
+        warehouses={[]}
+        selectedWarehouseId=""
+        onWarehouseChange={vi.fn()}
+        vatRates={{ "0": 0 }}
+      />
+    </MemoryRouter>,
   );
 }
 
