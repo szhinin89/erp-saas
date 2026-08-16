@@ -65,15 +65,20 @@
   border-right: none;
 }
 
-/* ── Col 0: Acciones — basurero + texto "Eliminar" ──
-   Reemplaza el badge flotante anterior (SALES-RETAIL-READY-01-FIX06I): columna izquierda
-   integrada a la línea (mismo patrón que Compras .pdl-line__action), con ícono + texto visible
-   para que la acción destructiva sea clara para un usuario no técnico. */
-.sf-product__actions {
+/* ── Col 0: Rail izquierdo — número de línea + eliminar (ícono solo) ──
+   Patrón visual alineado con el rail de acciones de Compras: número arriba, basurero debajo,
+   sin texto visible (SALES-RETAIL-LINE-CARD-01). Clases propias de Ventas, ancho estable. */
+.sf-product__rail {
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 8px;
   padding: 12px 6px;
+}
+.sf-product__rail-index {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
 }
 .sf-product__delete-btn.prd-icon-btn {
   width: 36px;
@@ -83,16 +88,8 @@
   font-size: 22px;
   color: var(--color-error);
 }
-.sf-product__delete-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-error);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
 
-/* ── Columna 1: Producto (número de línea + SKU + nombre) ────────
+/* ── Columna 1: Producto (SKU + nombre) ────────
    Columna propia con todo el ancho disponible para el nombre, que trunca lo menos posible. */
 .sf-product__info {
   gap: 6px;
@@ -101,12 +98,6 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-}
-.sf-product__index {
-  flex-shrink: 0;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--color-text-secondary);
 }
 .sf-product__code {
   font-size: 13px;

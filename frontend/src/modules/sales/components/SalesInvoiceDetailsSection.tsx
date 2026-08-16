@@ -9,7 +9,7 @@ import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";
 import { Badge } from "../../../components/PageShell";
-import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
@@ -524,35 +524,35 @@ function SalesProductCard({
 
   return (
     <div className="sf-product">
-      {/* Col 0: Acciones — basurero + texto "Eliminar" visible, integrados a la línea como
-          columna izquierda dedicada (referencia: Compras .pdl-line__action). Reemplaza el badge
-          flotante anterior (SALES-RETAIL-READY-01-FIX06I): para un usuario no técnico, una acción
-          destructiva flotante y sin texto resultaba ambigua. */}
-      <div className="sf-product__actions">
+      {/* Col 0: Rail izquierdo — número de línea + acción eliminar, mismo patrón visual que el
+          rail de acciones de Compras (SALES-RETAIL-LINE-CARD-01): número arriba, ícono-solo
+          (basurero, sin texto) debajo. Clases propias de Ventas (sf-product__rail-*), no se
+          reutilizan las clases pdl-* de Compras. */}
+      <div className="sf-product__rail">
+        <span className="sf-product__rail-index">
+          {String(index + 1).padStart(2, "0")}
+        </span>
         {!readOnly && (
-          <>
-            <ZHIconButton
-              // Basurero = eliminar el producto de la factura; una X se reserva para
-              // cerrar/cancelar modales o paneles, nunca para esta acción destructiva.
-              icon="delete"
-              variant="danger"
-              title="Eliminar producto de la factura"
-              onClick={() => onRemove(line._key)}
-              disabled={disabled}
-              className="sf-product__delete-btn"
-            />
-            <span className="sf-product__delete-label">Eliminar</span>
-          </>
+          // Basurero = eliminar el producto de la factura; una X se reserva para
+          // cerrar/cancelar modales o paneles, nunca para esta acción destructiva.
+          <ZHRowDeleteAction
+            compact
+            showText={false}
+            title="Eliminar producto de la factura"
+            label="Eliminar producto de la factura"
+            onClick={() => onRemove(line._key)}
+            disabled={disabled}
+            className="sf-product__delete-btn"
+          />
         )}
       </div>
 
-      {/* Col 1: Product Info — número de línea + SKU en la misma fila (calco de la referencia),
-          sin badge de IVA junto al nombre (pedido explícito del usuario, FIX06H): la tasa ya se
-          ve en la columna de totales ("IVA (15%)"), `vatLabel` se sigue usando solo para
-          formatear esa etiqueta más abajo. */}
+      {/* Col 1: Product Info — SKU en la primera fila (el número de línea ahora vive en el rail
+          izquierdo), sin badge de IVA junto al nombre (pedido explícito del usuario, FIX06H): la
+          tasa ya se ve en la columna de totales ("IVA (15%)"), `vatLabel` se sigue usando solo
+          para formatear esa etiqueta más abajo. */}
       <div className="sf-product__info">
         <div className="sf-product__title-row">
-          <span className="sf-product__index">{index + 1}.</span>
           {sku && <span className="sf-product__code">{sku}</span>}
         </div>
         <div className="sf-product__name" title={name}>
