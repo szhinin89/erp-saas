@@ -7,6 +7,7 @@ import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHLineAction } from "../../../components/zh/ZHLineAction";
 import { ZHLineActionItem } from "../../../components/zh/ZHLineActionItem";
 import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
+import { ZHLineCard } from "../../../components/zh/ZHLineCard";
 import { SupplierPicker } from "../components/SupplierPicker";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ProductPicker } from "../components/ProductPicker";
@@ -1696,62 +1697,67 @@ function PurchaseLineCard({
     ctxData?.shortName || l.description?.split(" — ")[1] || l.description;
 
   return (
-    <div className="zh-detail-line pdl-line-row">
-      {/* Columna lateral izquierda única de la línea: número, menú de producto,
-          duplicar, eliminar y el toggle de colapso — plantilla DESIGN-SYSTEM-LINE-RAIL-04
-          (unifica lo que antes eran dos bandas, izquierda y derecha). */}
-      <div className="pdl-line-row__rail">
-        <span className="pdl-line-row__num">
-          {String(idx + 1).padStart(2, "0")}
-        </span>
-        <ProductLineActionMenu
-          line={l}
-          ctx={ctx}
-          disabled={ctx.fieldDisabled}
-          onProductSelect={handleProductSelect}
-          onViewProduct={() => viewMatchedItem(l.itemId as string)}
-          onUnlinkProduct={handleUnlinkProduct}
-        />
-        <ZHLineAction
-          icon="content_copy"
-          variant="default"
-          size="md"
-          compact
-          showText={false}
-          title={t("purchases.lines.duplicate", "Duplicar")}
-          label={t("purchases.lines.duplicate", "Duplicar")}
-          onClick={() => ctx.duplicateLine(l._key)}
-        />
-        <ZHRowDeleteAction
-          compact
-          showText={false}
-          title={t("purchases.lines.delete", "Eliminar")}
-          label={t("purchases.lines.delete", "Eliminar")}
-          onClick={() => ctx.removeLine(l._key)}
-        />
-        <button
-          type="button"
-          className="pdl-line-row__collapse-toggle"
-          aria-expanded={!collapsed}
-          aria-label={
-            collapsed
-              ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
-              : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
-          }
-          title={
-            collapsed
-              ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
-              : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
-          }
-          onClick={() => setCollapsed((current) => !current)}
-        >
-          <span
-            className={`material-symbols-outlined pdl-line-row__collapse-icon${collapsed ? "" : " pdl-line-row__collapse-icon--open"}`}
-          >
-            expand_more
+    // DS-LINE-CARD-UNIFY-02: wrapper externo unificado (ZHLineCard) en vez de la caja local
+    // `.zh-detail-line pdl-line-row` — mismo rail izquierdo aprobado (número, menú de producto,
+    // duplicar, eliminar, colapso — plantilla DESIGN-SYSTEM-LINE-RAIL-04), pasado como prop
+    // `rail`; el contenido de la línea (`.pdl-line`, sin cambios internos) sigue como children.
+    <ZHLineCard
+      className="pdl-line-card"
+      rail={
+        <>
+          <span className="pdl-line-row__num">
+            {String(idx + 1).padStart(2, "0")}
           </span>
-        </button>
-      </div>
+          <ProductLineActionMenu
+            line={l}
+            ctx={ctx}
+            disabled={ctx.fieldDisabled}
+            onProductSelect={handleProductSelect}
+            onViewProduct={() => viewMatchedItem(l.itemId as string)}
+            onUnlinkProduct={handleUnlinkProduct}
+          />
+          <ZHLineAction
+            icon="content_copy"
+            variant="default"
+            size="md"
+            compact
+            showText={false}
+            title={t("purchases.lines.duplicate", "Duplicar")}
+            label={t("purchases.lines.duplicate", "Duplicar")}
+            onClick={() => ctx.duplicateLine(l._key)}
+          />
+          <ZHRowDeleteAction
+            compact
+            showText={false}
+            title={t("purchases.lines.delete", "Eliminar")}
+            label={t("purchases.lines.delete", "Eliminar")}
+            onClick={() => ctx.removeLine(l._key)}
+          />
+          <button
+            type="button"
+            className="pdl-line-row__collapse-toggle"
+            aria-expanded={!collapsed}
+            aria-label={
+              collapsed
+                ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
+                : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
+            }
+            title={
+              collapsed
+                ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
+                : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
+            }
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            <span
+              className={`material-symbols-outlined pdl-line-row__collapse-icon${collapsed ? "" : " pdl-line-row__collapse-icon--open"}`}
+            >
+              expand_more
+            </span>
+          </button>
+        </>
+      }
+    >
       <div className="pdl-line">
       <div className="pdl-line__main">
         <div className="pdl-line__summary">
@@ -1768,11 +1774,39 @@ function PurchaseLineCard({
                 <div className="pdl-line__product-name">
                   {productName}
                 </div>
+                {/* PURCHASE-LINE-HEADER-UX-01 — mismos datos/orden que antes (SKU · Cód.
+                    proveedor), solo reestructurados en pares label/valor para que el label
+                    (pequeño, uppercase) no compita visualmente con el código (mono, más fuerte) —
+                    mismo criterio que ya usan los labels de .pdl-line__metric-label. */}
                 <div className="pdl-line__product-meta">
-                  SKU: {vm.item.sku} ·{" "}
-                  {t("purchases.lines.supplierCode", "Cód. proveedor")}:{" "}
-                  {vm.xml.supplierCode}
+                  <span className="pdl-line__product-meta-item">
+                    <span className="pdl-line__product-meta-label">SKU</span>
+                    <span className="pdl-line__product-meta-value">
+                      {vm.item.sku}
+                    </span>
+                  </span>
+                  <span className="pdl-line__product-meta-sep">·</span>
+                  <span className="pdl-line__product-meta-item">
+                    <span className="pdl-line__product-meta-label">
+                      {t("purchases.lines.supplierCode", "Cód. proveedor")}
+                    </span>
+                    <span className="pdl-line__product-meta-value">
+                      {vm.xml.supplierCode}
+                    </span>
+                  </span>
                 </div>
+              </>
+            )}
+          </div>
+          {/* PURCHASE-LINE-HEADER-UX-02 — bodega como columna operativa propia (criterio
+              "Ubicación" de Ventas), en vez de un campo suelto debajo del producto. Mismo
+              componente/handler/condición (l.itemId) que antes: solo cambió dónde se renderiza. */}
+          <div className="pdl-line__warehouse">
+            {l.itemId && (
+              <>
+                <span className="pdl-line__warehouse-label">
+                  {t("purchases.lines.warehouse", "Bodega")}
+                </span>
                 <ZhSelect
                   className="pdl-line__wh-select-compact"
                   density="compact"
@@ -1794,7 +1828,10 @@ function PurchaseLineCard({
               </>
             )}
           </div>
-          <div className="pdl-line__metrics">
+          {/* PURCHASE-LINE-HEADER-UX-03 — cada métrica pasa a ser columna directa de
+              .pdl-line__summary (antes agrupadas en .pdl-line__metrics) para que la cabecera sea
+              un grid real de celdas (mismo criterio que .sf-product en Ventas: columnas con
+              minmax() y separadores, no un bloque flex anidado) — mismos datos/orden/handlers. */}
             <div className="pdl-line__metric">
               <span className="pdl-line__metric-label">
                 {t("purchases.lines.quantity", "Cantidad")}
@@ -1913,7 +1950,6 @@ function PurchaseLineCard({
                 {vm.commercial.profitability.marginPct}%
               </span>
             </div>
-          </div>
         </div>
       </div>
 
@@ -2331,7 +2367,7 @@ function PurchaseLineCard({
         </button>
       )}
       </div>
-    </div>
+    </ZHLineCard>
   );
 }
 

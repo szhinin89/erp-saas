@@ -37,11 +37,12 @@
 
 .pf-badge--offset { margin-left: 8px; }
 .pf-validation-summary .zh-form-alert-detail { white-space: pre-line; }
-/* Cabecera de línea: ahora una sola columna — solo datos (.pdl-line__summary).
+/* Cabecera de línea: .pdl-line__main envuelve una sola columna (.pdl-line__summary).
  * Menú, número, Duplicar/Eliminar y el toggle de colapso viven todos en la
  * única banda lateral izquierda (.pdl-line-row__rail, hermana de .pdl-line__main
- * dentro de .pdl-line-row) — ya no hay banda derecha. Cantidad/costo/descuento/
- * IVA/ICE/total se agrupan dentro de .pdl-line__metrics, dentro de .pdl-line__summary. */
+ * dentro de .pdl-line-row) — ya no hay banda derecha. Producto/Bodega/Cantidad/
+ * Costo/Base/IVA-ICE/Total/Margen son columnas directas de .pdl-line__summary
+ * (grid real desde PURCHASE-LINE-HEADER-UX-03 — ver esa regla más abajo). */
 .pdl-container .pdl-line__main {
   grid-template-columns: 1fr;
   /* Compacta el padding vertical del wrapper principal (base: erp-form-core.css
@@ -49,6 +50,15 @@
    * el horizontal (var(--space-5)) no se toca. */
   padding-top: var(--space-2);
   padding-bottom: var(--space-2);
+}
+/* PURCHASE-LINE-HEADER-UX-01 — zona de estado/alertas (badge de estado o los
+ * avisos de readiness) como banda propia, separada con un divisor suave del
+ * bloque identidad+métricas de arriba, en vez de sentirse pegada/flotante.
+ * Scoped a compras (base: erp-form-core.css .pdl-line__status, sin otros
+ * consumidores hoy — ver DS-LINE-CARD-UNIFY-02). */
+.pdl-container .pdl-line__status {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-light);
 }
 /* Compacta el margen inferior de los bloques inferiores (base: erp-form-core.css
  * .pdl-blocks, compartida con Kardex/Sales) solo dentro de compras — es el
@@ -98,33 +108,44 @@
 /* Fila de línea con control lateral: banda externa única (número, menú,
    Duplicar, Eliminar y toggle de colapso — DESIGN-SYSTEM-LINE-RAIL-04)
    + componente de detalle de la línea (.pdl-line, sin cambios internos).
-   El borde/radio/superficie/sombra/margin-bottom son SSOT de .zh-detail-line
-   (zh-ui.css) — se aplica junto a esta clase en el JSX
-   (className="zh-detail-line pdl-line-row"). Aquí solo queda lo específico
-   de compras: el layout flex con la banda lateral y el gutter horizontal de
-   esta pantalla (var(--space-5)). */
-.pdl-line-row {
-  display: flex;
-  align-items: stretch;
+   DS-LINE-CARD-UNIFY-02: el wrapper externo ahora es `ZHLineCard`
+   (`.zh-line-card` en zh-ui.css, con `className="pdl-line-card"`) — reemplaza
+   la caja local `.zh-detail-line pdl-line-row` (esa combinación ya no se usa
+   en el JSX; `.zh-detail-line` queda sin consumidores). El rail (número, menú,
+   duplicar, eliminar, colapso) se pasa como prop `rail` de `ZHLineCard`, que lo
+   envuelve en `.zh-line-card__rail` — aquí solo se sobreescribe scoped
+   (`.pdl-line-card ...`) lo específico de Compras: ancho/gap/padding/fondo del
+   rail y el gutter horizontal de esta pantalla (var(--space-5)). */
+.pdl-line-card.zh-line-card {
+  max-width: none;
   margin-left: var(--space-5);
   margin-right: var(--space-5);
+  /* Chrome exacto migrado desde `.zh-detail-line` (mismo valor de tokens, para
+     no alterar el look aprobado): radio/sombra/margen más chicos que el
+     default de `.zh-line-card` (pensado para Ventas), y sin overflow:hidden
+     — el panel del menú de producto (ProductLineActionMenu) se abre en
+     posición absoluta dentro de esta tarjeta y quedaría recortado. */
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  margin-bottom: var(--space-2);
+  overflow: visible;
 }
-.pdl-line-row .pdl-line {
+.pdl-line-card.zh-line-card:last-child {
+  margin-bottom: 0;
+}
+.pdl-line-card .pdl-line {
   flex: 1;
   min-width: 0;
   border-top: none;
 }
-.pdl-line-row__rail {
+.pdl-line-card .zh-line-card__rail {
   flex-shrink: 0;
   /* DESIGN-SYSTEM-LINE-RAIL-04A: 36px -> 40px. DESIGN-SYSTEM-LINE-RAIL-04B: 40px -> 44px
      (el ícono eliminar, sin padding propio a diferencia de duplicar/ghost, seguía
      viéndose apretado). La banda agrupa 5 controles (número, menú, duplicar, eliminar,
      colapso) — 44px da margen sin angostar el contenido principal (flex:1 en
-     .pdl-line-row .pdl-line). */
+     .pdl-line-card .pdl-line). */
   width: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: flex-start;
   /* DESIGN-SYSTEM-LINE-RAIL-04A: var(--space-2) -> var(--space-3) — más aire
      entre los 5 controles apilados, evita que se sientan pegados. */
@@ -137,16 +158,16 @@
   background: var(--color-surface-container-low);
   border-right: 1px solid var(--color-border);
   /* Redondea solo el borde izquierdo para que el relleno de la banda no se
-     salga del contorno redondeado de .zh-detail-line (sin overflow:hidden,
-     que recortaría el panel del menú al abrirse). */
+     salga del contorno redondeado de la tarjeta (sin overflow:hidden, que
+     recortaría el panel del menú al abrirse). */
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 /* DESIGN-SYSTEM-LINE-RAIL-04B: el botón eliminar (.zh-line-action__btn--lg.prd-icon-btn--danger,
    zh-ui.css) no trae padding propio — a diferencia de duplicar (variante ghost, que sí trae
    4px) se veía más apretado dentro del rail. Ajuste acotado a Compras vía selector con
-   .pdl-line-row__rail como ancestro: NO se toca la clase global .prd-icon-btn--danger, que
-   sigue igual en Ventas y cualquier otro módulo que la use. */
-.pdl-line-row__rail .zh-line-action__btn--lg.prd-icon-btn--danger {
+   .zh-line-card__rail (dentro de .pdl-line-card) como ancestro: NO se toca la clase global
+   .prd-icon-btn--danger, que sigue igual en Ventas y cualquier otro módulo que la use. */
+.pdl-line-card .zh-line-card__rail .zh-line-action__btn--lg.prd-icon-btn--danger {
   padding: var(--space-1);
 }
 /* Número de línea, arriba del menú, dentro de la misma banda lateral —
@@ -221,77 +242,110 @@
 }
 /* Línea secundaria de la cabecera: SKU + código proveedor, debajo del
    nombre del producto y antes del selector de bodega. Margen reducido
-   (space-1 en vez de space-2) para acercar el selector de bodega. */
+   (space-1 en vez de space-2) para acercar el selector de bodega.
+   PURCHASE-LINE-HEADER-UX-01: pasa de un solo bloque de texto mono a pares
+   label/valor (mismo criterio que .pdl-line__metric-label/-value) — el label
+   ya no compite en peso visual con el código real. */
 .pdl-line__product-meta {
-  font-size: 11px;
-  color: var(--color-text-secondary);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-bottom: var(--space-1);
+}
+.pdl-line__product-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.pdl-line__product-meta-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.pdl-line__product-meta-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
 }
-/* Fila horizontal de la cabecera: identidad del producto (izquierda,
-   flexible) + métricas (derecha, ancho de contenido) — evita que las
-   métricas caigan debajo del selector de bodega en desktop. */
+.pdl-line__product-meta-sep {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+/* Cabecera de línea como grid real de 8 columnas — mismo criterio visual que
+   .sf-product en Ventas (columnas con minmax(), separador vertical suave
+   entre cada una, contenido centrado en la altura de la fila), aplicado con
+   clases pdl-* propias de Compras, sin copiar sf-* ni depender de Ventas
+   (PURCHASE-LINE-HEADER-UX-03). Orden fijo, igual al JSX: Producto | Bodega |
+   Cantidad | Costo | Base imp. | IVA/ICE | Total neto | Margen. Los pisos
+   mínimos de cada columna reusan anchos ya validados en iteraciones previas
+   de esta cabecera (min-width de .pdl-line__metric, .pdl-line__warehouse) o
+   el ancho real de los inputs que contienen (.pdl-input--qty 80px,
+   .pdl-input--cost 100px) — no son valores nuevos arbitrarios. */
 .pdl-line__summary {
-  display: flex;
-  /* flex-start: alinea el tope de métricas con el tope de identidad — igual
-     que en la referencia, donde los labels de las métricas quedan a la
-     misma altura que el nombre del producto (arriba), no centrados contra
-     todo el bloque de identidad (que es más alto por el selector). */
-  align-items: flex-start;
-  /* space-3 (no space-4): acerca la franja de métricas al bloque de
-     identidad — reduce el aire horizontal percibido entre ambos. */
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.5fr) /* Producto */
+    minmax(150px, 0.9fr) /* Bodega */
+    minmax(104px, 0.5fr) /* Cantidad (input 80px + padding) */
+    minmax(124px, 0.6fr) /* Costo (input 100px + padding) */
+    minmax(92px, 0.55fr) /* Base imp. */
+    minmax(110px, 0.65fr) /* IVA/ICE/IRBPNR */
+    minmax(96px, 0.55fr) /* Total neto */
+    minmax(80px, 0.45fr); /* Margen */
+  align-items: stretch;
+  gap: 0;
   min-width: 0;
 }
-.pdl-line__identity {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-/* Ancho razonable del selector de bodega dentro de la columna de identidad
-   — ya no cruza toda la cabecera. No hay token de ancho para selects en el
-   Design System (solo width:100% por defecto), así que se documenta este
-   valor local: suficiente para leer "WH-XXXXXXXX — Nombre de bodega" sin
-   quedar corto (antes 280px se sentía angosto). */
-.pdl-line__wh-select-compact {
-  max-width: 410px;
-}
-/* Agrupa cantidad/costo/descuento/IVA-ICE/total en una franja a la derecha
-   de la identidad — mismo orden ya existente (cantidad → costo/desc. →
-   IVA/ICE → total), mismos inputs y handlers, solo se reubica visualmente
-   el contenedor. flex-shrink: 0 evita que se comprima cuando la identidad
-   crece; el wrap a columna en desktop queda deshabilitado y solo se permite
-   en el breakpoint angosto (abajo). */
-.pdl-line__metrics {
-  display: flex;
-  flex-wrap: nowrap;
-  /* flex-start (no center): alinea el label de las 5 columnas en una misma
-     línea superior — con "center" cada celda se centraba por separado según
-     su propia altura (la celda de IVA/ICE es más alta que cantidad/costo),
-     así que los labels quedaban a distinta altura entre sí ("flotando"). El
-     bloque de métricas como conjunto se sigue centrando frente a identidad
-     vía .pdl-line__summary (nivel distinto, sin conflicto). */
-  align-items: flex-start;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-/* Cada métrica es su propia "columna": label arriba, valor debajo, alineado
-   a la derecha (mismo criterio NUM-001 que ya usaban cantidad/costo/tax por
-   separado). Separador vertical sutil entre columnas (Cambio 5) con el
-   mismo token de borde que ya usa .pdl-block; la primera columna no lleva
-   separador. Gap/padding compactos (space-2 en vez de space-3) para que se
-   sienta como resumen editable liviano, no como formulario técnico. */
-.pdl-line__metric {
+/* Cada columna directa: mismo padding/divisor vertical suave, salvo la
+   primera (Producto) — igual criterio que `.sf-product > *` en Ventas,
+   traducido a tokens/clases propias de Compras. */
+.pdl-line__summary > * {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
   justify-content: center;
-  gap: 2px;
-  padding-left: var(--space-2);
+  min-width: 0;
+  padding: 0 var(--space-3);
   border-left: 1px solid var(--color-border);
 }
-.pdl-line__metric:first-child {
+.pdl-line__summary > *:first-child {
   padding-left: 0;
   border-left: none;
+}
+.pdl-line__identity {
+  min-width: 0;
+}
+/* Columna de bodega — mismo componente/handler que antes (ZhSelect +
+   ctx.updateLineWarehouse), solo reubicado visualmente (PURCHASE-LINE-HEADER-
+   UX-02) y ahora como columna real del grid (UX-03) en vez de un flex item
+   con ancho manual. */
+.pdl-line__warehouse {
+  gap: 2px;
+}
+.pdl-line__warehouse-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* El selector llena su columna — el ancho real ya lo da el grid-template-
+   columns de arriba, no hace falta max-width propio. */
+.pdl-line__wh-select-compact {
+  width: 100%;
+}
+/* Cada métrica es su propia columna: label arriba, valor debajo, alineado a
+   la derecha (mismo criterio NUM-001 que ya usaban cantidad/costo/tax por
+   separado). El separador vertical y el padding ya los da la regla genérica
+   `.pdl-line__summary > *` de arriba — aquí solo queda la alineación
+   específica de datos numéricos. */
+.pdl-line__metric {
+  align-items: flex-end;
+  gap: 2px;
 }
 .pdl-line__metric-label {
   font-size: 10px;
@@ -308,50 +362,6 @@
 .pdl-line__metric-unit {
   font-size: 12px;
   color: var(--color-text-secondary);
-}
-/* PURCHASE-LINE-HEADER-METRICS-SPACING-01 — corrección v2. La v1 limitaba
-   max-width de identity para "correr" todo el grupo de métricas a la
-   izquierda, pero eso no resolvía el problema real: las columnas dentro del
-   grupo (Cantidad/Costo/Base imp./IVA-ICE/Total/Margen) seguían con gap
-   angosto (space-2) y sin min-width propio, así que se leían amontonadas
-   entre sí sin importar dónde arrancara el grupo — se revierte identity a su
-   comportamiento original (flex:1 1 auto, sin max-width, ver arriba) y en su
-   lugar se le da a cada columna más aire y ancho propio. Va DESPUÉS de las
-   reglas base de .pdl-line__metric (incluyendo :first-child) para poder
-   sobrescribir gap/padding con la misma especificidad de clase — :first-child
-   sigue ganando en Cantidad por mayor especificidad, así que no le agrega
-   padding-left de más. Solo desktop ancho (>1100px, mismo umbral que ya usa
-   la regla de wrap más abajo — por debajo de eso las métricas envuelven/pasan
-   a grid y ya tienen su propio tratamiento). Mismos datos/orden/fórmulas/JSX,
-   solo espaciado. */
-@media (min-width: 1101px) {
-  .pdl-line__metrics {
-    /* space-6 (24px, no space-4): separación real entre columnas — con
-       space-4 seguían leyéndose pegadas. */
-    gap: var(--space-6);
-  }
-  .pdl-line__metric {
-    padding-left: var(--space-4);
-    padding-right: var(--space-1);
-    min-width: 60px;
-  }
-  /* Columnas con más contenido/lectura (valores monetarios, dos líneas de
-     IVA/ICE, badge de margen) necesitan más ancho propio que Cantidad/Costo
-     para no sentirse comprimidas — mismo orden fijo del JSX (Cantidad=1,
-     Costo=2, Base imp.=3, IVA/ICE=4, Total neto=5, Margen=6), sin agregar
-     clases nuevas ni tocar el componente. */
-  .pdl-line__metric:nth-child(3) {
-    min-width: 92px;
-  }
-  .pdl-line__metric:nth-child(4) {
-    min-width: 100px;
-  }
-  .pdl-line__metric:nth-child(5) {
-    min-width: 92px;
-  }
-  .pdl-line__metric:nth-child(6) {
-    min-width: 84px;
-  }
 }
 /* Aligera el peso visual de los inputs dentro de las métricas — mismo
    .pdl-input compartido (erp-form-core.css), solo se reduce su padding/
@@ -438,20 +448,22 @@
    ELIMINADOS (PURCHASE-CLEANUP-RAIL-05) — sin consumidores; eran el rail
    derecho de Duplicar/Eliminar, reemplazado por ZHLineAction/ZHRowDeleteAction
    dentro de .pdl-line-row__rail desde DESIGN-SYSTEM-LINE-RAIL-04. */
-/* Pantallas medianas: las métricas pueden envolver en dos filas si no caben
-   en la franja horizontal, sin todavía apilar identidad/métricas. */
+/* Pantallas medianas: la cabecera (8 columnas: Producto, Bodega, Cantidad,
+   Costo, Base, IVA/ICE, Total, Margen) pasa a grid de 2 columnas — mismo
+   criterio que Ventas a este ancho: el divisor vertical se convierte en
+   horizontal, y solo las últimas 2 celdas (última fila) se quedan sin borde
+   inferior. PURCHASE-LINE-HEADER-UX-03. */
 @media (max-width: 1100px) {
-  .pdl-line__metrics {
-    flex-wrap: wrap;
-    row-gap: var(--space-2);
+  .pdl-line__summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
   }
-  /* Al envolver, cualquier métrica puede caer como primera de una nueva fila
-     y conservar su border-left (:first-child solo apunta al primer hijo real
-     del DOM, "Cantidad") — se ve una rayita huérfana. Solo en <=1100px se
-     quitan todos los separadores verticales; desktop (>1100px) los conserva. */
-  .pdl-line__metric {
+  .pdl-line__summary > * {
     border-left: none;
-    padding-left: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .pdl-line__summary > *:nth-last-child(-n + 2) {
+    border-bottom: none;
   }
   /* .pdl-blocks pasa a 2 columnas (erp-form-core.css) — el 3er bloque
      ("Información comercial") cae a una fila nueva en la columna 1, así
@@ -463,64 +475,67 @@
     padding-top: var(--space-3);
   }
 }
-/* ── Móvil real (<=640px): .pdl-line-row deja de ser 3 columnas rígidas ──
-   Causa raíz del fix anterior (FIX-02) siendo insuficiente: .pdl-line-row
+/* ── Móvil real (<=640px): la tarjeta deja de ser 3 columnas rígidas ──
+   Causa raíz del fix anterior (FIX-02) siendo insuficiente: el wrapper
    seguía siendo un flex-row con TRES hermanos lado a lado (rail izq 36px +
    .pdl-line flex:1 + rail der 48-72px) EN TODOS los anchos — nunca se dejó
    de "ver como tabla horizontal". Angostar el rail derecho no alcanzaba
    porque el problema era la estructura de 3 columnas en sí, no el ancho de
-   una de ellas. Se convierte a CSS Grid de 2 columnas (rail izq | contenido)
-   y el rail derecho se reubica, vía posicionamiento explícito de grid (no
-   requiere reordenar el JSX/DOM), como una fila propia DEBAJO de .pdl-line,
-   dentro de la misma columna 2 — deja de robar ancho horizontal. */
+   una de ellas. Se convierte a CSS Grid de 2 columnas (rail izq | contenido).
+   DS-LINE-CARD-UNIFY-02: `.zh-line-card__rail` y `.zh-line-card__body`
+   (ambos hijos directos de `.pdl-line-card.zh-line-card`, generados por
+   `ZHLineCard`) reemplazan a `.pdl-line-row__rail`/`.pdl-line` como destino
+   del posicionamiento explícito de grid — mismo truco, mismo resultado
+   visual, sin reordenar el JSX/DOM. */
 @media (max-width: 640px) {
-  .pdl-line-row {
+  .pdl-line-card.zh-line-card {
     display: grid;
     /* DESIGN-SYSTEM-LINE-RAIL-04A: 44px -> 48px. DESIGN-SYSTEM-LINE-RAIL-04B: 48px -> 52px,
-       en línea con el ancho desktop de .pdl-line-row__rail (40px -> 44px) — mismo margen
+       en línea con el ancho desktop de .zh-line-card__rail (40px -> 44px) — mismo margen
        relativo alrededor del trigger del menú (32px), sin restar más de lo necesario al
-       ancho de .pdl-line (columna 2, sigue siendo 1fr). */
+       ancho del contenido (columna 2, sigue siendo 1fr). */
     grid-template-columns: 52px 1fr;
     align-items: stretch;
   }
-  .pdl-line-row__rail {
+  .pdl-line-card .zh-line-card__rail {
     grid-column: 1;
     grid-row: 1 / -1;
     width: auto;
   }
-  .pdl-line-row .pdl-line {
+  .pdl-line-card .zh-line-card__body {
     grid-column: 2;
     grid-row: 1;
   }
   /* .pdl-line-row__actions-rail mobile override ELIMINADO (DESIGN-SYSTEM-LINE-RAIL-04)
      — ya no existe ese rail; Duplicar/Eliminar viven en .pdl-line-row__rail (columna 1,
      misma banda que en desktop), sin necesidad de reubicación por grid en mobile. */
-  /* Solo en pantallas angostas: las métricas caen debajo de la identidad
-     en vez de mantenerse en franja horizontal, y el selector de bodega
-     recupera el ancho completo de la columna. align-items:stretch (en vez
-     del flex-start heredado, pensado para la fila horizontal de desktop)
-     evita que el eje cruzado (el ancho, en modo columna) quede en
-     "fit-content" angosto — causa de que el nombre de producto se viera
-     partido casi palabra por palabra. */
+  /* Móvil real: la cabecera se apila en una sola columna (Producto, Bodega,
+     Cantidad, Costo, Base, IVA/ICE, Total, Margen, cada uno en su propia
+     fila) — mismo criterio que Ventas a este ancho. Los separadores pasan a
+     ser horizontales, sin borde tras la última celda. Reemplaza el esquema
+     previo de 2 tiers (grid 2 columnas a 640px + 1 columna a 480px): con la
+     cabecera unificada en un solo grid (UX-03), una sola columna desde
+     640px es más legible que un grid 2 columnas con celdas de ancho dispar
+     (Producto/Bodega no encajaban bien junto a Cantidad/Margen). */
   .pdl-line__summary {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+  .pdl-line__summary > * {
+    border-left: none;
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-2) 0;
+  }
+  .pdl-line__summary > *:last-child {
+    border-bottom: none;
+  }
+  /* Apilada a ancho completo, un valor numérico alineado a la derecha se lee
+     peor que alineado a la izquierda junto a su label — mismo criterio ya
+     usado antes de esta reorganización. */
+  .pdl-line__metric {
+    align-items: flex-start;
   }
   .pdl-line__wh-select-compact {
     max-width: none;
-  }
-  /* Métricas en grid de 2 columnas (Cantidad/Costo/Desc/IVA/Margen/Total) —
-     reemplaza el flex-wrap heredado de <=1100px, que las apilaba en una fila
-     larga sin relación visual entre pares. Los separadores verticales ya se
-     quitan a este ancho (regla <=1100px arriba). */
-  .pdl-line__metrics {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2) var(--space-4);
-    width: 100%;
-  }
-  .pdl-line__metric {
-    align-items: flex-start;
   }
   /* .pdl-blocks pasa a 1 columna (erp-form-core.css) — las 3 secciones se
      apilan, así que todos los separadores entre columnas se vuelven
@@ -530,14 +545,6 @@
     padding-left: 0;
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-3);
-  }
-}
-/* Ancho realmente angosto (390/430px): ni siquiera 2 columnas de métricas
-   caben con margen — se apilan en 1 columna para que inputs/valores no
-   queden comprimidos ni se solapen. */
-@media (max-width: 480px) {
-  .pdl-line__metrics {
-    grid-template-columns: 1fr;
   }
 }
 .pf-schedule-actions {
