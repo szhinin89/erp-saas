@@ -4,6 +4,9 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHLineAction } from "../../../components/zh/ZHLineAction";
+import { ZHLineActionItem } from "../../../components/zh/ZHLineActionItem";
+import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
 import { SupplierPicker } from "../components/SupplierPicker";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ProductPicker } from "../components/ProductPicker";
@@ -1480,22 +1483,18 @@ function ProductLineActionMenu({
   const [open, setOpen] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [productModalOpen, setProductModalOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const hasProduct = !!l.itemId;
   const canEditProduct = !disabled;
   const triggerDisabled = !hasProduct && !canEditProduct;
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (event: MouseEvent) => {
-      if (productModalOpen) return;
-      if (menuRef.current?.contains(event.target as Node)) return;
-      setOpen(false);
-      setSelectorOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, productModalOpen]);
+  // Click-outside/Escape ahora los maneja ZHLineAction kind="menu" internamente; este
+  // componente solo decide si el cierre procede (se ignora mientras hay un modal interno
+  // abierto — mismo gate que antes tenía el handler de mousedown).
+  const handleOpenChange = (next: boolean) => {
+    if (!next && productModalOpen) return;
+    setOpen(next);
+    if (!next) setSelectorOpen(false);
+  };
 
   const closeAfterModal = () => {
     setProductModalOpen(false);
@@ -1504,127 +1503,98 @@ function ProductLineActionMenu({
   };
 
   return (
-    <div className="pdl-product-menu" ref={menuRef}>
-      <button
-        type="button"
-        className="pdl-product-menu__trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={t("purchases.lines.productActions", "Acciones del producto")}
-        disabled={triggerDisabled}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="material-symbols-outlined pdl-product-menu__trigger-icon">
-          menu
-        </span>
-        <span
-          className={`material-symbols-outlined pdl-product-menu__trigger-chevron${open ? " pdl-product-menu__trigger-chevron--open" : ""}`}
-        >
-          expand_more
-        </span>
-      </button>
-      {open && (
-        <div className="pdl-product-menu__panel" role="menu">
-          {!hasProduct ? (
-            <>
-              <button
-                type="button"
-                className="pdl-product-menu__item"
-                role="menuitem"
+    <ZHLineAction
+      kind="menu"
+      icon="grid_view"
+      tone="primary"
+      label={t("purchases.lines.productActions", "Acciones del producto")}
+      title={t("purchases.lines.productActions", "Acciones del producto")}
+      disabled={triggerDisabled}
+      open={open}
+      onOpenChange={handleOpenChange}
+    >
+      {!hasProduct ? (
+        <>
+          <ZHLineActionItem
+            icon="search"
+            label={t("purchases.lines.selectProduct", "Seleccionar producto")}
+            disabled={disabled || ctx.matchingKey === l._key}
+            onClick={() => setSelectorOpen((current) => !current)}
+          />
+          {selectorOpen && (
+            <div className="pdl-product-menu__picker">
+              <ProductPicker
                 disabled={disabled || ctx.matchingKey === l._key}
-                onClick={() => setSelectorOpen((current) => !current)}
-              >
-                <span className="material-symbols-outlined pdl-product-menu__item-icon">
-                  search
-                </span>
-                {t("purchases.lines.selectProduct", "Seleccionar producto")}
-              </button>
-              {selectorOpen && (
-                <div className="pdl-product-menu__picker">
-                  <ProductPicker
-                    disabled={disabled || ctx.matchingKey === l._key}
-                    vatRates={ctx.vatRatesMap}
-                    initialQuery={l.description?.trim() || undefined}
-                    onSelect={(product) => {
-                      onProductSelect(product);
-                      setOpen(false);
-                      setSelectorOpen(false);
-                    }}
-                  />
-                </div>
-              )}
-              {l.purchaseReceptionLineId ? (
-                <ReceptionCreateItemAction
-                  line={l}
-                  ctx={ctx}
-                  disabled={disabled}
-                  buttonClassName="pdl-product-menu__item"
-                  label={t("purchases.lines.createProduct", "Crear producto")}
-                  onModalOpenChange={setProductModalOpen}
-                  onAfterModalClose={closeAfterModal}
-                />
-              ) : (
-                <CreateItemLineAction
-                  line={l}
-                  ctx={ctx}
-                  disabled={disabled}
-                  buttonClassName="pdl-product-menu__item"
-                  label={t("purchases.lines.createProduct", "Crear producto")}
-                  onModalOpenChange={setProductModalOpen}
-                  onAfterModalClose={closeAfterModal}
-                />
-              )}
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="pdl-product-menu__item"
-                role="menuitem"
-                onClick={() => {
+                vatRates={ctx.vatRatesMap}
+                initialQuery={l.description?.trim() || undefined}
+                onSelect={(product) => {
+                  onProductSelect(product);
                   setOpen(false);
-                  onViewProduct();
+                  setSelectorOpen(false);
                 }}
-              >
-                <span className="material-symbols-outlined pdl-product-menu__item-icon">
-                  visibility
-                </span>
-                {t("purchases.lines.viewProduct", "Ver producto")}
-              </button>
-              {canEditProduct && (
-                <UpdateItemAction
-                  line={l}
-                  ctx={ctx}
-                  buttonClassName="pdl-product-menu__item"
-                  label={t("purchases.lines.updateProduct", "Actualizar producto")}
-                  onModalOpenChange={setProductModalOpen}
-                  onAfterModalClose={closeAfterModal}
-                />
-              )}
-              {canEditProduct && (
-                <button
-                  type="button"
-                  className="pdl-product-menu__item"
-                  role="menuitem"
-                  disabled={ctx.matchingKey === l._key}
-                  onClick={() => {
-                    setOpen(false);
-                    onUnlinkProduct();
-                  }}
-                >
-                  <span className="material-symbols-outlined pdl-product-menu__item-icon">
-                    link_off
-                  </span>
-                  {ctx.matchingKey === l._key
-                    ? t("purchases.lines.unlinkingProduct", "Desvinculando...")
-                    : t("purchases.lines.unlinkProduct", "Desvincular producto")}
-                </button>
-              )}
-            </>
+              />
+            </div>
           )}
-        </div>
+          {l.purchaseReceptionLineId ? (
+            <ReceptionCreateItemAction
+              line={l}
+              ctx={ctx}
+              disabled={disabled}
+              buttonClassName="zh-line-action-item"
+              label={t("purchases.lines.createProduct", "Crear producto")}
+              onModalOpenChange={setProductModalOpen}
+              onAfterModalClose={closeAfterModal}
+            />
+          ) : (
+            <CreateItemLineAction
+              line={l}
+              ctx={ctx}
+              disabled={disabled}
+              buttonClassName="zh-line-action-item"
+              label={t("purchases.lines.createProduct", "Crear producto")}
+              onModalOpenChange={setProductModalOpen}
+              onAfterModalClose={closeAfterModal}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <ZHLineActionItem
+            icon="visibility"
+            label={t("purchases.lines.viewProduct", "Ver producto")}
+            onClick={() => {
+              setOpen(false);
+              onViewProduct();
+            }}
+          />
+          {canEditProduct && (
+            <UpdateItemAction
+              line={l}
+              ctx={ctx}
+              buttonClassName="zh-line-action-item"
+              label={t("purchases.lines.updateProduct", "Actualizar producto")}
+              onModalOpenChange={setProductModalOpen}
+              onAfterModalClose={closeAfterModal}
+            />
+          )}
+          {canEditProduct && (
+            <ZHLineActionItem
+              icon="link_off"
+              label={
+                ctx.matchingKey === l._key
+                  ? t("purchases.lines.unlinkingProduct", "Desvinculando...")
+                  : t("purchases.lines.unlinkProduct", "Desvincular producto")
+              }
+              disabled={ctx.matchingKey === l._key}
+              onClick={() => {
+                setOpen(false);
+                onUnlinkProduct();
+              }}
+            />
+          )}
+        </>
       )}
-    </div>
+    </ZHLineAction>
   );
 }
 
@@ -1727,9 +1697,13 @@ function PurchaseLineCard({
 
   return (
     <div className="zh-detail-line pdl-line-row">
-      {/* Control lateral del componente de línea — solo el menú, separado del
-          número/contenido (ver reporte de ajuste visual del trigger por línea). */}
+      {/* Columna lateral izquierda única de la línea: número, menú de producto,
+          duplicar, eliminar y el toggle de colapso — plantilla DESIGN-SYSTEM-LINE-RAIL-04
+          (unifica lo que antes eran dos bandas, izquierda y derecha). */}
       <div className="pdl-line-row__rail">
+        <span className="pdl-line-row__num">
+          {String(idx + 1).padStart(2, "0")}
+        </span>
         <ProductLineActionMenu
           line={l}
           ctx={ctx}
@@ -1738,9 +1712,23 @@ function PurchaseLineCard({
           onViewProduct={() => viewMatchedItem(l.itemId as string)}
           onUnlinkProduct={handleUnlinkProduct}
         />
-        <span className="pdl-line-row__num">
-          {String(idx + 1).padStart(2, "0")}
-        </span>
+        <ZHLineAction
+          icon="content_copy"
+          variant="default"
+          size="md"
+          compact
+          showText={false}
+          title={t("purchases.lines.duplicate", "Duplicar")}
+          label={t("purchases.lines.duplicate", "Duplicar")}
+          onClick={() => ctx.duplicateLine(l._key)}
+        />
+        <ZHRowDeleteAction
+          compact
+          showText={false}
+          title={t("purchases.lines.delete", "Eliminar")}
+          label={t("purchases.lines.delete", "Eliminar")}
+          onClick={() => ctx.removeLine(l._key)}
+        />
         <button
           type="button"
           className="pdl-line-row__collapse-toggle"
@@ -2342,34 +2330,6 @@ function PurchaseLineCard({
           </span>
         </button>
       )}
-      </div>
-      {/* Banda lateral derecha de la línea — solo acciones (duplicar/eliminar),
-          separadas del contenido/datos igual que el menú quedó separado en la
-          banda izquierda. Hermana de .pdl-line__main, no la contiene. */}
-      <div className="pdl-line-row__actions-rail">
-        <div className="pdl-line__action">
-          <ZHIconButton
-            icon="content_copy"
-            variant="ghost"
-            title={t("purchases.lines.duplicate", "Duplicar")}
-            onClick={() => ctx.duplicateLine(l._key)}
-          />
-          <span className="pdl-line__action-label">
-            {t("purchases.lines.duplicate", "Duplicar")}
-          </span>
-        </div>
-        <div className="pdl-line__action">
-          <ZHIconButton
-            icon="delete"
-            variant="danger"
-            className="pdl-line__delete-btn"
-            title={t("purchases.lines.delete", "Eliminar")}
-            onClick={() => ctx.removeLine(l._key)}
-          />
-          <span className="pdl-line__action-label pdl-line__action-label--danger">
-            {t("purchases.lines.delete", "Eliminar")}
-          </span>
-        </div>
       </div>
     </div>
   );

@@ -31,17 +31,17 @@
 .pdl-block__icon { font-size: 16px; }
 .pdl-ctx-col__loading-icon { font-size: 13px; }
 .pdl-cost-alert__icon { font-size: 13px; }
-.pdl-product-menu__trigger-icon { font-size: 18px; }
-.pdl-product-menu__item-icon { font-size: 16px; }
+/* .pdl-product-menu__trigger-icon / .pdl-product-menu__item-icon ELIMINADOS
+   (PURCHASE-CLEANUP-RAIL-05) — sin consumidores; el trigger/panel del menú de
+   producto ahora es ZHLineAction kind="menu" (zh-ui.css). */
 
 .pf-badge--offset { margin-left: 8px; }
 .pf-validation-summary .zh-form-alert-detail { white-space: pre-line; }
 /* Cabecera de línea: ahora una sola columna — solo datos (.pdl-line__summary).
- * Duplicar/Eliminar salieron de este grid, viven en .pdl-line-row__actions-rail
- * (hermana de .pdl-line__main dentro de .pdl-line-row), igual que el menú y el
- * número ya viven en .pdl-line-row__rail. El número de línea tampoco está acá
- * — vive en la banda izquierda. Cantidad/costo/descuento/IVA/ICE/total se
- * agrupan dentro de .pdl-line__metrics, dentro de .pdl-line__summary. */
+ * Menú, número, Duplicar/Eliminar y el toggle de colapso viven todos en la
+ * única banda lateral izquierda (.pdl-line-row__rail, hermana de .pdl-line__main
+ * dentro de .pdl-line-row) — ya no hay banda derecha. Cantidad/costo/descuento/
+ * IVA/ICE/total se agrupan dentro de .pdl-line__metrics, dentro de .pdl-line__summary. */
 .pdl-container .pdl-line__main {
   grid-template-columns: 1fr;
   /* Compacta el padding vertical del wrapper principal (base: erp-form-core.css
@@ -74,10 +74,9 @@
 }
 /* Cada sección deja de ser una tarjeta independiente (sin fondo/borde/radio
    propios) para leerse como una columna dentro de la misma franja — mismo
-   criterio ya usado en .pdl-line__metric / .pdl-line-row__actions-rail:
-   separador de un solo lado (border-left), no un contorno completo
-   duplicado. Solo dentro de compras — .pdl-block es compartido con
-   Kardex/Sales. */
+   criterio ya usado en .pdl-line__metric: separador de un solo lado
+   (border-left), no un contorno completo duplicado. Solo dentro de
+   compras — .pdl-block es compartido con Kardex/Sales. */
 .pdl-container .pdl-block {
   background: transparent;
   border: none;
@@ -96,7 +95,8 @@
 .pdl-container .pdl-blocks .pdl-block + .pdl-block {
   border-left: 1px solid var(--color-border);
 }
-/* Fila de línea con control lateral: banda externa (solo el trigger del menú)
+/* Fila de línea con control lateral: banda externa única (número, menú,
+   Duplicar, Eliminar y toggle de colapso — DESIGN-SYSTEM-LINE-RAIL-04)
    + componente de detalle de la línea (.pdl-line, sin cambios internos).
    El borde/radio/superficie/sombra/margin-bottom son SSOT de .zh-detail-line
    (zh-ui.css) — se aplica junto a esta clase en el JSX
@@ -116,14 +116,24 @@
 }
 .pdl-line-row__rail {
   flex-shrink: 0;
-  width: 36px;
+  /* DESIGN-SYSTEM-LINE-RAIL-04A: 36px -> 40px. DESIGN-SYSTEM-LINE-RAIL-04B: 40px -> 44px
+     (el ícono eliminar, sin padding propio a diferencia de duplicar/ghost, seguía
+     viéndose apretado). La banda agrupa 5 controles (número, menú, duplicar, eliminar,
+     colapso) — 44px da margen sin angostar el contenido principal (flex:1 en
+     .pdl-line-row .pdl-line). */
+  width: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-2);
-  /* Alineado con el nuevo padding-top compacto de .pdl-line__main (arriba). */
+  /* DESIGN-SYSTEM-LINE-RAIL-04A: var(--space-2) -> var(--space-3) — más aire
+     entre los 5 controles apilados, evita que se sientan pegados. */
+  gap: var(--space-3);
+  /* Alineado con el nuevo padding-top compacto de .pdl-line__main (arriba);
+     padding-bottom agregado (DESIGN-SYSTEM-LINE-RAIL-04A) para que el último
+     control (colapso) no quede pegado al borde inferior de la fila. */
   padding-top: var(--space-2);
+  padding-bottom: var(--space-3);
   background: var(--color-surface-container-low);
   border-right: 1px solid var(--color-border);
   /* Redondea solo el borde izquierdo para que el relleno de la banda no se
@@ -131,7 +141,15 @@
      que recortaría el panel del menú al abrirse). */
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
-/* Número de línea, debajo del menú, dentro de la misma banda lateral —
+/* DESIGN-SYSTEM-LINE-RAIL-04B: el botón eliminar (.zh-line-action__btn--lg.prd-icon-btn--danger,
+   zh-ui.css) no trae padding propio — a diferencia de duplicar (variante ghost, que sí trae
+   4px) se veía más apretado dentro del rail. Ajuste acotado a Compras vía selector con
+   .pdl-line-row__rail como ancestro: NO se toca la clase global .prd-icon-btn--danger, que
+   sigue igual en Ventas y cualquier otro módulo que la use. */
+.pdl-line-row__rail .zh-line-action__btn--lg.prd-icon-btn--danger {
+  padding: var(--space-1);
+}
+/* Número de línea, arriba del menú, dentro de la misma banda lateral —
    aislado del contenido principal (no es parte del menú ni del producto). */
 .pdl-line-row__num {
   /* Referencia aprobada: el número se lee como una cifra grande, no como
@@ -173,101 +191,18 @@
 .pdl-line-row__collapse-icon--open {
   transform: rotate(180deg);
 }
-/* Banda lateral derecha: solo Duplicar/Eliminar, hermana de .pdl-line__main
-   (no la contiene) — mismo criterio que la banda izquierda: separa las
-   acciones del contenido/datos de la línea. Sin fondo propio (a diferencia
-   de .pdl-line-row__rail) para no duplicar visualmente el borde/superficie
-   que ya aporta .zh-detail-line; solo un separador de un lado. */
-.pdl-line-row__actions-rail {
-  flex-shrink: 0;
-  width: 72px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  border-left: 1px solid var(--color-border);
-}
-.pdl-product-menu {
-  position: relative;
-  display: inline-flex;
-}
-.pdl-product-menu__trigger {
-  width: 32px;
-  min-height: 40px;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-primary);
-  cursor: pointer;
-}
-.pdl-product-menu__trigger-chevron {
-  font-size: 14px;
-  line-height: 1;
-  transition: transform var(--transition);
-}
-.pdl-product-menu__trigger-chevron--open {
-  transform: rotate(180deg);
-}
-.pdl-product-menu__trigger:hover,
-.pdl-product-menu__trigger:focus-visible,
-.pdl-product-menu__trigger[aria-expanded="true"] {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
-}
-.pdl-product-menu__trigger:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-.pdl-product-menu__panel {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 30;
-  width: min(320px, 80vw);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-lg);
-  display: grid;
-  gap: var(--space-1);
-  text-align: left;
-}
-.pdl-product-menu__item {
-  width: 100%;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-2);
-  padding: 6px 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.pdl-product-menu__item.zh-btn {
-  justify-content: flex-start;
-}
-.pdl-product-menu__item:hover,
-.pdl-product-menu__item:focus-visible {
-  background: var(--color-surface-container-low);
-}
-.pdl-product-menu__item:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
+/* .pdl-line-row__actions-rail ELIMINADO (DESIGN-SYSTEM-LINE-RAIL-04) — la banda
+   derecha (Duplicar/Eliminar) se unificó dentro de .pdl-line-row__rail (izquierda);
+   ya no queda ningún <div> en el JSX que use esta clase. Ver también la regla
+   mobile correspondiente, eliminada más abajo. */
+/* .pdl-product-menu / .pdl-product-menu__trigger* / .pdl-product-menu__panel /
+   .pdl-product-menu__item* ELIMINADOS (PURCHASE-CLEANUP-RAIL-05) — sin
+   consumidores en JSX (confirmado por grep en frontend/src). El trigger y el
+   panel del menú de producto de ProductLineActionMenu usan ZHLineAction
+   kind="menu" + ZHLineActionItem (zh-ui.css, .zh-line-action-menu*/
+   .zh-line-action-item) desde DESIGN-SYSTEM-LINE-ACTION-03.
+   .pdl-product-menu__picker se conserva: sí tiene consumidor real (el
+   contenedor del ProductPicker inline en ProductLineActionMenu). */
 .pdl-product-menu__picker {
   padding: var(--space-2);
   border: 1px solid var(--color-border);
@@ -499,33 +434,10 @@
   font-size: 18px;
   flex-shrink: 0;
 }
-/* Cada acción: ícono + texto visible apilados y centrados. */
-.pdl-line__action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.pdl-line__action-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.pdl-line__action-label--danger {
-  color: var(--color-error);
-}
-/* Eliminar: un poco más grande y con fondo tenue en reposo (no solo en
-   hover) para que se note más — reutiliza el token de peligro que ya trae
-   ZHIconButton variant="danger" (var(--color-error)), sin hardcodear color. */
-.pdl-line__delete-btn {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
-  border-radius: var(--radius-sm);
-}
-.pdl-line__delete-btn .material-symbols-outlined {
-  font-size: 22px;
-}
+/* .pdl-line__action / .pdl-line__action-label(--danger) / .pdl-line__delete-btn
+   ELIMINADOS (PURCHASE-CLEANUP-RAIL-05) — sin consumidores; eran el rail
+   derecho de Duplicar/Eliminar, reemplazado por ZHLineAction/ZHRowDeleteAction
+   dentro de .pdl-line-row__rail desde DESIGN-SYSTEM-LINE-RAIL-04. */
 /* Pantallas medianas: las métricas pueden envolver en dos filas si no caben
    en la franja horizontal, sin todavía apilar identidad/métricas. */
 @media (max-width: 1100px) {
@@ -564,7 +476,11 @@
 @media (max-width: 640px) {
   .pdl-line-row {
     display: grid;
-    grid-template-columns: 44px 1fr;
+    /* DESIGN-SYSTEM-LINE-RAIL-04A: 44px -> 48px. DESIGN-SYSTEM-LINE-RAIL-04B: 48px -> 52px,
+       en línea con el ancho desktop de .pdl-line-row__rail (40px -> 44px) — mismo margen
+       relativo alrededor del trigger del menú (32px), sin restar más de lo necesario al
+       ancho de .pdl-line (columna 2, sigue siendo 1fr). */
+    grid-template-columns: 52px 1fr;
     align-items: stretch;
   }
   .pdl-line-row__rail {
@@ -576,20 +492,9 @@
     grid-column: 2;
     grid-row: 1;
   }
-  /* Rail derecho: pasa de columna lateral fija a fila compacta horizontal
-     debajo del contenido de la línea — mismos botones/handlers, solo se
-     reordena visualmente vía grid-row/grid-column (la posición en el DOM
-     no cambia). */
-  .pdl-line-row__actions-rail {
-    grid-column: 2;
-    grid-row: 2;
-    width: auto;
-    flex-direction: row;
-    justify-content: flex-end;
-    border-left: none;
-    border-top: 1px solid var(--color-border);
-    padding: var(--space-2) var(--space-4);
-  }
+  /* .pdl-line-row__actions-rail mobile override ELIMINADO (DESIGN-SYSTEM-LINE-RAIL-04)
+     — ya no existe ese rail; Duplicar/Eliminar viven en .pdl-line-row__rail (columna 1,
+     misma banda que en desktop), sin necesidad de reubicación por grid en mobile. */
   /* Solo en pantallas angostas: las métricas caen debajo de la identidad
      en vez de mantenerse en franja horizontal, y el selector de bodega
      recupera el ancho completo de la columna. align-items:stretch (en vez

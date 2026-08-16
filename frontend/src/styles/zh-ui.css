@@ -41,6 +41,8 @@
    27. Auth Form Card (.zh-auth-card, .zh-auth-form, .zh-auth-input, .zh-auth-submit)
    28. Patrones responsive compartidos
    29. Toast (.zh-toast)
+   30. Line Row (.zh-line-card, .zh-line-action-rail, .zh-line-action, .zh-line-content,
+       .zh-line-action-menu, .zh-line-action-item)
    ============================================================ */
 
 /* ── 1. TIPOGRAFÍA ────────────────────────────────────────── */
@@ -2643,3 +2645,264 @@ select.zh-input--compact {
 
 /* .zh-document-picker__* ELIMINADO (Bloque 12B) -- sin consumidores; ningun
    componente picker de documentos usa este namespace hoy. */
+
+/* ── 30. LINE ROW (.zh-line-card / .zh-line-action-rail / .zh-line-action / .zh-line-content) ── */
+/* Fila de ítem con rail de acciones lateral + contenido (con skeleton).
+   Generaliza los patrones ad-hoc .sf-product__* (sales-product-card.css) y
+   .pdl-line__* (purchases-invoice.css) en un componente único reutilizable. */
+
+.zh-line-card {
+  display: flex;
+  width: 100%;
+  max-width: 960px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.zh-line-action-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  width: 64px;
+  flex-shrink: 0;
+  padding: var(--space-4) 0;
+  background: var(--color-surface-container-low);
+  border-right: 1px solid var(--color-border-light);
+}
+
+.zh-line-action-rail__index {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-mono);
+}
+
+.zh-line-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.zh-line-action__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.zh-line-action__label--danger {
+  color: var(--color-error);
+}
+
+.zh-line-action__btn--sm .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.zh-line-action__btn--md .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.zh-line-action__btn--lg .material-symbols-outlined {
+  font-size: 22px;
+}
+
+/* Fondo tenue en reposo (no solo hover) para la acción destructiva grande
+   (ej. eliminar línea) — reutiliza el token de peligro, sin hardcodear color.
+   Preserva el tratamiento visual que ya tenía .pdl-line__delete-btn. */
+.zh-line-action__btn--lg.prd-icon-btn--danger {
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.zh-line-action--compact {
+  gap: 0;
+}
+
+.zh-line-action__btn--tone-warning.prd-icon-btn {
+  color: var(--color-warning);
+}
+.zh-line-action__btn--tone-warning.prd-icon-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+}
+
+.zh-line-action__label--warning {
+  color: var(--color-warning);
+}
+
+/* ── ZHLineAction kind="menu" — trigger + panel (ex .pdl-product-menu*) ── */
+.zh-line-action-menu {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.zh-line-action-menu__trigger {
+  width: 32px;
+  min-height: 40px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    background var(--transition),
+    border-color var(--transition);
+}
+
+.zh-line-action-menu__trigger--primary {
+  color: var(--color-primary);
+}
+
+.zh-line-action-menu__trigger-icon {
+  font-size: 18px;
+}
+
+.zh-line-action-menu__trigger-chevron {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform var(--transition);
+}
+
+.zh-line-action-menu__trigger-chevron--open {
+  transform: rotate(180deg);
+}
+
+.zh-line-action-menu__trigger:hover:not(:disabled),
+.zh-line-action-menu__trigger:focus-visible,
+.zh-line-action-menu__trigger[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.zh-line-action-menu__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.zh-line-action-menu__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  width: min(320px, 80vw);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  gap: var(--space-1);
+  text-align: left;
+}
+
+.zh-line-action-menu__panel--end {
+  left: auto;
+  right: 0;
+}
+
+.zh-line-action-item {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.zh-line-action-item:hover:not(:disabled),
+.zh-line-action-item:focus-visible {
+  background: var(--color-surface-container-low);
+}
+
+.zh-line-action-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.zh-line-action-item__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.zh-line-action-item--primary {
+  color: var(--color-primary);
+}
+
+.zh-line-action-item--warning {
+  color: var(--color-warning);
+}
+
+.zh-line-action-item--danger {
+  color: var(--color-error);
+}
+
+.zh-line-content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.zh-line-content__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.zh-line-content__skeleton-bar {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-container);
+  animation: zh-line-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.zh-line-content__skeleton-bar--title {
+  width: 70%;
+  height: 14px;
+}
+
+.zh-line-content__skeleton-bar--sub {
+  width: 45%;
+}
+
+.zh-line-content__skeleton-bar--meta {
+  width: 55%;
+}
+
+@keyframes zh-line-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
