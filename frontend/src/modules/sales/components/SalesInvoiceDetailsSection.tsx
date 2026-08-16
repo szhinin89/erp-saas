@@ -551,6 +551,11 @@ function SalesProductCard({
         <div className="sf-product__disc-block">
           <span className="sf-product__disc-label">Dto. %</span>
           <ZhDecimalInput
+            // Input no controlado (defaultValue) por diseño — se remonta cuando line.discountPct
+            // cambia por una vía distinta a este mismo input (p. ej. al recargar una línea), para
+            // que el DOM nunca quede desincronizado del valor real. Sin key, React reutiliza el
+            // nodo y el usuario seguiría viendo el valor viejo (mismo bug que quantity, ver abajo).
+            key={line.discountPct ?? 0}
             className="sf-product__disc-input"
             decimals={dc.percentage}
             positiveOnly
@@ -570,6 +575,7 @@ function SalesProductCard({
           <div className="sf-product__price-wrap">
             <span className="sf-product__price-currency">$</span>
             <ZhDecimalInput
+              key={line.unitPrice}
               className="sf-product__price-input"
               decimals={dc.salesUnitPrice}
               positiveOnly
@@ -648,6 +654,12 @@ function SalesProductCard({
       {/* Col 5: Quantity */}
       <div className="sf-product__qty">
         <ZhDecimalInput
+          // key={line.quantity}: fuerza el remontaje del input cuando la cantidad cambia desde
+          // afuera de este blur (reescaneo del mismo producto en useSalesPage.addLineWithItem,
+          // que incrementa line.quantity directamente). Sin esto, el input no controlado
+          // (defaultValue) conserva el valor mostrado en el primer render — el subtotal (que sí
+          // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
+          key={line.quantity}
           className="sf-product__qty-input"
           decimals={dc.quantity}
           positiveOnly

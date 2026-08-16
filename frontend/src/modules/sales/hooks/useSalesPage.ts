@@ -55,6 +55,7 @@ import {
   calcSummary,
   formatVatLabel,
   lineExceedsStock,
+  findMergeableLineIndex,
   type TaxBreakdownEntry,
 } from "../utils/salesCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -691,18 +692,16 @@ export function useSalesPage() {
 
       // Reescaneo del mismo producto (código de barras o texto) bajo condiciones idénticas —
       // acumula cantidad en la línea existente en vez de duplicar la línea (flujo POS: escanear
-      // 3 veces el mismo producto suma 3 unidades, no crea 3 filas). Solo aplica si precio,
-      // descuento, impuestos y bodega coinciden exactamente; cualquier diferencia crea una línea
-      // separada, igual que hoy — evita fusionar por error un precio/descuento ya negociado.
-      const matchIndex = currentLines.findIndex(
-        (l) =>
-          l.itemId === item.id &&
-          l.unitPrice === unitPrice &&
-          (l.discountPct ?? 0) === 0 &&
-          l.vatCode === vatCode &&
-          normalizeOptionalCode(l.iceCode ?? null) === iceCode &&
-          (l.warehouseId ?? null) === lineWarehouseId,
-      );
+      // 3 veces el mismo producto suma 3 unidades, no crea 3 filas). Condición de fusión
+      // centralizada en salesCalc.ts (findMergeableLineIndex) — único punto, testeable sin
+      // levantar todo el hook.
+      const matchIndex = findMergeableLineIndex(currentLines, {
+        itemId: item.id,
+        unitPrice,
+        vatCode,
+        iceCode,
+        warehouseId: lineWarehouseId,
+      });
 
       if (matchIndex >= 0) {
         setValue(

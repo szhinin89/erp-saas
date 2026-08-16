@@ -6,6 +6,7 @@ import {
   calcLineTax,
   calcSummary,
   lineExceedsStock,
+  findMergeableLineIndex,
 } from "./salesCalc";
 import type {
   SalesLineInput,
@@ -326,5 +327,117 @@ describe("lineExceedsStock", () => {
     expect(
       lineExceedsStock({ _tracksStock: true, _stockQty: undefined, quantity: 100 }),
     ).toBe(false);
+  });
+});
+
+// ── findMergeableLineIndex — condición de fusión al reescanear (SALES-RETAIL-READY-01-FIX04) ──
+describe("findMergeableLineIndex", () => {
+  type TestLine = {
+    itemId?: string | null;
+    unitPrice: number;
+    discountPct?: number | null;
+    vatCode: string;
+    iceCode?: string | null;
+    warehouseId?: string | null;
+    quantity: number;
+  };
+
+  const existing: TestLine = {
+    itemId: "item-1",
+    unitPrice: 29.9,
+    discountPct: 0,
+    vatCode: "0",
+    iceCode: null,
+    warehouseId: "wh-1",
+    quantity: 1,
+  };
+
+  it("encuentra la línea y, al aplicar el incremento, la cantidad pasa de 1 a 2 (sin crear otra línea)", () => {
+    const lines: TestLine[] = [existing];
+    const idx = findMergeableLineIndex(lines, {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-1",
+    });
+
+    expect(idx).toBe(0);
+
+    // Mismo merge inmutable que usa useSalesPage.addLineWithItem.
+    const merged = lines.map((l, i) =>
+      i === idx ? { ...l, quantity: l.quantity + 1 } : l,
+    );
+
+    expect(merged).toHaveLength(1); // ninguna línea oculta/nueva
+    expect(merged[0].quantity).toBe(2);
+    expect(lines[0].quantity).toBe(1); // el original no se mutó (inmutable)
+  });
+
+  it("no fusiona si el precio no coincide (precio ya editado manualmente)", () => {
+    const idx = findMergeableLineIndex([existing], {
+      itemId: "item-1",
+      unitPrice: 25, // distinto
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-1",
+    });
+    expect(idx).toBe(-1);
+  });
+
+  it("no fusiona si la línea existente ya tiene un descuento manual aplicado", () => {
+    const discounted: TestLine = { ...existing, discountPct: 15 };
+    const idx = findMergeableLineIndex([discounted], {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-1",
+    });
+    expect(idx).toBe(-1);
+  });
+
+  it("no fusiona si el código de IVA no coincide", () => {
+    const idx = findMergeableLineIndex([existing], {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "10",
+      iceCode: null,
+      warehouseId: "wh-1",
+    });
+    expect(idx).toBe(-1);
+  });
+
+  it("no fusiona si el código de ICE no coincide", () => {
+    const idx = findMergeableLineIndex([existing], {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: "ICE01",
+      warehouseId: "wh-1",
+    });
+    expect(idx).toBe(-1);
+  });
+
+  it("no fusiona si la bodega no coincide", () => {
+    const idx = findMergeableLineIndex([existing], {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-2",
+    });
+    expect(idx).toBe(-1);
+  });
+
+  it("no fusiona si el itemId no coincide (producto distinto)", () => {
+    const idx = findMergeableLineIndex([existing], {
+      itemId: "item-2",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-1",
+    });
+    expect(idx).toBe(-1);
   });
 });

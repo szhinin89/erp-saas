@@ -1,5 +1,6 @@
 import type { SalesLineInput } from "../api/salesService";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { normalizeOptionalCode } from "../../../lib/sanitizers";
 
 export function lineGross(l: SalesLineInput): number {
   return l.quantity * l.unitPrice;
@@ -41,6 +42,37 @@ export function lineExceedsStock(line: {
     !!line._tracksStock &&
     line._stockQty != null &&
     line.quantity > line._stockQty
+  );
+}
+
+export type MergeCandidateLine = {
+  itemId?: string | null;
+  unitPrice: number;
+  vatCode: string;
+  iceCode?: string | null;
+  warehouseId?: string | null;
+};
+
+/**
+ * Único punto de la condición conservadora de fusión "reescanear el mismo producto suma
+ * cantidad en vez de crear otra línea": el ítem, precio, impuestos y bodega deben coincidir
+ * exactamente, y la línea existente no debe tener ya un descuento manual aplicado. Cualquier
+ * diferencia (p. ej. el cajero ya negoció precio/descuento distinto) no fusiona — crea una línea
+ * separada para no perder esa intención. Devuelve -1 si no hay ninguna línea fusionable.
+ */
+export function findMergeableLineIndex<T extends MergeCandidateLine & { discountPct?: number | null }>(
+  lines: T[],
+  candidate: MergeCandidateLine,
+): number {
+  return lines.findIndex(
+    (l) =>
+      l.itemId === candidate.itemId &&
+      l.unitPrice === candidate.unitPrice &&
+      (l.discountPct ?? 0) === 0 &&
+      l.vatCode === candidate.vatCode &&
+      normalizeOptionalCode(l.iceCode ?? null) ===
+        normalizeOptionalCode(candidate.iceCode ?? null) &&
+      (l.warehouseId ?? null) === (candidate.warehouseId ?? null),
   );
 }
 
