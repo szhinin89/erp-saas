@@ -48,6 +48,15 @@ function totalAmountText(container: HTMLElement): string | null {
   return container.querySelector(".sf-product__total-amount")?.textContent ?? null;
 }
 
+// DS-LINE-ATOM-MIGRATION-01: ZHMoneyValue divide "$" y el monto en dos <span> hijos
+// (.zh-money-value__symbol / __amount), así que el texto completo ya no vive en un único nodo de
+// texto directo — getByText("$26.00") deja de encontrar coincidencia (getNodeText de Testing
+// Library solo concatena text nodes directos, no de descendientes). Se lee el texto agregado
+// (textContent, que sí junta todos los descendientes) por selector de clase en su lugar.
+function moneyText(container: HTMLElement, selector: string): string | null {
+  return container.querySelector(selector)?.textContent ?? null;
+}
+
 function renderSection(
   lines: SalesLineFormValues[],
   overrides: Partial<{
@@ -96,9 +105,9 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   });
 
   it("muestra el precio lista", () => {
-    renderSection([baseLine({ _pvp: 26 })]);
+    const { container } = renderSection([baseLine({ _pvp: 26 })]);
     expect(screen.getByText("Precio lista")).not.toBeNull();
-    expect(screen.getByText("$26.00")).not.toBeNull();
+    expect(moneyText(container, ".sf-product__pricelist-value")).toBe("$26.00");
   });
 
   it("muestra el descuento (Dto. %)", () => {
@@ -133,32 +142,35 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   });
 
   it("muestra la base sin IVA", () => {
-    renderSection([baseLine()]);
+    const { container } = renderSection([baseLine()]);
     expect(screen.getByText("Base sin IVA")).not.toBeNull();
-    expect(screen.getByText("$52.00")).not.toBeNull();
+    const [baseValue] = container.querySelectorAll(".sf-product__subtotal-value");
+    expect(baseValue?.textContent).toBe("$52.00");
   });
 
   it("muestra el IVA con tasa", () => {
-    renderSection([baseLine()]);
+    const { container } = renderSection([baseLine()]);
     expect(screen.getByText("IVA (15%)")).not.toBeNull();
-    expect(screen.getByText("$7.80")).not.toBeNull();
+    const [, ivaValue] = container.querySelectorAll(".sf-product__subtotal-value");
+    expect(ivaValue?.textContent).toBe("$7.80");
   });
 
   it("muestra el total de línea", () => {
-    renderSection([baseLine()]);
+    const { container } = renderSection([baseLine()]);
     expect(screen.getByText("Total línea")).not.toBeNull();
-    expect(screen.getByText("$59.80")).not.toBeNull();
+    expect(totalAmountText(container)).toBe("$59.80");
   });
 
   it("el total de línea es visualmente el dato principal del bloque derecho", () => {
     const { container } = renderSection([baseLine()]);
     const totalValue = container.querySelector(".sf-product__total-amount");
-    const baseValue = screen.getByText("$52.00");
+    const baseValue = container.querySelector(".sf-product__subtotal-value");
     expect(totalValue?.textContent).toBe("$59.80");
+    expect(baseValue?.textContent).toBe("$52.00");
     // El total tiene su propia clase de énfasis; base/IVA comparten una clase más discreta.
     expect(totalValue?.className).toContain("sf-product__total-amount");
-    expect(baseValue.className).toContain("sf-product__subtotal-value");
-    expect(totalValue?.className).not.toBe(baseValue.className);
+    expect(baseValue?.className).toContain("sf-product__subtotal-value");
+    expect(totalValue?.className).not.toBe(baseValue?.className);
   });
 
   it("no muestra Costo por defecto", () => {
@@ -242,11 +254,13 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     );
 
     expect(totalAmountText(container)).toBe("$30.00");
-    expect(screen.queryByText("$20.00")).toBeNull();
+    expect(totalAmountText(container)).not.toBe("$20.00");
   });
 
   it("el reescaneo (quantity cambia vía props) mantiene la cantidad visible sincronizada con el total", () => {
-    const { rerender } = renderSection([baseLine({ quantity: 1, unitPrice: 26 })]);
+    const { rerender, container } = renderSection([
+      baseLine({ quantity: 1, unitPrice: 26 }),
+    ]);
     expect(screen.getByDisplayValue("1.0000")).not.toBeNull();
 
     rerender(
@@ -269,7 +283,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
 
     expect(screen.queryByDisplayValue("1.0000")).toBeNull();
     expect(screen.getByDisplayValue("2.0000")).not.toBeNull();
-    expect(screen.getByText("$59.80")).not.toBeNull();
+    expect(totalAmountText(container)).toBe("$59.80");
   });
 
   it("la advertencia de stock sigue funcionando cuando la cantidad supera el disponible", () => {

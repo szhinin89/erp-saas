@@ -141,22 +141,30 @@
   flex-direction: column;
   gap: 2px;
 }
-.sf-product__pricelist-label {
+/* Compuestas con .zh-field-label/.zh-money-value (DS-LINE-ATOM-MIGRATION-01): bump de
+   especificidad (2 clases) para que este look aprobado gane siempre sobre los estilos base
+   del átomo global, sin depender del orden de carga de los CSS (mismo criterio que
+   `.sf-product-card.zh-line-card`). */
+.sf-product__pricelist-label.zh-field-label {
   font-size: 10px;
   font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.sf-product__pricelist-value {
+.sf-product__pricelist-value.zh-money-value {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
   font-family: var(--font-family-mono);
+  gap: 0;
 }
-.sf-product__pricelist-value--bold {
+.sf-product__pricelist-value--bold.zh-money-value {
   font-weight: 800;
   font-size: 17px;
+}
+.sf-product__pricelist-value.zh-money-value .zh-money-value__symbol {
+  color: inherit;
 }
 
 /* ── Columna 3: Descuento + Precio facturado (bloque compacto) ── */
@@ -173,7 +181,7 @@
   align-items: center;
   gap: 4px;
 }
-.sf-product__disc-label {
+.sf-product__disc-label.zh-field-label {
   font-size: 10px;
   font-weight: 700;
   color: var(--color-text-secondary);
@@ -205,7 +213,7 @@
   align-items: center;
   gap: 4px;
 }
-.sf-product__price-label {
+.sf-product__price-label.zh-field-label {
   font-size: 10px;
   font-weight: 700;
   color: var(--color-text-secondary);
@@ -264,7 +272,7 @@
   min-width: 0;
   gap: 1px;
 }
-.sf-product__stock-label {
+.sf-product__stock-label.zh-field-label {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -272,7 +280,7 @@
   color: var(--color-text-secondary);
   margin-top: 6px;
 }
-.sf-product__stock-label:first-child {
+.sf-product__stock-label.zh-field-label:first-child {
   margin-top: 0;
 }
 .sf-product__stock-qty {
@@ -320,7 +328,7 @@
   padding-left: 10px;
   padding-right: 10px;
 }
-.sf-product__qty-label {
+.sf-product__qty-label.zh-field-label {
   font-size: 11px;
   font-weight: 700;
   color: var(--color-text-secondary);
@@ -364,17 +372,22 @@
   gap: 6px;
   font-size: 11px;
 }
-.sf-product__subtotal-label {
+.sf-product__subtotal-label.zh-field-label {
   font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.sf-product__subtotal-value {
+.sf-product__subtotal-value.zh-money-value {
   color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
+  gap: 0;
 }
-.sf-product__total-label {
+.sf-product__subtotal-value.zh-money-value .zh-money-value__symbol {
+  color: inherit;
+}
+.sf-product__total-label.zh-field-label {
+  display: block;
   font-size: 10px;
   font-weight: 800;
   color: var(--color-primary);
@@ -385,13 +398,17 @@
   border-top: 1px solid var(--color-border);
   width: 100%;
 }
-.sf-product__total-amount {
+.sf-product__total-amount.zh-money-value {
   font-size: 27px;
   font-weight: 800;
   color: var(--color-primary);
   font-family: var(--font-family-mono);
   letter-spacing: -0.5px;
   line-height: 1.2;
+  gap: 0;
+}
+.sf-product__total-amount.zh-money-value .zh-money-value__symbol {
+  color: inherit;
 }
 .sf-product__tax-incl {
   font-size: 9px;

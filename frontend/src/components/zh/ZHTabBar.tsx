@@ -2,6 +2,15 @@ export type ZHTab<TId extends string> = {
   id: TId;
   label: string;
   icon?: string;
+  /** true = se renderiza deshabilitado, aria-disabled, no dispara onChange. */
+  disabled?: boolean;
+  /**
+   * true = tab que puede estar activo pero no navega: se ve como un tab normal
+   * (incluso activo), pero el click no dispara onChange. Útil para representar
+   * la vista actual fija (p.ej. "Nueva/Editar Factura") junto a tabs que sí
+   * navegan (p.ej. "Historial").
+   */
+  inert?: boolean;
 };
 
 type Props<TId extends string> = {
@@ -38,8 +47,13 @@ export function ZHTabBar<TId extends string>({
           type="button"
           role="tab"
           aria-selected={activeTab === tab.id}
+          aria-disabled={tab.disabled || undefined}
+          disabled={tab.disabled}
           className={`prd-tab-btn${activeTab === tab.id ? " prd-tab-btn--active" : ""}`}
-          onClick={() => onChange(tab.id)}
+          onClick={() => {
+            if (tab.disabled || tab.inert) return;
+            onChange(tab.id);
+          }}
         >
           {tab.icon && (
             <span className="material-symbols-outlined prd-tab-icon">

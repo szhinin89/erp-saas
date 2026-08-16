@@ -70,37 +70,37 @@
   color: var(--color-primary);
 }
 
-/* ── Tabs ─────────────────────────────────────────────────────── */
-.sf-tabs {
-  display: flex;
+/* ── Tabs (ZHTabBar, look local al sidebar POS — ver SALES-DS-TABS-02) ── */
+.sf-sidebar .prd-tabs {
+  border-bottom: none;
+  margin-bottom: 0;
   overflow: hidden;
 }
-.sf-tab {
+.sf-sidebar .prd-tab-btn {
   flex: 1;
-  display: flex;
-  align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 12px 8px;
   font-size: 13px;
   font-weight: 600;
-  border: none;
-  cursor: pointer;
+  border-bottom: none;
+  margin-bottom: 0;
   transition: all 0.15s;
   background: var(--color-surface-container-low);
   color: var(--color-text-secondary);
 }
-.sf-tab:first-child {
+.sf-sidebar .prd-tab-btn:first-child {
   border-right: 1px solid var(--color-border);
 }
-.sf-tab--active {
+.sf-sidebar .prd-tab-btn--active {
   background: var(--color-primary);
   color: var(--color-on-primary);
+  border-bottom: none;
 }
-.sf-tab--active .sf-tab__icon {
+.sf-sidebar .prd-tab-btn--active .prd-tab-icon {
   color: var(--color-on-primary);
 }
-.sf-tab__icon {
+.sf-sidebar .prd-tab-icon {
   font-size: 18px;
 }
 
@@ -369,27 +369,6 @@
   flex: 1;
 }
 
-.sf-bottombar__btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-surface);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.sf-bottombar__btn:hover {
-  background: var(--color-surface-container-low);
-}
-.sf-bottombar__btn-icon {
-  font-size: 18px;
-}
-
 .sf-bottombar__emit {
   display: flex;
   align-items: center;
@@ -482,20 +461,13 @@
   padding: var(--space-3);
   margin-bottom: var(--space-2);
 }
+/* Posición/tamaño local sobre ZHIconButton (.prd-icon-btn--danger ya resuelve
+   color, hover y radio — ver SALES-DS-PAYMENT-REMOVE-03) */
 .pdt-row-remove {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-error);
-  display: flex;
   padding: 2px;
-  border-radius: var(--radius-sm);
-}
-.pdt-row-remove:hover {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
 }
 .pdt-row-remove .material-symbols-outlined {
   font-size: 16px;
@@ -526,10 +498,15 @@
   width: 120px;
   flex-shrink: 0;
 }
-.pdt-label {
+/* Compuesta con .zh-field-label (SALES-FORM-DS-MIGRATION-01): bump de especificidad (2
+   clases) para que este look aprobado gane siempre sobre los estilos base del átomo global,
+   sin depender del orden de carga de los CSS (mismo criterio que `.sf-product-card.zh-line-card`
+   / `.sf-product__*.zh-field-label`). */
+.pdt-label.zh-field-label {
   font-size: var(--text-label-sm-size);
   font-weight: 600;
   color: var(--color-text-secondary);
+  letter-spacing: normal;
 }
 .pdt-field input,
 .pdt-field select {

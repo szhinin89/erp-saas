@@ -6,8 +6,12 @@ import type {
   PaymentMethodDetailType,
 } from "../api/salesService";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
+import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
@@ -121,20 +125,21 @@ export function PaymentDetailModal({
 
       {rows.map((row) => (
         <div key={row._k} className="pdt-row-card">
-          <button
-            type="button"
+          <ZHIconButton
+            icon="delete"
+            title="Eliminar"
+            variant="danger"
             className="pdt-row-remove"
             onClick={() =>
               setRows((prev) => prev.filter((r) => r._k !== row._k))
             }
-            aria-label="Eliminar"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          />
           <div className="pdt-row-fields">
             <div className="pdt-field pdt-field--grow">
-              <label className="pdt-label">Banco</label>
-              <input
+              <ZHFieldLabel size="sm" className="pdt-label">
+                Banco
+              </ZHFieldLabel>
+              <ZhTextInput
                 placeholder="Banco"
                 value={
                   (isCard
@@ -158,8 +163,10 @@ export function PaymentDetailModal({
             {isCard && (
               <>
                 <div className="pdt-field pdt-field--grow">
-                  <label className="pdt-label">Marca</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Marca
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     placeholder="Visa"
                     value={row.card?.cardBrand ?? ""}
                     onChange={(e) =>
@@ -171,8 +178,10 @@ export function PaymentDetailModal({
                   />
                 </div>
                 <div className="pdt-field pdt-field--w60">
-                  <label className="pdt-label">Last4</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Last4
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     maxLength={4}
                     placeholder="1234"
                     value={row.card?.cardLastFour ?? ""}
@@ -190,8 +199,10 @@ export function PaymentDetailModal({
                   />
                 </div>
                 <div className="pdt-field pdt-field--grow">
-                  <label className="pdt-label">Autoriz.</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Autoriz.
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     placeholder="AUTH01"
                     value={row.card?.authorizationCode ?? ""}
                     onChange={(e) =>
@@ -203,8 +214,10 @@ export function PaymentDetailModal({
                   />
                 </div>
                 <div className="pdt-field pdt-field--w60">
-                  <label className="pdt-label">Lote</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Lote
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     placeholder="001"
                     value={row.card?.lotNumber ?? ""}
                     onChange={(e) =>
@@ -220,8 +233,10 @@ export function PaymentDetailModal({
             {isTransfer && (
               <>
                 <div className="pdt-field pdt-field--grow">
-                  <label className="pdt-label">Comprobante</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Comprobante
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     placeholder="TRX-001"
                     value={row.transfer?.receiptNumber ?? ""}
                     onChange={(e) =>
@@ -236,9 +251,10 @@ export function PaymentDetailModal({
                   />
                 </div>
                 <div className="pdt-field pdt-field--w120">
-                  <label className="pdt-label">Fecha</label>
-                  <input
-                    type="date"
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Fecha
+                  </ZHFieldLabel>
+                  <ZhDateInput
                     value={row.transfer?.transferDate ?? ""}
                     onChange={(e) =>
                       upd(row._k, (r) => ({
@@ -256,8 +272,10 @@ export function PaymentDetailModal({
             {isCheque && (
               <>
                 <div className="pdt-field pdt-field--grow">
-                  <label className="pdt-label">Nro. Cheque</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Nro. Cheque
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     placeholder="001234"
                     value={row.cheque?.chequeNumber ?? ""}
                     onChange={(e) =>
@@ -269,8 +287,10 @@ export function PaymentDetailModal({
                   />
                 </div>
                 <div className="pdt-field pdt-field--grow">
-                  <label className="pdt-label">Titular</label>
-                  <input
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Titular
+                  </ZHFieldLabel>
+                  <ZhTextInput
                     placeholder="Nombre"
                     value={row.cheque?.holderName ?? ""}
                     onChange={(e) =>
@@ -282,9 +302,10 @@ export function PaymentDetailModal({
                   />
                 </div>
                 <div className="pdt-field pdt-field--w120">
-                  <label className="pdt-label">Fecha cobro</label>
-                  <input
-                    type="date"
+                  <ZHFieldLabel size="sm" className="pdt-label">
+                    Fecha cobro
+                  </ZHFieldLabel>
+                  <ZhDateInput
                     value={row.cheque?.cashDate ?? ""}
                     onChange={(e) =>
                       upd(row._k, (r) => ({
@@ -297,7 +318,9 @@ export function PaymentDetailModal({
               </>
             )}
             <div className="pdt-field pdt-field--w90">
-              <label className="pdt-label">Monto</label>
+              <ZHFieldLabel size="sm" className="pdt-label">
+                Monto
+              </ZHFieldLabel>
               <ZhDecimalInput
                 decimals={totalAmountDecimals}
                 positiveOnly

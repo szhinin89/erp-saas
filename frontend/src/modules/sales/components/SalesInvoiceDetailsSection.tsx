@@ -11,9 +11,11 @@ import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSe
 import { Badge } from "../../../components/PageShell";
 import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
 import { ZHLineCard } from "../../../components/zh/ZHLineCard";
+import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
-import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import {
   lineNet,
   calcLineTax,
@@ -570,10 +572,14 @@ function SalesProductCard({
         <div className="sf-product__pricelist">
           {pvp != null ? (
             <div className="sf-product__pricelist-row">
-              <span className="sf-product__pricelist-label">Precio lista</span>
-              <span className="sf-product__pricelist-value sf-product__pricelist-value--bold">
-                ${formatMoney(pvp, dc.salesUnitPrice)}
-              </span>
+              <ZHFieldLabel size="sm" className="sf-product__pricelist-label">
+                Precio lista
+              </ZHFieldLabel>
+              <ZHMoneyValue
+                value={pvp}
+                emphasis="strong"
+                className="sf-product__pricelist-value sf-product__pricelist-value--bold"
+              />
             </div>
           ) : (
             <span className="sales-invoice-details-empty-value">—</span>
@@ -583,7 +589,9 @@ function SalesProductCard({
         {/* Col 3: Discount + Invoiced Price */}
         <div className="sf-product__negotiated">
           <div className="sf-product__disc-block">
-            <span className="sf-product__disc-label">Dto. %</span>
+            <ZHFieldLabel size="sm" className="sf-product__disc-label">
+              Dto. %
+            </ZHFieldLabel>
             <ZhDecimalInput
               // Input no controlado (defaultValue) por diseño — se remonta cuando line.discountPct
               // cambia por una vía distinta a este mismo input (p. ej. al recargar una línea), para
@@ -605,7 +613,9 @@ function SalesProductCard({
             />
           </div>
           <div className="sf-product__price-block">
-            <span className="sf-product__price-label">Precio Facturado</span>
+            <ZHFieldLabel size="sm" className="sf-product__price-label">
+              Precio Facturado
+            </ZHFieldLabel>
             <div className="sf-product__price-wrap">
               <span className="sf-product__price-currency">$</span>
               <ZhDecimalInput
@@ -629,7 +639,9 @@ function SalesProductCard({
             assignment
           </span>
           <div className="sf-product__stock-data">
-            <span className="sf-product__stock-label">Stock</span>
+            <ZHFieldLabel size="sm" className="sf-product__stock-label">
+              Stock
+            </ZHFieldLabel>
             <div
               className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
             >
@@ -656,7 +668,9 @@ function SalesProductCard({
             )}
             {line._tracksStock && (
               <>
-                <span className="sf-product__stock-label">Ubicación</span>
+                <ZHFieldLabel size="sm" className="sf-product__stock-label">
+                  Ubicación
+                </ZHFieldLabel>
                 {!readOnly ? (
                   <ZhWarehouseSelector
                     value={line.warehouseId ?? null}
@@ -699,7 +713,9 @@ function SalesProductCard({
 
         {/* Col 5: Quantity */}
         <div className="sf-product__qty">
-          <span className="sf-product__qty-label">Cantidad</span>
+          <ZHFieldLabel size="sm" className="sf-product__qty-label">
+            Cantidad
+          </ZHFieldLabel>
           <ZhDecimalInput
             // key={line.quantity}: fuerza el remontaje del input cuando la cantidad cambia desde
             // afuera de este blur (reescaneo del mismo producto en useSalesPage.addLineWithItem,
@@ -721,21 +737,25 @@ function SalesProductCard({
         {/* Col 6: Subtotal — el dato más fuerte del bloque es el Total línea */}
         <div className="sf-product__subtotal">
           <div className="sf-product__subtotal-row">
-            <span className="sf-product__subtotal-label">Base sin IVA</span>
-            <span className="sf-product__subtotal-value">
-              ${formatMoney(baseAmount, dc.totalAmount)}
-            </span>
+            <ZHFieldLabel size="sm" className="sf-product__subtotal-label">
+              Base sin IVA
+            </ZHFieldLabel>
+            <ZHMoneyValue value={baseAmount} className="sf-product__subtotal-value" />
           </div>
           <div className="sf-product__subtotal-row">
-            <span className="sf-product__subtotal-label">{ivaTotalsLabel}</span>
-            <span className="sf-product__subtotal-value">
-              ${formatMoney(vatAmount, dc.totalAmount)}
-            </span>
+            <ZHFieldLabel size="sm" className="sf-product__subtotal-label">
+              {ivaTotalsLabel}
+            </ZHFieldLabel>
+            <ZHMoneyValue value={vatAmount} className="sf-product__subtotal-value" />
           </div>
-          <div className="sf-product__total-label">Total línea</div>
-          <div className="sf-product__total-amount">
-            ${formatMoney(total, dc.totalAmount)}
-          </div>
+          <ZHFieldLabel size="sm" className="sf-product__total-label">
+            Total línea
+          </ZHFieldLabel>
+          <ZHMoneyValue
+            value={total}
+            emphasis="total"
+            className="sf-product__total-amount"
+          />
           <div className="sf-product__tax-incl">Imp. incluidos</div>
         </div>
       </div>

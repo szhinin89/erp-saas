@@ -5,6 +5,7 @@ import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHField, ZHFormActions, ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
@@ -132,7 +133,7 @@ export function AuthorizeSalesReturnModal({
               density="compact"
               fieldError={errors.refundAllocations?.[idx]?.method?.message}
             >
-              <select
+              <ZhSelect
                 className="zh-input"
                 disabled={saving}
                 {...register(`refundAllocations.${idx}.method` as const)}
@@ -142,7 +143,7 @@ export function AuthorizeSalesReturnModal({
                     {o.label}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField
               label="Monto"

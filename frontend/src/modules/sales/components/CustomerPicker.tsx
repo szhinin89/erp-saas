@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
+import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedValue";
 import type { CustomerPickerRow } from "../../masterData/types/businessPartner.types";
 
 type Props = {
@@ -8,6 +10,13 @@ type Props = {
   onChange: (customer: CustomerPickerRow | null) => void;
   disabled?: boolean;
   onCreateNew?: (searchText: string) => void;
+  /** Acción secundaria "editar" del cliente ya seleccionado (ver `ZHPickerSelectedValue`).
+   * Sin argumentos: el consumidor ya tiene el cliente activo en su propio estado (p. ej.
+   * `ctx.customerProfile` en `SalesPage`), CustomerPicker solo decide cuándo mostrar el
+   * botón. Si se omite, no se renderiza la acción de editar. */
+  onEditSelected?: () => void;
+  /** Título/aria-label del botón editar. Default del componente global: "Editar". */
+  editLabel?: string;
 };
 
 export function CustomerPicker({
@@ -15,6 +24,8 @@ export function CustomerPicker({
   onChange,
   disabled,
   onCreateNew,
+  onEditSelected,
+  editLabel,
 }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CustomerPickerRow[]>([]);
@@ -116,29 +127,14 @@ export function CustomerPicker({
 
   if (selected) {
     return (
-      <div className="zh-picker__selected">
-        <div className="zh-picker__selected-body">
-          <div className="zh-picker__selected-name">
-            {selected.fullName}
-          </div>
-          <div className="zh-picker__selected-id">
-            {selected.identificationNumber}
-          </div>
-        </div>
-        {!disabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            title="Cambiar cliente" className="zh-picker__clear"
-          >
-            <span
-              className="material-symbols-outlined zh-picker__clear-icon"
-            >
-              close
-            </span>
-          </button>
-        )}
-      </div>
+      <ZHPickerSelectedValue
+        title={selected.fullName}
+        meta={selected.identificationNumber}
+        clearLabel="Cambiar cliente"
+        editLabel={editLabel}
+        onClear={disabled ? undefined : handleClear}
+        onEdit={disabled ? undefined : onEditSelected}
+      />
     );
   }
 
@@ -193,20 +189,14 @@ export function CustomerPicker({
             </div>
           )}
           {results.map((row, i) => (
-            <button
+            <ZHPickerResultItem
               key={row.id}
-              type="button"
+              title={row.fullName}
+              meta={row.identificationNumber}
+              selected={i === focusIdx}
               onClick={() => handleSelect(row)}
               onMouseEnter={() => setFocusIdx(i)}
-              className={`zh-picker__result${i === focusIdx ? " zh-picker__result--focused" : ""}`}
-            >
-              <div className="zh-picker__result-name">
-                {row.fullName}
-              </div>
-              <div className="zh-picker__result-meta">
-                {row.identificationNumber}
-              </div>
-            </button>
+            />
           ))}
         </div>
       )}

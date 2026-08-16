@@ -68,6 +68,14 @@
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
 }
+.prd-tab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.prd-tab-btn:disabled:hover {
+  background: none;
+  color: inherit;
+}
 
 /* ── Variante "fill" — pestañas repartidas a ancho completo (formularios con muchas pestañas) ── */
 .prd-tabs--fill .prd-tab-btn {

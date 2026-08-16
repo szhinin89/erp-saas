@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import { ZhDecimalInput, ZhTextInput } from "../../../components/zh/inputs";
+import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
+import { ZhDecimalInput, ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
@@ -260,26 +261,27 @@ export function SalesPage() {
           {/* ── SIDEBAR ── */}
           <div className="sf-sidebar">
             {/* Tabs */}
-            <div className="sf-tabs">
-              <button className="sf-tab sf-tab--active">
-                <span className="material-symbols-outlined sf-tab__icon">
-                  receipt_long
-                </span>
-                {ctx.editing ? "Editar Factura" : "Nueva Factura"}
-              </button>
-              <button
-                className="sf-tab"
-                onClick={() => {
+            <ZHTabBar
+              tabs={
+                [
+                  {
+                    id: "form",
+                    label: ctx.editing ? "Editar Factura" : "Nueva Factura",
+                    icon: "receipt_long",
+                    inert: true,
+                  },
+                  { id: "history", label: "Historial", icon: "history" },
+                ] as ZHTab<"form" | "history">[]
+              }
+              activeTab="form"
+              fill
+              onChange={(id) => {
+                if (id === "history") {
                   void ctx.resetForm();
                   ctx.setTab("listado");
-                }}
-              >
-                <span className="material-symbols-outlined sf-tab__icon">
-                  history
-                </span>
-                Historial
-              </button>
-            </div>
+                }
+              }}
+            />
 
             {/* Checklist + Next Step (only in draft mode) */}
             {ctx.isDraft && !ctx.readOnly && <SalesFormChecklist ctx={ctx} />}
@@ -337,7 +339,7 @@ export function SalesPage() {
                 )}
                 <div>
                   <div className="sf-emission__label">Tipo Documento</div>
-                  <select
+                  <ZhSelect
                     className="zh-select--compact zh-mb-4"
                     value={
                       ctx.readOnly
@@ -354,11 +356,11 @@ export function SalesPage() {
                         {dt.code} — {dt.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </div>
                 <div>
                   <div className="sf-emission__label">Forma Pago SRI</div>
-                  <select
+                  <ZhSelect
                     className="zh-select--compact zh-mb-4"
                     value={
                       ctx.readOnly
@@ -375,7 +377,7 @@ export function SalesPage() {
                         {pm.code} — {pm.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </div>
                 {ctx.editing && (
                   <div className="zh-mt-4">
@@ -411,6 +413,10 @@ export function SalesPage() {
                   onChange={ctx.handleCustomerChange}
                   disabled={ctx.fieldDisabled}
                   onCreateNew={ctx.openNewCustomerModal}
+                  onEditSelected={
+                    ctx.customerProfile ? ctx.openEditCustomerModal : undefined
+                  }
+                  editLabel="Editar datos"
                 />
               </ZHField>
               {ctx.customerProfile && (
@@ -438,18 +444,6 @@ export function SalesPage() {
                       </span>
                       {ctx.customerProfile.phone}
                     </div>
-                  )}
-                  {!ctx.fieldDisabled && (
-                    <button
-                      type="button"
-                      onClick={ctx.openEditCustomerModal}
-                      className="zh-inline-action zh-mt-4"
-                    >
-                      <span className="material-symbols-outlined zh-icon-sm">
-                        edit
-                      </span>
-                      Editar datos
-                    </button>
                   )}
                 </div>
               )}
@@ -572,16 +566,17 @@ export function SalesPage() {
 
             <div className="sf-bottombar__spacer" />
 
-            <button
+            <ZHBtn
               type="button"
-              className="sf-bottombar__btn"
+              variant="secondary"
+              size="sm"
               onClick={() => void ctx.clearForm()}
             >
-              <span className="material-symbols-outlined sf-bottombar__btn-icon">
+              <span className="material-symbols-outlined zh-icon-lg">
                 delete_sweep
               </span>
               Limpiar Todo
-            </button>
+            </ZHBtn>
 
             {ctx.isDraft && <EmitButton ctx={ctx} />}
 
@@ -589,36 +584,39 @@ export function SalesPage() {
               ctx.isElectronic &&
               ctx.editing.status === "Authorized" &&
               ctx.editing.electronicStatus === "None" && (
-                <button
-                  className="sf-bottombar__btn"
+                <ZHBtn
+                  variant="secondary"
+                  size="sm"
                   onClick={() => void ctx.handleGenerateElectronicDocument()}
                   disabled={ctx.saving}
                   title="Esta factura fue autorizada pero nunca generó su documento electrónico — regenera el registro en el Monitor."
                 >
-                  <span className="material-symbols-outlined sf-bottombar__btn-icon">
+                  <span className="material-symbols-outlined zh-icon-lg">
                     bolt
                   </span>
                   Generar documento electrónico
-                </button>
+                </ZHBtn>
               )}
 
             {ctx.editing && ctx.editing.status === "Authorized" && (
-              <button
-                className="sf-bottombar__btn"
+              <ZHBtn
+                variant="secondary"
+                size="sm"
                 disabled={ride.ridePending}
                 onClick={() => void ride.handleViewRide(ctx.editing!.id)}
                 title="Abre el PDF del RIDE en una pestaña nueva. Reutiliza el ya generado si no cambió nada."
               >
-                <span className="material-symbols-outlined sf-bottombar__btn-icon">
+                <span className="material-symbols-outlined zh-icon-lg">
                   picture_as_pdf
                 </span>
                 Ver RIDE
-              </button>
+              </ZHBtn>
             )}
 
             {ctx.editing && ctx.editing.status === "Authorized" && (
-              <button
-                className="sf-bottombar__btn"
+              <ZHBtn
+                variant="secondary"
+                size="sm"
                 disabled={ride.ridePending}
                 onClick={() =>
                   void ride.handleDownloadRide(
@@ -627,37 +625,40 @@ export function SalesPage() {
                   )
                 }
               >
-                <span className="material-symbols-outlined sf-bottombar__btn-icon">
+                <span className="material-symbols-outlined zh-icon-lg">
                   download
                 </span>
                 Descargar RIDE
-              </button>
+              </ZHBtn>
             )}
 
             {ctx.editing && ctx.editing.status === "Authorized" && (
-              <button
-                className="sf-bottombar__btn"
+              <ZHBtn
+                variant="secondary"
+                size="sm"
                 disabled={ride.ridePending}
                 onClick={() => void ride.handleRegenerateRide(ctx.editing!.id)}
                 title="Fuerza una nueva generación del RIDE aunque el ya almacenado siga siendo válido."
               >
-                <span className="material-symbols-outlined sf-bottombar__btn-icon">
+                <span className="material-symbols-outlined zh-icon-lg">
                   refresh
                 </span>
                 Regenerar RIDE
-              </button>
+              </ZHBtn>
             )}
 
             {ctx.editing && ctx.editing.status === "Authorized" && (
-              <button
-                className="sf-bottombar__btn sales-bottombar-btn--danger"
+              <ZHBtn
+                variant="secondary"
+                size="sm"
+                className="sales-bottombar-btn--danger"
                 onClick={() => ctx.setModalCancelReason(true)}
               >
-                <span className="material-symbols-outlined sf-bottombar__btn-icon">
+                <span className="material-symbols-outlined zh-icon-lg">
                   block
                 </span>
                 Anular
-              </button>
+              </ZHBtn>
             )}
           </div>
         </div>

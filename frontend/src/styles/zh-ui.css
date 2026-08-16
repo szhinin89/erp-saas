@@ -420,6 +420,81 @@ select.zh-input--compact {
   margin-left: 3px;
 }
 
+/* ZHFieldLabel standalone — mismo look-and-feel de .zh-field-label, sin depender del
+   wrapper .zh-field. --md hereda la tipografía compartida; --sm cubre labels compactos de
+   líneas/cards/métricas (antes sf-*/pdl-* por módulo). */
+.zh-field-label--md {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.zh-field-label--sm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-text-primary);
+}
+
+.zh-field-label__required {
+  color: var(--color-error);
+}
+
+.zh-field-label__optional {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+/* ZHMoneyValue — valor monetario de solo lectura, reemplaza el patrón manual
+   "$" + formatMoney(value) repetido por módulo. Sin tokens dedicados de "strong"/"total"
+   en el DS: --strong/--total reutilizan el mismo peso (700) ya usado por otros elementos
+   destacados de zh-ui.css (.zh-auth-brand-name, .zh-avatar); --total usa además
+   --text-body-lg-size (15px, ya existente) para diferenciarse como valor principal. */
+.zh-money-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  color: var(--color-text-primary);
+}
+
+.zh-money-value--start {
+  justify-content: flex-start;
+}
+
+.zh-money-value--end {
+  justify-content: flex-end;
+}
+
+.zh-money-value--default {
+  font-size: var(--text-body-md-size);
+  font-weight: var(--text-body-md-weight);
+}
+
+.zh-money-value--strong {
+  font-size: var(--text-body-md-size);
+  font-weight: 700;
+}
+
+.zh-money-value--total {
+  font-size: var(--text-body-lg-size);
+  font-weight: 700;
+}
+
+.zh-money-value__symbol {
+  color: var(--color-text-secondary);
+}
+
+.zh-money-value__amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.zh-money-value--empty {
+  color: var(--color-text-secondary);
+}
+
 .zh-field-control {
   position: relative;
 }
@@ -2599,6 +2674,96 @@ select.zh-input--compact {
 
 .zh-picker__create-icon {
   font-size: 16px;
+}
+
+/* ── ZHPickerResultItem — fila seleccionable genérica de dropdowns/autocompletes
+   (ver ZHPickerResultItem.tsx) ───────────────────────────────────────────── */
+.zh-picker-result-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-family);
+}
+.zh-picker-result-item:hover:not(:disabled) {
+  background: var(--color-surface-container-low);
+}
+.zh-picker-result-item--selected {
+  background: var(--color-surface-container-low);
+}
+.zh-picker-result-item:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.zh-picker-result-item__icon {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.zh-picker-result-item__content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.zh-picker-result-item__title {
+  font-size: var(--text-body-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+}
+.zh-picker-result-item__subtitle {
+  margin-top: 2px;
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+.zh-picker-result-item__meta {
+  margin-top: 2px;
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+}
+
+/* ── ZHPickerSelectedValue — tarjeta de valor seleccionado de un picker
+   (ver ZHPickerSelectedValue.tsx) ───────────────────────────────────────── */
+.zh-picker-selected-value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.zh-picker-selected-value__content {
+  flex: 1;
+  min-width: 0;
+}
+.zh-picker-selected-value__title {
+  font-size: var(--text-body-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+}
+.zh-picker-selected-value__subtitle {
+  margin-top: 2px;
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+.zh-picker-selected-value__meta {
+  margin-top: 2px;
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+}
+.zh-picker-selected-value__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .zh-ml-1 {

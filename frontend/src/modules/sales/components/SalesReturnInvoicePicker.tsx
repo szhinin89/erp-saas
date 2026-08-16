@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { salesService, type SalesListItemDto } from "../api/salesService";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
+import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedValue";
 
 type Props = {
   value: SalesListItemDto | null;
@@ -65,27 +67,12 @@ export function SalesReturnInvoicePicker({ value, onChange, disabled }: Props) {
 
   if (value) {
     return (
-      <div className="sr-invoice-picker-selected">
-        <div className="sr-invoice-picker-selected__main">
-          <span className="sr-invoice-picker-selected__number">
-            {value.invoiceNumber}
-          </span>
-          <span className="sr-invoice-picker-selected__meta">
-            {value.customerName} — {formatDate(value.issueDate)} —{" "}
-            {formatMoney(value.grandTotal)}
-          </span>
-        </div>
-        {!disabled && (
-          <button
-            type="button"
-            className="sr-invoice-picker-selected__clear"
-            onClick={handleClear}
-            title="Cambiar factura"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        )}
-      </div>
+      <ZHPickerSelectedValue
+        title={value.invoiceNumber}
+        meta={`${value.customerName} — ${formatDate(value.issueDate)} — ${formatMoney(value.grandTotal)}`}
+        clearLabel="Cambiar factura"
+        onClear={disabled ? undefined : handleClear}
+      />
     );
   }
 
@@ -112,20 +99,12 @@ export function SalesReturnInvoicePicker({ value, onChange, disabled }: Props) {
           )}
           {!loading &&
             results.map((row) => (
-              <button
+              <ZHPickerResultItem
                 key={row.id}
-                type="button"
-                className="sr-invoice-picker__item"
+                title={row.invoiceNumber}
+                meta={`${row.customerName} — ${formatDate(row.issueDate)} — ${formatMoney(row.grandTotal)}`}
                 onClick={() => handleSelect(row)}
-              >
-                <span className="sr-invoice-picker__item-number">
-                  {row.invoiceNumber}
-                </span>
-                <span className="sr-invoice-picker__item-meta">
-                  {row.customerName} — {formatDate(row.issueDate)} —{" "}
-                  {formatMoney(row.grandTotal)}
-                </span>
-              </button>
+              />
             ))}
         </div>
       )}
