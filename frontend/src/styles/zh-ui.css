@@ -2662,6 +2662,21 @@ select.zh-input--compact {
   overflow: hidden;
 }
 
+/* Estructura mínima de rail + body — cada módulo consumidor decide el estilo visual interno
+   (padding, ancho, colores) con su propio CSS; ver `.sf-product-card` en Ventas. */
+.zh-line-card__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.zh-line-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
 .zh-line-action-rail {
   display: flex;
   flex-direction: column;

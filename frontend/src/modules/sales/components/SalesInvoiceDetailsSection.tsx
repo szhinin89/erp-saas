@@ -10,6 +10,7 @@ import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";
 import { Badge } from "../../../components/PageShell";
 import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
+import { ZHLineCard } from "../../../components/zh/ZHLineCard";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
@@ -523,215 +524,221 @@ function SalesProductCard({
   const exceedsStock = lineExceedsStock(line);
 
   return (
-    <div className="sf-product">
-      {/* Col 0: Rail izquierdo — número de línea + acción eliminar, mismo patrón visual que el
-          rail de acciones de Compras (SALES-RETAIL-LINE-CARD-01): número arriba, ícono-solo
-          (basurero, sin texto) debajo. Clases propias de Ventas (sf-product__rail-*), no se
-          reutilizan las clases pdl-* de Compras. */}
-      <div className="sf-product__rail">
-        <span className="sf-product__rail-index">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        {!readOnly && (
-          // Basurero = eliminar el producto de la factura; una X se reserva para
-          // cerrar/cancelar modales o paneles, nunca para esta acción destructiva.
-          <ZHRowDeleteAction
-            compact
-            showText={false}
-            title="Eliminar producto de la factura"
-            label="Eliminar producto de la factura"
-            onClick={() => onRemove(line._key)}
-            disabled={disabled}
-            className="sf-product__delete-btn"
-          />
-        )}
-      </div>
-
-      {/* Col 1: Product Info — SKU en la primera fila (el número de línea ahora vive en el rail
-          izquierdo), sin badge de IVA junto al nombre (pedido explícito del usuario, FIX06H): la
-          tasa ya se ve en la columna de totales ("IVA (15%)"), `vatLabel` se sigue usando solo
-          para formatear esa etiqueta más abajo. */}
-      <div className="sf-product__info">
-        <div className="sf-product__title-row">
-          {sku && <span className="sf-product__code">{sku}</span>}
-        </div>
-        <div className="sf-product__name" title={name}>
-          {name}
-        </div>
-      </div>
-
-      {/* Col 3: Price List — costo nunca se muestra en el modo de venta POS por defecto */}
-      <div className="sf-product__pricelist">
-        {pvp != null ? (
-          <div className="sf-product__pricelist-row">
-            <span className="sf-product__pricelist-label">Precio lista</span>
-            <span className="sf-product__pricelist-value sf-product__pricelist-value--bold">
-              ${formatMoney(pvp, dc.salesUnitPrice)}
-            </span>
+    // DS-LINE-CARD-UNIFY-01: wrapper externo unificado (ZHLineCard) en vez de la caja
+    // completamente local que tenía la línea antes — mismo criterio de rail izquierdo que
+    // Compras, pero sin depender de sus clases pdl-* ni tocar ese módulo. El rail (número +
+    // basurero) y el contenido interno de la línea siguen siendo clases propias de Ventas
+    // (sf-product-card / sf-product__*), estilizadas con overrides scoped en sales-product-card.css.
+    <ZHLineCard
+      className="sf-product-card"
+      rail={
+        <>
+          <span className="sf-product__rail-index">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          {!readOnly && (
+            // Basurero = eliminar el producto de la factura; una X se reserva para
+            // cerrar/cancelar modales o paneles, nunca para esta acción destructiva.
+            <ZHRowDeleteAction
+              compact
+              showText={false}
+              title="Eliminar producto de la factura"
+              label="Eliminar producto de la factura"
+              onClick={() => onRemove(line._key)}
+              disabled={disabled}
+              className="sf-product__delete-btn"
+            />
+          )}
+        </>
+      }
+    >
+      <div className="sf-product">
+        {/* Col 1: Product Info — SKU en la primera fila (el número de línea vive en el rail
+            izquierdo de ZHLineCard), sin badge de IVA junto al nombre (pedido explícito del
+            usuario, FIX06H): la tasa ya se ve en la columna de totales ("IVA (15%)"), `vatLabel`
+            se sigue usando solo para formatear esa etiqueta más abajo. */}
+        <div className="sf-product__info">
+          <div className="sf-product__title-row">
+            {sku && <span className="sf-product__code">{sku}</span>}
           </div>
-        ) : (
-          <span className="sales-invoice-details-empty-value">—</span>
-        )}
-      </div>
-
-      {/* Col 4: Discount + Invoiced Price */}
-      <div className="sf-product__negotiated">
-        <div className="sf-product__disc-block">
-          <span className="sf-product__disc-label">Dto. %</span>
-          <ZhDecimalInput
-            // Input no controlado (defaultValue) por diseño — se remonta cuando line.discountPct
-            // cambia por una vía distinta a este mismo input (p. ej. al recargar una línea), para
-            // que el DOM nunca quede desincronizado del valor real. Sin key, React reutiliza el
-            // nodo y el usuario seguiría viendo el valor viejo (mismo bug que quantity, ver abajo).
-            key={line.discountPct ?? 0}
-            className="sf-product__disc-input"
-            decimals={dc.percentage}
-            positiveOnly
-            defaultValue={line.discountPct ?? 0}
-            onBlur={(e) =>
-              onUpdate(
-                line._key,
-                "discountPct",
-                Math.min(100, Math.max(0, Number(e.target.value) || 0)),
-              )
-            }
-            disabled={disabled}
-          />
+          <div className="sf-product__name" title={name}>
+            {name}
+          </div>
         </div>
-        <div className="sf-product__price-block">
-          <span className="sf-product__price-label">Precio Facturado</span>
-          <div className="sf-product__price-wrap">
-            <span className="sf-product__price-currency">$</span>
+
+        {/* Col 2: Price List — costo nunca se muestra en el modo de venta POS por defecto */}
+        <div className="sf-product__pricelist">
+          {pvp != null ? (
+            <div className="sf-product__pricelist-row">
+              <span className="sf-product__pricelist-label">Precio lista</span>
+              <span className="sf-product__pricelist-value sf-product__pricelist-value--bold">
+                ${formatMoney(pvp, dc.salesUnitPrice)}
+              </span>
+            </div>
+          ) : (
+            <span className="sales-invoice-details-empty-value">—</span>
+          )}
+        </div>
+
+        {/* Col 3: Discount + Invoiced Price */}
+        <div className="sf-product__negotiated">
+          <div className="sf-product__disc-block">
+            <span className="sf-product__disc-label">Dto. %</span>
             <ZhDecimalInput
-              key={line.unitPrice}
-              className="sf-product__price-input"
-              decimals={dc.salesUnitPrice}
+              // Input no controlado (defaultValue) por diseño — se remonta cuando line.discountPct
+              // cambia por una vía distinta a este mismo input (p. ej. al recargar una línea), para
+              // que el DOM nunca quede desincronizado del valor real. Sin key, React reutiliza el
+              // nodo y el usuario seguiría viendo el valor viejo (mismo bug que quantity, ver abajo).
+              key={line.discountPct ?? 0}
+              className="sf-product__disc-input"
+              decimals={dc.percentage}
               positiveOnly
-              defaultValue={line.unitPrice}
+              defaultValue={line.discountPct ?? 0}
               onBlur={(e) =>
-                onUpdate(line._key, "unitPrice", Number(e.target.value) || 0)
+                onUpdate(
+                  line._key,
+                  "discountPct",
+                  Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+                )
               }
               disabled={disabled}
             />
           </div>
-        </div>
-      </div>
-
-      {/* Col 5: Stock */}
-      <div className="sf-product__stock-box">
-        <span className="material-symbols-outlined sf-product__stock-icon">
-          assignment
-        </span>
-        <div className="sf-product__stock-data">
-          <span className="sf-product__stock-label">Stock</span>
-          <div
-            className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
-          >
-            {stockQty != null ? stockQty : "—"}
-            {stockQty != null && (
-              <span className="sf-product__stock-uom"> UDS</span>
-            )}
-            {line._tracksStock && stockQty != null && (
-              <Badge
-                label={
-                  exceedsStock ? "Cantidad excede stock" : stockBadgeInfo(stockQty).label
+          <div className="sf-product__price-block">
+            <span className="sf-product__price-label">Precio Facturado</span>
+            <div className="sf-product__price-wrap">
+              <span className="sf-product__price-currency">$</span>
+              <ZhDecimalInput
+                key={line.unitPrice}
+                className="sf-product__price-input"
+                decimals={dc.salesUnitPrice}
+                positiveOnly
+                defaultValue={line.unitPrice}
+                onBlur={(e) =>
+                  onUpdate(line._key, "unitPrice", Number(e.target.value) || 0)
                 }
-                variant={
-                  exceedsStock ? "red" : stockBadgeInfo(stockQty).variant
-                }
-                size="md"
+                disabled={disabled}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Col 4: Stock */}
+        <div className="sf-product__stock-box">
+          <span className="material-symbols-outlined sf-product__stock-icon">
+            assignment
+          </span>
+          <div className="sf-product__stock-data">
+            <span className="sf-product__stock-label">Stock</span>
+            <div
+              className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
+            >
+              {stockQty != null ? stockQty : "—"}
+              {stockQty != null && (
+                <span className="sf-product__stock-uom"> UDS</span>
+              )}
+              {line._tracksStock && stockQty != null && (
+                <Badge
+                  label={
+                    exceedsStock ? "Cantidad excede stock" : stockBadgeInfo(stockQty).label
+                  }
+                  variant={
+                    exceedsStock ? "red" : stockBadgeInfo(stockQty).variant
+                  }
+                  size="md"
+                />
+              )}
+            </div>
+            {exceedsStock && (
+              <div className="sf-product__stock-warning">
+                Supera el disponible ({stockQty} UDS)
+              </div>
+            )}
+            {line._tracksStock && (
+              <>
+                <span className="sf-product__stock-label">Ubicación</span>
+                {!readOnly ? (
+                  <ZhWarehouseSelector
+                    value={line.warehouseId ?? null}
+                    onChange={(id, option) =>
+                      onUpdateWarehouse(line._key, id, option)
+                    }
+                    itemId={line.itemId}
+                    fallbackWarehouses={warehouses}
+                    defaultWarehouseId={selectedWarehouseId}
+                    disabled={disabled}
+                    placeholder="Seleccione bodega"
+                  />
+                ) : (
+                  <div className="sf-product__stock-wh">
+                    {warehouses.find((w) => w.id === line.warehouseId)?.name ??
+                      stockWarehouse ??
+                      "—"}
+                  </div>
+                )}
+                {line.itemId && (
+                  // Reutiliza el Kardex ya existente (mismo destino que "Ver Movimiento de
+                  // Inventario" en el listado de facturas) — sin endpoint ni componente nuevo.
+                  // Nueva pestaña: no debe abandonar la venta en curso.
+                  <Link
+                    to={`/inventory/kardex?productId=${line.itemId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="zh-inline-action sf-product__stock-global-link"
+                  >
+                    <span className="material-symbols-outlined zh-icon-sm">
+                      open_in_new
+                    </span>
+                    Ver stock global
+                  </Link>
+                )}
+              </>
             )}
           </div>
-          {exceedsStock && (
-            <div className="sf-product__stock-warning">
-              Supera el disponible ({stockQty} UDS)
-            </div>
-          )}
-          {line._tracksStock && (
-            <>
-              <span className="sf-product__stock-label">Ubicación</span>
-              {!readOnly ? (
-                <ZhWarehouseSelector
-                  value={line.warehouseId ?? null}
-                  onChange={(id, option) =>
-                    onUpdateWarehouse(line._key, id, option)
-                  }
-                  itemId={line.itemId}
-                  fallbackWarehouses={warehouses}
-                  defaultWarehouseId={selectedWarehouseId}
-                  disabled={disabled}
-                  placeholder="Seleccione bodega"
-                />
-              ) : (
-                <div className="sf-product__stock-wh">
-                  {warehouses.find((w) => w.id === line.warehouseId)?.name ??
-                    stockWarehouse ??
-                    "—"}
-                </div>
-              )}
-              {line.itemId && (
-                // Reutiliza el Kardex ya existente (mismo destino que "Ver Movimiento de
-                // Inventario" en el listado de facturas) — sin endpoint ni componente nuevo.
-                // Nueva pestaña: no debe abandonar la venta en curso.
-                <Link
-                  to={`/inventory/kardex?productId=${line.itemId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="zh-inline-action sf-product__stock-global-link"
-                >
-                  <span className="material-symbols-outlined zh-icon-sm">
-                    open_in_new
-                  </span>
-                  Ver stock global
-                </Link>
-              )}
-            </>
-          )}
         </div>
-      </div>
 
-      {/* Col 6: Quantity */}
-      <div className="sf-product__qty">
-        <span className="sf-product__qty-label">Cantidad</span>
-        <ZhDecimalInput
-          // key={line.quantity}: fuerza el remontaje del input cuando la cantidad cambia desde
-          // afuera de este blur (reescaneo del mismo producto en useSalesPage.addLineWithItem,
-          // que incrementa line.quantity directamente). Sin esto, el input no controlado
-          // (defaultValue) conserva el valor mostrado en el primer render — el subtotal (que sí
-          // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
-          key={line.quantity}
-          className="sf-product__qty-input"
-          decimals={dc.quantity}
-          positiveOnly
-          defaultValue={line.quantity}
-          onBlur={(e) =>
-            onUpdate(line._key, "quantity", Number(e.target.value) || 1)
-          }
-          disabled={disabled}
-        />
-      </div>
+        {/* Col 5: Quantity */}
+        <div className="sf-product__qty">
+          <span className="sf-product__qty-label">Cantidad</span>
+          <ZhDecimalInput
+            // key={line.quantity}: fuerza el remontaje del input cuando la cantidad cambia desde
+            // afuera de este blur (reescaneo del mismo producto en useSalesPage.addLineWithItem,
+            // que incrementa line.quantity directamente). Sin esto, el input no controlado
+            // (defaultValue) conserva el valor mostrado en el primer render — el subtotal (que sí
+            // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
+            key={line.quantity}
+            className="sf-product__qty-input"
+            decimals={dc.quantity}
+            positiveOnly
+            defaultValue={line.quantity}
+            onBlur={(e) =>
+              onUpdate(line._key, "quantity", Number(e.target.value) || 1)
+            }
+            disabled={disabled}
+          />
+        </div>
 
-      {/* Col 7: Subtotal — el dato más fuerte del bloque es el Total línea */}
-      <div className="sf-product__subtotal">
-        <div className="sf-product__subtotal-row">
-          <span className="sf-product__subtotal-label">Base sin IVA</span>
-          <span className="sf-product__subtotal-value">
-            ${formatMoney(baseAmount, dc.totalAmount)}
-          </span>
+        {/* Col 6: Subtotal — el dato más fuerte del bloque es el Total línea */}
+        <div className="sf-product__subtotal">
+          <div className="sf-product__subtotal-row">
+            <span className="sf-product__subtotal-label">Base sin IVA</span>
+            <span className="sf-product__subtotal-value">
+              ${formatMoney(baseAmount, dc.totalAmount)}
+            </span>
+          </div>
+          <div className="sf-product__subtotal-row">
+            <span className="sf-product__subtotal-label">{ivaTotalsLabel}</span>
+            <span className="sf-product__subtotal-value">
+              ${formatMoney(vatAmount, dc.totalAmount)}
+            </span>
+          </div>
+          <div className="sf-product__total-label">Total línea</div>
+          <div className="sf-product__total-amount">
+            ${formatMoney(total, dc.totalAmount)}
+          </div>
+          <div className="sf-product__tax-incl">Imp. incluidos</div>
         </div>
-        <div className="sf-product__subtotal-row">
-          <span className="sf-product__subtotal-label">{ivaTotalsLabel}</span>
-          <span className="sf-product__subtotal-value">
-            ${formatMoney(vatAmount, dc.totalAmount)}
-          </span>
-        </div>
-        <div className="sf-product__total-label">Total línea</div>
-        <div className="sf-product__total-amount">
-          ${formatMoney(total, dc.totalAmount)}
-        </div>
-        <div className="sf-product__tax-incl">Imp. incluidos</div>
       </div>
-    </div>
+    </ZHLineCard>
   );
 }
