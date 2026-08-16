@@ -81,6 +81,28 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_sales_and_purchase_returns_list_entries_only()
+    {
+        var navigation = KernelRegistry.Navigation;
+
+        var salesReturns = navigation.SingleOrDefault(n => n.RoutePath == "/sales/returns");
+        salesReturns.Should().NotBeNull("el listado de devoluciones de venta debe estar en el menú");
+        salesReturns!.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000001"));
+        salesReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
+
+        var purchaseReturns = navigation.SingleOrDefault(n => n.RoutePath == "/purchases/returns");
+        purchaseReturns.Should().NotBeNull("el listado de devoluciones de compra debe estar en el menú");
+        purchaseReturns!.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000001"));
+        purchaseReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
+
+        navigation.Should().NotContain(n => n.RoutePath == "/sales/returns/new");
+        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/sales/returns/"));
+        navigation.Should().NotContain(n => n.RoutePath == "/purchases/returns/new");
+        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/returns/"));
+        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/credit-notes"));
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry

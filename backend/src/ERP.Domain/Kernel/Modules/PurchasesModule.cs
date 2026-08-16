@@ -35,4 +35,14 @@ public static class PurchasesModule
         ParentId = "e3000000-0000-4000-9000-000000000001"
     )]
     public const string Reception = "/purchases/reception";
+
+    [NavItem(
+        "Devoluciones de compra",
+        Permission = PurchasePermissions.View,
+        LabelKey = "app.nav.item.purchases.returns",
+        SortOrder = 30,
+        Id = "c1000000-0000-4000-9000-000000000003",
+        ParentId = "e3000000-0000-4000-9000-000000000001"
+    )]
+    public const string Returns = "/purchases/returns";
 }

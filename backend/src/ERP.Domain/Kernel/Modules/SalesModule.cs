@@ -26,6 +26,16 @@ public static class SalesModule
     )]
     public const string Invoices = "/sales";
 
+    [NavItem(
+        "Devoluciones de venta",
+        Permission = SalesPermissions.View,
+        LabelKey = "app.nav.item.sales.returns",
+        SortOrder = 20,
+        Id = "d1000000-0000-4000-9000-000000000003",
+        ParentId = "e4000000-0000-4000-9000-000000000001"
+    )]
+    public const string Returns = "/sales/returns";
+
     // ── Contenedor: Cobros ─────────────────────────────────────────
     [NavItem(
         "Cobros",
