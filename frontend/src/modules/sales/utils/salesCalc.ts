@@ -45,6 +45,29 @@ export function lineExceedsStock(line: {
   );
 }
 
+export type StockBadgeVariant = "green" | "orange" | "red";
+export type StockBadgeInfo = { label: string; variant: StockBadgeVariant };
+
+/** Único punto de la clasificación visual de stock disponible (Disponible/Stock bajo/Sin
+ * stock) — mismos umbrales que ya usaba la tarjeta de línea de factura (≤0 sin stock, ≤5 stock
+ * bajo), reutilizados también por el buscador de productos para no duplicar el criterio. Es
+ * solo presentación: no decide si se puede vender, eso lo sigue validando el backend. */
+export function stockBadgeInfo(stockQty: number): StockBadgeInfo {
+  if (stockQty <= 0) return { label: "Sin stock", variant: "red" };
+  if (stockQty <= 5) return { label: "Stock bajo", variant: "orange" };
+  return { label: "Disponible", variant: "green" };
+}
+
+/** "IVA 15%" (tal como lo entrega el backend en InvoiceItemSearchResultDto.vatDisplay) →
+ * "IVA (15%)" para el desglose de precio del buscador — transformación de texto pura, no
+ * reinterpreta ni recalcula la tasa. Si el texto no tiene el formato esperado (p. ej. "Sin
+ * IVA"), lo devuelve sin cambios. */
+export function parenthesizeRateLabel(display: string): string {
+  const match = /^(.*?)\s*([\d.,]+%)$/.exec(display);
+  if (!match) return display;
+  return `${match[1].trim()} (${match[2]})`;
+}
+
 export type MergeCandidateLine = {
   itemId?: string | null;
   unitPrice: number;

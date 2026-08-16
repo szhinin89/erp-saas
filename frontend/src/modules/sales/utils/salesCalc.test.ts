@@ -7,6 +7,8 @@ import {
   calcSummary,
   lineExceedsStock,
   findMergeableLineIndex,
+  stockBadgeInfo,
+  parenthesizeRateLabel,
 } from "./salesCalc";
 import type {
   SalesLineInput,
@@ -439,5 +441,35 @@ describe("findMergeableLineIndex", () => {
       warehouseId: "wh-1",
     });
     expect(idx).toBe(-1);
+  });
+});
+
+// ── stockBadgeInfo / parenthesizeRateLabel — buscador POS (SALES-RETAIL-READY-01-FIX05) ──
+describe("stockBadgeInfo", () => {
+  it("Sin stock (rojo) cuando la cantidad es 0 o negativa", () => {
+    expect(stockBadgeInfo(0)).toEqual({ label: "Sin stock", variant: "red" });
+  });
+
+  it("Stock bajo (naranja) cuando la cantidad es baja pero positiva (≤5)", () => {
+    expect(stockBadgeInfo(2)).toEqual({ label: "Stock bajo", variant: "orange" });
+    expect(stockBadgeInfo(5)).toEqual({ label: "Stock bajo", variant: "orange" });
+  });
+
+  it("Disponible (verde) cuando la cantidad supera el umbral bajo", () => {
+    expect(stockBadgeInfo(6)).toEqual({ label: "Disponible", variant: "green" });
+  });
+});
+
+describe("parenthesizeRateLabel", () => {
+  it("convierte 'IVA 15%' en 'IVA (15%)'", () => {
+    expect(parenthesizeRateLabel("IVA 15%")).toBe("IVA (15%)");
+  });
+
+  it("convierte 'IVA 0%' en 'IVA (0%)'", () => {
+    expect(parenthesizeRateLabel("IVA 0%")).toBe("IVA (0%)");
+  });
+
+  it("deja sin cambios un texto que no tiene formato de tasa porcentual", () => {
+    expect(parenthesizeRateLabel("Sin IVA")).toBe("Sin IVA");
   });
 });
