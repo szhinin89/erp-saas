@@ -4,12 +4,13 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHToggleTile } from "../../../components/zh/ZHToggleTile";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { ZhDecimalInput, ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
-import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { CustomerPicker } from "../components/CustomerPicker";
 import { SalesInvoiceDetailsSection } from "../components/SalesInvoiceDetailsSection";
@@ -198,10 +199,10 @@ export function SalesPage() {
                     <td>{inv.issueDate}</td>
                     <td>{inv.customerName}</td>
                     <td className="zh-table-cell--num">
-                      {formatMoneyWithSymbol(
-                        inv.grandTotal,
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue
+                        value={inv.grandTotal}
+                        decimals={getDecimalConfig().totalAmount}
+                      />
                     </td>
                     <td className="zh-text-align-center">{inv.lineCount}</td>
                     <td>
@@ -466,16 +467,16 @@ export function SalesPage() {
                       <tr key={e.rate}>
                         <td>{e.label}</td>
                         <td>
-                          {formatMoneyWithSymbol(
-                            e.base,
-                            getDecimalConfig().totalAmount,
-                          )}
+                          <ZHMoneyValue
+                            value={e.base}
+                            decimals={getDecimalConfig().totalAmount}
+                          />
                         </td>
                         <td>
-                          {formatMoneyWithSymbol(
-                            e.tax,
-                            getDecimalConfig().totalAmount,
-                          )}
+                          <ZHMoneyValue
+                            value={e.tax}
+                            decimals={getDecimalConfig().totalAmount}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -486,10 +487,10 @@ export function SalesPage() {
                     <span>Descuento:</span>
                     <span>
                       -
-                      {formatMoneyWithSymbol(
-                        ctx.totalDiscount,
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue
+                        value={ctx.totalDiscount}
+                        decimals={getDecimalConfig().totalAmount}
+                      />
                     </span>
                   </div>
                 )}
@@ -497,10 +498,10 @@ export function SalesPage() {
                   <span className="sf-total-box__label">Total a Cobrar</span>
                 </div>
                 <div className="sf-total-box__amount">
-                  {formatMoneyWithSymbol(
-                    ctx.grandTotal,
-                    getDecimalConfig().totalAmount,
-                  )}
+                  <ZHMoneyValue
+                    value={ctx.grandTotal}
+                    decimals={getDecimalConfig().totalAmount}
+                  />
                 </div>
               </div>
             </div>
@@ -994,10 +995,10 @@ function PaymentMethodsSection({
               <div key={p.id} className="sales-payment-chip">
                 {p.paymentMethodName}{" "}
                 <span className="sales-payment-chip__amount">
-                  {formatMoneyWithSymbol(
-                    p.amount,
-                    getDecimalConfig().totalAmount,
-                  )}
+                  <ZHMoneyValue
+                    value={p.amount}
+                    decimals={getDecimalConfig().totalAmount}
+                  />
                 </span>
               </div>
             ))}
@@ -1124,10 +1125,10 @@ function PaymentMethodsSection({
                   )}
                   {hasValue && pm.requiresReference && !isCredit && (
                     <span className="sales-payment-ref-amount">
-                      {formatMoneyWithSymbol(
-                        totalForMethod,
-                        getDecimalConfig().totalAmount,
-                      )}{" "}
+                      <ZHMoneyValue
+                        value={totalForMethod}
+                        decimals={getDecimalConfig().totalAmount}
+                      />{" "}
                       <span className="sales-payment-ref-count">
                         ({entries.length})
                       </span>
@@ -1144,10 +1145,10 @@ function PaymentMethodsSection({
                         ctx.setModalCredit(true);
                       }}
                     >
-                      {formatMoneyWithSymbol(
-                        entry!.amount,
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue
+                        value={entry!.amount}
+                        decimals={getDecimalConfig().totalAmount}
+                      />
                     </span>
                   )}
                 </div>
@@ -1188,12 +1189,14 @@ function PaymentMethodsSection({
               >
                 <span>{ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}</span>
                 <span className="sales-cash-box__amount">
-                  {formatMoneyWithSymbol(
-                    ctx.cashInsufficient
-                      ? ctx.cashDue - ctx.cashReceived
-                      : ctx.cashChange,
-                    getDecimalConfig().totalAmount,
-                  )}
+                  <ZHMoneyValue
+                    value={
+                      ctx.cashInsufficient
+                        ? ctx.cashDue - ctx.cashReceived
+                        : ctx.cashChange
+                    }
+                    decimals={getDecimalConfig().totalAmount}
+                  />
                 </span>
               </div>
             </div>
@@ -1211,19 +1214,19 @@ function PaymentMethodsSection({
                 <div className="sales-summary-row">
                   <span>Total factura:</span>
                   <span className="sales-summary-row__amount">
-                    {formatMoneyWithSymbol(
-                      total,
-                      getDecimalConfig().totalAmount,
-                    )}
+                    <ZHMoneyValue
+                      value={total}
+                      decimals={getDecimalConfig().totalAmount}
+                    />
                   </span>
                 </div>
                 <div className="sales-summary-row">
                   <span>Total cobrado:</span>
                   <span className="sales-summary-row__amount">
-                    {formatMoneyWithSymbol(
-                      paid,
-                      getDecimalConfig().totalAmount,
-                    )}
+                    <ZHMoneyValue
+                      value={paid}
+                      decimals={getDecimalConfig().totalAmount}
+                    />
                   </span>
                 </div>
                 <div
@@ -1238,10 +1241,10 @@ function PaymentMethodsSection({
                   </span>
                   {diff !== 0 && (
                     <span className="sales-summary-total-row__amount">
-                      {formatMoneyWithSymbol(
-                        Math.abs(diff),
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue
+                        value={Math.abs(diff)}
+                        decimals={getDecimalConfig().totalAmount}
+                      />
                     </span>
                   )}
                 </div>

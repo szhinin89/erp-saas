@@ -20,6 +20,15 @@
 .sales-page-invoice-number {
   font-weight: var(--text-label-md-weight);
 }
+/* ZHMoneyValue (SALES-DS-MONEY-12) dentro de celdas .zh-table-cell--num
+   (listado de facturas) hereda tipografía de la celda en vez de imponer su
+   propio tamaño/peso por defecto. Escopado a esta página para no afectar
+   otras tablas .zh-table-cell--num fuera de Ventas. */
+.sales-page-root .zh-table-cell--num .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 /* .sales-page-list-action-icon ELIMINADO (FIX02) — sin consumidores TSX; los íconos de
    acciones del listado usan zh-icon-md/zh-icon-lg. */
 
@@ -74,6 +83,17 @@
 .sales-payment-chip__amount {
   font-family: var(--font-family-mono);
 }
+/* El chip tiene fondo primario sólido (color: on-primary) — ZHMoneyValue debe
+   heredar ese color/tamaño en vez de imponer --color-text-primary por
+   defecto, o el monto quedaría con bajo contraste sobre el fondo primario
+   (mismo riesgo ya corregido en SALES-DS-TOGGLE-TILE-10A para el tile). */
+.sales-payment-chip .zh-money-value,
+.sales-payment-chip .zh-money-value__symbol {
+  color: inherit;
+}
+.sales-payment-chip .zh-money-value {
+  font-size: inherit;
+}
 
 /* Formas de cobro — grilla editable */
 .sales-payment-grid {
@@ -124,6 +144,11 @@
   font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
 }
+.sales-payment-ref-amount .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 .sales-payment-ref-count {
   font-size: 9px;
   font-weight: 400;
@@ -136,6 +161,11 @@
   font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
   cursor: pointer;
+}
+.sales-payment-credit-amount .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 /* Caja de efectivo recibido */

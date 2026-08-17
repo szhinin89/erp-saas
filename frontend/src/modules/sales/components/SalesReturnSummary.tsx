@@ -1,5 +1,5 @@
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { formatMoney } from "../../../lib/sanitizers";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import type { SalesReturnDto } from "../api/salesReturnService";
 import "../../../styles/shared/erp-form-core.css";
 
@@ -41,16 +41,32 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
                     </td>
                     <td className="zh-table-cell--num">{line.quantity}</td>
                     <td className="zh-table-cell--num">
-                      {formatMoney(line.unitPrice, decimals)}
+                      <ZHMoneyValue
+                        value={line.unitPrice}
+                        decimals={decimals}
+                        currencySymbol=""
+                      />
                     </td>
                     <td className="zh-table-cell--num">
-                      {formatMoney(line.vatAmount, decimals)}
+                      <ZHMoneyValue
+                        value={line.vatAmount}
+                        decimals={decimals}
+                        currencySymbol=""
+                      />
                     </td>
                     <td className="zh-table-cell--num">
-                      {formatMoney(line.iceAmount, decimals)}
+                      <ZHMoneyValue
+                        value={line.iceAmount}
+                        decimals={decimals}
+                        currencySymbol=""
+                      />
                     </td>
                     <td className="zh-table-cell--num">
-                      {formatMoney(line.taxInclusiveTotal, decimals)}
+                      <ZHMoneyValue
+                        value={line.taxInclusiveTotal}
+                        decimals={decimals}
+                        currencySymbol=""
+                      />
                     </td>
                   </tr>
                 ))}
@@ -65,31 +81,52 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
           <div>
             <span className="sr-general-grid__label">Subtotal</span>
             <span className="sr-general-grid__value">
-              {formatMoney(salesReturn.subtotal, decimals)}
+              <ZHMoneyValue
+                value={salesReturn.subtotal}
+                decimals={decimals}
+                currencySymbol=""
+              />
             </span>
           </div>
           <div>
             <span className="sr-general-grid__label">Descuento</span>
             <span className="sr-general-grid__value">
-              -{formatMoney(salesReturn.totalDiscount, decimals)}
+              -
+              <ZHMoneyValue
+                value={salesReturn.totalDiscount}
+                decimals={decimals}
+                currencySymbol=""
+              />
             </span>
           </div>
           <div>
             <span className="sr-general-grid__label">IVA</span>
             <span className="sr-general-grid__value">
-              {formatMoney(salesReturn.totalVat, decimals)}
+              <ZHMoneyValue
+                value={salesReturn.totalVat}
+                decimals={decimals}
+                currencySymbol=""
+              />
             </span>
           </div>
           <div>
             <span className="sr-general-grid__label">ICE</span>
             <span className="sr-general-grid__value">
-              {formatMoney(salesReturn.totalIce, decimals)}
+              <ZHMoneyValue
+                value={salesReturn.totalIce}
+                decimals={decimals}
+                currencySymbol=""
+              />
             </span>
           </div>
           <div className="sr-totals-grid__grand">
             <span className="sr-general-grid__label">Total a reembolsar</span>
             <span className="sr-general-grid__value">
-              {formatMoney(salesReturn.grandTotal, decimals)}
+              <ZHMoneyValue
+                value={salesReturn.grandTotal}
+                decimals={decimals}
+                currencySymbol=""
+              />
             </span>
           </div>
         </div>
@@ -113,7 +150,13 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
                         ? "Efectivo (Caja)"
                         : "Crédito a Cuenta por Cobrar"}
                     </td>
-                    <td className="zh-table-cell--num">{formatMoney(a.amount, decimals)}</td>
+                    <td className="zh-table-cell--num">
+                      <ZHMoneyValue
+                        value={a.amount}
+                        decimals={decimals}
+                        currencySymbol=""
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
-import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import type { SalesInvoiceDto } from "../api/salesService";
@@ -202,14 +202,20 @@ export function SalesIssueModal({
             <dt>Nro. de productos</dt>
             <dd>{lineCount}</dd>
             <dt>Subtotal</dt>
-            <dd>{formatMoneyWithSymbol(subtotal, dc)}</dd>
+            <dd>
+              <ZHMoneyValue value={subtotal} decimals={dc} />
+            </dd>
             <dt>Descuento</dt>
-            <dd>{formatMoneyWithSymbol(discount, dc)}</dd>
+            <dd>
+              <ZHMoneyValue value={discount} decimals={dc} />
+            </dd>
             <dt>IVA</dt>
-            <dd>{formatMoneyWithSymbol(vat, dc)}</dd>
+            <dd>
+              <ZHMoneyValue value={vat} decimals={dc} />
+            </dd>
             <dt>Total</dt>
             <dd>
-              <strong>{formatMoneyWithSymbol(total, dc)}</strong>
+              <ZHMoneyValue value={total} decimals={dc} emphasis="total" />
             </dd>
           </dl>
           <p className="zh-confirm-message">
@@ -284,7 +290,7 @@ export function SalesIssueModal({
             </dd>
             <dt>Total</dt>
             <dd>
-              <strong>{formatMoneyWithSymbol(result.grandTotal, dc)}</strong>
+              <ZHMoneyValue value={result.grandTotal} decimals={dc} emphasis="total" />
             </dd>
           </dl>
           {(result.electronicIssueError ||

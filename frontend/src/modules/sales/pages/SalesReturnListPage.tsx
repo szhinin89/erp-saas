@@ -5,7 +5,8 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
-import { formatMoney } from "../../../lib/sanitizers";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -93,7 +94,13 @@ export function SalesReturnListPage() {
       key: "grandTotal",
       header: "Total",
       align: "right",
-      render: (row) => formatMoney(row.grandTotal),
+      render: (row) => (
+        <ZHMoneyValue
+          value={row.grandTotal}
+          decimals={getDecimalConfig().totalAmount}
+          currencySymbol=""
+        />
+      ),
     },
     {
       key: "createdAt",

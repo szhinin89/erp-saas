@@ -9,7 +9,9 @@ import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import {
   buildAuthorizeSalesReturnSchema,
   type AuthorizeSalesReturnFormValues,
@@ -49,6 +51,7 @@ export function AuthorizeSalesReturnModal({
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const submittingRef = useRef(false);
+  const dc = getDecimalConfig();
 
   const grandTotal = salesReturn?.grandTotal ?? 0;
   const {
@@ -183,11 +186,23 @@ export function AuthorizeSalesReturnModal({
         </ZHBtn>
 
         <div className="sr-refund-summary">
-          <span>Asignado: {formatMoney(sum)}</span>
+          <span>
+            Asignado:{" "}
+            <ZHMoneyValue value={sum} decimals={dc.totalAmount} currencySymbol="" />
+          </span>
           <span className={remaining !== 0 ? "sr-refund-summary--pending" : ""}>
-            {remaining === 0
-              ? "Coincide con el total"
-              : `Diferencia: ${formatMoney(remaining)}`}
+            {remaining === 0 ? (
+              "Coincide con el total"
+            ) : (
+              <>
+                Diferencia:{" "}
+                <ZHMoneyValue
+                  value={remaining}
+                  decimals={dc.totalAmount}
+                  currencySymbol=""
+                />
+              </>
+            )}
           </span>
         </div>
 

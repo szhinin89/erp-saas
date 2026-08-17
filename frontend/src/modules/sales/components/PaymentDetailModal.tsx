@@ -13,6 +13,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { PAYMENT_DETAIL_TOLERANCE } from "../constants/tolerances";
@@ -84,7 +85,11 @@ export function PaymentDetailModal({
           <div className="zh-modal-footer-summary">
             <span className="zh-modal-footer-label">
               Total:{" "}
-              <strong>${formatMoney(totalDetail, totalAmountDecimals)}</strong>
+              <ZHMoneyValue
+                value={totalDetail}
+                decimals={totalAmountDecimals}
+                emphasis="strong"
+              />
             </span>
           </div>
           <ZHBtn variant="ghost" size="md" onClick={onCancel}>

@@ -1,5 +1,6 @@
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { formatMoney } from "../../../lib/sanitizers";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import type { ReturnableLineDto } from "../api/salesReturnService";
 import "../../../styles/shared/erp-form-core.css";
 
@@ -24,6 +25,8 @@ export function ReturnableLinesEditor({
   onChangeQuantity,
   disabled,
 }: Props) {
+  const dc = getDecimalConfig();
+
   if (lines.length === 0) {
     return <p className="sr-lines-empty">Esta factura no tiene líneas devolvibles.</p>;
   }
@@ -56,7 +59,13 @@ export function ReturnableLinesEditor({
                 <td className="zh-table-cell--num">{line.originalQuantity}</td>
                 <td className="zh-table-cell--num">{line.returnedQuantity}</td>
                 <td className="zh-table-cell--num">{line.remainingQuantity}</td>
-                <td className="zh-table-cell--num">{formatMoney(line.unitPrice)}</td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue
+                    value={line.unitPrice}
+                    decimals={dc.salesUnitPrice}
+                    currencySymbol=""
+                  />
+                </td>
                 <td className="zh-text-align-right">
                   <ZhDecimalInput
                     decimals={4}

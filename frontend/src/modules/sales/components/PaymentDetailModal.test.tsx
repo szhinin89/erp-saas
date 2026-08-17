@@ -74,3 +74,34 @@ describe("PaymentDetailModal — botón eliminar fila (SALES-DS-PAYMENT-REMOVE-0
     });
   });
 });
+
+describe("PaymentDetailModal — total del footer migrado a ZHMoneyValue (SALES-DS-MONEY-12)", () => {
+  it("el total del footer (10 + 20 = 30) usa ZHMoneyValue con emphasis=strong", () => {
+    const { container } = renderModal();
+
+    const label = container.querySelector(".zh-modal-footer-label");
+    const moneyValue = label?.querySelector(".zh-money-value");
+    expect(moneyValue).toBeTruthy();
+    expect(moneyValue?.textContent).toBe("$30.00");
+    expect(moneyValue?.className).toContain("zh-money-value--strong");
+  });
+
+  it("los montos de las filas siguen siendo inputs editables, no ZHMoneyValue", () => {
+    renderModal();
+
+    const bankInput = screen.getByDisplayValue("Pichincha");
+    expect(bankInput.tagName).toBe("INPUT");
+  });
+
+  it("no hay estilos inline en el total del footer", () => {
+    const { container } = renderModal();
+
+    const moneyValue = container.querySelector(
+      ".zh-modal-footer-label .zh-money-value",
+    );
+    expect(moneyValue?.getAttribute("style")).toBeNull();
+    moneyValue?.querySelectorAll("*").forEach((el) => {
+      expect(el.getAttribute("style")).toBeNull();
+    });
+  });
+});

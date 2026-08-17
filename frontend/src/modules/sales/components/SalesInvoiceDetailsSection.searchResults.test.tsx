@@ -20,6 +20,17 @@ afterEach(() => {
   searchMock.mockReset();
 });
 
+// Precio sin IVA / IVA / Precio final ahora renderizan con ZHMoneyValue
+// (SALES-DS-MONEY-12): símbolo y monto quedan en <span> hermanos, así que el
+// texto completo ("$24.30") ya no vive en un único nodo de texto — se ubica
+// por la clase zh-money-value en vez de por texto plano.
+function getMoneyValueByText(text: string): HTMLElement {
+  return screen.getByText((_, element) => {
+    if (!element || !element.classList.contains("zh-money-value")) return false;
+    return element.textContent === text;
+  });
+}
+
 function makeResult(
   overrides: Partial<InvoiceItemSearchResultDto> = {},
 ): InvoiceItemSearchResultDto {
@@ -101,7 +112,7 @@ describe("SalesInvoiceDetailsSection — resultados del buscador (jerarquía ret
     renderSection();
     typeQuery("club");
     expect(await screen.findByText("Precio sin IVA")).not.toBeNull();
-    expect(screen.getByText("$24.30")).not.toBeNull();
+    expect(getMoneyValueByText("$24.30")).not.toBeNull();
   });
 
   it("muestra la etiqueta IVA (15%)", async () => {
@@ -109,7 +120,7 @@ describe("SalesInvoiceDetailsSection — resultados del buscador (jerarquía ret
     renderSection();
     typeQuery("club");
     expect(await screen.findByText("IVA (15%)")).not.toBeNull();
-    expect(screen.getByText("$3.65")).not.toBeNull();
+    expect(getMoneyValueByText("$3.65")).not.toBeNull();
   });
 
   it("muestra la etiqueta Precio final con el precio final destacado (SALES-RETAIL-READY-01-FIX05A)", async () => {
@@ -117,7 +128,7 @@ describe("SalesInvoiceDetailsSection — resultados del buscador (jerarquía ret
     renderSection();
     typeQuery("club");
     expect(await screen.findByText("Precio final")).not.toBeNull();
-    const finalValue = screen.getByText("$27.95");
+    const finalValue = getMoneyValueByText("$27.95");
     expect(finalValue).not.toBeNull();
     expect(finalValue.className).toContain("sf-result__price-val--final");
   });

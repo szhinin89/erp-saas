@@ -179,6 +179,14 @@
   color: var(--color-error);
   font-weight: 600;
 }
+/* ZHMoneyValue (SALES-DS-MONEY-12) hereda la tipografía local en vez de
+   imponer su propio tamaño/peso/color por defecto — preserva el look
+   aprobado de este resumen. */
+.sf-summary__discount-total .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 
 /* ── Total Box ────────────────────────────────────────────────── */
 .sf-total-box {
@@ -216,6 +224,12 @@
   letter-spacing: -0.02em;
   margin-bottom: 12px;
 }
+.sf-total-box__amount .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
 
 /* Tax Breakdown Table */
 .sf-tax-table {
@@ -249,6 +263,11 @@
   text-align: right;
   font-family: var(--font-family-mono);
   font-weight: 600;
+}
+.sf-tax-table .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 /* ── Payment Section ──────────────────────────────────────────── */

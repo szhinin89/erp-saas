@@ -15,7 +15,6 @@ import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
-import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import {
   lineNet,
   calcLineTax,
@@ -351,37 +350,36 @@ export function SalesInvoiceDetailsSection({
                               <span className="sf-result__price-lbl">
                                 Precio sin IVA
                               </span>
-                              <span className="sf-result__price-val">
-                                {formatMoneyWithSymbol(
-                                  item.salePriceWithoutTax!,
-                                  dc.salesUnitPrice,
-                                )}
-                              </span>
+                              <ZHMoneyValue
+                                value={item.salePriceWithoutTax!}
+                                decimals={dc.salesUnitPrice}
+                                className="sf-result__price-val"
+                              />
                             </div>
                             <div className="sf-result__price-row">
                               <span className="sf-result__price-lbl">
                                 {ivaLabel}
                               </span>
-                              <span className="sf-result__price-val">
-                                {ivaAmount != null
-                                  ? formatMoneyWithSymbol(
-                                      ivaAmount,
-                                      dc.salesUnitPrice,
-                                    )
-                                  : "—"}
-                              </span>
+                              {ivaAmount != null ? (
+                                <ZHMoneyValue
+                                  value={ivaAmount}
+                                  decimals={dc.salesUnitPrice}
+                                  className="sf-result__price-val"
+                                />
+                              ) : (
+                                <span className="sf-result__price-val">—</span>
+                              )}
                             </div>
                             {item.finalSalePrice != null && (
                               <div className="sf-result__price-row sf-result__price-row--final">
                                 <span className="sf-result__price-lbl">
                                   Precio final
                                 </span>
-                                <span className="sf-result__price-val sf-result__price-val--final">
-                                  {formatMoneyWithSymbol(
-                                    item.finalSalePrice,
-                                    dc.salesUnitPrice,
-                                  )}
-                                </span>
+                                <ZHMoneyValue
+                                  value={item.finalSalePrice}
+                                  decimals={dc.salesUnitPrice}
+                                  className="sf-result__price-val sf-result__price-val--final"
+                                />
                               </div>
                             )}
                           </>

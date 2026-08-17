@@ -86,6 +86,22 @@
   color: var(--color-primary);
 }
 
+/* ZHMoneyValue (SALES-DS-MONEY-12) hereda la tipografía local en vez de
+   imponer su propio tamaño/peso/color por defecto — preserva el look
+   aprobado de este resumen (incluida la fila de total, más grande y en
+   color primario). Escopado a .sr-lines-table para no afectar otras tablas
+   .zh-table-cell--num fuera de Devoluciones de venta. */
+.sr-general-grid__value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+.sr-lines-table .zh-table-cell--num .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
 .sr-reason-readonly {
   font-size: 13px;
   white-space: pre-wrap;
@@ -123,4 +139,11 @@
 
 .sr-refund-summary--pending {
   color: var(--color-error);
+}
+/* ZHMoneyValue (SALES-DS-MONEY-12) hereda tamaño/peso/color locales — incluido
+   el color de error cuando el resumen está en estado "pendiente". */
+.sr-refund-summary .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }

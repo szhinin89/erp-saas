@@ -4,6 +4,7 @@ import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { INSTALLMENT_ROUNDING_TOLERANCE } from "../constants/tolerances";
@@ -120,7 +121,11 @@ export function CreditSimulatorModal({
               <strong>Total cuotas</strong>
             </td>
             <td className="zh-table-cell--num">
-              <strong>${formatMoney(totalCuotas, totalAmountDecimals)}</strong>
+              <ZHMoneyValue
+                value={totalCuotas}
+                decimals={totalAmountDecimals}
+                emphasis="strong"
+              />
             </td>
           </tr>
         </tfoot>
