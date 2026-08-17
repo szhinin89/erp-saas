@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "../../../i18n/i18n";
 import {
   companyManagementFormSchema,
@@ -26,12 +26,6 @@ const defaults = (): CompanyManagementFormValues => ({
   taxId: "",
   legalName: "",
   tradeName: "",
-  corporateEmail: "",
-  website: "",
-  countryCode: "ECU",
-  timezone: "America/Guayaquil",
-  currencyCode: "USD",
-  brandingJson: "",
   isActive: true,
 });
 
@@ -69,12 +63,6 @@ export function CompanyManagementFormPage({
             taxId: detail.taxId,
             legalName: detail.legalName,
             tradeName: detail.tradeName ?? "",
-            corporateEmail: detail.corporateEmail ?? "",
-            website: detail.website ?? "",
-            countryCode: detail.countryCode,
-            timezone: detail.timezone,
-            currencyCode: detail.currencyCode,
-            brandingJson: detail.brandingJson ?? "",
             isActive: detail.isActive,
           });
         }
@@ -95,12 +83,6 @@ export function CompanyManagementFormPage({
         taxId: values.taxId.trim(),
         legalName: values.legalName.trim(),
         tradeName: values.tradeName?.trim() || null,
-        corporateEmail: values.corporateEmail?.trim() || null,
-        website: values.website?.trim() || null,
-        countryCode: values.countryCode.trim(),
-        timezone: values.timezone.trim(),
-        currencyCode: values.currencyCode.trim(),
-        brandingJson: values.brandingJson?.trim() || null,
       };
       if (mode === "create") {
         await companyManagementService.create(payload);
@@ -172,48 +154,16 @@ export function CompanyManagementFormPage({
               </ZHField>
             </ZHGrid>
           </ZHFormSection>
-          <ZHFormSection title={t("companyManagement.sectionLocale")}>
-            <ZHGrid cols={3}>
-              <ZHField
-                label={t("companyManagement.country")}
-                fieldError={errors.countryCode?.message}
-              >
-                <ZhTextInput disabled={saving} {...register("countryCode")} />
-              </ZHField>
-              <ZHField
-                label={t("companyManagement.timezone")}
-                fieldError={errors.timezone?.message}
-              >
-                <ZhTextInput disabled={saving} {...register("timezone")} />
-              </ZHField>
-              <ZHField
-                label={t("companyManagement.currency")}
-                fieldError={errors.currencyCode?.message}
-              >
-                <ZhTextInput disabled={saving} {...register("currencyCode")} />
-              </ZHField>
-            </ZHGrid>
-          </ZHFormSection>
-          <ZHFormSection title={t("companyManagement.sectionContact")}>
-            <ZHGrid cols={2}>
-              <ZHField
-                label={t("companyManagement.corporateEmail")}
-                fieldError={errors.corporateEmail?.message}
-              >
-                <input
-                  type="email"
-                  disabled={saving}
-                  {...register("corporateEmail")}
-                />
-              </ZHField>
-              <ZHField
-                label={t("companyManagement.website")}
-                fieldError={errors.website?.message}
-              >
-                <ZhTextInput disabled={saving} {...register("website")} />
-              </ZHField>
-            </ZHGrid>
-          </ZHFormSection>
+          {mode === "edit" ? (
+            <p className="zh-text-muted zh-text-xs zh-mb-8">
+              Contacto, marca, moneda, zona horaria y datos fiscales se
+              administran desde{" "}
+              <Link to="/settings/company" className="zh-link">
+                Configuración de Empresa
+              </Link>{" "}
+              (empresa activa).
+            </p>
+          ) : null}
           {mode === "edit" ? (
             <Controller
               name="isActive"

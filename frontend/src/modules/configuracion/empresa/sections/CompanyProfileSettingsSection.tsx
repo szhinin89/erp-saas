@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router-dom";
 import {
   Badge,
   LoadingState,
@@ -43,8 +44,8 @@ const TAX_STATUS_LABELS: Record<string, string> = {
 export function CompanyProfileSettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const canView = canShow("configuracion.empresa.view");
-  const canEdit = canShow("configuracion.empresa.edit");
+  const canView = canShow("erp.companies.view");
+  const canEdit = canShow("erp.companies.update");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -67,9 +68,6 @@ export function CompanyProfileSettingsSection() {
   const toFormValues = (
     profile: NonNullable<typeof profileState.data>,
   ): CompanyConfigValues => ({
-    legalName: profile.legalName ?? "",
-    tradeName: profile.tradeName ?? "",
-    taxIdentificationNumber: profile.taxIdentificationNumber ?? "",
     corporateEmail: profile.corporateEmail ?? "",
     phone: profile.phone ?? "",
     website: profile.website ?? "",
@@ -95,9 +93,6 @@ export function CompanyProfileSettingsSection() {
     setSaving(true);
     try {
       await companyProfileService.updateProfile({
-        legalName: values.legalName,
-        tradeName: values.tradeName || null,
-        taxIdentificationNumber: values.taxIdentificationNumber || null,
         corporateEmail: values.corporateEmail || null,
         phone: values.phone || null,
         website: values.website || null,
@@ -192,43 +187,40 @@ export function CompanyProfileSettingsSection() {
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField
-                label="Razón Social"
-                required
-                error={errors.legalName?.message}
-              >
+              <ZHField label="Razón Social">
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="Razón social registrada en el SRI"
-                  disabled={saving || !canEdit}
-                  {...register("legalName")}
+                  value={profile?.legalName ?? ""}
+                  readOnly
+                  disabled
                 />
               </ZHField>
 
-              <ZHField
-                label="Nombre Comercial"
-                error={errors.tradeName?.message}
-              >
+              <ZHField label="Nombre Comercial">
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="Nombre visible en documentos"
-                  disabled={saving || !canEdit}
-                  {...register("tradeName")}
+                  value={profile?.tradeName ?? ""}
+                  readOnly
+                  disabled
                 />
               </ZHField>
 
-              <ZHField
-                label="RUC"
-                error={errors.taxIdentificationNumber?.message}
-              >
+              <ZHField label="RUC">
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="13 dígitos"
-                  disabled={saving || !canEdit}
-                  {...register("taxIdentificationNumber")}
+                  value={profile?.taxIdentificationNumber ?? ""}
+                  readOnly
+                  disabled
                 />
               </ZHField>
             </ZHGrid>
+            <p className="zh-text-muted zh-text-xs zh-mt-8">
+              Razón social, nombre comercial y RUC se administran desde{" "}
+              <Link to="/companies" className="zh-link">
+                Administración de Empresas
+              </Link>
+              .
+            </p>
           </div>
         </div>
 

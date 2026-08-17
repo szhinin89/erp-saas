@@ -38,8 +38,8 @@ export function CompanyOrgConfigSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
 
-  const canView = canShow("configuracion.empresa.view");
-  const canEdit = canShow("configuracion.empresa.edit");
+  const canView = canShow("erp.companies.view");
+  const canEdit = canShow("erp.companies.update");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);

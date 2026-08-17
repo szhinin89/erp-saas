@@ -42,14 +42,7 @@ public sealed class CreateCompanyHandler
                 _currentUser.UserId,
                 creatorRole: SecurityRoles.Admin,
                 command.TradeName,
-                command.CorporateEmail,
-                phone: null,
-                command.CountryCode,
-                command.Timezone,
-                command.CurrencyCode,
-                command.BrandingJson,
-                command.Website,
-                cancellationToken
+                cancellationToken: cancellationToken
             );
 
             return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(company));

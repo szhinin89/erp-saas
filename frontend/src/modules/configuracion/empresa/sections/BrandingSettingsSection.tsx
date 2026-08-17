@@ -37,8 +37,8 @@ function parseBrandingConfiguration(raw: string | null): CompanyBrandingValues {
 export function BrandingSettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const canView = canShow("configuracion.empresa.view");
-  const canEdit = canShow("configuracion.empresa.edit");
+  const canView = canShow("erp.companies.view");
+  const canEdit = canShow("erp.companies.update");
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);

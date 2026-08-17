@@ -72,15 +72,9 @@ public sealed class UpdateCompanyHandler
             );
         }
 
-        entity.UpdateProfile(
+        entity.UpdateAdminIdentity(
             command.LegalName,
             command.TradeName,
-            command.CorporateEmail,
-            command.Website,
-            command.CountryCode,
-            command.Timezone,
-            command.CurrencyCode,
-            command.BrandingJson,
             command.IsActive,
             _currentUser.UserId
         );

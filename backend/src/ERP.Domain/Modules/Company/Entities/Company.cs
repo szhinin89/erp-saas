@@ -170,31 +170,29 @@ public class Company : ITenantScopedEntity
         };
     }
 
-    public void UpdateProfile(
-        string legalName,
-        string? tradeName,
+    /// <summary>
+    /// Actualiza contacto, representante legal y configuración regional (pestaña "General"
+    /// de Company Settings, empresa activa). No toca <see cref="LegalName"/>/<see cref="TradeName"/>/
+    /// <see cref="IsActive"/> — esos son propiedad exclusiva de Companies Admin
+    /// (<see cref="UpdateAdminIdentity"/>), para evitar el mismo campo editable en dos pantallas.
+    /// </summary>
+    public void UpdateContactProfile(
         string? corporateEmail,
+        string? phone,
         string? website,
-        string countryCode,
         string timezone,
         string currencyCode,
-        Guid? updatedBy,
-        string? phone = null,
-        string? legalRepName = null,
-        string? legalRepPosition = null,
-        string? legalRepIdNumber = null,
-        string? legalRepEmail = null,
-        string? legalRepPhone = null
+        string? legalRepName,
+        string? legalRepPosition,
+        string? legalRepIdNumber,
+        string? legalRepEmail,
+        string? legalRepPhone,
+        Guid? updatedBy
     )
     {
-        LegalName = legalName.Trim();
-        TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
         CorporateEmail = NormalizeEmail(corporateEmail);
         Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
         Website = NormalizeWebsite(website);
-        CountryCode = string.IsNullOrWhiteSpace(countryCode)
-            ? CountryCode
-            : countryCode.Trim().ToUpperInvariant();
         Timezone = string.IsNullOrWhiteSpace(timezone) ? Timezone : timezone.Trim();
         CurrencyCode = string.IsNullOrWhiteSpace(currencyCode)
             ? CurrencyCode
@@ -212,34 +210,23 @@ public class Company : ITenantScopedEntity
         UpdatedBy = updatedBy;
     }
 
-    /// <summary>Overload retained for the company-management module, which also manages <c>IsActive</c> and <c>BrandingConfiguration</c>.</summary>
-    public void UpdateProfile(
+    /// <summary>
+    /// Actualiza identidad administrativa (Companies Admin: <c>/companies</c>): razón social,
+    /// nombre comercial y estado activo/inactivo. No toca contacto/marca/locale/fiscal —
+    /// esos son propiedad exclusiva de Company Settings.
+    /// </summary>
+    public void UpdateAdminIdentity(
         string legalName,
         string? tradeName,
-        string? corporateEmail,
-        string? website,
-        string countryCode,
-        string timezone,
-        string currencyCode,
-        string? brandingConfiguration,
         bool isActive,
         Guid? updatedBy
     )
     {
-        UpdateProfile(
-            legalName,
-            tradeName,
-            corporateEmail,
-            website,
-            countryCode,
-            timezone,
-            currencyCode,
-            updatedBy
-        );
-        BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration)
-            ? null
-            : brandingConfiguration.Trim();
+        LegalName = legalName.Trim();
+        TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
         IsActive = isActive;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     public void UpdateTaxIdentification(

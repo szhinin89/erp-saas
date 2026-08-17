@@ -8,20 +8,6 @@ public sealed class UpdateCompanyProfileCommandValidator
 {
     public UpdateCompanyProfileCommandValidator()
     {
-        RuleFor(x => x.LegalName)
-            .NotEmpty()
-            .WithMessage("La razón social es obligatoria.")
-            .MaximumLength(200);
-
-        RuleFor(x => x.TradeName)
-            .MaximumLength(200)
-            .When(x => !string.IsNullOrWhiteSpace(x.TradeName));
-
-        RuleFor(x => x.TaxIdentificationNumber)
-            .Length(13)
-            .WithMessage("El RUC debe tener 13 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.TaxIdentificationNumber));
-
         RuleFor(x => x.CorporateEmail)
             .MaximumLength(CompanyEntity.CorporateEmailMaxLen)
             .EmailAddress()

@@ -4,10 +4,12 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile;
 
+/// <summary>
+/// Contacto, representante legal y configuración regional de la empresa activa
+/// ("General" de Company Settings). LegalName/TradeName/RUC no forman parte de este comando:
+/// son propiedad exclusiva de Companies Admin (<c>UpdateCompanyCommand</c>).
+/// </summary>
 public sealed record UpdateCompanyProfileCommand(
-    string LegalName,
-    string? TradeName,
-    string? TaxIdentificationNumber,
     string? CorporateEmail,
     string? Phone,
     string? Website,
