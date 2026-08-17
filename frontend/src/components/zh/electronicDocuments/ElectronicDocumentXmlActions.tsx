@@ -96,7 +96,7 @@ export function ElectronicDocumentXmlActions({
               {t("electronicDocuments.monitor.detail.downloadXml")}
             </ZHBtn>
           </div>
-          <pre className="edm-xml-viewer">{xmlContent}</pre>
+          <pre className="edm-xml-viewer zh-code-value">{xmlContent}</pre>
         </>
       )}
     </>

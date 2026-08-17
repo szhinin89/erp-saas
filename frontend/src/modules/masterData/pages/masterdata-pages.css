@@ -258,7 +258,6 @@
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
   margin: 2px 0;
-  font-family: var(--font-family-mono);
 }
 .md-location-card__purposes {
   display: flex;

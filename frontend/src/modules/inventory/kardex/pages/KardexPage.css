@@ -94,9 +94,10 @@
 }
 
 
-.kdx-mono {
-  font-family: var(--font-family-mono);
-}
+/* .kdx-mono (codigo tecnico: bodega/doc-id/numero de documento/secuencial)
+   promovida a zh-ui.css (ERP-DS-MONO-REMAINING-01) -- consumida tambien
+   desde Purchases (PurchaseReceptionXmlViewModal.tsx), asi que no puede
+   quedar como font-family-mono local de este modulo. */
 
 .kdx-mono--strong {
   font-weight: 600;
@@ -136,7 +137,6 @@
 .kdx-summary-value {
   font-size: 18px;
   font-weight: 700;
-  font-family: var(--font-family-mono);
 }
 
 
@@ -201,9 +201,5 @@
 
 .kdx-field-value {
   font-size: var(--text-body-sm-size);
-}
-
-.kdx-mono {
-  font-family: var(--font-family-mono);
 }
 

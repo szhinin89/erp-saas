@@ -140,7 +140,6 @@
 
 /* Table cell specifics (coloring beyond .table defaults) */
 .dsh-cell-id {
-  font-family: var(--font-family-mono);
   font-size: var(--text-label-sm-size);
 }
 .dsh-cell-chevron {

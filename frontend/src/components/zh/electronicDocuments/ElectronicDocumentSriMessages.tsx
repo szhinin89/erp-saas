@@ -31,7 +31,7 @@ export function ElectronicDocumentSriMessages({ messages }: Props) {
               label={m.messageType}
               upper
             />
-            {m.code && <span className="edm-message-code">#{m.code}</span>}
+            {m.code && <span className="edm-message-code zh-code-value">#{m.code}</span>}
             <span className="edm-hint-sm">
               {formatDateTime(m.occurredAtUtc)}
             </span>

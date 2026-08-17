@@ -121,7 +121,7 @@ export function ElectronicDocumentsTable({
       header: t("electronicDocuments.monitor.table.accessKey"),
       render: (row) =>
         row.accessKey ? (
-          <span className="edm-access-key">
+          <span className="edm-access-key zh-code-value">
             {row.accessKey.slice(0, 10)}…
             <ZHIconButton
               icon="content_copy"

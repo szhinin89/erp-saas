@@ -655,6 +655,17 @@ select.zh-input--compact {
   font-family: var(--font-family-mono);
 }
 
+/* ERP-DS-MONO-REMAINING-01 -- alias historico de .zh-code-value. Vivia como
+   font-family-mono local en modules/inventory/kardex/pages/KardexPage.css
+   pero tiene consumidores cruzados (Kardex y
+   modules/purchases/components/PurchaseReceptionXmlViewModal.tsx via
+   className="kdx-field-value kdx-mono") -- se promueve aca para que ningun
+   modulo vuelva a definir font-family-mono local, sin tener que tocar esos
+   consumidores existentes. Nuevos usos deberian preferir .zh-code-value. */
+.kdx-mono {
+  font-family: var(--font-family-mono);
+}
+
 /* <ZHInfoRow>: par label/valor compacto para paneles de detalle (líneas de
    documento, contexto XML, inventario, info comercial) — reemplaza pares
    `.pdl-cost-label`/`.pdl-cost-val` locales repetidos por módulo. Solo da
