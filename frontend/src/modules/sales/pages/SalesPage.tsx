@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHToggleTile } from "../../../components/zh/ZHToggleTile";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { ZhDecimalInput, ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
@@ -1019,14 +1020,11 @@ function PaymentMethodsSection({
                 Math.max(0, remainingToCollect(ctx, pm.id));
 
               return (
-                <div
-                  key={pm.id}
-                  className={`sales-payment-method${hasValue ? " sales-payment-method--active" : ""}`}
-                >
-                  <button
-                    type="button"
+                <div key={pm.id} className="sales-payment-method">
+                  <ZHToggleTile
+                    active={hasValue}
                     disabled={ctx.fieldDisabled}
-                    className="sales-payment-method__btn"
+                    title={pm.name}
                     onClick={() => {
                       if (ctx.fieldDisabled) return;
                       if (isCredit) {
@@ -1082,9 +1080,7 @@ function PaymentMethodsSection({
                         }
                       }
                     }}
-                  >
-                    {pm.name}
-                  </button>
+                  />
                   {hasValue && !isCredit && !pm.requiresReference && (
                     <div className="sales-payment-amount-row">
                       <span className="sales-payment-dollar">$</span>

@@ -82,43 +82,15 @@
   gap: var(--space-2);
 }
 
+/* Layout wrapper del tile de método de pago (ZHToggleTile) + filas
+   complementarias (monto, referencia, crédito) que aparecen debajo cuando el
+   método está activo. El chrome visual (borde/fondo/estado activo) vive en
+   ZHToggleTile — ver .zh-toggle-tile en zh-ui.css. */
 .sales-payment-method {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: var(--space-2) 6px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-md-weight);
-  text-transform: uppercase;
-  transition:
-    border-color var(--transition),
-    background var(--transition),
-    color var(--transition);
-}
-.sales-payment-method--active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.sales-payment-method__btn {
-  font-size: var(--text-label-sm-size);
-  cursor: pointer;
-  width: 100%;
-  text-align: center;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  font-weight: inherit;
-  text-transform: inherit;
-  color: inherit;
 }
 
 .sales-payment-amount-row {
