@@ -203,6 +203,34 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_settings_financial_destinations_and_leaves_finance_and_reports_untouched()
+    {
+        var navigation = KernelRegistry.Navigation;
+
+        var financialDestinations = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/settings/financial-destinations"
+        );
+        financialDestinations.Should().NotBeNull("destinos financieros debe estar en el menú");
+        financialDestinations!.GroupCode.Should().Be("settings");
+        financialDestinations
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.FinancialDestinationsView);
+
+        var finance = KernelRegistry.Modules.Single(m => m.Code == "finance");
+        finance.Icon.Should().Be("💳");
+        finance.SortOrder.Should().Be(46);
+
+        var reports = KernelRegistry.Modules.Single(m => m.Code == "reports");
+        reports.Icon.Should().Be("📊");
+        reports.SortOrder.Should().Be(55);
+
+        navigation
+            .Where(n => n.GroupCode is "finance" or "reports")
+            .Should()
+            .HaveCount(6, "las 3 rutas de finance y las 3 de reports deben permanecer sin cambios");
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry

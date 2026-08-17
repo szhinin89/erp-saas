@@ -50,4 +50,13 @@ public static class SettingsModule
         Id = "a1000000-0000-4000-9000-000000000006"
     )]
     public const string Geography = "/settings/geography";
+
+    [NavItem(
+        "Destinos financieros",
+        Permission = SettingsPermissions.FinancialDestinationsView,
+        LabelKey = "app.nav.item.settings.financialDestinations",
+        SortOrder = 60,
+        Id = "a1000000-0000-4000-9000-000000000011"
+    )]
+    public const string FinancialDestinations = "/settings/financial-destinations";
 }
