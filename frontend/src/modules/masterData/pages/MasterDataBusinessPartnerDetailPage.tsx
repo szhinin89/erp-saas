@@ -693,7 +693,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                     <h3>Ubicaciones</h3>
                     <div className="md-detail-filter-actions">
                       <select
-                        className="md-detail-filter-select"
+                        className="md-detail-filter-select zh-select--compact"
                         value={locFilter}
                         onChange={(e) =>
                           setLocFilter(
@@ -730,7 +730,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                           className={`md-location-card ${!l.isActive ? "md-location-card--inactive" : ""}`}
                         >
                           <div className="md-location-card__header">
-                            <span className="md-location-card__name">
+                            <span className="md-location-card__name zh-row-title">
                               {l.name}
                             </span>
                             {l.isPrimary && (
@@ -822,7 +822,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                       className={`md-contact-card ${!c.isActive ? "md-contact-card--inactive" : ""}`}
                     >
                       <div className="md-contact-card__header">
-                        <span className="md-contact-card__name">
+                        <span className="md-contact-card__name zh-row-title">
                           {c.fullName}
                         </span>
                         {c.isPrimary && (

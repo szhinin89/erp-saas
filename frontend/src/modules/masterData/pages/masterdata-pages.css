@@ -144,7 +144,7 @@
   background: var(--color-primary-fixed);
   color: var(--color-primary);
   font-size: var(--text-badge-size);
-  font-weight: 700;
+  font-weight: var(--text-badge-weight);
   padding: 1px 7px;
   border-radius: 10px;
 }
@@ -246,7 +246,6 @@
   margin-bottom: 6px;
 }
 .md-location-card__name {
-  font-weight: 600;
   flex: 1;
 }
 .md-location-card__address {
@@ -302,7 +301,6 @@
   margin-bottom: 4px;
 }
 .md-contact-card__name {
-  font-weight: 600;
   flex: 1;
 }
 .md-contact-card__position {
@@ -393,7 +391,7 @@
 .prd-quick-card h3 {
   margin: 0;
   font-size: var(--text-help-size);
-  font-weight: 600;
+  font-weight: var(--text-label-sm-weight);
   color: var(--color-text-primary);
 }
 
@@ -445,7 +443,7 @@
 
 .md-search-result-name {
   font-size: var(--text-body-md-size);
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -485,13 +483,13 @@
 }
 
 .md-payment-term-preview__summary {
-  font-size: 18px;
+  font-size: var(--text-headline-sm-size);
   font-weight: 700;
   color: var(--color-primary);
 }
 
 .md-payment-term-preview__total {
-  font-size: 18px;
+  font-size: var(--text-headline-sm-size);
   font-weight: 700;
   color: var(--color-text-primary);
 }
@@ -504,7 +502,6 @@
 
 .md-detail-filter-select {
   width: auto;
-  font-size: 0.85rem;
 }
 
 .md-detail-purpose-options {
