@@ -1,6 +1,6 @@
 ﻿# DS Audit Report
 
-- Fecha: 2026-08-17 13:49:48
+- Fecha: 2026-08-17 15:06:28
 - Scope: `modules` (moduleName: `electronicDocuments`)
 - Generado por: `scripts/ds/ds-audit.ps1`
 - Total hallazgos: **14**
@@ -19,27 +19,26 @@
 
 | Clasificacion | Hallazgos |
 |---|---|
-| `OK_TOKEN` | 10 |
-| `NEEDS_DECISION` | 3 |
+| `OK_TOKEN` | 13 |
 | `OK_LAYOUT` | 1 |
 
 ## Hallazgos
 
 | Archivo | Linea | Patron | Contenido | Clasificacion | Accion sugerida |
 |---|---|---|---|---|---|
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 19 | `font-weight` | `font-weight: 400;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 19 | `font-weight` | `font-weight: var(--text-body-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 29 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 34 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 50 | `line-height` | `line-height: 0;` | OK_LAYOUT | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 61 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 67 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 100 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 111 | `font-size` | `font-size: 12px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 111 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 118 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 158 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 163 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 170 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 178 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 179 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 179 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 
 

@@ -1,6 +1,6 @@
 ﻿# DS Audit Report
 
-- Fecha: 2026-08-17 13:49:50
+- Fecha: 2026-08-17 15:06:29
 - Scope: `modules` (moduleName: `dashboard`)
 - Generado por: `scripts/ds/ds-audit.ps1`
 - Total hallazgos: **23**
@@ -19,8 +19,8 @@
 
 | Clasificacion | Hallazgos |
 |---|---|
-| `OK_TOKEN` | 20 |
-| `NEEDS_DECISION` | 2 |
+| `OK_TOKEN` | 21 |
+| `NEEDS_DECISION` | 1 |
 | `OK_ICON` | 1 |
 
 ## Hallazgos
@@ -31,7 +31,7 @@
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 73 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 91 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 95 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 96 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 96 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 115 | `font-size` | `font-size: var(--text-headline-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 116 | `font-weight` | `font-weight: var(--text-headline-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 117 | `letter-spacing` | `letter-spacing: var(--text-headline-md-spacing);` | OK_TOKEN | Sin accion - cumple regla DS. |

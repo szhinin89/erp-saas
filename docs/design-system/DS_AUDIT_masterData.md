@@ -1,9 +1,9 @@
 ﻿# DS Audit Report
 
-- Fecha: 2026-08-17 13:49:49
+- Fecha: 2026-08-17 14:00:42
 - Scope: `modules` (moduleName: `masterData`)
 - Generado por: `scripts/ds/ds-audit.ps1`
-- Total hallazgos: **48**
+- Total hallazgos: **45**
 
 > Auditoria por lineas (regex), no un parser real de CSS/TSX. ` NEEDS_DECISION ` siempre requiere revision humana - ver ` docs/design-system/DS_RULES.md `.
 
@@ -11,8 +11,8 @@
 
 | Patron | Hallazgos |
 |---|---|
-| `font-size` | 29 |
-| `font-weight` | 13 |
+| `font-size` | 28 |
+| `font-weight` | 11 |
 | `text-transform` | 2 |
 | `letter-spacing` | 2 |
 | `line-height` | 1 |
@@ -22,8 +22,8 @@
 
 | Clasificacion | Hallazgos |
 |---|---|
-| `OK_TOKEN` | 34 |
-| `NEEDS_DECISION` | 12 |
+| `OK_TOKEN` | 38 |
+| `NEEDS_DECISION` | 5 |
 | `OK_ICON` | 1 |
 | `OK_LAYOUT` | 1 |
 
@@ -47,7 +47,7 @@
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 124 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 141 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 146 | `font-size` | `font-size: var(--text-badge-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 147 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 147 | `font-weight` | `font-weight: var(--text-badge-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 163 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 167 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 168 | `font-weight` | `font-weight: var(--text-label-sm-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
@@ -58,26 +58,23 @@
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 185 | `line-height` | `line-height: var(--text-title-sm-height);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 210 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 218 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 249 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 253 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 258 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 269 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 305 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 309 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 314 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 339 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 343 | `font-size` | `font-size: 18px;` | OK_ICON | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 395 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 396 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 407 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 447 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 448 | `font-weight` | `font-weight: 500;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 455 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 471 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 488 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 489 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 494 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 495 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 507 | `font-size` | `font-size: 0.85rem;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 252 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 257 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 268 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 307 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 312 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 337 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 341 | `font-size` | `font-size: 18px;` | OK_ICON | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 393 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 394 | `font-weight` | `font-weight: var(--text-label-sm-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 405 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 445 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 446 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 453 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 469 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 486 | `font-size` | `font-size: var(--text-headline-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 487 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 492 | `font-size` | `font-size: var(--text-headline-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 493 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 
 
