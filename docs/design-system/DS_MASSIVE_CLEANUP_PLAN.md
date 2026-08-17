@@ -147,3 +147,70 @@ referencia, no se tocan salvo regresión.
 - `docs/design-system/DS_AUDIT_settings.md` (0 hallazgos)
 - `docs/design-system/DS_AUDIT_admin.md` (0 hallazgos)
 - `docs/design-system/DS_MASSIVE_CLEANUP_PLAN.md` (este archivo)
+
+---
+
+## Closeout final
+
+### 1. Fecha del cierre
+2026-08-17.
+
+### 2. Estado `ds-guard.ps1 -Scope modules`
+```
+ds-guard: OK - sin violaciones bloqueantes en scope 'modules'.
+```
+**Exit code 0.** 109 advertencias `NEEDS_DECISION` de tipografía impresas (no bloquean), todas ya revisadas y clasificadas — ver punto 6.
+
+### 3. Conteo final global (`ds-audit.ps1 -Scope modules`, todo `frontend/src/modules`)
+
+| Clasificación | Hallazgos |
+|---|---|
+| `OK_TOKEN` | 277 |
+| `OK_ICON` | 35 |
+| `OK_LAYOUT` | 15 |
+| `OK_GLOBAL` | 56 |
+| `NEEDS_DECISION` | 109 |
+| `NOT_OK_VISUAL_LOCAL` | **0** |
+| **Total** | **492** |
+
+### 4. Módulos revisados (barrido completo, tareas `ERP-DS-MODULE-SWEEP-*` / `ERP-DS-MODULE-BATCH-SWEEP-*`)
+Sales, Purchases, Inventory/Kardex (+ Warehouses), MasterData, Auth, Access, ElectronicDocuments, Dashboard, Items, Security, CompanyManagement, Logistica, CashRegisters. 13 módulos con trabajo activo o auditoría explícita de cierre.
+
+### 5. Módulos limpios (0 `NEEDS_DECISION`)
+`electronicDocuments`, `items`, `company-management`, `cashRegisters` (limpio desde el inicio, sin CSS local), y los 12 módulos de 0 hallazgos totales ya listados en la sección B/E (`admin`, `branches`, `config`, `establishments`, `finance`, `pricing`, `reportes`, `ride`, `session`, `emissionPoints`, `configuracion`, `settings`).
+
+### 6. `NEEDS_DECISION` restantes por módulo (109 total)
+
+| Módulo | NEEDS_DECISION | Naturaleza |
+|---|---|---|
+| `sales` | 50 | referencia — pesos 500/600/700/800 y letter-spacing/uppercase ya revisados y aceptados en `ERP-DS-TYPOGRAPHY-SCALE-02` |
+| `purchases` | 25 | referencia — mismo criterio que Sales |
+| `auth` | 9 | tagline de marca (`.fp-brand-sub`/`.rp-brand-sub`/`.pr-brand-sub`, uppercase+tracking, idénticos en 3 páginas) + override responsive de `.lp-brand-name` en móvil |
+| `inventory` | 7 | pesos 600/700 en `.kdx-*`/`.bod-*` que ya coinciden con tiers estándar (revisado en `ERP-DS-MODULE-SWEEP-01`) |
+| `masterData` | 5 | `.md-detail-section-title`/`.md-detail-subheader` (uppercase, ya 100% tokenizados en lo demás) + pesos 600/700 en `.md-search-result-name`/`.md-payment-term-preview-*` |
+| `access` | 5 | `.prf-modal-progress-value`/`.prf-modal-security-title` (700 + uppercase/tracking, label/badge de seguridad) + `.acc-user-name` (600) |
+| `security` | 3 | `.userName` (600) + `.security-badge` (uppercase/tracking — forma/color no calzan exacto con `<Badge>` global) |
+| `caja` | 3 | **fuera de alcance explícito** (pagos/caja) en toda la serie — no revisado a propósito |
+| `dashboard` | 1 | `.dsh-footer-brand` (700, texto de marca en footer) |
+| `logistica` | 1 | `.crt-col-name` (600, nombre de transportista en tabla) |
+
+### 7. Confirmación `NOT_OK_VISUAL_LOCAL` = 0
+Confirmado en el audit global (punto 3) y en el guard (punto 2) — **0** en todo `frontend/src/modules`, incluyendo `caja` (los 3 `NEEDS_DECISION` de `caja` no son violaciones bloqueantes, solo tipografía cruda sin revisar a propósito).
+
+### 8. Confirmación `ds-fix-known-patterns.ps1` sin cambios pendientes
+```
+powershell -ExecutionPolicy Bypass -File scripts/ds/ds-fix-known-patterns.ps1 -Scope modules
+Fixer 4: .zh-money-value ya tiene white-space: nowrap - OK, sin cambios.
+ds-fix-known-patterns: sin cambios aplicables en scope 'modules'.
+```
+**0 cambios automáticos disponibles** en todo `frontend/src/modules` (dry-run).
+
+### 9. Reglas que quedan como decisiones futuras (no deuda bloqueante)
+- **Pesos 600/700/800 que representan un tier semántico ya establecido** (600=dato normal/label, 700=strong, 800=grand) expresados como literal numérico en vez de `var()` — no existe token genérico `--font-weight-*` en `design-tokens.css`, solo compuestos por rol; forzar una referencia sería artificial.
+- **Tagline de marca en Auth** (`.fp-brand-sub`/`.rp-brand-sub`/`.pr-brand-sub`, idénticos en 3 páginas, uppercase+letter-spacing 0.12em) — candidato real a consolidarse en una utilidad global nueva, pero es una decisión de identidad visual de marca, no un fix mecánico; el `.zh-auth-brand-sub` que ya existe en `zh-ui.css` tiene valores distintos y no es un reemplazo directo.
+- **`.security-badge`** (Access/Security, rol de usuario) — duplica parcialmente `<Badge>` pero con `border-radius`/`padding` distintos (chip `radius-sm` vs pill del DS) y color `--color-primary-subtle` sin variante exacta en `<Badge>`; migrarlo requiere decidir forma/color o extender `<Badge>` con un nuevo tono.
+- **`.dsh-footer-brand`** (Dashboard) — texto de marca en footer, mismo criterio que el punto de pesos semánticos.
+- **`caja`** (3 `NEEDS_DECISION`) — deliberadamente no revisado en ninguna tarea de este barrido por ser zona de pagos/caja; queda como decisión futura explícita, a abordar con la misma cautela ya aplicada a las zonas de pago de Ventas (nunca tocadas en todo este barrido).
+
+### 10. Recomendación
+Incorporar `scripts/ds/ds-guard.ps1 -Scope modules` como paso de CI (o pre-push hook) en una tarea futura, para que ninguna regresión de `font-family`/`italic`/`style={{`/colores hardcodeados locales vuelva a entrar en `frontend/src/modules` sin bloquear el pipeline. Los `NEEDS_DECISION` seguirían siendo solo advertencia (no bloquean), consistente con el comportamiento actual del script.
