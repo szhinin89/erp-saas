@@ -1,9 +1,9 @@
 ﻿# DS Audit Report
 
-- Fecha: 2026-08-17 13:16:08
+- Fecha: 2026-08-17 13:49:57
 - Scope: `modules`
 - Generado por: `scripts/ds/ds-audit.ps1`
-- Total hallazgos: **504**
+- Total hallazgos: **496**
 
 > Auditoria por lineas (regex), no un parser real de CSS/TSX. ` NEEDS_DECISION ` siempre requiere revision humana - ver ` docs/design-system/DS_RULES.md `.
 
@@ -16,19 +16,17 @@
 | `letter-spacing` | 39 |
 | `text-transform` | 25 |
 | `line-height` | 15 |
-| `font-family` | 8 |
 | `font-style` | 2 |
 
 ## Conteo por clasificacion
 
 | Clasificacion | Hallazgos |
 |---|---|
-| `OK_TOKEN` | 254 |
-| `NEEDS_DECISION` | 136 |
+| `OK_TOKEN` | 264 |
+| `NEEDS_DECISION` | 126 |
 | `OK_GLOBAL` | 56 |
 | `OK_ICON` | 35 |
 | `OK_LAYOUT` | 15 |
-| `NOT_OK_VISUAL_LOCAL` | 8 |
 
 ## Hallazgos
 
@@ -119,68 +117,61 @@
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 117 | `letter-spacing` | `letter-spacing: var(--text-headline-md-spacing);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 123 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/dashboard/pages/DashboardPage.css` | 124 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 143 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 144 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 192 | `font-size` | `font-size: 20px;` | OK_ICON | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 204 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 205 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 211 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 245 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 246 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 251 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 256 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 280 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 281 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 286 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 296 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 143 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 191 | `font-size` | `font-size: 20px;` | OK_ICON | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 203 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 204 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 210 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 244 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 245 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 250 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 255 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 279 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 280 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 285 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/dashboard/pages/DashboardPage.css` | 295 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 19 | `font-weight` | `font-weight: 400;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 | `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 29 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 34 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 35 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 51 | `line-height` | `line-height: 0;` | OK_LAYOUT | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 62 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 68 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 101 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 112 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 113 | `font-size` | `font-size: 12px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 120 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 160 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 161 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 166 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 173 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 181 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 182 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 34 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 50 | `line-height` | `line-height: 0;` | OK_LAYOUT | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 61 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 67 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 100 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 111 | `font-size` | `font-size: 12px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 118 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 158 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 163 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 170 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 178 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/electronicDocuments/monitor/components/electronic-documents-monitor.css` | 179 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 | `frontend/src/modules/emissionPoints/pages/emission-points-page.css` | 29 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 98 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 102 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 106 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 119 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 123 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 131 | `font-size` | `font-size: 11px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 137 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 138 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 139 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 103 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 107 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 120 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 124 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 132 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 138 | `font-size` | `font-size: var(--text-headline-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 139 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 | `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 178 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 199 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 203 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/inventory/kardex/pages/KardexPage.css` | 207 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 11 | `font-weight` | `font-weight: 500;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 15 | `font-size` | `font-size: 11px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 20 | `font-size` | `font-size: 13px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 23 | `font-size` | `font-size: 12px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 11 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 15 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 20 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 23 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 48 | `font-size` | `font-size: 22px;` | OK_ICON | Sin accion - cumple regla DS. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 60 | `font-size` | `font-size: 15px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 60 | `font-size` | `font-size: var(--text-body-lg-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 61 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 99 | `font-size` | `font-size: 16px;` | OK_ICON | Sin accion - cumple regla DS. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 103 | `font-size` | `font-size: 12px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 103 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 104 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 124 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 124 | `font-weight` | `font-weight: var(--text-label-md-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 125 | `font-size` | `font-size: var(--text-label-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 130 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 151 | `font-size` | `font-size: var(--text-label-sm-size, 11px);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 153 | `text-transform` | `text-transform: uppercase;` | NEEDS_DECISION | Revisar si es titulo/label global (OK) o uppercase local sin justificacion. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 154 | `letter-spacing` | `letter-spacing: 0.05em;` | NEEDS_DECISION | Revisar si es titulo/label global (OK) o tracking local sin justificacion. |
-| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 157 | `font-size` | `font-size: 13px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 154 | `letter-spacing` | `letter-spacing: var(--text-label-sm-spacing);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/inventory/warehouses/pages/BodegasPage.css` | 157 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/items/catalog/wizard/catalog-wizard.css` | 14 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/items/catalog/wizard/catalog-wizard.css` | 51 | `font-size` | `font-size: 20px;` | OK_ICON | Sin accion - cumple regla DS. |
 | `frontend/src/modules/items/catalog/wizard/catalog-wizard.css` | 59 | `font-size` | `font-size: 20px;` | OK_ICON | Sin accion - cumple regla DS. |
@@ -219,25 +210,24 @@
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 249 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 253 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/masterData/pages/masterdata-pages.css` | 258 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 261 | `font-family` | `font-family: var(--font-family-mono);` | NOT_OK_VISUAL_LOCAL | Eliminar font-family local. Texto normal hereda var(--font-family) global; codigo tecnico usa .zh-code-value / ZHDataValue variant=code / Badge code. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 270 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 306 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 310 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 315 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 340 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 344 | `font-size` | `font-size: 18px;` | OK_ICON | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 396 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 397 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 408 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 448 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 449 | `font-weight` | `font-weight: 500;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 456 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 472 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 489 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 490 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 495 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 496 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 508 | `font-size` | `font-size: 0.85rem;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 269 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 305 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 309 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 314 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 339 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 343 | `font-size` | `font-size: 18px;` | OK_ICON | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 395 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 396 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 407 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 447 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 448 | `font-weight` | `font-weight: 500;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 455 | `font-size` | `font-size: var(--text-help-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 471 | `font-size` | `font-size: var(--text-body-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 488 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 489 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 494 | `font-size` | `font-size: 18px;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 495 | `font-weight` | `font-weight: 700;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
+| `frontend/src/modules/masterData/pages/masterdata-pages.css` | 507 | `font-size` | `font-size: 0.85rem;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*) o a ZHFieldLabel/ZHDataValue/ZHMoneyValue global. |
 | `frontend/src/modules/purchases/styles/purchase-credit-note.css` | 14 | `font-size` | `font-size: var(--text-label-sm-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
 | `frontend/src/modules/purchases/styles/purchase-credit-note.css` | 15 | `text-transform` | `text-transform: uppercase;` | NEEDS_DECISION | Revisar si es titulo/label global (OK) o uppercase local sin justificacion. |
 | `frontend/src/modules/purchases/styles/purchase-credit-note.css` | 16 | `letter-spacing` | `letter-spacing: var(--text-label-sm-spacing);` | OK_TOKEN | Sin accion - cumple regla DS. |

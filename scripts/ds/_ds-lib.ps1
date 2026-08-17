@@ -56,7 +56,7 @@ function Get-DsTargetFiles {
     $files = foreach ($p in $Paths) {
         Get-ChildItem -Path $p -Recurse -File -Include "*.tsx", "*.css" -ErrorAction SilentlyContinue
     }
-    return $files | Sort-Object FullName -Unique
+    return ,@($files | Sort-Object FullName -Unique)
 }
 
 # Definicion de patrones: Name, Regex, y a que tipo de archivo aplica.
@@ -249,5 +249,9 @@ function Get-DsFindings {
         }
     }
 
-    return $findings
+    # La coma evita que PowerShell "desenrolle" la lista en el stream de
+    # salida: sin ella, un $findings vacio o de 1 elemento se convierte en
+    # $null/objeto-escalar en la variable del caller (bug real detectado
+    # auditando modulos con pocos archivos, ej. -ModuleName settings).
+    return ,$findings
 }
