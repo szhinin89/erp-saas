@@ -234,5 +234,13 @@ public sealed record TaxIdentification
         return suppliedLegalEntityTypeCode.Value;
     }
 
+    /// <summary>
+    /// Punto único de detección de "Consumidor Final" en todo el backend — por convención SRI
+    /// (tipo 07 + número estándar 9999999999999, sembrado por SalesBootstrapStep). Cualquier
+    /// módulo que necesite distinguir Consumidor Final de un cliente identificado debe usar este
+    /// método en vez de comparar las constantes por su cuenta.
+    /// </summary>
+    public bool IsConsumidorFinal() => Type == SriConsumidorFinal && Number == ConsumidorFinalNumber;
+
     public override string ToString() => $"{Type}:{Number}";
 }

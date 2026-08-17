@@ -77,3 +77,26 @@ export interface CompanyBrandingIdentity {
   secondaryColor?: string;
   slogan?: string;
 }
+
+export type ConsumerFinalMaxAmountSource =
+  | "Manual"
+  | "TaxRegimeDefault"
+  | "Fallback";
+
+/**
+ * Política fiscal efectiva de Consumidor Final. BlockConsumerFinalCredit siempre es `true`
+ * (regla fija, no editable) — se expone tal cual la calcula el backend, nunca hardcodeada aquí.
+ * Los dos mensajes ya vienen formateados por el backend (incluyen el monto máximo).
+ */
+export interface SalesFiscalPolicy {
+  blockConsumerFinalCredit: boolean;
+  consumerFinalMaxAmount: number;
+  consumerFinalMaxAmountSource: ConsumerFinalMaxAmountSource;
+  taxRegimeCode: string | null;
+  creditBlockedMessage: string;
+  amountExceededMessage: string;
+}
+
+export interface UpdateConsumerFinalMaxAmountPayload {
+  consumerFinalMaxAmount: number;
+}

@@ -818,6 +818,10 @@ public static class DependencyInjection
             ERP.Domain.Configuration.Interfaces.IOrgConfigResolver,
             OrgConfigResolver
         >();
+        services.AddScoped<
+            ERP.Domain.Modules.Sales.Interfaces.ISalesFiscalPolicyResolver,
+            ERP.Infrastructure.Services.SalesFiscalPolicyResolver
+        >();
 
         // ── Setup BC ──────────────────────────────────────────────────────────
         services.AddScoped<ISystemSetupRepository, SystemSetupRepository>();

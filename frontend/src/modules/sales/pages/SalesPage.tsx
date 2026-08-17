@@ -464,6 +464,24 @@ export function SalesPage() {
                   )}
                 </div>
               )}
+              {ctx.isConsumerFinalCustomer && ctx.consumerFinalPolicy && (
+                <ZHPageNotice
+                  variant={ctx.consumerFinalAmountExceeded ? "error" : "info"}
+                  message={
+                    ctx.consumerFinalAmountExceeded
+                      ? ctx.consumerFinalPolicy.amountExceededMessage
+                      : "Consumidor Final: solo ventas a contado."
+                  }
+                  detail={
+                    ctx.consumerFinalAmountExceeded
+                      ? undefined
+                      : `Monto máximo permitido: ${formatMoney(
+                          ctx.consumerFinalPolicy.consumerFinalMaxAmount,
+                          getDecimalConfig().totalAmount,
+                        )}. Para superarlo, seleccione un cliente identificado.`
+                  }
+                />
+              )}
             </div>
 
             {/* Resumen Impuestos + Total */}

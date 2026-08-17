@@ -4,6 +4,7 @@ using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Modules.Sales.UseCases.GetDailySalesReport;
 using ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 using ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
+using ERP.Application.Modules.Sales.UseCases.GetSalesRuntimeContext;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -115,6 +116,16 @@ public sealed class SalesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetInvoiceDefaults(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetSalesInvoiceDefaultsQuery(), ct));
+
+    /// <summary>
+    /// Contexto agregado para Ventas y futuras pantallas (POS, facturación rápida, pedidos, app
+    /// móvil): política fiscal de Consumidor Final + defaults de factura, en un solo GET.
+    /// Requiere solo autenticación — mismo criterio que invoice-defaults.
+    /// </summary>
+    [HttpGet("runtime-context")]
+    [Authorize]
+    public async Task<IActionResult> GetRuntimeContext(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetSalesRuntimeContextQuery(), ct));
 
     [HttpGet("item-search")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]

@@ -46,4 +46,20 @@ public static class OrgSettingKeys
         public const string SecondaryColorHex = "ride.branding.secondary_color_hex";
         public const string FooterText = "ride.branding.footer_text";
     }
+
+    /// <summary>
+    /// Política fiscal de Consumidor Final. Propietario: Empresa (scope=Company), editada desde
+    /// Fiscal/Tributario en Configuración de Empresa. Ausencia de fila → se calcula default por
+    /// régimen tributario (ver ConsumerFinalPolicyDefaults, dominio Sales) — nunca hardcodear el
+    /// default en Application/API/frontend.
+    /// </summary>
+    public static class Sales
+    {
+        /// <summary>
+        /// numeric(18,2). "0" es un valor manual válido y distinto de "sin configurar": bloquea
+        /// toda venta a Consumidor Final. Ausencia de fila (no confundir con "0") activa el
+        /// default por régimen.
+        /// </summary>
+        public const string ConsumerFinalMaxAmount = "sales.consumer_final.max_amount";
+    }
 }

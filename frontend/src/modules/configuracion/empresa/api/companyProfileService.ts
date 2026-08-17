@@ -3,10 +3,12 @@ import type { ApiResponse } from "../../../../types/api";
 import type {
   CompanyBrandingIdentity,
   CompanyProfile,
+  SalesFiscalPolicy,
   UpdateCompanyDocumentsPayload,
   UpdateCompanyFiscalPayload,
   UpdateCompanyOperationPayload,
   UpdateCompanyProfilePayload,
+  UpdateConsumerFinalMaxAmountPayload,
 } from "../../../../types/companyProfile";
 
 export const companyProfileService = {
@@ -143,5 +145,22 @@ export const companyProfileService = {
       if (status === 404) return null;
       throw err;
     }
+  },
+
+  async getFiscalPolicy(): Promise<SalesFiscalPolicy> {
+    const { data } = await api.get<ApiResponse<SalesFiscalPolicy>>(
+      "/api/v1/companies/profile/fiscal-policy",
+    );
+    return data.data;
+  },
+
+  async updateConsumerFinalMaxAmount(
+    payload: UpdateConsumerFinalMaxAmountPayload,
+  ): Promise<SalesFiscalPolicy> {
+    const { data } = await api.put<ApiResponse<SalesFiscalPolicy>>(
+      "/api/v1/companies/profile/fiscal-policy",
+      payload,
+    );
+    return data.data;
   },
 };

@@ -2,11 +2,13 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.Sales.Policies;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -39,6 +41,8 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository _edocRepo;
     private readonly ISalesInvoiceEmissionStrategyResolver _emissionStrategyResolver;
     private readonly ERP.Application.Common.Services.ICompanyClock _companyClock;
+    private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly ISalesFiscalPolicyResolver _fiscalPolicyResolver;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -55,6 +59,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
         ISalesInvoiceEmissionStrategyResolver emissionStrategyResolver,
         ERP.Application.Common.Services.ICompanyClock companyClock,
+        IBusinessPartnerRepository bpRepo,
+        ISalesFiscalPolicyResolver fiscalPolicyResolver,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -71,6 +77,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         _edocRepo = edocRepo;
         _emissionStrategyResolver = emissionStrategyResolver;
         _companyClock = companyClock;
+        _bpRepo = bpRepo;
+        _fiscalPolicyResolver = fiscalPolicyResolver;
         _logger = logger;
         _t = t;
         _c = c;
@@ -139,6 +147,28 @@ public sealed class AuthorizeSalesInvoiceHandler
                 iceRate,
                 iceName
             );
+        }
+
+        // ── Validar política fiscal de Consumidor Final (autoridad backend) ─
+        // Único punto de esta regla — nunca duplicada en otro handler ni confiada al frontend.
+        // isCredit se calcula aquí (antes que más abajo) porque ambos bloques la necesitan;
+        // ver también el bloque de generación de CxC, que reutiliza esta misma variable.
+        var isCredit = inv.CreditTermDays > 0 || inv.PaymentTerm.Installments > 1;
+
+        var customer = await _bpRepo.GetByIdAsync(inv.CustomerId, ct);
+        if (customer is not null && customer.Identification.IsConsumidorFinal())
+        {
+            var policy = await _fiscalPolicyResolver.GetEffectivePolicyAsync(ct);
+
+            if (isCredit && policy.BlockConsumerFinalCredit)
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    SalesFiscalPolicyMessages.CreditBlockedMessage
+                );
+
+            if (inv.GrandTotal > policy.ConsumerFinalMaxAmount)
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    SalesFiscalPolicyMessages.AmountExceededMessage(policy.ConsumerFinalMaxAmount)
+                );
         }
 
         // ── Validar stock disponible por línea (Kardex) ─────────────
@@ -241,7 +271,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         }
 
         // ── Generar cuenta por cobrar (solo crédito — contado no genera CxC) ─
-        var isCredit = inv.CreditTermDays > 0 || inv.PaymentTerm.Installments > 1;
+        // isCredit ya calculado arriba (validación de política fiscal de Consumidor Final).
         if (isCredit && inv.GrandTotal > 0)
         {
             var receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(

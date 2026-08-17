@@ -9,6 +9,7 @@ using ERP.Application.Modules.Companies.UseCases.GetCompanyLogoAltContent;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyLogoContent;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyProfile;
 using ERP.Application.Modules.Companies.UseCases.GetCurrentCompany;
+using ERP.Application.Modules.Companies.UseCases.GetSalesFiscalPolicy;
 using ERP.Application.Modules.Companies.UseCases.ListCompanies;
 using ERP.Application.Modules.Companies.UseCases.UpdateCompany;
 using ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding;
@@ -16,6 +17,7 @@ using ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments;
 using ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal;
 using ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation;
 using ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile;
+using ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount;
 using ERP.Application.Modules.Companies.UseCases.UploadCompanyLogo;
 using ERP.Application.Modules.Companies.UseCases.UploadCompanyLogoAlt;
 using ERP.Domain.Kernel.Permissions;
@@ -204,6 +206,33 @@ public sealed class CompaniesController : ControllerBase
 
         var content = result.Value!;
         return File(content.Content, content.ContentType, content.FileName);
+    }
+
+    [HttpGet("profile/fiscal-policy")]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesView}")]
+    [ProducesResponseType(
+        typeof(ApiResponse<ERP.Application.Modules.Sales.DTOs.SalesFiscalPolicyDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetFiscalPolicy(CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetSalesFiscalPolicyQuery(), cancellationToken);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpPut("profile/fiscal-policy")]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
+    [ProducesResponseType(
+        typeof(ApiResponse<ERP.Application.Modules.Sales.DTOs.SalesFiscalPolicyDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> UpdateFiscalPolicy(
+        [FromBody] UpdateConsumerFinalMaxAmountCommand command,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var result = await _mediator.Send(command, cancellationToken);
+        return this.ToOkOrBadRequest(result);
     }
 
     [HttpGet("{id:guid}")]

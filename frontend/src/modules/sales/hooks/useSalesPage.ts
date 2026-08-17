@@ -36,6 +36,8 @@ import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { salesDefaultsService } from "../api/salesDefaultsService";
 import type { SalesInvoiceDefaultsDto } from "../api/salesDefaultsService";
+import { salesRuntimeContextService } from "../api/salesRuntimeContextService";
+import type { SalesRuntimeContextDto } from "../api/salesRuntimeContextService";
 import { salesItemPricingService } from "../api/salesItemPricingService";
 import {
   loadDecimalConfig,
@@ -309,6 +311,10 @@ export function useSalesPage() {
   const [tenantDefaults, setTenantDefaults] =
     useState<SalesInvoiceDefaultsDto | null>(null);
   const [iceRatesMap, setIceRatesMap] = useState<Record<string, number>>({});
+  // Política fiscal de Consumidor Final + defaults, resuelta por el backend (autoridad única).
+  // No reemplaza la validación del backend al emitir — solo previene en UI.
+  const [runtimeContext, setRuntimeContext] =
+    useState<SalesRuntimeContextDto | null>(null);
 
   // ── Modal state ────────────────────────────────────────────────────
   const [modalCancelReason, setModalCancelReason] = useState(false);
@@ -426,6 +432,22 @@ export function useSalesPage() {
     [lines],
   );
 
+  const grandTotal = editing && readOnly ? editing.grandTotal : summary.total;
+  const totalDiscount =
+    editing && readOnly ? editing.totalDiscount : summary.discount;
+
+  // Consumidor Final: el backend es la autoridad (AuthorizeSalesInvoiceHandler bloquea igual
+  // si se manipula el payload) — esto solo previene el intento en UI con un mensaje claro,
+  // usando siempre el monto ya resuelto por el backend (nunca 50/200 hardcodeado aquí).
+  const isConsumerFinalCustomer =
+    customerProfile?.identificationType === "07" &&
+    customerProfile?.taxId === CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER;
+  const consumerFinalPolicy = runtimeContext?.consumerFinalPolicy ?? null;
+  const consumerFinalAmountExceeded =
+    isConsumerFinalCustomer &&
+    !!consumerFinalPolicy &&
+    grandTotal > consumerFinalPolicy.consumerFinalMaxAmount;
+
   const canEmit =
     !fieldDisabled &&
     hasCustomer &&
@@ -433,11 +455,8 @@ export function useSalesPage() {
     hasCashSession === true &&
     paymentOk &&
     !cashInsufficient &&
-    !hasInsufficientStock;
-
-  const grandTotal = editing && readOnly ? editing.grandTotal : summary.total;
-  const totalDiscount =
-    editing && readOnly ? editing.totalDiscount : summary.discount;
+    !hasInsufficientStock &&
+    !consumerFinalAmountExceeded;
 
   const taxBreakdown: TaxBreakdownEntry[] = useMemo(() => {
     if (editing && readOnly && editing.lines.length > 0) {
@@ -526,6 +545,10 @@ export function useSalesPage() {
           .then((types) =>
             setSriIdTypes(types.map((t) => ({ code: t.code, name: t.name }))),
           )
+          .catch(() => {}),
+        salesRuntimeContextService
+          .get()
+          .then(setRuntimeContext)
           .catch(() => {}),
       ]);
 
@@ -633,6 +656,32 @@ export function useSalesPage() {
           }
         }
 
+        // Consumidor Final nunca puede crédito (regla fija del backend, ver
+        // ISalesFiscalPolicyResolver) — si la condición de pago recién resuelta implica
+        // crédito, se fuerza a contado aquí mismo (misma fuente que resolvió el paymentTermId
+        // arriba, para no duplicar la lógica de detección en otro lugar). El backend sigue
+        // siendo la autoridad real: esto es solo prevención de UX.
+        if (
+          bp.identificationType === "07" &&
+          bp.identificationNumber === CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER
+        ) {
+          const resolvedPtId = getValues("paymentTermId");
+          const resolvedPt = paymentTermsList.find((p) => p.id === resolvedPtId);
+          const impliesCredit =
+            !!resolvedPt && (resolvedPt.totalDays > 0 || resolvedPt.installments > 1);
+          if (impliesCredit) {
+            const contado = paymentTermsList.find(
+              (p) => p.isActive && p.totalDays === 0 && p.installments === 1,
+            );
+            if (contado) {
+              setValue("paymentTermId", contado.id, { shouldDirty: true });
+              message.warning(
+                "Consumidor Final no puede registrar ventas a crédito. Se cambió la condición de pago a contado.",
+              );
+            }
+          }
+        }
+
         return {
           name: bp.tradeName || bp.legalName,
           taxId: bp.identificationNumber,
@@ -649,7 +698,7 @@ export function useSalesPage() {
         return null;
       }
     },
-    [paymentTermsList, setValue, tenantDefaults],
+    [paymentTermsList, setValue, getValues, tenantDefaults],
   );
 
   // ── Line operations ────────────────────────────────────────────────
@@ -1592,6 +1641,12 @@ export function useSalesPage() {
     taxBreakdown,
     isElectronic,
     selectedPt,
+
+    // Consumidor Final — política fiscal (runtime context, autoridad backend)
+    runtimeContext,
+    isConsumerFinalCustomer,
+    consumerFinalPolicy,
+    consumerFinalAmountExceeded,
 
     // Actions
     fetchList,
