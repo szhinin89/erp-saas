@@ -93,7 +93,7 @@
 }
 .dsh-summary-value {
   font-size: var(--text-label-md-size);
-  font-weight: 600;
+  font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
 }
 .dsh-summary-value--warn {

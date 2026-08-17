@@ -16,7 +16,7 @@
 }
 
 .edm-retry-suffix {
-  font-weight: 400;
+  font-weight: var(--text-body-md-weight);
   opacity: 0.85;
 }
 
@@ -108,7 +108,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-3);
-  font-size: 12px;
+  font-size: var(--text-help-size);
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -176,7 +176,7 @@
 .edm-tech-info summary {
   cursor: pointer;
   font-size: var(--text-label-md-size);
-  font-weight: 600;
+  font-weight: var(--text-label-md-weight);
   padding: var(--space-2) 0;
 }
 
