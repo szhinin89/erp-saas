@@ -231,6 +231,38 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_admin_access_sessions_and_leaves_other_modules_untouched()
+    {
+        var navigation = KernelRegistry.Navigation;
+
+        var accessSessions = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/admin/access/sessions"
+        );
+        accessSessions.Should().NotBeNull("sesiones de usuario debe estar en el menú Admin");
+        accessSessions!.GroupCode.Should().Be("admin");
+        accessSessions
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.SessionsView);
+        accessSessions.SortOrder.Should().Be(45);
+
+        navigation.Should().NotContain(n => n.RoutePath == "/rrhh");
+
+        var finance = KernelRegistry.Modules.Single(m => m.Code == "finance");
+        finance.Icon.Should().Be("💳");
+        finance.SortOrder.Should().Be(46);
+
+        var reports = KernelRegistry.Modules.Single(m => m.Code == "reports");
+        reports.Icon.Should().Be("📊");
+        reports.SortOrder.Should().Be(55);
+
+        var settingsFinancialDestinations = navigation.Single(n =>
+            n.RoutePath == "/settings/financial-destinations"
+        );
+        settingsFinancialDestinations.GroupCode.Should().Be("settings");
+        settingsFinancialDestinations.SortOrder.Should().Be(60);
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry

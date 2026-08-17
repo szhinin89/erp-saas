@@ -42,6 +42,15 @@ public static class AdminModule
     public const string Activity = "/admin/activity";
 
     [NavItem(
+        "Sesiones de usuario",
+        Permission = AccessPermissions.SessionsView,
+        LabelKey = "app.nav.item.admin.accessSessions",
+        SortOrder = 45,
+        Id = "a1000000-0000-4000-9000-00000000000b"
+    )]
+    public const string AccessSessions = "/admin/access/sessions";
+
+    [NavItem(
         "Companies",
         Permission = SettingsPermissions.CompaniesView,
         LabelKey = "app.nav.item.erp.companies",
