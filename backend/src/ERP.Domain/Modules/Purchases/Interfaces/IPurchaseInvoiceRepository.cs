@@ -63,6 +63,18 @@ public interface IPurchaseInvoiceRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// P0-FIX-PAYABLES-UI-01 — proyección liviana (sin tracking, sin Include de líneas) del nombre
+    /// comercial (<c>SupplierName</c>, snapshot al momento de la compra) para un lote de
+    /// <c>PurchaseInvoice.Id</c> — usado para resolver el nombre de proveedor a mostrar en CxP sin
+    /// cargar la entidad completa.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetSupplierNamesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> purchaseInvoiceIds,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default);
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,

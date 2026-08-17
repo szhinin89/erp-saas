@@ -50,6 +50,22 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
                 ct
             );
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetSupplierNamesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> purchaseInvoiceIds,
+        CancellationToken ct = default
+    )
+    {
+        if (purchaseInvoiceIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        return await Scoped(tenantId)
+            .Where(x => purchaseInvoiceIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.SupplierName })
+            .AsNoTracking()
+            .ToDictionaryAsync(x => x.Id, x => x.SupplierName, ct);
+    }
+
     public async Task<(
         IReadOnlyList<PurchaseInvoice> Items,
         IReadOnlyDictionary<Guid, int> LineCounts,

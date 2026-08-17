@@ -126,7 +126,7 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
       onClose={handleClose}
       size="md"
       title="Registrar pago"
-      subtitle={`Proveedor: ${payable.supplierId} — Saldo pendiente: ${formatMoney(payable.balanceDue)}`}
+      subtitle={`Proveedor: ${payable.supplierName || "Proveedor no encontrado"} — Saldo pendiente: ${formatMoney(payable.balanceDue)}`}
     >
       <div>
         <ZHField label="Monto a pagar" error={errors.amount?.message} required>

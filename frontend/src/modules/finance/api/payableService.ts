@@ -15,6 +15,7 @@ export interface PurchasePayableDto {
   id: string;
   purchaseId: string;
   supplierId: string;
+  supplierName: string;
   totalAmount: number;
   paidAmount: number;
   totalRetained: number;

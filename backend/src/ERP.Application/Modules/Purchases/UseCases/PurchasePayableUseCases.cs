@@ -16,6 +16,7 @@ public sealed record PurchasePayableDto(
     Guid Id,
     Guid PurchaseId,
     Guid SupplierId,
+    string SupplierName,
     decimal TotalAmount,
     decimal PaidAmount,
     decimal TotalRetained,
@@ -62,11 +63,17 @@ public sealed class GetPayableByIdHandler
     : IRequestHandler<GetPayableByIdQuery, Result<PurchasePayableDto>>
 {
     private readonly IPurchasePayableRepository _repo;
+    private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
 
-    public GetPayableByIdHandler(IPurchasePayableRepository repo, ICurrentTenant t)
+    public GetPayableByIdHandler(
+        IPurchasePayableRepository repo,
+        IPurchaseInvoiceRepository invoiceRepo,
+        ICurrentTenant t
+    )
     {
         _repo = repo;
+        _invoiceRepo = invoiceRepo;
         _t = t;
     }
 
@@ -76,18 +83,24 @@ public sealed class GetPayableByIdHandler
     )
     {
         var p = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        return p is null
-            ? Result<PurchasePayableDto>.NotFound("Cuenta por pagar no encontrada.")
-            : Result<PurchasePayableDto>.Success(MapDto(p));
+        if (p is null)
+            return Result<PurchasePayableDto>.NotFound("Cuenta por pagar no encontrada.");
+
+        var names = await _invoiceRepo.GetSupplierNamesByIdsAsync(_t.TenantId, [p.PurchaseId], ct);
+        return Result<PurchasePayableDto>.Success(
+            MapDto(p, names.GetValueOrDefault(p.PurchaseId, string.Empty))
+        );
     }
 
     internal static PurchasePayableDto MapDto(
-        Domain.Modules.Purchases.Entities.PurchasePayable p
+        Domain.Modules.Purchases.Entities.PurchasePayable p,
+        string supplierName
     ) =>
         new(
             p.Id,
             p.PurchaseId,
             p.SupplierId,
+            supplierName,
             p.TotalAmount,
             p.PaidAmount,
             p.TotalRetained,
@@ -112,11 +125,17 @@ public sealed class GetPayablesListHandler
     : IRequestHandler<GetPayablesListQuery, Result<PayablesListResponse>>
 {
     private readonly IPurchasePayableRepository _repo;
+    private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
 
-    public GetPayablesListHandler(IPurchasePayableRepository repo, ICurrentTenant t)
+    public GetPayablesListHandler(
+        IPurchasePayableRepository repo,
+        IPurchaseInvoiceRepository invoiceRepo,
+        ICurrentTenant t
+    )
     {
         _repo = repo;
+        _invoiceRepo = invoiceRepo;
         _t = t;
     }
 
@@ -133,7 +152,14 @@ public sealed class GetPayablesListHandler
             q.PageSize,
             ct
         );
-        var dtos = items.Select(GetPayableByIdHandler.MapDto).ToList();
+        var names = await _invoiceRepo.GetSupplierNamesByIdsAsync(
+            _t.TenantId,
+            items.Select(x => x.PurchaseId).Distinct().ToList(),
+            ct
+        );
+        var dtos = items
+            .Select(p => GetPayableByIdHandler.MapDto(p, names.GetValueOrDefault(p.PurchaseId, string.Empty)))
+            .ToList();
         return Result<PayablesListResponse>.Success(
             new PayablesListResponse(dtos, total, q.PageNumber, q.PageSize)
         );

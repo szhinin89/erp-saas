@@ -51,6 +51,7 @@ public sealed class PurchasePayablesControllerTests
             id,
             Guid.NewGuid(),
             Guid.NewGuid(),
+            "Proveedor de Prueba S.A.",
             100m,
             0m,
             0m,

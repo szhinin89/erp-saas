@@ -13,6 +13,18 @@ import { RegisterPaymentModal } from "../components/RegisterPaymentModal";
 import "../../../styles/shared/items-catalog.css";
 
 /**
+ * P0-FIX-PAYABLES-UI-01 — deriva el estado real a mostrar a partir de `status` (solo
+ * "pending"/"cancelled" en BD, ver PurchasePayable.cs) y `balanceDue`, ya que no existe un
+ * valor "paid" persistido: el saldo en cero es la señal de pago completo. Mismos 3 estados que
+ * ya ofrece el filtro ZhSelect de esta pantalla (Pendientes/Pagadas/Anuladas).
+ */
+function getPayableStatusBadge(p: PurchasePayableDto): { label: string; variant: "red" | "green" | "orange" } {
+  if (p.status === "cancelled") return { label: "Anulada", variant: "red" };
+  if (p.balanceDue <= 0) return { label: "Pagada", variant: "green" };
+  return { label: "Pendiente", variant: "orange" };
+}
+
+/**
  * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — pantalla mínima de Cuentas por Pagar: consulta,
  * selección de la deuda y registro de pago contra ella (RegisterPaymentModal). Mismo patrón que
  * AccountsReceivablePage (CxC).
@@ -89,9 +101,11 @@ export function AccountsPayablePage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((p) => (
+              {items.map((p) => {
+                const statusBadge = getPayableStatusBadge(p);
+                return (
                 <tr key={p.id}>
-                  <td>{p.supplierId}</td>
+                  <td>{p.supplierName || "Proveedor no encontrado"}</td>
                   <td>{formatMoney(p.totalAmount)}</td>
                   <td>{formatMoney(p.paidAmount)}</td>
                   <td>{formatMoney(p.totalRetained)}</td>
@@ -99,7 +113,7 @@ export function AccountsPayablePage() {
                     <strong>{formatMoney(p.balanceDue)}</strong>
                   </td>
                   <td>
-                    <Badge label={"Estado"} variant="neutral" />
+                    <Badge label={statusBadge.label} variant={statusBadge.variant} />
                   </td>
                   <td>{formatDate(p.createdAt)}</td>
                   <td className="prd-td-actions">
@@ -113,7 +127,8 @@ export function AccountsPayablePage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {items.length === 0 && (
                 <tr className="prd-empty-row">
                   <td colSpan={8}>Sin cuentas por pagar.</td>
