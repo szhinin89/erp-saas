@@ -103,6 +103,47 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Modules_contains_finance_group()
+    {
+        var finance = KernelRegistry.Modules.SingleOrDefault(m => m.Code == "finance");
+
+        finance.Should().NotBeNull("el grupo Finanzas debe estar registrado en el Kernel");
+    }
+
+    [Fact]
+    public void Navigation_contains_finance_receivables_payables_and_supplier_credits()
+    {
+        var navigation = KernelRegistry.Navigation;
+        var financePermission = ERP.Domain.Kernel.Permissions.FinancePermissions.View;
+
+        var receivables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/receivables");
+        receivables.Should().NotBeNull("cuentas por cobrar debe estar en el menú");
+        receivables!.PermissionKey.Should().Be(financePermission);
+        receivables.SortOrder.Should().Be(10);
+
+        var payables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/payables");
+        payables.Should().NotBeNull("cuentas por pagar debe estar en el menú");
+        payables!.PermissionKey.Should().Be(financePermission);
+        payables.SortOrder.Should().Be(20);
+
+        var supplierCredits = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/finance/supplier-credits"
+        );
+        supplierCredits.Should().NotBeNull("créditos de proveedor debe estar en el menú");
+        supplierCredits!.PermissionKey.Should().Be(financePermission);
+        supplierCredits.SortOrder.Should().Be(30);
+
+        navigation.Should().NotContain(n => n.RoutePath == "/finance/supplier-credits/:id");
+        navigation
+            .Should()
+            .NotContain(n => n.RoutePath.StartsWith("/finance/supplier-credits/", StringComparison.Ordinal));
+
+        var creditTerms = navigation.Single(n => n.RoutePath == "/finance/credit-terms");
+        creditTerms.GroupCode.Should().Be("masterdata", "credit-terms no debe moverse en esta tarea");
+        creditTerms.ParentItemId.Should().Be(Guid.Parse("e1000000-0000-4000-9000-000000000001"));
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry
