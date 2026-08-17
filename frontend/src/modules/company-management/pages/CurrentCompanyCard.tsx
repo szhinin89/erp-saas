@@ -45,7 +45,7 @@ export function CurrentCompanyCard() {
         <LoadingState />
       ) : detail ? (
         <div className="company-current-card">
-          <p className="company-current-name">
+          <p className="company-current-name zh-row-title">
             {detail.tradeName?.trim() || detail.legalName}
           </p>
           <p className="mono subtle">{detail.taxId}</p>
