@@ -304,7 +304,11 @@ export type ZHBtnVariant =
   | "secondary"
   | "ghost"
   | "destructive"
-  | "success";
+  | "success"
+  /** CTA principal de alto impacto (p.ej. "Emitir Factura") — mayor peso visual
+   * que `primary`: fondo sólido, texto en mayúsculas, tamaño más grande. Para
+   * la acción crítica única de un flujo, no para botones primarios comunes. */
+  | "cta";
 export type ZHBtnSize = "md" | "sm" | "xs";
 
 export const ZHBtn = React.forwardRef<

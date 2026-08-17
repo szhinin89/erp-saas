@@ -939,8 +939,8 @@ function EmitButton({ ctx }: { ctx: SalesPageContext }) {
 
   return (
     <div className="sales-emit-wrap">
-      <button
-        className="sf-bottombar__emit"
+      <ZHBtn
+        variant="cta"
         onClick={ctx.openIssueFlow}
         disabled={!ctx.canEmit}
         title={
@@ -949,13 +949,13 @@ function EmitButton({ ctx }: { ctx: SalesPageContext }) {
             : undefined
         }
       >
-        <span className="material-symbols-outlined sf-bottombar__emit-icon">
+        <span className="material-symbols-outlined zh-icon-lg">
           play_arrow
         </span>
         {ctx.isElectronic
           ? "Emitir Factura Electrónica (F8)"
           : "Emitir Factura (F8)"}
-      </button>
+      </ZHBtn>
       {!ctx.canEmit && !ctx.fieldDisabled && reasons.length > 0 && (
         <div className="sf-save-tooltip">{reasons.join(" · ")}</div>
       )}

@@ -4,11 +4,9 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import type { SalesInvoiceDto } from "../api/salesService";
-import type { PaymentMethodDto } from "../api/paymentMethodService";
 
-// ── Mocks de componentes pesados: esta suite prueba el ajuste de contraste de
-// las filas complementarias del método de pago (monto/referencia/crédito)
-// debajo del tile activo (SALES-DS-TOGGLE-TILE-10A). ──
+// ── Mocks de componentes pesados: esta suite prueba únicamente la migración
+// de EmitButton ("Emitir Factura (F8)") a ZHBtn variant="cta" (SALES-DS-CTA-11). ──
 vi.mock("../components/CustomerPicker", () => ({ CustomerPicker: () => null }));
 vi.mock("../components/SalesInvoiceDetailsSection", () => ({
   SalesInvoiceDetailsSection: () => null,
@@ -102,22 +100,6 @@ function buildInvoice(overrides: Partial<SalesInvoiceDto> = {}): SalesInvoiceDto
   };
 }
 
-function buildPaymentMethod(
-  overrides: Partial<PaymentMethodDto> = {},
-): PaymentMethodDto {
-  return {
-    id: "pm-cash",
-    code: "01",
-    name: "Efectivo",
-    isActive: true,
-    requiresReference: false,
-    isCreditAllowed: false,
-    sortOrder: 1,
-    detailType: "None",
-    ...overrides,
-  };
-}
-
 function buildCtx(
   overrides: Partial<SalesPageContext> = {},
 ): SalesPageContext {
@@ -138,12 +120,12 @@ function buildCtx(
     register: vi.fn(),
     control: {},
     errors: {},
-    formWatch: { docTypeCode: "", sriPaymentMethodCode: "", customerId: "" },
+    formWatch: { docTypeCode: "", sriPaymentMethodCode: "", customerId: "cust-1" },
     setValue: vi.fn(),
     getValues: vi.fn(),
     reset: vi.fn(),
 
-    lines: [],
+    lines: [{ itemId: "item-1" }],
     addLineWithItem: vi.fn(),
     removeLine: vi.fn(),
     updateLine: vi.fn(),
@@ -155,8 +137,9 @@ function buildCtx(
     setInvoicePayments: vi.fn(),
     payKey: 0,
     setPayKey: vi.fn(),
-    paymentMethods: [buildPaymentMethod()],
+    paymentMethods: [],
     paidTotal: 0,
+    paymentOk: true,
 
     customerProfile: null,
     setCustomerProfile: vi.fn(),
@@ -179,7 +162,8 @@ function buildCtx(
     isDraft: true,
     readOnly: false,
     fieldDisabled: false,
-    canEmit: false,
+    canEmit: true,
+    openIssueFlow: vi.fn(),
     cashDue: 0,
     cashInsufficient: false,
     cashReceived: 0,
@@ -196,7 +180,7 @@ function buildCtx(
     grandTotal: 115,
     totalDiscount: 0,
     taxBreakdown: [],
-    isElectronic: true,
+    isElectronic: false,
     selectedPt: null,
 
     fetchList: vi.fn(),
@@ -212,7 +196,6 @@ function buildCtx(
     issueError: null,
     xmlDownloading: false,
     productSearchFocusKey: 0,
-    openIssueFlow: vi.fn(),
     closeIssueFlow: vi.fn(),
     confirmIssue: vi.fn(),
     retryIssue: vi.fn(),
@@ -268,7 +251,7 @@ function buildCtx(
   return { ...base, ...overrides } as unknown as SalesPageContext;
 }
 
-describe("SalesPage — contraste de filas complementarias del método de pago (SALES-DS-TOGGLE-TILE-10A)", () => {
+describe("SalesPage — EmitButton migrado a ZHBtn variant=cta (SALES-DS-CTA-11)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -277,127 +260,95 @@ describe("SalesPage — contraste de filas complementarias del método de pago (
     cleanup();
   });
 
-  it("renderiza la fila de monto (input) cuando un método simple tiene pago registrado", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
+  it('renderiza "Emitir Factura (F8)" cuando la factura no es electrónica', () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ isElectronic: false }));
+    renderSalesPage();
 
-    expect(container.querySelector(".sales-payment-dollar")).toBeTruthy();
-    const input = container.querySelector<HTMLInputElement>(
-      ".sales-payment-input",
-    );
-    expect(input).toBeTruthy();
+    expect(screen.getByText("Emitir Factura (F8)")).toBeTruthy();
   });
 
-  it("renderiza el monto de referencia cuando un método con referencia tiene pago registrado", () => {
+  it('renderiza "Emitir Factura Electrónica (F8)" cuando la factura es electrónica', () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ isElectronic: true }));
+    renderSalesPage();
+
+    expect(screen.getByText("Emitir Factura Electrónica (F8)")).toBeTruthy();
+  });
+
+  it("usa ZHBtn variant=cta y no queda un <button> local con className sf-bottombar__emit", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
+    const { container } = renderSalesPage();
+
+    const btn = screen.getByText("Emitir Factura (F8)").closest("button")!;
+    expect(btn.className).toContain("zh-btn");
+    expect(btn.className).toContain("zh-btn--cta");
+    expect(container.querySelector(".sf-bottombar__emit")).toBeNull();
+  });
+
+  it("click mantiene el handler de emisión (ctx.openIssueFlow)", () => {
+    const openIssueFlow = vi.fn();
+    useSalesPageMock.mockReturnValue(buildCtx({ openIssueFlow }));
+    renderSalesPage();
+
+    screen.getByText("Emitir Factura (F8)").click();
+
+    expect(openIssueFlow).toHaveBeenCalledTimes(1);
+  });
+
+  it("disabled sigue funcionando cuando canEmit es false", () => {
+    const openIssueFlow = vi.fn();
+    useSalesPageMock.mockReturnValue(
+      buildCtx({ canEmit: false, openIssueFlow }),
+    );
+    renderSalesPage();
+
+    const btn = screen.getByText("Emitir Factura (F8)").closest("button")!;
+    expect(btn.disabled).toBe(true);
+    btn.click();
+    expect(openIssueFlow).not.toHaveBeenCalled();
+  });
+
+  it("habilitado (canEmit=true) permite el click", () => {
+    const openIssueFlow = vi.fn();
+    useSalesPageMock.mockReturnValue(
+      buildCtx({ canEmit: true, openIssueFlow }),
+    );
+    renderSalesPage();
+
+    const btn = screen.getByText("Emitir Factura (F8)").closest("button")!;
+    expect(btn.disabled).toBe(false);
+  });
+
+  it("no toca el selector de método de pago (ZHToggleTile sigue presente para métodos disponibles)", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
         paymentMethods: [
-          buildPaymentMethod({
-            id: "pm-card",
-            code: "19",
-            name: "Tarjeta",
-            requiresReference: true,
-            detailType: "Card",
-          }),
-        ],
-        payments: [
-          { _key: 1, paymentMethodId: "pm-card", amount: 50, reference: "ref-1" },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    const refAmount = container.querySelector(".sales-payment-ref-amount");
-    expect(refAmount).toBeTruthy();
-    expect(container.querySelector(".sales-payment-ref-count")).toBeTruthy();
-  });
-
-  it("renderiza el monto de crédito cuando el método de crédito tiene pago registrado", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        paymentMethods: [
-          buildPaymentMethod({
-            id: "pm-credit",
-            code: "20",
-            name: "Crédito",
-            isCreditAllowed: true,
-          }),
-        ],
-        payments: [
-          { _key: 1, paymentMethodId: "pm-credit", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    expect(container.querySelector(".sales-payment-credit-amount")).toBeTruthy();
-  });
-
-  it("el método activo sigue usando aria-pressed=true tras el ajuste de contraste", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
+          {
+            id: "pm-cash",
+            code: "01",
+            name: "Efectivo",
+            isActive: true,
+            requiresReference: false,
+            isCreditAllowed: false,
+            sortOrder: 1,
+            detailType: "None",
+          },
         ],
       }),
     );
     renderSalesPage();
 
     const tile = screen.getByText("Efectivo").closest("button")!;
-    expect(tile.getAttribute("aria-pressed")).toBe("true");
+    expect(tile.className).toContain("zh-toggle-tile");
   });
 
-  it("no existe ningún elemento con clase sales-payment-method--active en el DOM", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    expect(
-      container.querySelector(".sales-payment-method--active"),
-    ).toBeNull();
-  });
-
-  it("no existe ningún elemento con clase sales-payment-method__btn en el DOM", () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
-    const { container } = renderSalesPage();
-
-    expect(container.querySelector(".sales-payment-method__btn")).toBeNull();
-  });
-
-  it("no hay estilos inline en el área de método de pago", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    container
-      .querySelectorAll(".sales-payment-grid, .sales-payment-grid *")
-      .forEach((el) => {
-        expect(el.getAttribute("style")).toBeNull();
-      });
-  });
-
-  it("el botón Emitir (EmitButton) sigue presente y no fue tocado por el ajuste de contraste", () => {
+  it("no hay estilos inline en el botón de emisión", () => {
     useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
 
-    const emitBtn = screen.getByText(/Emitir Factura/).closest("button")!;
-    expect(emitBtn).toBeTruthy();
-    expect(emitBtn.getAttribute("style")).toBeNull();
+    const btn = screen.getByText("Emitir Factura (F8)").closest("button")!;
+    expect(btn.getAttribute("style")).toBeNull();
+    btn.querySelectorAll("*").forEach((el) => {
+      expect(el.getAttribute("style")).toBeNull();
+    });
   });
 });

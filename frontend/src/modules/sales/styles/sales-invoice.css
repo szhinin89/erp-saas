@@ -369,32 +369,9 @@
   flex: 1;
 }
 
-.sf-bottombar__emit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-.sf-bottombar__emit:hover {
-  filter: brightness(1.1);
-}
-.sf-bottombar__emit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.sf-bottombar__emit-icon {
-  font-size: 20px;
-}
+/* .sf-bottombar__emit / .sf-bottombar__emit-icon ELIMINADOS (SALES-DS-CTA-11)
+   — EmitButton migrado a ZHBtn variant="cta" (ver .zh-btn--cta en zh-ui.css)
+   con ícono zh-icon-lg; sin consumidores locales. */
 
 /* ── Search dropdown (reuse from pdl) ─────────────────────────── */
 .sf-search-dropdown {
