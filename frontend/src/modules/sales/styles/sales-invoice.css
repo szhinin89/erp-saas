@@ -122,53 +122,10 @@
   font-weight: 600;
   color: var(--color-text-primary);
 }
-.sf-emission__btn {
-  margin-top: 8px;
-  width: 100%;
-  padding: 8px;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-}
-.sf-emission__btn:hover {
-  filter: brightness(1.1);
-}
-
-/* ── Customer ─────────────────────────────────────────────────── */
-.sf-customer-card {
-  background: var(--color-surface-container-low);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
-  padding: 10px 12px;
-  font-size: 12px;
-}
-.sf-customer-card__name {
-  font-weight: 700;
-  color: var(--color-text-primary);
-  font-size: 13px;
-  margin-bottom: 2px;
-}
-.sf-customer-card__taxid {
-  font-family: var(--font-family-mono);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-.sf-customer-card__address {
-  font-style: italic;
-  color: var(--color-text-secondary);
-  font-size: 11px;
-}
-.sf-customer-card__email {
-  color: var(--color-text-secondary);
-  font-size: 11px;
-}
+/* .sf-emission__btn ELIMINADO (SALES-DS-CLEANUP-13) — sin consumidores TSX;
+   la acción de emisión vive en EmitButton (ZHBtn variant="cta"). */
+/* .sf-customer-card / .sf-customer-card__name / __taxid / __address / __email
+   ELIMINADOS (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
 
 /* ── Invoice Summary ──────────────────────────────────────────── */
 .sf-summary__discount-total {
@@ -212,10 +169,7 @@
   letter-spacing: 0.08em;
   color: var(--color-warning);
 }
-.sf-total-box__icon {
-  font-size: 20px;
-  color: var(--color-warning);
-}
+/* .sf-total-box__icon ELIMINADO (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
 .sf-total-box__amount {
   font-size: 28px;
   font-weight: 800;
@@ -270,21 +224,7 @@
   color: inherit;
 }
 
-/* ── Payment Section ──────────────────────────────────────────── */
-.sf-payment-pending {
-  width: 100%;
-  padding: 10px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-surface-container-low);
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: center;
-  cursor: default;
-}
+/* .sf-payment-pending ELIMINADO (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
 
 /* ── Main Area ────────────────────────────────────────────────── */
 .sf-main {
@@ -335,21 +275,8 @@
 .sf-searchbar__input::placeholder {
   color: var(--color-text-secondary);
 }
-.sf-searchbar__warehouse-select {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-surface);
-  white-space: nowrap;
-  min-width: 180px;
-}
-.sf-searchbar__warehouse-select:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
-}
+/* .sf-searchbar__warehouse-select ELIMINADO (SALES-DS-CLEANUP-13) — sin
+   consumidores TSX; la selección de bodega usa ZhWarehouseSelector (DS). */
 
 /* ── Bottom Bar ───────────────────────────────────────────────── */
 .sf-bottombar {
@@ -432,10 +359,6 @@
   }
   .sf-searchbar__input-wrap {
     flex-basis: 100%;
-  }
-  .sf-searchbar__warehouse-select {
-    min-width: 0;
-    width: 100%;
   }
   .sf-bottombar {
     flex-wrap: wrap;
@@ -676,29 +599,9 @@
   max-width: 200px;
 }
 
-/* ── Payment summary bar ── */
-.sf-payment-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 16px;
-  font-size: 11px;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface-container-low);
-}
-.sf-payment-summary__label {
-  color: var(--color-text-secondary);
-}
-.sf-payment-summary__value {
-  font-weight: 700;
-  font-family: var(--font-family-mono);
-}
-.sf-payment-summary__value--ok {
-  color: var(--color-success);
-}
-.sf-payment-summary__value--short {
-  color: var(--color-error);
-}
+/* .sf-payment-summary / __label / __value / __value--ok / __value--short
+   ELIMINADOS (SALES-DS-CLEANUP-13) — sin consumidores TSX; el resumen de
+   cobro actual usa .sales-summary-box/.sales-summary-row (ver SalesPage.css). */
 
 /* ═══════════════════════════════════════════════════════════════
    Buscador de productos — 5 columnas compactas
