@@ -89,6 +89,18 @@ a:hover {
 .zh-font-mono {
   font-family: var(--font-family-mono);
 }
+/* Título de sección compacto (11px/700, mayúsculas, tracking 0.06em) — patrón repetido
+   idéntico en varias secciones de sidebar/paneles compactos (encabezado de sección,
+   total destacado, checklist). No hay token dedicado a esta combinación en
+   design-tokens.css; se expone como utilidad global en vez de repetir los 4 valores en
+   cada módulo. El color se deja fuera a propósito: cada consumidor define su propio
+   color (neutro, énfasis, warning, etc.) según el contexto (SALES-DS-GLOBAL-VISUAL-16). */
+.zh-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 .subtle {
   color: var(--color-text-secondary);
   font-size: var(--text-sm);

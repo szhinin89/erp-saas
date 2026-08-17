@@ -597,6 +597,7 @@ function SalesProductCard({
               // nodo y el usuario seguiría viendo el valor viejo (mismo bug que quantity, ver abajo).
               key={line.discountPct ?? 0}
               className="sf-product__disc-input"
+              density="compact"
               decimals={dc.percentage}
               positiveOnly
               defaultValue={line.discountPct ?? 0}
@@ -619,6 +620,7 @@ function SalesProductCard({
               <ZhDecimalInput
                 key={line.unitPrice}
                 className="sf-product__price-input"
+                density="compact"
                 decimals={dc.salesUnitPrice}
                 positiveOnly
                 defaultValue={line.unitPrice}
@@ -709,7 +711,13 @@ function SalesProductCard({
           </div>
         </div>
 
-        {/* Col 5: Quantity */}
+        {/* Col 5: Quantity — NO usa density="compact" (a diferencia de Dto %/Precio Facturado,
+            SALES-DS-VISUAL-REAL-17): su tamaño 21px es una excepción documentada y verificada en
+            navegador real (ver nota FIX06F más abajo en el bloque .sf-product__qty-input,
+            sales-product-card.css) para que "2.0000" no se recorte — es el campo protagonista de
+            la ficha por diseño, igual que Total línea. Comparte el mismo border/focus-ring que
+            los otros dos inputs (1.5px solid + box-shadow var(--color-focus-ring)); solo difiere
+            en tamaño/padding por esa razón funcional, no por inconsistencia sin resolver. */}
         <div className="sf-product__qty">
           <ZHFieldLabel size="sm" className="sf-product__qty-label">
             Cantidad

@@ -145,9 +145,10 @@
    especificidad (2 clases) para que este look aprobado gane siempre sobre los estilos base
    del átomo global, sin depender del orden de carga de los CSS (mismo criterio que
    `.sf-product-card.zh-line-card`). */
+/* Tamaño/peso heredados de .zh-field-label--sm (ZHFieldLabel size="sm", 12px/600) — solo se
+   mantiene localmente la convención POS de mayúsculas + tracking, ya documentada en todo el
+   módulo, no un tamaño propio (SALES-DS-VISUAL-BASELINE-15). */
 .sf-product__pricelist-label.zh-field-label {
-  font-size: 10px;
-  font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -181,17 +182,20 @@
   align-items: center;
   gap: 4px;
 }
+/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
 .sf-product__disc-label.zh-field-label {
-  font-size: 10px;
-  font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* font-size ELIMINADO (SALES-DS-VISUAL-REAL-17) — el TSX ahora pasa `density="compact"`
+   (ZhDecimalInput) para este input, que aporta el font-size 13px vía `.zh-input--compact`
+   (zh-ui.css) en vez de repetirlo aquí; mismo criterio para .sf-product__price-input más abajo.
+   padding/width/border se mantienen locales a propósito: son la densidad angosta específica de
+   esta ficha (56px fijo para 2-3 dígitos), distinta del padding genérico de `.zh-input--compact`. */
 .sf-product__disc-input {
   width: 56px;
   padding: 7px 6px;
-  font-size: 14px;
   font-weight: 700;
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
@@ -204,7 +208,7 @@
 .sf-product__disc-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .sf-product__price-block {
@@ -213,17 +217,20 @@
   align-items: center;
   gap: 4px;
 }
+/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
 .sf-product__price-label.zh-field-label {
-  font-size: 10px;
-  font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* Borde sólido (antes "dashed") — mismo tratamiento que el resto de inputs de la ficha
+   (.sf-product__disc-input, .sf-product__qty-input): el borde punteado + overflow:hidden
+   quedaba recortado en las esquinas del wrapper (efecto "cortado"), reportado en
+   SALES-DS-VISUAL-BASELINE-15. overflow:visible evita que el anillo de foco se recorte. */
 .sf-product__price-wrap {
   display: flex;
   align-items: center;
-  border: 1.5px dashed var(--color-outline-variant);
+  border: 1.5px solid var(--color-outline-variant);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow: hidden;
@@ -231,7 +238,7 @@
 }
 .sf-product__price-wrap:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 .sf-product__price-currency {
   padding: 7px 0 7px 8px;
@@ -240,10 +247,12 @@
   color: var(--color-text-secondary);
   user-select: none;
 }
+/* font-size ELIMINADO (SALES-DS-VISUAL-REAL-17) — ver nota de .sf-product__disc-input: ahora
+   viene de `.zh-input--compact` vía `density="compact"` en el TSX (13px), mismo valor que
+   `.sf-product__price-currency` de abajo (antes 13 vs 14, mismatch entre "$" y el número). */
 .sf-product__price-input {
   width: 76px;
   padding: 7px 8px 7px 4px;
-  font-size: 14px;
   font-weight: 700;
   text-align: right;
   border: none;
@@ -272,9 +281,10 @@
   min-width: 0;
   gap: 1px;
 }
+/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio (antes 9px, el
+   valor más chico de toda la ficha sin ninguna razón funcional distinta a los demás labels
+   compactos). */
 .sf-product__stock-label.zh-field-label {
-  font-size: 9px;
-  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-secondary);
@@ -328,9 +338,8 @@
   padding-left: 10px;
   padding-right: 10px;
 }
+/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
 .sf-product__qty-label.zh-field-label {
-  font-size: 11px;
-  font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -351,7 +360,7 @@
 .sf-product__qty-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 /* ── Columna 6: Base / IVA / Total línea ─────────────────────────
@@ -372,8 +381,9 @@
   gap: 6px;
   font-size: 11px;
 }
+/* font-weight 600 ELIMINADO (SALES-DS-VISUAL-BASELINE-15) — redundante con
+   .zh-field-label--sm, que ya define var(--text-label-sm-weight) = 600. */
 .sf-product__subtotal-label.zh-field-label {
-  font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -386,9 +396,11 @@
 .sf-product__subtotal-value.zh-money-value .zh-money-value__symbol {
   color: inherit;
 }
+/* Tamaño normalizado al mismo token compacto (12px) que el resto de labels de la ficha;
+   peso 800 + color primario se mantienen como énfasis aprobado — es el label inmediatamente
+   sobre el Total línea, el valor más fuerte de la tarjeta (SALES-DS-VISUAL-BASELINE-15). */
 .sf-product__total-label.zh-field-label {
   display: block;
-  font-size: 10px;
   font-weight: 800;
   color: var(--color-primary);
   text-transform: uppercase;

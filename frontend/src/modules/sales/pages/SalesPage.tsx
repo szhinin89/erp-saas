@@ -5,6 +5,7 @@ import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHToggleTile } from "../../../components/zh/ZHToggleTile";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { ZhDecimalInput, ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
@@ -290,7 +291,7 @@ export function SalesPage() {
 
             {/* Datos de Emisión */}
             <div className="sf-sidebar__section">
-              <div className="sf-sidebar__header">
+              <div className="sf-sidebar__header zh-section-title">
                 <span className="material-symbols-outlined sf-sidebar__header-icon">
                   apartment
                 </span>
@@ -302,13 +303,17 @@ export function SalesPage() {
                     seleccionables manualmente. */}
                 {ctx.branchName && (
                   <div>
-                    <span className="sf-emission__label">Sucursal: </span>
+                    <ZHFieldLabel size="sm" className="sf-emission__label">
+                      {"Sucursal:"}
+                    </ZHFieldLabel>
                     <span className="sf-emission__value">{ctx.branchName}</span>
                   </div>
                 )}
                 {ctx.myCashSession && (
                   <div>
-                    <span className="sf-emission__label">Caja: </span>
+                    <ZHFieldLabel size="sm" className="sf-emission__label">
+                      {"Caja:"}
+                    </ZHFieldLabel>
                     <span className="sf-emission__value">
                       {ctx.myCashSession.cashRegisterCodeSnapshot} —{" "}
                       {ctx.myCashSession.cashRegisterNameSnapshot}
@@ -317,7 +322,9 @@ export function SalesPage() {
                 )}
                 {ctx.myCashSession && (
                   <div>
-                    <span className="sf-emission__label">Punto: </span>
+                    <ZHFieldLabel size="sm" className="sf-emission__label">
+                      {"Punto:"}
+                    </ZHFieldLabel>
                     <span className="sf-emission__value">
                       {ctx.myCashSession.emissionPointCodeSnapshot}
                     </span>
@@ -330,7 +337,9 @@ export function SalesPage() {
                 {(ctx.myCashSession?.emissionType ??
                   ctx.editing?.emissionType) && (
                   <div>
-                    <span className="sf-emission__label">Tipo Emisión: </span>
+                    <ZHFieldLabel size="sm" className="sf-emission__label">
+                      {"Tipo Emisión:"}
+                    </ZHFieldLabel>
                     <span className="sf-emission__value">
                       {(ctx.myCashSession?.emissionType ??
                         ctx.editing?.emissionType) === "Electronic"
@@ -340,7 +349,9 @@ export function SalesPage() {
                   </div>
                 )}
                 <div>
-                  <div className="sf-emission__label">Tipo Documento</div>
+                  <ZHFieldLabel size="sm" className="sf-emission__label">
+                    Tipo Documento
+                  </ZHFieldLabel>
                   <ZhSelect
                     className="zh-select--compact zh-mb-4"
                     value={
@@ -361,7 +372,9 @@ export function SalesPage() {
                   </ZhSelect>
                 </div>
                 <div>
-                  <div className="sf-emission__label">Forma Pago SRI</div>
+                  <ZHFieldLabel size="sm" className="sf-emission__label">
+                    Forma Pago SRI
+                  </ZHFieldLabel>
                   <ZhSelect
                     className="zh-select--compact zh-mb-4"
                     value={
@@ -383,7 +396,9 @@ export function SalesPage() {
                 </div>
                 {ctx.editing && (
                   <div className="zh-mt-4">
-                    <span className="sf-emission__label">Nro: </span>
+                    <ZHFieldLabel size="sm" className="sf-emission__label">
+                      {"Nro:"}
+                    </ZHFieldLabel>
                     <span className="sf-emission__value zh-font-mono">
                       {ctx.editing.invoiceNumber}
                     </span>
@@ -394,7 +409,7 @@ export function SalesPage() {
 
             {/* Cliente */}
             <div className="sf-sidebar__section">
-              <div className="sf-sidebar__header">
+              <div className="sf-sidebar__header zh-section-title">
                 <span className="material-symbols-outlined sf-sidebar__header-icon">
                   person
                 </span>
@@ -495,12 +510,15 @@ export function SalesPage() {
                   </div>
                 )}
                 <div className="sf-total-box__header zh-mt-10">
-                  <span className="sf-total-box__label">Total a Cobrar</span>
+                  <span className="sf-total-box__label zh-section-title">
+                    Total a Cobrar
+                  </span>
                 </div>
                 <div className="sf-total-box__amount">
                   <ZHMoneyValue
                     value={ctx.grandTotal}
                     decimals={getDecimalConfig().totalAmount}
+                    emphasis="total"
                   />
                 </div>
               </div>
@@ -880,7 +898,9 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
   return (
     <>
       <div className="sf-checklist">
-        <div className="sf-checklist__title">Estado del formulario</div>
+        <div className="sf-checklist__title zh-section-title">
+          Estado del formulario
+        </div>
         {item("Cliente seleccionado", hasCustomer ? "ok" : "missing")}
         {item("Productos agregados", hasLines ? "ok" : "missing")}
         {ctx.hasInsufficientStock &&
@@ -972,7 +992,7 @@ function PaymentMethodsSection({
 }) {
   return (
     <div className="sf-sidebar__section">
-      <div className="sf-sidebar__header">
+      <div className="sf-sidebar__header zh-section-title">
         <span className="material-symbols-outlined sf-sidebar__header-icon">
           payments
         </span>

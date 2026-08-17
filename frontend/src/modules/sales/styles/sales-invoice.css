@@ -44,15 +44,15 @@
   border-bottom: none;
 }
 
+/* Tipografía (11px/700/uppercase/tracking) movida a la utilidad global
+   .zh-section-title (zh-ui.css, SALES-DS-GLOBAL-VISUAL-16) — el JSX aplica
+   ambas clases (`sf-sidebar__header zh-section-title`). Aquí solo queda
+   layout (flex/gap/margin) y el color, que es semántico de este bloque. */
 .sf-sidebar__header {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
   color: var(--color-text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   margin-bottom: 12px;
 }
 .sf-sidebar__header-icon {
@@ -81,8 +81,9 @@
   justify-content: center;
   gap: 6px;
   padding: 12px 8px;
-  font-size: 13px;
-  font-weight: 600;
+  /* font-size/font-weight: heredados de .prd-tab-btn (items-catalog.css, 13px/500) —
+     no se reinventa tipografía aquí, solo el layout "fill" y el look de pill activo/inactivo
+     propio del sidebar POS (SALES-DS-VISUAL-BASELINE-15). */
   border-bottom: none;
   margin-bottom: 0;
   transition: all 0.15s;
@@ -106,17 +107,29 @@
 
 /* ── Emission Data ────────────────────────────────────────────── */
 .sf-emission {
-  font-size: 12px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.sf-emission__label {
-  font-size: 10px;
-  font-weight: 600;
+/* SALES-DS-VISUAL-REAL-17: el JSX ahora renderiza estas etiquetas con `ZHFieldLabel size="sm"`
+   (antes un <span> con esta clase imitando el token) — font-size/font-weight ELIMINADOS de
+   aquí porque son exactamente los que ya aporta `.zh-field-label--sm` (--text-label-sm-size /
+   --text-label-sm-weight, mismo valor, cero cambio visual). Selector compuesto
+   (`.sf-emission__label.zh-field-label`, 2 clases) por el mismo criterio de especificidad que
+   `.sf-product__pricelist-label.zh-field-label` — solo quedan como overrides reales: mayúsculas
+   (el átomo global no las impone) y el color secundario (el átomo global usa
+   --color-text-primary por defecto). */
+.sf-emission__label.zh-field-label {
   text-transform: uppercase;
   color: var(--color-text-secondary);
+  /* Un solo espacio de texto al final de un <label> inline-flex (ej. "Sucursal: ") se recorta
+     visualmente por las reglas de colapso de whitespace al final de línea — el JSX ya no incluye
+     ese espacio (texto "Sucursal:" sin espacio final); el hueco antes del valor se garantiza acá
+     con margin, que no depende de cómo el navegador trate el whitespace de texto
+     (SALES-DS-VISUAL-REAL-17). */
+  margin-right: 4px;
 }
 .sf-emission__value {
   font-weight: 600;
@@ -162,11 +175,11 @@
   justify-content: space-between;
   margin-bottom: 4px;
 }
+/* Tipografía movida a la utilidad global .zh-section-title (zh-ui.css,
+   SALES-DS-GLOBAL-VISUAL-16) — el JSX aplica ambas clases
+   (`sf-total-box__label zh-section-title`). Solo el color (warning) se
+   mantiene local como semántica propia de este bloque. */
 .sf-total-box__label {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--color-warning);
 }
 /* .sf-total-box__icon ELIMINADO (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
@@ -266,10 +279,12 @@
   background: var(--color-surface-container-low);
   color: var(--color-text-primary);
 }
+/* border-color/outline/box-shadow ELIMINADOS (SALES-DS-GLOBAL-VISUAL-16) — este es un
+   <input> nativo, así que ya hereda el foco global `input:focus` (zh-ui.css: border-color
+   primary + box-shadow 0 0 0 3px var(--color-focus-ring); outline:none ya viene del
+   `input` base) sin necesidad de redeclararlo aquí — mismo valor, cascada normal. Solo
+   queda el cambio de fondo al enfocar, que sí es propio de esta barra de búsqueda. */
 .sf-searchbar__input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
   background: var(--color-surface);
 }
 .sf-searchbar__input::placeholder {
@@ -295,9 +310,12 @@
   min-width: 0;
   flex-shrink: 1;
 }
+/* Alineado al mismo token de "compact card/line label" (12px/600) que el resto del
+   módulo — antes 9px ad hoc, sin relación con ninguna otra etiqueta compacta de la
+   pantalla (SALES-DS-VISUAL-BASELINE-15). */
 .sf-bottombar__sri-label {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
   text-transform: uppercase;
   color: var(--color-text-secondary);
   letter-spacing: 0.06em;
@@ -421,17 +439,25 @@
    clases) para que este look aprobado gane siempre sobre los estilos base del átomo global,
    sin depender del orden de carga de los CSS (mismo criterio que `.sf-product-card.zh-line-card`
    / `.sf-product__*.zh-field-label`). */
+/* font-size/font-weight ELIMINADOS (SALES-DS-GLOBAL-VISUAL-16) — redundantes con
+   .zh-field-label--sm (ZHFieldLabel size="sm", ya aplicado en el JSX): mismo token
+   --text-label-sm-size y mismo peso 600 (--text-label-sm-weight). Solo quedan como
+   overrides reales: color (secondary en vez de primary, contraste más suave para
+   labels de modal) y letter-spacing (normal en vez del tracking 0.03em del token —
+   diferencia visual mínima, documentada como excepción intencional de este modal). */
 .pdt-label.zh-field-label {
-  font-size: var(--text-label-sm-size);
-  font-weight: 600;
   color: var(--color-text-secondary);
   letter-spacing: normal;
 }
+/* font-size/border ELIMINADOS (SALES-DS-GLOBAL-VISUAL-16) — redundantes con la base
+   global `input, select` (zh-ui.css): mismo token --text-body-md-size y mismo
+   `1px solid var(--color-border)`. Solo quedan overrides reales de densidad: padding
+   compacto propio de este modal y border-radius más chico (--radius-sm vs el
+   --radius-md por defecto). El foco (color/box-shadow) también viene del selector
+   global `input:focus` — no se redeclara aquí. */
 .pdt-field input,
 .pdt-field select {
   padding: 5px 6px;
-  font-size: var(--text-body-md-size);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 .zh-modal-footer-summary {
@@ -452,11 +478,11 @@
   padding: 10px 16px 12px;
   border-bottom: 1px solid var(--color-border);
 }
+/* Tipografía movida a la utilidad global .zh-section-title (zh-ui.css,
+   SALES-DS-GLOBAL-VISUAL-16) — el JSX aplica ambas clases
+   (`sf-checklist__title zh-section-title`). Aquí solo queda el color y el
+   margen (layout). */
 .sf-checklist__title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--color-text-secondary);
   margin-bottom: 4px;
 }
