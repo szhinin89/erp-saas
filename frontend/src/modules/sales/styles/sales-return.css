@@ -29,29 +29,29 @@
 
 .sr-invoice-picker__hint {
   padding: 10px 14px;
-  font-size: 12px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
 
 .sr-lines-table__desc {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
 }
 
 .sr-lines-table__sku {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
 }
 
 .sr-lines-table__error {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   color: var(--color-error);
   margin-top: 2px;
 }
 
 .sr-lines-empty {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
   padding: var(--space-3) 0;
 }
 
@@ -68,20 +68,20 @@
 
 .sr-general-grid__label {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
 }
 
 .sr-general-grid__value {
   display: block;
-  font-size: 14px;
+  font-size: var(--text-body-md-size);
   font-weight: 600;
 }
 
 .sr-totals-grid__grand .sr-general-grid__value {
-  font-size: 18px;
+  font-size: var(--text-headline-sm-size);
   color: var(--color-primary);
 }
 
@@ -102,7 +102,7 @@
 }
 
 .sr-reason-readonly {
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
   white-space: pre-wrap;
 }
 
@@ -131,7 +131,7 @@
 .sr-refund-summary {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
   font-weight: 600;
   margin: var(--space-3) 0;
 }

@@ -53,7 +53,7 @@
 }
 .sf-product__rail-index {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: var(--text-label-md-size);
   font-weight: 800;
   color: var(--color-text-secondary);
 }
@@ -113,7 +113,7 @@
   gap: 8px;
 }
 .sf-product__code {
-  font-size: 13px;
+  font-size: var(--text-badge-size);
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: 0.02em;
@@ -151,7 +151,7 @@
   letter-spacing: 0.04em;
 }
 .sf-product__pricelist-value.zh-money-value {
-  font-size: 16px;
+  font-size: var(--text-title-sm-size);
   font-weight: 700;
   color: var(--color-text-primary);
   gap: 0;
@@ -261,7 +261,7 @@
   margin-top: 0;
 }
 .sf-product__stock-qty {
-  font-size: 16px;
+  font-size: var(--text-title-sm-size);
   font-weight: 800;
   color: var(--color-text-primary);
   display: flex;
@@ -272,24 +272,24 @@
   color: var(--color-text-secondary);
 }
 .sf-product__stock-uom {
-  font-size: 9px;
+  font-size: var(--text-label-sm-size);
   text-transform: uppercase;
   color: var(--color-text-secondary);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--text-label-sm-spacing);
 }
 .sf-product__stock-wh {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-secondary);
 }
 .sf-product__stock-warning {
-  font-size: 10px;
+  font-size: var(--text-label-sm-size);
   font-weight: 700;
   color: var(--color-error);
   margin-top: 2px;
 }
 .sf-product__stock-global-link {
   margin-top: 4px;
-  font-size: 10px;
+  font-size: var(--text-label-sm-size);
 }
 
 /* ── Columna 5: Cantidad — grande, centrada, protagonista ─────────
@@ -342,7 +342,7 @@
   align-items: baseline;
   justify-content: flex-end;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
 }
 /* font-weight 600 ELIMINADO (SALES-DS-VISUAL-BASELINE-15) — redundante con
    .zh-field-label--sm, que ya define var(--text-label-sm-weight) = 600. */
@@ -373,7 +373,7 @@
   width: 100%;
 }
 .sf-product__total-amount.zh-money-value {
-  font-size: 27px;
+  font-size: var(--text-headline-lg-size);
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: -0.5px;
@@ -384,11 +384,11 @@
   color: inherit;
 }
 .sf-product__tax-incl {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
   color: var(--color-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--text-label-sm-spacing);
   margin-top: 2px;
 }
 
@@ -400,7 +400,7 @@
   justify-content: center;
   padding: 60px 20px;
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: var(--text-body-md-size);
   gap: 8px;
 }
 .sf-products-empty__icon {

@@ -21,7 +21,6 @@
 .pf-collapsible__chevron--open { transform: rotate(180deg); }
 .pf-collapsible__status {
   margin-left: 8px;
-  font-size: 10px;
 }
 
 .pdl-empty__icon {
@@ -176,7 +175,7 @@
 .pdl-line-row__num {
   /* Referencia aprobada: el número se lee como una cifra grande, no como
      una nota pequeña — mismo peso visual que .pdl-line__total. */
-  font-size: 20px;
+  font-size: var(--text-headline-md-size);
   font-weight: 700;
   color: var(--color-text-secondary);
   text-align: center;
@@ -388,8 +387,8 @@
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-info) 8%, transparent);
   color: var(--color-info);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
   cursor: pointer;
   text-align: left;
 }
@@ -532,7 +531,7 @@
 .pf-schedule-field--installments { width: 140px; }
 .pf-schedule-field--days-between { width: 180px; }
 .pf-schedule-total {
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
   padding-bottom: 8px;
 }
@@ -542,7 +541,7 @@
 .pf-schedule-installment-number { font-weight: 600; }
 .pf-schedule-installment-number--muted { color: var(--color-text-secondary); }
 .pf-schedule-notes {
-  font-size: 12px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
 .pf-schedule-input--date { width: 150px; }
@@ -556,7 +555,7 @@
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid var(--color-border);
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
 }
 .pf-schedule-footer__count { color: var(--color-text-secondary); }
 .pf-schedule-footer__amount .zh-money-value,
@@ -572,7 +571,7 @@
   text-align: center;
   padding: var(--space-5);
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
 }
 .pf-schedule-empty__icon {
   font-size: 32px;
@@ -601,9 +600,9 @@
 .pf-totals__value--warning { color: var(--color-warning); }
 .pf-totals__label--strong { font-weight: 600; }
 .pf-total-mini-card__label {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-weight: var(--text-label-sm-weight);
   margin-bottom: 2px;
 }
 
@@ -619,7 +618,7 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 12px;
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
 }
 
 .pf-pagination__summary { color: var(--color-text-secondary); }
@@ -637,7 +636,7 @@
 
 .pf-confirm-checklist__hint {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
 }
 
 .pf-confirm-checklist__list {
@@ -653,7 +652,7 @@
   grid-template-columns: 20px minmax(0, 1fr);
   gap: var(--space-2);
   align-items: start;
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
 }
 
 .pf-confirm-checklist__icon {
@@ -711,8 +710,8 @@
 }
 .pf-totals__header h4 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -737,11 +736,11 @@
   padding: var(--space-2) 0;
 }
 .pf-totals__label {
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
 }
 .pf-totals__value {
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -767,15 +766,18 @@
   border-top: 2px solid var(--color-primary);
 }
 .pf-totals__grand-label {
-  font-size: 14px;
+  font-size: var(--text-label-md-size);
   font-weight: 700;
   color: var(--color-text-primary);
 }
+/* Alineado al mismo tier que <ZHMoneyValue emphasis="grand"> (.zh-money-value--grand,
+   zh-ui.css: 20px/800/-0.5px) — incluso sin envolver este total en el componente, usa
+   exactamente los mismos valores en vez de una escala "grand" propia de Compras. */
 .pf-totals__grand-value {
-  font-size: 22px;
+  font-size: var(--text-headline-md-size);
   font-weight: 800;
   color: var(--color-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.5px;
 }
 .pf-totals__grand-value .zh-money-value {
   font-size: inherit;
@@ -805,7 +807,7 @@
   background: color-mix(in srgb, var(--color-warning) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent);
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-warning);
   margin-bottom: var(--space-4);
 }
@@ -813,7 +815,7 @@
   /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — total numérico, alineado a la derecha. */
   text-align: right;
   margin-top: var(--space-3);
-  font-size: 16px;
+  font-size: var(--text-title-sm-size);
   font-weight: 800;
   color: var(--color-text-primary);
 }
@@ -824,7 +826,7 @@
   flex-wrap: wrap;
 }
 .pf-retention__issued-item {
-  font-size: 12px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
 .pf-retention__issued-totals {
@@ -851,7 +853,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 17px;
+  font-size: var(--text-headline-sm-size);
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
@@ -980,13 +982,13 @@
 }
 .pdl-empty__title {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-label-md-size);
   font-weight: 700;
   color: var(--color-text-primary);
 }
 .pdl-empty__desc {
   margin: 2px 0 0;
-  font-size: 12.5px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
 .pdl-empty__cta {
@@ -1039,11 +1041,11 @@
 }
 
 .pf-total-mini-card__value--default {
-  font-size: 16px;
+  font-size: var(--text-title-sm-size);
 }
 
 .pf-total-mini-card__value--highlight {
-  font-size: 20px;
+  font-size: var(--text-headline-md-size);
 }
 
 .pf-total-mini-card__value[data-tone="default"] {

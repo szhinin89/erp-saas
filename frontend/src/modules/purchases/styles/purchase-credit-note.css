@@ -11,15 +11,15 @@
 
 .pcn-summary-grid__label {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
 }
 
 .pcn-summary-grid__value {
   display: block;
-  font-size: 14px;
+  font-size: var(--text-body-md-size);
   font-weight: 600;
 }
 /* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda tamaño/peso/color en vez de imponer
@@ -54,13 +54,13 @@
 
 .pcn-hint {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--text-help-size);
   margin-top: var(--space-2);
 }
 
 .pcn-radio-label {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
 }
 
 .pcn-actions-row {
@@ -74,23 +74,23 @@
    mismo patrón visual que .sr-lines-table (sales-return.css), sin duplicar esa hoja. */
 .pcn-lines-table__desc {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
 }
 
 .pcn-lines-table__meta {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
 
 .pcn-lines-table__error {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   color: var(--color-error);
   margin-top: 2px;
 }
 
 .pcn-lines-empty {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
   padding: var(--space-3) 0;
 }
 
