@@ -73,7 +73,7 @@
 .prf-modal-tip-title {
   margin: 0 0 var(--space-1);
   font-size: var(--text-label-sm-size);
-  font-weight: 600;
+  font-weight: var(--text-label-sm-weight);
   color: var(--color-primary);
 }
 
@@ -94,7 +94,7 @@
 .prf-modal-status-label {
   margin: 0;
   font-size: var(--text-label-sm-size);
-  font-weight: 600;
+  font-weight: var(--text-label-sm-weight);
 }
 
 .prf-modal-progress-value {

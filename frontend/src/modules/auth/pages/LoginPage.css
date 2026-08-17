@@ -115,7 +115,7 @@
 }
 
 .lp-remember-label {
-  font-size: 12px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
   cursor: pointer;
   user-select: none;
@@ -175,7 +175,7 @@
 }
 
 .lp-security-text {
-  font-size: 10px;
+  font-size: var(--text-label-sm-size);
   font-weight: var(--text-label-sm-weight);
   letter-spacing: 0.1em;
   text-transform: uppercase;
