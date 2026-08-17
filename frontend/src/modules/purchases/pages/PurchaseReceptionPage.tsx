@@ -6,12 +6,12 @@ import {
   type ZHDataTableColumn,
 } from "../../../components/zh/ZHDataTable";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import {
   formatDate,
   formatDateTime,
 } from "../../../lib/formatters/dateFormatters";
-import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { useI18n } from "../../../i18n/i18n";
 import { usePurchaseReceptionPage } from "../hooks/usePurchaseReceptionPage";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
@@ -109,13 +109,17 @@ export function PurchaseReceptionPage() {
                     )
                   : t("purchases.reception.values.subtotal", "Subtotal")}
               </span>
-              <span>{formatMoneyWithSymbol(row.subtotal)}</span>
+              <span>
+                <ZHMoneyValue value={row.subtotal} />
+              </span>
             </p>
             <p className="pur-values-line">
               <span className="pur-values-label">
                 {t("purchases.reception.values.vat", "IVA")}
               </span>
-              <span>{formatMoneyWithSymbol(row.vatAmount)}</span>
+              <span>
+                <ZHMoneyValue value={row.vatAmount} />
+              </span>
             </p>
             {isCreditNote ? (
               <p className="pur-values-line pur-values-total">
@@ -125,11 +129,13 @@ export function PurchaseReceptionPage() {
                     "Total crédito",
                   )}
                 </span>
-                <span>{formatMoneyWithSymbol(row.total)}</span>
+                <span>
+                  <ZHMoneyValue value={row.total} />
+                </span>
               </p>
             ) : (
               <p className="pur-values-total">
-                {formatMoneyWithSymbol(row.total)}
+                <ZHMoneyValue value={row.total} />
               </p>
             )}
           </div>

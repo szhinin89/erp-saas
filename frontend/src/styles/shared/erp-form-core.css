@@ -337,11 +337,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: envuelve un
+   <ZHMoneyValue> (precio PVP en el resultado del picker), no un código. */
 .pdl-search__result-price {
   flex-shrink: 0;
   font-weight: 700;
   color: var(--color-primary);
-  font-family: var(--font-family-mono);
 }
 .pdl-search__result-type {
   margin-left: auto;
@@ -408,33 +409,26 @@
 .pdl-line__qty {
   text-align: right;
 }
-.pdl-input {
-  font-size: 14px;
-  padding: 8px 10px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  text-align: right;
-  transition: border-color var(--transition);
-}
-.pdl-input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
-}
+/* PURCHASES-DS-VISUAL-BASELINE-02 — .pdl-input ya no redefine border/radius/
+   background/focus/font-size: el input (ZhDecimalInput con density="compact")
+   los hereda de los selectores globales `input` y `.zh-input--compact` en
+   zh-ui.css. Solo queda layout (ancho por variante) — texto alineado a la
+   derecha ya lo da `.zh-numeric-input` (base de ZhDecimalInput). Único
+   consumidor real: Cantidad/Costo en PurchasesPage.tsx (confirmado por grep;
+   sin uso en Sales/Kardex pese a vivir en este archivo compartido). */
 .pdl-input--qty {
   width: 80px;
 }
+/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: es un input
+   editable de moneda, no un código/secuencial; ya se alinea a la derecha
+   por .zh-numeric-input, sin necesitar monoespaciado. Coincide ahora con
+   Cantidad, que nunca tuvo mono. */
 .pdl-input--cost {
   width: 100px;
-  text-align: right;
-  font-family: var(--font-family-mono);
 }
 .pdl-input--disc {
   width: 64px;
   text-align: right;
-  font-family: var(--font-family-mono);
 }
 .pdl-line__cost-row {
   display: flex;
@@ -457,29 +451,41 @@
 .pdl-line__tax {
   text-align: right;
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-line__metric-label/
+   .pdl-line__warehouse-label (var(--text-label-sm-*)) — antes usaba un tamaño/
+   peso propio (12px/500, sin uppercase) que no coincidía con el resto de labels
+   de la franja de cabecera de línea. */
 .pdl-line__tax-head {
-  font-size: 12px;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
-  font-weight: 500;
+  text-transform: uppercase;
 }
+/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: este contenedor
+   envuelve un <ZHMoneyValue>, que no define su propia font-family (usa
+   font-variant-numeric: tabular-nums para alinear dígitos sin cambiar de
+   tipografía). El mono local se heredaba hacia el money value por cascada,
+   rompiendo la familia sans única del ERP sin necesidad real (no es un
+   código/secuencial ni una tabla que requiera alineación monoespaciada). */
 .pdl-line__tax-amount {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
   margin-bottom: 2px;
 }
 .pdl-line__tax-ice {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
   font-style: italic;
 }
+/* PURCHASES-DS-TYPOGRAPHY-03 — mismo motivo que .pdl-line__tax-amount: envuelve
+   un <ZHMoneyValue>, no un código técnico. font-family mono eliminada. */
 .pdl-line__total {
   text-align: right;
   font-size: 18px;
   font-weight: 800;
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
   letter-spacing: -0.5px;
 }
 .pdl-line__actions {
@@ -596,15 +602,16 @@
   display: flex;
   align-items: center;
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — tipografía movida a la utilidad global
+   .zh-section-title (zh-ui.css: 11px/700/uppercase/0.06em), agregada en JSX
+   junto a esta clase. .pdl-block__title solo queda como hook de layout
+   (margin) — reemplazaba una reimplementación local casi idéntica (10px/700/
+   0.05em) del mismo patrón ya resuelto por el DS. */
 .pdl-block__title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   margin: 0;
 }
 .pdl-block__hint {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
   font-style: italic;
   margin: 0 0 var(--space-2);

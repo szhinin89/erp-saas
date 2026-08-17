@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Badge } from "../../../components/PageShell";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
+import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
+import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedValue";
 import { useI18n } from "../../../i18n/i18n";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import {
@@ -120,36 +122,20 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
 
   if (selected) {
     return (
-      <div className="zh-picker__selected">
-        <div className="zh-picker__selected-body">
-          <div className="zh-picker__selected-name">
-            {selected.fullName}
-          </div>
-          <div className="zh-picker__selected-id">
-            {selected.identificationNumber}
-          </div>
-          {!selected.isActive && (
+      <ZHPickerSelectedValue
+        title={selected.fullName}
+        subtitle={selected.identificationNumber}
+        meta={
+          !selected.isActive && (
             <Badge
               variant="warning"
               label={t("purchases.supplier.inactiveBadge", "Proveedor inactivo")}
             />
-          )}
-        </div>
-        {!disabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            title={t("purchases.supplierPicker.change", "Cambiar proveedor")}
-            className="zh-picker__clear"
-          >
-            <span
-              className="material-symbols-outlined zh-picker__clear-icon"
-            >
-              close
-            </span>
-          </button>
-        )}
-      </div>
+          )
+        }
+        clearLabel={t("purchases.supplierPicker.change", "Cambiar proveedor")}
+        onClear={disabled ? undefined : handleClear}
+      />
     );
   }
 
@@ -200,25 +186,18 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
             </div>
           )}
           {results.map((row, i) => (
-            <button
+            <ZHPickerResultItem
               key={row.id}
-              type="button"
+              title={row.fullName}
+              subtitle={row.identificationNumber}
+              meta={
+                !row.isActive &&
+                t("purchases.supplier.inactiveBadge", "Proveedor inactivo")
+              }
+              selected={i === focusIdx}
               onClick={() => handleSelect(row)}
               onMouseEnter={() => setFocusIdx(i)}
-              className={`zh-picker__result${i === focusIdx ? " zh-picker__result--focused" : ""}`}
-            >
-              <div className="zh-picker__result-name">
-                {row.fullName}
-              </div>
-              <div className="zh-picker__result-meta">
-                {row.identificationNumber}
-              </div>
-              {!row.isActive && (
-                <div className="zh-picker__result-meta">
-                  {t("purchases.supplier.inactiveBadge", "Proveedor inactivo")}
-                </div>
-              )}
-            </button>
+            />
           ))}
         </div>
       )}

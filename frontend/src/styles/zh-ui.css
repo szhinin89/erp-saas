@@ -2701,6 +2701,14 @@ select.zh-input--compact {
   font-family: var(--font-family-mono);
   color: var(--color-text-primary);
 }
+/* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda el tamaño compacto de la fila
+   "extra" del picker (--text-xs) en vez de imponer su propio tamaño por
+   defecto — evita que el precio se envuelva/desborde la fila nowrap. */
+.zh-picker__result-extra-value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 /* .zh-picker__create-btn ELIMINADO (Bloque 13H) — migrado a
    <ZHBtn variant="primary" size="sm"> en CustomerPicker.tsx. */
 

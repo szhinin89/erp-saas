@@ -1,4 +1,4 @@
-import { formatMoney } from "../../../lib/sanitizers";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseLineDto } from "../api/purchaseService";
 import "../styles/purchase-credit-note.css";
@@ -71,13 +71,27 @@ export function PurchaseInvoiceLinesDetailTable({ lines }: Readonly<Props>) {
               <td className="zh-table-cell--num">
                 {line.quantity} {line.uomCode}
               </td>
-              <td className="zh-table-cell--num">{formatMoney(line.unitPrice)}</td>
-              <td className="zh-table-cell--num">{formatMoney(line.discountAmount)}</td>
-              <td className="zh-table-cell--num">{formatMoney(line.taxableBase)}</td>
-              <td className="zh-table-cell--num">{formatMoney(line.vatAmount)}</td>
-              <td className="zh-table-cell--num">{formatMoney(line.iceAmount)}</td>
-              <td className="zh-table-cell--num">{formatMoney(line.irbpnrAmount)}</td>
-              <td className="zh-table-cell--num">{formatMoney(line.taxInclusiveTotal)}</td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.unitPrice} currencySymbol="" align="end" />
+              </td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.discountAmount} currencySymbol="" align="end" />
+              </td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.taxableBase} currencySymbol="" align="end" />
+              </td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.vatAmount} currencySymbol="" align="end" />
+              </td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.iceAmount} currencySymbol="" align="end" />
+              </td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.irbpnrAmount} currencySymbol="" align="end" />
+              </td>
+              <td className="zh-table-cell--num">
+                <ZHMoneyValue value={line.taxInclusiveTotal} currencySymbol="" align="end" />
+              </td>
               <td className="pcn-lines-table__meta">
                 {line.snapshotWarehouseCode ?? "—"}
               </td>

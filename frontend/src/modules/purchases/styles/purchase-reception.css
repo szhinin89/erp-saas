@@ -123,6 +123,15 @@
   font-weight: 700;
   color: var(--color-text-primary);
 }
+/* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda tamaño/peso/color de la celda
+   "Valores" en vez de imponer su propio look por defecto — mismo criterio que
+   SALES-DS-MONEY-12 en Ventas. */
+.pur-values-line .zh-money-value,
+.pur-values-total .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 
 /* Celda agrupada "Proceso": lista compacta label/valor (Documento, Detalle, XML) — grid de 2
    columnas para que labels y badges queden alineados en vez de badges sueltos en fila. No repite

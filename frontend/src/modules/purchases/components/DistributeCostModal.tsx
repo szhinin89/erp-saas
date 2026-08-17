@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
-import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseCostDistributionType } from "../api/purchaseService";
@@ -248,33 +248,49 @@ export function DistributeCostModal({
               <td>{p.description}</td>
               <td className="zh-table-cell--num">{p.quantity}</td>
               <td className="zh-table-cell--num">
-                {formatMoney(p.currentUnitCost, totalAmountDecimals)}
+                <ZHMoneyValue
+                  value={p.currentUnitCost}
+                  decimals={totalAmountDecimals}
+                  currencySymbol=""
+                />
               </td>
               <td className="zh-table-cell--num">
-                {formatMoney(p.subtotalBase, totalAmountDecimals)}
+                <ZHMoneyValue
+                  value={p.subtotalBase}
+                  decimals={totalAmountDecimals}
+                  currencySymbol=""
+                />
               </td>
               <td className="zh-table-cell--num">
                 {hasCalculated ? `${p.participationPct.toFixed(2)}%` : "—"}
               </td>
               <td className="zh-table-cell--num">
-                {hasCalculated
-                  ? formatMoney(p.allocatedAmount, totalAmountDecimals)
-                  : "—"}
+                <ZHMoneyValue
+                  value={hasCalculated ? p.allocatedAmount : null}
+                  decimals={totalAmountDecimals}
+                  currencySymbol=""
+                />
               </td>
               <td className="zh-table-cell--num">
-                {hasCalculated
-                  ? formatMoney(p.allocatedPerUnit, totalAmountDecimals)
-                  : "—"}
+                <ZHMoneyValue
+                  value={hasCalculated ? p.allocatedPerUnit : null}
+                  decimals={totalAmountDecimals}
+                  currencySymbol=""
+                />
               </td>
               <td className="zh-table-cell--num">
-                {hasCalculated
-                  ? formatMoney(p.newUnitCost, totalAmountDecimals)
-                  : "—"}
+                <ZHMoneyValue
+                  value={hasCalculated ? p.newUnitCost : null}
+                  decimals={totalAmountDecimals}
+                  currencySymbol=""
+                />
               </td>
               <td className="zh-table-cell--num">
-                {hasCalculated
-                  ? formatMoney(p.newLineTotal, totalAmountDecimals)
-                  : "—"}
+                <ZHMoneyValue
+                  value={hasCalculated ? p.newLineTotal : null}
+                  decimals={totalAmountDecimals}
+                  currencySymbol=""
+                />
               </td>
             </tr>
           ))}
@@ -289,7 +305,12 @@ export function DistributeCostModal({
               "Subtotal base ítems incluidos",
             )}
           </span>
-          <strong>{formatMoney(subtotalBaseIncluded, totalAmountDecimals)}</strong>
+          <ZHMoneyValue
+            value={subtotalBaseIncluded}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -298,21 +319,34 @@ export function DistributeCostModal({
               "Subtotal base todos los ítems",
             )}
           </span>
-          <strong>{formatMoney(subtotalBaseAll, totalAmountDecimals)}</strong>
+          <ZHMoneyValue
+            value={subtotalBaseAll}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
             {t("purchases.distributeCost.totals.amount", "Valor a distribuir")}
           </span>
-          <strong>{formatMoney(amount, totalAmountDecimals)}</strong>
+          <ZHMoneyValue
+            value={amount}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
             {t("purchases.distributeCost.totals.distributed", "Total distribuido")}
           </span>
-          <strong>
-            {hasCalculated ? formatMoney(totalDistributed, totalAmountDecimals) : "—"}
-          </strong>
+          <ZHMoneyValue
+            value={hasCalculated ? totalDistributed : null}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -321,9 +355,12 @@ export function DistributeCostModal({
               "Diferencia de redondeo",
             )}
           </span>
-          <strong>
-            {hasCalculated ? formatMoney(roundingDiff, totalAmountDecimals) : "—"}
-          </strong>
+          <ZHMoneyValue
+            value={hasCalculated ? roundingDiff : null}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -332,7 +369,12 @@ export function DistributeCostModal({
               "Total factura antes",
             )}
           </span>
-          <strong>{formatMoney(grandTotal, totalAmountDecimals)}</strong>
+          <ZHMoneyValue
+            value={grandTotal}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -341,11 +383,12 @@ export function DistributeCostModal({
               "Total factura después",
             )}
           </span>
-          <strong>
-            {hasCalculated
-              ? formatMoney(totalFacturaDespues, totalAmountDecimals)
-              : "—"}
-          </strong>
+          <ZHMoneyValue
+            value={hasCalculated ? totalFacturaDespues : null}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -354,11 +397,12 @@ export function DistributeCostModal({
               "Total documento / CxP esperado",
             )}
           </span>
-          <strong>
-            {hasCalculated
-              ? formatMoney(totalFacturaDespues, totalAmountDecimals)
-              : "—"}
-          </strong>
+          <ZHMoneyValue
+            value={hasCalculated ? totalFacturaDespues : null}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -367,9 +411,12 @@ export function DistributeCostModal({
               "Diferencia para cuadrar factura",
             )}
           </span>
-          <strong>
-            {hasCalculated ? formatMoney(roundingDiff, totalAmountDecimals) : "—"}
-          </strong>
+          <ZHMoneyValue
+            value={hasCalculated ? roundingDiff : null}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -378,7 +425,12 @@ export function DistributeCostModal({
               "Flete actual del documento",
             )}
           </span>
-          <strong>{formatMoney(totalFreight, totalAmountDecimals)}</strong>
+          <ZHMoneyValue
+            value={totalFreight}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
         <div className="pdc-totals__row">
           <span>
@@ -387,7 +439,12 @@ export function DistributeCostModal({
               "Otros gastos actuales del documento",
             )}
           </span>
-          <strong>{formatMoney(totalOtherCosts, totalAmountDecimals)}</strong>
+          <ZHMoneyValue
+            value={totalOtherCosts}
+            decimals={totalAmountDecimals}
+            currencySymbol=""
+            emphasis="strong"
+          />
         </div>
       </div>
     </ZHModal>

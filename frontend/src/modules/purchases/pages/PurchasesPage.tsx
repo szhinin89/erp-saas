@@ -8,6 +8,9 @@ import { ZHLineAction } from "../../../components/zh/ZHLineAction";
 import { ZHLineActionItem } from "../../../components/zh/ZHLineActionItem";
 import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
 import { ZHLineCard } from "../../../components/zh/ZHLineCard";
+import { ZHTabBar } from "../../../components/zh/ZHTabBar";
+import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { SupplierPicker } from "../components/SupplierPicker";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ProductPicker } from "../components/ProductPicker";
@@ -112,25 +115,14 @@ export function PurchasesPage() {
       title={t("purchases.page.title", "Facturas de compra")}
       subtitle={t("purchases.page.subtitle", "Gestión de compras en borrador.")}
     >
-      <div className="prd-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            className={`prd-tab-btn ${ctx.tab === t.id ? "prd-tab-btn--active" : ""}`}
-            onClick={() => {
-              if (t.id === "listado") ctx.resetForm();
-              ctx.setTab(t.id);
-            }}
-          >
-            <span
-              className="material-symbols-outlined zh-icon-lg"
-            >
-              {t.icon}
-            </span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <ZHTabBar
+        tabs={tabs}
+        activeTab={ctx.tab}
+        onChange={(id) => {
+          if (id === "listado") ctx.resetForm();
+          ctx.setTab(id);
+        }}
+      />
 
       {/* ══════════════════════════════════════════════════════════ LISTADO */}
       {ctx.tab === "listado" && (
@@ -831,39 +823,41 @@ export function PurchasesPage() {
                           </div>
                         ) : (
                           ctx.globalResults.map((item, i) => (
-                            <button
+                            <ZHPickerResultItem
                               key={item.id}
-                              type="button"
-                              className={`pdl-search__result ${i === ctx.globalFocusIdx ? "pdl-search__result--focused" : ""}`}
+                              selected={i === ctx.globalFocusIdx}
                               onClick={() => void ctx.addLineWithItem(item)}
                               onMouseEnter={() => ctx.setGlobalFocusIdx(i)}
-                            >
-                              <div className="pdl-search__result-row">
-                                <span className="pdl-search__result-name">
-                                  {item.shortName}
-                                </span>
-                                {item.baseSalePrice != null && (
-                                  <span className="pdl-search__result-price">
-                                    {formatMoneyWithSymbol(
-                                      item.baseSalePrice,
-                                      getDecimalConfig().salesUnitPrice,
-                                    )}
+                              title={
+                                <div className="pdl-search__result-row">
+                                  <span className="pdl-search__result-name">
+                                    {item.shortName}
                                   </span>
-                                )}
-                              </div>
-                              <div className="pdl-search__result-row pdl-search__result-row--meta">
-                                <span className="pdl-search__result-sku">
-                                  {item.sku}
-                                </span>
-                                <Badge
-                                  variant="neutral"
-                                  size="md"
-                                  upper
-                                  label={item.itemTypeName}
-                                  className="pdl-search__result-type"
-                                />
-                              </div>
-                            </button>
+                                  {item.baseSalePrice != null && (
+                                    <span className="pdl-search__result-price">
+                                      <ZHMoneyValue
+                                        value={item.baseSalePrice}
+                                        decimals={getDecimalConfig().salesUnitPrice}
+                                      />
+                                    </span>
+                                  )}
+                                </div>
+                              }
+                              subtitle={
+                                <div className="pdl-search__result-row pdl-search__result-row--meta">
+                                  <span className="pdl-search__result-sku">
+                                    {item.sku}
+                                  </span>
+                                  <Badge
+                                    variant="neutral"
+                                    size="md"
+                                    upper
+                                    label={item.itemTypeName}
+                                    className="pdl-search__result-type"
+                                  />
+                                </div>
+                              }
+                            />
                           ))
                         )}
                       </div>
@@ -1839,6 +1833,7 @@ function PurchaseLineCard({
               <ZhDecimalInput
                 key={headerInputKey("qty", vm, l.packagingLevelId)}
                 className="pdl-input pdl-input--qty"
+                density="compact"
                 decimals={getDecimalConfig().quantity}
                 positiveOnly
                 defaultValue={
@@ -1867,11 +1862,12 @@ function PurchaseLineCard({
               <span className="pdl-line__metric-label">
                 {t("purchases.lines.costShort", "COSTO")}
               </span>
-              <div className="pdl-line__metric-value">
+              <div className="pdl-line__metric-value pdl-line__cost-group">
                 <span className="pdl-line__metric-unit">$</span>
                 <ZhDecimalInput
                   key={headerInputKey("cost", vm, l.packagingLevelId)}
                   className="pdl-input pdl-input--cost"
+                  density="compact"
                   decimals={getDecimalConfig().purchaseUnitPrice}
                   positiveOnly
                   defaultValue={
@@ -1911,7 +1907,7 @@ function PurchaseLineCard({
                 {t("purchases.lines.taxableBaseShort", "BASE IMP.")}
               </span>
               <div className="pdl-line__metric-value">
-                $ {formatMoney(sub, getDecimalConfig().totalAmount)}
+                <ZHMoneyValue value={sub} decimals={getDecimalConfig().totalAmount} />
               </div>
             </div>
             <div className="pdl-line__metric">
@@ -1920,14 +1916,16 @@ function PurchaseLineCard({
                   {t("purchases.lines.vatShort", "IVA")} {vatPct}%: $
                 </div>
                 <div className="pdl-line__tax-amount">
-                  {formatMoney(vatAmt, getDecimalConfig().totalAmount)}
+                  <ZHMoneyValue value={vatAmt} decimals={getDecimalConfig().totalAmount} currencySymbol="" />
                 </div>
                 <div className="pdl-line__tax-ice">
-                  {t("purchases.lines.iceShort", "ICE")}: $ {formatMoney(iceAmt, getDecimalConfig().totalAmount)}
+                  {t("purchases.lines.iceShort", "ICE")}:{" "}
+                  <ZHMoneyValue value={iceAmt} decimals={getDecimalConfig().totalAmount} />
                 </div>
                 {irbpnrAmt > 0 && (
                   <div className="pdl-line__tax-ice">
-                    IRBPNR: $ {formatMoney(irbpnrAmt, getDecimalConfig().totalAmount)}
+                    IRBPNR:{" "}
+                    <ZHMoneyValue value={irbpnrAmt} decimals={getDecimalConfig().totalAmount} />
                   </div>
                 )}
               </div>
@@ -1937,7 +1935,7 @@ function PurchaseLineCard({
                 {t("purchases.lines.netTotal", "Total neto")}
               </span>
               <div className="pdl-line__total">
-                $ {formatMoney(total, getDecimalConfig().totalAmount)}
+                <ZHMoneyValue value={total} decimals={getDecimalConfig().totalAmount} />
               </div>
             </div>
             <div className="pdl-line__metric">
@@ -2014,7 +2012,7 @@ function PurchaseLineCard({
             >
               description
             </span>
-            <h4 className="pdl-block__title">
+            <h4 className="pdl-block__title zh-section-title">
               {t("purchases.lines.receivedProduct", "Producto recibido (XML)")}
             </h4>
           </header>
@@ -2113,7 +2111,7 @@ function PurchaseLineCard({
             >
               badge
             </span>
-            <h4 className="pdl-block__title">
+            <h4 className="pdl-block__title zh-section-title">
               {t("purchases.lines.systemProduct", "Presentación e inventario")}
             </h4>
             {vm.item.isLoading && (
@@ -2252,7 +2250,7 @@ function PurchaseLineCard({
             >
               insights
             </span>
-            <h4 className="pdl-block__title">
+            <h4 className="pdl-block__title zh-section-title">
               {t("purchases.lines.commercialInfo", "Información comercial")}
             </h4>
           </header>
@@ -2816,10 +2814,7 @@ function PaymentScheduleSection({
                   </td>
                   <td>{formatDate(s.dueDate)}</td>
                   <td className="zh-table-cell--num">
-                    {formatMoneyWithSymbol(
-                      s.amount,
-                      getDecimalConfig().totalAmount,
-                    )}
+                    <ZHMoneyValue value={s.amount} decimals={getDecimalConfig().totalAmount} />
                   </td>
                   <td className="pf-schedule-notes">
                     {s.notes || "—"}
@@ -2924,18 +2919,12 @@ function PaymentScheduleSection({
                 <strong
                   className={`pf-schedule-footer__amount ${ctx.ptMismatch ? "pf-schedule-footer__amount--error" : "pf-schedule-footer__amount--default"}`}
                 >
-                  {formatMoneyWithSymbol(
-                    ctx.ptRowsSum,
-                    getDecimalConfig().totalAmount,
-                  )}
+                  <ZHMoneyValue value={ctx.ptRowsSum} decimals={getDecimalConfig().totalAmount} />
                 </strong>
                 {" / "}
                 {t("purchases.schedule.purchaseTotal", "Total compra")}:{" "}
                 <strong className="pf-schedule-footer__purchase-total">
-                  {formatMoneyWithSymbol(
-                    ctx.localTotal,
-                    getDecimalConfig().totalAmount,
-                  )}
+                  <ZHMoneyValue value={ctx.localTotal} decimals={getDecimalConfig().totalAmount} />
                 </strong>
               </span>
             </div>
@@ -3072,17 +3061,11 @@ function RetentionSection({
                       </td>
                       <td>{l.retentionCodeName}</td>
                       <td className="zh-table-cell--num">
-                        {formatMoneyWithSymbol(
-                          l.taxableBase,
-                          getDecimalConfig().totalAmount,
-                        )}
+                        <ZHMoneyValue value={l.taxableBase} decimals={getDecimalConfig().totalAmount} />
                       </td>
                       <td className="zh-table-cell--num">{l.retentionPct}%</td>
                       <td className="zh-table-cell--num pf-retention-amount">
-                        {formatMoneyWithSymbol(
-                          l.amountRetained,
-                          getDecimalConfig().totalAmount,
-                        )}
+                        <ZHMoneyValue value={l.amountRetained} decimals={getDecimalConfig().totalAmount} />
                       </td>
                     </tr>
                   ))}
@@ -3092,10 +3075,7 @@ function RetentionSection({
             {ctx.whPreview.totalRetained > 0 && (
               <div className="pf-retention__total">
                 {t("purchases.retention.totalToWithhold", "Total a retener")}:{" "}
-                {formatMoneyWithSymbol(
-                  ctx.whPreview.totalRetained,
-                  getDecimalConfig().totalAmount,
-                )}
+                <ZHMoneyValue value={ctx.whPreview.totalRetained} decimals={getDecimalConfig().totalAmount} />
               </div>
             )}
           </>
@@ -3146,17 +3126,11 @@ function RetentionSection({
                     </td>
                     <td>{d.retentionCodeDescription}</td>
                     <td className="zh-table-cell--num">
-                      {formatMoneyWithSymbol(
-                        d.taxableBase,
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue value={d.taxableBase} decimals={getDecimalConfig().totalAmount} />
                     </td>
                     <td className="zh-table-cell--num">{d.retentionPct}%</td>
                     <td className="zh-table-cell--num pf-retention-amount">
-                      {formatMoneyWithSymbol(
-                        d.amountRetained,
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue value={d.amountRetained} decimals={getDecimalConfig().totalAmount} />
                     </td>
                   </tr>
                 ))}
@@ -3238,30 +3212,18 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
                 <tr key={row.vatCode}>
                   <td>{row.vatPercent}%</td>
                   <td className="zh-table-cell--num">
-                    {formatMoneyWithSymbol(
-                      row.taxableBase,
-                      getDecimalConfig().totalAmount,
-                    )}
+                    <ZHMoneyValue value={row.taxableBase} decimals={getDecimalConfig().totalAmount} />
                   </td>
                   <td className="zh-table-cell--num">
-                    {formatMoneyWithSymbol(
-                      row.vat,
-                      getDecimalConfig().totalAmount,
-                    )}
+                    <ZHMoneyValue value={row.vat} decimals={getDecimalConfig().totalAmount} />
                   </td>
                   {hasIce && (
                     <td className="zh-table-cell--num">
-                      {formatMoneyWithSymbol(
-                        row.ice,
-                        getDecimalConfig().totalAmount,
-                      )}
+                      <ZHMoneyValue value={row.ice} decimals={getDecimalConfig().totalAmount} />
                     </td>
                   )}
                   <td className="zh-table-cell--num">
-                    {formatMoneyWithSymbol(
-                      row.total,
-                      getDecimalConfig().totalAmount,
-                    )}
+                    <ZHMoneyValue value={row.total} decimals={getDecimalConfig().totalAmount} />
                   </td>
                 </tr>
               ))}
@@ -3273,10 +3235,10 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         <div className="pf-totals__row">
           <span className="pf-totals__label">{t("purchases.summary.subtotal", "Subtotal")}</span>
           <span className="pf-totals__value">
-            {formatMoneyWithSymbol(
-              ctx.editing ? ctx.editing.subtotal : ctx.localSummary.subtotal,
-              getDecimalConfig().totalAmount,
-            )}
+            <ZHMoneyValue
+              value={ctx.editing ? ctx.editing.subtotal : ctx.localSummary.subtotal}
+              decimals={getDecimalConfig().totalAmount}
+            />
           </span>
         </div>
         <div className="pf-totals__row">
@@ -3285,30 +3247,30 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             className="pf-totals__value pf-totals__value--warning"
           >
             -
-            {formatMoneyWithSymbol(
-              ctx.editing
-                ? ctx.editing.totalDiscount
-                : ctx.localSummary.discount,
-              getDecimalConfig().totalAmount,
-            )}
+            <ZHMoneyValue
+              value={
+                ctx.editing ? ctx.editing.totalDiscount : ctx.localSummary.discount
+              }
+              decimals={getDecimalConfig().totalAmount}
+            />
           </span>
         </div>
         <div className="pf-totals__row">
           <span className="pf-totals__label">{t("purchases.lines.iceShort", "ICE")}</span>
           <span className="pf-totals__value">
-            {formatMoneyWithSymbol(
-              ctx.editing ? ctx.editing.totalIce : ctx.localSummary.ice,
-              getDecimalConfig().totalAmount,
-            )}
+            <ZHMoneyValue
+              value={ctx.editing ? ctx.editing.totalIce : ctx.localSummary.ice}
+              decimals={getDecimalConfig().totalAmount}
+            />
           </span>
         </div>
         <div className="pf-totals__row">
           <span className="pf-totals__label">{t("purchases.lines.vatShort", "IVA")}</span>
           <span className="pf-totals__value">
-            {formatMoneyWithSymbol(
-              ctx.editing ? ctx.editing.totalVat : ctx.localSummary.vat,
-              getDecimalConfig().totalAmount,
-            )}
+            <ZHMoneyValue
+              value={ctx.editing ? ctx.editing.totalVat : ctx.localSummary.vat}
+              decimals={getDecimalConfig().totalAmount}
+            />
           </span>
         </div>
         {!!ctx.editing?.totalIrbpnr && (
@@ -3326,33 +3288,26 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               </span>
             </span>
             <span className="pf-totals__value">
-              {formatMoneyWithSymbol(
-                ctx.editing.totalIrbpnr,
-                getDecimalConfig().totalAmount,
-              )}
+              <ZHMoneyValue value={ctx.editing.totalIrbpnr} decimals={getDecimalConfig().totalAmount} />
             </span>
           </div>
         )}
         <div className="pf-totals__row">
           <span className="pf-totals__label">{t("purchases.summary.freight", "Flete")}</span>
           <span className="pf-totals__value">
-            {formatMoneyWithSymbol(
-              ctx.editing
-                ? ctx.editing.totalFreight
-                : ctx.formWatch.freightCost,
-              getDecimalConfig().totalAmount,
-            )}
+            <ZHMoneyValue
+              value={ctx.editing ? ctx.editing.totalFreight : ctx.formWatch.freightCost}
+              decimals={getDecimalConfig().totalAmount}
+            />
           </span>
         </div>
         <div className="pf-totals__row">
           <span className="pf-totals__label">{t("purchases.summary.otherCosts", "Otros costos")}</span>
           <span className="pf-totals__value">
-            {formatMoneyWithSymbol(
-              ctx.editing
-                ? ctx.editing.totalOtherCosts
-                : ctx.formWatch.otherCosts,
-              getDecimalConfig().totalAmount,
-            )}
+            <ZHMoneyValue
+              value={ctx.editing ? ctx.editing.totalOtherCosts : ctx.formWatch.otherCosts}
+              decimals={getDecimalConfig().totalAmount}
+            />
           </span>
         </div>
         <div className="pf-totals__divider" />
@@ -3366,10 +3321,10 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
       <div className="pf-totals__grand">
         <span className="pf-totals__grand-label">{t("purchases.summary.total", "TOTAL")}</span>
         <span className="pf-totals__grand-value">
-          {formatMoneyWithSymbol(
-            ctx.editing ? ctx.editing.grandTotal : ctx.localTotal,
-            getDecimalConfig().totalAmount,
-          )}
+          <ZHMoneyValue
+            value={ctx.editing ? ctx.editing.grandTotal : ctx.localTotal}
+            decimals={getDecimalConfig().totalAmount}
+          />
         </span>
       </div>
     </div>
@@ -3396,7 +3351,7 @@ function TotalMiniCard({
         className={`pf-total-mini-card__value ${highlight ? "pf-total-mini-card__value--highlight" : "pf-total-mini-card__value--default"}`}
         data-tone={color === "var(--color-error)" ? "error" : "default"}
       >
-        {formatMoneyWithSymbol(value, getDecimalConfig().totalAmount)}
+        <ZHMoneyValue value={value} decimals={getDecimalConfig().totalAmount} />
       </div>
     </div>
   );

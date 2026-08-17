@@ -6,10 +6,10 @@ import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhTextarea } from "../../../components/zh/inputs";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
-import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
@@ -325,7 +325,9 @@ export function PurchaseCreditNoteFormPage() {
             <span className="pcn-summary-grid__label">
               {t("purchases.creditNote.affectedInvoice.total", "Total")}
             </span>
-            <span className="pcn-summary-grid__value">{formatMoney(invoice.grandTotal)}</span>
+            <span className="pcn-summary-grid__value">
+              <ZHMoneyValue value={invoice.grandTotal} currencySymbol="" />
+            </span>
           </div>
           <div>
             <span className="pcn-summary-grid__label">
@@ -468,27 +470,35 @@ export function PurchaseCreditNoteFormPage() {
                 <span className="pcn-summary-grid__label">
                   {t("purchases.creditNote.lines.subtotal", "Subtotal")}
                 </span>
-                <span className="pcn-summary-grid__value">{formatMoney(subtotal)}</span>
+                <span className="pcn-summary-grid__value">
+                  <ZHMoneyValue value={subtotal} currencySymbol="" />
+                </span>
               </div>
               {isDiscount && (
                 <div>
                   <span className="pcn-summary-grid__label">
                     {t("purchases.creditNote.taxSummaryLines.iceCredit", "ICE crédito")}
                   </span>
-                  <span className="pcn-summary-grid__value">{formatMoney(iceAmount)}</span>
+                  <span className="pcn-summary-grid__value">
+                    <ZHMoneyValue value={iceAmount} currencySymbol="" />
+                  </span>
                 </div>
               )}
               <div>
                 <span className="pcn-summary-grid__label">
                   {t("purchases.creditNote.lines.vatAmount", "IVA")}
                 </span>
-                <span className="pcn-summary-grid__value">{formatMoney(vatAmount)}</span>
+                <span className="pcn-summary-grid__value">
+                  <ZHMoneyValue value={vatAmount} currencySymbol="" />
+                </span>
               </div>
               <div>
                 <span className="pcn-summary-grid__label">
                   {t("purchases.creditNote.lines.total", "Total crédito")}
                 </span>
-                <span className="pcn-summary-grid__value">{formatMoney(totalAmount)}</span>
+                <span className="pcn-summary-grid__value">
+                  <ZHMoneyValue value={totalAmount} currencySymbol="" />
+                </span>
               </div>
               <div>
                 <span className="pcn-summary-grid__label">

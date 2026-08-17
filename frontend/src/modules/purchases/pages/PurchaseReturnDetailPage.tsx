@@ -7,8 +7,8 @@ import { useI18n } from "../../../i18n/i18n";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhTextarea } from "../../../components/zh/inputs";
-import { formatMoney } from "../../../lib/sanitizers";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -255,7 +255,7 @@ export function PurchaseReturnDetailPage() {
             <div>
               <span className="sr-general-grid__label">Total autorizado</span>
               <span className="sr-general-grid__value">
-                {formatMoney(editing.authorizedGrandTotal)}
+                <ZHMoneyValue value={editing.authorizedGrandTotal} currencySymbol="" />
               </span>
             </div>
           )}

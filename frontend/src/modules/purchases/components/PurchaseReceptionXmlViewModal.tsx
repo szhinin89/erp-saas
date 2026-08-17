@@ -3,6 +3,7 @@ import {
   ZHDataTable,
   type ZHDataTableColumn,
 } from "../../../components/zh/ZHDataTable";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
@@ -126,9 +127,12 @@ export function PurchaseReceptionXmlViewModal({
       header: t("purchases.reception.xmlView.totals.value", "Valor"),
       align: "right",
       render: (row) => (
-        <span className={row.emphasize ? "pur-xmlview-strong" : undefined}>
-          {formatMoneyWithSymbol(row.value, total)}
-        </span>
+        <ZHMoneyValue
+          value={row.value}
+          decimals={total}
+          align="end"
+          emphasis={row.emphasize ? "strong" : "default"}
+        />
       ),
     },
   ];
@@ -155,13 +159,17 @@ export function PurchaseReceptionXmlViewModal({
       key: "base",
       header: t("purchases.reception.xmlView.taxes.base", "Base"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.taxableBase, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.taxableBase} decimals={total} align="end" />
+      ),
     },
     {
       key: "amount",
       header: t("purchases.reception.xmlView.taxes.amount", "Valor"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.amount, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.amount} decimals={total} align="end" />
+      ),
     },
   ];
 
@@ -186,43 +194,57 @@ export function PurchaseReceptionXmlViewModal({
       key: "unitPrice",
       header: t("purchases.reception.xmlView.lines.unitPrice", "Precio unit."),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.unitPrice, cost),
+      render: (row) => (
+        <ZHMoneyValue value={row.unitPrice} decimals={cost} align="end" />
+      ),
     },
     {
       key: "discountAmount",
       header: t("purchases.reception.xmlView.lines.discount", "Descuento"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.discountAmount, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.discountAmount} decimals={total} align="end" />
+      ),
     },
     {
       key: "taxableBase",
       header: t("purchases.reception.xmlView.lines.taxableBase", "Base imponible"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.taxableBase, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.taxableBase} decimals={total} align="end" />
+      ),
     },
     {
       key: "vatAmount",
       header: t("purchases.reception.xmlView.lines.vat", "IVA"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.vatAmount, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.vatAmount} decimals={total} align="end" />
+      ),
     },
     {
       key: "iceAmount",
       header: t("purchases.reception.xmlView.lines.ice", "ICE"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.iceAmount, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.iceAmount} decimals={total} align="end" />
+      ),
     },
     {
       key: "irbpnrAmount",
       header: t("purchases.reception.xmlView.lines.irbpnr", "IRBPNR"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.irbpnrAmount, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.irbpnrAmount} decimals={total} align="end" />
+      ),
     },
     {
       key: "totalAmount",
       header: t("purchases.reception.xmlView.lines.total", "Total línea"),
       align: "right",
-      render: (row) => formatMoneyWithSymbol(row.lineTotal, total),
+      render: (row) => (
+        <ZHMoneyValue value={row.lineTotal} decimals={total} align="end" />
+      ),
     },
     {
       key: "detail",

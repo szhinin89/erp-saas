@@ -1,5 +1,6 @@
 import type { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove } from "react-hook-form";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
 import { useI18n } from "../../../i18n/i18n";
 import type {
@@ -125,9 +126,15 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
                       ` · ${t("purchases.creditNote.taxSummaryLines.iceCode", "ICE")} ${summary.iceCode}`}
                   </div>
                 </td>
-                <td className="zh-table-cell--num">{formatMoney(summary.taxableBase)}</td>
-                <td className="zh-table-cell--num">{formatMoney(summary.creditedTaxableBase)}</td>
-                <td className="zh-table-cell--num">{formatMoney(summary.availableTaxableBase)}</td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue value={summary.taxableBase} currencySymbol="" align="end" />
+                </td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue value={summary.creditedTaxableBase} currencySymbol="" align="end" />
+                </td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue value={summary.availableTaxableBase} currencySymbol="" align="end" />
+                </td>
                 <td className="zh-text-align-right">
                   <ZhDecimalInput
                     decimals={2}
@@ -147,9 +154,15 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
                     </div>
                   )}
                 </td>
-                <td className="zh-table-cell--num">{formatMoney(preview.ice)}</td>
-                <td className="zh-table-cell--num">{formatMoney(preview.vat)}</td>
-                <td className="zh-table-cell--num">{formatMoney(preview.total)}</td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue value={preview.ice} currencySymbol="" align="end" />
+                </td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue value={preview.vat} currencySymbol="" align="end" />
+                </td>
+                <td className="zh-table-cell--num">
+                  <ZHMoneyValue value={preview.total} currencySymbol="" align="end" />
+                </td>
               </tr>
             );
           })}

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
+import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
-import { formatMoney } from "../../../lib/sanitizers";
 import type { ItemDto } from "../../../types/items";
 import { useI18n } from "../../../i18n/i18n";
 import {
@@ -146,41 +147,40 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
           {results.map((item, i) => {
             const cached = profileCache.get(item.id);
             return (
-              <button
+              <ZHPickerResultItem
                 key={item.id}
-                type="button"
-                className={`zh-picker__result${i === focusIdx ? " zh-picker__result--focused" : ""}`}
-                onClick={() => void handleSelect(item)}
-                onMouseEnter={() => setFocusIdx(i)}
-              >
-                <div className="zh-picker__result-main">
-                  <div className="zh-picker__result-name">
+                selected={i === focusIdx}
+                title={
+                  <>
                     <span className="zh-picker__result-code">{item.sku}</span>
                     {item.shortName}
-                  </div>
-                  <div className="zh-picker__result-desc">{item.description}</div>
-                </div>
-                {cached && (
-                  <div className="zh-picker__result-extra">
-                    <span className="zh-picker__result-extra-label">
-                      {t("purchases.productPicker.pvp", "PVP")}:
-                    </span>
-                    <span className="zh-picker__result-extra-value">
-                      $
-                      {formatMoney(
-                        cached.currentPvp,
-                        getDecimalConfig().salesUnitPrice,
-                      )}
-                    </span>
-                    <span className="zh-picker__result-extra-label">
-                      {t("purchases.productPicker.vat", "IVA")}:
-                    </span>
-                    <span className="zh-picker__result-extra-value">
-                      {cached.vatRate ?? cached.purchaseVatCode ?? "..."}
-                    </span>
-                  </div>
-                )}
-              </button>
+                  </>
+                }
+                subtitle={item.description}
+                meta={
+                  cached && (
+                    <div className="zh-picker__result-extra">
+                      <span className="zh-picker__result-extra-label">
+                        {t("purchases.productPicker.pvp", "PVP")}:
+                      </span>
+                      <span className="zh-picker__result-extra-value">
+                        <ZHMoneyValue
+                          value={cached.currentPvp}
+                          decimals={getDecimalConfig().salesUnitPrice}
+                        />
+                      </span>
+                      <span className="zh-picker__result-extra-label">
+                        {t("purchases.productPicker.vat", "IVA")}:
+                      </span>
+                      <span className="zh-picker__result-extra-value">
+                        {cached.vatRate ?? cached.purchaseVatCode ?? "..."}
+                      </span>
+                    </div>
+                  )
+                }
+                onClick={() => void handleSelect(item)}
+                onMouseEnter={() => setFocusIdx(i)}
+              />
             );
           })}
         </div>

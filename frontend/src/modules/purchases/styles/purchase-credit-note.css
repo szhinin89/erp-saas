@@ -22,6 +22,20 @@
   font-size: 14px;
   font-weight: 600;
 }
+/* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda tamaño/peso/color en vez de imponer
+   su propio look por defecto — preserva el look aprobado del resumen y de las
+   tablas de línea, mismo criterio que SALES-DS-MONEY-12 en Ventas
+   (.sr-general-grid__value / .sr-lines-table .zh-table-cell--num). */
+.pcn-summary-grid__value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+.pcn-lines-table .zh-table-cell--num .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 
 .pcn-fiscal-grid {
   display: grid;

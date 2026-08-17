@@ -6,10 +6,10 @@ import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhTextarea } from "../../../components/zh/inputs";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
-import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
@@ -272,14 +272,16 @@ export function PurchaseCreditNoteDetailPage() {
               {t("purchases.creditNote.affectedInvoice.balanceDue", "Saldo pendiente")}
             </span>
             <span className="pcn-summary-grid__value">
-              {editing.invoiceBalanceDue !== null ? formatMoney(editing.invoiceBalanceDue) : "—"}
+              <ZHMoneyValue value={editing.invoiceBalanceDue} currencySymbol="" />
             </span>
           </div>
           <div>
             <span className="pcn-summary-grid__label">
               {t("purchases.creditNote.lines.total", "Total crédito")}
             </span>
-            <span className="pcn-summary-grid__value">{formatMoney(editing.totalAmount)}</span>
+            <span className="pcn-summary-grid__value">
+              <ZHMoneyValue value={editing.totalAmount} currencySymbol="" />
+            </span>
           </div>
           {editing.appliedToPayableAmount !== null && (
             <div>
@@ -287,7 +289,7 @@ export function PurchaseCreditNoteDetailPage() {
                 {t("purchases.creditNote.summary.reducesPayable", "Reduce CxP")}
               </span>
               <span className="pcn-summary-grid__value">
-                {formatMoney(editing.appliedToPayableAmount)}
+                <ZHMoneyValue value={editing.appliedToPayableAmount} currencySymbol="" />
               </span>
             </div>
           )}
@@ -399,7 +401,7 @@ export function PurchaseCreditNoteDetailPage() {
           )}
         >
           <div className="table-scroll">
-            <table className="table table--compact table--neutral">
+            <table className="table table--compact table--neutral pcn-lines-table">
               <thead>
                 <tr>
                   <th>{t("purchases.creditNote.taxSummaryLines.tax", "Impuesto")}</th>
@@ -424,10 +426,18 @@ export function PurchaseCreditNoteDetailPage() {
                       {summary.vatName ?? summary.vatCode}
                       {summary.iceCode && ` + ${summary.iceName ?? summary.iceCode}`}
                     </td>
-                    <td className="zh-table-cell--num">{formatMoney(summary.taxableBase)}</td>
-                    <td className="zh-table-cell--num">{formatMoney(summary.iceAmount)}</td>
-                    <td className="zh-table-cell--num">{formatMoney(summary.vatAmount)}</td>
-                    <td className="zh-table-cell--num">{formatMoney(summary.totalAmount)}</td>
+                    <td className="zh-table-cell--num">
+                      <ZHMoneyValue value={summary.taxableBase} currencySymbol="" />
+                    </td>
+                    <td className="zh-table-cell--num">
+                      <ZHMoneyValue value={summary.iceAmount} currencySymbol="" />
+                    </td>
+                    <td className="zh-table-cell--num">
+                      <ZHMoneyValue value={summary.vatAmount} currencySymbol="" />
+                    </td>
+                    <td className="zh-table-cell--num">
+                      <ZHMoneyValue value={summary.totalAmount} currencySymbol="" />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -461,7 +471,7 @@ export function PurchaseCreditNoteDetailPage() {
             </>
           ) : (
             <div className="table-scroll">
-              <table className="table table--compact table--neutral">
+              <table className="table table--compact table--neutral pcn-lines-table">
                 <thead>
                   <tr>
                     <th>{t("purchases.creditNote.lines.description", "Concepto")}</th>
@@ -480,9 +490,15 @@ export function PurchaseCreditNoteDetailPage() {
                   {editing.lines.map((line) => (
                     <tr key={line.id}>
                       <td>{line.description}</td>
-                      <td className="zh-table-cell--num">{formatMoney(line.subtotal)}</td>
-                      <td className="zh-table-cell--num">{formatMoney(line.vatAmount)}</td>
-                      <td className="zh-table-cell--num">{formatMoney(line.totalAmount)}</td>
+                      <td className="zh-table-cell--num">
+                        <ZHMoneyValue value={line.subtotal} currencySymbol="" />
+                      </td>
+                      <td className="zh-table-cell--num">
+                        <ZHMoneyValue value={line.vatAmount} currencySymbol="" />
+                      </td>
+                      <td className="zh-table-cell--num">
+                        <ZHMoneyValue value={line.totalAmount} currencySymbol="" />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

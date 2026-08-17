@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { PurchaseReceptionXmlViewModal } from "./PurchaseReceptionXmlViewModal";
 import type { PurchaseReceptionXmlView } from "../api/purchaseReceptionService";
@@ -149,26 +149,42 @@ function renderModal() {
   );
 }
 
+/** Los valores monetarios de solo lectura (totales XML, resumen de impuestos, líneas)
+ * migraron a `ZHMoneyValue` — el texto "$X.XX" queda repartido en spans anidados
+ * (`.zh-money-value__symbol` + `.zh-money-value__amount`), por lo que se verifica vía
+ * `.zh-money-value` (textContent) en vez de `getByText` (ver precedente Ventas,
+ * SALES-DS-MONEY-12: `SalesReturnListPage.test.tsx`). La cantidad (`quantity`, decimales
+ * distintos a monto) y la tarifa (%) no migraron — siguen siendo texto plano. */
+function moneyTexts(root: ParentNode): string[] {
+  return Array.from(root.querySelectorAll(".zh-money-value")).map(
+    (el) => el.textContent,
+  ) as string[];
+}
+
 describe("PurchaseReceptionXmlViewModal", () => {
   it("renders XML totals, tax summary, IRBPNR and expandable line detail", () => {
-    renderModal();
+    const { container } = renderModal();
 
     expect(screen.getByText("Totales XML")).toBeTruthy();
     expect(screen.getByText("Resumen de impuestos")).toBeTruthy();
-    expect(screen.getAllByText("$2.64").length).toBeGreaterThan(0);
     expect(screen.getByText("5/5001")).toBeTruthy();
-    expect(screen.getByText("$95.60")).toBeTruthy();
-    expect(screen.getByText("$95.61")).toBeTruthy();
-    expect(screen.getByText("$-0.01")).toBeTruthy();
+
+    const allMoney = moneyTexts(container);
+    expect(allMoney).toContain("$2.64");
+    expect(allMoney).toContain("$95.60");
+    expect(allMoney).toContain("$95.61");
+    expect(allMoney).toContain("$-0.01");
 
     const fantaRow = screen.getByText("3172").closest("tr");
     expect(fantaRow).toBeTruthy();
-    expect(within(fantaRow!).getByText("$0.48")).toBeTruthy();
-    expect(within(fantaRow!).getByText("$25.14")).toBeTruthy();
+    const fantaMoney = moneyTexts(fantaRow!);
+    expect(fantaMoney).toContain("$0.48");
+    expect(fantaMoney).toContain("$25.14");
 
     const lataRow = screen.getByText("10111").closest("tr");
     expect(lataRow).toBeTruthy();
-    expect(within(lataRow!).getAllByText("$0.00").length).toBeGreaterThan(0);
+    const lataMoney = moneyTexts(lataRow!);
+    expect(lataMoney.filter((t) => t === "$0.00").length).toBeGreaterThan(0);
 
     const details = screen.getAllByText("Ver detalle");
     fireEvent.click(details[0]);

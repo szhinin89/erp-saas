@@ -12,10 +12,11 @@
 /* ── Totals Panel ───────────────────────────────────────────── */
 /* .pf-icon--14/--18 ELIMINADOS (Bloque 4D) — equivalentes exactos
    .zh-icon-sm (14px) / .zh-icon-lg (18px) en zh-ui.css. .pf-icon--20
-   ELIMINADA (Bloque 15A) — sin consumidores. --22/--28 se mantienen:
-   sin equivalente en la escala oficial de iconos. */
+   ELIMINADA (Bloque 15A) — sin consumidores. .pf-icon--28 ELIMINADA
+   (PURCHASES-DS-FULL-SWEEP-01) — sin consumidores (confirmado por grep
+   en frontend/src/modules/purchases). --22 se mantiene: sin equivalente
+   en la escala oficial de iconos. */
 .pf-icon--22 { font-size: 22px; }
-.pf-icon--28 { font-size: 28px; }
 
 .pf-collapsible__chevron--open { transform: rotate(180deg); }
 .pf-collapsible__status {
@@ -258,21 +259,26 @@
   align-items: baseline;
   gap: 4px;
 }
+/* PURCHASES-DS-TYPOGRAPHY-03 — mismos tokens que .pdl-line__metric-label
+   (antes 10px/0.02em propio). */
 .pdl-line__product-meta-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
+/* font-family mono CONSERVADA a propósito: es un código real (SKU/código de
+   proveedor), no un monto — excepción documentada de la regla tipográfica
+   (PURCHASES-DS-TYPOGRAPHY-03). Tamaño alineado al token de texto muted. */
 .pdl-line__product-meta-value {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   font-weight: 600;
   color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
 }
 .pdl-line__product-meta-sep {
-  font-size: 11px;
+  font-size: var(--text-help-size);
   color: var(--color-text-tertiary);
 }
 /* Cabecera de línea como grid real de 8 columnas — mismo criterio visual que
@@ -325,12 +331,14 @@
 .pdl-line__warehouse {
   gap: 2px;
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-line__metric-label/
+   .pdl-line__tax-head — antes 10px/0.02em, ligeramente distinto del resto. */
 .pdl-line__warehouse-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--text-label-sm-spacing);
   white-space: nowrap;
 }
 /* El selector llena su columna — el ancho real ya lo da el grid-template-
@@ -347,9 +355,14 @@
   align-items: flex-end;
   gap: 2px;
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-line__warehouse-label/
+   .pdl-line__tax-head (var(--text-label-sm-*), erp-form-core.css): antes 10px/600
+   local, ahora alineado a la escala de label compacto del DS en vez de un valor
+   propio ligeramente distinto por columna. */
 .pdl-line__metric-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
   text-transform: uppercase;
   white-space: nowrap;
@@ -359,23 +372,75 @@
   align-items: center;
   gap: 2px;
 }
+/* Costo: agrupa el prefijo "$" y el input en un solo control con borde/foco
+   propios (mismos tokens que el input global: --color-border/--radius-md/
+   --color-focus-ring) en vez de un span suelto al lado de un input con su
+   propio borde — evita el efecto "parche" de dos cajas distintas pegadas.
+   No existe un patrón de prefijo/adornment global en el DS (auditado en
+   components/zh/ e inputs/) — NEEDS_DECISION si se repite en más pantallas;
+   por ahora es el fix visual más pequeño posible reusando tokens existentes. */
+.pdl-line__cost-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.pdl-line__cost-group:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+.pdl-line__cost-group .pdl-input {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.pdl-line__cost-group .pdl-input:focus {
+  box-shadow: none;
+}
+/* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda la tipografía local en vez de imponer
+   su propio tamaño/peso/color por defecto — preserva el look ya aprobado de la
+   franja de métricas de línea (base imponible, IVA/ICE, total neto). Escopado a
+   estos contenedores puntuales para no afectar otras celdas .zh-money-value fuera
+   de esta franja. line-height agregado (PURCHASES-DS-VISUAL-BASELINE-02) para que
+   el valor de texto quede alineado a la misma línea base que los inputs vecinos
+   de Cantidad/Costo dentro de la franja. */
+.pdl-line__metric-value .zh-money-value,
+.pdl-line__tax-amount .zh-money-value,
+.pdl-line__tax-ice .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  line-height: inherit;
+}
 .pdl-line__metric-unit {
   font-size: 12px;
   color: var(--color-text-secondary);
+  padding-left: var(--space-2);
 }
 /* Aligera el peso visual de los inputs dentro de las métricas — mismo
-   .pdl-input compartido (erp-form-core.css), solo se reduce su padding/
-   tamaño aquí para que la franja se vea como resumen compacto y no como
-   formulario técnico pesado. No se toca su borde/radio/color (tokens). */
+   .pdl-input compartido (erp-form-core.css), solo se reduce su padding aquí
+   para que la franja se vea como resumen compacto y no como formulario
+   técnico pesado. font-size ya no se redefine aquí: coincide con el que da
+   density="compact" globalmente (.zh-input--compact, zh-ui.css), así que
+   queda una sola fuente de verdad para el tamaño. No se toca su borde/radio/
+   foco — eso ahora lo da el input global (PURCHASES-DS-VISUAL-BASELINE-02). */
 .pdl-line__metric .pdl-input {
   padding: 5px 7px;
-  font-size: 13px;
 }
 /* El total es el valor más fuerte de la cabecera — mismo tamaño/peso que ya
    tenía (18px/800, erp-form-core.css), solo se refuerza un poco más aquí
    dentro de la nueva franja de métricas para que destaque frente al resto. */
 .pdl-container .pdl-line__total {
   font-size: 20px;
+}
+.pdl-container .pdl-line__total .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
 }
 /* Margen en cabecera — mismo valor ya calculado que "Información comercial"
    (vm.commercial.profitability), solo se repite visualmente aquí como badge
@@ -593,6 +658,12 @@
 }
 .pf-schedule-footer__count { color: var(--color-text-secondary); }
 .pf-schedule-footer__amount { font-family: var(--font-family-mono); }
+.pf-schedule-footer__amount .zh-money-value,
+.pf-schedule-footer__purchase-total .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 .pf-schedule-footer__purchase-total {
   color: var(--color-primary);
   font-family: var(--font-family-mono);
@@ -619,6 +690,11 @@
 .pf-retention-action-icon { font-size: 16px; }
 .pf-retention-code { font-family: var(--font-family-mono); }
 .pf-retention-amount { font-weight: 700; }
+.pf-retention-amount .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 .pf-totals__title-icon--primary {
   font-size: 20px;
   color: var(--color-primary);
@@ -772,6 +848,14 @@
   color: var(--color-text-primary);
   font-family: var(--font-family-mono);
 }
+/* ZHMoneyValue (PURCHASES-DS-MONEY-01) hereda tamaño/peso/color del resumen de
+   totales en vez de imponer su propio look por defecto — mismo criterio que
+   SALES-DS-MONEY-12 en Ventas. */
+.pf-totals__value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 .pf-totals__divider {
   height: 1px;
   background: var(--color-border);
@@ -797,6 +881,12 @@
   font-family: var(--font-family-mono);
   letter-spacing: -0.02em;
 }
+.pf-totals__grand-value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
 
 /* ── Footer Actions ─────────────────────────────────────────── */
 .pf-footer {
@@ -812,12 +902,8 @@
 .pf-retention {
   margin-top: var(--space-5);
 }
-.pf-retention__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-4);
-}
+/* .pf-retention__header ELIMINADA (PURCHASES-DS-FULL-SWEEP-01) — sin
+   consumidores; RetentionSection usa .pf-card__header (compartido). */
 .pf-retention__skip {
   padding: var(--space-3) var(--space-4);
   background: color-mix(in srgb, var(--color-warning) 6%, transparent);
@@ -876,9 +962,12 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+/* font-family mono CONSERVADA: chip de código técnico (Cód. proveedor/
+   auxiliar) — excepción documentada (PURCHASES-DS-TYPOGRAPHY-03). Tamaño
+   alineado al token de label compacto (antes 10px propio). */
 .pdl-tag {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--text-label-sm-size);
   font-weight: 700;
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -900,15 +989,24 @@
   flex-direction: column;
   gap: 1px;
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-cost-label/
+   .pdl-margin-label (var(--text-label-sm-*)): antes 9px, notablemente más
+   chico que las demás etiquetas de los 3 paneles inferiores. */
 .pdl-stock-head {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
   text-transform: uppercase;
 }
+/* Indicador de estado crítico (p.ej. "CRÍTICO"): mantiene su énfasis propio
+   (peso 800 + color success/danger vía --ok/--danger) por ser una señal de
+   negocio, no un label neutro — pero ahora en la misma escala de tamaño que
+   el resto (antes 9px). */
 .pdl-stock-label {
-  font-size: 9px;
+  font-size: var(--text-label-sm-size);
   font-weight: 800;
+  letter-spacing: var(--text-label-sm-spacing);
   text-transform: uppercase;
 }
 .pdl-stock-label--ok {
@@ -923,11 +1021,15 @@
 .pdl-stock-label--danger::before {
   content: "● ";
 }
+/* Unificado con .pdl-cost-val (13px, antes 12px) — mismo nivel de dato en
+   paneles distintos, mismo tamaño (PURCHASES-DS-VISUAL-BASELINE-02). */
+/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: valor numérico
+   simple (stock actual/disp./reserva) en un par label:valor, no una tabla
+   que requiera alineación monoespaciada ni un código técnico. */
 .pdl-stock-val {
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
 }
 .pdl-ctx-col__costs > div {
   display: flex;
@@ -943,11 +1045,14 @@
   text-align: right;
   white-space: normal;
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-stock-head/
+   .pdl-margin-label (antes 11px, ligeramente distinto). */
 .pdl-cost-label {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: var(--text-label-sm-weight);
 }
 
 /* PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — detallesAdicionales/detAdicional, solo lectura. */
@@ -959,11 +1064,14 @@
   flex-direction: column;
   gap: 2px;
 }
+/* Unificado con .pdl-stock-val (13px, antes 12px) — PURCHASES-DS-VISUAL-BASELINE-02. */
+/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: valores de
+   cantidad/precio/base/IVA/ICE/total del panel XML y costo/ingreso del panel
+   de inventario — pares label:valor sueltos, no tabla ni código. */
 .pdl-cost-val {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
 }
 .pdl-cost-alert {
   margin-top: 6px;
@@ -986,17 +1094,22 @@
   align-items: baseline;
   margin-bottom: var(--space-1);
 }
+/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-cost-label/
+   .pdl-stock-head (antes 11px). */
 .pdl-margin-label {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: var(--text-label-sm-weight);
 }
+/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: un único
+   porcentaje, no una columna tabular. Mantiene su énfasis (800/success)
+   como indicador de negocio (regla 7). */
 .pdl-margin-pct {
   font-size: 14px;
   font-weight: 800;
   color: var(--color-success);
-  font-family: var(--font-family-mono);
 }
 .pdl-margin-pct--neg {
   color: var(--color-error);
@@ -1008,16 +1121,15 @@
   overflow: hidden;
   margin-bottom: var(--space-2);
 }
-.pdl-margin-bar__fill {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
+/* .pdl-margin-bar__fill ELIMINADA (PURCHASES-DS-FULL-SWEEP-01) — sin
+   consumidores; la barra de margen usa <progress className="pdl-margin-bar
+   pdl-margin-bar--progress"> nativo, sin un div interno de relleno manual. */
+/* Caption muted (Precio de venta / Desc. máx.) — usa el token de help-text
+   (12px, antes 10px) en vez de un tamaño propio (PURCHASES-DS-VISUAL-BASELINE-02). */
 .pdl-margin-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
 
@@ -1111,6 +1223,12 @@
   letter-spacing: -0.5px;
   font-family: var(--font-family-mono);
 }
+.pf-total-mini-card__value .zh-money-value {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
 
 .pf-total-mini-card__value--default {
   font-size: 16px;
@@ -1175,6 +1293,12 @@
   font-size: var(--text-body-sm-size);
   color: var(--color-text-secondary);
 }
-.pdc-totals__row strong {
-  color: var(--color-text-primary);
+/* .pdc-totals__row strong ELIMINADA (PURCHASES-DS-FULL-SWEEP-01) — los totales
+   ahora usan <ZHMoneyValue emphasis="strong"> en vez de envolver el texto en
+   <strong>; el color "fuerte" ya lo da ZHMoneyValue por defecto
+   (--color-text-primary), y el tamaño/peso se hereda de la fila vía la regla
+   siguiente para no imponer el tamaño por defecto de ZHMoneyValue sobre esta
+   fila compacta (--text-body-sm-size). */
+.pdc-totals__row .zh-money-value {
+  font-size: inherit;
 }
