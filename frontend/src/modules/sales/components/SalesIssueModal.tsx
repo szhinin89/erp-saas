@@ -253,7 +253,7 @@ export function SalesIssueModal({
 
       {phase === "success" && result && (
         <div className="sf-issue-success">
-          <div className="sf-issue-success__number">{result.invoiceNumber}</div>
+          <div className="sf-issue-success__number zh-code-value">{result.invoiceNumber}</div>
           <dl className="sf-authorize-summary__grid">
             {result.emissionType === "Electronic" && (
               <>
@@ -273,13 +273,13 @@ export function SalesIssueModal({
             {result.accessKey && (
               <>
                 <dt>Clave de acceso</dt>
-                <dd className="sf-issue-success__mono">{result.accessKey}</dd>
+                <dd className="sf-issue-success__mono zh-code-value">{result.accessKey}</dd>
               </>
             )}
             {result.authorizationNumber && (
               <>
                 <dt>Nro. de autorización</dt>
-                <dd className="sf-issue-success__mono">
+                <dd className="sf-issue-success__mono zh-code-value">
                   {result.authorizationNumber}
                 </dd>
               </>

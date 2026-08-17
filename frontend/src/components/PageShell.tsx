@@ -104,9 +104,13 @@ export function Badge(
     size?: "md";
     /** Aplica `.badge--upper` (mayúsculas + letter-spacing). */
     upper?: boolean;
+    /** Aplica `.badge--code` (font-family monoespaciada) — para códigos técnicos
+     * (SKU, código de proveedor/auxiliar, secuenciales). Único modificador del
+     * Badge con tipografía monoespaciada; combina con cualquier `variant`. */
+    code?: boolean;
   },
 ) {
-  const { label, variant, size, upper, className, ...rest } = props;
+  const { label, variant, size, upper, code, className, ...rest } = props;
   const variantClassMap: Record<BadgeVariant, string> = {
   success: "badge--success",
   warning: "badge--warning",
@@ -126,6 +130,7 @@ const cls = [
     variantClassMap[variant],
     size ? `badge--${size}` : "",
     upper ? "badge--upper" : "",
+    code ? "badge--code" : "",
     className,
   ]
     .filter(Boolean)

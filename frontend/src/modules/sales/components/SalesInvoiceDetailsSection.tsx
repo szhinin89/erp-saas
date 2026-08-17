@@ -13,6 +13,7 @@ import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
 import { ZHLineCard } from "../../../components/zh/ZHLineCard";
 import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import {
@@ -303,7 +304,7 @@ export function SalesInvoiceDetailsSection({
                       {/* Info: SKU + estado de stock, nombre, disponibilidad */}
                       <div className="sf-result__main">
                         <div className="sf-result__header-row">
-                          <span className="sf-result__sku">{item.sku}</span>
+                          <span className="sf-result__sku zh-code-value">{item.sku}</span>
                           {item.tracksStock && (
                             <Badge
                               label={badge.label}
@@ -559,9 +560,9 @@ function SalesProductCard({
             se sigue usando solo para formatear esa etiqueta más abajo. */}
         <div className="sf-product__info">
           <div className="sf-product__title-row">
-            {sku && <span className="sf-product__code">{sku}</span>}
+            {sku && <span className="sf-product__code zh-code-value">{sku}</span>}
           </div>
-          <div className="sf-product__name" title={name}>
+          <div className="sf-product__name zh-row-title" title={name}>
             {name}
           </div>
         </div>
@@ -615,8 +616,7 @@ function SalesProductCard({
             <ZHFieldLabel size="sm" className="sf-product__price-label">
               Precio Facturado
             </ZHFieldLabel>
-            <div className="sf-product__price-wrap">
-              <span className="sf-product__price-currency">$</span>
+            <ZHInputGroup className="sf-product__price-wrap" prefix="$">
               <ZhDecimalInput
                 key={line.unitPrice}
                 className="sf-product__price-input"
@@ -629,7 +629,7 @@ function SalesProductCard({
                 }
                 disabled={disabled}
               />
-            </div>
+            </ZHInputGroup>
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useZHLocale } from "./ZHLocaleProvider";
 import { formatMoney } from "../../lib/sanitizers";
 
-export type ZHMoneyValueEmphasis = "default" | "strong" | "total";
+export type ZHMoneyValueEmphasis = "default" | "muted" | "strong" | "total" | "grand";
 export type ZHMoneyValueAlign = "start" | "end";
 
 export type ZHMoneyValueProps = {

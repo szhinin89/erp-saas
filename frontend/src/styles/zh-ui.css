@@ -427,6 +427,45 @@ select.zh-input--compact {
   padding-right: 28px;
 }
 
+/* <ZHInputGroup>: agrupa un prefijo/sufijo (p.ej. "$") con un input Zh*Input en
+   un solo control visual — reemplaza wrappers locales tipo `.pdl-line__cost-group`
+   que cada módulo reimplementaba a mano cada vez que un input necesitaba un
+   adorno. Reusa los mismos tokens que el input global (border/radius/focus-ring)
+   en vez de definir los suyos propios (PURCHASES-DS-GLOBAL-COMPONENT-04). */
+.zh-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.zh-input-group:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+.zh-input-group__prefix,
+.zh-input-group__suffix {
+  padding: 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--text-body-md-size);
+  flex-shrink: 0;
+}
+.zh-input-group input,
+.zh-input-group select,
+.zh-input-group textarea {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.zh-input-group input:focus,
+.zh-input-group select:focus,
+.zh-input-group textarea:focus {
+  box-shadow: none;
+  outline: none;
+}
+
 /* ── 4. CAMPOS (.zh-field) ────────────────────────────────── */
 .zh-field {
   display: flex;
@@ -485,11 +524,16 @@ select.zh-input--compact {
    en el DS: --strong/--total reutilizan el mismo peso (700) ya usado por otros elementos
    destacados de zh-ui.css (.zh-auth-brand-name, .zh-avatar); --total usa además
    --text-body-lg-size (15px, ya existente) para diferenciarse como valor principal. */
+/* ERP-DS-VISUAL-CONSISTENCY-CLOSEOUT-01 — money es una unidad visual
+   indivisible: `white-space: nowrap` evita que el símbolo y el valor (dos
+   <span> hijos del inline-flex) envuelvan a líneas distintas cuando el
+   contenedor padre es angosto (tablas, mini-cards, cols de precio). */
 .zh-money-value {
   display: inline-flex;
   align-items: baseline;
   gap: var(--space-1);
   color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
 .zh-money-value--start {
@@ -505,6 +549,16 @@ select.zh-input--compact {
   font-weight: var(--text-body-md-weight);
 }
 
+/* PURCHASES-DS-GLOBAL-COMPONENT-04 (revisión) — tier faltante para montos
+   secundarios/de menor peso visual dentro de una línea (p.ej. ICE/IRBPNR junto
+   al IVA principal): antes cada módulo envolvía el ZHMoneyValue en un div con
+   font-size/color locales para lograr este look "de-enfatizado". */
+.zh-money-value--muted {
+  font-size: var(--text-help-size);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
 .zh-money-value--strong {
   font-size: var(--text-body-md-size);
   font-weight: 700;
@@ -513,6 +567,19 @@ select.zh-input--compact {
 .zh-money-value--total {
   font-size: var(--text-body-lg-size);
   font-weight: 700;
+}
+
+/* PURCHASES-DS-GLOBAL-COMPONENT-04 — tier faltante para el total más
+   destacado de una línea/card (p.ej. Total Neto de una línea de compra):
+   ninguna emphasis existente llegaba a ese peso visual, así que cada módulo
+   lo recreaba con font-size/weight locales. Mismo tamaño que ya tenía el
+   look aprobado (20px/800, antes repartido entre erp-form-core.css 18px base
+   + un override local de purchases-invoice.css a 20px) — solo se relocaliza
+   la propiedad al componente global en vez de dos reglas CSS por pantalla. */
+.zh-money-value--grand {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .zh-money-value__symbol {
@@ -525,6 +592,93 @@ select.zh-input--compact {
 
 .zh-money-value--empty {
   color: var(--color-text-secondary);
+}
+
+/* PURCHASES-DS-GLOBAL-COMPONENT-04 — <ZHDataValue>: dato de solo lectura no
+   monetario (SKU, cantidad, stock, ingreso a inventario, etc.). Reemplaza los
+   `.pdl-cost-val`/`.pdl-stock-val`/`.pdl-line__product-meta-value` locales que
+   cada módulo reimplementaba con su propio tamaño/peso/font-family. Todas las
+   variantes usan var(--font-family) salvo `--code` (única excepción
+   monoespaciada, documentada, para códigos técnicos reales). */
+.zh-data-value {
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+}
+.zh-data-value--default {
+  font-size: var(--text-body-md-size);
+  font-weight: 600;
+}
+.zh-data-value--muted {
+  font-size: var(--text-help-size);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+/* ERP-DS-VISUAL-CONSISTENCY-CLOSEOUT-01 (fix) — `--numeric` daba el mismo
+   font-weight (700) que `--strong`, sin diferenciarse más que por tamaño: en
+   filas con varios datos numéricos seguidos (p.ej. "Producto recibido XML")
+   todo se leía igual de negrita que el total, sin jerarquía. `--numeric` solo
+   alinea dígitos (tabular-nums); el peso "medio" (600) es el mismo que
+   `--default`, dejando `--strong` (700) como la única variante realmente en
+   negrita. */
+.zh-data-value--numeric {
+  font-size: var(--text-body-md-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.zh-data-value--strong {
+  font-size: var(--text-title-sm-size);
+  font-weight: 700;
+}
+.zh-data-value--code {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-help-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.zh-data-value--tone-success {
+  color: var(--color-success);
+}
+.zh-data-value--tone-danger {
+  color: var(--color-error);
+}
+.zh-data-value--italic {
+  font-style: italic;
+}
+
+/* ERP-DS-CODE-VALUE-02 — utilidad global para código técnico/documental
+   (SKU, clave de acceso, secuencial, nro. de autorización, código SRI) cuando
+   el markup ya tiene su propia clase local con tamaño/peso/color propios y
+   solo necesita el font-family monoespaciado del DS — evita repetir
+   `font-family: var(--font-family-mono)` en CSS de módulo. Combinar con la
+   clase local existente, nunca reemplazarla. */
+.zh-code-value {
+  font-family: var(--font-family-mono);
+}
+
+/* <ZHInfoRow>: par label/valor compacto para paneles de detalle (líneas de
+   documento, contexto XML, inventario, info comercial) — reemplaza pares
+   `.pdl-cost-label`/`.pdl-cost-val` locales repetidos por módulo. Solo da
+   layout: la tipografía la deciden `label` (normalmente ZHFieldLabel size="sm")
+   y `value` (ZHDataValue/ZHMoneyValue) que el consumidor pasa como children. */
+.zh-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.zh-info-row + .zh-info-row {
+  margin-top: 2px;
+}
+.zh-info-row--wide {
+  align-items: flex-start;
+}
+.zh-info-row--wide .zh-info-row__value {
+  text-align: right;
+  white-space: normal;
+}
+.zh-info-row__value {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .zh-field-control {
@@ -1307,6 +1461,14 @@ select.zh-input--compact {
   text-transform: uppercase;
   letter-spacing: var(--text-label-sm-spacing);
 }
+/* PURCHASES-DS-GLOBAL-COMPONENT-04 — único modificador de <Badge> con
+   tipografía monoespaciada: para códigos técnicos (SKU, código de
+   proveedor/auxiliar, secuenciales), nunca por defecto. Combina con
+   cualquier `variant` de color (p.ej. neutral para código normal, warning
+   para código con alerta) en vez de necesitar un chip local por módulo. */
+.badge--code {
+  font-family: var(--font-family-mono);
+}
 
 /* .zh-inline-check ELIMINADO (Bloque 12B) -- sin consumidores. */
 
@@ -1732,6 +1894,16 @@ select.zh-input--compact {
 .zh-text-xs {
   font-size: var(--text-label-sm-size);
 }
+/* ERP-DS-VISUAL-CONSISTENCY-CLOSEOUT-01 — título de fila/card (nombre de
+   producto/item en línea de documento o card de venta): peso destacado
+   compartido por Compras (`.pdl-line__product-name`) y Ventas
+   (`.sf-product__name`), antes duplicado en cada módulo con su propio
+   font-weight/color locales. La clase local conserva solo tamaño (puede
+   variar por densidad de pantalla) y layout; el peso/color vienen de aquí. */
+.zh-row-title {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
 /* .zh-items-end ELIMINADO (Bloque 12B) — sin consumidores. */
 
 /* Color swatch (type="color" input) */
@@ -1943,6 +2115,16 @@ select.zh-input--compact {
 }
 .zh-status--pending::before {
   background: var(--color-primary);
+}
+/* PURCHASES-DS-GLOBAL-COMPONENT-04 — variante que faltaba para indicadores
+   críticos/error (p.ej. stock crítico) — antes cada módulo reimplementaba el
+   punto de color a mano (`.pdl-stock-label--danger::before { content: "● " }`). */
+.zh-status--danger {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  color: var(--color-error);
+}
+.zh-status--danger::before {
+  background: var(--color-error);
 }
 
 /* ── 23. ENTITY ITEM (lista de selección clickeable) ─────── */

@@ -11,6 +11,10 @@ import { ZHLineCard } from "../../../components/zh/ZHLineCard";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
+import { ZHDataValue } from "../../../components/zh/ZHDataValue";
+import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
+import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { SupplierPicker } from "../components/SupplierPicker";
 import { DistributeCostModal } from "../components/DistributeCostModal";
 import { ProductPicker } from "../components/ProductPicker";
@@ -173,7 +177,7 @@ export function PurchasesPage() {
               <tbody>
                 {ctx.listItems.map((inv) => (
                   <tr key={inv.id}>
-                    <td className="pf-invoice-number">
+                    <td className="pf-invoice-number zh-code-value">
                       {inv.invoiceNumber}
                     </td>
                     <td>{formatDate(inv.issueDate)}</td>
@@ -1765,28 +1769,24 @@ function PurchaseLineCard({
               </div>
             ) : (
               <>
-                <div className="pdl-line__product-name">
+                <div className="pdl-line__product-name zh-row-title">
                   {productName}
                 </div>
                 {/* PURCHASE-LINE-HEADER-UX-01 — mismos datos/orden que antes (SKU · Cód.
-                    proveedor), solo reestructurados en pares label/valor para que el label
-                    (pequeño, uppercase) no compita visualmente con el código (mono, más fuerte) —
-                    mismo criterio que ya usan los labels de .pdl-line__metric-label. */}
+                    proveedor), en pares label/valor: ZHFieldLabel size="sm" (global) para el
+                    label + ZHDataValue variant="code" (global, mono documentado) para el
+                    código — PURCHASES-DS-GLOBAL-COMPONENT-04. */}
                 <div className="pdl-line__product-meta">
                   <span className="pdl-line__product-meta-item">
-                    <span className="pdl-line__product-meta-label">SKU</span>
-                    <span className="pdl-line__product-meta-value">
-                      {vm.item.sku}
-                    </span>
+                    <ZHFieldLabel size="sm">SKU</ZHFieldLabel>
+                    <ZHDataValue variant="code">{vm.item.sku}</ZHDataValue>
                   </span>
-                  <span className="pdl-line__product-meta-sep">·</span>
+                  <ZHDataValue variant="muted">·</ZHDataValue>
                   <span className="pdl-line__product-meta-item">
-                    <span className="pdl-line__product-meta-label">
+                    <ZHFieldLabel size="sm">
                       {t("purchases.lines.supplierCode", "Cód. proveedor")}
-                    </span>
-                    <span className="pdl-line__product-meta-value">
-                      {vm.xml.supplierCode}
-                    </span>
+                    </ZHFieldLabel>
+                    <ZHDataValue variant="code">{vm.xml.supplierCode}</ZHDataValue>
                   </span>
                 </div>
               </>
@@ -1798,9 +1798,9 @@ function PurchaseLineCard({
           <div className="pdl-line__warehouse">
             {l.itemId && (
               <>
-                <span className="pdl-line__warehouse-label">
+                <ZHFieldLabel size="sm">
                   {t("purchases.lines.warehouse", "Bodega")}
-                </span>
+                </ZHFieldLabel>
                 <ZhSelect
                   className="pdl-line__wh-select-compact"
                   density="compact"
@@ -1827,9 +1827,9 @@ function PurchaseLineCard({
               un grid real de celdas (mismo criterio que .sf-product en Ventas: columnas con
               minmax() y separadores, no un bloque flex anidado) — mismos datos/orden/handlers. */}
             <div className="pdl-line__metric">
-              <span className="pdl-line__metric-label">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.quantity", "Cantidad")}
-              </span>
+              </ZHFieldLabel>
               <ZhDecimalInput
                 key={headerInputKey("qty", vm, l.packagingLevelId)}
                 className="pdl-input pdl-input--qty"
@@ -1859,11 +1859,10 @@ function PurchaseLineCard({
               />
             </div>
             <div className="pdl-line__metric">
-              <span className="pdl-line__metric-label">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.costShort", "COSTO")}
-              </span>
-              <div className="pdl-line__metric-value pdl-line__cost-group">
-                <span className="pdl-line__metric-unit">$</span>
+              </ZHFieldLabel>
+              <ZHInputGroup className="pdl-line__metric-value" prefix="$">
                 <ZhDecimalInput
                   key={headerInputKey("cost", vm, l.packagingLevelId)}
                   className="pdl-input pdl-input--cost"
@@ -1900,53 +1899,74 @@ function PurchaseLineCard({
                   }}
                   disabled={ctx.fieldDisabled}
                 />
-              </div>
+              </ZHInputGroup>
             </div>
             <div className="pdl-line__metric">
-              <span className="pdl-line__metric-label">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.taxableBaseShort", "BASE IMP.")}
-              </span>
+              </ZHFieldLabel>
               <div className="pdl-line__metric-value">
                 <ZHMoneyValue value={sub} decimals={getDecimalConfig().totalAmount} />
               </div>
             </div>
             <div className="pdl-line__metric">
               <div className="pdl-line__tax">
-                <div className="pdl-line__tax-head">
+                <ZHFieldLabel size="sm">
                   {t("purchases.lines.vatShort", "IVA")} {vatPct}%: $
-                </div>
+                </ZHFieldLabel>
                 <div className="pdl-line__tax-amount">
-                  <ZHMoneyValue value={vatAmt} decimals={getDecimalConfig().totalAmount} currencySymbol="" />
+                  <ZHMoneyValue
+                    value={vatAmt}
+                    decimals={getDecimalConfig().totalAmount}
+                    currencySymbol=""
+                    emphasis="strong"
+                  />
                 </div>
-                <div className="pdl-line__tax-ice">
-                  {t("purchases.lines.iceShort", "ICE")}:{" "}
-                  <ZHMoneyValue value={iceAmt} decimals={getDecimalConfig().totalAmount} />
+                <div>
+                  <ZHDataValue variant="muted">
+                    {t("purchases.lines.iceShort", "ICE")}:{" "}
+                  </ZHDataValue>
+                  <ZHMoneyValue
+                    value={iceAmt}
+                    decimals={getDecimalConfig().totalAmount}
+                    emphasis="muted"
+                  />
                 </div>
                 {irbpnrAmt > 0 && (
-                  <div className="pdl-line__tax-ice">
-                    IRBPNR:{" "}
-                    <ZHMoneyValue value={irbpnrAmt} decimals={getDecimalConfig().totalAmount} />
+                  <div>
+                    <ZHDataValue variant="muted">
+                      IRBPNR:{" "}
+                    </ZHDataValue>
+                    <ZHMoneyValue
+                      value={irbpnrAmt}
+                      decimals={getDecimalConfig().totalAmount}
+                      emphasis="muted"
+                    />
                   </div>
                 )}
               </div>
             </div>
             <div className="pdl-line__metric">
-              <span className="pdl-line__metric-label">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.netTotal", "Total neto")}
-              </span>
+              </ZHFieldLabel>
               <div className="pdl-line__total">
-                <ZHMoneyValue value={total} decimals={getDecimalConfig().totalAmount} />
+                <ZHMoneyValue
+                  value={total}
+                  decimals={getDecimalConfig().totalAmount}
+                  emphasis="grand"
+                />
               </div>
             </div>
             <div className="pdl-line__metric">
-              <span className="pdl-line__metric-label">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.marginShort", "Margen")}
-              </span>
-              <span
-                className={`pdl-line__margin-badge pdl-line__margin-badge--lg ${vm.commercial.profitability.marginPctValue >= 0 ? "" : "pdl-line__margin-badge--neg"}`}
-              >
-                {vm.commercial.profitability.marginPct}%
-              </span>
+              </ZHFieldLabel>
+              <Badge
+                variant={vm.commercial.profitability.marginPctValue >= 0 ? "success" : "error"}
+                size="md"
+                label={`${vm.commercial.profitability.marginPct}%`}
+              />
             </div>
         </div>
       </div>
@@ -2018,85 +2038,89 @@ function PurchaseLineCard({
           </header>
           {!vm.xml.hasOrigin && (
             <p className="pdl-block__hint">
-              {t(
-                "purchases.lines.manualPurchaseHint",
-                "Compra manual — no proviene de recepción electrónica.",
-              )}
+              <ZHDataValue variant="muted">
+                {t(
+                  "purchases.lines.manualPurchaseHint",
+                  "Compra manual — no proviene de recepción electrónica.",
+                )}
+              </ZHDataValue>
             </p>
           )}
           <div className="pdl-ctx-col__badges">
-            <span className="pdl-tag">
-              {t("purchases.lines.supplierCode", "Cód. proveedor")}:{" "}
-              {vm.xml.supplierCode}
-            </span>
-            <span
-              className={`pdl-tag ${vm.xml.hasSupplierAuxCode ? "pdl-tag--accent" : ""}`}
-            >
-              {t("purchases.lines.auxCode", "Cód. auxiliar")}:{" "}
-              {vm.xml.supplierAuxCode}
-            </span>
+            <Badge
+              variant="neutral"
+              code
+              label={`${t("purchases.lines.supplierCode", "Cód. proveedor")}: ${vm.xml.supplierCode}`}
+            />
+            <Badge
+              variant={vm.xml.hasSupplierAuxCode ? "warning" : "neutral"}
+              code
+              label={`${t("purchases.lines.auxCode", "Cód. auxiliar")}: ${vm.xml.supplierAuxCode}`}
+            />
           </div>
-          <div className="pdl-ctx-col__desc">{vm.xml.description}</div>
+          <ZHDataValue variant="muted" className="pdl-ctx-col__desc">
+            {vm.xml.description}
+          </ZHDataValue>
           <div className="pdl-ctx-col__costs">
-            <div>
-              <span className="pdl-cost-label">{t("purchases.lines.quantity", "Cantidad")}</span>
-              <span className="pdl-cost-val">{vm.xml.quantity}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">{t("purchases.lines.price", "Precio")}</span>
-              <span className="pdl-cost-val">{vm.xml.unitPrice}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">{t("purchases.lines.discount", "Descuento")}</span>
-              <span className="pdl-cost-val">{vm.xml.discount}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.taxableBase", "Base imponible")}
-              </span>
-              <span className="pdl-cost-val">{vm.xml.taxableBase}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">
-                IVA ({vm.xml.vatPercentage}%)
-              </span>
-              <span className="pdl-cost-val">{vm.xml.taxValue}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.iceShort", "ICE")}
-              </span>
-              <span className="pdl-cost-val">{vm.xml.iceValue}</span>
-            </div>
+            <ZHInfoRow
+              label={<ZHFieldLabel size="sm">{t("purchases.lines.quantity", "Cantidad")}</ZHFieldLabel>}
+              value={<ZHDataValue variant="numeric">{vm.xml.quantity}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={<ZHFieldLabel size="sm">{t("purchases.lines.price", "Precio")}</ZHFieldLabel>}
+              value={<ZHDataValue variant="numeric">{vm.xml.unitPrice}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={<ZHFieldLabel size="sm">{t("purchases.lines.discount", "Descuento")}</ZHFieldLabel>}
+              value={<ZHDataValue variant="numeric">{vm.xml.discount}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.taxableBase", "Base imponible")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="numeric">{vm.xml.taxableBase}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={<ZHFieldLabel size="sm">IVA ({vm.xml.vatPercentage}%)</ZHFieldLabel>}
+              value={<ZHDataValue variant="numeric">{vm.xml.taxValue}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={<ZHFieldLabel size="sm">{t("purchases.lines.iceShort", "ICE")}</ZHFieldLabel>}
+              value={<ZHDataValue variant="numeric">{vm.xml.iceValue}</ZHDataValue>}
+            />
             {vm.xml.hasIrbpnr && (
-              <div>
-                <span className="pdl-cost-label">IRBPNR</span>
-                <span className="pdl-cost-val">{vm.xml.irbpnrValue}</span>
-              </div>
+              <ZHInfoRow
+                label={<ZHFieldLabel size="sm">IRBPNR</ZHFieldLabel>}
+                value={<ZHDataValue variant="numeric">{vm.xml.irbpnrValue}</ZHDataValue>}
+              />
             )}
-            <div>
-              <span className="pdl-cost-label pdl-cost-label--strong">
-                {t("purchases.lines.lineTotal", "Total línea")}
-              </span>
-              <span className="pdl-cost-val pdl-cost-val--strong">
-                {vm.xml.totalLine}
-              </span>
-            </div>
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.lineTotal", "Total línea")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="strong">{vm.xml.totalLine}</ZHDataValue>}
+            />
           </div>
           {vm.xml.hasAdditionalFields && (
             <div className="pdl-additional-fields">
-              <span className="pdl-stock-head">
+              <ZHFieldLabel size="sm">
                 {t(
                   "purchases.lines.additionalFieldsTitle",
                   "Datos adicionales XML",
                 )}
-              </span>
+              </ZHFieldLabel>
               <div className="pdl-ctx-col__costs">
                 {vm.xml.additionalFields.map((f, idx) => (
-                  <div key={`${f.name}-${idx}`} className="pdl-cost-wide">
-                    <span className="pdl-cost-label">{f.name}</span>
-                    <span className="pdl-cost-val">{f.value}</span>
-                  </div>
+                  <ZHInfoRow
+                    key={`${f.name}-${idx}`}
+                    wide
+                    label={<ZHFieldLabel size="sm">{f.name}</ZHFieldLabel>}
+                    value={<ZHDataValue variant="numeric">{f.value}</ZHDataValue>}
+                  />
                 ))}
               </div>
             </div>
@@ -2143,9 +2167,9 @@ function PurchaseLineCard({
           <div className="pdl-ctx-col__costs">
             {packagingLevels.length > 0 && (
               <div>
-                <span className="pdl-cost-label">
+                <ZHFieldLabel size="sm">
                   {t("purchases.lines.presentation", "Presentación")}
-                </span>
+                </ZHFieldLabel>
                 <ZhSelect
                   density="compact"
                   value={l.packagingLevelId ?? ""}
@@ -2167,56 +2191,62 @@ function PurchaseLineCard({
               vm.xml.hasOrigin &&
               packagingLevels.length === 0 &&
               !vm.inventory.hasPresentation && (
-                <div className="pdl-cost-wide">
-                  <span className="pdl-cost-label">
-                    {t(
-                      "purchases.lines.presentationUnavailable",
-                      "Presentación",
-                    )}
-                  </span>
-                  <span className="pdl-cost-val">
-                    {t(
-                      "purchases.lines.presentationNotLinked",
-                      "Sin presentación vinculada",
-                    )}
-                  </span>
-                </div>
+                <ZHInfoRow
+                  wide
+                  label={
+                    <ZHFieldLabel size="sm">
+                      {t("purchases.lines.presentationUnavailable", "Presentación")}
+                    </ZHFieldLabel>
+                  }
+                  value={
+                    <Badge
+                      variant="neutral"
+                      label={t(
+                        "purchases.lines.presentationNotLinked",
+                        "Sin presentación vinculada",
+                      )}
+                    />
+                  }
+                />
               )}
             {vm.inventory.hasPresentation && (
-              <div className="pdl-cost-wide">
-                <span className="pdl-cost-label">
-                  {t(
-                    "purchases.lines.linkedPresentation",
-                    "Presentación vinculada",
-                  )}
-                </span>
-                <span className="pdl-cost-val">
-                  {vm.inventory.presentationLabel}
-                </span>
-              </div>
+              <ZHInfoRow
+                wide
+                label={
+                  <ZHFieldLabel size="sm">
+                    {t("purchases.lines.linkedPresentation", "Presentación vinculada")}
+                  </ZHFieldLabel>
+                }
+                value={<ZHDataValue variant="numeric">{vm.inventory.presentationLabel}</ZHDataValue>}
+              />
             )}
             {vm.item.hasItem && !!vm.inventory.equivalenceDetail && (
-              <div className="pdl-cost-wide">
-                <span className="pdl-cost-label">
-                  {t("purchases.lines.baseConversion", "Equivalencia")}
-                </span>
-                <span className="pdl-cost-val">
-                  {vm.inventory.equivalenceDetail}
-                </span>
-              </div>
+              <ZHInfoRow
+                wide
+                label={
+                  <ZHFieldLabel size="sm">
+                    {t("purchases.lines.baseConversion", "Equivalencia")}
+                  </ZHFieldLabel>
+                }
+                value={<ZHDataValue variant="numeric">{vm.inventory.equivalenceDetail}</ZHDataValue>}
+              />
             )}
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.inventory", "Ingreso a inventario")}
-              </span>
-              <span className="pdl-cost-val">{vm.inventory.baseQuantity}</span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.baseCost", "Costo unitario base")}
-              </span>
-              <span className="pdl-cost-val">{vm.inventory.baseUnitCost}</span>
-            </div>
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.inventory", "Ingreso a inventario")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="numeric">{vm.inventory.baseQuantity}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.baseCost", "Costo unitario base")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="numeric">{vm.inventory.baseUnitCost}</ZHDataValue>}
+            />
             {vm.item.hasItem && vm.xml.hasOrigin && (
               <div className="pdl-cost-wide">
                 <ZHBtn
@@ -2256,47 +2286,47 @@ function PurchaseLineCard({
           </header>
           <div className="pdl-ctx-col__stock">
             <div className="pdl-stock-item">
-              <span
-                className={`pdl-stock-label ${vm.commercial.hasContext ? (vm.commercial.stock.isCritical ? "pdl-stock-label--danger" : "pdl-stock-label--ok") : ""}`}
-              >
-                {vm.commercial.stock.statusLabel}
-              </span>
-              <span className="pdl-stock-val">
-                {vm.commercial.stock.current}
-              </span>
+              {vm.commercial.hasContext ? (
+                <Badge
+                  variant={vm.commercial.stock.isCritical ? "error" : "success"}
+                  size="md"
+                  label={vm.commercial.stock.statusLabel}
+                />
+              ) : (
+                <ZHFieldLabel size="sm">{vm.commercial.stock.statusLabel}</ZHFieldLabel>
+              )}
+              <ZHDataValue variant="numeric">{vm.commercial.stock.current}</ZHDataValue>
             </div>
             <div className="pdl-stock-item">
-              <span className="pdl-stock-head">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.availableShort", "Disp.")}
-              </span>
-              <span className="pdl-stock-val">
-                {vm.commercial.stock.available}
-              </span>
+              </ZHFieldLabel>
+              <ZHDataValue variant="numeric">{vm.commercial.stock.available}</ZHDataValue>
             </div>
             <div className="pdl-stock-item">
-              <span className="pdl-stock-head">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.reserved", "Reserva")}
-              </span>
-              <span className="pdl-stock-val">
-                {vm.commercial.stock.reserved}
-              </span>
+              </ZHFieldLabel>
+              <ZHDataValue variant="numeric">{vm.commercial.stock.reserved}</ZHDataValue>
             </div>
           </div>
           <div className="pdl-ctx-col__costs">
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.averageCost", "Costo promedio")}
-              </span>
-              <span className="pdl-cost-val">
-                {vm.commercial.costs.average}
-              </span>
-            </div>
-            <div>
-              <span className="pdl-cost-label">
-                {t("purchases.lines.lastCost", "Último costo")}
-              </span>
-              <span className="pdl-cost-val">{vm.commercial.costs.last}</span>
-            </div>
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.averageCost", "Costo promedio")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="numeric">{vm.commercial.costs.average}</ZHDataValue>}
+            />
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.lastCost", "Último costo")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="numeric">{vm.commercial.costs.last}</ZHDataValue>}
+            />
           </div>
           {vm.commercial.costs.showDeviationAlert && (
             <div className="pdl-cost-alert">
@@ -2310,14 +2340,15 @@ function PurchaseLineCard({
           )}
           <div className="pdl-ctx-col__margin">
             <div className="pdl-margin-row">
-              <span className="pdl-margin-label">
+              <ZHFieldLabel size="sm">
                 {t("purchases.lines.profitability", "Rentabilidad (margen neto)")}
-              </span>
-              <span
-                className={`pdl-margin-pct ${vm.commercial.profitability.marginPctValue >= 0 ? "" : "pdl-margin-pct--neg"}`}
+              </ZHFieldLabel>
+              <ZHDataValue
+                variant="numeric"
+                tone={vm.commercial.profitability.marginPctValue >= 0 ? "success" : "danger"}
               >
                 {vm.commercial.profitability.marginPct}%
-              </span>
+              </ZHDataValue>
             </div>
             <progress
               className="pdl-margin-bar pdl-margin-bar--progress"
@@ -2326,14 +2357,14 @@ function PurchaseLineCard({
               aria-label={t("purchases.lines.profitabilityAria", "Rentabilidad margen neto")}
             />
             <div className="pdl-margin-meta">
-              <span>
+              <ZHDataValue variant="muted">
                 {t("purchases.lines.salePrice", "Precio de venta")}:{" "}
                 {vm.commercial.profitability.pvp}
-              </span>
-              <span>
+              </ZHDataValue>
+              <ZHDataValue variant="muted">
                 {t("purchases.lines.maxDiscount", "Desc. máx.")}:{" "}
                 {vm.commercial.profitability.maxDiscountPercent}%
-              </span>
+              </ZHDataValue>
             </div>
           </div>
         </section>
@@ -3056,7 +3087,7 @@ function RetentionSection({
                           label={l.taxType}
                         />
                       </td>
-                      <td className="pf-retention-code">
+                      <td className="zh-code-value">
                         {l.retentionCode}
                       </td>
                       <td>{l.retentionCodeName}</td>
@@ -3121,7 +3152,7 @@ function RetentionSection({
                         label={d.taxType}
                       />
                     </td>
-                    <td className="pf-retention-code">
+                    <td className="zh-code-value">
                       {d.retentionCode}
                     </td>
                     <td>{d.retentionCodeDescription}</td>

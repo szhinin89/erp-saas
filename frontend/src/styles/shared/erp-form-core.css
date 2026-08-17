@@ -374,9 +374,7 @@
   min-width: 0;
 }
 .pdl-line__product-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-text-primary);
+  font-size: var(--text-body-lg-size);
   margin-bottom: var(--space-2);
   display: flex;
   align-items: center;
@@ -451,42 +449,24 @@
 .pdl-line__tax {
   text-align: right;
 }
-/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-line__metric-label/
-   .pdl-line__warehouse-label (var(--text-label-sm-*)) — antes usaba un tamaño/
-   peso propio (12px/500, sin uppercase) que no coincidía con el resto de labels
-   de la franja de cabecera de línea. */
-.pdl-line__tax-head {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-}
-/* PURCHASES-DS-TYPOGRAPHY-03 — font-family mono ELIMINADA: este contenedor
-   envuelve un <ZHMoneyValue>, que no define su propia font-family (usa
-   font-variant-numeric: tabular-nums para alinear dígitos sin cambiar de
-   tipografía). El mono local se heredaba hacia el money value por cascada,
-   rompiendo la familia sans única del ERP sin necesidad real (no es un
-   código/secuencial ni una tabla que requiera alineación monoespaciada). */
+/* PURCHASES-DS-GLOBAL-COMPONENT-04 — .pdl-line__tax-head ELIMINADA: el label
+   ahora es <ZHFieldLabel size="sm"> (global), sin wrapper de tipografía local. */
+/* .pdl-line__tax-amount: ya no define tipografía — el <ZHMoneyValue> que
+   envuelve usa emphasis="strong" (global) en vez de heredar font-size/weight/
+   color de este div. Solo queda layout (margin-bottom). */
 .pdl-line__tax-amount {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-primary);
   margin-bottom: 2px;
 }
-.pdl-line__tax-ice {
-  font-size: var(--text-help-size);
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-/* PURCHASES-DS-TYPOGRAPHY-03 — mismo motivo que .pdl-line__tax-amount: envuelve
-   un <ZHMoneyValue>, no un código técnico. font-family mono eliminada. */
+/* .pdl-line__tax-ice ELIMINADA (PURCHASES-DS-GLOBAL-COMPONENT-04 — revisión):
+   el label "ICE:"/"IRBPNR:" ahora es <ZHDataValue variant="muted" italic> y
+   el monto es <ZHMoneyValue emphasis="muted"> (ambos global, nuevos tiers
+   agregados en zh-ui.css) — sin wrapper local ni regla de inherit hacia
+   .zh-money-value. */
+/* .pdl-line__total: ya no define tipografía — el <ZHMoneyValue> que envuelve
+   usa emphasis="grand" (global, nuevo tier agregado en este mismo cambio).
+   Solo queda layout (alineación). */
 .pdl-line__total {
   text-align: right;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--color-text-primary);
-  letter-spacing: -0.5px;
 }
 .pdl-line__actions {
   display: flex;
@@ -549,10 +529,10 @@
   flex-wrap: wrap;
 }
 /* .pdl-tag* movido a purchases-invoice.css */
+/* Solo layout: la tipografía (tamaño/color/itálica) ahora la da
+   <ZHDataValue variant="muted" italic> (global) en vez de esta clase local
+   (PURCHASES-DS-GLOBAL-COMPONENT-04 — revisión). */
 .pdl-ctx-col__desc {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  font-style: italic;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -584,10 +564,10 @@
   background: transparent;
   opacity: 0.85;
 }
-.pdl-block--muted .pdl-cost-val,
-.pdl-block--muted .pdl-stock-val {
-  font-size: 12px;
-}
+/* .pdl-block--muted .pdl-cost-val/.pdl-stock-val ELIMINADAS
+   (PURCHASES-DS-GLOBAL-COMPONENT-04) — ambas clases sin consumidores: sus
+   valores ahora son <ZHDataValue variant="numeric"> (global); el panel entero
+   ya se atenúa vía opacity de .pdl-block--muted arriba. */
 .pdl-block__header {
   display: flex;
   align-items: center;
@@ -610,20 +590,16 @@
 .pdl-block__title {
   margin: 0;
 }
+/* .pdl-block__hint: tipografía movida a <ZHDataValue variant="muted"> (global)
+   — solo queda el italic (excepción documentada, marca "nota informativa"; no
+   está en la lista de propiedades prohibidas) y el margin (layout). */
 .pdl-block__hint {
-  font-size: var(--text-help-size);
-  color: var(--color-text-secondary);
   font-style: italic;
   margin: 0 0 var(--space-2);
 }
-.pdl-cost-label--strong {
-  color: var(--color-text-primary);
-  font-weight: 700;
-}
-.pdl-cost-val--strong {
-  font-size: 15px;
-  font-weight: 800;
-}
+/* .pdl-cost-label--strong/.pdl-cost-val--strong ELIMINADAS
+   (PURCHASES-DS-GLOBAL-COMPONENT-04) — "Total línea" ahora usa
+   <ZHDataValue variant="strong"> (global) en vez de un modificador local. */
 
 /* ── Responsive (.pdl-line__*/
 .pdl-ctx compartidos con Kardex) ── */

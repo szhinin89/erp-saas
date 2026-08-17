@@ -80,9 +80,6 @@
   font-size: var(--text-label-sm-size);
   font-weight: var(--text-label-md-weight);
 }
-.sales-payment-chip__amount {
-  font-family: var(--font-family-mono);
-}
 /* El chip tiene fondo primario sólido (color: on-primary) — ZHMoneyValue debe
    heredar ese color/tamaño en vez de imponer --color-text-primary por
    defecto, o el monto quedaría con bajo contraste sobre el fondo primario
@@ -129,7 +126,6 @@
 .sales-payment-input {
   width: 70px;
   font-size: var(--text-body-md-size);
-  font-family: var(--font-family-mono);
   font-weight: var(--text-label-md-weight);
   text-align: center;
   padding: 2px 4px;
@@ -140,7 +136,6 @@
 
 .sales-payment-ref-amount {
   font-size: var(--text-label-sm-size);
-  font-family: var(--font-family-mono);
   font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
 }
@@ -157,7 +152,6 @@
 
 .sales-payment-credit-amount {
   font-size: var(--text-body-md-size);
-  font-family: var(--font-family-mono);
   font-weight: var(--text-label-md-weight);
   color: var(--color-text-primary);
   cursor: pointer;
@@ -201,7 +195,6 @@
 .sales-cash-input {
   width: 80px;
   padding: 2px var(--space-1);
-  font-family: var(--font-family-mono);
   font-size: var(--text-body-md-size);
   font-weight: var(--text-label-md-weight);
   text-align: center;
@@ -218,10 +211,6 @@
 .sales-cash-box__total-row--insufficient {
   color: var(--color-error);
 }
-.sales-cash-box__amount {
-  font-family: var(--font-family-mono);
-}
-
 /* Resumen de cobro (total / cobrado / pendiente) */
 .sales-summary-box {
   margin-top: var(--space-2);
@@ -258,11 +247,6 @@
 .sales-summary-total-row--exceeds {
   color: var(--color-error);
 }
-.sales-summary-row__amount,
-.sales-summary-total-row__amount {
-  font-family: var(--font-family-mono);
-}
-
 @media (max-width: 980px) {
   .sales-page-root {
     padding: var(--space-2) 0 0;

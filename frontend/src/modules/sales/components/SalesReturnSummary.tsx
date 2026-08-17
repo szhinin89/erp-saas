@@ -36,7 +36,7 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
                     <td>
                       <div className="sr-lines-table__desc">{line.description}</div>
                       {line.snapshotSku && (
-                        <div className="sr-lines-table__sku">{line.snapshotSku}</div>
+                        <div className="sr-lines-table__sku zh-code-value">{line.snapshotSku}</div>
                       )}
                     </td>
                     <td className="zh-table-cell--num">{line.quantity}</td>

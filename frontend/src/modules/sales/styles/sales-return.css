@@ -41,7 +41,6 @@
 .sr-lines-table__sku {
   font-size: 11px;
   color: var(--color-text-secondary);
-  font-family: var(--font-family-mono);
 }
 
 .sr-lines-table__error {

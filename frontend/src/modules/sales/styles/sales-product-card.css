@@ -116,13 +116,10 @@
   font-size: 13px;
   font-weight: 800;
   color: var(--color-primary);
-  font-family: var(--font-family-mono);
   letter-spacing: 0.02em;
 }
 .sf-product__name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-primary);
+  font-size: var(--text-title-sm-size);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -157,7 +154,6 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
   gap: 0;
 }
 .sf-product__pricelist-value--bold.zh-money-value {
@@ -200,7 +196,6 @@
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
   border-radius: var(--radius-md);
-  font-family: var(--font-family-mono);
   background: var(--color-surface);
   color: var(--color-text-primary);
   transition: border-color 0.15s;
@@ -223,43 +218,15 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-/* Borde sólido (antes "dashed") — mismo tratamiento que el resto de inputs de la ficha
-   (.sf-product__disc-input, .sf-product__qty-input): el borde punteado + overflow:hidden
-   quedaba recortado en las esquinas del wrapper (efecto "cortado"), reportado en
-   SALES-DS-VISUAL-BASELINE-15. overflow:visible evita que el anillo de foco se recorte. */
-.sf-product__price-wrap {
-  display: flex;
-  align-items: center;
-  border: 1.5px solid var(--color-outline-variant);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  overflow: hidden;
-  transition: border-color 0.15s;
-}
-.sf-product__price-wrap:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
-}
-.sf-product__price-currency {
-  padding: 7px 0 7px 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  user-select: none;
-}
-/* font-size ELIMINADO (SALES-DS-VISUAL-REAL-17) — ver nota de .sf-product__disc-input: ahora
-   viene de `.zh-input--compact` vía `density="compact"` en el TSX (13px), mismo valor que
-   `.sf-product__price-currency` de abajo (antes 13 vs 14, mismatch entre "$" y el número). */
+/* ERP-DS-VISUAL-CONSISTENCY-CLOSEOUT-01 — wrapper migrado a <ZHInputGroup
+   prefix="$"> (zh-input-group en zh-ui.css): border/background/focus-within
+   del prefijo "$" ya no se redefinen aquí, vienen del componente global.
+   Solo queda layout específico de esta ficha (ancho fijo por densidad). */
 .sf-product__price-input {
   width: 76px;
   padding: 7px 8px 7px 4px;
   font-weight: 700;
   text-align: right;
-  border: none;
-  background: transparent;
-  font-family: var(--font-family-mono);
-  color: var(--color-text-primary);
-  outline: none;
 }
 
 /* ── Columna 4: Stock / Ubicación ────────────────────────────── */
@@ -306,16 +273,13 @@
 }
 .sf-product__stock-uom {
   font-size: 9px;
-  font-weight: 800;
   text-transform: uppercase;
   color: var(--color-text-secondary);
   letter-spacing: 0.04em;
 }
 .sf-product__stock-wh {
   font-size: 11px;
-  font-weight: 700;
   color: var(--color-secondary);
-  letter-spacing: 0.02em;
 }
 .sf-product__stock-warning {
   font-size: 10px;
@@ -352,7 +316,6 @@
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
   border-radius: var(--radius-md);
-  font-family: var(--font-family-mono);
   color: var(--color-text-primary);
   background: var(--color-surface);
   transition: border-color 0.15s;
@@ -390,7 +353,6 @@
 }
 .sf-product__subtotal-value.zh-money-value {
   color: var(--color-text-secondary);
-  font-family: var(--font-family-mono);
   gap: 0;
 }
 .sf-product__subtotal-value.zh-money-value .zh-money-value__symbol {
@@ -414,7 +376,6 @@
   font-size: 27px;
   font-weight: 800;
   color: var(--color-primary);
-  font-family: var(--font-family-mono);
   letter-spacing: -0.5px;
   line-height: 1.2;
   gap: 0;

@@ -571,7 +571,7 @@ export function SalesPage() {
                   </span>
                   Clave de Acceso SRI
                 </span>
-                <span className="sf-bottombar__sri-key">
+                <span className="sf-bottombar__sri-key zh-code-value">
                   {ctx.editing?.accessKey ?? "— se genera al emitir —"}
                 </span>
                 {ctx.editing && (

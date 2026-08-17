@@ -187,7 +187,6 @@
   font-size: 28px;
   font-weight: 800;
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
   letter-spacing: -0.02em;
   margin-bottom: 12px;
 }
@@ -228,7 +227,6 @@
 }
 .sf-tax-table tbody td:not(:first-child) {
   text-align: right;
-  font-family: var(--font-family-mono);
   font-weight: 600;
 }
 .sf-tax-table .zh-money-value {
@@ -322,7 +320,6 @@
 }
 .sf-bottombar__sri-key {
   font-size: 10px;
-  font-family: var(--font-family-mono);
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -604,7 +601,6 @@
 
 /* ── Issue flow: success screen ── */
 .sf-issue-success__number {
-  font-family: var(--font-family-mono);
   font-size: 20px;
   font-weight: 700;
   text-align: center;
@@ -612,7 +608,6 @@
   color: var(--color-text-primary);
 }
 .sf-issue-success__mono {
-  font-family: var(--font-family-mono);
   font-size: 12px;
 }
 
@@ -723,7 +718,6 @@
   display: inline-block;
   font-size: 10px;
   font-weight: 700;
-  font-family: var(--font-family-mono);
   letter-spacing: 0.04em;
   color: var(--color-text-secondary);
   background: var(--color-surface-container-low);
@@ -754,11 +748,7 @@
 }
 .sf-result__stock-line strong {
   color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
   font-weight: 700;
-}
-.sf-result__stock-line--muted {
-  font-style: italic;
 }
 
 /* ── Zona precio: Sin IVA / IVA / Final ────────────────────────
@@ -794,7 +784,6 @@
 .sf-result__price-val {
   font-size: 12px;
   font-weight: 600;
-  font-family: var(--font-family-mono);
 }
 .sf-result__price-val--final {
   color: var(--color-success);

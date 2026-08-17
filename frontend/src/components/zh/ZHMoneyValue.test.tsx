@@ -107,6 +107,20 @@ describe("ZHMoneyValue", () => {
     ).toBe(true);
   });
 
+  it("emphasis=muted aplica .zh-money-value--muted", () => {
+    const { container } = render(<ZHMoneyValue value={100} emphasis="muted" />);
+    expect(
+      container.firstElementChild?.className.includes("zh-money-value--muted"),
+    ).toBe(true);
+  });
+
+  it("emphasis=grand aplica .zh-money-value--grand", () => {
+    const { container } = render(<ZHMoneyValue value={100} emphasis="grand" />);
+    expect(
+      container.firstElementChild?.className.includes("zh-money-value--grand"),
+    ).toBe(true);
+  });
+
   it("align=start aplica .zh-money-value--start", () => {
     const { container } = render(<ZHMoneyValue value={100} align="start" />);
     expect(
