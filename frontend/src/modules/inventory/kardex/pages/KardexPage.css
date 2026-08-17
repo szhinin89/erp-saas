@@ -129,13 +129,13 @@
 }
 
 .kdx-summary-label {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
   margin-top: var(--space-1);
 }
 
 .kdx-summary-value {
-  font-size: 18px;
+  font-size: var(--text-headline-sm-size);
   font-weight: 700;
 }
 

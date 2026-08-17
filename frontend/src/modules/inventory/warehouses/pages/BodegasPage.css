@@ -8,19 +8,19 @@
 }
 
 .bod-list-name {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 .bod-list-sub {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
 }
 .bod-list-branch {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--text-label-sm-size);
 }
 .bod-list-footer-note {
-  font-size: 12px;
+  font-size: var(--text-help-size);
   margin: 0;
 }
 
@@ -57,7 +57,7 @@
   flex-shrink: 0;
 }
 .bod-form-head__title {
-  font-size: 15px;
+  font-size: var(--text-body-lg-size);
   font-weight: 600;
   margin: 0;
   color: var(--color-text-primary);
@@ -100,7 +100,7 @@
   color: var(--color-primary);
 }
 .bod-form-section__label {
-  font-size: 12px;
+  font-size: var(--text-help-size);
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -121,7 +121,7 @@
   margin-bottom: var(--space-2);
 }
 .bod-tip-title {
-  font-weight: 600;
+  font-weight: var(--text-label-md-weight);
   font-size: var(--text-label-md-size);
   color: var(--color-primary);
   margin: 0;
@@ -151,10 +151,10 @@
   font-size: var(--text-label-sm-size, 11px);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--text-label-sm-spacing);
 }
 .bod-meta-value {
-  font-size: 13px;
+  font-size: var(--text-body-md-size);
 }
 
 /* readonly code field */
