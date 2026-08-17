@@ -144,6 +144,65 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Modules_contains_reports_group()
+    {
+        var reports = KernelRegistry.Modules.SingleOrDefault(m => m.Code == "reports");
+
+        reports.Should().NotBeNull("el grupo Reportes debe estar registrado en el Kernel");
+    }
+
+    [Fact]
+    public void Navigation_contains_sales_stock_and_purchases_reports_with_domain_permissions()
+    {
+        var navigation = KernelRegistry.Navigation;
+
+        var salesReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/ventas");
+        salesReport.Should().NotBeNull("el reporte de ventas debe estar en el menú");
+        salesReport!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
+        salesReport.SortOrder.Should().Be(10);
+
+        var stockReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/stock");
+        stockReport.Should().NotBeNull("el reporte de stock debe estar en el menú");
+        stockReport!.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.InventoryPermissions.StockView);
+        stockReport.SortOrder.Should().Be(20);
+
+        var purchasesReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/compras");
+        purchasesReport.Should().NotBeNull("el reporte de compras debe estar en el menú");
+        purchasesReport!.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
+        purchasesReport.SortOrder.Should().Be(30);
+
+        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/reportes/", StringComparison.Ordinal)
+            && n.RoutePath != "/reportes/ventas"
+            && n.RoutePath != "/reportes/stock"
+            && n.RoutePath != "/reportes/compras");
+    }
+
+    [Fact]
+    public void Navigation_reports_group_does_not_affect_finance_module()
+    {
+        var finance = KernelRegistry.Modules.Single(m => m.Code == "finance");
+        finance.Icon.Should().Be("💳");
+        finance.SortOrder.Should().Be(46);
+
+        var financeItems = new[]
+        {
+            "/finance/receivables",
+            "/finance/payables",
+            "/finance/supplier-credits",
+        };
+
+        foreach (var route in financeItems)
+        {
+            KernelRegistry
+                .Navigation.Single(n => n.RoutePath == route)
+                .GroupCode.Should()
+                .Be("finance", $"'{route}' debe seguir perteneciendo al grupo finance");
+        }
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry
