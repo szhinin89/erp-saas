@@ -1,11 +1,6 @@
 import { Route } from "react-router-dom";
 import { lazyNamedPage } from "./lazyPage";
 
-const ModulePlaceholderPage = lazyNamedPage<{ variant: "hr" }>(
-  () => import("../modules/shared/pages/ModulePlaceholderPage"),
-  "ModulePlaceholderPage",
-);
-
 const DashboardPage = lazyNamedPage(
   () => import("../modules/dashboard/pages/DashboardPage"),
   "DashboardPage",
@@ -167,11 +162,5 @@ export const mainRoutes = [
     key="purchases-report"
     path="/reportes/compras"
     element={<PurchasesReportPage />}
-  />,
-
-  <Route
-    key="rrhh"
-    path="/rrhh"
-    element={<ModulePlaceholderPage variant="hr" />}
   />,
 ];

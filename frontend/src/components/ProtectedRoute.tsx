@@ -14,7 +14,6 @@ function requiresCompanyContext(path: string): boolean {
     "/configuracion/",
     "/catalog/",
     "/reportes/",
-    "/rrhh",
     "/admin/",
     "/security",
   ];
