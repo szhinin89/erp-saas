@@ -1,3 +1,4 @@
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ConfirmStockTransfer;
@@ -146,7 +147,22 @@ public sealed class StockController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Crea una transferencia entre bodegas en estado Draft.</summary>
+    /// <summary>
+    /// Crea una transferencia entre bodegas en estado Draft. Único punto de entrada de menú de
+    /// "Stock" (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01): la clase no tiene [AppFeature] (ver
+    /// comentario de cabecera — Stock en general no es menú-visible), pero Transferencias sí es
+    /// una pantalla propia — [AppFeature] a nivel de método (soportado por el atributo) le da
+    /// entrada de menú dedicada sin exponer Ajustes/consultas de Stock como ítems de menú.
+    /// Reutiliza el mismo permiso que ya protege este endpoint — no crea uno nuevo.
+    /// </summary>
+    [AppFeature(
+        "Transferencias entre bodegas",
+        $"perm:{InventoryPermissions.StockManage}",
+        "swap_horiz",
+        "/inventory/transfers",
+        null,
+        22
+    )]
     [HttpPost("transfers")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
     [ProducesResponseType(

@@ -105,4 +105,17 @@ public static class InventoryModule
         Id = "a1000000-0000-4000-9000-000000000040"
     )]
     public const string Kardex = "/inventory/kardex";
+
+    // ── Transferencias entre bodegas: acceso operativo directo (sin contenedor),
+    // mismo patrón que Kardex — después de Kardex en el menú (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01).
+    // Permission = StockManage (no StockView): sin permiso de gestión el usuario no puede crear
+    // ni confirmar nada en esta pantalla — no existe un modo de solo lectura que justifique
+    // mostrarla con StockView únicamente.
+    [NavItem(
+        "Transferencias entre bodegas",
+        Permission = InventoryPermissions.StockManage,
+        LabelKey = "app.nav.item.inventory.transfers",
+        SortOrder = 40
+    )]
+    public const string Transfers = "/inventory/transfers";
 }

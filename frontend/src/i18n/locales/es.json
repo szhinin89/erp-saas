@@ -344,6 +344,7 @@
   "app.nav.item.inventory.itemTypes": "Tipos de Ítem",
   "app.nav.item.inventory.warehouses": "Bodegas",
   "app.nav.item.inventory.kardex": "Kardex",
+  "app.nav.item.inventory.transfers": "Transferencias entre bodegas",
   "app.nav.item.inventory.catalog": "Catálogo",
   "app.nav.item.catalog.brands": "Marcas",
   "app.nav.item.catalog.attributeGroups": "Grupos de Atributos",

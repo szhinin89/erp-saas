@@ -1,0 +1,111 @@
+/* P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01 / -POLISH-01 — layout local únicamente (flex/grid/spacing).
+   Colores, tipografía y bordes vienen de zh-ui.css / design-tokens.css, nunca de aquí. */
+
+.itf-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.itf-picker-wrap {
+  max-width: 420px;
+  margin-bottom: var(--space-3);
+}
+
+.itf-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+/* Línea de producto — mismo patrón de ZHLineCard que Ventas (sf-product-card):
+   rail izquierdo con índice + basurero, separado del body por un divisor,
+   en vez del icono suelto pegado al borde de la versión anterior. */
+.itf-line.zh-line-card {
+  width: 100%;
+  max-width: none;
+}
+
+.itf-line .zh-line-card__rail {
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--color-border);
+}
+
+.itf-line__index {
+  flex-shrink: 0;
+}
+
+.itf-line__main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+}
+
+.itf-line__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.itf-line__title-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.itf-line__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itf-line__qty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 140px;
+}
+
+.itf-line__stock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.itf-details {
+  margin-top: var(--space-1);
+}
+
+.itf-summary {
+  max-width: 480px;
+}
+
+.itf-actions {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 720px) {
+  .itf-line__main {
+    align-items: stretch;
+  }
+
+  .itf-line__qty,
+  .itf-line__stock {
+    flex-basis: 100%;
+  }
+
+  .itf-summary {
+    max-width: none;
+  }
+}

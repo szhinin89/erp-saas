@@ -13,6 +13,10 @@ const KardexPage = lazyNamedPage(
   () => import("../modules/inventory/kardex/pages/KardexPage"),
   "KardexPage",
 );
+const StockTransferPage = lazyNamedPage(
+  () => import("../modules/inventory/transfers/pages/StockTransferPage"),
+  "StockTransferPage",
+);
 const ItemTypesPage = lazyNamedPage(
   () => import("../modules/items/pages/ItemTypesPage"),
   "ItemTypesPage",
@@ -91,6 +95,11 @@ export const mainRoutes = [
     key="inventory-kardex"
     path="/inventory/kardex"
     element={<KardexPage />}
+  />,
+  <Route
+    key="inventory-transfers"
+    path="/inventory/transfers"
+    element={<StockTransferPage />}
   />,
 
   // -- Master data --------------------------------------------------------
