@@ -132,7 +132,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         SalesInvoice inv,
         DateOnly companyToday,
         BusinessPartner? customerBp = null,
-        SalesFiscalPolicyResult? fiscalPolicy = null
+        SalesFiscalPolicyResult? fiscalPolicy = null,
+        bool paymentMethodIsCreditAllowed = false
     )
     {
         var repo = new Mock<ISalesInvoiceRepository>();
@@ -185,6 +186,23 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                     )
             );
 
+        // BUGFIX-SALES-CONSUMER-FINAL-CREDIT-BLOCK-01: la política de Consumidor Final también
+        // debe mirar el método de pago usado (PaymentMethod.IsCreditAllowed), no solo el
+        // PaymentTerm — ver comentario en AuthorizeSalesUseCases.cs.
+        var paymentMethod = PaymentMethod.Create(
+            TenantId,
+            paymentMethodIsCreditAllowed ? "CREDITO" : "EFECTIVO",
+            paymentMethodIsCreditAllowed ? "Crédito" : "Efectivo",
+            requiresReference: false,
+            isCreditAllowed: paymentMethodIsCreditAllowed,
+            sortOrder: 1,
+            createdBy: UserId
+        );
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(paymentMethod);
+
         var handler = new AuthorizeSalesInvoiceHandler(
             repo.Object,
             Mock.Of<ISalesReceivableRepository>(),
@@ -198,6 +216,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             companyClock.Object,
             bpRepo.Object,
             fiscalPolicyResolver.Object,
+            paymentMethodRepo.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -408,6 +427,75 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
     }
 
+    /// <summary>
+    /// Regresión de bug real: factura 001-001-000000016 (BUGFIX-SALES-CONSUMER-FINAL-CREDIT-BLOCK-01).
+    /// Consumidor Final pagó con el método "Crédito" (PaymentMethod.IsCreditAllowed=true) sobre un
+    /// PaymentTerm de Contado (installments=1, days=0) — el bloqueo original solo miraba el
+    /// PaymentTerm y no vio esta señal, dejando pasar la autorización sin generar CxC pero
+    /// registrando la venta como si fuera a crédito.
+    /// </summary>
+    [Fact]
+    public async Task ConsumerFinal_metodo_pago_credito_es_bloqueado_aunque_paymentterm_sea_contado()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        // installments=1, daysBetween=0 (default) → PaymentTerm es Contado, como en la factura real.
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m);
+        var policy = new SalesFiscalPolicyResult(
+            true,
+            50.00m,
+            ConsumerFinalMaxAmountSource.TaxRegimeDefault,
+            "01"
+        );
+        var (handler, _) = BuildHandler(
+            inv,
+            today,
+            CreateConsumidorFinalBp(),
+            policy,
+            paymentMethodIsCreditAllowed: true
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("crédito");
+        inv.Status.Should()
+            .Be(
+                Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft,
+                "no debe autorizarse — reproduce y corrige la factura 001-001-000000016"
+            );
+    }
+
+    [Fact]
+    public async Task ConsumerFinal_contado_con_metodo_pago_contado_dentro_del_maximo_es_permitido()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m); // total ≈ 11.5 < 50
+        var policy = new SalesFiscalPolicyResult(
+            true,
+            50.00m,
+            ConsumerFinalMaxAmountSource.TaxRegimeDefault,
+            "01"
+        );
+        var (handler, _) = BuildHandler(
+            inv,
+            today,
+            CreateConsumidorFinalBp(),
+            policy,
+            paymentMethodIsCreditAllowed: false
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+    }
+
     [Fact]
     public async Task ClienteIdentificado_credito_valido_es_permitido()
     {
@@ -424,7 +512,13 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(inv, today, CreateIdentifiedCustomerBp(), policy);
+        var (handler, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            policy,
+            paymentMethodIsCreditAllowed: true
+        );
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),

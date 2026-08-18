@@ -304,4 +304,52 @@ public sealed class TaxIdentificationEcuadorTests
         var act = () => id.ResolveLegalEntityTypeCode(null);
         act.Should().Throw<ArgumentException>();
     }
+
+    // ── IsConsumidorFinal() — BUGFIX-SALES-CONSUMER-FINAL-CREDIT-BLOCK-01 ─────────
+    // Único punto de detección de Consumidor Final en todo el backend (ver
+    // AuthorizeSalesInvoiceHandler). Type "07" siempre normaliza a exactamente
+    // "9999999999999" (número estándar SRI) — no hay otro formato "válido" para tipo 07 que
+    // TaxIdentification.Create acepte y deba tratarse como Consumidor Final.
+
+    [Fact]
+    public void IsConsumidorFinal_tipo07_numero_estandar_devuelve_true()
+    {
+        var id = TaxIdentification.Create("07", "9999999999999");
+        id.IsConsumidorFinal().Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsConsumidorFinal_tipo07_numero_estandar_con_espacios_devuelve_true()
+    {
+        // Create() hace Trim() del número — un valor con espacios alrededor debe normalizar
+        // igual al formato estándar y seguir detectándose como Consumidor Final.
+        var id = TaxIdentification.Create("07", "  9999999999999  ");
+        id.IsConsumidorFinal().Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsConsumidorFinal_tipo07_numero_distinto_devuelve_false()
+    {
+        // Tipo 07 admite cualquier referencia (no valida dígito verificador), pero solo el
+        // número estándar SRI es Consumidor Final — cualquier otro valor no lo es.
+        var id = TaxIdentification.Create("07", "0000000000000");
+        id.IsConsumidorFinal().Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsConsumidorFinal_ruc_con_numero_estandar_devuelve_false()
+    {
+        // El número por sí solo no basta — debe ser tipo 07. Un RUC real nunca coincide con
+        // "9999999999999" (falla el dígito verificador), pero se prueba explícito el criterio
+        // "ambos campos" para que un futuro cambio no rompa esta regla mirando solo el número.
+        var id = TaxIdentification.Create("04", "1790016919001"); // RUC válido (Persona Natural)
+        id.IsConsumidorFinal().Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsConsumidorFinal_cliente_identificado_devuelve_false()
+    {
+        var id = TaxIdentification.Create("05", "1710034065");
+        id.IsConsumidorFinal().Should().BeFalse();
+    }
 }

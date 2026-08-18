@@ -43,6 +43,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ERP.Application.Common.Services.ICompanyClock _companyClock;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISalesFiscalPolicyResolver _fiscalPolicyResolver;
+    private readonly IPaymentMethodRepository _paymentMethodRepo;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -61,6 +62,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         ERP.Application.Common.Services.ICompanyClock companyClock,
         IBusinessPartnerRepository bpRepo,
         ISalesFiscalPolicyResolver fiscalPolicyResolver,
+        IPaymentMethodRepository paymentMethodRepo,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -79,6 +81,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _companyClock = companyClock;
         _bpRepo = bpRepo;
         _fiscalPolicyResolver = fiscalPolicyResolver;
+        _paymentMethodRepo = paymentMethodRepo;
         _logger = logger;
         _t = t;
         _c = c;
@@ -151,8 +154,9 @@ public sealed class AuthorizeSalesInvoiceHandler
 
         // ── Validar política fiscal de Consumidor Final (autoridad backend) ─
         // Único punto de esta regla — nunca duplicada en otro handler ni confiada al frontend.
-        // isCredit se calcula aquí (antes que más abajo) porque ambos bloques la necesitan;
-        // ver también el bloque de generación de CxC, que reutiliza esta misma variable.
+        // isCredit (PaymentTerm) se calcula aquí porque el bloque de generación de CxC más abajo
+        // reutiliza esta misma variable — esa condición de negocio (cuándo se genera CxC) NO
+        // cambia con este fix.
         var isCredit = inv.CreditTermDays > 0 || inv.PaymentTerm.Installments > 1;
 
         var customer = await _bpRepo.GetByIdAsync(inv.CustomerId, ct);
@@ -160,7 +164,27 @@ public sealed class AuthorizeSalesInvoiceHandler
         {
             var policy = await _fiscalPolicyResolver.GetEffectivePolicyAsync(ct);
 
-            if (isCredit && policy.BlockConsumerFinalCredit)
+            // BUGFIX-SALES-CONSUMER-FINAL-CREDIT-BLOCK-01: "isCredit" (arriba) solo mira el
+            // PaymentTerm — una factura 001-001-000000016 real demostró que se puede pagar con
+            // el método "Crédito" (PaymentMethod.IsCreditAllowed=true) sobre un PaymentTerm de
+            // Contado, evadiendo el bloqueo. La política de Consumidor Final debe considerar
+            // TODAS las señales reales de crédito del dominio, no solo el PaymentTerm.
+            var isCreditByPaymentMethod = false;
+            foreach (var payment in inv.Payments)
+            {
+                var method = await _paymentMethodRepo.GetByIdAsync(
+                    tid,
+                    payment.PaymentMethodId,
+                    ct
+                );
+                if (method?.IsCreditAllowed == true)
+                {
+                    isCreditByPaymentMethod = true;
+                    break;
+                }
+            }
+
+            if ((isCredit || isCreditByPaymentMethod) && policy.BlockConsumerFinalCredit)
                 return Result<SalesInvoiceDto>.ValidationFailure(
                     SalesFiscalPolicyMessages.CreditBlockedMessage
                 );
