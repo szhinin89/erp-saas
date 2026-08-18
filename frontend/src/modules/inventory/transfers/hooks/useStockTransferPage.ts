@@ -11,6 +11,7 @@ import {
 import type { TransferProductProfile } from "../components/TransferProductPicker";
 import { message } from "../../../../lib/messages";
 import { readApiErrorMessage } from "../../../lib/apiError";
+import { useI18n } from "../../../../i18n/i18n";
 
 /**
  * El backend valida stock insuficiente en el dominio (`CurrentStock.ApplyMovement`, compartido
@@ -18,11 +19,23 @@ import { readApiErrorMessage } from "../../../lib/apiError";
  * traduce aquí al texto claro que pide la pantalla, sin tocar ese dominio compartido (fuera de
  * alcance de esta tarea). Cualquier otro error del backend se muestra tal cual llega.
  */
-function friendlyConfirmError(err: unknown): string {
+function friendlyConfirmError(
+  err: unknown,
+  t: (key: string, fallback?: string) => string,
+): string {
   const raw = readApiErrorMessage(err) ?? "";
   if (raw.toLowerCase().includes("insufficient stock"))
-    return "No hay stock suficiente en la bodega origen.";
-  return raw || "No se pudo confirmar la transferencia. Intente nuevamente.";
+    return t(
+      "inventory.transfers.messages.insufficientStock",
+      "No hay stock suficiente en la bodega origen.",
+    );
+  return (
+    raw ||
+    t(
+      "inventory.transfers.messages.confirmError",
+      "No se pudo confirmar la transferencia. Intente nuevamente.",
+    )
+  );
 }
 
 export type TransferLine = {
@@ -44,6 +57,7 @@ export type TransferLine = {
  * expuesto por ningún endpoint) — "Cancelar/limpiar" es puramente un reset del formulario local.
  */
 export function useStockTransferPage() {
+  const { t } = useI18n();
   const [warehouses, setWarehouses] = useState<WarehouseDto[]>([]);
   const [branches, setBranches] = useState<BranchListItemDto[]>([]);
   const [sourceWarehouseId, setSourceWarehouseId] = useState("");
@@ -95,7 +109,10 @@ export function useStockTransferPage() {
     async (product: TransferProductProfile) => {
       if (lines.some((l) => l.productId === product.id)) {
         message.warning(
-          "Este producto ya fue agregado. Edite la cantidad en la línea existente.",
+          t(
+            "inventory.transfers.messages.duplicateProduct",
+            "Este producto ya fue agregado. Edite la cantidad en la línea existente.",
+          ),
         );
         return;
       }
@@ -124,7 +141,7 @@ export function useStockTransferPage() {
       ]);
       setLineKey((k) => k + 1);
     },
-    [lines, lineKey, sourceWarehouseId],
+    [lines, lineKey, sourceWarehouseId, t],
   );
 
   const updateLineQuantity = useCallback((key: number, quantity: number) => {
@@ -136,18 +153,31 @@ export function useStockTransferPage() {
   }, []);
 
   const validate = useCallback((): string | null => {
-    if (!sourceWarehouseId) return "Seleccione una bodega origen.";
-    if (!targetWarehouseId) return "Seleccione una bodega destino.";
+    if (!sourceWarehouseId)
+      return t("inventory.transfers.messages.selectSourceWarehouse", "Seleccione una bodega origen.");
+    if (!targetWarehouseId)
+      return t("inventory.transfers.messages.selectTargetWarehouse", "Seleccione una bodega destino.");
     if (sourceWarehouseId === targetWarehouseId)
-      return "La bodega origen y destino no pueden ser la misma.";
-    if (lines.length === 0) return "Agregue al menos un producto.";
+      return t(
+        "inventory.transfers.messages.sameWarehouse",
+        "La bodega origen y destino no pueden ser la misma.",
+      );
+    if (lines.length === 0)
+      return t("inventory.transfers.messages.addProduct", "Agregue al menos un producto.");
     for (const line of lines) {
-      if (line.quantity <= 0) return "La cantidad debe ser mayor a cero.";
+      if (line.quantity <= 0)
+        return t(
+          "inventory.transfers.messages.quantityGreaterThanZero",
+          "La cantidad debe ser mayor a cero.",
+        );
       if (line.availableAtSource !== null && line.quantity > line.availableAtSource)
-        return "No hay stock suficiente en la bodega origen.";
+        return t(
+          "inventory.transfers.messages.insufficientStock",
+          "No hay stock suficiente en la bodega origen.",
+        );
     }
     return null;
-  }, [sourceWarehouseId, targetWarehouseId, lines]);
+  }, [sourceWarehouseId, targetWarehouseId, lines, t]);
 
   const createTransfer = useCallback(async () => {
     setError(null);
@@ -174,12 +204,15 @@ export function useStockTransferPage() {
     } catch (err) {
       setError(
         readApiErrorMessage(err) ??
-          "No se pudo crear la transferencia. Intente nuevamente.",
+          t(
+            "inventory.transfers.messages.createError",
+            "No se pudo crear la transferencia. Intente nuevamente.",
+          ),
       );
     } finally {
       setCreating(false);
     }
-  }, [validate, sourceWarehouseId, targetWarehouseId, reason, notes, lines]);
+  }, [validate, sourceWarehouseId, targetWarehouseId, reason, notes, lines, t]);
 
   const confirmTransfer = useCallback(async () => {
     if (!transfer) return;
@@ -188,13 +221,15 @@ export function useStockTransferPage() {
     try {
       const confirmed = await stockTransferService.confirm(transfer.id);
       setTransfer(confirmed);
-      setSuccessMessage("Transferencia confirmada correctamente.");
+      setSuccessMessage(
+        t("inventory.transfers.messages.confirmed", "Transferencia confirmada correctamente."),
+      );
     } catch (err) {
-      setError(friendlyConfirmError(err));
+      setError(friendlyConfirmError(err, t));
     } finally {
       setConfirming(false);
     }
-  }, [transfer]);
+  }, [transfer, t]);
 
   const resetForm = useCallback(() => {
     setSourceWarehouseId("");

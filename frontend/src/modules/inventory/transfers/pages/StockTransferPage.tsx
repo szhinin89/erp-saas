@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useI18n } from "../../../../i18n/i18n";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHGrid, ZHField, ZHBtn } from "../../../../components/zh/ZHForm";
@@ -16,19 +17,26 @@ import { TransferProductPicker } from "../components/TransferProductPicker";
 import { useStockTransferPage } from "../hooks/useStockTransferPage";
 import "./StockTransferPage.css";
 
-function statusBadge(status: string): { label: string; variant: "orange" | "green" | "gray" } {
-  if (status === "Confirmed") return { label: "Confirmada", variant: "green" };
-  if (status === "Cancelled") return { label: "Anulada", variant: "gray" };
-  return { label: "Borrador", variant: "orange" };
+function statusBadge(
+  status: string,
+  t: (key: string, fallback?: string) => string,
+): { label: string; variant: "orange" | "green" | "gray" } {
+  if (status === "Confirmed")
+    return { label: t("inventory.transfers.status.confirmed", "Confirmada"), variant: "green" };
+  if (status === "Cancelled")
+    return { label: t("inventory.transfers.status.cancelled", "Anulada"), variant: "gray" };
+  return { label: t("inventory.transfers.status.draft", "Borrador"), variant: "orange" };
 }
 
 function availabilityBadge(
   available: number,
   quantity: number,
+  t: (key: string, fallbackOrParams?: string | Record<string, string | number>) => string,
 ): { label: string; variant: "red" | "orange" | "green" } {
-  if (quantity > available) return { label: `Disp. ${available}`, variant: "red" };
-  if (available <= 5) return { label: `Disp. ${available}`, variant: "orange" };
-  return { label: `Disp. ${available}`, variant: "green" };
+  const label = t("inventory.transfers.labels.available", { count: available });
+  if (quantity > available) return { label, variant: "red" };
+  if (available <= 5) return { label, variant: "orange" };
+  return { label, variant: "green" };
 }
 
 /**
@@ -42,32 +50,40 @@ function availabilityBadge(
  * lógica ni de contrato respecto a la versión anterior.
  */
 export function StockTransferPage() {
+  const { t } = useI18n();
   const ctx = useStockTransferPage();
 
-  const badge = ctx.transfer ? statusBadge(ctx.transfer.status) : null;
+  const badge = ctx.transfer ? statusBadge(ctx.transfer.status, t) : null;
 
   return (
     <ErpPageTemplate
-      title="Transferencias entre bodegas"
-      subtitle="Mueve stock entre bodegas de la misma empresa manteniendo trazabilidad en Kardex."
+      title={t("inventory.transfers.title", "Transferencias entre bodegas")}
+      subtitle={t(
+        "inventory.transfers.description",
+        "Mueve stock entre bodegas de la misma empresa manteniendo trazabilidad en Kardex.",
+      )}
     >
       <div className="itf-page">
         {ctx.error && (
-          <ZHPageNotice variant="error" message="Error" detail={ctx.error} />
+          <ZHPageNotice
+            variant="error"
+            message={t("inventory.transfers.messages.error", "Error")}
+            detail={ctx.error}
+          />
         )}
         {ctx.successMessage && (
           <ZHPageNotice variant="success" message={ctx.successMessage} />
         )}
 
-        <ZHCard title="Origen y destino">
+        <ZHCard title={t("inventory.transfers.sections.originDestination", "Origen y destino")}>
           <ZHGrid cols={2}>
             <ZHField
-              label="Bodega origen"
+              label={t("inventory.transfers.fields.sourceWarehouse", "Bodega origen")}
               required
               hint={
                 ctx.sourceWarehouseId
                   ? (ctx.branchNameForWarehouse(ctx.sourceWarehouseId) ??
-                    "Sucursal no disponible")
+                    t("inventory.transfers.messages.branchUnavailable", "Sucursal no disponible"))
                   : undefined
               }
             >
@@ -76,16 +92,19 @@ export function StockTransferPage() {
                 onChange={(id) => ctx.setSourceWarehouseId(id)}
                 fallbackWarehouses={ctx.warehouses}
                 disabled={ctx.formLocked}
-                placeholder="Seleccione bodega origen"
+                placeholder={t(
+                  "inventory.transfers.placeholders.sourceWarehouse",
+                  "Seleccione bodega origen",
+                )}
               />
             </ZHField>
             <ZHField
-              label="Bodega destino"
+              label={t("inventory.transfers.fields.targetWarehouse", "Bodega destino")}
               required
               hint={
                 ctx.targetWarehouseId
                   ? (ctx.branchNameForWarehouse(ctx.targetWarehouseId) ??
-                    "Sucursal no disponible")
+                    t("inventory.transfers.messages.branchUnavailable", "Sucursal no disponible"))
                   : undefined
               }
             >
@@ -94,19 +113,25 @@ export function StockTransferPage() {
                 onChange={(id) => ctx.setTargetWarehouseId(id)}
                 fallbackWarehouses={ctx.warehouses}
                 disabled={ctx.formLocked}
-                placeholder="Seleccione bodega destino"
+                placeholder={t(
+                  "inventory.transfers.placeholders.targetWarehouse",
+                  "Seleccione bodega destino",
+                )}
               />
             </ZHField>
           </ZHGrid>
           {ctx.sameWarehouse && (
             <ZHPageNotice
               variant="warning"
-              message="La bodega origen y destino no pueden ser la misma."
+              message={t(
+                "inventory.transfers.messages.sameWarehouse",
+                "La bodega origen y destino no pueden ser la misma.",
+              )}
             />
           )}
         </ZHCard>
 
-        <ZHCard title="Productos">
+        <ZHCard title={t("inventory.transfers.sections.products", "Productos")}>
           {!ctx.formLocked && (
             <div className="itf-picker-wrap">
               <TransferProductPicker
@@ -117,7 +142,12 @@ export function StockTransferPage() {
           )}
 
           {ctx.lines.length === 0 ? (
-            <EmptyState message="Agregue al menos un producto para transferir." />
+            <EmptyState
+              message={t(
+                "inventory.transfers.messages.emptyProductsHint",
+                "Agregue al menos un producto para transferir.",
+              )}
+            />
           ) : (
             <div className="itf-lines">
               {ctx.lines.map((line, index) => (
@@ -133,8 +163,10 @@ export function StockTransferPage() {
                         <ZHRowDeleteAction
                           compact
                           showText={false}
-                          title="Quitar línea"
-                          ariaLabel={`Quitar ${line.name}`}
+                          title={t("inventory.transfers.actions.removeLine", "Quitar línea")}
+                          ariaLabel={t("inventory.transfers.actions.removeLineAria", {
+                            name: line.name,
+                          })}
                           onClick={() => ctx.removeLine(line._key)}
                         />
                       )}
@@ -154,7 +186,9 @@ export function StockTransferPage() {
                     </div>
 
                     <div className="itf-line__qty">
-                      <ZHFieldLabel size="sm">Cantidad</ZHFieldLabel>
+                      <ZHFieldLabel size="sm">
+                        {t("inventory.transfers.fields.quantity", "Cantidad")}
+                      </ZHFieldLabel>
                       <ZhDecimalInput
                         decimals={2}
                         positiveOnly
@@ -172,9 +206,11 @@ export function StockTransferPage() {
 
                     {line.availableAtSource !== null && (
                       <div className="itf-line__stock">
-                        <ZHFieldLabel size="sm">En origen</ZHFieldLabel>
+                        <ZHFieldLabel size="sm">
+                          {t("inventory.transfers.fields.availableAtSource", "En origen")}
+                        </ZHFieldLabel>
                         <Badge
-                          {...availabilityBadge(line.availableAtSource, line.quantity)}
+                          {...availabilityBadge(line.availableAtSource, line.quantity, t)}
                         />
                       </div>
                     )}
@@ -186,17 +222,23 @@ export function StockTransferPage() {
         </ZHCard>
 
         {!ctx.formLocked && (
-          <ZHCard title="Detalles de la transferencia" className="itf-details">
+          <ZHCard
+            title={t("inventory.transfers.sections.observations", "Observaciones")}
+            className="itf-details"
+          >
             <ZHGrid cols={2}>
-              <ZHField label="Motivo">
+              <ZHField label={t("inventory.transfers.fields.reason", "Motivo")}>
                 <ZhTextInput
                   value={ctx.reason}
                   onChange={(e) => ctx.setReason(e.target.value)}
                   maxLength={200}
-                  placeholder="Ej. Reabastecimiento sucursal"
+                  placeholder={t(
+                    "inventory.transfers.placeholders.reason",
+                    "Ej. Reabastecimiento sucursal",
+                  )}
                 />
               </ZHField>
-              <ZHField label="Notas">
+              <ZHField label={t("inventory.transfers.fields.notes", "Notas")}>
                 <ZhTextInput
                   value={ctx.notes}
                   onChange={(e) => ctx.setNotes(e.target.value)}
@@ -207,17 +249,25 @@ export function StockTransferPage() {
           </ZHCard>
         )}
 
-        <ZHCard title="Resumen" className="itf-summary">
+        <ZHCard title={t("inventory.transfers.sections.summary", "Resumen")} className="itf-summary">
           <ZHInfoRow
-            label={<ZHFieldLabel size="sm">Líneas</ZHFieldLabel>}
+            label={<ZHFieldLabel size="sm">{t("inventory.transfers.fields.lines", "Líneas")}</ZHFieldLabel>}
             value={<ZHDataValue variant="numeric">{ctx.lines.length}</ZHDataValue>}
           />
           <ZHInfoRow
-            label={<ZHFieldLabel size="sm">Total unidades</ZHFieldLabel>}
+            label={
+              <ZHFieldLabel size="sm">
+                {t("inventory.transfers.fields.totalUnits", "Total unidades")}
+              </ZHFieldLabel>
+            }
             value={<ZHDataValue variant="numeric">{ctx.totalUnits}</ZHDataValue>}
           />
           <ZHInfoRow
-            label={<ZHFieldLabel size="sm">Origen → Destino</ZHFieldLabel>}
+            label={
+              <ZHFieldLabel size="sm">
+                {t("inventory.transfers.fields.originToDestination", "Origen → Destino")}
+              </ZHFieldLabel>
+            }
             value={
               <ZHDataValue>
                 {ctx.sourceWarehouse?.name ?? "—"} → {ctx.targetWarehouse?.name ?? "—"}
@@ -226,13 +276,17 @@ export function StockTransferPage() {
           />
           {ctx.transfer && badge && (
             <ZHInfoRow
-              label={<ZHFieldLabel size="sm">Estado</ZHFieldLabel>}
+              label={<ZHFieldLabel size="sm">{t("inventory.transfers.fields.status", "Estado")}</ZHFieldLabel>}
               value={<Badge label={badge.label} variant={badge.variant} />}
             />
           )}
           {ctx.transfer && (
             <ZHInfoRow
-              label={<ZHFieldLabel size="sm">N.º transferencia</ZHFieldLabel>}
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("inventory.transfers.fields.transferNumber", "N.º transferencia")}
+                </ZHFieldLabel>
+              }
               value={<ZHDataValue variant="code">{ctx.transfer.transferNumber}</ZHDataValue>}
             />
           )}
@@ -248,7 +302,7 @@ export function StockTransferPage() {
                 onClick={ctx.resetForm}
                 disabled={ctx.creating}
               >
-                Limpiar
+                {t("inventory.transfers.actions.clear", "Limpiar")}
               </ZHBtn>
               <ZHBtn
                 variant="primary"
@@ -257,7 +311,9 @@ export function StockTransferPage() {
                 onClick={() => void ctx.createTransfer()}
                 disabled={ctx.creating}
               >
-                {ctx.creating ? "Creando..." : "Crear transferencia"}
+                {ctx.creating
+                  ? t("inventory.transfers.actions.creating", "Creando...")
+                  : t("inventory.transfers.actions.create", "Crear transferencia")}
               </ZHBtn>
             </>
           ) : ctx.isDraft ? (
@@ -269,7 +325,7 @@ export function StockTransferPage() {
                 onClick={ctx.resetForm}
                 disabled={ctx.confirming}
               >
-                Nueva transferencia
+                {t("inventory.transfers.actions.newTransfer", "Nueva transferencia")}
               </ZHBtn>
               <ZHBtn
                 variant="primary"
@@ -278,7 +334,9 @@ export function StockTransferPage() {
                 onClick={() => void ctx.confirmTransfer()}
                 disabled={ctx.confirming}
               >
-                {ctx.confirming ? "Confirmando..." : "Confirmar transferencia"}
+                {ctx.confirming
+                  ? t("inventory.transfers.actions.confirming", "Confirmando...")
+                  : t("inventory.transfers.actions.confirm", "Confirmar transferencia")}
               </ZHBtn>
             </>
           ) : (
@@ -287,16 +345,16 @@ export function StockTransferPage() {
                 to={`/inventory/kardex?warehouseId=${ctx.sourceWarehouseId}`}
                 className="zh-link"
               >
-                Ver Kardex — bodega origen
+                {t("inventory.transfers.actions.viewSourceKardex", "Ver Kardex — bodega origen")}
               </Link>
               <Link
                 to={`/inventory/kardex?warehouseId=${ctx.targetWarehouseId}`}
                 className="zh-link"
               >
-                Ver Kardex — bodega destino
+                {t("inventory.transfers.actions.viewTargetKardex", "Ver Kardex — bodega destino")}
               </Link>
               <ZHBtn variant="primary" size="sm" type="button" onClick={ctx.resetForm}>
-                Nueva transferencia
+                {t("inventory.transfers.actions.newTransfer", "Nueva transferencia")}
               </ZHBtn>
             </>
           )}

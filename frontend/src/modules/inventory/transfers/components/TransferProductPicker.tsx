@@ -3,6 +3,7 @@ import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZHPickerResultItem } from "../../../../components/zh/ZHPickerResultItem";
 import { itemLookupFacade } from "../../../items/facades/itemLookupFacade";
 import type { ItemDto } from "../../../../types/items";
+import { useI18n } from "../../../../i18n/i18n";
 
 export type TransferProductProfile = {
   id: string;
@@ -29,6 +30,7 @@ type Props = {
  * aquí) — de ahí este componente local mínimo, reutilizando solo piezas DS/facade genéricas.
  */
 export function TransferProductPicker({ onSelect, disabled }: Props) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ItemDto[]>([]);
   const [open, setOpen] = useState(false);
@@ -111,16 +113,21 @@ export function TransferProductPicker({ onSelect, disabled }: Props) {
           if (query.length >= 2) setOpen(true);
         }}
         onKeyDown={handleKeyDown}
-        placeholder="Buscar por SKU o nombre..."
+        placeholder={t(
+          "inventory.transfers.placeholders.searchProduct",
+          "Buscar por SKU o nombre...",
+        )}
         disabled={disabled}
       />
 
       {open && query.length >= 2 && (
         <div className="zh-picker__dropdown">
-          {loading && <div className="zh-picker__empty">Buscando...</div>}
+          {loading && (
+            <div className="zh-picker__empty">{t("common.searching", "Buscando...")}</div>
+          )}
           {!loading && results.length === 0 && (
             <div className="zh-picker__empty">
-              Sin resultados con control de stock para &quot;{query}&quot;.
+              {t("inventory.transfers.messages.noResults", { query })}
             </div>
           )}
           {results.map((item, i) => (
