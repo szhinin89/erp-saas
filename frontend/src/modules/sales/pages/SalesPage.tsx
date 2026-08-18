@@ -1043,6 +1043,17 @@ function PaymentMethodsSection({
         </div>
       ) : (
         <>
+          {ctx.isCreditTerm &&
+            !ctx.payments.some((p) =>
+              ctx.paymentMethods.find(
+                (pm) => pm.id === p.paymentMethodId && pm.isCreditAllowed,
+              ),
+            ) && (
+              <ZHPageNotice
+                variant="info"
+                message="Esta venta es a crédito. Seleccione el método de pago Crédito para continuar."
+              />
+            )}
           <div className="sales-payment-grid">
             {ctx.paymentMethods.map((pm) => {
               const entries = ctx.payments.filter(
@@ -1055,6 +1066,11 @@ function PaymentMethodsSection({
               );
               const hasValue = totalForMethod > 0;
               const isCredit = pm.isCreditAllowed;
+              // BUGFIX-SALES-CREDIT-PAYMENT-CONSISTENCY-01: el backend bloquea Contado + método
+              // Crédito (AuthorizeSalesInvoiceHandler) — se deshabilita aquí para prevenir el
+              // intento, nunca reemplaza esa validación.
+              const creditTileDisabled =
+                ctx.fieldDisabled || (isCredit && !ctx.isCreditTerm);
               const calcRemaining = () =>
                 Math.max(0, remainingToCollect(ctx, pm.id));
 
@@ -1062,10 +1078,15 @@ function PaymentMethodsSection({
                 <div key={pm.id} className="sales-payment-method">
                   <ZHToggleTile
                     active={hasValue}
-                    disabled={ctx.fieldDisabled}
+                    disabled={creditTileDisabled}
                     title={pm.name}
+                    subtitle={
+                      isCredit && !ctx.isCreditTerm
+                        ? "Requiere condición de pago a crédito"
+                        : undefined
+                    }
                     onClick={() => {
-                      if (ctx.fieldDisabled) return;
+                      if (creditTileDisabled) return;
                       if (isCredit) {
                         const rem = calcRemaining();
                         ctx.setCreditAmount(rem);

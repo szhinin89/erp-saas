@@ -152,39 +152,36 @@ public sealed class AuthorizeSalesInvoiceHandler
             );
         }
 
-        // ── Validar política fiscal de Consumidor Final (autoridad backend) ─
-        // Único punto de esta regla — nunca duplicada en otro handler ni confiada al frontend.
-        // isCredit (PaymentTerm) se calcula aquí porque el bloque de generación de CxC más abajo
-        // reutiliza esta misma variable — esa condición de negocio (cuándo se genera CxC) NO
-        // cambia con este fix.
+        // ── Modalidad de pago real (BUGFIX-SALES-CREDIT-PAYMENT-CONSISTENCY-01) ─────
+        // Único punto de estas dos señales — nunca recalculadas por separado en otra validación.
+        // isCredit (alias de IsCreditByTerm) se conserva con este nombre porque el bloque de
+        // generación de CxC más abajo lo reutiliza — esa condición de negocio (cuándo se genera
+        // CxC) no cambia con este fix.
         var isCredit = inv.CreditTermDays > 0 || inv.PaymentTerm.Installments > 1;
 
+        var isCreditByPaymentMethod = false;
+        foreach (var payment in inv.Payments)
+        {
+            var method = await _paymentMethodRepo.GetByIdAsync(tid, payment.PaymentMethodId, ct);
+            if (method?.IsCreditAllowed == true)
+            {
+                isCreditByPaymentMethod = true;
+                break;
+            }
+        }
+
+        var paymentModality = new SalesPaymentModality(isCredit, isCreditByPaymentMethod);
+
+        // ── Validar política fiscal de Consumidor Final (autoridad backend) ─
+        // Único punto de esta regla — nunca duplicada en otro handler ni confiada al frontend.
+        // Se evalúa ANTES que la consistencia general: el mensaje fiscal de Consumidor Final
+        // tiene prioridad sobre el mensaje genérico de consistencia (regla fiscal más fuerte).
         var customer = await _bpRepo.GetByIdAsync(inv.CustomerId, ct);
         if (customer is not null && customer.Identification.IsConsumidorFinal())
         {
             var policy = await _fiscalPolicyResolver.GetEffectivePolicyAsync(ct);
 
-            // BUGFIX-SALES-CONSUMER-FINAL-CREDIT-BLOCK-01: "isCredit" (arriba) solo mira el
-            // PaymentTerm — una factura 001-001-000000016 real demostró que se puede pagar con
-            // el método "Crédito" (PaymentMethod.IsCreditAllowed=true) sobre un PaymentTerm de
-            // Contado, evadiendo el bloqueo. La política de Consumidor Final debe considerar
-            // TODAS las señales reales de crédito del dominio, no solo el PaymentTerm.
-            var isCreditByPaymentMethod = false;
-            foreach (var payment in inv.Payments)
-            {
-                var method = await _paymentMethodRepo.GetByIdAsync(
-                    tid,
-                    payment.PaymentMethodId,
-                    ct
-                );
-                if (method?.IsCreditAllowed == true)
-                {
-                    isCreditByPaymentMethod = true;
-                    break;
-                }
-            }
-
-            if ((isCredit || isCreditByPaymentMethod) && policy.BlockConsumerFinalCredit)
+            if (paymentModality.IsCreditSale && policy.BlockConsumerFinalCredit)
                 return Result<SalesInvoiceDto>.ValidationFailure(
                     SalesFiscalPolicyMessages.CreditBlockedMessage
                 );
@@ -193,6 +190,18 @@ public sealed class AuthorizeSalesInvoiceHandler
                 return Result<SalesInvoiceDto>.ValidationFailure(
                     SalesFiscalPolicyMessages.AmountExceededMessage(policy.ConsumerFinalMaxAmount)
                 );
+        }
+
+        // ── Validar consistencia condición de pago ↔ método de pago (cualquier cliente) ─
+        // Caso real que motivó esta regla: factura 001-001-000000016, PaymentTerm Contado pagada
+        // con método Crédito — quedó autorizada sin generar CxC. Venta mixta (parte contado +
+        // parte crédito) queda fuera de alcance de esta fase.
+        if (!paymentModality.IsConsistent)
+        {
+            var message = paymentModality.IsCreditByTerm
+                ? SalesPaymentConsistencyMessages.TermCreditMethodCashOnlyMessage
+                : SalesPaymentConsistencyMessages.TermCashMethodCreditMessage;
+            return Result<SalesInvoiceDto>.ValidationFailure(message);
         }
 
         // ── Validar stock disponible por línea (Kardex) ─────────────

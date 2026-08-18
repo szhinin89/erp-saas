@@ -127,7 +127,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
     private static (
         AuthorizeSalesInvoiceHandler handler,
-        Mock<ICompanyClock> companyClock
+        Mock<ICompanyClock> companyClock,
+        Mock<ISalesReceivableRepository> receivableRepo
     ) BuildHandler(
         SalesInvoice inv,
         DateOnly companyToday,
@@ -203,9 +204,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paymentMethod);
 
+        var receivableRepo = new Mock<ISalesReceivableRepository>();
+
         var handler = new AuthorizeSalesInvoiceHandler(
             repo.Object,
-            Mock.Of<ISalesReceivableRepository>(),
+            receivableRepo.Object,
             stockRepo.Object,
             tax.Object,
             Mock.Of<IDocumentSequenceRepository>(),
@@ -223,7 +226,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             user.Object
         );
 
-        return (handler, companyClock);
+        return (handler, companyClock, receivableRepo);
     }
 
     [Fact]
@@ -231,7 +234,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today.AddDays(4)); // reproduce factura 001-500-000000012
-        var (handler, _) = BuildHandler(inv, today);
+        var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -252,7 +255,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today.AddDays(-91));
-        var (handler, _) = BuildHandler(inv, today);
+        var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -268,7 +271,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today.AddDays(-90));
-        var (handler, _) = BuildHandler(inv, today);
+        var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -286,7 +289,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // (todavía "hoy" localmente) — con la fecha empresarial correcta, esto ya no falla.
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today);
-        var (handler, companyClock) = BuildHandler(inv, today);
+        var (handler, companyClock, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -310,7 +313,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // pruebas) fallaría de forma intermitente según la hora en que corra la suite.
         var companyToday = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
         var inv = CreateDraftInvoice(issueDate: companyToday);
-        var (handler, companyClock) = BuildHandler(inv, companyToday);
+        var (handler, companyClock, _) = BuildHandler(inv, companyToday);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -338,7 +341,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     {
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today);
-        var (handler, _) = BuildHandler(inv, today);
+        var (handler, _, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -362,7 +365,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
+        var (handler, _, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -384,7 +387,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
+        var (handler, _, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -415,7 +418,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
+        var (handler, _, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -446,7 +449,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(
+        var (handler, _, _) = BuildHandler(
             inv,
             today,
             CreateConsumidorFinalBp(),
@@ -479,7 +482,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(
+        var (handler, _, _) = BuildHandler(
             inv,
             today,
             CreateConsumidorFinalBp(),
@@ -512,7 +515,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(
+        var (handler, _, _) = BuildHandler(
             inv,
             today,
             CreateIdentifiedCustomerBp(),
@@ -540,7 +543,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.TaxRegimeDefault,
             "01"
         );
-        var (handler, _) = BuildHandler(inv, today, CreateIdentifiedCustomerBp(), policy);
+        var (handler, _, _) = BuildHandler(inv, today, CreateIdentifiedCustomerBp(), policy);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -562,7 +565,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             ConsumerFinalMaxAmountSource.Manual,
             "01"
         );
-        var (handler, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
+        var (handler, _, _) = BuildHandler(inv, today, CreateConsumidorFinalBp(), policy);
 
         var result = await handler.Handle(
             new AuthorizeSalesInvoiceCommand(inv.Id),
@@ -572,5 +575,154 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("0.00");
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+    }
+
+    // ── Consistencia condición de pago ↔ método de pago (BUGFIX-SALES-CREDIT-PAYMENT-CONSISTENCY-01) ──
+
+    [Fact]
+    public async Task ClienteIdentificado_contado_con_efectivo_es_permitido_y_no_genera_CxC()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m); // Contado, default efectivo
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: false
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+        receivableRepo.Verify(
+            r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "Contado + Efectivo no debe generar cuenta por cobrar"
+        );
+    }
+
+    [Fact]
+    public async Task ClienteIdentificado_contado_con_metodo_credito_es_bloqueado()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        // installments=1, daysBetween=0 (default) → PaymentTerm Contado.
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m);
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: true
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("contado");
+        result.Error.Should().Contain("crédito");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+    }
+
+    [Fact]
+    public async Task ClienteIdentificado_credito_con_metodo_credito_es_permitido_y_genera_CxC()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            unitPrice: 10m,
+            installments: 1,
+            daysBetween: 30
+        );
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: true
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+        receivableRepo.Verify(
+            r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()),
+            Times.Once,
+            "Crédito + método Crédito debe generar cuenta por cobrar"
+        );
+    }
+
+    [Fact]
+    public async Task ClienteIdentificado_credito_con_solo_efectivo_es_bloqueado()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            unitPrice: 10m,
+            installments: 1,
+            daysBetween: 30
+        );
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: false
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("crédito");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+        receivableRepo.Verify(
+            r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task ConsumerFinal_metodo_credito_bloquea_con_mensaje_fiscal_no_generico()
+    {
+        // La regla de consistencia general también bloquearía este caso (Contado + método
+        // Crédito), pero el mensaje que debe llegar al usuario es el fiscal de Consumidor Final
+        // (prioridad), no el genérico de consistencia — ambos contienen "crédito", por eso se
+        // verifica el texto completo, no solo una palabra.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m);
+        var policy = new SalesFiscalPolicyResult(
+            true,
+            50.00m,
+            ConsumerFinalMaxAmountSource.TaxRegimeDefault,
+            "01"
+        );
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateConsumidorFinalBp(),
+            policy,
+            paymentMethodIsCreditAllowed: true
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should()
+            .Be(
+                "Consumidor Final no puede registrar ventas a crédito. Seleccione un cliente identificado o cambie la condición de pago a contado."
+            );
     }
 }

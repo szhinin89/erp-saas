@@ -492,6 +492,36 @@ export function useSalesPage() {
     [paymentTermsList, formWatch.paymentTermId],
   );
 
+  // Misma condición que usa el backend para decidir "es crédito" por PaymentTerm
+  // (AuthorizeSalesInvoiceHandler: CreditTermDays>0 || Installments>1) — nunca hardcodear un id
+  // de condición de pago, siempre los flags reales del PaymentTerm seleccionado.
+  const isCreditTerm =
+    !!selectedPt && (selectedPt.totalDays > 0 || selectedPt.installments > 1);
+
+  // BUGFIX-SALES-CREDIT-PAYMENT-CONSISTENCY-01: si la condición de pago deja de ser crédito
+  // (p.ej. el cliente cambia y se resuelve un PaymentTerm de contado), cualquier pago ya
+  // registrado con un método de crédito (PaymentMethod.IsCreditAllowed) queda inválido — se
+  // limpia aquí mismo, en el único lugar que conoce ambas señales (término + métodos). El
+  // backend sigue siendo la autoridad real: esto solo evita que el usuario intente autorizar
+  // una combinación que ya sabemos inválida.
+  useEffect(() => {
+    if (isCreditTerm || paymentMethods.length === 0) return;
+    const creditMethodIds = new Set(
+      paymentMethods.filter((pm) => pm.isCreditAllowed).map((pm) => pm.id),
+    );
+    if (creditMethodIds.size === 0) return;
+    const current = getValues("payments");
+    if (!current.some((p) => creditMethodIds.has(p.paymentMethodId))) return;
+    setValue(
+      "payments",
+      current.filter((p) => !creditMethodIds.has(p.paymentMethodId)),
+      { shouldDirty: true },
+    );
+    message.warning(
+      "La condición de pago es contado — se quitó el método de pago Crédito.",
+    );
+  }, [isCreditTerm, paymentMethods, getValues, setValue]);
+
   // ── Init reference data ────────────────────────────────────────────
   // Flujo: config empresa → catálogos → aplicar defaults → listo para renderizar
   useEffect(() => {
@@ -1641,6 +1671,7 @@ export function useSalesPage() {
     taxBreakdown,
     isElectronic,
     selectedPt,
+    isCreditTerm,
 
     // Consumidor Final — política fiscal (runtime context, autoridad backend)
     runtimeContext,
