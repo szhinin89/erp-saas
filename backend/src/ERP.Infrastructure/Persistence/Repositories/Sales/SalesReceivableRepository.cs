@@ -48,8 +48,26 @@ public sealed class SalesReceivableRepository : ISalesReceivableRepository
     {
         var q = Scoped(tenantId);
 
+        // FINANCE-RECEIVABLES-LIST-ENTERPRISE-01: SalesReceivable.Status nunca transiciona a
+        // "paid" (RegisterCollection solo acumula PaidAmount) — el saldo en cero es la única
+        // señal real de "pagada", igual que en PurchasePayable. Filtrar por Status=="pending"
+        // literal dejaba pasar filas ya saldadas al filtro "Pendientes". "pending"/"paid" se
+        // traducen aquí a la condición real de saldo; "cancelled" (y cualquier otro valor futuro)
+        // sigue siendo comparación literal de Status.
         if (!string.IsNullOrWhiteSpace(status))
-            q = q.Where(x => x.Status == status.Trim().ToLowerInvariant());
+        {
+            var normalized = status.Trim().ToLowerInvariant();
+            q = normalized switch
+            {
+                "pending" => q.Where(x =>
+                    x.Status != "cancelled" && x.OriginalAmount - x.PaidAmount > 0
+                ),
+                "paid" => q.Where(x =>
+                    x.Status != "cancelled" && x.OriginalAmount - x.PaidAmount <= 0
+                ),
+                _ => q.Where(x => x.Status == normalized),
+            };
+        }
 
         var total = await q.CountAsync(ct);
         var items = await q.OrderByDescending(x => x.CreatedAt)

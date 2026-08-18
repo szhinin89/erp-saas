@@ -89,6 +89,64 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
         return rows.ToDictionary(x => x.Id, x => (x.InvoiceNumber, x.CustomerName));
     }
 
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
+            (
+                string InvoiceNumber,
+                string CustomerName,
+                string CustomerTaxId,
+                string CustomerIdentificationType,
+                Guid BranchId,
+                Guid CreatedBy,
+                DateOnly IssueDate,
+                DateTime CreatedAt
+            )
+        >
+    > GetReceivableSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        if (ids.Count == 0)
+            return new Dictionary<
+                Guid,
+                (string, string, string, string, Guid, Guid, DateOnly, DateTime)
+            >();
+
+        var rows = await Scoped(tenantId)
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.InvoiceNumber,
+                CustomerName = x.Customer.Name,
+                CustomerTaxId = x.Customer.TaxId,
+                CustomerIdentificationType = x.Customer.IdentificationType,
+                x.BranchId,
+                x.CreatedBy,
+                x.IssueDate,
+                x.CreatedAt,
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (
+                x.InvoiceNumber,
+                x.CustomerName,
+                x.CustomerTaxId,
+                x.CustomerIdentificationType,
+                x.BranchId,
+                x.CreatedBy,
+                x.IssueDate,
+                x.CreatedAt
+            )
+        );
+    }
+
     public async Task<IReadOnlyList<SalesInvoice>> GetForDailyReportAsync(
         Guid tenantId,
         DateOnly dateFrom,

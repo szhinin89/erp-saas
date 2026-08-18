@@ -132,7 +132,7 @@ export function RegisterCollectionModal({
       onClose={handleClose}
       size="md"
       title="Registrar cobro"
-      subtitle={`Cliente: ${receivable.customerId} — Saldo pendiente: ${formatMoney(receivable.balanceDue)}`}
+      subtitle={`Factura ${receivable.invoiceNumber} — Cliente: ${receivable.customerName} — Saldo pendiente: ${formatMoney(receivable.balanceDue)}`}
     >
       <div>
         <ZHField label="Monto a cobrar" error={errors.amount?.message} required>

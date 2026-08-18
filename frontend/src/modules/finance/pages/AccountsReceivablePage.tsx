@@ -1,15 +1,42 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { Badge } from "../../../components/PageShell";
+import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { formatMoney } from "../../../lib/sanitizers";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import {
+  formatDate,
+  formatDateTime,
+} from "../../../lib/formatters/dateFormatters";
 import { receivableService, type SalesReceivableDto } from "../api/receivableService";
 import { RegisterCollectionModal } from "../components/RegisterCollectionModal";
 
 import "../../../styles/shared/items-catalog.css";
+
+/**
+ * FINANCE-RECEIVABLES-LIST-ENTERPRISE-01 — deriva el label/color del badge a partir de
+ * `statusLabel` (ya calculado por el backend desde status persistido + saldo + mora — ver
+ * SalesReceivableDtoMapper). Mismo patrón que `getPayableStatusBadge` en AccountsPayablePage
+ * (CxP), adaptado a los 5 estados de CxC: Pendiente/Parcial/Pagada/Vencida/Anulada.
+ */
+function getReceivableStatusBadge(r: SalesReceivableDto): {
+  label: string;
+  variant: BadgeVariant;
+} {
+  switch (r.statusLabel) {
+    case "Anulada":
+      return { label: r.statusLabel, variant: "gray" };
+    case "Pagada":
+      return { label: r.statusLabel, variant: "green" };
+    case "Vencida":
+      return { label: r.statusLabel, variant: "red" };
+    case "Parcial":
+      return { label: r.statusLabel, variant: "blue" };
+    default:
+      return { label: r.statusLabel, variant: "orange" };
+  }
+}
 
 /**
  * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — pantalla mínima de Cuentas por Cobrar: consulta,
@@ -67,43 +94,60 @@ export function AccountsReceivablePage() {
           <table className="prd-crud-table">
             <thead>
               <tr>
+                <th>Factura</th>
                 <th>Cliente</th>
+                <th>Identificación</th>
+                <th>Sucursal</th>
+                <th>Emitido por</th>
+                <th>Fecha factura</th>
+                <th>Vence</th>
                 <th>Monto original</th>
                 <th>Cobrado</th>
                 <th>Saldo pendiente</th>
                 <th>Estado</th>
-                <th>Creada</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.customerId}</td>
-                  <td>{formatMoney(r.originalAmount)}</td>
-                  <td>{formatMoney(r.paidAmount)}</td>
-                  <td>
-                    <strong>{formatMoney(r.balanceDue)}</strong>
-                  </td>
-                  <td>
-                    <Badge label={"Estado"} variant="neutral" />
-                  </td>
-                  <td>{formatDate(r.createdAt)}</td>
-                  <td className="prd-td-actions">
-                    {r.balanceDue > 0 && r.status !== "cancelled" && (
-                      <ZHBtn onClick={() => setSelected(r)}>
-                        <span className="material-symbols-outlined zh-icon-md">
-                          payments
-                        </span>
-                        Registrar cobro
-                      </ZHBtn>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {items.map((r) => {
+                const statusBadge = getReceivableStatusBadge(r);
+                return (
+                  <tr key={r.id}>
+                    <td className="mono">{r.invoiceNumber}</td>
+                    <td>{r.customerName}</td>
+                    <td className="mono">{r.customerIdentification}</td>
+                    <td>{r.branchName || "Sucursal no disponible"}</td>
+                    <td>{r.createdByName || "Usuario no disponible"}</td>
+                    <td>{formatDateTime(r.invoiceCreatedAt)}</td>
+                    <td>{r.dueDate ? formatDate(r.dueDate) : "—"}</td>
+                    <td>
+                      <ZHMoneyValue value={r.originalAmount} />
+                    </td>
+                    <td>
+                      <ZHMoneyValue value={r.paidAmount} />
+                    </td>
+                    <td>
+                      <ZHMoneyValue value={r.balanceDue} emphasis="strong" />
+                    </td>
+                    <td>
+                      <Badge label={statusBadge.label} variant={statusBadge.variant} />
+                    </td>
+                    <td className="prd-td-actions">
+                      {r.balanceDue > 0 && r.status !== "cancelled" ? (
+                        <ZHBtn onClick={() => setSelected(r)}>
+                          <span className="material-symbols-outlined zh-icon-md">
+                            payments
+                          </span>
+                          Registrar cobro
+                        </ZHBtn>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
               {items.length === 0 && (
                 <tr className="prd-empty-row">
-                  <td colSpan={7}>Sin cuentas por cobrar.</td>
+                  <td colSpan={12}>Sin cuentas por cobrar.</td>
                 </tr>
               )}
             </tbody>
@@ -125,8 +169,3 @@ export function AccountsReceivablePage() {
     </ErpPageTemplate>
   );
 }
-
-
-
-
-

@@ -28,6 +28,32 @@ public interface ISalesInvoiceRepository
     );
 
     /// <summary>
+    /// Proyección para el listado de Cuentas por Cobrar (FINANCE-RECEIVABLES-LIST-ENTERPRISE-01):
+    /// datos de la factura origen que <c>SalesReceivable</c> no tiene por sí sola (número,
+    /// cliente, sucursal, usuario que facturó, fecha de emisión) — un solo query por página en
+    /// vez de N+1 por fila de la grilla.
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (
+                string InvoiceNumber,
+                string CustomerName,
+                string CustomerTaxId,
+                string CustomerIdentificationType,
+                Guid BranchId,
+                Guid CreatedBy,
+                DateOnly IssueDate,
+                DateTime CreatedAt
+            )
+        >
+    > GetReceivableSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Facturas emitidas en el rango de fechas indicado (inclusive), con líneas cargadas para
     /// que los totales calculados (Subtotal/TotalVat/TotalDiscount/GrandTotal) resuelvan
     /// correctamente incluso para facturas aún no autorizadas. Usado por el reporte básico de

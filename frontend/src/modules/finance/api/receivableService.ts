@@ -11,15 +11,34 @@ export interface SalesReceivableInstallmentDto {
   status: string;
 }
 
+/**
+ * FINANCE-RECEIVABLES-LIST-ENTERPRISE-01 — DTO enriquecido con los datos de la factura origen
+ * (número, cliente, sucursal, usuario que facturó) que el backend ya resuelve — el frontend
+ * nunca debe mostrar `customerId` crudo ni armar el estado a partir de un literal genérico.
+ * `branchName`/`createdByName` pueden venir `null` si el registro referenciado ya no existe —
+ * usar un fallback textual, nunca el GUID.
+ */
 export interface SalesReceivableDto {
   id: string;
   invoiceId: string;
+  invoiceNumber: string;
   customerId: string;
+  customerName: string;
+  customerIdentification: string;
+  branchId: string;
+  branchName: string | null;
+  createdByUserId: string | null;
+  createdByName: string | null;
+  invoiceIssuedAt: string;
+  invoiceCreatedAt: string;
+  dueDate: string | null;
   originalAmount: number;
   paidAmount: number;
   balanceDue: number;
   status: string;
+  statusLabel: string;
   installmentCount: number;
+  overdueDays: number | null;
   installments: SalesReceivableInstallmentDto[];
   createdAt: string;
   updatedAt: string | null;
