@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
+using System.Text.RegularExpressions;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 

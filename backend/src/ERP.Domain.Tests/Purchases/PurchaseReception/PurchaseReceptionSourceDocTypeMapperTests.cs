@@ -1,6 +1,5 @@
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using FluentAssertions;
-using Xunit;
 
 namespace ERP.Domain.Tests.Purchases.PurchaseReception;
 

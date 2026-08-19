@@ -1,9 +1,8 @@
-using System.Reflection;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Infrastructure.Ride.ElectronicDocumentsAdapter;
 using FluentAssertions;
-using Xunit;
+using System.Reflection;
 
 namespace ERP.Infrastructure.Tests.Ride;
 

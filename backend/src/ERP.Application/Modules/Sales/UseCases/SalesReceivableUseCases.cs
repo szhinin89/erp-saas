@@ -1,7 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
-using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;

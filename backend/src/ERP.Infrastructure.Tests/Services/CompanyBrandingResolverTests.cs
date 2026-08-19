@@ -1,4 +1,3 @@
-using ERP.Application.Common.Models;
 using ERP.Application.Modules.Media;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;

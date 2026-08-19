@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;

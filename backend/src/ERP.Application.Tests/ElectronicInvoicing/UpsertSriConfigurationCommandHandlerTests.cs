@@ -3,7 +3,6 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSriConfiguration;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
-using FluentAssertions;
 using Moq;
 
 namespace ERP.Application.Tests.ElectronicInvoicing;

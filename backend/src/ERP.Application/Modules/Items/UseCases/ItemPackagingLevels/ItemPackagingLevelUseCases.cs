@@ -40,10 +40,10 @@ public sealed class ReplaceItemPackagingLevelsCommandValidator
                 lvls is not null
                 && lvls.All(l => !string.IsNullOrWhiteSpace(l.UomCode))
                 && lvls.Select(l => new
-                    {
-                        UomCode = l.UomCode.Trim().ToUpperInvariant(),
-                        l.BaseQuantity,
-                    })
+                {
+                    UomCode = l.UomCode.Trim().ToUpperInvariant(),
+                    l.BaseQuantity,
+                })
                     .Distinct()
                     .Count() == lvls.Count
             )

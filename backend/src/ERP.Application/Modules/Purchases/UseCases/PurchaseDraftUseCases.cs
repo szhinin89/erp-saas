@@ -1248,7 +1248,7 @@ file static class ReceptionTaxHelper
                         iceRate = entry.Percentage ?? 0m;
                     }
                     break;
-                // IRBPNR no tiene campos escalares legacy — solo vive en la colección Taxes.
+                    // IRBPNR no tiene campos escalares legacy — solo vive en la colección Taxes.
             }
         }
 

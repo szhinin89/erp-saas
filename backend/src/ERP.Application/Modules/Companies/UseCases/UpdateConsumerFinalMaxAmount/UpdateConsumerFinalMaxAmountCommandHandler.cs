@@ -1,4 +1,3 @@
-using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
@@ -8,6 +7,7 @@ using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;
+using System.Globalization;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount;
 

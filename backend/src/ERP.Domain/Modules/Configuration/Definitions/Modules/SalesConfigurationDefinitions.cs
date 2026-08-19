@@ -1,6 +1,6 @@
-using System.Globalization;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
+using System.Globalization;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
