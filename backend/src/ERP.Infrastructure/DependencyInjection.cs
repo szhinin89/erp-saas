@@ -829,6 +829,14 @@ public static class DependencyInjection
             ERP.Domain.Modules.Company.Interfaces.ICompanyBrandingResolver,
             ERP.Infrastructure.Services.CompanyBrandingResolver
         >();
+        services.AddScoped<
+            ERP.Domain.Modules.Sales.Interfaces.IInvoiceDefaultsResolver,
+            ERP.Infrastructure.Services.InvoiceDefaultsResolver
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Items.Interfaces.ICatalogConfigurationResolver,
+            ERP.Infrastructure.Services.CatalogConfigurationResolver
+        >();
 
         // ── Setup BC ──────────────────────────────────────────────────────────
         services.AddScoped<ISystemSetupRepository, SystemSetupRepository>();

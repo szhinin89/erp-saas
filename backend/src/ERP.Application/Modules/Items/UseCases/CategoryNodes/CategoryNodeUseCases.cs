@@ -1,8 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
-using ERP.Domain.Configuration.Constants;
-using ERP.Domain.Configuration.Enums;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Enums;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -88,21 +85,21 @@ public sealed class CreateCategoryNodeCommandHandler
     : IRequestHandler<CreateCategoryNodeCommand, Result<CategoryNodeDto>>
 {
     private readonly ICategoryNodeRepository _repo;
-    private readonly IOrgSettingsRepository _orgRepo;
+    private readonly ICatalogConfigurationResolver _catalogConfigResolver;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
     public CreateCategoryNodeCommandHandler(
         ICategoryNodeRepository repo,
-        IOrgSettingsRepository orgRepo,
+        ICatalogConfigurationResolver catalogConfigResolver,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
-        _orgRepo = orgRepo;
+        _catalogConfigResolver = catalogConfigResolver;
         _tenant = tenant;
         _company = company;
         _user = user;
@@ -135,8 +132,7 @@ public sealed class CreateCategoryNodeCommandHandler
         }
 
         var newDepth = CategoryDepthResolver.DepthOf(parent?.Path) + 1;
-        var maxDepth = await CategoryDepthResolver.ResolveMaxDepthAsync(
-            _orgRepo,
+        var maxDepth = await _catalogConfigResolver.ResolveMaxCategoryDepthAsync(
             tenantId,
             _company.CompanyId,
             ct
@@ -177,38 +173,16 @@ public sealed class CreateCategoryNodeCommandHandler
 }
 
 /// <summary>
-/// Resuelve la profundidad de un nodo a partir de su Path materializado
-/// y el límite máximo configurado por empresa (OrgSettings, default 3).
+/// Resuelve la profundidad de un nodo a partir de su Path materializado. El límite máximo
+/// configurado por empresa ya no vive aquí — CONFIG-FOUNDATION-P1-04 lo movió a
+/// ICatalogConfigurationResolver (Infrastructure.Services.CatalogConfigurationResolver).
 /// </summary>
 internal static class CategoryDepthResolver
 {
-    public const int DefaultMaxDepth = 3;
-
     public static int DepthOf(string? path) =>
         string.IsNullOrEmpty(path)
             ? 0
             : path.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
-
-    public static async Task<int> ResolveMaxDepthAsync(
-        IOrgSettingsRepository orgRepo,
-        Guid tenantId,
-        Guid companyId,
-        CancellationToken ct
-    )
-    {
-        var setting = await orgRepo.GetAsync(
-            tenantId,
-            companyId,
-            OrgScope.Company,
-            companyId,
-            OrgSettingKeys.Catalog.MaxCategoryDepth,
-            ct
-        );
-
-        return setting is not null && int.TryParse(setting.Value, out var value) && value > 0
-            ? value
-            : DefaultMaxDepth;
-    }
 }
 
 public sealed class UpdateCategoryNodeCommandHandler
@@ -332,19 +306,19 @@ public sealed class GetCategoryTreeQueryHandler
     : IRequestHandler<GetCategoryTreeQuery, Result<CategoryTreeDto>>
 {
     private readonly ICategoryNodeRepository _repo;
-    private readonly IOrgSettingsRepository _orgRepo;
+    private readonly ICatalogConfigurationResolver _catalogConfigResolver;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
 
     public GetCategoryTreeQueryHandler(
         ICategoryNodeRepository repo,
-        IOrgSettingsRepository orgRepo,
+        ICatalogConfigurationResolver catalogConfigResolver,
         ICurrentTenant tenant,
         ICurrentCompany company
     )
     {
         _repo = repo;
-        _orgRepo = orgRepo;
+        _catalogConfigResolver = catalogConfigResolver;
         _tenant = tenant;
         _company = company;
     }
@@ -357,8 +331,7 @@ public sealed class GetCategoryTreeQueryHandler
         var tenantId = _tenant.TenantId;
         var nodes = await _repo.GetAllAsync(tenantId, query.IncludeInactive, ct);
         var dtos = nodes.Select(CategoryNodeMapping.ToDto).ToList();
-        var maxDepth = await CategoryDepthResolver.ResolveMaxDepthAsync(
-            _orgRepo,
+        var maxDepth = await _catalogConfigResolver.ResolveMaxCategoryDepthAsync(
             tenantId,
             _company.CompanyId,
             ct
