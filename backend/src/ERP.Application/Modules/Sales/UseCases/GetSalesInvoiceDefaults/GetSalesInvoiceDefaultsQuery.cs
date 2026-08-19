@@ -6,9 +6,10 @@ namespace ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 
 /// <summary>
 /// Fase I-6B: branch-scoped por exigencia de contexto — se precarga siempre en el flujo de
-/// creación de factura, que ya opera con sucursal activa. No cambia la resolución de
-/// DefaultWarehouseId (sigue null; ver comentario del handler) — eso es una mejora de lógica
-/// de negocio fuera de alcance de este cierre.
+/// creación de factura, que ya opera con sucursal activa. CONFIG-FOUNDATION-P0-01: el contexto
+/// de sucursal (ICurrentBranch, validado por BranchScopeBehavior antes de llegar al handler) se
+/// usa ahora para resolver DefaultWarehouseId server-side — ver
+/// GetSalesInvoiceDefaultsQueryHandler.ResolveDefaultWarehouseAsync.
 /// </summary>
 public record GetSalesInvoiceDefaultsQuery
     : IRequest<Result<SalesInvoiceDefaultsDto>>,

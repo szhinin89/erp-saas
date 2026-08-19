@@ -161,6 +161,21 @@ public sealed class Warehouse : MasterEntity, ITenantScopedEntity, ICompanyOpera
         SetUpdated(updatedBy);
     }
 
+    /// <summary>
+    /// CONFIG-FOUNDATION-P0-01: único punto controlado para cambiar <see cref="IsMain"/> — antes
+    /// no existía ningún setter fuera de <see cref="Create"/>. Desmarcar la bodega principal
+    /// anterior de la misma sucursal es responsabilidad de quien orquesta la transacción
+    /// (Application/Infrastructure); esta entidad solo garantiza que el propio flag se audita
+    /// vía <see cref="AuditableEntity.SetUpdated"/>. No existe todavía un caso de uso que invoque
+    /// este método — el constraint único filtrado en `warehouses` (uq_warehouses_tenant_branch_main)
+    /// es la protección real de P0 mientras no se construya esa pantalla.
+    /// </summary>
+    public void SetMain(bool isMain, Guid updatedBy)
+    {
+        IsMain = isMain;
+        SetUpdated(updatedBy);
+    }
+
     private static string? Trim(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     public override void Disable(Guid updatedBy)

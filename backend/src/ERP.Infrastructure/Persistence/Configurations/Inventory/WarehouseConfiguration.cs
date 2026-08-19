@@ -80,6 +80,19 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
             .HasDatabaseName("uq_warehouses_tenant_branch_code")
             .HasFilter("code IS NOT NULL");
 
+        // CONFIG-FOUNDATION-P0-01: garantiza en DB que solo exista una bodega principal por
+        // sucursal (Fase 10 de docs/architecture/configuration-engine-target-architecture.md).
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.BranchId,
+            })
+            .IsUnique()
+            .HasDatabaseName("uq_warehouses_tenant_branch_main")
+            .HasFilter("is_main = true");
+
         builder
             .HasOne<Branch>()
             .WithMany()

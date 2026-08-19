@@ -595,18 +595,25 @@ export function useSalesPage() {
       const effectiveSriPaymentMethodCode =
         d?.defaultSriPaymentMethodCode ?? d?.fallbackSriPaymentMethodCode ?? "";
 
-      // Bodega: Caja (CashRegister.DefaultWarehouseId, la más específica) → tenant config → primera activa disponible
+      // Bodega: Caja (CashRegister.DefaultWarehouseId, la más específica) → default resuelto
+      // en backend (Branch OrgSetting → Warehouse.IsMain de la sucursal). CONFIG-FOUNDATION-P0-01:
+      // ya NUNCA se sustituye por "la primera bodega del listado" — si ninguna de las dos fuentes
+      // resuelve un valor, el campo queda vacío y exige selección manual (el guard existente en
+      // addLineWithItem ya bloquea agregar ítems que requieren bodega sin selección).
       const sessionData =
         mySession.status === "fulfilled" ? mySession.value : null;
-      const effectiveWhId =
-        sessionData?.defaultWarehouseId ??
-        d?.defaultWarehouseId ??
-        whsData[0]?.id ??
-        "";
+      const effectiveWhId = sessionData?.defaultWarehouseId ?? d?.defaultWarehouseId ?? "";
 
       setValue("docTypeCode", effectiveDocTypeCode);
       setValue("sriPaymentMethodCode", effectiveSriPaymentMethodCode);
       if (effectiveWhId) setSelectedWarehouseId(effectiveWhId);
+
+      if (!effectiveWhId && d?.requiresManualWarehouseSelection) {
+        message.warning(
+          d.configurationWarnings[0] ??
+            "No hay una bodega predeterminada configurada para esta sucursal. Seleccione una bodega antes de facturar.",
+        );
+      }
 
       // Cliente por defecto de la Caja — mismo loadCustomerProfile ya usado al elegir
       // cliente manualmente (handleCustomerChange), sin lógica paralela. Si la caja no

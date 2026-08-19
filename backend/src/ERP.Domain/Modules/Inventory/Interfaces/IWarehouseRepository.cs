@@ -28,5 +28,16 @@ public interface IWarehouseRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// CONFIG-FOUNDATION-P0-01: resuelve la bodega principal (<see cref="Warehouse.IsMain"/>)
+    /// activa de una sucursal — fuente de fallback del default de bodega de venta cuando no hay
+    /// OrgSetting de sucursal configurado. Null si la sucursal no tiene bodega principal activa.
+    /// </summary>
+    Task<Warehouse?> GetMainForBranchAsync(
+        Guid tenantId,
+        Guid branchId,
+        CancellationToken cancellationToken = default
+    );
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

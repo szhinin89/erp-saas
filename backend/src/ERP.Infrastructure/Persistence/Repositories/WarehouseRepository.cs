@@ -74,6 +74,15 @@ public sealed class WarehouseRepository : IWarehouseRepository
         return await q.OrderBy(b => b.Name).ToListAsync(cancellationToken);
     }
 
+    public Task<Warehouse?> GetMainForBranchAsync(
+        Guid tenantId,
+        Guid branchId,
+        CancellationToken cancellationToken = default
+    ) =>
+        Scoped(tenantId)
+            .Where(w => w.BranchId == branchId && w.IsMain && w.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _context.SaveChangesAsync(cancellationToken);
 }

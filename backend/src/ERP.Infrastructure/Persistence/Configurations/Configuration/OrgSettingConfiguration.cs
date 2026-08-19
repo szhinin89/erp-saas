@@ -80,5 +80,17 @@ public sealed class OrgSettingConfiguration : IEntityTypeConfiguration<OrgSettin
                 e.ScopeId,
             })
             .HasDatabaseName("ix_org_settings_scope_lookup");
+
+        // CONFIG-FOUNDATION-P0-01: concurrencia optimista para settings críticos editados por
+        // más de un admin (Fase 5 de docs/architecture/configuration-engine-target-architecture.md).
+        // Mapea la columna de sistema xmin de Postgres como shadow property de solo lectura —
+        // no requiere columna nueva ni migración de datos; EF Core la usa como token de
+        // concurrencia automáticamente en cada UPDATE/DELETE.
+        builder
+            .Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsRowVersion();
     }
 }

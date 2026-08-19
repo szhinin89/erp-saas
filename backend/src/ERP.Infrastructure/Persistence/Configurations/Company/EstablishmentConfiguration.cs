@@ -59,6 +59,14 @@ public class EstablishmentConfiguration : IEntityTypeConfiguration<Establishment
             .IsUnique()
             .HasDatabaseName("uq_estab_code");
 
+        // CONFIG-FOUNDATION-P0-01: garantiza en DB que solo exista un establecimiento principal
+        // por empresa (Fase 10 de docs/architecture/configuration-engine-target-architecture.md).
+        builder
+            .HasIndex(x => new { x.TenantId, x.CompanyId })
+            .IsUnique()
+            .HasDatabaseName("uq_establishment_tenant_company_main")
+            .HasFilter("is_main = true");
+
         builder
             .HasOne(x => x.Company)
             .WithMany(x => x.Establishments)

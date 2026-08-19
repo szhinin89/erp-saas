@@ -50,7 +50,10 @@ public sealed class GetSalesRuntimeContextQueryHandler
                     d.DefaultWarehouseId,
                     d.DefaultPaymentTermId,
                     d.FallbackDocTypeCode,
-                    d.FallbackSriPaymentMethodCode
+                    d.FallbackSriPaymentMethodCode,
+                    d.DefaultWarehouseSource,
+                    d.RequiresManualWarehouseSelection,
+                    d.ConfigurationWarnings
                 )
             )
         );

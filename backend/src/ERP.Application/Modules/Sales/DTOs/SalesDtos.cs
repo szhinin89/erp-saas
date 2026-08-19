@@ -6,6 +6,17 @@ namespace ERP.Application.Modules.Sales.DTOs;
 /// debe usar el catálogo disponible sin asumir un valor concreto.
 /// Los campos Fallback* son el único punto centralizado de fallback del sistema
 /// para campos obligatorios cuyo catálogo siempre debe tener un valor seleccionado.
+///
+/// CONFIG-FOUNDATION-P0-01: <c>DefaultWarehouseId</c> ahora se resuelve en backend (Branch
+/// OrgSetting → Warehouse.IsMain de la sucursal → null). El frontend NUNCA debe elegir la
+/// primera bodega de un listado como sustituto — si <c>DefaultWarehouseId</c> es null y
+/// <c>RequiresManualWarehouseSelection</c> es true, debe exigir selección manual.
+/// <c>DefaultWarehouseSource</c> es uno de: "BranchSetting" | "BranchMainWarehouse" | "None"
+/// (el valor "CashRegister" —de mayor precedencia— se resuelve en frontend a partir de la
+/// sesión de caja activa, fuera de esta query; ver Fase 3/4 de
+/// docs/architecture/configuration-engine-target-architecture.md).
+/// <c>ConfigurationWarnings</c> solo se puebla cuando un valor configurado es inválido
+/// (fail-closed: nunca cae en silencio al siguiente scope).
 /// </summary>
 public sealed record SalesInvoiceDefaultsDto(
     string? DefaultDocTypeCode,
@@ -14,7 +25,10 @@ public sealed record SalesInvoiceDefaultsDto(
     Guid? DefaultWarehouseId,
     Guid? DefaultPaymentTermId,
     string FallbackDocTypeCode,
-    string FallbackSriPaymentMethodCode
+    string FallbackSriPaymentMethodCode,
+    string DefaultWarehouseSource,
+    bool RequiresManualWarehouseSelection,
+    IReadOnlyList<string> ConfigurationWarnings
 );
 
 public sealed record SalesInvoiceDto(

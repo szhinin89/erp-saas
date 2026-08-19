@@ -32,5 +32,8 @@ public sealed record SalesRuntimeDefaultsDto(
     Guid? DefaultWarehouseId,
     Guid? DefaultPaymentTermId,
     string FallbackDocTypeCode,
-    string FallbackSriPaymentMethodCode
+    string FallbackSriPaymentMethodCode,
+    string DefaultWarehouseSource,
+    bool RequiresManualWarehouseSelection,
+    IReadOnlyList<string> ConfigurationWarnings
 );

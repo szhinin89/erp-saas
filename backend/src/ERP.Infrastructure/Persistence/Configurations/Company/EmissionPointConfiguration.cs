@@ -48,6 +48,19 @@ public class EmissionPointConfiguration : IEntityTypeConfiguration<EmissionPoint
             .IsUnique()
             .HasDatabaseName("uq_ep_code");
 
+        // CONFIG-FOUNDATION-P0-01: garantiza en DB que solo exista un punto de emisión default
+        // por establecimiento (Fase 10 de docs/architecture/configuration-engine-target-architecture.md).
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.EstablishmentId,
+            })
+            .IsUnique()
+            .HasDatabaseName("uq_emission_point_establishment_default")
+            .HasFilter("is_default = true");
+
         builder
             .HasOne(x => x.Company)
             .WithMany()
