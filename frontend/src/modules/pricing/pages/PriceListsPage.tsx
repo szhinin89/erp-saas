@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
@@ -41,7 +42,6 @@ export function PriceListsPage() {
   const [fCode, setFCode] = useState("");
   const [fName, setFName] = useState("");
   const [fCurrency, setFCurrency] = useState("USD");
-  const [fDefault, setFDefault] = useState(false);
   const [fFrom, setFFrom] = useState("");
   const [fUntil, setFUntil] = useState("");
   const [fRuleType, setFRuleType] = useState("");
@@ -66,7 +66,6 @@ export function PriceListsPage() {
     setFCode("");
     setFName("");
     setFCurrency("USD");
-    setFDefault(false);
     setFFrom("");
     setFUntil("");
     setFRuleType("");
@@ -79,7 +78,6 @@ export function PriceListsPage() {
     setEditing(pl);
     setFName(pl.name);
     setFCurrency(pl.currencyCode);
-    setFDefault(pl.isDefault);
     setFFrom(pl.validFrom ?? "");
     setFUntil(pl.validUntil ?? "");
     setFRuleType(pl.ruleType ?? "");
@@ -108,11 +106,13 @@ export function PriceListsPage() {
     setSaving(true);
     try {
       if (editing) {
+        // isDefault no se edita desde este catálogo — único punto de escritura:
+        // Configuración → Ventas (priceListService.setDefault). Se reenvía sin cambios.
         const p: UpdatePriceListPayload = {
           id: editing.id,
           name: fName,
           currencyCode: fCurrency,
-          isDefault: fDefault,
+          isDefault: editing.isDefault,
           validFrom: fFrom || null,
           validUntil: fUntil || null,
           ruleType,
@@ -120,11 +120,12 @@ export function PriceListsPage() {
         };
         await priceListService.update(editing.id, p);
       } else {
+        // Las listas nuevas nunca nacen predeterminadas — se promueven desde Configuración → Ventas.
         const p: CreatePriceListPayload = {
           code: fCode,
           name: fName,
           currencyCode: fCurrency,
-          isDefault: fDefault,
+          isDefault: false,
           validFrom: fFrom || null,
           validUntil: fUntil || null,
           ruleType,
@@ -273,7 +274,11 @@ export function PriceListsPage() {
                         pl.currencyCode,
                       )}
                     </td>
-                    <td>{pl.isDefault ? "✓" : ""}</td>
+                    <td>
+                      {pl.isDefault ? (
+                        <Badge label="Predeterminada" variant="success" />
+                      ) : null}
+                    </td>
                     <td>
                       <Badge label={"Estado"} variant="neutral" />
                     </td>
@@ -458,16 +463,24 @@ export function PriceListsPage() {
               </div>
             )}
             <div className="zh-field">
-              <label className="zh-checkbox-label prd-checkbox-field">
-                <input
-                  type="checkbox"
-                  checked={fDefault}
-                  onChange={(e) => setFDefault(e.target.checked)}
-                />
-                Lista predeterminada
-              </label>
+              <label className="zh-field-label">Lista predeterminada</label>
+              <div className="zh-field-control">
+                {editing?.isDefault ? (
+                  <Badge label="Predeterminada" variant="success" />
+                ) : (
+                  <span className="zh-text-muted zh-text-xs">No</span>
+                )}
+              </div>
             </div>
           </div>
+
+          <p className="zh-text-muted zh-text-xs zh-mt-8">
+            La lista predeterminada se asigna desde{" "}
+            <Link to="/settings/company" className="zh-link">
+              Configuración → Ventas
+            </Link>
+            .
+          </p>
 
           <div className="prd-crud-actions">
             <ZHBtn onClick={handleSave} disabled={saving || !fName.trim()}>

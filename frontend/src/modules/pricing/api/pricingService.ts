@@ -174,6 +174,9 @@ export const priceListService = {
   enable: (id: string) => apiPatch<boolean>(`${BASE}/price-lists/${id}/enable`),
   disable: (id: string) =>
     apiPatch<boolean>(`${BASE}/price-lists/${id}/disable`),
+  /** Único punto de escritura para el default — usado desde Configuración → Ventas. */
+  setDefault: (id: string) =>
+    apiPatch<PriceListDto>(`${BASE}/price-lists/${id}/set-default`),
   /** Responsabilidad única: qué ítems pertenecen a esta lista (sin reglas ni excepciones). */
   getAssignedItems: (id: string) =>
     apiGet<PriceListAssignedItemDto[]>(

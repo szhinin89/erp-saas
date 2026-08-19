@@ -70,6 +70,9 @@ public sealed class PriceListRepository : IPriceListRepository
         return await q.AnyAsync(ct);
     }
 
+    public Task<PriceList?> GetDefaultAsync(Guid tenantId, CancellationToken ct = default) =>
+        Scoped(tenantId).FirstOrDefaultAsync(p => p.IsDefault && p.IsActive, ct);
+
     public Task AddAsync(PriceList priceList, CancellationToken ct = default) =>
         _context.PriceLists.AddAsync(priceList, ct).AsTask();
 

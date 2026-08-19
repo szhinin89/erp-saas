@@ -5,7 +5,7 @@ import { FiscalSettingsSection } from "./sections/FiscalSettingsSection";
 import { OperationSettingsSection } from "./sections/OperationSettingsSection";
 import { DocumentsSettingsSection } from "./sections/DocumentsSettingsSection";
 import { DecimalSettingsSection } from "./sections/DecimalSettingsSection";
-import { CompanyOrgConfigSection } from "./sections/CompanyOrgConfigSection";
+import { CompanySalesSettingsSection } from "./sections/CompanySalesSettingsSection";
 
 export type CompanySettingsTabId =
   | "profile"
@@ -14,7 +14,7 @@ export type CompanySettingsTabId =
   | "operation"
   | "documents"
   | "decimals"
-  | "org-config";
+  | "sales";
 
 export type CompanySettingsTab = {
   id: CompanySettingsTabId;
@@ -73,10 +73,10 @@ export const companySettingsTabs: CompanySettingsTab[] = [
     enabled: true,
   },
   {
-    id: "org-config",
-    labelKey: "settings.company.tabs.orgConfig",
-    icon: "corporate_fare",
-    component: CompanyOrgConfigSection,
+    id: "sales",
+    labelKey: "settings.company.tabs.sales",
+    icon: "sell",
+    component: CompanySalesSettingsSection,
     enabled: true,
   },
 ];

@@ -193,6 +193,19 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         );
     }
 
+    /// <summary>
+    /// Cambia únicamente la bandera de lista predeterminada, sin tocar el resto de los campos —
+    /// usado por el flujo de Configuración → Ventas (settings/company) para reasignar el default
+    /// de forma atómica sin reenviar todos los campos de <see cref="Update"/>.
+    /// </summary>
+    public void SetDefault(bool isDefault, Guid updatedBy)
+    {
+        if (IsDefault == isDefault)
+            return;
+        IsDefault = isDefault;
+        SetUpdated(updatedBy);
+    }
+
     private static void ValidateRule(PricingRuleType? ruleType, decimal? ruleValue)
     {
         if (ruleType.HasValue && !ruleValue.HasValue)

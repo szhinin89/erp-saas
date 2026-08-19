@@ -77,4 +77,21 @@ public sealed class PriceListRuleTests
         );
         list.IsValidOn(new DateOnly(2020, 2, 1)).Should().BeFalse();
     }
+
+    [Fact]
+    public void SetDefault_true_marca_la_lista_como_predeterminada()
+    {
+        var list = CreateList();
+        list.SetDefault(true, Guid.NewGuid());
+        list.IsDefault.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SetDefault_mismo_valor_no_lanza_ni_cambia_estado()
+    {
+        var list = CreateList();
+        var act = () => list.SetDefault(false, Guid.NewGuid());
+        act.Should().NotThrow();
+        list.IsDefault.Should().BeFalse();
+    }
 }

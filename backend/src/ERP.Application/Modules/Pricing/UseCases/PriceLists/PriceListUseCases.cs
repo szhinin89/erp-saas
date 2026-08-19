@@ -59,6 +59,15 @@ public sealed record GetPriceListsQuery(bool? IsActive = null, string? Search = 
     : IRequest<Result<IReadOnlyList<PriceListDto>>>,
         ICompanyScopedRequest;
 
+/// <summary>
+/// Reasigna la lista predeterminada de forma atómica: desmarca la actual (si existe otra) y marca
+/// la indicada — único punto de escritura para Configuración → Ventas (settings/company), evita
+/// que la UI de Settings tenga que reenviar Name/CurrencyCode/etc. como en <see cref="UpdatePriceListCommand"/>.
+/// </summary>
+public sealed record SetDefaultPriceListCommand(Guid Id)
+    : IRequest<Result<PriceListDto>>,
+        ICompanyScopedRequest;
+
 // ── Validators ──────────────────────────────────────────────────────────
 
 file static class PriceListCommonRules
@@ -265,6 +274,47 @@ public sealed class DisablePriceListHandler : IRequestHandler<DisablePriceListCo
         }
         await _repo.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
+    }
+}
+
+public sealed class SetDefaultPriceListHandler
+    : IRequestHandler<SetDefaultPriceListCommand, Result<PriceListDto>>
+{
+    private readonly IPriceListRepository _repo;
+    private readonly ICurrentTenant _t;
+    private readonly ICurrentUser _u;
+
+    public SetDefaultPriceListHandler(IPriceListRepository repo, ICurrentTenant t, ICurrentUser u)
+    {
+        _repo = repo;
+        _t = t;
+        _u = u;
+    }
+
+    public async Task<Result<PriceListDto>> Handle(
+        SetDefaultPriceListCommand cmd,
+        CancellationToken ct
+    )
+    {
+        var tid = _t.TenantId;
+        var target = await _repo.GetByIdAsync(tid, cmd.Id, ct);
+        if (target is null)
+            return Result<PriceListDto>.NotFound("Lista de precios no encontrada.");
+        if (!target.IsActive)
+            return Result<PriceListDto>.ValidationFailure(
+                "No se puede marcar como predeterminada una lista deshabilitada."
+            );
+
+        if (!target.IsDefault)
+        {
+            var current = await _repo.GetDefaultAsync(tid, ct);
+            if (current is not null && current.Id != target.Id)
+                current.SetDefault(false, _u.UserId);
+            target.SetDefault(true, _u.UserId);
+            await _repo.SaveChangesAsync(ct);
+        }
+
+        return Result<PriceListDto>.Success(Map.ToDto(target));
     }
 }
 

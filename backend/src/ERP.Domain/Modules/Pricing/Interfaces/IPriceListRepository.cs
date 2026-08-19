@@ -18,6 +18,8 @@ public interface IPriceListRepository
         CancellationToken ct = default
     );
     Task<bool> DefaultExistsAsync(Guid tenantId, Guid? excludeId, CancellationToken ct = default);
+    /// <summary>Lista predeterminada activa vigente del tenant, o null si no hay ninguna — usado para reasignar el default desde Configuración → Ventas.</summary>
+    Task<PriceList?> GetDefaultAsync(Guid tenantId, CancellationToken ct = default);
     Task AddAsync(PriceList priceList, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

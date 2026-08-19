@@ -72,6 +72,12 @@ public sealed class PricingController : ControllerBase
     public async Task<IActionResult> DisablePriceList(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new DisablePriceListCommand(id), ct));
 
+    /// <summary>Único punto de escritura para "lista de precios predeterminada" — consumido por Configuración → Ventas (settings/company).</summary>
+    [HttpPatch("price-lists/{id:guid}/set-default")]
+    [Authorize(Policy = $"perm:{PricingPermissions.Update}")]
+    public async Task<IActionResult> SetDefaultPriceList(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new SetDefaultPriceListCommand(id), ct));
+
     /// <summary>Ítems pertenecientes a esta lista (identidad + precio base) — sin reglas ni excepciones; combinar con GetPricingRules en el consumidor.</summary>
     [HttpGet("price-lists/{id:guid}/assigned-items")]
     [Authorize(Policy = $"perm:{PricingPermissions.View}")]
