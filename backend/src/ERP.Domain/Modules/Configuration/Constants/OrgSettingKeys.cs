@@ -62,4 +62,25 @@ public static class OrgSettingKeys
         /// </summary>
         public const string ConsumerFinalMaxAmount = "sales.consumer_final.max_amount";
     }
+
+    /// <summary>
+    /// CONFIG-FOUNDATION-P1-01: precisión decimal de PRESENTACIÓN — cuántos decimales se
+    /// muestran/almacenan para cantidades, precios, costos, porcentajes y totales en pantalla.
+    /// Propietario: Empresa (scope=Company). Reemplaza el mecanismo paralelo GeneralParameter
+    /// (keys <c>decimal.*</c>), eliminado en esta entrega.
+    ///
+    /// NUNCA debe usarse para redondeo fiscal, tributario o de documentos autorizados — eso es
+    /// <see cref="global::ERP.Domain.Common.FiscalPrecision"/> (constante System, no
+    /// configurable, sin relación con este namespace). Mezclar ambos es exactamente el error que
+    /// esta migración corrige: antes de esta entrega existían dos sistemas de decimales sin
+    /// frontera documentada; ahora la frontera es "Presentation" = UI, "FiscalPrecision" = legal.
+    /// </summary>
+    public static class Presentation
+    {
+        public const string DecimalSalesUnitPrice = "presentation.decimal.sales_unit_price";
+        public const string DecimalPurchaseUnitPrice = "presentation.decimal.purchase_unit_price";
+        public const string DecimalQuantity = "presentation.decimal.quantity";
+        public const string DecimalPercentage = "presentation.decimal.percentage";
+        public const string DecimalTotalAmount = "presentation.decimal.total_amount";
+    }
 }

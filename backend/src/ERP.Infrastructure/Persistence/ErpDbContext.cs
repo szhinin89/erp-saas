@@ -237,7 +237,6 @@ public class ErpDbContext : DbContext
     public DbSet<Establishment> Establishments => Set<Establishment>();
     public DbSet<EmissionPoint> EmissionPoints => Set<EmissionPoint>();
     public DbSet<DocumentSequence> DocumentSequences => Set<DocumentSequence>();
-    public DbSet<GeneralParameter> GeneralParameters => Set<GeneralParameter>();
 
     // ── Items BC (canonical catalog) ──────────────────────────────────────
     public DbSet<ItemCategoryNode> ItemCategoryNodes => Set<ItemCategoryNode>();

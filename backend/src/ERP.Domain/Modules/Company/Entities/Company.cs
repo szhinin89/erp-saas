@@ -79,7 +79,6 @@ public class Company : ITenantScopedEntity
     public SriTaxRegime? TaxRegime { get; set; }
 
     public ICollection<Establishment> Establishments { get; set; } = [];
-    public ICollection<GeneralParameter> Parameters { get; set; } = [];
 
     // ── Lifecycle methods ─────────────────────────────────────────────────────
 
