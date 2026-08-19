@@ -837,6 +837,14 @@ public static class DependencyInjection
             ERP.Domain.Modules.Items.Interfaces.ICatalogConfigurationResolver,
             ERP.Infrastructure.Services.CatalogConfigurationResolver
         >();
+        services.AddScoped<
+            ERP.Domain.Configuration.Interfaces.IConfigurationChangeLogger,
+            ERP.Infrastructure.Services.ConfigurationChangeLogger
+        >();
+        services.AddScoped<
+            ERP.Domain.Configuration.Interfaces.IConfigurationChangeLogQueryRepository,
+            ERP.Infrastructure.Persistence.Repositories.Configuration.ConfigurationChangeLogQueryRepository
+        >();
 
         // ── Setup BC ──────────────────────────────────────────────────────────
         services.AddScoped<ISystemSetupRepository, SystemSetupRepository>();

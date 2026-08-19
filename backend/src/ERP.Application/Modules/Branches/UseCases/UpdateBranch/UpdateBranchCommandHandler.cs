@@ -3,6 +3,8 @@ using ERP.Application.Modules.Branches.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.Configuration.Enums;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Geography.Interfaces;
 using MediatR;
 
@@ -14,6 +16,7 @@ public sealed class UpdateBranchCommandHandler
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
     private readonly IUserActivityRepository _activity;
+    private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _user;
 
@@ -21,6 +24,7 @@ public sealed class UpdateBranchCommandHandler
         IBranchRepository repo,
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
+        IConfigurationChangeLogger changeLogger,
         ICurrentTenant tenant,
         ICurrentUser user
     )
@@ -28,6 +32,7 @@ public sealed class UpdateBranchCommandHandler
         _repo = repo;
         _geo = geo;
         _activity = activity;
+        _changeLogger = changeLogger;
         _currentTenant = tenant;
         _user = user;
     }
@@ -58,8 +63,18 @@ public sealed class UpdateBranchCommandHandler
         if (locErr is not null)
             return Result<BranchListItemDto>.Failure(locErr);
 
+        var wasMain = entity.IsMainBranch;
         if (command.IsMainBranch)
-            await _repo.ClearMainBranchExceptAsync(tenantId, command.Id, userId, cancellationToken);
+        {
+            var clearedIds = await _repo.ClearMainBranchExceptAsync(
+                tenantId,
+                command.Id,
+                userId,
+                cancellationToken
+            );
+            foreach (var clearedId in clearedIds)
+                await LogMainBranchChangeAsync(entity.CompanyId, clearedId, true, false, cancellationToken);
+        }
 
         entity.Update(
             command.Name,
@@ -91,6 +106,15 @@ public sealed class UpdateBranchCommandHandler
             entity.Enable(userId);
         else if (!command.IsActive && entity.IsActive)
             entity.Disable(userId);
+
+        if (wasMain != command.IsMainBranch)
+            await LogMainBranchChangeAsync(
+                entity.CompanyId,
+                entity.Id,
+                wasMain,
+                command.IsMainBranch,
+                cancellationToken
+            );
 
         await _activity.AddAsync(
             UserActivity.Create(
@@ -126,4 +150,32 @@ public sealed class UpdateBranchCommandHandler
             )
         );
     }
+
+    // CONFIG-FOUNDATION-P2-01: registra tanto la sucursal desmarcada como la marcada — el flip
+    // completo. Scope=Company porque "sucursal principal" es una designación a nivel empresa.
+    private Task LogMainBranchChangeAsync(
+        Guid companyId,
+        Guid branchId,
+        bool oldValue,
+        bool newValue,
+        CancellationToken ct
+    ) =>
+        _changeLogger.LogAsync(
+            new ERP.Domain.Configuration.Interfaces.ConfigurationChangeLogEntry(
+                TenantId: _currentTenant.TenantId,
+                CompanyId: companyId,
+                Scope: OrgScope.Company,
+                ScopeId: companyId,
+                Key: null,
+                EntityType: "Branch",
+                EntityId: branchId,
+                FieldName: "IsMainBranch",
+                OldValue: oldValue ? "true" : "false",
+                NewValue: newValue ? "true" : "false",
+                ValueType: ConfigurationChangeValueType.Bool,
+                ChangedBy: _user.UserId,
+                Source: ConfigurationChangeSource.Api
+            ),
+            ct
+        );
 }

@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Pricing.DTOs;
+using ERP.Domain.Configuration.Enums;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Enums;
 using ERP.Domain.Modules.Pricing.Interfaces;
@@ -281,12 +283,19 @@ public sealed class SetDefaultPriceListHandler
     : IRequestHandler<SetDefaultPriceListCommand, Result<PriceListDto>>
 {
     private readonly IPriceListRepository _repo;
+    private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
-    public SetDefaultPriceListHandler(IPriceListRepository repo, ICurrentTenant t, ICurrentUser u)
+    public SetDefaultPriceListHandler(
+        IPriceListRepository repo,
+        IConfigurationChangeLogger changeLogger,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
     {
         _repo = repo;
+        _changeLogger = changeLogger;
         _t = t;
         _u = u;
     }
@@ -309,13 +318,46 @@ public sealed class SetDefaultPriceListHandler
         {
             var current = await _repo.GetDefaultAsync(tid, ct);
             if (current is not null && current.Id != target.Id)
+            {
                 current.SetDefault(false, _u.UserId);
+                await LogFlagChangeAsync(current.Id, target.CompanyId, true, false, ct);
+            }
             target.SetDefault(true, _u.UserId);
+            await LogFlagChangeAsync(target.Id, target.CompanyId, false, true, ct);
             await _repo.SaveChangesAsync(ct);
         }
 
         return Result<PriceListDto>.Success(Map.ToDto(target));
     }
+
+    // CONFIG-FOUNDATION-P2-01: registra tanto la lista que se desmarca como la que se marca —
+    // el flip completo, no solo el lado "nuevo". Se agrega al mismo DbContext que _repo
+    // (via IConfigurationChangeLogger), así viaja en la misma transacción que SaveChangesAsync.
+    private Task LogFlagChangeAsync(
+        Guid priceListId,
+        Guid companyId,
+        bool oldValue,
+        bool newValue,
+        CancellationToken ct
+    ) =>
+        _changeLogger.LogAsync(
+            new ConfigurationChangeLogEntry(
+                TenantId: _t.TenantId,
+                CompanyId: companyId,
+                Scope: OrgScope.Company,
+                ScopeId: companyId,
+                Key: null,
+                EntityType: "PriceList",
+                EntityId: priceListId,
+                FieldName: "IsDefault",
+                OldValue: oldValue ? "true" : "false",
+                NewValue: newValue ? "true" : "false",
+                ValueType: ConfigurationChangeValueType.Bool,
+                ChangedBy: _u.UserId,
+                Source: ConfigurationChangeSource.Api
+            ),
+            ct
+        );
 }
 
 public sealed class GetPriceListByIdHandler

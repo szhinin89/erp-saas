@@ -40,7 +40,8 @@ public interface IEmissionPointRepository
         Guid companyId,
         CancellationToken cancellationToken = default
     );
-    Task ClearDefaultExceptAsync(
+    /// <summary>CONFIG-FOUNDATION-P2-01: devuelve los Id de los puntos de emisión desmarcados (para auditoría).</summary>
+    Task<IReadOnlyList<Guid>> ClearDefaultExceptAsync(
         Guid tenantId,
         Guid establishmentId,
         Guid? exceptId,

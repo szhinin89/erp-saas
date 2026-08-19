@@ -138,4 +138,25 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _db.SaveChangesAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Guid>> ClearMainExceptAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid? exceptEstablishmentId,
+        Guid updatedBy,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var q = _db.Establishments.Where(e =>
+            e.TenantId == tenantId && e.CompanyId == companyId && e.IsMain
+        );
+        if (exceptEstablishmentId is not null)
+            q = q.Where(e => e.Id != exceptEstablishmentId.Value);
+
+        var others = await q.ToListAsync(cancellationToken);
+        foreach (var e in others)
+            e.SetMain(false, updatedBy);
+
+        return others.Select(e => e.Id).ToList();
+    }
 }

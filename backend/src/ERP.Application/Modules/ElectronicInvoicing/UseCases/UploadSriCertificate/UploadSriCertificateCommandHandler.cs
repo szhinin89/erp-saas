@@ -1,7 +1,9 @@
+using System.Security.Cryptography;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
+using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using MediatR;
 
@@ -11,6 +13,7 @@ public sealed class UploadSriCertificateCommandHandler
     : IRequestHandler<UploadSriCertificateCommand, Result<SriCertificateUploadResultDto>>
 {
     private readonly ISriSettingsRepository _repo;
+    private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
     private readonly ISecretProtector _secretProtector;
@@ -19,6 +22,7 @@ public sealed class UploadSriCertificateCommandHandler
 
     public UploadSriCertificateCommandHandler(
         ISriSettingsRepository repo,
+        IConfigurationChangeLogger changeLogger,
         ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         ISecretProtector secretProtector,
@@ -27,6 +31,7 @@ public sealed class UploadSriCertificateCommandHandler
     )
     {
         _repo = repo;
+        _changeLogger = changeLogger;
         _currentCompany = currentCompany;
         _currentUser = currentUser;
         _secretProtector = secretProtector;
@@ -67,6 +72,8 @@ public sealed class UploadSriCertificateCommandHandler
         buffer.Position = 0;
         await _fileStorage.SaveAsync(storedPath, buffer, cancellationToken);
 
+        var previousFileName = settings.CertFileName;
+
         var uploadedAtUtc = DateTime.UtcNow;
         settings.AttachCertificate(
             storedPath,
@@ -75,6 +82,32 @@ public sealed class UploadSriCertificateCommandHandler
             uploadedAtUtc,
             _currentUser.UserId
         );
+
+        // CONFIG-FOUNDATION-P2-01: nunca se guarda el certificado binario ni la contraseña — se
+        // registra un fingerprint SHA-256 del contenido (permite detectar "cambió a un archivo
+        // distinto" sin exponer el certificado) + el nombre de archivo, que ya era metadata
+        // pública dentro del sistema (visible en la UI de configuración SRI).
+        var fingerprint = Convert.ToHexStringLower(SHA256.HashData(bytes));
+        await _changeLogger.LogAsync(
+            new ConfigurationChangeLogEntry(
+                TenantId: settings.TenantId,
+                CompanyId: settings.CompanyId,
+                Scope: OrgScope.Company,
+                ScopeId: settings.CompanyId,
+                Key: null,
+                EntityType: "SriSettings",
+                EntityId: settings.Id,
+                FieldName: "Certificate",
+                OldValue: previousFileName,
+                NewValue: $"{request.File.FileName}|sha256:{fingerprint}",
+                ValueType: ConfigurationChangeValueType.Fingerprint,
+                ChangedBy: _currentUser.UserId,
+                Source: ConfigurationChangeSource.Api,
+                IsSensitive: true
+            ),
+            cancellationToken
+        );
+
         await _repo.UpdateAsync(settings, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
 

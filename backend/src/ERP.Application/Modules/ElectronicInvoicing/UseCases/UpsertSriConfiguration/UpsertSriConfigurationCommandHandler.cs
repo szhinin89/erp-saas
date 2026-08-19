@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using MediatR;
 
@@ -11,6 +12,7 @@ public sealed class UpsertSriConfigurationCommandHandler
     : IRequestHandler<UpsertSriConfigurationCommand, Result<SriConfigurationDto>>
 {
     private readonly ISriSettingsRepository _repo;
+    private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
@@ -18,6 +20,7 @@ public sealed class UpsertSriConfigurationCommandHandler
 
     public UpsertSriConfigurationCommandHandler(
         ISriSettingsRepository repo,
+        IConfigurationChangeLogger changeLogger,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ICurrentUser currentUser,
@@ -25,6 +28,7 @@ public sealed class UpsertSriConfigurationCommandHandler
     )
     {
         _repo = repo;
+        _changeLogger = changeLogger;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
         _currentUser = currentUser;
@@ -66,6 +70,15 @@ public sealed class UpsertSriConfigurationCommandHandler
             }
 
             await _repo.AddAsync(config, cancellationToken);
+
+            // CONFIG-FOUNDATION-P2-01: primera configuración — se audita igual que un cambio
+            // (null → valor), nunca la contraseña en claro (ValueType.Masked).
+            await LogFieldAsync(config, "Environment", null, command.Environment.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
+            await LogFieldAsync(config, "EmissionType", null, command.EmissionType.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
+            await LogFieldAsync(config, "WsdlUrl", null, command.WsdlUrl, ConfigurationChangeValueType.String, cancellationToken);
+            if (hasNewPassword)
+                await LogFieldAsync(config, "CertPassword", null, "***", ConfigurationChangeValueType.Masked, cancellationToken, isSensitive: true);
+
             await _repo.SaveChangesAsync(cancellationToken);
             return Result<SriConfigurationDto>.Success(ToDto(config));
         }
@@ -76,6 +89,10 @@ public sealed class UpsertSriConfigurationCommandHandler
             ? _secretProtector.Protect(command.CertPassword!.Trim())
             : null;
 
+        var oldEnvironment = existing.Environment;
+        var oldEmissionType = existing.EmissionType;
+        var oldWsdlUrl = existing.WsdlUrl;
+
         existing.UpdateConfiguration(
             environment: command.Environment,
             emissionType: command.EmissionType,
@@ -84,10 +101,50 @@ public sealed class UpsertSriConfigurationCommandHandler
             updatedBy: userId
         );
 
+        // CONFIG-FOUNDATION-P2-01: cada campo se compara y audita por separado — nunca se
+        // guarda la contraseña real, solo un marcador Masked indicando que cambió.
+        if (oldEnvironment != command.Environment)
+            await LogFieldAsync(existing, "Environment", oldEnvironment.ToString(), command.Environment.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
+        if (oldEmissionType != command.EmissionType)
+            await LogFieldAsync(existing, "EmissionType", oldEmissionType.ToString(), command.EmissionType.ToString(), ConfigurationChangeValueType.Int, cancellationToken);
+        if (!string.Equals(oldWsdlUrl, existing.WsdlUrl, StringComparison.Ordinal))
+            await LogFieldAsync(existing, "WsdlUrl", oldWsdlUrl, existing.WsdlUrl, ConfigurationChangeValueType.String, cancellationToken);
+        if (hasNewPassword)
+            await LogFieldAsync(existing, "CertPassword", "***", "***", ConfigurationChangeValueType.Masked, cancellationToken, isSensitive: true);
+
         await _repo.UpdateAsync(existing, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<SriConfigurationDto>.Success(ToDto(existing));
     }
+
+    private Task LogFieldAsync(
+        SriSettings config,
+        string fieldName,
+        string? oldValue,
+        string? newValue,
+        ConfigurationChangeValueType valueType,
+        CancellationToken ct,
+        bool isSensitive = false
+    ) =>
+        _changeLogger.LogAsync(
+            new ConfigurationChangeLogEntry(
+                TenantId: config.TenantId,
+                CompanyId: config.CompanyId,
+                Scope: OrgScope.Company,
+                ScopeId: config.CompanyId,
+                Key: null,
+                EntityType: "SriSettings",
+                EntityId: config.Id,
+                FieldName: fieldName,
+                OldValue: oldValue,
+                NewValue: newValue,
+                ValueType: valueType,
+                ChangedBy: _currentUser.UserId,
+                Source: ConfigurationChangeSource.Api,
+                IsSensitive: isSensitive
+            ),
+            ct
+        );
 
     private static SriConfigurationDto ToDto(SriSettings c) =>
         new(

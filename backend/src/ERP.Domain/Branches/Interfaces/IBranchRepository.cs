@@ -19,7 +19,8 @@ public interface IBranchRepository
         CancellationToken cancellationToken = default
     );
 
-    Task ClearMainBranchExceptAsync(
+    /// <summary>CONFIG-FOUNDATION-P2-01: devuelve los Id de las sucursales desmarcadas (para auditoría).</summary>
+    Task<IReadOnlyList<Guid>> ClearMainBranchExceptAsync(
         Guid tenantId,
         Guid? exceptBranchId,
         Guid updatedBy,

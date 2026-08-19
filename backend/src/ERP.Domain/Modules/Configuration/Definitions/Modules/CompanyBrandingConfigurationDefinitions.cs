@@ -63,7 +63,10 @@ public static partial class CompanyBrandingConfigurationDefinitions
             AllowedScopes = [OrgScope.Company],
             DefaultScope = OrgScope.Company,
             FallbackStrategy = ConfigurationFallbackStrategy.VisualSafeDefault,
-            RequiresAudit = false,
+            // CONFIG-FOUNDATION-P2-01: decisión explícita — a diferencia de los colores/slogan
+            // (puramente visuales), este texto se imprime en RIDE/PDF y otros documentos
+            // compatibles; un cambio aquí altera contenido documental, no solo apariencia.
+            RequiresAudit = true,
             Validator = value => value!.Length <= MaxFooterTextLength,
         };
     }

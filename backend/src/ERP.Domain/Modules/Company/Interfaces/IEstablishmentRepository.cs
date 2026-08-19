@@ -58,4 +58,21 @@ public interface IEstablishmentRepository
 
     Task AddAsync(Establishment establishment, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// CONFIG-FOUNDATION-P2-01: desmarca todo establecimiento IsMain=true de la empresa distinto
+    /// de <paramref name="exceptEstablishmentId"/> — antes de esta entrega, UpdateEstablishmentCommandHandler
+    /// llamaba a Establishment.SetMain(true, ...) sin desmarcar el establecimiento principal
+    /// anterior, lo que habría violado uq_establishment_tenant_company_main (CONFIG-FOUNDATION-P0-01)
+    /// con una excepción cruda en vez de un flip controlado — mismo patrón ya usado por
+    /// IBranchRepository.ClearMainBranchExceptAsync / IEmissionPointRepository.ClearDefaultExceptAsync.
+    /// Devuelve los Id desmarcados (para auditoría).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ClearMainExceptAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid? exceptEstablishmentId,
+        Guid updatedBy,
+        CancellationToken cancellationToken = default
+    );
 }

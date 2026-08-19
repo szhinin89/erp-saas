@@ -214,6 +214,7 @@ public class ErpDbContext : DbContext
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
     public DbSet<OrgSetting> OrgSettings => Set<OrgSetting>();
+    public DbSet<ConfigurationChangeLog> ConfigurationChangeLogs => Set<ConfigurationChangeLog>();
 
     // ── SRI Catalogs (global reference data) ─────────────────────────────
     public DbSet<SriEmissionType> SriEmissionTypes => Set<SriEmissionType>();

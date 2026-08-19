@@ -4,6 +4,8 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.Configuration.Enums;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Geography.Interfaces;
 using MediatR;
 
@@ -15,6 +17,7 @@ public sealed class CreateBranchCommandHandler
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
     private readonly IUserActivityRepository _activity;
+    private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
@@ -23,6 +26,7 @@ public sealed class CreateBranchCommandHandler
         IBranchRepository repo,
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
+        IConfigurationChangeLogger changeLogger,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentUser user
@@ -31,6 +35,7 @@ public sealed class CreateBranchCommandHandler
         _repo = repo;
         _geo = geo;
         _activity = activity;
+        _changeLogger = changeLogger;
         _currentTenant = tenant;
         _company = company;
         _user = user;
@@ -55,8 +60,15 @@ public sealed class CreateBranchCommandHandler
         var tenantId = _currentTenant.TenantId;
         var userId = _user.UserId;
 
+        var companyId = _company.CompanyId;
+        IReadOnlyList<Guid> clearedIds = Array.Empty<Guid>();
         if (command.IsMainBranch)
-            await _repo.ClearMainBranchExceptAsync(tenantId, null, userId, cancellationToken);
+            clearedIds = await _repo.ClearMainBranchExceptAsync(
+                tenantId,
+                null,
+                userId,
+                cancellationToken
+            );
 
         var code = $"SUC-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..14];
 
@@ -86,13 +98,19 @@ public sealed class CreateBranchCommandHandler
             command.InternalNotes,
             command.IsMainBranch,
             userId,
-            _company.CompanyId
+            companyId
         );
 
         if (!command.IsActive)
             entity.Disable(userId);
 
         await _repo.AddAsync(entity, cancellationToken);
+
+        foreach (var clearedId in clearedIds)
+            await LogMainBranchChangeAsync(companyId, clearedId, true, false, cancellationToken);
+        if (command.IsMainBranch)
+            await LogMainBranchChangeAsync(companyId, entity.Id, false, true, cancellationToken);
+
         await _activity.AddAsync(
             UserActivity.Create(
                 tenantId,
@@ -127,4 +145,31 @@ public sealed class CreateBranchCommandHandler
             )
         );
     }
+
+    // CONFIG-FOUNDATION-P2-01: mismo patrón que UpdateBranchCommandHandler.
+    private Task LogMainBranchChangeAsync(
+        Guid companyId,
+        Guid branchId,
+        bool oldValue,
+        bool newValue,
+        CancellationToken ct
+    ) =>
+        _changeLogger.LogAsync(
+            new ConfigurationChangeLogEntry(
+                TenantId: _currentTenant.TenantId,
+                CompanyId: companyId,
+                Scope: OrgScope.Company,
+                ScopeId: companyId,
+                Key: null,
+                EntityType: "Branch",
+                EntityId: branchId,
+                FieldName: "IsMainBranch",
+                OldValue: oldValue ? "true" : "false",
+                NewValue: newValue ? "true" : "false",
+                ValueType: ConfigurationChangeValueType.Bool,
+                ChangedBy: _user.UserId,
+                Source: ConfigurationChangeSource.Api
+            ),
+            ct
+        );
 }

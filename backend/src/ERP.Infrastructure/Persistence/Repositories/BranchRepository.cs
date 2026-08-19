@@ -59,7 +59,7 @@ public sealed class BranchRepository : IBranchRepository
             .Branches.IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
 
-    public async Task ClearMainBranchExceptAsync(
+    public async Task<IReadOnlyList<Guid>> ClearMainBranchExceptAsync(
         Guid tenantId,
         Guid? exceptBranchId,
         Guid updatedBy,
@@ -73,6 +73,8 @@ public sealed class BranchRepository : IBranchRepository
         var list = await q.ToListAsync(cancellationToken);
         foreach (var b in list)
             b.SetMainBranchFlag(false, updatedBy);
+
+        return list.Select(b => b.Id).ToList();
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>

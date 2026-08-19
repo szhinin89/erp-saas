@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Configuration;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -86,7 +87,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task Key_desconocida_se_rechaza_sin_persistir_nada()
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
             "no.existe.esta.key",
             "x",
@@ -112,7 +113,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task Keys_legacy_eliminadas_se_rechazan_como_desconocidas(string legacyKey)
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
             legacyKey,
             "x",
@@ -132,7 +133,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task Scope_no_permitido_se_rechaza()
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         // invoice.default_warehouse_id solo permite Branch, no Company.
         var setting = BuildSetting(
             OrgSettingKeys.Invoice.DefaultWarehouseId,
@@ -153,7 +154,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task DataType_incorrecto_se_rechaza()
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         // sales.consumer_final.max_amount es Decimal, no String.
         var setting = BuildSetting(
             OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
@@ -174,7 +175,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task Presentation_decimal_fuera_de_rango_se_rechaza()
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
             OrgSettingKeys.Presentation.DecimalQuantity,
             "99",
@@ -194,7 +195,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task Company_branding_color_invalido_se_rechaza()
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
             OrgSettingKeys.CompanyBranding.PrimaryColor,
             "not-a-color",
@@ -214,7 +215,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     public async Task Company_branding_color_null_o_vacio_es_valido_ausencia_de_configuracion()
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
             OrgSettingKeys.CompanyBranding.PrimaryColor,
             null,
@@ -239,7 +240,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     )
     {
         await using var db = CreateContext();
-        var repo = new OrgSettingsRepository(db);
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var scopeId = scope == OrgScope.Branch ? Guid.NewGuid() : _companyId;
         var setting = BuildSetting(key, value, dataType, scope, scopeId);
 
@@ -302,6 +303,133 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
             SettingDataType.String,
             OrgScope.Company,
         };
+    }
+
+    // ── CONFIG-FOUNDATION-P2-01: ConfigurationChangeLog ────────────────────────────────
+
+    [Fact]
+    public async Task Cambiar_key_RequiresAudit_true_crea_ConfigurationChangeLog()
+    {
+        await using var db = CreateContext();
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
+        var setting = BuildSetting(
+            OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
+            "150.00",
+            SettingDataType.Decimal,
+            OrgScope.Company,
+            _companyId
+        );
+
+        await repo.UpsertAsync(setting);
+        await repo.SaveChangesAsync();
+
+        var logs = await ChangeLogsForAsync(OrgSettingKeys.Sales.ConsumerFinalMaxAmount);
+        logs.Should().ContainSingle();
+        logs[0].EntityType.Should().Be("OrgSetting");
+        logs[0].FieldName.Should().Be("Value");
+        logs[0].OldValue.Should().BeNull();
+        logs[0].NewValue.Should().Be("150.00");
+        logs[0].ChangedBy.Should().Be(_createdBy);
+        logs[0].Scope.Should().Be(OrgScope.Company);
+        logs[0].ScopeId.Should().Be(_companyId);
+    }
+
+    [Fact]
+    public async Task Cambiar_key_RequiresAudit_false_no_crea_ConfigurationChangeLog()
+    {
+        await using var db = CreateContext();
+        var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
+        var setting = BuildSetting(
+            OrgSettingKeys.Presentation.DecimalQuantity,
+            "4",
+            SettingDataType.Int,
+            OrgScope.Company,
+            _companyId
+        );
+
+        await repo.UpsertAsync(setting);
+        await repo.SaveChangesAsync();
+
+        (await ChangeLogsForAsync(OrgSettingKeys.Presentation.DecimalQuantity)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Escribir_el_mismo_valor_no_crea_un_segundo_log()
+    {
+        await using var db1 = CreateContext();
+        var repo1 = new OrgSettingsRepository(db1, new ConfigurationChangeLogger(db1));
+        await repo1.UpsertAsync(
+            BuildSetting(
+                OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
+                "300.00",
+                SettingDataType.Decimal,
+                OrgScope.Company,
+                _companyId
+            )
+        );
+        await repo1.SaveChangesAsync();
+
+        // Reescribir exactamente el mismo valor en una escritura separada.
+        await using var db2 = CreateContext();
+        var repo2 = new OrgSettingsRepository(db2, new ConfigurationChangeLogger(db2));
+        await repo2.UpsertAsync(
+            BuildSetting(
+                OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
+                "300.00",
+                SettingDataType.Decimal,
+                OrgScope.Company,
+                _companyId
+            )
+        );
+        await repo2.SaveChangesAsync();
+
+        (await ChangeLogsForAsync(OrgSettingKeys.Sales.ConsumerFinalMaxAmount)).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Cambiar_el_valor_dos_veces_crea_dos_logs_con_old_new_encadenados()
+    {
+        await using var db1 = CreateContext();
+        var repo1 = new OrgSettingsRepository(db1, new ConfigurationChangeLogger(db1));
+        await repo1.UpsertAsync(
+            BuildSetting(
+                OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
+                "100.00",
+                SettingDataType.Decimal,
+                OrgScope.Company,
+                _companyId
+            )
+        );
+        await repo1.SaveChangesAsync();
+
+        await using var db2 = CreateContext();
+        var repo2 = new OrgSettingsRepository(db2, new ConfigurationChangeLogger(db2));
+        await repo2.UpsertAsync(
+            BuildSetting(
+                OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
+                "250.00",
+                SettingDataType.Decimal,
+                OrgScope.Company,
+                _companyId
+            )
+        );
+        await repo2.SaveChangesAsync();
+
+        var logs = await ChangeLogsForAsync(OrgSettingKeys.Sales.ConsumerFinalMaxAmount);
+        logs.Should().HaveCount(2);
+        logs.Should().Contain(l => l.OldValue == null && l.NewValue == "100.00");
+        logs.Should().Contain(l => l.OldValue == "100.00" && l.NewValue == "250.00");
+    }
+
+    private async Task<List<ERP.Domain.Configuration.Entities.ConfigurationChangeLog>> ChangeLogsForAsync(
+        string key
+    )
+    {
+        await using var db = CreateContext();
+        return await db
+            .ConfigurationChangeLogs.IgnoreQueryFilters()
+            .Where(l => l.Key == key)
+            .ToListAsync();
     }
 
     private async Task<int> CountRowsAsync()

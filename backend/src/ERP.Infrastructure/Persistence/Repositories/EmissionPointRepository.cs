@@ -136,7 +136,7 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
             );
     }
 
-    public async Task ClearDefaultExceptAsync(
+    public async Task<IReadOnlyList<Guid>> ClearDefaultExceptAsync(
         Guid tenantId,
         Guid establishmentId,
         Guid? exceptId,
@@ -155,6 +155,8 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
 
         foreach (var ep in others)
             ep.SetDefault(false, updatedBy);
+
+        return others.Select(ep => ep.Id).ToList();
     }
 
     public Task<bool> ExistsAsync(
