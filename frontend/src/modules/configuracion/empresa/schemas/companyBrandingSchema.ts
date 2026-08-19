@@ -14,6 +14,10 @@ export const companyBrandingSchema = z.object({
     .optional()
     .or(z.literal("")),
   slogan: z.string().max(200, "Máximo 200 caracteres").optional(),
+  documentFooterText: z
+    .string()
+    .max(500, "Máximo 500 caracteres")
+    .optional(),
 });
 
 export type CompanyBrandingValues = z.infer<typeof companyBrandingSchema>;
@@ -22,4 +26,5 @@ export const defaultCompanyBrandingValues: CompanyBrandingValues = {
   primaryColor: "",
   secondaryColor: "",
   slogan: "",
+  documentFooterText: "",
 };

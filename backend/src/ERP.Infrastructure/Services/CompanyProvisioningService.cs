@@ -111,7 +111,6 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         string countryCode = "ECU",
         string timezone = "America/Guayaquil",
         string currencyCode = "USD",
-        string? brandingJson = null,
         string? website = null,
         CancellationToken cancellationToken = default
     )
@@ -128,7 +127,6 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             countryCode,
             timezone,
             currencyCode,
-            brandingJson,
             website,
             isTemporaryTaxIdentification: ProvisionalTaxIdGenerator.IsProvisional(normalized),
             taxIdentificationStatus: ProvisionalTaxIdGenerator.IsProvisional(normalized)

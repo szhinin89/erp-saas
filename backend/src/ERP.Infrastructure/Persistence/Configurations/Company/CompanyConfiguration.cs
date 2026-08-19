@@ -79,10 +79,6 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasColumnName("withholds_renta")
             .HasDefaultValue(true);
         builder.Property(x => x.WithholdsVat).HasColumnName("withholds_iva").HasDefaultValue(true);
-        builder
-            .Property(x => x.BrandingConfiguration)
-            .HasColumnName("branding_configuration")
-            .HasColumnType("jsonb");
         builder.Property(x => x.ExtraLegend).HasColumnName("extra_legend").HasMaxLength(500);
         builder
             .Property(x => x.LanguageCode)

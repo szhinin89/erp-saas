@@ -4,13 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
-import { ZhTextInput } from "../../../../components/zh/inputs";
+import { ZhTextarea, ZhTextInput } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { companyProfileService } from "../api/companyProfileService";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import type { CompanyBrandingDto } from "../../../../types/companyProfile";
 import {
   companyBrandingSchema,
   defaultCompanyBrandingValues,
@@ -20,18 +21,14 @@ import {
 const ALLOWED_LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
-function parseBrandingConfiguration(raw: string | null): CompanyBrandingValues {
-  if (!raw) return { ...defaultCompanyBrandingValues };
-  try {
-    const parsed = JSON.parse(raw) as Partial<CompanyBrandingValues>;
-    return {
-      primaryColor: parsed.primaryColor ?? "",
-      secondaryColor: parsed.secondaryColor ?? "",
-      slogan: parsed.slogan ?? "",
-    };
-  } catch {
-    return { ...defaultCompanyBrandingValues };
-  }
+function toFormValues(branding: CompanyBrandingDto | null): CompanyBrandingValues {
+  if (!branding) return { ...defaultCompanyBrandingValues };
+  return {
+    primaryColor: branding.primaryColor ?? "",
+    secondaryColor: branding.secondaryColor ?? "",
+    slogan: branding.slogan ?? "",
+    documentFooterText: branding.documentFooterText ?? "",
+  };
 }
 
 export function BrandingSettingsSection() {
@@ -67,6 +64,7 @@ export function BrandingSettingsSection() {
   const [identitySaved, setIdentitySaved] = useState(false);
 
   const profileState = useAsync(() => companyProfileService.getProfile());
+  const brandingState = useAsync(() => companyProfileService.getBranding());
 
   const {
     register,
@@ -149,10 +147,9 @@ export function BrandingSettingsSection() {
   }, [altLogoPreviewUrl]);
 
   useEffect(() => {
-    const profile = profileState.data;
-    if (!profile) return;
-    reset(parseBrandingConfiguration(profile.brandingConfiguration));
-  }, [profileState.data?.brandingConfiguration, reset]);
+    if (!brandingState.data) return;
+    reset(toFormValues(brandingState.data));
+  }, [brandingState.data, reset]);
 
   const handleLogoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -168,7 +165,7 @@ export function BrandingSettingsSection() {
     }
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setLogoError("Formato no soportado. Use PNG, JPG o WEBP.");
+      setLogoError(t("settings.company.logo.formatError"));
       setLogoFile(null);
       setLogoPreviewUrl(null);
       if (logoFileInputRef.current) logoFileInputRef.current.value = "";
@@ -176,7 +173,7 @@ export function BrandingSettingsSection() {
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setLogoError("El archivo supera el tamaño máximo de 5 MB.");
+      setLogoError(t("settings.company.logo.sizeError"));
       setLogoFile(null);
       setLogoPreviewUrl(null);
       if (logoFileInputRef.current) logoFileInputRef.current.value = "";
@@ -229,7 +226,7 @@ export function BrandingSettingsSection() {
     }
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setAltLogoError("Formato no soportado. Use PNG, JPG o WEBP.");
+      setAltLogoError(t("settings.company.logo.formatError"));
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
       if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
@@ -237,7 +234,7 @@ export function BrandingSettingsSection() {
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setAltLogoError("El archivo supera el tamaño máximo de 5 MB.");
+      setAltLogoError(t("settings.company.logo.sizeError"));
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
       if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
@@ -284,12 +281,13 @@ export function BrandingSettingsSection() {
     setIdentitySaving(true);
     try {
       await companyProfileService.updateBranding({
-        primaryColor: values.primaryColor || undefined,
-        secondaryColor: values.secondaryColor || undefined,
-        slogan: values.slogan || undefined,
+        primaryColor: values.primaryColor || null,
+        secondaryColor: values.secondaryColor || null,
+        slogan: values.slogan || null,
+        documentFooterText: values.documentFooterText || null,
       });
       setIdentitySaved(true);
-      profileState.refetch();
+      brandingState.refetch();
     } catch (err) {
       const applied = applyServerErrors(err, setFieldError, (msg) =>
         setIdentityError(msg),
@@ -309,14 +307,11 @@ export function BrandingSettingsSection() {
   const handleIdentityDiscard = () => {
     setIdentityError(null);
     setIdentitySaved(false);
-    const profile = profileState.data;
-    if (profile) {
-      reset(parseBrandingConfiguration(profile.brandingConfiguration));
-    }
+    reset(toFormValues(brandingState.data));
   };
 
   if (!canView) return <NoAccessPage title={t("settings.company.title")} />;
-  if (profileState.loading) return <LoadingState />;
+  if (profileState.loading || brandingState.loading) return <LoadingState />;
 
   return (
     <>
@@ -325,6 +320,13 @@ export function BrandingSettingsSection() {
           variant="error"
           message={t("common.errorPrefix")}
           detail={profileState.error}
+        />
+      )}
+      {brandingState.error && (
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={brandingState.error}
         />
       )}
       {logoError && (
@@ -519,6 +521,9 @@ export function BrandingSettingsSection() {
             </div>
           </div>
           <div className="pg-section-body">
+            <p className="zh-text-muted zh-mb-16">
+              {t("settings.company.branding.identity.notice")}
+            </p>
             <ZHGrid cols={2}>
               <ZHField
                 label={t("settings.company.branding.identity.primaryColor")}
@@ -535,7 +540,9 @@ export function BrandingSettingsSection() {
                   />
                   <ZhTextInput
                     className="zh-input"
-                    placeholder="Ej. color principal HEX"
+                    placeholder={t(
+                      "settings.company.branding.identity.primaryColorPlaceholder",
+                    )}
                     disabled={identitySaving || !canEdit}
                     {...register("primaryColor")}
                   />
@@ -557,7 +564,9 @@ export function BrandingSettingsSection() {
                   />
                   <ZhTextInput
                     className="zh-input"
-                    placeholder="Ej. color secundario HEX"
+                    placeholder={t(
+                      "settings.company.branding.identity.secondaryColorPlaceholder",
+                    )}
                     disabled={identitySaving || !canEdit}
                     {...register("secondaryColor")}
                   />
@@ -575,6 +584,21 @@ export function BrandingSettingsSection() {
                   {...register("slogan")}
                 />
               </ZHField>
+
+              <ZHField
+                label={t("settings.company.branding.identity.documentFooterText")}
+                hint={t(
+                  "settings.company.branding.identity.documentFooterTextHint",
+                )}
+                error={errors.documentFooterText?.message}
+              >
+                <ZhTextarea
+                  className="zh-input"
+                  rows={2}
+                  disabled={identitySaving || !canEdit}
+                  {...register("documentFooterText")}
+                />
+              </ZHField>
             </ZHGrid>
           </div>
         </div>
@@ -588,7 +612,7 @@ export function BrandingSettingsSection() {
               disabled={identitySaving || !isDirty}
               onClick={handleIdentityDiscard}
             >
-              Descartar Cambios
+              {t("common.discard")}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -597,7 +621,7 @@ export function BrandingSettingsSection() {
               disabled={identitySaving || !canEdit || !isDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {identitySaving ? t("common.saving") : "Guardar Configuración"}
+              {identitySaving ? t("common.saving") : t("common.save")}
             </ZHBtn>
           </div>
         </div>

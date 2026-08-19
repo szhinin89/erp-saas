@@ -39,9 +39,6 @@ public class Company : ITenantScopedEntity
     public bool WithholdsRenta { get; set; } = true;
     public bool WithholdsVat { get; set; } = true;
 
-    // UI / white-label
-    /// <summary>JSON theme tokens (colors, fonts) para white-label; validado en capa Application.</summary>
-    public string? BrandingConfiguration { get; set; }
     public string? ExtraLegend { get; set; }
 
     /// <summary>Idioma principal de la empresa (es/en/qu).</summary>
@@ -128,7 +125,6 @@ public class Company : ITenantScopedEntity
         string countryCode = "ECU",
         string timezone = "America/Guayaquil",
         string currencyCode = "USD",
-        string? brandingConfiguration = null,
         string? website = null,
         bool isTemporaryTaxIdentification = false,
         TaxIdentificationStatus taxIdentificationStatus = TaxIdentificationStatus.Verified,
@@ -157,9 +153,6 @@ public class Company : ITenantScopedEntity
             CurrencyCode = string.IsNullOrWhiteSpace(currencyCode)
                 ? "USD"
                 : currencyCode.Trim().ToUpperInvariant(),
-            BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration)
-                ? null
-                : brandingConfiguration.Trim(),
             IsActive = true,
             OnboardingCompleted = true,
             OperationalStatus = CompanyOperationalStatus.Operational,
@@ -284,16 +277,6 @@ public class Company : ITenantScopedEntity
     public void UpdateDocumentsSettings(string? extraLegend, Guid? updatedBy)
     {
         ExtraLegend = string.IsNullOrWhiteSpace(extraLegend) ? null : extraLegend.Trim();
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
-    }
-
-    /// <summary>Actualiza colores corporativos y eslogan (pestaña "Marca" de Configuración → Empresa).</summary>
-    public void UpdateBrandingConfiguration(string? brandingConfigurationJson, Guid? updatedBy)
-    {
-        BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfigurationJson)
-            ? null
-            : brandingConfigurationJson.Trim();
         UpdatedAt = DateTime.UtcNow;
         UpdatedBy = updatedBy;
     }

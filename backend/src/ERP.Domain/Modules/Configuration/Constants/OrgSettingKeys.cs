@@ -34,17 +34,24 @@ public static class OrgSettingKeys
     }
 
     /// <summary>
-    /// Branding del RIDE (ADR-025 §12, Fase 8 del plan de implementación de Ride). Propietario:
-    /// Empresa (scope=Company) en v1.0 — la jerarquía Sucursal/Punto de Emisión es diseño futuro
-    /// (ADR-025 §11), sin nuevas claves todavía. Todos opcionales: ausencia de fila es un estado
-    /// válido (tenant sin branding configurado), nunca un error.
+    /// CONFIG-FOUNDATION-P1-02: marca de la empresa (colores, eslogan, pie de página de
+    /// documentos). Propietario: Empresa (scope=Company). RIDE/PDF/reportes son CONSUMIDORES,
+    /// nunca dueños — leen la marca ya resuelta vía <c>ICompanyBrandingResolver</c>, jamás estas
+    /// keys directamente (ver <c>backend/src/ERP.Infrastructure/Ride/Branding/CompanyBrandingRideProvider.cs</c>).
+    /// Reemplaza el namespace <c>ride.branding.*</c> (ADR-025 §12), que nunca tuvo un flujo de
+    /// escritura real en producción y quedaba semánticamente mal ubicado — RIDE no es dueño de la
+    /// marca de la empresa. Todos opcionales: ausencia de fila es un estado válido, nunca un error.
+    ///
+    /// El logo NO vive aquí — vive en <c>MediaFile</c> (Owner=Company, Role="logo"), ya
+    /// funcional; org_settings nunca debe guardar binarios/base64/rutas administradas por otro
+    /// subsistema (Principio de la arquitectura objetivo).
     /// </summary>
-    public static class Ride
+    public static class CompanyBranding
     {
-        public const string LogoStoragePath = "ride.branding.logo_storage_path";
-        public const string PrimaryColorHex = "ride.branding.primary_color_hex";
-        public const string SecondaryColorHex = "ride.branding.secondary_color_hex";
-        public const string FooterText = "ride.branding.footer_text";
+        public const string PrimaryColor = "company.branding.primary_color";
+        public const string SecondaryColor = "company.branding.secondary_color";
+        public const string Slogan = "company.branding.slogan";
+        public const string DocumentFooterText = "company.branding.document_footer_text";
     }
 
     /// <summary>

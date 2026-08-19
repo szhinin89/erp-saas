@@ -4,6 +4,7 @@ using ERP.API.Extensions;
 using ERP.Application.Common.Models;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.CreateCompany;
+using ERP.Application.Modules.Companies.UseCases.GetCompanyBranding;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyById;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyLogoAltContent;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyLogoContent;
@@ -159,9 +160,18 @@ public sealed class CompaniesController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    [HttpGet("profile/branding")]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesView}")]
+    [ProducesResponseType(typeof(ApiResponse<CompanyBrandingDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetBranding(CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetCompanyBrandingQuery(), cancellationToken);
+        return this.ToOkOrBadRequest(result);
+    }
+
     [HttpPut("profile/branding")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
-    [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<CompanyBrandingDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateBranding(
         [FromBody] UpdateCompanyBrandingCommand command,
         CancellationToken cancellationToken = default

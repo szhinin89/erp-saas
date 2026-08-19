@@ -1,9 +1,10 @@
 import { api } from "../../../lib/api";
 import type { ApiResponse } from "../../../../types/api";
 import type {
-  CompanyBrandingIdentity,
+  CompanyBrandingDto,
   CompanyProfile,
   SalesFiscalPolicy,
+  UpdateCompanyBrandingPayload,
   UpdateCompanyDocumentsPayload,
   UpdateCompanyFiscalPayload,
   UpdateCompanyOperationPayload,
@@ -97,14 +98,19 @@ export const companyProfileService = {
     return data.data;
   },
 
-  async updateBranding(
-    identity: CompanyBrandingIdentity,
-  ): Promise<CompanyProfile> {
-    const { data } = await api.put<ApiResponse<CompanyProfile>>(
+  async getBranding(): Promise<CompanyBrandingDto | null> {
+    const { data } = await api.get<ApiResponse<CompanyBrandingDto>>(
       "/api/v1/companies/profile/branding",
-      {
-        brandingConfiguration: JSON.stringify(identity),
-      },
+    );
+    return data.data ?? null;
+  },
+
+  async updateBranding(
+    payload: UpdateCompanyBrandingPayload,
+  ): Promise<CompanyBrandingDto> {
+    const { data } = await api.put<ApiResponse<CompanyBrandingDto>>(
+      "/api/v1/companies/profile/branding",
+      payload,
     );
     return data.data;
   },

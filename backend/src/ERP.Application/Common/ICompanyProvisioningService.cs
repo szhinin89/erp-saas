@@ -23,7 +23,6 @@ public interface ICompanyProvisioningService
         string countryCode = "ECU",
         string timezone = "America/Guayaquil",
         string currencyCode = "USD",
-        string? brandingJson = null,
         string? website = null,
         CancellationToken cancellationToken = default
     );

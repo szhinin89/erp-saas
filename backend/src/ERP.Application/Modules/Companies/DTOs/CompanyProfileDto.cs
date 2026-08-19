@@ -19,8 +19,13 @@ public sealed record CompanyLogoDto(Guid Id, string Url, DateTime LastUpdatedAt)
 /// <summary>
 /// Perfil de empresa para "Configuración → Empresa": identidad legal/fiscal,
 /// información corporativa, representante legal, configuración fiscal,
-/// operación y documentos. <see cref="BrandingConfiguration"/> es un jsonb con
-/// la forma <c>{ primaryColor, secondaryColor, slogan }</c>, editado desde la pestaña "Marca".
+/// operación y documentos.
+///
+/// CONFIG-FOUNDATION-P1-02: la marca (colores/eslogan/pie de página) ya NO viaja aquí como JSON
+/// crudo — se consulta/edita vía <c>GET/PUT /api/v1/companies/profile/branding</c>
+/// (<see cref="CompanyBrandingDto"/>, respaldado por <c>org_settings</c> a través
+/// de <c>ICompanyBrandingResolver</c>). El logo sigue viviendo aquí (<see cref="Logo"/>,
+/// <see cref="AlternateLogo"/>) porque es un archivo (MediaFile), no un setting escalar.
 /// </summary>
 public sealed record CompanyProfileDto(
     Guid Id,
@@ -50,7 +55,6 @@ public sealed record CompanyProfileDto(
     string OperationalStatus,
     bool OnboardingCompleted,
     string? ExtraLegend,
-    string? BrandingConfiguration,
     CompanyLogoDto? Logo,
     CompanyLogoDto? AlternateLogo,
     bool IsActive,
@@ -93,7 +97,6 @@ public sealed record CompanyProfileDto(
             c.OperationalStatus.ToString(),
             c.OnboardingCompleted,
             c.ExtraLegend,
-            c.BrandingConfiguration,
             logo is null ? null : CompanyLogoDto.FromMediaFile(logo),
             alternateLogo is null ? null : CompanyLogoDto.FromAlternateMediaFile(alternateLogo),
             c.IsActive,

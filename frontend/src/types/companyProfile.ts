@@ -32,7 +32,6 @@ export interface CompanyProfile {
   operationalStatus: string;
   onboardingCompleted: boolean;
   extraLegend: string | null;
-  brandingConfiguration: string | null;
   logo: CompanyLogo | null;
   alternateLogo: CompanyLogo | null;
   isActive: boolean;
@@ -72,10 +71,24 @@ export interface UpdateCompanyDocumentsPayload {
   extraLegend?: string | null;
 }
 
-export interface CompanyBrandingIdentity {
-  primaryColor?: string;
-  secondaryColor?: string;
-  slogan?: string;
+/**
+ * CONFIG-FOUNDATION-P1-02: marca de empresa tipada — ya no un JSON crudo
+ * (Company.BrandingConfiguration fue eliminado). Respaldada por org_settings vía
+ * ICompanyBrandingResolver. El logo no viaja aquí: sigue siendo CompanyProfile.logo/alternateLogo
+ * (archivo, MediaFile) — duplicarlo aquí sería una segunda fuente de verdad.
+ */
+export interface CompanyBrandingDto {
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  slogan: string | null;
+  documentFooterText: string | null;
+}
+
+export interface UpdateCompanyBrandingPayload {
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  slogan?: string | null;
+  documentFooterText?: string | null;
 }
 
 export type ConsumerFinalMaxAmountSource =

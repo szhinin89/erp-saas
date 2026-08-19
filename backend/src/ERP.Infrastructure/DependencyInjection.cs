@@ -550,9 +550,12 @@ public static class DependencyInjection
 
         // Fase 8: branding y storage definitivos — reemplazan a NullRideBrandingProvider y
         // NullRidePdfStorageService (Fase 4), eliminados.
+        // CONFIG-FOUNDATION-P1-02: CompanyBrandingRideProvider (antes OrgSettingsRideBrandingProvider)
+        // ya no lee org_settings directamente — delega en ICompanyBrandingResolver, la fuente
+        // única de marca de empresa (Company Branding es owner; RIDE es consumidor).
         services.AddScoped<
             ERP.Application.Modules.Ride.Branding.IRideBrandingProvider,
-            ERP.Infrastructure.Ride.Branding.OrgSettingsRideBrandingProvider
+            ERP.Infrastructure.Ride.Branding.CompanyBrandingRideProvider
         >();
         services.AddScoped<
             ERP.Application.Modules.Ride.Storage.IRidePdfStorageNamingStrategy,
@@ -821,6 +824,10 @@ public static class DependencyInjection
         services.AddScoped<
             ERP.Domain.Modules.Sales.Interfaces.ISalesFiscalPolicyResolver,
             ERP.Infrastructure.Services.SalesFiscalPolicyResolver
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Company.Interfaces.ICompanyBrandingResolver,
+            ERP.Infrastructure.Services.CompanyBrandingResolver
         >();
 
         // ── Setup BC ──────────────────────────────────────────────────────────

@@ -83,6 +83,29 @@ public sealed class RideDependencyInjectionTests
                 .ReturnsAsync(new List<ERP.Domain.Configuration.Entities.OrgSetting>());
             return mock.Object;
         });
+        // CONFIG-FOUNDATION-P1-02: CompanyBrandingRideProvider ya no depende de
+        // IOrgSettingsRepository directamente — depende de ICompanyBrandingResolver, que a su vez
+        // compone IOrgSettingsRepository (arriba) + IMediaService (mockeado: sin logo en este test).
+        services.AddScoped<ERP.Application.Modules.Media.IMediaService>(_ =>
+        {
+            var mock = new Mock<ERP.Application.Modules.Media.IMediaService>();
+            mock.Setup(m =>
+                    m.GetActivePrimaryAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<ERP.Domain.Modules.Media.Enums.MediaOwnerType>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync((ERP.Domain.Modules.Media.Entities.MediaFile?)null);
+            return mock.Object;
+        });
+        services.AddScoped<
+            ERP.Domain.Modules.Company.Interfaces.ICompanyBrandingResolver,
+            ERP.Infrastructure.Services.CompanyBrandingResolver
+        >();
 
         // ── Exactamente el bloque "Ride BC" registrado en ERP.Infrastructure/DependencyInjection.cs ──
         services.AddScoped<IRidePdfDocumentRepository, RidePdfDocumentRepository>();
@@ -92,7 +115,7 @@ public sealed class RideDependencyInjectionTests
         services.AddScoped<IRideTemplate, DefaultInvoiceRideTemplate>();
         services.AddScoped<IRideSourceXmlProvider, ElectronicDocumentRideSourceXmlProvider>();
         services.AddScoped<IRideRenderer, QuestPdfRideRenderer>();
-        services.AddScoped<IRideBrandingProvider, OrgSettingsRideBrandingProvider>();
+        services.AddScoped<IRideBrandingProvider, CompanyBrandingRideProvider>();
         services.AddSingleton<ERP.Application.Codes.IQrCodeGenerator, QrCodeGenerator>();
         services.AddScoped<IRideQrCodeGenerator, RideQrCodeGenerator>();
         services.AddSingleton<
