@@ -825,6 +825,10 @@ public static class DependencyInjection
             SriSettingsRepository
         >();
         services.AddScoped<
+            ERP.Domain.Configuration.Interfaces.ISystemProviderSettingsRepository,
+            ERP.Infrastructure.Persistence.Repositories.SystemProviderSettingsRepository
+        >();
+        services.AddScoped<
             ERP.Domain.Configuration.Interfaces.IOrgSettingsRepository,
             ERP.Infrastructure.Persistence.Repositories.Configuration.OrgSettingsRepository
         >();

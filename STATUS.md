@@ -4,6 +4,25 @@
 
 ---
 
+## ERP-CORE-CLOSEOUT-09 — Cumplimiento SRI proveedor de sistema (2026-08-21)
+
+**Estado: PARCIAL — infraestructura de configuración dinámica lista; integración XML queda como precondición normativa explícita.** Preparación del ERP para obligaciones de proveedor de sistema de facturación electrónica (Resolución NAC-DGERCGC26-00000027).
+
+**Restricción reconocida al iniciar este cierre**: no es posible verificar de forma confiable, desde el conocimiento de este agente, el contenido técnico exacto de la resolución (qué campo/elemento del XML —si alguno— debe llevar el dato del proveedor de sistema). Inventar esa estructura habría violado la propia instrucción del cierre ("No modificar XML SRI sin confirmar estructura/campo aplicable"). Se confirmó el alcance con el usuario antes de implementar: preparar la infraestructura de configuración dinámica sin tocar XML, dejando la integración documentada como precondición.
+
+- **Sin hardcodes previos**: se auditó el código de runtime (Application/Domain/Infrastructure/API, excluyendo tests y `E2ESeedService.cs` ya gateado como no-producción) buscando RUC/razón social/CIIU/"ZH Technologies" — no se encontró ningún hardcode fuera de tests y de un string descriptivo de Swagger. Este punto ya estaba limpio.
+- **Configuración dinámica implementada**: nueva entidad singleton `SystemProviderSettings` (RUC, razón social, CIIU, habilitado, fecha de vigencia) — **a nivel de instancia del ERP, no por tenant/empresa** (decisión confirmada con el usuario: el proveedor de sistema es quien construyó el software, un hecho fijo del despliegue, no algo que cada empresa cliente configura). Deliberadamente separada de `Company`/`SriSettings` (el emisor de cada comprobante) — mismo patrón singleton que `SystemSetupState` (Id=1, sin TenantId/CompanyId). Fail-closed: no puede quedar `Enabled=true` con RUC/razón social/CIIU incompletos (validado en el dominio y en el validador de FluentValidation).
+- **API**: `GET`/`PUT /api/v1/system/provider-settings`, controlador nuevo y separado (`SystemProviderSettingsController`) — acceso solo Admin del tenant (`[Authorize(Roles = SecurityRoles.Admin)]`, mismo patrón que `SecurityController`), sin requerir contexto de empresa, para no mezclar con la configuración del emisor. Sin pantalla de frontend nueva (no había una existente que lo requiriera, fuera del alcance de este cierre).
+- **PRECONDICIÓN NORMATIVA PENDIENTE (bloqueante para cerrar el punto 3 del alcance)**: el dato del proveedor de sistema **todavía no se inyecta en ningún XML de comprobante electrónico**. Antes de tocar `InvoiceXmlBuilder`/`CreditNoteXmlBuilder` o el `infoTributaria`/`infoAdicional` del XML, se necesita el texto de la Resolución NAC-DGERCGC26-00000027 o la ficha técnica SRI correspondiente que confirme el campo/elemento exacto. Documentado también como comentario en `SystemProviderSettings.cs`.
+- **Checklist de facturación electrónica**: deliberadamente NO se agregó un ítem de readiness para "proveedor de sistema" en `CompanyOperationalReadinessResolver` en este cierre — el `Code` de cada ítem requiere una traducción i18n correspondiente en frontend (fuera de alcance: "frontend solo si existe pantalla de configuración necesaria", y no hay pantalla de proveedor de sistema todavía). Queda como seguimiento explícito para cuando se implemente esa pantalla.
+- **Precondición legal/administrativa externa (no es un bug técnico)**: si ZH Technologies comercializa este ERP como proveedor de sistema, debe revisar/actualizar su propio RUC ante el SRI con el código CIIU J62021002 (actividad de desarrollo de software) antes de operar bajo esa obligación regulatoria — trámite administrativo externo al código, no una tarea de este repositorio.
+- Sin cambios en `SalesPage`/POS, Print Agent, ni XML SRI existente — la emisión electrónica actual no se modificó ni se rompió.
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore` (0 errores), tests nuevos de dominio y de los handlers Get/Upsert (10 tests, todos verdes), tests filtrados ElectronicDocument/ElectronicInvoicing/Sri/Configuration/CompanyProfile/Security en Application/Infrastructure/API.Tests (119+90+4, todo verde), guardrails de `ERP.Architecture.Tests` (101/101 verde), migración EF nueva (`AddSystemProviderSettings`) sin cambios de modelo pendientes, y `git diff --check`.
+
+**Resultado real vs. esperado**: la configuración dinámica queda lista y sin hardcodes (cumple items 1, 2, 5 —como precondición documentada—, 6 y 7 del alcance). El item 3 (integración XML) y el item 4 (checklist UI) quedan explícitamente abiertos, no cerrados por decisión deliberada ante la falta de confirmación normativa/de alcance de frontend — no se debe interpretar este cierre como "cumplimiento SRI completo".
+
+---
+
 ## ERP-CORE-CLOSEOUT-08 — Reportes mínimos finales (2026-08-21)
 
 **Estado: COMPLETADO.** Auditoría de los 8 reportes mínimos (Ventas, Compras, Inventario/stock, Kardex, Caja, Cuentas por Cobrar, Cuentas por Pagar, Monitor de documentos electrónicos). Se encontraron y corrigieron **2 defectos reales**; el resto de los reportes ya tenía aislamiento y cálculos correctos.

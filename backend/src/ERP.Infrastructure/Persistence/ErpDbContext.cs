@@ -368,6 +368,7 @@ public class ErpDbContext : DbContext
 
     // ── Configuration ─────────────────────────────────────────────────────
     public DbSet<SriSettings> SriSettings => Set<SriSettings>();
+    public DbSet<SystemProviderSettings> SystemProviderSettings => Set<SystemProviderSettings>();
 
     // ── Setup (first-run gate) ────────────────────────────────────────────
     public DbSet<SystemSetupState> SystemSetupStates => Set<SystemSetupState>();
