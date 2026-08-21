@@ -113,3 +113,60 @@ export interface SalesFiscalPolicy {
 export interface UpdateConsumerFinalMaxAmountPayload {
   consumerFinalMaxAmount: number;
 }
+
+/**
+ * COMPANY-OPERATING-SETUP-01 — checklist de preparación operativa. Deliberadamente sin texto:
+ * el backend solo calcula estado/código, el frontend resuelve label/mensaje vía i18n a partir de
+ * `code` (ver OperationalReadinessSection.tsx). No expone entidades de dominio.
+ */
+export type ReadinessStatus = "Ready" | "Warning" | "Missing" | "NotApplicable";
+export type ReadinessSeverity = "Info" | "Warning" | "Blocking";
+export type ReadinessBlockingArea =
+  | "Sales"
+  | "ElectronicInvoicing"
+  | "Inventory"
+  | "CashRegister";
+
+/**
+ * Identificador semántico de la pantalla owner donde se corrige el ítem — el backend nunca
+ * conoce el router de React. `operationalReadinessActionRoutes.ts` traduce cada valor a su ruta
+ * concreta de React Router; si el backend agrega un target nuevo sin mapeo, el ítem simplemente
+ * no muestra acción (fail-safe, nunca navega a una ruta inventada).
+ */
+export type ReadinessActionTarget =
+  | "CompanyProfile"
+  | "CompanyBranding"
+  | "CompanyFiscalSettings"
+  | "CompanySalesSettings"
+  | "DecimalSettings"
+  | "Branches"
+  | "Establishments"
+  | "EmissionPoints"
+  | "Warehouses"
+  | "CashRegisters"
+  | "PriceLists"
+  | "ElectronicInvoicingSettings"
+  | "Items";
+
+export interface CompanyOperationalReadinessItem {
+  code: string;
+  status: ReadinessStatus;
+  severity: ReadinessSeverity;
+  blockingArea: ReadinessBlockingArea | null;
+  actionTarget: ReadinessActionTarget | null;
+}
+
+export interface CompanyOperationalReadinessSection {
+  code: string;
+  status: ReadinessStatus;
+  items: CompanyOperationalReadinessItem[];
+}
+
+export interface CompanyOperationalReadiness {
+  overallStatus: ReadinessStatus;
+  canSell: boolean;
+  canIssueElectronicInvoices: boolean;
+  canUseInventory: boolean;
+  canUseCashRegister: boolean;
+  sections: CompanyOperationalReadinessSection[];
+}

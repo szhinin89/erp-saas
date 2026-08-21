@@ -8,6 +8,7 @@ using ERP.Application.Modules.Companies.UseCases.GetCompanyBranding;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyById;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyLogoAltContent;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyLogoContent;
+using ERP.Application.Modules.Companies.UseCases.GetCompanyOperationalReadiness;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyProfile;
 using ERP.Application.Modules.Companies.UseCases.GetCurrentCompany;
 using ERP.Application.Modules.Companies.UseCases.GetSalesFiscalPolicy;
@@ -227,6 +228,27 @@ public sealed class CompaniesController : ControllerBase
     public async Task<IActionResult> GetFiscalPolicy(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetSalesFiscalPolicyQuery(), cancellationToken);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>
+    /// COMPANY-OPERATING-SETUP-01: checklist de preparación operativa — orquesta fuentes/resolvers
+    /// existentes, no persiste nada. Ver ICompanyOperationalReadinessResolver.
+    /// </summary>
+    [HttpGet("operational-readiness")]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesView}")]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyOperationalReadinessDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetOperationalReadiness(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var result = await _mediator.Send(
+            new GetCompanyOperationalReadinessQuery(),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 

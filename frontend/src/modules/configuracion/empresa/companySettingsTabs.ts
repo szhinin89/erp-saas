@@ -6,6 +6,7 @@ import { OperationSettingsSection } from "./sections/OperationSettingsSection";
 import { DocumentsSettingsSection } from "./sections/DocumentsSettingsSection";
 import { DecimalSettingsSection } from "./sections/DecimalSettingsSection";
 import { CompanySalesSettingsSection } from "./sections/CompanySalesSettingsSection";
+import { OperationalReadinessSection } from "./sections/OperationalReadinessSection";
 
 export type CompanySettingsTabId =
   | "profile"
@@ -14,7 +15,8 @@ export type CompanySettingsTabId =
   | "operation"
   | "documents"
   | "decimals"
-  | "sales";
+  | "sales"
+  | "readiness";
 
 export type CompanySettingsTab = {
   id: CompanySettingsTabId;
@@ -77,6 +79,13 @@ export const companySettingsTabs: CompanySettingsTab[] = [
     labelKey: "settings.company.tabs.sales",
     icon: "sell",
     component: CompanySalesSettingsSection,
+    enabled: true,
+  },
+  {
+    id: "readiness",
+    labelKey: "settings.company.tabs.readiness",
+    icon: "checklist",
+    component: OperationalReadinessSection,
     enabled: true,
   },
 ];

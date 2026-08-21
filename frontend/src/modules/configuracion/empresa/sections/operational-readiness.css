@@ -1,0 +1,62 @@
+/* Preparación operativa — layout local únicamente (colores/tipografía vienen de zh-ui.css / page-template.css) */
+
+.opreadiness-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.opreadiness-capabilities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.opreadiness-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.opreadiness-item-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.opreadiness-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.opreadiness-item-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.opreadiness-item-row:first-child {
+  padding-top: 0;
+}
+
+.opreadiness-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opreadiness-item-label {
+  margin: 0;
+}
+
+.opreadiness-item-message {
+  margin: 0;
+}
+
+.opreadiness-item-action {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

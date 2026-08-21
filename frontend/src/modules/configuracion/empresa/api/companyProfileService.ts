@@ -2,6 +2,7 @@ import { api } from "../../../lib/api";
 import type { ApiResponse } from "../../../../types/api";
 import type {
   CompanyBrandingDto,
+  CompanyOperationalReadiness,
   CompanyProfile,
   SalesFiscalPolicy,
   UpdateCompanyBrandingPayload,
@@ -166,6 +167,13 @@ export const companyProfileService = {
     const { data } = await api.put<ApiResponse<SalesFiscalPolicy>>(
       "/api/v1/companies/profile/fiscal-policy",
       payload,
+    );
+    return data.data;
+  },
+
+  async getOperationalReadiness(): Promise<CompanyOperationalReadiness> {
+    const { data } = await api.get<ApiResponse<CompanyOperationalReadiness>>(
+      "/api/v1/companies/operational-readiness",
     );
     return data.data;
   },
