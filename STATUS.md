@@ -4,6 +4,18 @@
 
 ---
 
+## ERP-CORE-CLOSEOUT-05-FIX03 — Cierre de gobernanza IgnoreQueryFilters (2026-08-21)
+
+**Estado: COMPLETADO.** Cierra el último pendiente de gobernanza dejado abierto por FIX02: `ConfigurationChangeLogQueryRepository.cs` usaba `.IgnoreQueryFilters()` fuera del allowlist permitido, sin necesitarlo.
+
+- **Causa raíz**: `query.TenantId`/`query.CompanyId` (los únicos filtros aplicados) siempre provienen de `ICurrentTenant`/`ICurrentCompany` — documentado explícitamente en `ConfigurationChangeLogQuery` ("nunca del query string"). Eso es exactamente lo mismo que ya exige el filtro global de EF para `ConfigurationChangeLog` (`ITenantScopedEntity` + `ICompanyScopedEntity`), así que el bypass no tenía ninguna razón real — no era un caso de "necesita cruzar tenant/empresa" como el resto del allowlist (login, bootstrap, seeding).
+- **Fix**: se eliminó el bypass del filtro global; se mantiene el `Where` explícito por `TenantId`/`CompanyId` como defensa en profundidad, sin ningún bypass. No se usó `PlatformQueryAccessor` aquí porque no aplicaba — el requisito era "si no necesita ignorar filtros, eliminarlo", no envolverlo.
+- **`IgnoreQueryFiltersAuditTests` queda en verde** — no quedan usos de `.IgnoreQueryFilters()` fuera del allowlist documentado en todo `backend/src`. ERP-CORE-CLOSEOUT-05 cierra sin pendientes de gobernanza multi-tenant.
+- Sin cambios en Sales, Purchases, Inventory, Cash, Communications, Print Agent ni lógica funcional de auditoría/configuración — solo se retiró un bypass innecesario.
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore` (0 errores), `dotnet test backend/src/ERP.Infrastructure.Tests --filter IgnoreQueryFiltersAuditTests` (verde), `dotnet test backend/src/ERP.Application.Tests --filter Configuration|Settings|Branch|Tenant` (139 tests verdes), `dotnet ef migrations has-pending-model-changes` (sin cambios pendientes) y `git diff --check`.
+
+---
+
 ## ERP-CORE-CLOSEOUT-05-FIX02 — P1 de aislamiento y gobernanza (2026-08-21)
 
 **Estado: COMPLETADO.** Se corrigieron los 6 hallazgos P1 de ERP-CORE-CLOSEOUT-05 sin reabrir los P0 de FIX01 ni tocar reglas de negocio de venta/compra/inventario/caja.

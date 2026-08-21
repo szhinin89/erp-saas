@@ -15,9 +15,15 @@ public sealed class ConfigurationChangeLogQueryRepository : IConfigurationChange
         CancellationToken cancellationToken = default
     )
     {
+        // ERP-CORE-CLOSEOUT-05-FIX03: el bypass del filtro global de EF que existía aquí era
+        // innecesario — query.TenantId/CompanyId siempre vienen de ICurrentTenant/ICurrentCompany
+        // (ver doc de ConfigurationChangeLogQuery), exactamente lo mismo que ya aplica ese filtro
+        // para ConfigurationChangeLog (ITenantScopedEntity + ICompanyScopedEntity). El Where
+        // explícito se mantiene por claridad/defensa en profundidad, sin ningún bypass.
         var q = _db
-            .ConfigurationChangeLogs.IgnoreQueryFilters()
-            .Where(l => l.TenantId == query.TenantId && l.CompanyId == query.CompanyId);
+            .ConfigurationChangeLogs.Where(l =>
+                l.TenantId == query.TenantId && l.CompanyId == query.CompanyId
+            );
 
         if (!string.IsNullOrWhiteSpace(query.EntityType))
             q = q.Where(l => l.EntityType == query.EntityType);
