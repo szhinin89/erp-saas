@@ -43,36 +43,26 @@ public sealed class UpdateConsumerFinalMaxAmountCommandHandler
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
 
-        var existing = await _repo.GetAsync(
+        var value = command.ConsumerFinalMaxAmount.ToString("0.00", CultureInfo.InvariantCulture);
+
+        // CONFIG-FOUNDATION-P2-01: nunca pre-cargar y mutar la entidad existente aquí — UpsertAsync
+        // resuelve internamente insert-vs-update y calcula OldValue/NewValue para el audit log
+        // consultando el valor persistido. Si el caller mutara la instancia trackeada antes de
+        // llamar a UpsertAsync, el identity map de EF devolvería esa misma instancia ya mutada al
+        // recalcular OldValue dentro del repositorio, con lo que OldValue == NewValue siempre y el
+        // ConfigurationChangeLog dejaría de generarse silenciosamente. Se construye siempre una
+        // instancia nueva no trackeada, igual que el resto de escrituras de org_settings.
+        var setting = OrgSetting.Create(
             tenantId,
             companyId,
             OrgScope.Company,
             companyId,
             OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
-            cancellationToken
+            value,
+            SettingDataType.Decimal,
+            _currentUser.UserId
         );
-
-        var value = command.ConsumerFinalMaxAmount.ToString("0.00", CultureInfo.InvariantCulture);
-
-        if (existing is not null)
-        {
-            existing.UpdateValue(value, _currentUser.UserId);
-            await _repo.UpsertAsync(existing, cancellationToken);
-        }
-        else
-        {
-            var setting = OrgSetting.Create(
-                tenantId,
-                companyId,
-                OrgScope.Company,
-                companyId,
-                OrgSettingKeys.Sales.ConsumerFinalMaxAmount,
-                value,
-                SettingDataType.Decimal,
-                _currentUser.UserId
-            );
-            await _repo.UpsertAsync(setting, cancellationToken);
-        }
+        await _repo.UpsertAsync(setting, cancellationToken);
 
         await _repo.SaveChangesAsync(cancellationToken);
 
