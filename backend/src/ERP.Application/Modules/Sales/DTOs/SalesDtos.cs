@@ -139,6 +139,59 @@ public sealed record SalesInvoiceDetailDto(
     short SortOrder
 );
 
+public sealed record SalesReceiptPrintPayloadDto(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid BranchId,
+    string CompanyName,
+    string? TradeName,
+    string Ruc,
+    string BranchName,
+    string? EstablishmentCode,
+    string? EmissionPointCode,
+    string? CashRegisterName,
+    Guid? CashSessionId,
+    Guid InvoiceId,
+    string InvoiceNumber,
+    DateOnly IssuedAt,
+    string CustomerName,
+    string CustomerIdentification,
+    string? CustomerEmail,
+    string DocumentType,
+    bool IsElectronic,
+    string? ElectronicStatus,
+    string? AccessKey,
+    string? AuthorizationNumber,
+    DateTime? AuthorizationDate,
+    IReadOnlyList<SalesReceiptLineDto> Lines,
+    SalesReceiptTotalsDto Totals,
+    IReadOnlyList<SalesReceiptPaymentDto> Payments,
+    decimal? CashReceived,
+    decimal? CashChange,
+    string? FooterMessage
+);
+
+public sealed record SalesReceiptLineDto(
+    string ProductName,
+    string? Sku,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal Discount,
+    decimal Subtotal,
+    decimal VatRate,
+    decimal VatAmount,
+    decimal Total
+);
+
+public sealed record SalesReceiptPaymentDto(string Method, decimal Amount, string? Reference);
+
+public sealed record SalesReceiptTotalsDto(
+    decimal SubtotalWithoutTaxes,
+    decimal DiscountTotal,
+    decimal VatTotal,
+    decimal Total
+);
+
 /// <summary>
 /// Resultado de resolver el precio e impuestos oficiales de un ítem para una línea
 /// de venta, vía IPricingResolver (Pricing Engine v2) + ISriTaxResolver. UnitPrice

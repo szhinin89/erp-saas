@@ -3,6 +3,7 @@ using ERP.API.Extensions;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Modules.Sales.UseCases.GetDailySalesReport;
 using ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
+using ERP.Application.Modules.Sales.UseCases.GetSalesReceiptPrintPayload;
 using ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
 using ERP.Application.Modules.Sales.UseCases.GetSalesRuntimeContext;
 using ERP.Domain.Kernel.Permissions;
@@ -47,6 +48,16 @@ public sealed class SalesController : ControllerBase
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetSalesInvoiceByIdQuery(id), ct));
+
+    [HttpGet("invoices/{invoiceId:guid}/receipt-print-payload")]
+    [Authorize(Policy = $"perm:{SalesPermissions.View}")]
+    public async Task<IActionResult> GetReceiptPrintPayload(
+        Guid invoiceId,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrNotFound(
+            await _mediator.Send(new GetSalesReceiptPrintPayloadQuery(invoiceId), ct)
+        );
 
     [HttpGet]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]

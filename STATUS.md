@@ -4,6 +4,19 @@
 
 ---
 
+## ZH-PRINT-AGENT-02A — Backend payload oficial de tirilla POS (2026-08-21)
+
+**Estado: COMPLETADO.** Se agregó un contrato backend oficial, estable y solo lectura para que el POS pueda obtener el payload de tirilla de una factura ya emitida sin acoplar el ERP al Print Agent ni ejecutar impresión física desde backend.
+
+- Application/API: agregado `GetSalesReceiptPrintPayloadQuery` y endpoint `GET /api/v1/sales/invoices/{invoiceId}/receipt-print-payload`, expuesto desde `SalesController` con controller delgado y permiso `Sales.View`.
+- Payload: devuelve tenant, empresa, sucursal, RUC, nombre comercial, caja/sesión, número de factura, cliente, estado electrónico/SRI cuando aplica, líneas, totales, pagos y pie de documento resuelto por `ICompanyBrandingResolver`.
+- Scope: la consulta falla cerrado con `NotFound` si la factura no existe, no está autorizada/emitida o pertenece a otra sucursal activa del contexto. No crea ni modifica factura, pagos, caja, stock, kardex, RIDE, Communications ni outbox.
+- Fallbacks documentados: `cashReceived` y `cashChange` se devuelven `null` porque hoy no están persistidos en `SalesInvoicePayment` ni `CashMovement`; `establishmentCode`/`emissionPointCode` usan configuración actual si existe y fallback histórico desde `InvoiceNumber`/snapshot de `CashSession`.
+- Sin cambios en `frontend/`, `print-agent/`, `SalesPage`, `SalesIssueModal`, reglas de venta, SRI, RIDE ni Communications.
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore`, tests nuevos de payload, tests Application relevantes de Sales/Caja/ElectronicDocuments, y `dotnet ef migrations has-pending-model-changes` sin cambios pendientes.
+
+---
+
 ## ERP-CORE-CLOSEOUT-02B — Correo automático de factura autorizada SRI (2026-08-21)
 
 **Estado: COMPLETADO.** Se conectó la autorización electrónica SRI con el módulo transversal Communications para encolar automáticamente el correo de factura autorizada al cliente, sin acoplar Ventas/SRI/POS a SMTP.
