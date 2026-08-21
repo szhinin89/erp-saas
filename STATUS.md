@@ -4,6 +4,96 @@
 
 ---
 
+## ERP-CORE-CLOSEOUT-10-FINALIZE — Cierre final sin pendientes técnicos accionables (2026-08-21)
+
+### Veredicto final
+
+**ERP Core queda listo para piloto técnico.** Pendientes técnicos accionables en el repositorio: **ninguno**. Bloques cerrados: **01 a 10**. Solo quedan pendientes externos inevitables, listados abajo con procedimiento ya preparado para cuando estén disponibles.
+
+- **Tirilla (Print Agent)**: preparada — cola persistente, reintentos, `Driver: "windows-raw"`, instalación como servicio Windows, 21 tests verdes. Pendiente prueba física real por falta de impresora térmica disponible.
+- **Correo (SMTP)**: preparado — outbox desacoplado (nunca bloquea una venta), resolución en dos capas (`OrgSettings` → fallback `Communications:Email:*`/env vars) ya implementada y probada. Pendiente credencial SMTP real (Zoho u otro) para el smoke de envío end-to-end.
+- **SRI proveedor de sistema (XML)**: configuración dinámica lista (`SystemProviderSettings`, singleton de instancia). Pendiente el texto de la Resolución NAC-DGERCGC26-00000027 o ficha técnica SRI que confirme el campo/elemento exacto antes de tocar los XML builders — normativa, no técnica.
+
+### Corrección a un hallazgo del cierre anterior (ERP-CORE-CLOSEOUT-10)
+
+El cierre anterior afirmó que el backup de PostgreSQL/FileStorage era "procedimiento manual, no programado" — **eso era impreciso**: `scripts/backup-localprod.ps1` (dump + FileStorage + checksums + manifest) y `scripts/restore-check-localprod.ps1` (drill de restore completo en un entorno descartable, sin tocar el stack real) ya existían y están documentados en detalle en `docs/BACKUP_RESTORE_LOCALPROD.md` — no se habían revisado en el cierre anterior. Lo único que realmente falta es agendar la ejecución periódica (no existe cron/scheduler todavía) — eso sí queda clasificado como externo/operativo, no como código faltante.
+
+### Qué se revisó y su clasificación
+
+| Punto | Clasificación | Detalle |
+|---|---|---|
+| Health checks API/Postgres/Redis, `depends_on: service_healthy` | **Cerrado** | Corregido en el cierre anterior (`docker-compose.localprod.yml`), reverificado con `docker compose config`. |
+| Volúmenes persistentes: Postgres, FileStorage, logs API | **Cerrado** | `erp_saas_pgdata`, `erp-api-files`, `erp-api-logs` (este último agregado en el cierre anterior) — documentados en `docs/DOCKER_LOCAL_PROD.md`. |
+| Secretos en `docker-compose*.yml`/`.env*.example` | **Cerrado** | Sin secretos reales; `POSTGRES_PASSWORD`/`JWT_SECRET_KEY` sin default en `compose.base.yml` (falla si no se exportan) — ningún compose de prod puede heredar un password débil. |
+| Migraciones EF aplicables desde cero | **Cerrado** | Re-verificado en este cierre: 27 migraciones aplicadas sin error contra un Postgres 16 real (contenedor temporal, no Testcontainers). `has-pending-model-changes` → sin cambios. Comando documentado en `docs/DOCKER_LOCAL_PROD.md` §5 y `docs/DEVELOPMENT.md`. |
+| Backup/restore/rollback PostgreSQL + FileStorage | **Cerrado** | Scripts ya existentes (`backup-localprod.ps1`, `restore-check-localprod.ps1`) + `docs/DOCKER_LOCAL_PROD.md` § Rollback de la aplicación (nuevo en este cierre: rollback de contenedores por commit + advertencia sobre downgrade de esquema). `docs/deployment/README.md` corregido para referenciar los scripts reales en vez de comandos genéricos inventados. |
+| Backend config (appsettings, guardas de arranque, CORS, Swagger, Hangfire, JWT) | **Cerrado** | Reverificado directamente en `Program.cs`: guard fail-fast en Production para `Jwt:SecretKey`/`ConnectionStrings:DefaultConnection`/`Cors:AllowedOrigins` con placeholder o vacíos; CORS sin `AllowAnyOrigin`; Swagger solo Development/Testing; Hangfire deshabilitado por defecto sin bloquear ventas ni Communications. |
+| Frontend config (`.env` examples, `VITE_API_URL`, `VITE_PRINT_AGENT_*`) | **Cerrado** | `VITE_API_URL` vacío = proxy relativo `/api` (funciona en dev y en Docker vía nginx); las 4 variables `VITE_PRINT_AGENT_*` documentadas en `.env.development.example`, comentadas, sin clave real; Vite no embebe ningún secreto por defecto en el bundle. |
+| SMTP documentado (OrgSettings + fallback env vars) | **Cerrado** | Nueva sección en `docs/deployment/README.md`: tabla de variables `Communications__Email__*` (ejemplo Zoho), confirmación de que no bloquea ventas, y nota honesta de que el endpoint de administración de `communications.email.*` vía OrgSettings **no existe todavía** (se usa el fallback por variables de entorno para el piloto) — no se inventó ni se implementó esa pantalla en este cierre (sería alcance funcional nuevo). |
+| Print Agent — versionado, README, prueba física | **Cerrado** | `print-agent/` ya está versionado (43 archivos trackeados, no `?? print-agent/`) — no hacía falta un commit separado. Build (`ZH.PrintAgent.sln`) y tests (21/21) verdes. README ya cubría instalación/ApiKey/DataDirectory/`windows-raw`/nombre de cola; se agregó la advertencia explícita de prueba física pendiente. |
+| SRI/certificado — documentación de dependencia física vs. electrónica | **Cerrado** | Nueva sección en `docs/deployment/README.md`: factura física sin dependencia del certificado (garantía estructural), venta electrónica con error claro (nunca 500) si falta certificado/settings, endpoint de readiness, y el punto normativo pendiente del proveedor de sistema. |
+| `Deployment:SuperAdminPanelEnabled` | **No aplicable por arquitectura** | Esa clave de configuración no existe en `backend/src` — ERP Core no tiene panel SuperAdmin/Platform por diseño (`ERP_CORE_FREEZE.md`). Discrepancia de alcance de la tarea, no un defecto de este repo. |
+| Dominio `.com.ec` + SSL real | **Externo inevitable** | Requiere dominio registrado y decisión de proveedor de certificado — documentado en `docs/deployment/README.md`, sin inventar configuración TLS sin el dominio real. |
+| Credenciales SMTP reales (Zoho) | **Externo inevitable** | El código/config ya está listo (ver tabla de variables); falta la cuenta real. |
+| Impresora térmica física | **Externo inevitable** | El agente y su README ya están listos; falta el hardware para la prueba end-to-end. |
+| Certificado `.p12` SRI real por empresa piloto | **Externo inevitable** | El flujo de subida/validación ya está implementado (ERP-CORE-CLOSEOUT-06/07); falta el certificado real de la empresa piloto. |
+| Texto/ficha técnica de la Resolución NAC-DGERCGC26-00000027 | **Externo inevitable** | Ver ERP-CORE-CLOSEOUT-09 — no se puede confirmar la estructura XML sin la fuente normativa oficial; no se inventó. |
+| Backups productivos con periodicidad automatizada | **Externo inevitable (operativo)** | Los scripts de backup/restore ya funcionan (ver arriba); falta solo agendarlos (cron/Task Scheduler) en el entorno real del piloto — decisión operativa, no de código. |
+
+### Validado en este cierre
+
+- `dotnet build backend/src/ERP.slnx --no-restore` → 0 errores.
+- `npm run build` (frontend) → build correcto.
+- Migraciones EF aplicadas **desde cero** contra Postgres 16 real (segunda verificación independiente, contenedor temporal nuevo) → sin errores. `dotnet ef migrations has-pending-model-changes` → sin cambios pendientes.
+- `dotnet build print-agent/ZH.PrintAgent.sln --no-restore` → 0 errores. `dotnet test print-agent/ZH.PrintAgent.sln --no-build` → 21/21 verdes.
+- `git diff --check` limpio. `git status` revisado antes de cualquier commit propuesto — sin `bin/`, `obj/`, `data/`, `TestResults/` en los cambios.
+- Efecto colateral detectado y revertido dos veces en este cierre: `npm run build`/`dotnet build` regeneran automáticamente `docs/ci/PLATFORM_GUARD_REPORT.md` y `docs/future-platform/API_USAGE_GRAPH.json` con timestamp nuevo (contenido idéntico, `PASS`/0 violaciones) — revertidos por no ser cambios semánticos reales.
+
+### Archivos modificados en este cierre (pendientes de commit — no se commiteó nada todavía)
+
+`STATUS.md`, `docker-compose.localprod.yml` (ya modificado en el cierre anterior, sin cambios adicionales en este), `docs/DOCKER_LOCAL_PROD.md`, `docs/deployment/README.md`, `print-agent/README.md`. Ninguno mezcla código de backend/frontend con print-agent en el mismo cambio — todo es documentación/configuración Docker.
+
+---
+
+## ERP-CORE-CLOSEOUT-10 — Preparación despliegue piloto (2026-08-21)
+
+**Estado: COMPLETADO.** Auditoría de entorno/Docker/variables/migraciones/seeds/health/logs/seguridad mínima para el piloto. Se validó de punta a punta (build backend/frontend, migraciones EF aplicadas desde cero contra Postgres real, `docker compose config`) y se corrigieron **2 gaps reales de infraestructura**; el resto del entorno ya estaba listo.
+
+**Corregido**:
+- `docker-compose.localprod.yml`: `erp-frontend` dependía de `erp-api` con `condition: service_started` (arranque del contenedor), no `service_healthy` — nginx podía empezar a proxyear `/api/*` mientras la API todavía aplicaba migraciones/bootstrap. Corregido a `service_healthy`.
+- `docker-compose.localprod.yml`: los logs de Serilog (`logs/erp-.txt`, resuelve a `/app/logs` por el `WORKDIR` del Dockerfile) no tenían volumen — se perdían en cada recreación del contenedor. Se agregó el volumen nombrado `erp-api-logs`.
+- `docs/deployment/README.md` (antes un placeholder de una línea): se agregaron procedimientos concretos de **backup** (`pg_dump`/`pg_restore` contra el contenedor `postgreszh`, con nota explícita de que hoy es manual, no programado), **rollback** (rebuild desde commit anterior — no hay registry de imágenes versionado todavía; downgrade de EF requiere revisar el `Down()` de la migración) y **dominio/SSL** (documentado honestamente como pendiente externo no resuelto, sin inventar una configuración TLS sin dominio real).
+
+**Validado end-to-end (no solo revisado)**:
+- `dotnet build backend/src/ERP.slnx --no-restore` → 0 errores.
+- `npm run build` (frontend) → build correcto (solo warnings preexistentes de tamaño de chunk).
+- Migraciones EF aplicadas **desde cero** contra un Postgres 16 real (contenedor temporal, no Testcontainers) — las 27 migraciones corrieron sin error hasta `AddSystemProviderSettings`. `dotnet ef migrations has-pending-model-changes` → sin cambios pendientes.
+- `docker compose -f docker-compose.yml -f docker-compose.localprod.yml config` → renderiza correctamente (validación estática, sin levantar contenedores).
+- `git diff --check` limpio.
+
+**Confirmado sin defectos** (auditado, no corregido): guard de arranque que falla rápido en Production si `Jwt:SecretKey`/`ConnectionStrings:DefaultConnection`/`Cors:AllowedOrigins` quedan con el placeholder o vacíos (`Program.cs`) — ningún secreto real en el repo, solo placeholders `CHANGE_ME_*`. CORS sin `AllowAnyOrigin`, con fallback a `localhost` inalcanzable en Production por el guard anterior. Swagger habilitado solo en Development/Testing. Hangfire deshabilitado por defecto (`Hangfire:Enabled=false`) sin romper el arranque ni las colas de Communications — los jobs simplemente no se programan; una venta/factura nunca depende de que Hangfire esté activo. Migraciones y bootstrap global se auto-aplican en cada arranque de la API (`db.Database.MigrateAsync()` + `GlobalBootstrapOrchestrator`); una empresa piloto llega a estado operativo solo con `POST /api/v1/setup/admin` (sin intervención manual en BD, coherente con ERP-CORE-CLOSEOUT-06). Volumen `erp-api-files` ya persistía certificados P12/XML/RIDE correctamente. Dockerfile backend ya en Alpine/musl con el fix de SkiaSharp Linux confirmado (ERP-CORE-CLOSEOUT-07); Dockerfile frontend sirve build estático vía nginx, no dev server. Variables `VITE_*` no embeben ningún secreto por defecto en el bundle. `.env.docker.local.example`/`compose.base.yml` fuerzan `POSTGRES_PASSWORD`/`JWT_SECRET_KEY` sin default real — un compose de prod no puede heredar silenciosamente una contraseña débil.
+- Nota menor no bloqueante: `.env.example` (solo para dev local, nunca alcanzable por prod por el guard de arranque) trae un password de conveniencia no vacío — documentado en el propio archivo como dev-only, no accionado.
+
+**Discrepancia de alcance detectada**: el punto "SuperAdmin panel controlado por `Deployment:SuperAdminPanelEnabled`" no aplica — esa clave de configuración no existe en ningún lugar de `backend/src`, consistente con hallazgos de auditorías previas (ERP-CORE-CLOSEOUT-05): este repo de ERP Core no contiene ningún panel de SuperAdmin/Platform por diseño arquitectónico (`ERP_CORE_FREEZE.md`, "ERP never depends on Platform"). No es un defecto de este repo — probablemente una referencia cruzada a un flag de otro producto (ZH Platform).
+
+### Checklist operativo del piloto
+
+1. **Crear empresa**: `POST /api/v1/setup/admin` con el token de instalación impreso en consola al primer arranque → crea Tenant + Company + admin + `CompanyUserMembership` + `CompanyUserBranch` a la sucursal principal (fix de ERP-CORE-CLOSEOUT-06). Bootstrap automático crea sucursal, bodega, establecimiento, punto de emisión, caja, secuencias, métodos de pago, cliente "Consumidor Final" y lista de precios por defecto — sin pasos manuales adicionales.
+2. **Sucursal/bodega/caja adicionales** (si el piloto necesita más de una sucursal): crear vía `/settings/branches`, `/inventory/warehouses`, `/settings/cash-registers` — cada uno valida pertenencia a la empresa activa (ERP-CORE-CLOSEOUT-05-FIX01).
+3. **Abrir caja**: requiere `CashRegister` con `EmissionPointId` asignado — sin caja abierta, Ventas bloquea con mensaje claro ("No existe una caja abierta para realizar ventas.").
+4. **Compra**: requiere bodega válida en la sucursal activa — bloquea con mensaje claro si falta.
+5. **Venta física**: funciona sin ningún dato de facturación electrónica configurado (aislamiento estructural confirmado en ERP-CORE-CLOSEOUT-07).
+6. **Venta electrónica**: requiere `SriSettings` (ambiente + WSDL) y certificado `.p12` subido vía `/settings/electronic-invoicing` — sin eso, bloquea con mensaje claro, nunca un 500. El endpoint `GET /api/companies/operational-readiness` muestra exactamente qué falta antes de intentar vender.
+7. **RIDE**: disponible solo tras factura Authorized con XML autorizado persistido — `GET /api/v1/ride/content`. Funciona en Docker/Linux (QuestPDF Community + SkiaSharp Linux, confirmado).
+8. **Correo SMTP pendiente**: la venta/factura electrónica nunca se bloquea por falta de SMTP — el correo simplemente no se envía hasta que se configure SMTP real por empresa vía OrgSettings.
+9. **Print Agent pendiente de impresora física**: `SalesIssueModal` ofrece imprimir tirilla vía el agente local; si no hay impresora física conectada, el agente reporta el error de forma aislada sin afectar la venta ya emitida (ver `print-agent/README.md`).
+
+### Pendientes externos (no resolubles en este repo)
+
+SMTP real (Zoho u otro) · impresora térmica física + Print Agent instalado por caja · dominio `.com.ec` + SSL · certificado `.p12` SRI real por empresa piloto · confirmación normativa de la Resolución NAC-DGERCGC26-00000027 (ver ERP-CORE-CLOSEOUT-09) · backups productivos automatizados (hoy manual, ver `docs/deployment/README.md`).
+
+---
+
 ## ERP-CORE-CLOSEOUT-09 — Cumplimiento SRI proveedor de sistema (2026-08-21)
 
 **Estado: PARCIAL — infraestructura de configuración dinámica lista; integración XML queda como precondición normativa explícita.** Preparación del ERP para obligaciones de proveedor de sistema de facturación electrónica (Resolución NAC-DGERCGC26-00000027).

@@ -186,6 +186,48 @@ docker volume ls | findstr erp-api-files
 ⚠️ El volumen `erp-api-files` **solo** se borra con `docker compose -f docker-compose.localprod.yml
 down -v` — nunca ejecutes ese comando salvo que quieras perder certificados/XML/RIDE ya generados.
 
+### Logs de la API
+
+Mismo patrón: Serilog escribe en la ruta relativa `logs/erp-.txt` (`appsettings.json`), que con
+`WORKDIR=/app` del Dockerfile resuelve a `/app/logs` dentro del contenedor. `docker-compose.localprod.yml`
+monta esa ruta sobre el volumen nombrado **`erp-api-logs`**, así el historial de logs (rolling diario,
+retención 14 días) sobrevive a `--force-recreate` igual que `erp-api-files`.
+
+```powershell
+docker volume ls | findstr erp-api-logs
+```
+
+---
+
+## Rollback de la aplicación
+
+Las imágenes `erp-api-localprod`/`erp-frontend-localprod` se construyen desde el código fuente
+(`build:`), no desde un registry con tags versionados — hoy no hay "volver a la imagen anterior" con
+un solo comando. El procedimiento real:
+
+```powershell
+# 1. Confirma el commit al que quieres volver (debe ser uno ya probado/estable)
+git log --oneline -10
+
+# 2. Vuelve a ese commit (crea una rama si vas a seguir trabajando después)
+git checkout <commit-estable>
+
+# 3. Reconstruye y levanta — los datos (Postgres, erp-api-files, erp-api-logs) NO se tocan,
+#    solo se reconstruyen las imágenes de aplicación
+docker compose -f docker-compose.localprod.yml --env-file .env.docker.local up -d --build
+
+# 4. Verifica
+curl.exe -s http://localhost:5003/health/live
+```
+
+**Importante — rollback de esquema de base de datos**: `ERP.API` aplica migraciones automáticamente
+al iniciar (`db.Database.MigrateAsync()`), pero nunca las revierte solo. Si el commit al que vuelves
+tiene MENOS migraciones que las ya aplicadas contra `dberpsaas`, el esquema no baja solo — necesitas
+revertir manualmente con `dotnet ef database update <MigraciónAnterior>` **solo si** confirmaste que
+el `Down()` de las migraciones a revertir no es destructivo (revisa cada migración antes de ejecutar).
+Si tienes dudas, restaura desde un backup previo (`docs/BACKUP_RESTORE_LOCALPROD.md`) en vez de
+intentar un downgrade de esquema a ciegas.
+
 ---
 
 ## Seguridad

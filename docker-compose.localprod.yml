@@ -37,6 +37,10 @@ services:
       - erp-saas-existing
     volumes:
       - erp-api-files:/app/data/files
+      # Serilog (appsettings.json) escribe en la ruta relativa logs/erp-.txt, que con
+      # WORKDIR=/app del Dockerfile resuelve a /app/logs — sin volumen, el historial de
+      # logs se pierde en cada recreación del contenedor (ERP-CORE-CLOSEOUT-10).
+      - erp-api-logs:/app/logs
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health/live"]
       interval: 10s
@@ -51,7 +55,11 @@ services:
     container_name: erp-frontend-localprod
     restart: unless-stopped
     depends_on:
-      - erp-api
+      # condition: service_healthy (no solo "started") — evita que nginx empiece a
+      # proxyear /api/* mientras erp-api todavía está aplicando migraciones/bootstrap
+      # (ERP-CORE-CLOSEOUT-10).
+      erp-api:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-8080}:80"
     networks:
@@ -68,3 +76,4 @@ volumes:
   # `docker compose ... up -d --force-recreate erp-api`; solo se borra con `down -v`,
   # que este proyecto nunca ejecuta contra este compose (ver docs/DOCKER_LOCAL_PROD.md).
   erp-api-files:
+  erp-api-logs:

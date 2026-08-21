@@ -160,6 +160,12 @@ Instalar:
 .\print-agent\scripts\install-windows-service.ps1 -PublishDirectory .\print-agent\publish
 ```
 
+**Pendiente externo antes del piloto**: la prueba con impresora térmica física está pendiente por falta
+de hardware disponible — todo lo anterior (cola persistente, reintentos, `Driver: "windows-raw"`,
+instalación como servicio) está implementado y cubierto por los 21 tests de `ZH.PrintAgent.sln`, pero
+no hay todavía una tirilla real impresa en una impresora física para confirmar el driver/cola de
+Windows end-to-end. Usar `manual-smoke-test.ps1` (impresora simulada) mientras tanto.
+
 El script configura inicio automático y reinicio ante fallo con `sc.exe failure`.
 El script debe ejecutarse como administrador y falla si no existe `appsettings.Production.json` o si `ApiKey` conserva un valor de ejemplo.
 
