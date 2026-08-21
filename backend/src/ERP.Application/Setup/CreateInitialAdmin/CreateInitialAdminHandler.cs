@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
@@ -15,6 +16,8 @@ public sealed class CreateInitialAdminHandler
     private readonly ISystemSetupRepository _setupRepo;
     private readonly ITenantRepository _tenants;
     private readonly IAccessRepository _access;
+    private readonly IBranchRepository _branches;
+    private readonly ICompanyUserBranchRepository _companyUserBranches;
     private readonly IPasswordHasher _hasher;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly IUnitOfWork _unitOfWork;
@@ -23,6 +26,8 @@ public sealed class CreateInitialAdminHandler
         ISystemSetupRepository setupRepo,
         ITenantRepository tenants,
         IAccessRepository access,
+        IBranchRepository branches,
+        ICompanyUserBranchRepository companyUserBranches,
         IPasswordHasher hasher,
         ICompanyProvisioningService companyProvisioning,
         IUnitOfWork unitOfWork
@@ -31,6 +36,8 @@ public sealed class CreateInitialAdminHandler
         _setupRepo = setupRepo;
         _tenants = tenants;
         _access = access;
+        _branches = branches;
+        _companyUserBranches = companyUserBranches;
         _hasher = hasher;
         _companyProvisioning = companyProvisioning;
         _unitOfWork = unitOfWork;
@@ -122,6 +129,30 @@ public sealed class CreateInitialAdminHandler
 
                 await _access.AddUserAsync(user, ct);
                 await _access.AddCompanyUserMembershipAsync(membership, ct);
+
+                // ERP-CORE-CLOSEOUT-06: sin esto, el admin inicial queda con CompanyUserMembership
+                // pero CERO CompanyUserBranch — BranchAccessGuard lo bloquea en toda operación
+                // branch-scoped (venta/compra/caja) y el modal de selección de sucursal del
+                // frontend no se puede cerrar sin una sucursal autorizada, dejándolo sin forma de
+                // recuperarse desde la propia app. El bootstrap (EnsureDefaultCompanyAsync, arriba)
+                // ya creó y persistió la sucursal principal — la buscamos y autorizamos aquí, dentro
+                // de la misma transacción, igual patrón que E2ESeedService.SeedAdminAccessAsync.
+                var mainBranch = (
+                    await _branches.GetAsync(tenant.Id, activeFilter: true, cancellationToken: ct)
+                ).FirstOrDefault(b => b.CompanyId == company.Id && b.IsMainBranch);
+                if (mainBranch is not null)
+                {
+                    await _companyUserBranches.AddAsync(
+                        CompanyUserBranch.Create(
+                            tenant.Id,
+                            company.Id,
+                            membership.Id,
+                            mainBranch.Id,
+                            bootstrapId
+                        ),
+                        ct
+                    );
+                }
 
                 // Single-use: invalidate el setup token permanentemente. `state` ya está trackeado por
                 // el DbContext (vino de una query sin AsNoTracking) — este cambio se persiste en el
