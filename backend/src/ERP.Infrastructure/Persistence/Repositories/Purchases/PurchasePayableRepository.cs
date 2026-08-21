@@ -51,8 +51,40 @@ public sealed class PurchasePayableRepository : IPurchasePayableRepository
     {
         var q = _db.PurchasePayables.ForOperationalScope(tenantId, _company);
 
+        // ERP-CORE-CLOSEOUT-08: PurchasePayable.Status nunca transiciona a "paid" (RegisterPayment
+        // solo acumula PaidAmount) — filtrar por Status=="paid" literal nunca coincidía con
+        // ninguna fila, dejando el filtro "Pagadas" siempre vacío. Mismo fix ya aplicado en
+        // SalesReceivableRepository.GetPagedAsync (FINANCE-RECEIVABLES-LIST-ENTERPRISE-01):
+        // "pending"/"paid" se traducen al saldo real (BalanceDue); "cancelled" y cualquier otro
+        // valor futuro siguen siendo comparación literal de Status.
         if (!string.IsNullOrWhiteSpace(status))
-            q = q.Where(x => x.Status == status.Trim().ToLowerInvariant());
+        {
+            var normalized = status.Trim().ToLowerInvariant();
+            q = normalized switch
+            {
+                "pending" => q.Where(x =>
+                    x.Status != "cancelled"
+                    && x.TotalAmount
+                        - x.PaidAmount
+                        - x.TotalRetained
+                        - x.ReturnAppliedAmount
+                        - x.SupplierCreditAppliedAmount
+                        - x.CreditNoteAppliedAmount
+                        > 0
+                ),
+                "paid" => q.Where(x =>
+                    x.Status != "cancelled"
+                    && x.TotalAmount
+                        - x.PaidAmount
+                        - x.TotalRetained
+                        - x.ReturnAppliedAmount
+                        - x.SupplierCreditAppliedAmount
+                        - x.CreditNoteAppliedAmount
+                        <= 0
+                ),
+                _ => q.Where(x => x.Status == normalized),
+            };
+        }
         if (supplierId is not null)
             q = q.Where(x => x.SupplierId == supplierId.Value);
 

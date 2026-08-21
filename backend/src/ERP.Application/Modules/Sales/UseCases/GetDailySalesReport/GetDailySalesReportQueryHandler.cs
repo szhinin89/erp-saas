@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;
 
@@ -43,12 +44,18 @@ public sealed class GetDailySalesReportQueryHandler
             ))
             .ToList();
 
+        // ERP-CORE-CLOSEOUT-08: los totales del reporte son ingresos reales — Draft (aún no
+        // emitida) y Cancelled nunca deben sumar a la venta del período, aunque las filas sigan
+        // visibles (con su Status real) para auditoría/trazabilidad.
+        var authorizedInvoices = invoices
+            .Where(i => i.Status == SalesInvoiceStatus.Authorized)
+            .ToList();
         var totals = new SalesReportTotalsDto(
-            rows.Count,
-            rows.Sum(r => r.Subtotal),
-            rows.Sum(r => r.TotalVat),
-            rows.Sum(r => r.TotalDiscount),
-            rows.Sum(r => r.GrandTotal)
+            authorizedInvoices.Count,
+            authorizedInvoices.Sum(i => i.Subtotal),
+            authorizedInvoices.Sum(i => i.TotalVat),
+            authorizedInvoices.Sum(i => i.TotalDiscount),
+            authorizedInvoices.Sum(i => i.GrandTotal)
         );
 
         return Result<SalesReportResponse>.Success(

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
 
@@ -52,12 +53,16 @@ public sealed class GetPurchasesBySupplierReportQueryHandler
             ))
             .ToList();
 
+        // ERP-CORE-CLOSEOUT-08: los totales del reporte son compras reales — Draft (aún no
+        // confirmada) y Cancelled nunca deben sumar al gasto del período, aunque las filas sigan
+        // visibles (con su Status real) para auditoría/trazabilidad.
+        var confirmedInvoices = invoices.Where(i => i.Status == PurchaseStatus.Confirmed).ToList();
         var totals = new PurchasesReportTotalsDto(
-            rows.Count,
-            rows.Sum(r => r.Subtotal),
-            rows.Sum(r => r.TotalVat),
-            rows.Sum(r => r.TotalDiscount),
-            rows.Sum(r => r.GrandTotal)
+            confirmedInvoices.Count,
+            confirmedInvoices.Sum(i => i.Subtotal),
+            confirmedInvoices.Sum(i => i.TotalVat),
+            confirmedInvoices.Sum(i => i.TotalDiscount),
+            confirmedInvoices.Sum(i => i.GrandTotal)
         );
 
         return Result<PurchasesBySupplierReportResponse>.Success(
