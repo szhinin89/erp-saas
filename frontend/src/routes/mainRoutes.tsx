@@ -71,6 +71,11 @@ const ElectronicInvoicingPage = lazyNamedPage(
     import("../modules/configuracion/facturacionElectronica/pages/ElectronicInvoicingPage"),
   "ElectronicInvoicingPage",
 );
+const CommunicationsEmailSettingsPage = lazyNamedPage(
+  () =>
+    import("../modules/configuracion/comunicaciones/pages/CommunicationsEmailSettingsPage"),
+  "CommunicationsEmailSettingsPage",
+);
 const ElectronicDocumentsMonitorPage = lazyNamedPage(
   () =>
     import("../modules/electronicDocuments/monitor/pages/ElectronicDocumentsMonitorPage"),
@@ -129,6 +134,11 @@ export const mainRoutes = [
     key="settings-electronic-invoicing"
     path="/settings/electronic-invoicing"
     element={<ElectronicInvoicingPage />}
+  />,
+  <Route
+    key="settings-communications-email"
+    path="/settings/communications/email"
+    element={<CommunicationsEmailSettingsPage />}
   />,
   <Route
     key="electronic-documents-monitor"

@@ -4,6 +4,18 @@
 
 ---
 
+## COMMUNICATIONS-SETTINGS-UI-01 — Configuración SMTP por empresa (2026-08-21)
+
+Cierra el hallazgo P0 de CONFIG-AUDIT-01: `communications.email.*` ya tenía SSOT en `OrgSettings` (scope=Company) pero ningún endpoint/pantalla lo escribía — el piloto dependía por completo del fallback `Communications:Email:*` por variable de entorno (ver línea "SMTP documentado" del cierre ERP-CORE-CLOSEOUT-10-FINALIZE arriba, ahora superada).
+
+- **Backend**: `GetCompanyEmailSettingsQuery`/`UpdateCompanyEmailSettingsCommand`/`SendTestEmailCommand` (`ERP.Application/Modules/Communications/UseCases/`) + `CommunicationsEmailSettingsController` (`GET`/`PUT /api/v1/communications/email-settings`, `POST .../test`), permisos `communications.view`/`communications.configure`. Password nunca se devuelve en `GET` (solo `passwordConfigured: bool`); se persiste cifrado con `ISecretProtector` (mismo mecanismo que la contraseña del certificado SRI); un `PUT` sin password nueva conserva la existente.
+- **Bug real corregido en el camino** (`CommunicationSettingsResolver`, `ERP.Infrastructure/Communications/`): (1) consultaba `OrgSettings` con `scopeId=Guid.Empty` en vez del `companyId` real — la capa OrgSettings nunca se leía en la práctica; (2) `IOrgConfigResolver.GetValueAsync<T>` no puede distinguir "no configurado" de "configurado como `false`/`0`" para tipos valor (no tiene `where T : struct`) — rompía el fallback a env var para `Enabled`/`UseSsl`/`SmtpPort`/`MaxRetries`. Ambos corregidos localmente en el resolver de Communications (lectura de string crudo + parseo propio), sin tocar el resolver genérico compartido.
+- **Frontend**: `/settings/communications/email` (`modules/configuracion/comunicaciones/`), patrón idéntico a `/settings/electronic-invoicing` (useForm+zodResolver+`applyServerErrors`, componentes ZH, password con toggle mostrar/ocultar tipo SRI). Muestra `Contraseña configurada: Sí/No` y la fuente actual (`OrgSettings` vs `EnvironmentFallback`). Incluye envío de correo de prueba sin tocar Sales/POS.
+- **Tests**: 9 tests nuevos en `ERP.Application.Tests/Communications/` (GET nunca expone password, aislamiento multi-tenant, password nueva se cifra, `PUT` sin password conserva la existente, `Enabled` sin campos requeridos → 422, `SendTestEmail` usa la config de la empresa actual) + 3 en `ERP.Infrastructure.Tests/Communications/` (regresión de ambos bugs del resolver). Suites completas verdes: 1013 Application, 451 Infrastructure. `dotnet build` (0 errores), `npx tsc --noEmit`, `npm run lint`, `npm run build` (incluye `run-platform-guard`, allowlist actualizado con `/api/communications`) todos verdes. Sin cambios de esquema (`has-pending-model-changes` → ninguno).
+- **Variables de entorno `Communications:Email:*`**: siguen funcionando como fallback de infraestructura (no se removieron) — quedan como respaldo, ya no como único camino.
+
+---
+
 ## ERP-CORE-CLOSEOUT-10-FINALIZE — Cierre final sin pendientes técnicos accionables (2026-08-21)
 
 ### Veredicto final
