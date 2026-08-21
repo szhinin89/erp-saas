@@ -101,7 +101,7 @@ public sealed class CreateCashRegisterHandler
         var code = cmd.Code.Trim();
 
         var branch = await _branchRepo.GetByIdAsync(tid, cmd.BranchId, ct);
-        if (branch is null || !branch.IsActive)
+        if (branch is null || !branch.IsActive || branch.CompanyId != _c.CompanyId)
             return Result<CashRegisterDto>.ValidationFailure(
                 "La sucursal no existe o no está activa."
             );

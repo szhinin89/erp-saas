@@ -46,12 +46,19 @@ public sealed class RecordCashMovementHandler
 {
     private readonly ICashSessionRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
-    public RecordCashMovementHandler(ICashSessionRepository repo, ICurrentTenant t, ICurrentUser u)
+    public RecordCashMovementHandler(
+        ICashSessionRepository repo,
+        ICurrentTenant t,
+        ICurrentBranch b,
+        ICurrentUser u
+    )
     {
         _repo = repo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -75,7 +82,7 @@ public sealed class RecordCashMovementHandler
             );
 
         var session = await _repo.GetByIdAsync(_t.TenantId, cmd.CashSessionId, ct);
-        if (session is null)
+        if (session is null || session.BranchId != _b.BranchId)
             return Result<CashMovementDto>.NotFound("Sesión de caja no encontrada.");
 
         try

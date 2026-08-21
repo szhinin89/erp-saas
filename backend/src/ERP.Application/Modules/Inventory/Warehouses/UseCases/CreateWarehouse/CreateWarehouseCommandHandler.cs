@@ -3,6 +3,7 @@ using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouses;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using MediatR;
@@ -13,6 +14,7 @@ public sealed class CreateWarehouseCommandHandler
     : IRequestHandler<CreateWarehouseCommand, Result<WarehouseListItemDto>>
 {
     private readonly IWarehouseRepository _repo;
+    private readonly IBranchRepository _branchRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _company;
@@ -20,6 +22,7 @@ public sealed class CreateWarehouseCommandHandler
 
     public CreateWarehouseCommandHandler(
         IWarehouseRepository repo,
+        IBranchRepository branchRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentCompany company,
@@ -27,6 +30,7 @@ public sealed class CreateWarehouseCommandHandler
     )
     {
         _repo = repo;
+        _branchRepo = branchRepo;
         _activity = activity;
         _currentTenant = currentTenant;
         _company = company;
@@ -40,6 +44,12 @@ public sealed class CreateWarehouseCommandHandler
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
+
+        var branch = await _branchRepo.GetByIdAsync(tenantId, command.BranchId, cancellationToken);
+        if (branch is null || branch.CompanyId != companyId)
+            return Result<WarehouseListItemDto>.ValidationFailure(
+                "La sucursal no existe o no pertenece a esta empresa."
+            );
 
         var code = $"WH-{Guid.NewGuid():N}"[..Warehouse.CodeMaxLen];
 

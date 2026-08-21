@@ -3,6 +3,7 @@ using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouses;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using MediatR;
 
@@ -12,20 +13,26 @@ public sealed class UpdateWarehouseCommandHandler
     : IRequestHandler<UpdateWarehouseCommand, Result<WarehouseListItemDto>>
 {
     private readonly IWarehouseRepository _repo;
+    private readonly IBranchRepository _branchRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
     public UpdateWarehouseCommandHandler(
         IWarehouseRepository repo,
+        IBranchRepository branchRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
+        _branchRepo = branchRepo;
         _activity = activity;
         _currentTenant = currentTenant;
+        _company = company;
         _user = user;
     }
 
@@ -35,10 +42,17 @@ public sealed class UpdateWarehouseCommandHandler
     )
     {
         var tenantId = _currentTenant.TenantId;
+        var companyId = _company.CompanyId;
 
         var entity = await _repo.GetByIdAsync(tenantId, command.Id, cancellationToken);
         if (entity is null)
             return Result<WarehouseListItemDto>.NotFound("Bodega no encontrada.");
+
+        var branch = await _branchRepo.GetByIdAsync(tenantId, command.BranchId, cancellationToken);
+        if (branch is null || branch.CompanyId != companyId)
+            return Result<WarehouseListItemDto>.ValidationFailure(
+                "La sucursal no existe o no pertenece a esta empresa."
+            );
 
         entity.Update(
             branchId: command.BranchId,

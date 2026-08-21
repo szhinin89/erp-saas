@@ -31,18 +31,21 @@ public sealed class GetCashSessionByIdHandler
     private readonly IEmissionPointRepository _epRepo;
     private readonly ICashRegisterRepository _crRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
     public GetCashSessionByIdHandler(
         ICashSessionRepository repo,
         IEmissionPointRepository epRepo,
         ICashRegisterRepository crRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentBranch b
     )
     {
         _repo = repo;
         _epRepo = epRepo;
         _crRepo = crRepo;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<CashSessionDto>> Handle(
@@ -51,7 +54,7 @@ public sealed class GetCashSessionByIdHandler
     )
     {
         var session = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        if (session is null)
+        if (session is null || session.BranchId != _b.BranchId)
             return Result<CashSessionDto>.NotFound("Sesión de caja no encontrada.");
 
         var ep = await _epRepo.GetByIdAsync(session.EmissionPointId, _t.TenantId, ct);

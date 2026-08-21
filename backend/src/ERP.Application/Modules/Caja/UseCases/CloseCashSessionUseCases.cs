@@ -68,6 +68,7 @@ public sealed class CloseCashSessionHandler
     private readonly IEmissionPointRepository _epRepo;
     private readonly ICashRegisterRepository _crRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public CloseCashSessionHandler(
@@ -75,6 +76,7 @@ public sealed class CloseCashSessionHandler
         IEmissionPointRepository epRepo,
         ICashRegisterRepository crRepo,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
@@ -82,6 +84,7 @@ public sealed class CloseCashSessionHandler
         _epRepo = epRepo;
         _crRepo = crRepo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -91,7 +94,7 @@ public sealed class CloseCashSessionHandler
     )
     {
         var session = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
-        if (session is null)
+        if (session is null || session.BranchId != _b.BranchId)
             return Result<CashSessionDto>.NotFound("Sesión de caja no encontrada.");
 
         var closingCounts = cmd

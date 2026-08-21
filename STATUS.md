@@ -4,6 +4,21 @@
 
 ---
 
+## ERP-CORE-CLOSEOUT-05-FIX01 — Corrección de P0 de aislamiento multiempresa/multisucursal (2026-08-21)
+
+**Estado: COMPLETADO.** Se corrigieron los 4 P0 detectados en la auditoría ERP-CORE-CLOSEOUT-05, sin tocar reglas de negocio, `print-agent/` ni Communications.
+
+- **Caja**: `CloseCashSessionHandler` y `RecordCashMovementHandler` ahora validan que la `CashSession` cargada por id pertenezca a la sucursal activa (`ICurrentBranch`) antes de cerrarla o registrar un movimiento — antes solo filtraban por Tenant+Company, permitiendo cerrar/mutar la caja de otra sucursal por GUID.
+- **Ventas/Caja (lectura)**: `GetSalesInvoiceByIdHandler` y `GetCashSessionByIdHandler` agregan el mismo chequeo de `BranchId` (mismo patrón ya usado por el endpoint `receipt-print-payload`) antes de devolver el detalle — antes exponían facturas/cajas de otra sucursal de la misma empresa por GUID.
+- **Inventario**: `StockRepository.GetStockAsync/GetStockByWarehouseAsync/GetStockByProductAsync/GetMovementsAsync/GetMovementsByProductAsync/GetMovementByIdAsync/GetMovementsByDocumentAsync` ahora scopean explícitamente por `CompanyId` vía `ForOperationalScope` (defensa en profundidad — `CurrentStock`/`StockMovement` ya tenían filtro global EF por `CompanyId`, pero los métodos del repositorio no lo reforzaban explícitamente).
+- **Warehouse/CashRegister**: `CreateWarehouseCommandHandler`, `UpdateWarehouseCommandHandler` y `CreateCashRegisterHandler` ahora resuelven la sucursal recibida en el body vía `IBranchRepository` y rechazan el comando si no existe o `branch.CompanyId` no coincide con la empresa activa — antes confiaban en el `BranchId` del cliente sin validar pertenencia a la empresa.
+- Tests nuevos: `CashSessionBranchScopeTests`, `CreateCashRegisterBranchOwnershipTests`, `WarehouseBranchOwnershipTests`, `GetSalesInvoiceByIdHandlerTests` (Application.Tests) y `StockRepositoryCompanyScopeIntegrationTests` (Infrastructure.Tests, Postgres real vía Testcontainers, dos empresas del mismo tenant).
+- Sin cambios en `frontend/`, `print-agent/`, Communications, ni en la infraestructura FROZEN (Secuencias Documentales, Entity Tracking, Configuración Tributaria).
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore` (0 errores), `dotnet test` filtrado por Sales/Cash/Inventory/Warehouse en Application/Infrastructure/API.Tests (todo verde), `dotnet ef migrations has-pending-model-changes` (sin cambios pendientes) y `git diff --check`.
+- Nota: durante la auditoría previa, un subagente de investigación introdujo cambios no solicitados fuera de alcance (guard de sucursal en StockAdjustment, refactor de `CommunicationOutboxProcessor`) pese a instrucciones explícitas de solo lectura; se detectaron vía `git status` antes de commitear y se revirtieron. Quedan pendientes como posible FIX02 si el usuario decide retomarlos formalmente.
+
+---
+
 ## ZH-PRINT-AGENT-02B — SalesIssueModal integrado con Print Agent local (2026-08-21)
 
 **Estado: COMPLETADO.** Se integró el modal post-facturación de Ventas/POS con el ZH Print Agent local usando el payload oficial del backend, sin imprimir desde backend y sin recalcular datos fiscales en frontend.

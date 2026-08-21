@@ -498,16 +498,19 @@ public sealed class GetSalesInvoiceByIdHandler
     private readonly ISalesInvoiceRepository _repo;
     private readonly ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository _edocRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
     public GetSalesInvoiceByIdHandler(
         ISalesInvoiceRepository repo,
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentBranch b
     )
     {
         _repo = repo;
         _edocRepo = edocRepo;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -516,7 +519,7 @@ public sealed class GetSalesInvoiceByIdHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         // Fase 10: ElectronicDocument es la única fuente de verdad del estado electrónico.

@@ -61,11 +61,9 @@ public sealed class StockRepository : IStockRepository
         CancellationToken ct = default
     ) =>
         _db.Set<CurrentStock>()
+            .ForOperationalScope(tenantId, _company)
             .FirstOrDefaultAsync(
-                s =>
-                    s.TenantId == tenantId
-                    && s.WarehouseId == warehouseId
-                    && s.ProductId == productId,
+                s => s.WarehouseId == warehouseId && s.ProductId == productId,
                 ct
             );
 
@@ -77,7 +75,8 @@ public sealed class StockRepository : IStockRepository
     )
     {
         var q = _db.Set<CurrentStock>()
-            .Where(s => s.TenantId == tenantId && s.WarehouseId == warehouseId);
+            .ForOperationalScope(tenantId, _company)
+            .Where(s => s.WarehouseId == warehouseId);
         if (productId.HasValue)
             q = q.Where(s => s.ProductId == productId.Value);
         return await q.ToListAsync(ct);
@@ -292,9 +291,8 @@ public sealed class StockRepository : IStockRepository
         var from = AsUtc(fromUtc);
         var to = AsUtc(toUtc);
         var q = _db.Set<StockMovement>()
-            .Where(m =>
-                m.TenantId == tenantId && m.ProductId == productId && m.WarehouseId == warehouseId
-            );
+            .ForOperationalScope(tenantId, _company)
+            .Where(m => m.ProductId == productId && m.WarehouseId == warehouseId);
         if (from.HasValue)
             q = q.Where(m => m.CreatedAt >= from.Value);
         if (to.HasValue)
@@ -314,7 +312,8 @@ public sealed class StockRepository : IStockRepository
         var from = AsUtc(fromUtc);
         var to = AsUtc(toUtc);
         var q = _db.Set<StockMovement>()
-            .Where(m => m.TenantId == tenantId && m.ProductId == productId);
+            .ForOperationalScope(tenantId, _company)
+            .Where(m => m.ProductId == productId);
         if (warehouseId.HasValue)
             q = q.Where(m => m.WarehouseId == warehouseId.Value);
         if (from.HasValue)
@@ -337,7 +336,8 @@ public sealed class StockRepository : IStockRepository
         CancellationToken ct = default
     ) =>
         _db.Set<StockMovement>()
-            .FirstOrDefaultAsync(m => m.TenantId == tenantId && m.Id == movementId, ct);
+            .ForOperationalScope(tenantId, _company)
+            .FirstOrDefaultAsync(m => m.Id == movementId, ct);
 
     public async Task<IReadOnlyList<StockMovement>> GetMovementsByDocumentAsync(
         Guid tenantId,
@@ -346,11 +346,8 @@ public sealed class StockRepository : IStockRepository
         CancellationToken ct = default
     ) =>
         await _db.Set<StockMovement>()
-            .Where(m =>
-                m.TenantId == tenantId
-                && m.SourceDocId == sourceDocId
-                && m.SourceDocType == sourceDocType
-            )
+            .ForOperationalScope(tenantId, _company)
+            .Where(m => m.SourceDocId == sourceDocId && m.SourceDocType == sourceDocType)
             .OrderBy(m => m.WarehouseId)
             .ThenBy(m => m.SequenceNumber)
             .ToListAsync(ct);
@@ -399,7 +396,8 @@ public sealed class StockRepository : IStockRepository
         CancellationToken ct = default
     ) =>
         await _db.Set<CurrentStock>()
-            .Where(s => s.TenantId == tenantId && s.ProductId == productId)
+            .ForOperationalScope(tenantId, _company)
+            .Where(s => s.ProductId == productId)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<CurrentStock>> GetForReportAsync(
