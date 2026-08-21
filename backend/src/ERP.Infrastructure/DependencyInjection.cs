@@ -5,6 +5,10 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Security;
 using ERP.Application.Modules.Dashboard;
+using ERP.Infrastructure.Persistence.Repositories.Communications;
+using ERP.Infrastructure.Communications;
+using ERP.Domain.Modules.Communications.Interfaces;
+using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Navigation;
 using ERP.Application.Setup;
 using ERP.Domain.Access.Interfaces;
@@ -808,6 +812,13 @@ public static class DependencyInjection
             ERP.Infrastructure.Services.IdentificationUsageValidator
         >();
 
+
+        // ── Communications BC ───────────────────────────────────────────────
+        services.AddScoped<ICommunicationOutboxRepository, CommunicationOutboxRepository>();
+        services.AddScoped<ICommunicationTemplateRepository, CommunicationTemplateRepository>();
+        services.AddScoped<ICommunicationSettingsResolver, CommunicationSettingsResolver>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<ICommunicationOutboxProcessor, CommunicationOutboxProcessor>();
         // ── Configuration BC ──────────────────────────────────────────────────
         services.AddScoped<
             ERP.Domain.Configuration.Interfaces.ISriSettingsRepository,

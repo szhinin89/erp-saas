@@ -277,6 +277,7 @@ if (hangfireEnabled)
     );
     builder.Services.AddHangfireServer();
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
+    builder.Services.AddScoped<IProcessCommunicationsJob, ProcessCommunicationsJob>();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
     builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
     builder.Services.AddScoped<IExpireUserSessionsJob, ExpireUserSessionsJob>();
@@ -500,6 +501,12 @@ if (hangfireEnabled)
 
     RecurringJob.AddOrUpdate<IProcessOutboxJob>(
         "process-outbox",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "* * * * *"
+    );
+
+    RecurringJob.AddOrUpdate<IProcessCommunicationsJob>(
+        "process-communications",
         x => x.ExecuteAsync(CancellationToken.None),
         "* * * * *"
     );

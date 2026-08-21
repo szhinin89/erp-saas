@@ -90,4 +90,22 @@ public static class OrgSettingKeys
         public const string DecimalPercentage = "presentation.decimal.percentage";
         public const string DecimalTotalAmount = "presentation.decimal.total_amount";
     }
+    /// <summary>
+    /// Configuración transversal de comunicaciones. Propietario: Empresa (scope=Company).
+    /// Consumida por el módulo Communications para correo transaccional y futuros canales.
+    /// </summary>
+    public static class Communications
+    {
+        public const string EmailEnabled = "communications.email.enabled";
+        public const string SmtpHost = "communications.email.smtp_host";
+        public const string SmtpPort = "communications.email.smtp_port";
+        public const string SmtpUsername = "communications.email.smtp_username";
+        public const string SmtpPassword = "communications.email.smtp_password";
+        public const string SenderEmail = "communications.email.sender_email";
+        public const string SenderName = "communications.email.sender_name";
+        public const string UseSsl = "communications.email.use_ssl";
+        public const string ReplyToEmail = "communications.email.reply_to_email";
+        public const string MaxRetries = "communications.email.max_retries";
+        public const string DefaultLanguage = "communications.email.default_language";
+    }
 }

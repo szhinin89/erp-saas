@@ -1,6 +1,44 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-08-11** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-08-21** · Kernel refactor: **2026-06-05**.
+
+---
+
+## ERP-CORE-CLOSEOUT-02B — Correo automático de factura autorizada SRI (2026-08-21)
+
+**Estado: COMPLETADO.** Se conectó la autorización electrónica SRI con el módulo transversal Communications para encolar automáticamente el correo de factura autorizada al cliente, sin acoplar Ventas/SRI/POS a SMTP.
+
+- Integración: agregado `SalesInvoiceAuthorizedCommunicationHandler`, suscrito a `ElectronicDocumentAuthorizedEvent`. Solo actúa cuando el documento electrónico está `Authorized`, es `Invoice` y su origen es `Sales`.
+- Communications: agregado propósito canónico `SALES_INVOICE_AUTHORIZED`; `ICommunicationQueue` ahora permite pasar `BranchId` explícito y diferir `SaveChanges` para integrarse correctamente con handlers de domain events.
+- Email: si el snapshot del cliente tiene email válido, se encola `CommunicationOutbox` con asunto/cuerpo que incluyen número de factura, clave de acceso, cliente, total y empresa emisora. Si el cliente no tiene email válido, no se encola y la factura no falla.
+- Adjuntos: se referencia el XML autorizado (`AuthorizedXmlPath`) y se solicita RIDE por el caso de uso público `GetOrGenerateRideQuery`; si RIDE no está disponible o falla, se registra y el correo se encola con los adjuntos disponibles sin revertir la autorización.
+- Idempotencia: la comunicación usa una `IdempotencyKey` determinística por tenant, empresa, factura, propósito y destinatario para evitar duplicados ante reprocesos.
+- Sin cambios de UI: no se modificó `SalesPage`, POS ni se agregó botón manual de correo. No hubo migración nueva en 02B; se reutiliza la migración `AddCommunicationsOutbox` de 02A.
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore`, tests Application relevantes de Communications/ElectronicDocuments/Sales y tests Domain relevantes de Communications/ElectronicDocuments/Sales.
+
+---
+
+## ERP-CORE-CLOSEOUT-02A — Communications transversal reutilizable (2026-08-21)
+
+**Estado: COMPLETADO.** Se implementó la arquitectura base de Communications como módulo transversal desacoplado de Ventas/SRI/POS y reutilizable por otros módulos.
+
+- Domain: agregado `Communications` con `CommunicationOutbox`, `CommunicationOutboxAttachment`, `CommunicationTemplate`, enums de canal/estado/prioridad/tipo de adjunto e interfaces de repositorio. Domain no depende de SMTP, Hangfire, EF ni ASP.NET.
+- Application: agregado contrato reutilizable `ICommunicationQueue`, `QueueEmailCommand` CQRS/MediatR con FluentValidation, DTOs de encolado y contratos técnicos `IEmailSender`, `ICommunicationSettingsResolver`, `ICommunicationOutboxProcessor`.
+- Infrastructure/API: agregado mapeo EF y repositorios, resolvedor SMTP desde `OrgSettings` (`communications.email.*`) con fallback a `Communications:Email:*`, `SmtpEmailSender`, processor de outbox multi-tenant con `JobExecutionContext`, y job Hangfire `process-communications` cada minuto.
+- Persistencia: migración `20260821020826_AddCommunicationsOutbox` crea `communication_outbox`, `communication_outbox_attachments` y `communication_templates`, con índices para pendientes, correlación e idempotencia por `(tenant_id, company_id, idempotency_key)`.
+- No se modificó `SalesPage` y no se conectó SRI/POS a SMTP; el disparo post-autorización de factura se implementó después en `ERP-CORE-CLOSEOUT-02B`.
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore`, tests puntuales de Domain/Application para Communications/configuración, y generación de SQL idempotente de la migración EF.
+
+---
+
+## ERP-CORE-CLOSEOUT-01 — Cierre POS Retail / SalesPage para piloto (2026-08-20)
+
+**Estado: COMPLETADO.** Auditoría de `SalesPage` contra el checklist funcional de cierre para piloto retail/POS — la implementación existente ya cumplía la mayoría de los requisitos; se corrigió el único vacío real encontrado.
+
+- Confirmado ya implementado (sin cambios): búsqueda por SKU/nombre/código de barras (`InvoiceItemSearchRepository`, rankeo barcode exacto → SKU exacto → parcial → nombre), tarjeta de resultado con stock/precio sin IVA/IVA/precio final sin costo, fusión de línea al reescanear/duplicar producto (`findMergeableLineIndex`) con actualización visual de cantidad/subtotal/IVA/total, diseño de línea aprobado (`ZHLineCard` con rail numerado + basurero), bloqueo de emisión sin caja abierta (`canEmit`/`hasCashSession`) y sin cobro completo (`paymentOk`), y modal post-facturación sin envío de correo manual.
+- Corregido: el modal de éxito de emisión (`SalesIssueModal`) no mostraba **dinero entregado** ni **vuelto** en ventas con cobro en efectivo — se agregaron ambos campos (visibles solo cuando `cashDue > 0`), reutilizando el estado ya existente en `useSalesPage` (`cashReceived`/`cashChange`), sin nuevos componentes ni cálculos duplicados.
+- Sin cambios de backend, sin componentes nuevos del Design System, sin estilos inline.
+- Validado con `npx eslint` (sin errores nuevos), `npx tsc --noEmit` (sin errores), `npm run build` y `npx vitest run` sobre los tests existentes de `SalesPage` (bottombar/emitButton/paymentMethod, 20/20 passed).
 
 ---
 

@@ -30,6 +30,17 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.CompanyBranding.Slogan };
         yield return new object[] { OrgSettingKeys.CompanyBranding.DocumentFooterText };
         yield return new object[] { OrgSettingKeys.Catalog.MaxCategoryDepth };
+        yield return new object[] { OrgSettingKeys.Communications.EmailEnabled };
+        yield return new object[] { OrgSettingKeys.Communications.SmtpHost };
+        yield return new object[] { OrgSettingKeys.Communications.SmtpPort };
+        yield return new object[] { OrgSettingKeys.Communications.SmtpUsername };
+        yield return new object[] { OrgSettingKeys.Communications.SmtpPassword };
+        yield return new object[] { OrgSettingKeys.Communications.SenderEmail };
+        yield return new object[] { OrgSettingKeys.Communications.SenderName };
+        yield return new object[] { OrgSettingKeys.Communications.UseSsl };
+        yield return new object[] { OrgSettingKeys.Communications.ReplyToEmail };
+        yield return new object[] { OrgSettingKeys.Communications.MaxRetries };
+        yield return new object[] { OrgSettingKeys.Communications.DefaultLanguage };
     }
 
     [Theory]
@@ -152,5 +163,32 @@ public sealed class ConfigurationDefinitionCatalogTests
         );
         guidDef!.DataType.Should().Be(ConfigurationDataType.Guid);
         guidDef.PersistedDataType.Should().Be(SettingDataType.Guid);
+    }
+    [Fact]
+    public void communications_email_settings_solo_Company_y_validan_valores_basicos()
+    {
+        ConfigurationDefinitionCatalog.TryGet(
+            OrgSettingKeys.Communications.SmtpPort,
+            out var portDef
+        );
+        ConfigurationDefinitionCatalog.TryGet(
+            OrgSettingKeys.Communications.SenderEmail,
+            out var senderDef
+        );
+        ConfigurationDefinitionCatalog.TryGet(
+            OrgSettingKeys.Communications.SmtpPassword,
+            out var passwordDef
+        );
+
+        portDef!.AllowedScopes.Should().BeEquivalentTo([OrgScope.Company]);
+        portDef.IsValidValue("587").Should().BeTrue();
+        portDef.IsValidValue("0").Should().BeFalse();
+        portDef.IsValidValue("99999").Should().BeFalse();
+
+        senderDef!.AllowedScopes.Should().BeEquivalentTo([OrgScope.Company]);
+        senderDef.IsValidValue("facturacion@empresa.com").Should().BeTrue();
+        senderDef.IsValidValue("correo-invalido").Should().BeFalse();
+
+        passwordDef!.IsSensitive.Should().BeTrue();
     }
 }

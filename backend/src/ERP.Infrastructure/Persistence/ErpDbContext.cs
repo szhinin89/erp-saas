@@ -10,6 +10,7 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -215,6 +216,11 @@ public class ErpDbContext : DbContext
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
     public DbSet<OrgSetting> OrgSettings => Set<OrgSetting>();
     public DbSet<ConfigurationChangeLog> ConfigurationChangeLogs => Set<ConfigurationChangeLog>();
+
+    // ── Communications BC ───────────────────────────────────────────────
+    public DbSet<CommunicationOutbox> CommunicationOutbox => Set<CommunicationOutbox>();
+    public DbSet<CommunicationOutboxAttachment> CommunicationOutboxAttachments => Set<CommunicationOutboxAttachment>();
+    public DbSet<CommunicationTemplate> CommunicationTemplates => Set<CommunicationTemplate>();
 
     // ── SRI Catalogs (global reference data) ─────────────────────────────
     public DbSet<SriEmissionType> SriEmissionTypes => Set<SriEmissionType>();

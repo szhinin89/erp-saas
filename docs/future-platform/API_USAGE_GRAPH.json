@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-17T14:58:39.062Z",
+  "generatedAt": "2026-08-21T01:45:49.992Z",
   "summary": {
-    "total": 95,
-    "allowed": 95,
+    "total": 98,
+    "allowed": 98,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -298,6 +298,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/companies/operational-readiness",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/companies/profile",
       "files": [
         "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
@@ -323,6 +331,14 @@
     },
     {
       "endpoint": "/api/v1/companies/profile/fiscal",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/fiscal-policy",
       "files": [
         "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
       ],
@@ -515,6 +531,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/inventory/stock/transfers",
+      "files": [
+        "frontend/src/modules/inventory/transfers/api/stockTransferService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/inventory/warehouses",
       "files": [
         "frontend/src/modules/inventory/warehouses/api/warehouseService.ts"
@@ -668,6 +692,7 @@
         "frontend/src/modules/sales/api/invoiceItemSearchService.ts",
         "frontend/src/modules/sales/api/salesDefaultsService.ts",
         "frontend/src/modules/sales/api/salesItemPricingService.ts",
+        "frontend/src/modules/sales/api/salesRuntimeContextService.ts",
         "frontend/src/modules/sales/api/salesService.ts"
       ],
       "legacy": false,
