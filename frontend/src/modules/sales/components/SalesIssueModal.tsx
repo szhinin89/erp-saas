@@ -36,6 +36,10 @@ interface SalesIssueModalProps {
   onPrintRide: () => void;
   onDownloadPdf: () => void;
   onDownloadXml: () => void;
+  /** Pago en efectivo de esta venta — solo se muestran si hubo cobro en efectivo (cashDue > 0). */
+  cashDue: number;
+  cashReceived: number;
+  cashChange: number;
 
   // Error (solo fallas de infraestructura — interno/comunicación)
   error: IssueErrorInfo | null;
@@ -81,6 +85,9 @@ export function SalesIssueModal({
   onPrintRide,
   onDownloadPdf,
   onDownloadXml,
+  cashDue,
+  cashReceived,
+  cashChange,
   error,
   onRetry,
   onCancel,
@@ -292,6 +299,18 @@ export function SalesIssueModal({
             <dd>
               <ZHMoneyValue value={result.grandTotal} decimals={dc} emphasis="total" />
             </dd>
+            {cashDue > 0 && (
+              <>
+                <dt>Dinero entregado</dt>
+                <dd>
+                  <ZHMoneyValue value={cashReceived} decimals={dc} />
+                </dd>
+                <dt>Vuelto</dt>
+                <dd>
+                  <ZHMoneyValue value={cashChange} decimals={dc} emphasis="total" />
+                </dd>
+              </>
+            )}
           </dl>
           {(result.electronicIssueError ||
             (result.emissionType === "Electronic" &&

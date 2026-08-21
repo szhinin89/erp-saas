@@ -800,6 +800,9 @@ export function SalesPage() {
           )
         }
         onDownloadXml={() => void ctx.handleDownloadXml()}
+        cashDue={ctx.cashDue}
+        cashReceived={ctx.cashReceived}
+        cashChange={ctx.cashChange}
         error={ctx.issueError}
         onRetry={ctx.retryIssue}
         onCancel={ctx.closeIssueFlow}
