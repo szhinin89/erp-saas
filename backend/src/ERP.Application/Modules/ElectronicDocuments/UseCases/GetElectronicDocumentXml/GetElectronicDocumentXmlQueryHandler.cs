@@ -12,16 +12,19 @@ public sealed class GetElectronicDocumentXmlQueryHandler
     private readonly IElectronicDocumentRepository _repository;
     private readonly IFileStorage _fileStorage;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
     public GetElectronicDocumentXmlQueryHandler(
         IElectronicDocumentRepository repository,
         IFileStorage fileStorage,
-        ICurrentTenant currentTenant
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
     )
     {
         _repository = repository;
         _fileStorage = fileStorage;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<string>> Handle(
@@ -36,6 +39,13 @@ public sealed class GetElectronicDocumentXmlQueryHandler
             cancellationToken
         );
         if (document is null)
+            return Result<string>.NotFound("El documento electrónico no existe.");
+
+        // ERP-CORE-CLOSEOUT-07: GetBySourceAsync solo filtra por TenantId — sin este chequeo,
+        // cualquier usuario del tenant podía leer el XML comercial completo de otra empresa
+        // adivinando su sourceEntityId. Mismo patrón ya usado por GetElectronicDocumentDetail/
+        // Timeline/RetryElectronicDocument.
+        if (_currentCompany.HasCompanyContext && document.CompanyId != _currentCompany.CompanyId)
             return Result<string>.NotFound("El documento electrónico no existe.");
 
         var storedPath = query.Variant switch
