@@ -22,10 +22,16 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
             .Include(a => a.Lines)
             .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Id == id, ct);
 
+    /// <summary>
+    /// El siguiente secuencial debe considerar también ajustes deshabilitados/soft-deleted (el
+    /// filtro global de <see cref="StockAdjustment"/> los excluiría) — bypass explícito vía
+    /// <see cref="PlatformQueryAccessor.AsPlatformQuery{T}"/>, con el filtro por TenantId
+    /// reaplicado a mano en el mismo Where (ERP-CORE-CLOSEOUT-05-FIX02, P1-4).
+    /// </summary>
     public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
     {
         var max = await _db.Set<StockAdjustment>()
-            .IgnoreQueryFilters()
+            .AsPlatformQuery()
             .Where(a => a.TenantId == tenantId)
             .MaxAsync(a => (int?)a.Sequential, ct);
         return (max ?? 0) + 1;

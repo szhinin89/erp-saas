@@ -3,6 +3,20 @@ using ERP.Domain.Modules.Caja.Enums;
 
 namespace ERP.Domain.Modules.Caja.Entities;
 
+/// <summary>
+/// ERP-CORE-CLOSEOUT-05-FIX02 (P1-2) — decisión documentada: <c>CashMovement</c> implementa solo
+/// <see cref="IMustHaveTenant"/> (filtro EF tenant-only), no <c>ICompanyOperationalEntity</c>,
+/// porque nunca se consulta directamente — siempre se accede como hijo del agregado
+/// <see cref="CashSession"/> (<c>ErpDbContext.CashMovements</c> no se usa fuera del mapeo EF; toda
+/// lectura pasa por <c>ICashSessionRepository.GetByIdAsync</c>, ya scopeado por Company vía
+/// <c>ForOperationalScope</c> y, tras ERP-CORE-CLOSEOUT-05-FIX01, también por BranchId en
+/// <c>GetCashSessionByIdHandler</c>/<c>CloseCashSessionHandler</c>/<c>RecordCashMovementHandler</c>).
+/// Promover a <c>ICompanyOperationalEntity</c> exigiría una migración (agregar <c>CompanyId</c> a
+/// la tabla) sin cerrar ningún hueco real hoy — se deja fuera de este fix. Si en el futuro aparece
+/// una consulta directa de <c>CashMovement</c>, debe pasar primero por company+branch scope antes
+/// de agregarse; <see cref="ERP.Infrastructure.Tests.Persistence.CashMovementDirectQueryAuditTests"/>
+/// (Infrastructure.Tests) hace cumplir que eso no ocurra silenciosamente.
+/// </summary>
 public sealed class CashMovement : IMustHaveTenant
 {
     public const int DescriptionMaxLen = 300;

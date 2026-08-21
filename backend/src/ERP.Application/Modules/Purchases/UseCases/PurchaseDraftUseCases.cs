@@ -1263,16 +1263,24 @@ file static class ReceptionTaxHelper
     }
 }
 
+/// <summary>
+/// ERP-CORE-CLOSEOUT-05-FIX02 (P1-1) — igual criterio que GetSalesInvoiceByIdHandler
+/// (ERP-CORE-CLOSEOUT-05-FIX01): la lectura de un documento puntual por GUID sí se restringe a la
+/// sucursal activa del llamante (a diferencia de GetPurchaseListQuery, cuyo alcance company-wide es
+/// una decisión de negocio ya documentada y sin cambios en este fix — ver comentario de esa query).
+/// </summary>
 public sealed class GetPurchaseByIdHandler
     : IRequestHandler<GetPurchaseByIdQuery, Result<PurchaseInvoiceDto>>
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
-    public GetPurchaseByIdHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t)
+    public GetPurchaseByIdHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t, ICurrentBranch b)
     {
         _repo = repo;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<PurchaseInvoiceDto>> Handle(
@@ -1281,7 +1289,7 @@ public sealed class GetPurchaseByIdHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        return inv is null
+        return inv is null || inv.BranchId != _b.BranchId
             ? Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.")
             : Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
     }

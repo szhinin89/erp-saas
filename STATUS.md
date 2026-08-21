@@ -4,6 +4,23 @@
 
 ---
 
+## ERP-CORE-CLOSEOUT-05-FIX02 — P1 de aislamiento y gobernanza (2026-08-21)
+
+**Estado: COMPLETADO.** Se corrigieron los 6 hallazgos P1 de ERP-CORE-CLOSEOUT-05 sin reabrir los P0 de FIX01 ni tocar reglas de negocio de venta/compra/inventario/caja.
+
+- **Compras por id (P1-1)**: `GetPurchaseByIdHandler` ahora valida `inv.BranchId == ICurrentBranch.BranchId` (mismo patrón que `GetSalesInvoiceByIdHandler`, FIX01). `GetPurchaseListQuery` queda sin cambios — su alcance company-wide es una decisión de negocio ya documentada en el propio código (mismo criterio que `GetSalesInvoiceListQuery`), no un defecto.
+- **CashMovement (P1-2)**: decisión documentada — se mantiene `IMustHaveTenant` (sin Company/Branch) porque nunca se consulta directamente, solo como hijo de `CashSession` (ya scopeado). Se agregó `CashMovementDirectQueryAuditTests` (guardrail de gobernanza) para que una futura consulta directa no pueda introducirse sin scope explícito.
+- **SwitchBranchHandler / UserSession.BranchId (P1-3)**: `UserSession.BranchId` quedaba congelado en la sucursal del login tras un switch, pudiendo ser consultado como fallback por `GetSessionContextHandler` cuando el cliente aún no envía `X-Branch-Id`. Se agregó `UserSession.UpdateBranch()` y `SwitchBranchHandler` ahora actualiza la sesión activa tras un switch exitoso — best-effort, nunca fuente de autorización (eso sigue siendo `ICurrentBranch` + `BranchScopeBehavior` por request).
+- **IgnoreQueryFilters en StockAdjustmentRepository (P1-4)**: reemplazado por el wrapper sancionado `PlatformQueryAccessor.AsPlatformQuery()` (ya pre-registrado en el allowlist de `IgnoreQueryFiltersAuditTests`), manteniendo el filtro explícito por TenantId.
+- **StockAdjustment sin guard de sucursal (P1-5 — hallazgo real, no duplicado)**: se confirmó que `CreateStockAdjustmentCommandHandler`/`ExecuteStockAdjustmentCommandHandler` **nunca tuvieron** validación de bodega/sucursal en el código commiteado (el reporte de auditoría previo que decía "ya protegido" citaba líneas que no correspondían a código real). Se agregaron los guards (`warehouse.BranchId == ICurrentBranch.BranchId`) con 5 tests nuevos.
+- **CommunicationOutboxProcessor (P1-6/gobernanza)**: `IgnoreQueryFiltersAuditTests` fallaba en el código commiteado (previo a este fix, no causado por esta sesión) porque este archivo usaba `.IgnoreQueryFilters()` crudo, fuera del allowlist. Cambio de una línea a `.AsPlatformQuery()`, sin tocar SMTP, outbox ni lógica de envío — confirmado con el usuario antes de tocar Communications.
+- **Hallazgo nuevo fuera de alcance, reportado sin corregir**: `ConfigurationChangeLogQueryRepository.cs` (módulo Configuration/Settings) también usa `.IgnoreQueryFilters()` fuera del allowlist — no relacionado a Communications/Sales/Purchases/Inventory/Caja y fuera de la lista de P1 de este cierre. `IgnoreQueryFiltersAuditTests` sigue en rojo por este motivo (no cubierto por los filtros de test exigidos en este fix). Candidato a un FIX03 futuro.
+- Tests nuevos: `GetPurchaseByIdHandlerTests`, `StockAdjustmentBranchOwnershipTests` (5 casos), `CashMovementDirectQueryAuditTests`, 2 tests nuevos en `SwitchBranchHandlerTests`.
+- Sin cambios en `frontend/`, `print-agent/`, `SalesPage`, reglas de negocio, ni infraestructura FROZEN.
+- Validado con `dotnet build backend/src/ERP.slnx --no-restore` (0 errores), tests filtrados Purchases/Cash/Inventory/Branch/StockAdjustment en Application/Infrastructure/API.Tests (todo verde), `dotnet ef migrations has-pending-model-changes` (sin cambios pendientes) y `git diff --check`.
+
+---
+
 ## ERP-CORE-CLOSEOUT-05-FIX01 — Corrección de P0 de aislamiento multiempresa/multisucursal (2026-08-21)
 
 **Estado: COMPLETADO.** Se corrigieron los 4 P0 detectados en la auditoría ERP-CORE-CLOSEOUT-05, sin tocar reglas de negocio, `print-agent/` ni Communications.

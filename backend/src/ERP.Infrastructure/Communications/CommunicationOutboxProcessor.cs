@@ -33,8 +33,13 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
     public async Task ProcessPendingAsync(CancellationToken ct = default)
     {
         var utcNow = DateTime.UtcNow;
+        // ERP-CORE-CLOSEOUT-05-FIX02 (P1-6/gobernanza): bypass sancionado vía PlatformQueryAccessor
+        // — el job corre sin ICurrentTenant/ICurrentCompany ambiente (procesa filas de todos los
+        // tenants/empresas en una sola pasada); cada fila se re-scopea individualmente por
+        // JobExecutionContext.Begin(communication.TenantId, communication.CompanyId) antes de
+        // resolver settings/enviar (ProcessOneAsync), sin cambios de comportamiento aquí.
         var pending = await _db.CommunicationOutbox
-            .IgnoreQueryFilters()
+            .AsPlatformQuery()
             .Include(x => x.Attachments)
             .Where(x =>
                 x.Status == CommunicationStatus.Pending

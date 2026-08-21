@@ -68,6 +68,26 @@ public sealed class UserSession : AuditableEntity, ITenantScopedEntity, ICompany
         return session;
     }
 
+    /// <summary>
+    /// Actualiza la sucursal activa tras un switch-branch exitoso (ERP-CORE-CLOSEOUT-05-FIX02) —
+    /// sin esto, <c>UserSession.BranchId</c> quedaba congelado en la sucursal del login y
+    /// <c>GetSessionContextHandler</c> podía resolver una sucursal obsoleta como fallback cuando
+    /// el cliente todavía no envía <c>X-Branch-Id</c>. No es una decisión de autorización — la
+    /// autorización real sigue validándose por request vía <c>ICurrentBranch</c> +
+    /// <c>BranchScopeBehavior</c>/<c>CompanyUserBranch</c>, nunca desde este campo. No-op si la
+    /// sesión ya no está activa o si la sucursal no cambió.
+    /// </summary>
+    public void UpdateBranch(Guid branchId, Guid updatedBy)
+    {
+        if (branchId == Guid.Empty)
+            throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
+        if (!IsActive || BranchId == branchId)
+            return;
+
+        BranchId = branchId;
+        SetUpdated(updatedBy);
+    }
+
     /// <summary>Cierre explícito por el usuario (logout). Idempotente.</summary>
     public void CloseManually(Guid closedBy)
     {

@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Session.UseCases.SwitchBranch;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -10,15 +12,30 @@ namespace ERP.Application.Tests.Modules.Session.UseCases.SwitchBranch;
 /// SwitchBranchHandler delega toda la validación (empresa operativa, sucursal existente/activa/
 /// de la empresa, y CompanyUserBranch activa) en IBranchAccessGuard — misma fuente única de
 /// verdad que BranchScopeBehavior. Estos tests verifican que el handler no reimplementa ninguna
-/// regla y que propaga fielmente el resultado del guard.
+/// regla y que propaga fielmente el resultado del guard. ERP-CORE-CLOSEOUT-05-FIX02 (P1-3) agrega
+/// cobertura de la actualización best-effort de UserSession.BranchId tras un switch exitoso.
 /// </summary>
 public sealed class SwitchBranchHandlerTests
 {
     private sealed class Fixture
     {
         public Mock<IBranchAccessGuard> Guard { get; } = new();
+        public Mock<IUserSessionRepository> UserSessions { get; } = new();
 
-        public SwitchBranchHandler BuildHandler() => new(Guard.Object);
+        public Fixture()
+        {
+            UserSessions
+                .Setup(r =>
+                    r.GetActiveSessionsAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(Array.Empty<UserSession>());
+        }
+
+        public SwitchBranchHandler BuildHandler() => new(Guard.Object, UserSessions.Object);
     }
 
     [Fact]
@@ -140,5 +157,68 @@ public sealed class SwitchBranchHandlerTests
             g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()),
             Times.Once
         );
+    }
+
+    [Fact]
+    public async Task Switch_exitoso_actualiza_BranchId_de_la_UserSession_activa_de_la_empresa()
+    {
+        var f = new Fixture();
+        var newBranchId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var oldBranchId = Guid.NewGuid();
+
+        var activeSession = UserSession.Create(tenantId, companyId, userId, oldBranchId, "terminal-1");
+        f.UserSessions
+            .Setup(r => r.GetActiveSessionsAsync(userId, tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { activeSession });
+        f.Guard.Setup(g => g.RequireBranchAsync(newBranchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(userId, tenantId, companyId, newBranchId, "Sucursal Norte", false)
+                )
+            );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(new SwitchBranchCommand(newBranchId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        activeSession.BranchId.Should().Be(newBranchId);
+        f.UserSessions.Verify(
+            r => r.UpdateAsync(activeSession, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        f.UserSessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Switch_exitoso_sin_UserSession_activa_no_falla_ni_intenta_guardar()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        branchId,
+                        "Matriz",
+                        true
+                    )
+                )
+            );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        f.UserSessions.Verify(
+            r => r.UpdateAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.UserSessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
