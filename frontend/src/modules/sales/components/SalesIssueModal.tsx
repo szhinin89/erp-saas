@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -6,7 +6,15 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import type { SalesInvoiceDto } from "../api/salesService";
+import { salesService, type SalesInvoiceDto } from "../api/salesService";
+import {
+  buildReceiptPrintJobRequest,
+  PrintAgentError,
+  printAgentUserMessage,
+  retryReceiptPrintJob,
+  submitReceiptPrintJob,
+  type PrintJobResponse,
+} from "../api/printAgentClient";
 import {
   ISSUE_STEPS,
   type IssuePhase,
@@ -69,6 +77,8 @@ const ELECTRONIC_STATUS_LABEL: Record<string, string> = {
   Failed: "Fallido",
 };
 
+type ReceiptPrintState = "idle" | "printing" | "success" | "error";
+
 export function SalesIssueModal({
   phase,
   isElectronic,
@@ -98,6 +108,17 @@ export function SalesIssueModal({
   // del header quedan neutralizados porque onClose ignora la llamada).
   const canClose = phase !== "processing";
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const [receiptPrintState, setReceiptPrintState] =
+    useState<ReceiptPrintState>("idle");
+  const [receiptPrintMessage, setReceiptPrintMessage] = useState<string | null>(
+    null,
+  );
+  const [receiptPrintDetail, setReceiptPrintDetail] = useState<string | null>(
+    null,
+  );
+  const [lastFailedReceiptJobId, setLastFailedReceiptJobId] = useState<
+    string | null
+  >(null);
 
   // ZHModal enfoca automáticamente el primer elemento focusable del cuerpo/footer
   // en orden de documento — el cuerpo de 'confirm' no tiene campos, así que ese
@@ -107,6 +128,13 @@ export function SalesIssueModal({
     if (phase === "confirm") confirmBtnRef.current?.focus();
   }, [phase]);
 
+  useEffect(() => {
+    setReceiptPrintState("idle");
+    setReceiptPrintMessage(null);
+    setReceiptPrintDetail(null);
+    setLastFailedReceiptJobId(null);
+  }, [result?.id]);
+
   // Memoizado: ZHModal reejecuta su efecto de foco/Escape cuando `onClose`
   // cambia de identidad (dependencia de su useEffect) — sin useCallback se
   // recreaba en cada render y robaba el foco repetidamente durante 'processing'.
@@ -115,6 +143,46 @@ export function SalesIssueModal({
     if (phase === "success") onNewSale();
     else onCancel();
   }, [canClose, phase, onNewSale, onCancel]);
+
+  const handlePrintReceipt = useCallback(async () => {
+    if (!result) return;
+
+    const deterministicJobId = `invoice-${result.id}-receipt`;
+    setReceiptPrintState("printing");
+    setReceiptPrintMessage("Imprimiendo...");
+    setReceiptPrintDetail(null);
+
+    try {
+      const payload = await salesService.getReceiptPrintPayload(result.id);
+      const request = buildReceiptPrintJobRequest(payload);
+      const response: PrintJobResponse =
+        lastFailedReceiptJobId === request.jobId
+          ? await retryReceiptPrintJob(request.jobId)
+          : await submitReceiptPrintJob(request);
+
+      setReceiptPrintState("success");
+      setReceiptPrintMessage(
+        response.duplicate
+          ? "La tirilla ya estaba registrada en el agente de impresión."
+          : "Tirilla enviada a impresión.",
+      );
+      setReceiptPrintDetail(null);
+      setLastFailedReceiptJobId(null);
+    } catch (err) {
+      setReceiptPrintState("error");
+      setReceiptPrintMessage(printAgentUserMessage(err));
+      setReceiptPrintDetail(
+        err instanceof PrintAgentError
+          ? (err.detail ?? null)
+          : "Error de impresión; puede reintentar.",
+      );
+      setLastFailedReceiptJobId(
+        err instanceof PrintAgentError && err.kind === "job-failed"
+          ? deterministicJobId
+          : null,
+      );
+    }
+  }, [lastFailedReceiptJobId, result]);
 
   if (phase === "idle") return null;
   const dc = getDecimalConfig().totalAmount;
@@ -148,6 +216,22 @@ export function SalesIssueModal({
       </>
     ) : phase === "success" ? (
       <>
+        <ZHBtn
+          type="button"
+          variant="ghost"
+          size="md"
+          disabled={receiptPrintState === "printing"}
+          onClick={() => void handlePrintReceipt()}
+        >
+          <span className="material-symbols-outlined zh-icon-md">
+            receipt_long
+          </span>
+          {receiptPrintState === "printing"
+            ? "Imprimiendo..."
+            : receiptPrintState === "success"
+              ? "Reimprimir tirilla"
+              : "Imprimir tirilla"}
+        </ZHBtn>
         <ZHBtn
           type="button"
           variant="ghost"
@@ -321,6 +405,17 @@ export function SalesIssueModal({
                 result.electronicIssueError
                   ? `El documento electrónico quedó pendiente de autorización: ${result.electronicIssueError} Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
                   : `El documento electrónico quedó en estado "${ELECTRONIC_STATUS_LABEL[result.electronicStatus] ?? result.electronicStatus}", pendiente de autorización. Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
+              }
+            />
+          )}
+          {receiptPrintState !== "idle" && receiptPrintMessage && (
+            <ZHPageNotice
+              variant={receiptPrintState === "error" ? "error" : "info"}
+              message={receiptPrintMessage}
+              detail={
+                receiptPrintState === "error"
+                  ? (receiptPrintDetail ?? undefined)
+                  : undefined
               }
             />
           )}

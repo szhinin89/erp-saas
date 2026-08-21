@@ -197,6 +197,63 @@ export interface SalesReportResponse {
   dateTo: string;
 }
 
+export interface SalesReceiptLineDto {
+  productName: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  total: number;
+}
+
+export interface SalesReceiptPaymentDto {
+  method: string;
+  amount: number;
+  reference: string | null;
+}
+
+export interface SalesReceiptTotalsDto {
+  subtotalWithoutTaxes: number;
+  discountTotal: number;
+  vatTotal: number;
+  total: number;
+}
+
+export interface SalesReceiptPrintPayloadDto {
+  tenantId: string;
+  companyId: string;
+  branchId: string;
+  companyName: string;
+  tradeName: string | null;
+  ruc: string;
+  branchName: string;
+  establishmentCode: string | null;
+  emissionPointCode: string | null;
+  cashRegisterName: string | null;
+  cashSessionId: string | null;
+  invoiceId: string;
+  invoiceNumber: string;
+  issuedAt: string;
+  customerName: string;
+  customerIdentification: string;
+  customerEmail: string | null;
+  documentType: string;
+  isElectronic: boolean;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  authorizationNumber: string | null;
+  authorizationDate: string | null;
+  lines: SalesReceiptLineDto[];
+  totals: SalesReceiptTotalsDto;
+  payments: SalesReceiptPaymentDto[];
+  cashReceived: number | null;
+  cashChange: number | null;
+  footerMessage: string | null;
+}
+
 // ── Payloads ─────────────────────────────────────────────────────────────
 
 export interface SalesLineInput {
@@ -239,6 +296,10 @@ export const salesService = {
     return apiGet<SalesListResponse>(`${BASE}?${params}`);
   },
   getById: (id: string) => apiGet<SalesInvoiceDto>(`${BASE}/${id}`),
+  getReceiptPrintPayload: (id: string) =>
+    apiGet<SalesReceiptPrintPayloadDto>(
+      `${BASE}/invoices/${id}/receipt-print-payload`,
+    ),
   create: (p: CreateSalesPayload) => apiPost<SalesInvoiceDto>(BASE, p),
   update: (id: string, p: UpdateSalesPayload) =>
     apiPut<SalesInvoiceDto>(`${BASE}/${id}`, p),

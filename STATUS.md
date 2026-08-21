@@ -4,6 +4,20 @@
 
 ---
 
+## ZH-PRINT-AGENT-02B — SalesIssueModal integrado con Print Agent local (2026-08-21)
+
+**Estado: COMPLETADO.** Se integró el modal post-facturación de Ventas/POS con el ZH Print Agent local usando el payload oficial del backend, sin imprimir desde backend y sin recalcular datos fiscales en frontend.
+
+- Frontend: `SalesIssueModal` ahora ofrece `Imprimir tirilla` / `Reimprimir tirilla` en el estado de éxito de emisión, manteniendo `Nueva venta` como salida normal para omitir impresión.
+- Datos: antes de imprimir consulta `GET /api/v1/sales/invoices/{invoiceId}/receipt-print-payload`; el request al agente se arma solo con esos snapshots oficiales, sin recalcular totales, IVA, pagos ni vuelto.
+- Print Agent: cliente local configurable con `VITE_PRINT_AGENT_BASE_URL`, `VITE_PRINT_AGENT_RECEIPT_ENDPOINT`, `VITE_PRINT_AGENT_API_KEY`, `VITE_PRINT_AGENT_PRINTER_NAME` y overrides por `localStorage` (`zh.printAgent.*`). El endpoint real del agente actual es `/print-jobs`.
+- Idempotencia: `jobId = invoice-{invoiceId}-receipt`; reenviar el mismo job no duplica una tirilla ya `Printed` según semántica del agente. Si el job queda `Failed`/`NeedsReview`, el reintento usa `POST /print-jobs/{jobId}/retry`.
+- UX: mensajes visibles para `Imprimiendo...`, `Tirilla enviada a impresión.`, agente apagado, API key inválida/no configurada, impresora no disponible y error de impresión reintentable.
+- Sin cambios en `SalesPage`, reglas de venta, caja, kardex, stock, pagos, SRI, RIDE, Communications ni `print-agent/`.
+- Validado con `npx vitest run src/modules/sales/api/printAgentClient.test.ts`, eslint específico de archivos tocados, `npm run build` y guardas de plataforma OK.
+
+---
+
 ## ZH-PRINT-AGENT-02A — Backend payload oficial de tirilla POS (2026-08-21)
 
 **Estado: COMPLETADO.** Se agregó un contrato backend oficial, estable y solo lectura para que el POS pueda obtener el payload de tirilla de una factura ya emitida sin acoplar el ERP al Print Agent ni ejecutar impresión física desde backend.
