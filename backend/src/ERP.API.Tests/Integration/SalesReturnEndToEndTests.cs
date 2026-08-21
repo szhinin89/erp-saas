@@ -54,6 +54,7 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
     public Guid CashRegisterId { get; private set; }
     public Guid CustomerId { get; private set; }
     public Guid PaymentMethodId { get; private set; }
+    public Guid CreditPaymentMethodId { get; private set; }
     public Guid CashPaymentTermId { get; private set; }
     public Guid CreditPaymentTermId { get; private set; }
     public Guid ItemId { get; private set; }
@@ -221,11 +222,21 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
             sortOrder: 1,
             createdBy: _adminId
         );
-        db.PaymentMethods.Add(paymentMethod);
+        var creditPaymentMethod = PaymentMethod.Create(
+            TenantId,
+            "CRED",
+            "Credito",
+            requiresReference: false,
+            isCreditAllowed: true,
+            sortOrder: 2,
+            createdBy: _adminId
+        );
+        db.PaymentMethods.AddRange(paymentMethod, creditPaymentMethod);
         await db.SaveChangesAsync();
         CashPaymentTermId = cashPaymentTerm.Id;
         CreditPaymentTermId = creditPaymentTerm.Id;
         PaymentMethodId = paymentMethod.Id;
+        CreditPaymentMethodId = creditPaymentMethod.Id;
 
         var customer = BusinessPartner.Create(
             TenantId,
@@ -447,6 +458,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             MidpointRounding.AwayFromZero
         );
         var expectedGrandTotal = quantity * unitPrice + expectedVat;
+        var effectivePaymentTermId = paymentTermId ?? _f.CashPaymentTermId;
+        var effectivePaymentMethodId = effectivePaymentTermId == _f.CreditPaymentTermId
+            ? _f.CreditPaymentMethodId
+            : _f.PaymentMethodId;
 
         var createResponse = await _f.Client.PostAsJsonAsync(
             "/api/v1/sales",
@@ -456,7 +471,7 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
                 issueDate = DateOnly
                     .FromDateTime(DateTime.UtcNow.AddDays(-1))
                     .ToString("yyyy-MM-dd"),
-                paymentTermId = paymentTermId ?? _f.CashPaymentTermId,
+                paymentTermId = effectivePaymentTermId,
                 lines = new[]
                 {
                     new
@@ -471,7 +486,7 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
                 },
                 payments = new[]
                 {
-                    new { paymentMethodId = _f.PaymentMethodId, amount = expectedGrandTotal },
+                    new { paymentMethodId = effectivePaymentMethodId, amount = expectedGrandTotal },
                 },
             }
         );

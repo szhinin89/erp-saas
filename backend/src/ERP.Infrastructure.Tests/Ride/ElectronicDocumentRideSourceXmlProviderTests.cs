@@ -1,13 +1,17 @@
 using ERP.Application.Audit;
 using ERP.Application.Common;
+using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Audit;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using ERP.Domain.Modules.Ride.Enums;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Audit;
 using ERP.Infrastructure.Persistence;
@@ -18,6 +22,8 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Ride;
@@ -74,6 +80,22 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
         services.AddScoped<ERP.Application.Common.Interfaces.IFileStorage, LocalFileStorage>();
         services.AddScoped<IRideSourceXmlProvider, ElectronicDocumentRideSourceXmlProvider>();
+        services.AddScoped(_ =>
+        {
+            var mock = new Mock<ISalesInvoiceRepository>();
+            mock.Setup(r =>
+                    r.GetByIdAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync((SalesInvoice?)null);
+            return mock.Object;
+        });
+        services.AddScoped(_ => Mock.Of<ICompanyRepository>());
+        services.AddScoped(_ => Mock.Of<ICommunicationQueue>());
+        services.AddLogging();
         services.AddScoped<
             ERP.Application.Common.Services.ICompanyClock,
             ERP.Infrastructure.Persistence.Services.CompanyClock
