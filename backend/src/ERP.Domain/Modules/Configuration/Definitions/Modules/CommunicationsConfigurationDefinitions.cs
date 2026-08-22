@@ -4,6 +4,23 @@ using System.Globalization;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
+/// <summary>
+/// EmailEnabled..DefaultLanguage: infraestructura SMTP existente (Communications, pantalla propia).
+///
+/// SalesInvoiceAuthorizedEnabled/SendCopyToCompanyEmail (grupo Notifications de
+/// /settings/operations): auditadas en CONFIG-DYNAMIC-OPERATIONS-03 (no renderizadas en UI —
+/// evita settings decorativos).
+/// - SalesInvoiceAuthorizedEnabled: DUPLICADA — no conectar. La regla "enviar correo de factura de
+///   venta autorizada" ya está resuelta y con efecto real por
+///   ElectronicDocumentsPreferences.EmailOnAuthorization ("electronic_documents.email_on_authorization",
+///   CONFIG-DYNAMIC-OPERATIONS-01), la única key que SalesInvoiceAuthorizedCommunicationHandler
+///   consulta hoy. Esta key ("communications.sales_invoice_authorized_enabled") es una segunda
+///   representación de la misma regla, nunca leída por ningún handler — se mantiene guardada
+///   (compatibilidad del contrato del DTO/API) pero EmailOnAuthorization es la única autoridad; no
+///   se conecta para evitar dos fuentes de verdad para "enviar correo al autorizar".
+/// - SendCopyToCompanyEmail: sin consumidor todavía (Fase C) — no auditada en
+///   CONFIG-DYNAMIC-OPERATIONS-03 (no estaba en su alcance).
+/// </summary>
 public static class CommunicationsConfigurationDefinitions
 {
     private const int HostMaxLen = 255;

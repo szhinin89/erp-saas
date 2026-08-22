@@ -8,14 +8,32 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 /// Definitions para OrgSettingKeys.SalesPos. Conectadas a efecto real: AllowManualDiscount/
 /// MaxDiscountPercent (CONFIG-DYNAMIC-OPERATIONS-01, ApplySalesDiscountHandler +
 /// SalesLineBuilder — ver también POS-DISCOUNT-RULES-01) y AllowSellWithoutStock
-/// (CONFIG-DYNAMIC-OPERATIONS-02, AuthorizeSalesInvoiceHandler). El resto se guarda y expone en
-/// /settings/operations pero aún no cambia comportamiento:
-/// - RequireOpenCashSession: NO conectada — requeriría una ruta de resolución de EmissionPointId
-///   independiente de ICurrentCashSession (hoy CreateSalesDraftHandler exige sesión abierta
-///   precisamente porque de ahí saca EmissionPointId/CashSessionId sin fallback). Conectar esto
-///   es un rediseño, no un simple gate — documentado, no implementado en CONFIG-DYNAMIC-OPERATIONS-02.
-/// - AllowManualPrice, RequireCustomerAboveAmount, AskBeforeIssue, DefaultPriceListId,
-///   DefaultCustomerId: sin consumidor todavía (Fase C).
+/// (CONFIG-DYNAMIC-OPERATIONS-02, AuthorizeSalesInvoiceHandler). El resto se guarda y expone (solo
+/// vía API — NINGUNO de estos 5 campos se renderiza en /settings/operations, evita settings
+/// decorativos visibles) pero no cambia comportamiento, con decisión final de
+/// CONFIG-DYNAMIC-OPERATIONS-03 (auditoría, no implementación):
+/// - RequireOpenCashSession: CERRADA / no configurable — no es un rediseño pendiente, es una
+///   invariante estructural. CreateSalesDraftHandler exige sesión abierta porque de ahí resuelve
+///   CashSessionId/EmissionPointId sin fallback, y SalesInvoice.CreateDraft(...) declara
+///   cashSessionId como Guid no-nullable (no Guid?) — no existe una ruta de creación de factura sin
+///   caja. "false" es hoy arquitectónicamente imposible sin cambiar el dominio de Ventas y el
+///   derivador de EmissionPointId (FROZEN — secuencias documentales). No se reabre sin ADR.
+/// - RequireCustomerAboveAmount: DUPLICADA — no conectar. La regla "exigir cliente identificado
+///   sobre cierto monto" ya existe y es la única autoridad: ISalesFiscalPolicyResolver /
+///   OrgSettingKeys.Sales.ConsumerFinalMaxAmount ("sales.consumer_final.max_amount"), enforced en
+///   AuthorizeSalesInvoiceHandler contra factura de Consumidor Final. Conectar esta key crearía una
+///   segunda fuente de verdad para la misma regla de negocio.
+/// - DefaultCustomerId: DUPLICADA — no conectar. Ya existen dos niveles de resolución dinámica:
+///   CashRegister.DefaultCustomerId (por caja, expuesto en OpenCashSessionUseCases/CajaMapper) y el
+///   fallback universal a "Consumidor Final" (resolveConsumidorFinal() en useSalesPage.ts, vía API,
+///   sin hardcode). Un tercer nivel a nivel Company competiría con el más específico (por caja), que
+///   es el que realmente se ejercita end-to-end.
+/// - DefaultPriceListId: DUPLICADA — no conectar. El motor de Pricing ya tiene su propio mecanismo
+///   de lista por defecto: PriceList.IsDefault, consumido directamente por IPricingResolver cuando
+///   no se pasa priceListId explícito (SSOT documentado en IPricingResolver.cs). Esta key sería una
+///   segunda noción de "lista por defecto" compitiendo con la del dominio Pricing.
+/// - AllowManualPrice, AskBeforeIssue: sin consumidor todavía (Fase C) — no auditadas en
+///   CONFIG-DYNAMIC-OPERATIONS-03 (no estaban en su alcance), quedan pendientes para un bloque futuro.
 /// </summary>
 public static class SalesPosConfigurationDefinitions
 {

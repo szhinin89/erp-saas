@@ -8,8 +8,16 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 /// Definitions para OrgSettingKeys.Cash. Conectadas a efecto real en CloseCashSessionHandler:
 /// RequireReasonForDifference (CONFIG-DYNAMIC-OPERATIONS-01), AllowCloseWithDifference y
 /// MaxAllowedDifference (CONFIG-DYNAMIC-OPERATIONS-02) — las tres se evalúan juntas, en ese
-/// orden, cuando session.Difference != 0. RequireOpeningAmount/AllowManualInOutMovements/
-/// RequireReasonForMovements: sin consumidor todavía (Fase C).
+/// orden, cuando session.Difference != 0. Ninguno de los otros 3 campos se renderiza en
+/// /settings/operations (evita settings decorativos):
+/// - RequireOpeningAmount: DIFERIDA (auditada en CONFIG-DYNAMIC-OPERATIONS-03, no implementada).
+///   Hoy no existe la distinción que esta preferencia necesitaría gatear: CashSession.Open(...)
+///   solo valida OpeningAmount >= 0 (OpeningAmount = 0 ya es un valor válido sin restricción) —
+///   no hay forma de distinguir "el usuario dejó el monto en blanco/0 deliberadamente" de "el
+///   campo nunca se llenó", porque un decimal en el body siempre llega con un valor. Conectar esto
+///   requeriría agregar esa señal a OpenCashSessionCommand — fuera de alcance de un simple gate.
+/// - AllowManualInOutMovements/RequireReasonForMovements: sin consumidor todavía (Fase C) — no
+///   auditadas en CONFIG-DYNAMIC-OPERATIONS-03 (no estaban en su alcance).
 /// </summary>
 public static class CashConfigurationDefinitions
 {
