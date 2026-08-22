@@ -3,129 +3,95 @@ using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.Domain.Kernel.Modules;
 
-[Module("inventory", Icon = "📦", SortOrder = 20)]
+// MENU-MODULE-REORG-01: reorganizado en Operación/Configuración/Reportes — el catálogo de
+// productos se movió a ProductsModule (módulo propio "Productos y servicios").
+[Module("inventory", Icon = "🏭", SortOrder = 20)]
 public static class InventoryModule
 {
-    // ── Contenedor: Productos y servicios ────────────────────────────
-    // MENU-UX-RENAME-01: label de negocio "Productos y servicios" (antes "Catálogo" vía
-    // LabelKey) — solo texto visible, mismo Id/ruta/permisos.
+    // ── Operación ────────────────────────────────────────────────────
     [NavItem(
-        "Productos y servicios",
-        LabelKey = "app.nav.item.inventory.catalog",
+        "Operación",
+        LabelKey = "app.nav.item.inventory.operation",
         SortOrder = 10,
-        Id = "e2000000-0000-4000-9000-000000000001",
-        PermissionsAnyCsv = InventoryPermissions.ItemsView + "," + CatalogPermissions.Manage
-    )]
-    public const string ProductsGroup = "/inventory/products-group";
-
-    // MENU-UX-RENAME-01: label de negocio "Productos" (antes "Ítems") — solo texto visible.
-    [NavItem(
-        "Productos",
-        Permission = InventoryPermissions.ItemsView,
-        LabelKey = "app.nav.item.inventory.items",
-        SortOrder = 10,
-        Id = "a1000000-0000-4000-9000-000000000001",
-        ParentId = "e2000000-0000-4000-9000-000000000001"
-    )]
-    public const string Items = "/inventory/items";
-
-    [NavItem(
-        "Tipos de Ítem",
-        Permission = InventoryPermissions.ItemsView,
-        LabelKey = "app.nav.item.inventory.itemTypes",
-        SortOrder = 15,
-        Id = "a1000000-0000-4000-9000-000000000039",
-        ParentId = "e2000000-0000-4000-9000-000000000001"
-    )]
-    public const string ItemTypes = "/inventory/item-types";
-
-    [NavItem(
-        "Brands",
-        Permission = CatalogPermissions.Manage,
-        LabelKey = "app.nav.item.catalog.brands",
-        SortOrder = 20,
-        Id = "a1000000-0000-4000-9000-000000000031",
-        ParentId = "e2000000-0000-4000-9000-000000000001"
-    )]
-    public const string Brands = "/catalog/brands";
-
-    // MENU-UX-RENAME-01: label de negocio "Categorías de productos" (antes "Árbol de catálogo").
-    [NavItem(
-        "Categorías de productos",
-        Permission = CatalogPermissions.Manage,
-        LabelKey = "app.nav.item.catalog.tree",
-        SortOrder = 30,
-        Id = "a1000000-0000-4000-9000-000000000038",
-        ParentId = "e2000000-0000-4000-9000-000000000001"
-    )]
-    public const string CatalogTree = "/catalog/tree";
-
-    // MENU-UX-RENAME-01: label de negocio "Atributos de productos" (antes "Grupo de atributos") —
-    // la pantalla gestiona definiciones de atributos reutilizables (ej. Color, Talla), no genera
-    // variantes por sí misma (eso lo hace VariantsSection en el detalle del ítem).
-    [NavItem(
-        "Atributos de productos",
-        Permission = CatalogPermissions.Manage,
-        LabelKey = "app.nav.item.catalog.attributeGroups",
-        SortOrder = 40,
-        Id = "a1000000-0000-4000-9000-000000000035",
-        ParentId = "e2000000-0000-4000-9000-000000000001"
-    )]
-    public const string AttributeGroups = "/catalog/attribute-groups";
-
-    [NavItem(
-        "Attribute Definitions",
-        Permission = CatalogPermissions.Manage,
-        LabelKey = "app.nav.item.catalog.attributeDefinitions",
-        SortOrder = 50,
-        Id = "a1000000-0000-4000-9000-000000000036",
-        ParentId = "e2000000-0000-4000-9000-000000000001"
-    )]
-    public const string AttributeDefinitions = "/catalog/attribute-definitions";
-
-    // ── Contenedor: Almacenes ──────────────────────────────────────
-    [NavItem(
-        "Almacenes",
-        LabelKey = "app.nav.item.inventory.warehouses",
-        SortOrder = 20,
-        Id = "e2000000-0000-4000-9000-000000000002",
+        Id = "e2000000-0000-4000-9000-000000000010",
         PermissionsAnyCsv = InventoryPermissions.WarehousesView
+            + ","
+            + InventoryPermissions.StockView
+            + ","
+            + InventoryPermissions.StockManage
     )]
-    public const string WarehousesGroup = "/inventory/warehouses-group";
+    public const string OperationGroup = "/inventory/operation-group";
 
     [NavItem(
-        "Warehouses",
+        "Bodegas",
         Permission = InventoryPermissions.WarehousesView,
         LabelKey = "app.nav.item.inventory.warehouses",
         SortOrder = 10,
         Id = "a1000000-0000-4000-9000-000000000002",
-        ParentId = "e2000000-0000-4000-9000-000000000002"
+        ParentId = "e2000000-0000-4000-9000-000000000010"
     )]
     public const string Warehouses = "/inventory/warehouses";
 
-    // ── Kardex: acceso operativo directo (sin contenedor) ───────────
-    // MENU-UX-RENAME-01: label unificado "Kardex / Movimientos de Inventario" (menú y título
-    // de pantalla ahora coinciden — antes el menú decía "Kardex" y la pantalla "Centro de
-    // Investigación de Inventario").
     [NavItem(
         "Kardex / Movimientos de Inventario",
         Permission = InventoryPermissions.StockView,
         LabelKey = "app.nav.item.inventory.kardex",
-        SortOrder = 30,
-        Id = "a1000000-0000-4000-9000-000000000040"
+        SortOrder = 20,
+        Id = "a1000000-0000-4000-9000-000000000040",
+        ParentId = "e2000000-0000-4000-9000-000000000010"
     )]
     public const string Kardex = "/inventory/kardex";
 
-    // ── Transferencias entre bodegas: acceso operativo directo (sin contenedor),
-    // mismo patrón que Kardex — después de Kardex en el menú (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01).
-    // Permission = StockManage (no StockView): sin permiso de gestión el usuario no puede crear
-    // ni confirmar nada en esta pantalla — no existe un modo de solo lectura que justifique
-    // mostrarla con StockView únicamente.
     [NavItem(
         "Transferencias entre bodegas",
         Permission = InventoryPermissions.StockManage,
         LabelKey = "app.nav.item.inventory.transfers",
-        SortOrder = 40
+        SortOrder = 30,
+        ParentId = "e2000000-0000-4000-9000-000000000010"
     )]
     public const string Transfers = "/inventory/transfers";
+
+    // ── Configuración ────────────────────────────────────────────────
+    [NavItem(
+        "Configuración",
+        LabelKey = "app.nav.item.inventory.configuration",
+        SortOrder = 20,
+        Id = "e2000000-0000-4000-9000-000000000020",
+        PermissionsAnyCsv = OperationalPreferencesPermissions.View
+    )]
+    public const string ConfigurationGroup = "/inventory/configuration-group";
+
+    // Enlace contextual al tab "inventory" de la pantalla única de Preferencias Operativas
+    // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.
+    [NavItem(
+        "Preferencias de Inventario",
+        Permission = OperationalPreferencesPermissions.View,
+        LabelKey = "app.nav.item.inventory.preferences",
+        SortOrder = 10,
+        Id = "e2000000-0000-4000-9000-000000000021",
+        ParentId = "e2000000-0000-4000-9000-000000000020"
+    )]
+    public const string Preferences = "/settings/operations?tab=inventory";
+
+    // ── Reportes ─────────────────────────────────────────────────────
+    [NavItem(
+        "Reportes",
+        LabelKey = "app.nav.item.inventory.reports",
+        SortOrder = 30,
+        Id = "e2000000-0000-4000-9000-000000000030",
+        PermissionsAnyCsv = InventoryPermissions.StockView
+    )]
+    public const string ReportsGroup = "/inventory/reports-group";
+
+    // Movido desde ReportsModule (antes /reportes/stock en el grupo "reports" separado) —
+    // mismo Id/ruta/permiso, ahora dentro de Inventario → Reportes.
+    [NavItem(
+        "Reporte de Inventario",
+        Permission = InventoryPermissions.StockView,
+        LabelKey = "app.nav.item.reportes.stock",
+        SortOrder = 10,
+        Id = "f7000000-0000-4000-9000-000000000002",
+        ParentId = "e2000000-0000-4000-9000-000000000030"
+    )]
+    public const string StockReport = "/reportes/stock";
 }

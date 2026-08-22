@@ -85,14 +85,16 @@ public sealed class KernelRegistryTests
     {
         var navigation = KernelRegistry.Navigation;
 
+        // MENU-MODULE-REORG-01: reparentado bajo el contenedor "Operación" de cada módulo
+        // (antes "Documentos") — mismo Id/ruta/permiso, solo cambia el ParentId.
         var salesReturns = navigation.SingleOrDefault(n => n.RoutePath == "/sales/returns");
         salesReturns.Should().NotBeNull("el listado de devoluciones de venta debe estar en el menú");
-        salesReturns!.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000001"));
+        salesReturns!.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000010"));
         salesReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
 
         var purchaseReturns = navigation.SingleOrDefault(n => n.RoutePath == "/purchases/returns");
         purchaseReturns.Should().NotBeNull("el listado de devoluciones de compra debe estar en el menú");
-        purchaseReturns!.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000001"));
+        purchaseReturns!.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
         purchaseReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
 
         navigation.Should().NotContain(n => n.RoutePath == "/sales/returns/new");
@@ -103,77 +105,86 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Modules_contains_finance_group()
+    public void Modules_no_longer_contains_finance_or_reports_groups()
     {
-        var finance = KernelRegistry.Modules.SingleOrDefault(m => m.Code == "finance");
+        // MENU-MODULE-REORG-01: "finance" y "reports" se disolvieron — sus ítems se movieron a
+        // Ventas/Compras/Inventario (ver Navigation_contains_finance_receivables_payables_and_
+        // supplier_credits_moved_into_sales_and_purchases y
+        // Navigation_contains_sales_stock_and_purchases_reports_moved_into_their_modules).
+        var modules = KernelRegistry.Modules;
 
-        finance.Should().NotBeNull("el grupo Finanzas debe estar registrado en el Kernel");
+        modules.Should().NotContain(m => m.Code == "finance");
+        modules.Should().NotContain(m => m.Code == "reports");
     }
 
     [Fact]
-    public void Navigation_contains_finance_receivables_payables_and_supplier_credits()
+    public void Navigation_contains_finance_receivables_payables_and_supplier_credits_moved_into_sales_and_purchases()
     {
         var navigation = KernelRegistry.Navigation;
         var financePermission = ERP.Domain.Kernel.Permissions.FinancePermissions.View;
 
-        // Permission alineado con el permiso real que exige la API que consume cada pantalla
-        // (SalesReceivablesController / PurchasePayablesController), no FinancePermissions.View.
+        // MENU-MODULE-REORG-01: movidas a Ventas → Operación / Compras → Operación (mismos
+        // Ids/rutas). Permission alineado con el permiso real que exige la API que consume cada
+        // pantalla (SalesReceivablesController / PurchasePayablesController), no
+        // FinancePermissions.View.
         var receivables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/receivables");
         receivables.Should().NotBeNull("cuentas por cobrar debe estar en el menú");
         receivables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
-        receivables.SortOrder.Should().Be(10);
+        receivables.GroupCode.Should().Be("sales");
+        receivables.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000010"));
 
         var payables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/payables");
         payables.Should().NotBeNull("cuentas por pagar debe estar en el menú");
         payables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
-        payables.SortOrder.Should().Be(20);
+        payables.GroupCode.Should().Be("purchases");
+        payables.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
 
         var supplierCredits = navigation.SingleOrDefault(n =>
             n.RoutePath == "/finance/supplier-credits"
         );
         supplierCredits.Should().NotBeNull("créditos de proveedor debe estar en el menú");
         supplierCredits!.PermissionKey.Should().Be(financePermission);
-        supplierCredits.SortOrder.Should().Be(30);
+        supplierCredits.GroupCode.Should().Be("purchases");
+        supplierCredits.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
 
         navigation.Should().NotContain(n => n.RoutePath == "/finance/supplier-credits/:id");
         navigation
             .Should()
             .NotContain(n => n.RoutePath.StartsWith("/finance/supplier-credits/", StringComparison.Ordinal));
 
+        // MENU-MODULE-REORG-01: "Clientes y proveedores" se aplanó — credit-terms ya no cuelga
+        // de un contenedor "Clientes" (retirado), es un ítem directo del módulo.
         var creditTerms = navigation.Single(n => n.RoutePath == "/finance/credit-terms");
-        creditTerms.GroupCode.Should().Be("masterdata", "credit-terms no debe moverse en esta tarea");
-        creditTerms.ParentItemId.Should().Be(Guid.Parse("e1000000-0000-4000-9000-000000000001"));
+        creditTerms.GroupCode.Should().Be("masterdata", "credit-terms no debe moverse a otro módulo");
+        creditTerms.ParentItemId.Should().BeNull();
     }
 
     [Fact]
-    public void Modules_contains_reports_group()
+    public void Navigation_contains_sales_stock_and_purchases_reports_moved_into_their_modules()
     {
-        var reports = KernelRegistry.Modules.SingleOrDefault(m => m.Code == "reports");
-
-        reports.Should().NotBeNull("el grupo Reportes debe estar registrado en el Kernel");
-    }
-
-    [Fact]
-    public void Navigation_contains_sales_stock_and_purchases_reports_with_domain_permissions()
-    {
+        // MENU-MODULE-REORG-01: los 3 reportes salieron del módulo "reports" (retirado) y ahora
+        // viven dentro de "Reportes" en su propio módulo de negocio — mismas rutas/permisos.
         var navigation = KernelRegistry.Navigation;
 
         var salesReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/ventas");
         salesReport.Should().NotBeNull("el reporte de ventas debe estar en el menú");
         salesReport!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
-        salesReport.SortOrder.Should().Be(10);
+        salesReport.GroupCode.Should().Be("sales");
+        salesReport.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000030"));
 
         var stockReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/stock");
         stockReport.Should().NotBeNull("el reporte de stock debe estar en el menú");
         stockReport!.PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.InventoryPermissions.StockView);
-        stockReport.SortOrder.Should().Be(20);
+        stockReport.GroupCode.Should().Be("inventory");
+        stockReport.ParentItemId.Should().Be(Guid.Parse("e2000000-0000-4000-9000-000000000030"));
 
         var purchasesReport = navigation.SingleOrDefault(n => n.RoutePath == "/reportes/compras");
         purchasesReport.Should().NotBeNull("el reporte de compras debe estar en el menú");
         purchasesReport!.PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
-        purchasesReport.SortOrder.Should().Be(30);
+        purchasesReport.GroupCode.Should().Be("purchases");
+        purchasesReport.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000030"));
 
         navigation.Should().NotContain(n => n.RoutePath.StartsWith("/reportes/", StringComparison.Ordinal)
             && n.RoutePath != "/reportes/ventas"
@@ -182,30 +193,86 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_reports_group_does_not_affect_finance_module()
+    public void Navigation_products_module_contains_the_former_inventory_catalog_items()
     {
-        var finance = KernelRegistry.Modules.Single(m => m.Code == "finance");
-        finance.Icon.Should().Be("💳");
-        finance.SortOrder.Should().Be(46);
+        // MENU-MODULE-REORG-01: "Productos y servicios" es ahora un módulo propio (antes un
+        // contenedor dentro de "inventory") — mismos Ids/rutas/permisos, sin contenedor padre.
+        var navigation = KernelRegistry.Navigation;
 
-        var financeItems = new[]
+        var productsRoutes = new[]
         {
-            "/finance/receivables",
-            "/finance/payables",
-            "/finance/supplier-credits",
+            "/inventory/items",
+            "/inventory/item-types",
+            "/catalog/tree",
+            "/catalog/brands",
+            "/catalog/attribute-groups",
+            "/catalog/attribute-definitions",
         };
 
-        foreach (var route in financeItems)
+        foreach (var route in productsRoutes)
         {
-            KernelRegistry
-                .Navigation.Single(n => n.RoutePath == route)
-                .GroupCode.Should()
-                .Be("finance", $"'{route}' debe seguir perteneciendo al grupo finance");
+            var item = navigation.Single(n => n.RoutePath == route);
+            item.GroupCode.Should().Be("products", $"'{route}' debe pertenecer al módulo products");
+            item.ParentItemId.Should().BeNull($"'{route}' no debe tener contenedor padre");
+        }
+
+        var productsModule = KernelRegistry.Modules.Single(m => m.Code == "products");
+        productsModule.Icon.Should().Be("📦");
+    }
+
+    [Fact]
+    public void Navigation_sales_purchases_inventory_and_caja_expose_operation_configuration_and_reports_containers()
+    {
+        // MENU-MODULE-REORG-01: cada módulo agrupa sus pantallas bajo Operación/Configuración/
+        // Reportes (Caja no tiene Reportes: no existe pantalla de "Reporte de Caja").
+        var navigation = KernelRegistry.Navigation;
+
+        foreach (var (groupCode, expectedCount) in new[]
+        {
+            ("sales", 3),
+            ("purchases", 3),
+            ("inventory", 3),
+            ("caja", 2),
+        })
+        {
+            var containers = navigation
+                .Where(n => n.GroupCode == groupCode && n.ParentItemId is null)
+                .ToList();
+
+            containers.Should().HaveCount(
+                expectedCount,
+                $"'{groupCode}' debe exponer exactamente {expectedCount} contenedores de primer nivel"
+            );
         }
     }
 
     [Fact]
-    public void Navigation_contains_settings_financial_destinations_and_leaves_finance_and_reports_untouched()
+    public void Navigation_preferences_deep_links_point_to_the_single_operational_preferences_screen()
+    {
+        // MENU-MODULE-REORG-01: enlaces contextuales (query param ?tab=) a la ÚNICA pantalla real
+        // de Preferencias Operativas — no crean pantallas nuevas ni duplican la existente.
+        var navigation = KernelRegistry.Navigation;
+
+        var deepLinks = new[]
+        {
+            "/settings/operations?tab=salesPos",
+            "/settings/operations?tab=purchases",
+            "/settings/operations?tab=inventory",
+            "/settings/operations?tab=cash",
+        };
+
+        foreach (var route in deepLinks)
+        {
+            var item = navigation.Single(n => n.RoutePath == route);
+            item.PermissionKey.Should()
+                .Be(ERP.Domain.Kernel.Permissions.OperationalPreferencesPermissions.View);
+        }
+
+        navigation.Should().ContainSingle(n => n.RoutePath == "/settings/operations");
+    }
+
+    [Fact]
+    public void Navigation_contains_settings_financial_destinations()
     {
         var navigation = KernelRegistry.Navigation;
 
@@ -217,19 +284,6 @@ public sealed class KernelRegistryTests
         financialDestinations
             .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.FinancialDestinationsView);
-
-        var finance = KernelRegistry.Modules.Single(m => m.Code == "finance");
-        finance.Icon.Should().Be("💳");
-        finance.SortOrder.Should().Be(46);
-
-        var reports = KernelRegistry.Modules.Single(m => m.Code == "reports");
-        reports.Icon.Should().Be("📊");
-        reports.SortOrder.Should().Be(55);
-
-        navigation
-            .Where(n => n.GroupCode is "finance" or "reports")
-            .Should()
-            .HaveCount(6, "las 3 rutas de finance y las 3 de reports deben permanecer sin cambios");
     }
 
     [Fact]
@@ -250,19 +304,13 @@ public sealed class KernelRegistryTests
 
         navigation.Should().NotContain(n => n.RoutePath == "/rrhh");
 
-        var finance = KernelRegistry.Modules.Single(m => m.Code == "finance");
-        finance.Icon.Should().Be("💳");
-        finance.SortOrder.Should().Be(46);
-
-        var reports = KernelRegistry.Modules.Single(m => m.Code == "reports");
-        reports.Icon.Should().Be("📊");
-        reports.SortOrder.Should().Be(55);
-
+        // MENU-MODULE-REORG-01: "Destinos financieros" se movió de SortOrder 60 → 50 al
+        // insertar "Facturación Electrónica" en Configuración general.
         var settingsFinancialDestinations = navigation.Single(n =>
             n.RoutePath == "/settings/financial-destinations"
         );
         settingsFinancialDestinations.GroupCode.Should().Be("settings");
-        settingsFinancialDestinations.SortOrder.Should().Be(60);
+        settingsFinancialDestinations.SortOrder.Should().Be(50);
     }
 
     [Fact]

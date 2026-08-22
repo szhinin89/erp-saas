@@ -95,9 +95,11 @@ export function isPlanBuilderSessionMenu(
 const MAIN_NAV_GROUP_ORDER = [
   "home",
   "masterdata",
+  "products",
   "inventory",
   "purchases",
   "sales",
+  "caja",
   "settings",
   "admin",
   "inventario",

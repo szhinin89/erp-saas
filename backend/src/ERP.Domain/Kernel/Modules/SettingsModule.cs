@@ -62,22 +62,26 @@ public static class SettingsModule
     public const string EmissionPoints = "/settings/emission-points";
 
     [NavItem(
-        "Geography",
-        Permission = SettingsPermissions.GeographyView,
-        LabelKey = "app.nav.item.settings.geography",
-        SortOrder = 50,
-        Id = "a1000000-0000-4000-9000-000000000006"
-    )]
-    public const string Geography = "/settings/geography";
-
-    [NavItem(
         "Destinos financieros",
         Permission = SettingsPermissions.FinancialDestinationsView,
         LabelKey = "app.nav.item.settings.financialDestinations",
-        SortOrder = 60,
+        SortOrder = 50,
         Id = "a1000000-0000-4000-9000-000000000011"
     )]
     public const string FinancialDestinations = "/settings/financial-destinations";
+
+    // MENU-MODULE-REORG-01: movido desde SalesModule — es configuración transversal (aplica al
+    // documento electrónico en general), no exclusiva de Ventas. Mismo permiso; antes derivaba
+    // su Id automáticamente (module.Code="sales" + ruta), ahora fijo explícito para que el
+    // cambio de módulo no genere un Id nuevo huérfano en ui_nav_items.
+    [NavItem(
+        "Electronic Invoicing",
+        Permission = ElectronicInvoicingPermissions.View,
+        LabelKey = "app.nav.item.settings.electronicInvoicing",
+        SortOrder = 60,
+        Id = "a1000000-0000-4000-9000-000000000014"
+    )]
+    public const string ElectronicInvoicing = "/settings/electronic-invoicing";
 
     [NavItem(
         "Correo SMTP",
@@ -96,4 +100,13 @@ public static class SettingsModule
         Id = "a1000000-0000-4000-9000-000000000013"
     )]
     public const string OperationalPreferences = "/settings/operations";
+
+    [NavItem(
+        "Geography",
+        Permission = SettingsPermissions.GeographyView,
+        LabelKey = "app.nav.item.settings.geography",
+        SortOrder = 90,
+        Id = "a1000000-0000-4000-9000-000000000006"
+    )]
+    public const string Geography = "/settings/geography";
 }
