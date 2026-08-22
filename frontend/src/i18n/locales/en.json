@@ -359,6 +359,7 @@
   "app.nav.item.settings.emissionPoints": "Emission Points",
   "app.nav.item.settings.geography": "Geography",
   "app.nav.item.settings.financialDestinations": "Financial Destinations",
+  "app.nav.item.settings.communicationsEmail": "SMTP Email",
   "app.nav.item.erp.companies": "Companies",
   "app.nav.item.admin.group.access": "Access",
   "app.nav.item.admin.group.security": "Security",

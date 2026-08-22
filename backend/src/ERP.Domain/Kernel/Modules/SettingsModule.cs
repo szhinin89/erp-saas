@@ -59,4 +59,13 @@ public static class SettingsModule
         Id = "a1000000-0000-4000-9000-000000000011"
     )]
     public const string FinancialDestinations = "/settings/financial-destinations";
+
+    [NavItem(
+        "Correo SMTP",
+        Permission = CommunicationsPermissions.View,
+        LabelKey = "app.nav.item.settings.communicationsEmail",
+        SortOrder = 70,
+        Id = "a1000000-0000-4000-9000-000000000012"
+    )]
+    public const string CommunicationsEmail = "/settings/communications/email";
 }

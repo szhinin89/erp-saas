@@ -263,6 +263,22 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_settings_communications_email_with_communications_view_permission()
+    {
+        var navigation = KernelRegistry.Navigation;
+
+        var communicationsEmail = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/settings/communications/email"
+        );
+        communicationsEmail.Should().NotBeNull("correo SMTP debe estar en el menú de Configuración (COMMUNICATIONS-SETTINGS-UI-01B)");
+        communicationsEmail!.GroupCode.Should().Be("settings");
+        communicationsEmail
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.CommunicationsPermissions.View);
+        communicationsEmail.SortOrder.Should().Be(70);
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry
