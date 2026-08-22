@@ -1,0 +1,95 @@
+/* INVENTORY-ADJUSTMENTS-03 — layout local del editor de ajustes (flex/grid/spacing únicamente).
+   Colores, tipografía, bordes, tarjetas y badges vienen de zh-ui.css / page-template.css /
+   design-tokens.css. Prefijo propio del módulo: `adj-`. */
+
+.adj-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.adj-picker-wrap {
+  max-width: 420px;
+  margin-bottom: var(--space-3);
+}
+
+.adj-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.adj-line.zh-line-card {
+  width: 100%;
+  max-width: none;
+}
+
+.adj-line .zh-line-card__rail {
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--color-border);
+}
+
+.adj-line__index {
+  flex-shrink: 0;
+}
+
+.adj-line__main {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+}
+
+.adj-line__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.adj-line__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 150px;
+}
+
+.adj-line__warning {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.adj-line__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 100%;
+}
+
+.adj-summary {
+  max-width: 520px;
+}
+
+.adj-actions {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 720px) {
+  .adj-line__cell {
+    flex-basis: 100%;
+  }
+
+  .adj-summary {
+    max-width: none;
+  }
+}

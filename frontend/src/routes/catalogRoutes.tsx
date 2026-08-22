@@ -117,6 +117,13 @@ const AttributeDefinitionsPage = lazyNamedPage(
   () => import("../modules/items/catalog/pages/AttributeDefinitionsPage"),
   "AttributeDefinitionsPage",
 );
+const InventoryAdjustmentReasonsPage = lazyNamedPage(
+  () =>
+    import(
+      "../modules/inventory/adjustmentReasons/pages/InventoryAdjustmentReasonsPage"
+    ),
+  "InventoryAdjustmentReasonsPage",
+);
 const TreeEditorPage = lazyNamedPage(
   () => import("../modules/items/catalog/wizard/TreeEditor"),
   "TreeEditorPage",
@@ -127,6 +134,13 @@ export const catalogRoutes = [
     key="inventory-warehouses"
     path="/inventory/warehouses"
     element={<BodegasPage />}
+  />,
+  // INVENTORY-ADJUSTMENTS-03 — Inventario / Configuración (junto a Bodegas, mismo split
+  // Operación/Configuración ya establecido entre mainRoutes y catalogRoutes).
+  <Route
+    key="inventory-adjustment-reasons"
+    path="/inventory/adjustment-reasons"
+    element={<InventoryAdjustmentReasonsPage />}
   />,
   <Route
     key="inventario-bodegas"

@@ -1,0 +1,36 @@
+/* INVENTORY-ADJUSTMENTS-03 — layout local de la lista de ajustes (flex/grid/spacing únicamente).
+   Colores, tipografía, bordes, tabla y badges vienen de zh-ui.css / page-template.css /
+   design-tokens.css — nunca de este archivo. Prefijo propio del módulo: `adj-`. */
+
+.adj-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.adj-filters__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
+.adj-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.adj-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+@media (max-width: 720px) {
+  .adj-filters {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,16 @@
+/* INVENTORY-ADJUSTMENTS-03 — layout local del catálogo de motivos de ajuste.
+   Solo espaciado/disposición; tabla, tarjetas, badges y tipografía vienen de zh-ui.css,
+   page-template.css e items-catalog.css. Prefijo propio del módulo: `adjr-`. */
+
+.adjr-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.adjr-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 820px;
+}

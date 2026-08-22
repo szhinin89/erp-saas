@@ -17,6 +17,14 @@ const StockTransferPage = lazyNamedPage(
   () => import("../modules/inventory/transfers/pages/StockTransferPage"),
   "StockTransferPage",
 );
+const StockAdjustmentsPage = lazyNamedPage(
+  () => import("../modules/inventory/adjustments/pages/StockAdjustmentsPage"),
+  "StockAdjustmentsPage",
+);
+const StockAdjustmentFormPage = lazyNamedPage(
+  () => import("../modules/inventory/adjustments/pages/StockAdjustmentFormPage"),
+  "StockAdjustmentFormPage",
+);
 const ItemTypesPage = lazyNamedPage(
   () => import("../modules/items/pages/ItemTypesPage"),
   "ItemTypesPage",
@@ -110,6 +118,23 @@ export const mainRoutes = [
     key="inventory-transfers"
     path="/inventory/transfers"
     element={<StockTransferPage />}
+  />,
+  // INVENTORY-ADJUSTMENTS-03 — Inventario / Operación (el menú es 100% server-driven desde
+  // [AppFeature] en los controladores; aquí solo se registra la ruta que ese menú espera).
+  <Route
+    key="inventory-adjustments"
+    path="/inventory/adjustments"
+    element={<StockAdjustmentsPage />}
+  />,
+  <Route
+    key="inventory-adjustments-new"
+    path="/inventory/adjustments/new"
+    element={<StockAdjustmentFormPage />}
+  />,
+  <Route
+    key="inventory-adjustment-detail"
+    path="/inventory/adjustments/:id"
+    element={<StockAdjustmentFormPage />}
   />,
 
   // -- Master data --------------------------------------------------------
