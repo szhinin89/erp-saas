@@ -12,14 +12,28 @@ public static class SettingsModule
     /// conceptualmente es Configuración, no usuarios/perfiles/delegación/sesiones/actividad. Mismo
     /// Id/ruta/permiso que tenía en AdminModule — sin cambios de API ni de lógica de negocio.
     /// </summary>
-    // MENU-UX-RENAME-01: label de negocio "Mis empresas" (antes "Empresas") — distingue el
-    // multiempresa del suscriptor de la empresa activa (ver Company abajo).
+    // MENU-FINAL-STRUCTURE-01: "Mis empresas" (multiempresa del suscriptor, perm.
+    // CompaniesView) y "Datos de la empresa" (empresa activa, perm. CompanyView) son pantallas
+    // reales distintas con permisos distintos — no se pueden fusionar en una sola entrada sin
+    // perder funcionalidad o mezclar permisos. Se agrupan bajo un contenedor "Empresas" (mismo
+    // patrón ya usado en Ventas/Compras/Inventario/Caja) para que el nivel superior de
+    // Configuración muestre una sola línea "Empresas", sin borrar ninguna pantalla.
+    [NavItem(
+        "Empresas",
+        LabelKey = "app.nav.item.settings.companiesGroup",
+        SortOrder = 5,
+        Id = "00000000-0000-4000-8000-000000000105",
+        PermissionsAnyCsv = SettingsPermissions.CompaniesView + "," + SettingsPermissions.CompanyView
+    )]
+    public const string CompaniesGroup = "/settings/companies-group";
+
     [NavItem(
         "Mis empresas",
         Permission = SettingsPermissions.CompaniesView,
         LabelKey = "app.nav.item.erp.companies",
-        SortOrder = 5,
-        Id = "00000000-0000-4000-8000-000000000104"
+        SortOrder = 10,
+        Id = "00000000-0000-4000-8000-000000000104",
+        ParentId = "00000000-0000-4000-8000-000000000105"
     )]
     public const string Companies = "/companies";
 
@@ -29,8 +43,9 @@ public static class SettingsModule
         "Datos de la empresa",
         Permission = SettingsPermissions.CompanyView,
         LabelKey = "app.nav.item.settings.company",
-        SortOrder = 10,
-        Id = "00000000-0000-4000-8000-000000000101"
+        SortOrder = 20,
+        Id = "00000000-0000-4000-8000-000000000101",
+        ParentId = "00000000-0000-4000-8000-000000000105"
     )]
     public const string Company = "/settings/company";
 
@@ -92,8 +107,10 @@ public static class SettingsModule
     )]
     public const string CommunicationsEmail = "/settings/communications/email";
 
+    // MENU-FINAL-STRUCTURE-01: renombrado de negocio "Parámetros Generales" (antes
+    // "Preferencias operativas") — mismo Id/ruta/permiso, misma pantalla.
     [NavItem(
-        "Preferencias operativas",
+        "Parámetros Generales",
         Permission = OperationalPreferencesPermissions.View,
         LabelKey = "app.nav.item.settings.operationalPreferences",
         SortOrder = 80,

@@ -81,6 +81,33 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_companies_and_company_are_grouped_under_a_single_empresas_container_without_losing_permissions()
+    {
+        // MENU-FINAL-STRUCTURE-01: "Mis empresas" (multiempresa, CompaniesView) y "Datos de la
+        // empresa" (empresa activa, CompanyView) son pantallas reales distintas con permisos
+        // distintos — no se fusionaron en una sola entrada (se perdería funcionalidad o se
+        // mezclarían permisos). En su lugar se agruparon bajo un contenedor "Empresas" — este
+        // test prueba que ambas siguen existiendo, con su Id/ruta/permiso intactos.
+        var navigation = KernelRegistry.Navigation;
+        var empresasGroupId = Guid.Parse("00000000-0000-4000-8000-000000000105");
+
+        var empresasContainer = navigation.Single(n => n.RoutePath == "/settings/companies-group");
+        empresasContainer.GroupCode.Should().Be("settings");
+        empresasContainer.ParentItemId.Should().BeNull();
+        empresasContainer.Id.Should().Be(empresasGroupId);
+
+        var companies = navigation.Single(n => n.RoutePath == "/companies");
+        companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
+        companies.ParentItemId.Should().Be(empresasGroupId);
+        companies.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
+
+        var company = navigation.Single(n => n.RoutePath == "/settings/company");
+        company.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
+        company.ParentItemId.Should().Be(empresasGroupId);
+        company.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView);
+    }
+
+    [Fact]
     public void Navigation_contains_sales_and_purchase_returns_list_entries_only()
     {
         var navigation = KernelRegistry.Navigation;

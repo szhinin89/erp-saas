@@ -8,9 +8,10 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("inventory", Icon = "🏭", SortOrder = 20)]
 public static class InventoryModule
 {
-    // ── Operación ────────────────────────────────────────────────────
+    // ── Inventario (MENU-FINAL-STRUCTURE-01: subgrupo renombrado de "Operación" al mismo
+    // nombre del módulo) ─────────────────────────────────────────────
     [NavItem(
-        "Operación",
+        "Inventario",
         LabelKey = "app.nav.item.inventory.operation",
         SortOrder = 10,
         Id = "e2000000-0000-4000-9000-000000000010",
@@ -32,8 +33,10 @@ public static class InventoryModule
     )]
     public const string Warehouses = "/inventory/warehouses";
 
+    // MENU-FINAL-STRUCTURE-01: renombrado de negocio "Historial de Existencias" (antes
+    // "Kardex / Movimientos de Inventario") — mismo Id/ruta/permiso, misma pantalla.
     [NavItem(
-        "Kardex / Movimientos de Inventario",
+        "Historial de Existencias",
         Permission = InventoryPermissions.StockView,
         LabelKey = "app.nav.item.inventory.kardex",
         SortOrder = 20,

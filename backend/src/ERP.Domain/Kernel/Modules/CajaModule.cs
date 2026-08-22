@@ -8,9 +8,10 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("caja", Icon = "💵", SortOrder = 45)]
 public static class CajaModule
 {
-    // ── Operación ────────────────────────────────────────────────────
+    // ── Caja (MENU-FINAL-STRUCTURE-01: subgrupo renombrado de "Operación" al mismo nombre
+    // del módulo) ────────────────────────────────────────────────────
     [NavItem(
-        "Operación",
+        "Caja",
         LabelKey = "app.nav.item.caja.operation",
         SortOrder = 10,
         Id = "f5000000-0000-4000-9000-000000000010",

@@ -11,9 +11,10 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("sales", Icon = "💰", SortOrder = 40)]
 public static class SalesModule
 {
-    // ── Operación ────────────────────────────────────────────────────
+    // ── Ventas (MENU-FINAL-STRUCTURE-01: subgrupo renombrado de "Operación" al mismo
+    // nombre del módulo) ─────────────────────────────────────────────
     [NavItem(
-        "Operación",
+        "Ventas",
         LabelKey = "app.nav.item.sales.operation",
         SortOrder = 10,
         Id = "e4000000-0000-4000-9000-000000000010",

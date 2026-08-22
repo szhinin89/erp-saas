@@ -24,8 +24,10 @@ public static class AdminModule
     )]
     public const string Roles = "/admin/roles";
 
+    // MENU-FINAL-STRUCTURE-01: renombrado de negocio "Delegar Funciones" (antes "Delegación de
+    // administración") — mismo Id/ruta/permiso.
     [NavItem(
-        "Administration Delegation",
+        "Delegar Funciones",
         Permission = AdminPermissions.DelegationView,
         LabelKey = "app.nav.item.admin.security",
         SortOrder = 30,

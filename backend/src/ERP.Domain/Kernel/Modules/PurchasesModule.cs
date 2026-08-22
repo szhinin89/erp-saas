@@ -9,9 +9,10 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("purchases", Icon = "🛒", SortOrder = 30)]
 public static class PurchasesModule
 {
-    // ── Operación ────────────────────────────────────────────────────
+    // ── Compras (MENU-FINAL-STRUCTURE-01: subgrupo renombrado de "Operación" al mismo
+    // nombre del módulo) ─────────────────────────────────────────────
     [NavItem(
-        "Operación",
+        "Compras",
         LabelKey = "app.nav.item.purchases.operation",
         SortOrder = 10,
         Id = "e3000000-0000-4000-9000-000000000010",
