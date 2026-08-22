@@ -2,44 +2,34 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.Mapping;
-using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
 
-namespace ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
+namespace ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment;
 
 /// <summary>
-/// ERP-CORE-CLOSEOUT-05-FIX02 (P1-5) — el comando trae <c>WarehouseId</c> del cliente sin ninguna
-/// validación de pertenencia: no existía lookup de bodega ni comparación contra la sucursal
-/// activa, permitiendo crear un ajuste de inventario contra una bodega de otra sucursal (incluso
-/// inexistente) de la misma empresa. <c>IWarehouseRepository.GetByIdAsync</c> ya scopea por
-/// Company (<c>ForOperationalScope</c>), así que solo falta el chequeo de Branch — mismo patrón
-/// que <c>OpenCashSessionHandler</c>/<c>CreateStockTransfer</c>.
-/// INVENTORY-ADJUSTMENTS-02 — no crea ningún StockMovement: solo persiste el borrador (Draft) con
-/// sus líneas resueltas a unidad base (item + presentación → UomCode/ConversionFactor/
-/// QuantityInBaseUom, mismo patrón que <c>PurchaseInvoiceDetail.Create</c>).
+/// INVENTORY-ADJUSTMENTS-02 — actualiza un ajuste en Draft (cabecera + reemplazo total de líneas,
+/// mismo patrón "reemplazar-todo" que otros drafts multi-línea). Rechaza cualquier ajuste que no
+/// esté en Draft. No toca stock.
 /// </summary>
-public sealed class CreateStockAdjustmentCommandHandler
-    : IRequestHandler<CreateStockAdjustmentCommand, Result<StockAdjustmentDto>>
+public sealed class UpdateStockAdjustmentCommandHandler
+    : IRequestHandler<UpdateStockAdjustmentCommand, Result<StockAdjustmentDto>>
 {
     private readonly IStockAdjustmentRepository _adjRepo;
     private readonly IInventoryAdjustmentReasonRepository _reasonRepo;
     private readonly IWarehouseRepository _warehouseRepo;
-    private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _tenant;
-    private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
     private readonly StockAdjustmentLineResolver _lineResolver;
 
-    public CreateStockAdjustmentCommandHandler(
+    public UpdateStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
         IInventoryAdjustmentReasonRepository reasonRepo,
         IWarehouseRepository warehouseRepo,
         IItemRepository itemRepo,
         ICurrentTenant tenant,
-        ICurrentCompany company,
         ICurrentBranch branch,
         ICurrentUser user
     )
@@ -47,25 +37,36 @@ public sealed class CreateStockAdjustmentCommandHandler
         _adjRepo = adjRepo;
         _reasonRepo = reasonRepo;
         _warehouseRepo = warehouseRepo;
-        _itemRepo = itemRepo;
         _tenant = tenant;
-        _company = company;
         _branch = branch;
         _user = user;
         _lineResolver = new StockAdjustmentLineResolver(itemRepo);
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
-        CreateStockAdjustmentCommand request,
+        UpdateStockAdjustmentCommand request,
         CancellationToken ct
     )
     {
         var tid = _tenant.TenantId;
 
-        var warehouse = await _warehouseRepo.GetByIdAsync(tid, request.WarehouseId, ct);
-        if (warehouse is null)
+        var adj = await _adjRepo.GetByIdAsync(tid, request.Id, ct);
+        if (adj is null)
+            return Result<StockAdjustmentDto>.NotFound("Ajuste no encontrado.");
+
+        var currentWarehouse = await _warehouseRepo.GetByIdAsync(tid, adj.WarehouseId, ct);
+        if (currentWarehouse is null || currentWarehouse.BranchId != _branch.BranchId)
+            return Result<StockAdjustmentDto>.NotFound("Ajuste no encontrado.");
+
+        if (adj.Status != "Draft")
+            return Result<StockAdjustmentDto>.ValidationFailure(
+                $"Solo ajustes en Draft pueden editarse (actual: {adj.Status})."
+            );
+
+        var newWarehouse = await _warehouseRepo.GetByIdAsync(tid, request.WarehouseId, ct);
+        if (newWarehouse is null)
             return Result<StockAdjustmentDto>.ValidationFailure("La bodega seleccionada no existe.");
-        if (warehouse.BranchId != _branch.BranchId)
+        if (newWarehouse.BranchId != _branch.BranchId)
             return Result<StockAdjustmentDto>.ValidationFailure(
                 "La bodega seleccionada no pertenece a la sucursal activa."
             );
@@ -74,31 +75,20 @@ public sealed class CreateStockAdjustmentCommandHandler
         if (reason is null)
             return Result<StockAdjustmentDto>.ValidationFailure("El motivo seleccionado no existe.");
 
-        var lineResult = await _lineResolver.ResolveAsync(
-            tid,
-            _company.CompanyId,
-            request.Lines,
-            ct
-        );
+        var lineResult = await _lineResolver.ResolveAsync(tid, adj.CompanyId, request.Lines, ct);
         if (!lineResult.IsSuccess)
             return Result<StockAdjustmentDto>.ValidationFailure(lineResult.Error!);
 
-        var seq = await _adjRepo.GetNextSequentialAsync(tid, ct);
-
-        var adj = StockAdjustment.Create(
-            tid,
-            seq,
+        adj.UpdateHeader(
             request.WarehouseId,
             request.WarehouseName,
             request.MovementType,
             request.ReasonId,
             request.Notes,
-            _user.UserId,
-            _company.CompanyId
+            _user.UserId
         );
         adj.ReplaceLines(lineResult.Value!);
 
-        await _adjRepo.AddAsync(adj, ct);
         await _adjRepo.SaveChangesAsync(ct);
 
         return Result<StockAdjustmentDto>.Success(StockAdjustmentMapper.ToDto(adj, reason.Name));

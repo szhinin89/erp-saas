@@ -5,15 +5,45 @@ public sealed record StockAdjustmentDto(
     string AdjustmentNumber,
     Guid WarehouseId,
     string WarehouseName,
-    Guid ProductId,
-    string ProductName,
-    decimal AdjustmentQty,
-    string AdjustmentType,
-    string Reason,
+    string MovementType,
+    Guid ReasonId,
+    string? ReasonName,
     string? Notes,
     DateTime AdjustmentDate,
     string Status,
-    DateTime? ExecutedAt
+    DateTime? ExecutedAt,
+    Guid? ExecutedBy,
+    DateTime? CancelledAt,
+    Guid? CancelledBy,
+    string? CancelledReason,
+    IReadOnlyList<StockAdjustmentLineDto> Lines
+);
+
+public sealed record StockAdjustmentLineDto(
+    Guid Id,
+    Guid ItemId,
+    string ItemName,
+    Guid? PackagingLevelId,
+    string UomCode,
+    string BaseUomCode,
+    decimal ConversionFactor,
+    decimal Quantity,
+    decimal QuantityInBaseUom,
+    decimal? UnitCostBase,
+    decimal? TotalCost,
+    decimal? CurrentStockBefore,
+    decimal? CurrentStockAfter,
+    string? LineNotes
+);
+
+public sealed record InventoryAdjustmentReasonDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string AllowedMovementType,
+    bool RequiresNotes,
+    bool IsActive,
+    int SortOrder
 );
 
 public sealed record StockTransferDto(

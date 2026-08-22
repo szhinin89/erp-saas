@@ -1,21 +1,14 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
+using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
 using ERP.Domain.Modules.Inventory.Entities;
 using FluentValidation;
 using MediatR;
 
-namespace ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
+namespace ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment;
 
-public sealed record CreateStockAdjustmentLineInput(
-    Guid ItemId,
-    string ItemName,
-    Guid? PackagingLevelId,
-    decimal Quantity,
-    decimal? UnitCostBase,
-    string? LineNotes
-);
-
-public sealed record CreateStockAdjustmentCommand(
+public sealed record UpdateStockAdjustmentCommand(
+    Guid Id,
     Guid WarehouseId,
     string WarehouseName,
     string MovementType,
@@ -24,10 +17,11 @@ public sealed record CreateStockAdjustmentCommand(
     IReadOnlyList<CreateStockAdjustmentLineInput> Lines
 ) : IRequest<Result<StockAdjustmentDto>>, IBranchScopedRequest;
 
-public sealed class CreateStockAdjustmentValidator : AbstractValidator<CreateStockAdjustmentCommand>
+public sealed class UpdateStockAdjustmentValidator : AbstractValidator<UpdateStockAdjustmentCommand>
 {
-    public CreateStockAdjustmentValidator()
+    public UpdateStockAdjustmentValidator()
     {
+        RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.WarehouseId).NotEmpty();
         RuleFor(x => x.WarehouseName).NotEmpty();
         RuleFor(x => x.MovementType)

@@ -16,8 +16,9 @@ public interface IStockAdjustmentRepository
         int pageNumber,
         int pageSize,
         Guid? warehouseId,
-        Guid? productId,
         string? status,
+        Guid? reasonId,
+        string? movementType,
         DateTime? startDate,
         DateTime? endDate,
         CancellationToken cancellationToken = default

@@ -18,33 +18,60 @@ public sealed class StockAdjustmentLineConfiguration : IEntityTypeConfiguration<
             .Property(x => x.StockAdjustmentId)
             .HasColumnName("stock_adjustment_id")
             .IsRequired();
-        builder.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-        builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id").IsRequired();
+        builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
         builder
-            .Property(x => x.SystemQuantity)
-            .HasColumnName("system_quantity")
-            .HasColumnType("numeric(18,4)")
+            .Property(x => x.ItemName)
+            .HasColumnName("item_name")
+            .HasMaxLength(StockAdjustmentLine.ItemNameMaxLen)
+            .IsRequired();
+        builder.Property(x => x.PackagingLevelId).HasColumnName("packaging_level_id");
+        builder
+            .Property(x => x.UomCode)
+            .HasColumnName("uom_code")
+            .HasMaxLength(StockAdjustmentLine.UomCodeMaxLen)
             .IsRequired();
         builder
-            .Property(x => x.PhysicalQuantity)
-            .HasColumnName("physical_quantity")
-            .HasColumnType("numeric(18,4)")
+            .Property(x => x.BaseUomCode)
+            .HasColumnName("base_uom_code")
+            .HasMaxLength(StockAdjustmentLine.UomCodeMaxLen)
             .IsRequired();
         builder
-            .Property(x => x.AdjustmentQuantity)
-            .HasColumnName("adjustment_quantity")
-            .HasColumnType("numeric(18,4)")
-            .IsRequired();
-        builder
-            .Property(x => x.UnitCost)
-            .HasColumnName("unit_cost")
+            .Property(x => x.ConversionFactor)
+            .HasColumnName("conversion_factor")
             .HasColumnType("numeric(18,6)")
             .IsRequired();
-        builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(200);
+        builder
+            .Property(x => x.Quantity)
+            .HasColumnName("quantity")
+            .HasColumnType("numeric(18,4)")
+            .IsRequired();
+        builder
+            .Property(x => x.QuantityInBaseUom)
+            .HasColumnName("quantity_in_base_uom")
+            .HasColumnType("numeric(18,4)")
+            .IsRequired();
+        builder
+            .Property(x => x.UnitCostBase)
+            .HasColumnName("unit_cost_base")
+            .HasColumnType("numeric(18,6)");
+        builder.Property(x => x.TotalCost).HasColumnName("total_cost").HasColumnType("numeric(18,2)");
+        builder
+            .Property(x => x.CurrentStockBefore)
+            .HasColumnName("current_stock_before")
+            .HasColumnType("numeric(18,4)");
+        builder
+            .Property(x => x.CurrentStockAfter)
+            .HasColumnName("current_stock_after")
+            .HasColumnType("numeric(18,4)");
+        builder
+            .Property(x => x.LineNotes)
+            .HasColumnName("line_notes")
+            .HasMaxLength(StockAdjustmentLine.LineNotesMaxLen);
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
 
         builder
             .HasIndex(x => x.StockAdjustmentId)
             .HasDatabaseName("ix_stock_adjustment_lines_adjustment");
+        builder.HasIndex(x => x.ItemId).HasDatabaseName("ix_stock_adjustment_lines_item");
     }
 }

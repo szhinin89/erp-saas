@@ -18,4 +18,13 @@ public static class InventoryPermissions
 
     public const string StockView = "inventory.stock.view";
     public const string StockManage = "inventory.stock.manage";
+
+    public const string AdjustmentsView = "inventory.adjustments.view";
+    public const string AdjustmentsCreate = "inventory.adjustments.create";
+    public const string AdjustmentsUpdate = "inventory.adjustments.update";
+    public const string AdjustmentsConfirm = "inventory.adjustments.confirm";
+    public const string AdjustmentsCancel = "inventory.adjustments.cancel";
+
+    public const string AdjustmentReasonsView = "inventory.adjustment-reasons.view";
+    public const string AdjustmentReasonsManage = "inventory.adjustment-reasons.manage";
 }

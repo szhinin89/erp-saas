@@ -20,6 +20,8 @@ public static class InventoryModule
             + InventoryPermissions.StockView
             + ","
             + InventoryPermissions.StockManage
+            + ","
+            + InventoryPermissions.AdjustmentsView
     )]
     public const string OperationGroup = "/inventory/operation-group";
 
@@ -54,6 +56,17 @@ public static class InventoryModule
     )]
     public const string Transfers = "/inventory/transfers";
 
+    // INVENTORY-ADJUSTMENTS-02: ajustes de inventario (Ingreso/Egreso) con líneas por ítem y
+    // motivo administrable — mismo grupo "Inventario" que Bodegas/Historial/Transferencias.
+    [NavItem(
+        "Ajustes de inventario",
+        Permission = InventoryPermissions.AdjustmentsView,
+        LabelKey = "app.nav.item.inventory.adjustments",
+        SortOrder = 40,
+        ParentId = "e2000000-0000-4000-9000-000000000010"
+    )]
+    public const string Adjustments = "/inventory/adjustments";
+
     // ── Configuración ────────────────────────────────────────────────
     [NavItem(
         "Configuración",
@@ -61,6 +74,8 @@ public static class InventoryModule
         SortOrder = 20,
         Id = "e2000000-0000-4000-9000-000000000020",
         PermissionsAnyCsv = OperationalPreferencesPermissions.View
+            + ","
+            + InventoryPermissions.AdjustmentReasonsView
     )]
     public const string ConfigurationGroup = "/inventory/configuration-group";
 
@@ -75,6 +90,16 @@ public static class InventoryModule
         ParentId = "e2000000-0000-4000-9000-000000000020"
     )]
     public const string Preferences = "/settings/operations?tab=inventory";
+
+    // INVENTORY-ADJUSTMENTS-02: catálogo administrable de motivos de ajuste de inventario.
+    [NavItem(
+        "Motivos de ajuste",
+        Permission = InventoryPermissions.AdjustmentReasonsView,
+        LabelKey = "app.nav.item.inventory.adjustment-reasons",
+        SortOrder = 20,
+        ParentId = "e2000000-0000-4000-9000-000000000020"
+    )]
+    public const string AdjustmentReasons = "/inventory/adjustment-reasons";
 
     // ── Reportes ─────────────────────────────────────────────────────
     [NavItem(

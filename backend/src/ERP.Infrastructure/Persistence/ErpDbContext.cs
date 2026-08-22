@@ -360,6 +360,8 @@ public class ErpDbContext : DbContext
     public DbSet<CurrentStock> CurrentStocks => Set<CurrentStock>();
     public DbSet<StockAdjustment> StockAdjustments => Set<StockAdjustment>();
     public DbSet<StockAdjustmentLine> StockAdjustmentLines => Set<StockAdjustmentLine>();
+    public DbSet<InventoryAdjustmentReason> InventoryAdjustmentReasons =>
+        Set<InventoryAdjustmentReason>();
     public DbSet<StockTransfer> StockTransfers => Set<StockTransfer>();
     public DbSet<StockTransferLine> StockTransferLines => Set<StockTransferLine>();
 

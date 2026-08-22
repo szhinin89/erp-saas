@@ -42,8 +42,9 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         int pageNumber,
         int pageSize,
         Guid? warehouseId,
-        Guid? productId,
         string? status,
+        Guid? reasonId,
+        string? movementType,
         DateTime? startDate,
         DateTime? endDate,
         CancellationToken ct = default
@@ -52,10 +53,12 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         var q = _db.Set<StockAdjustment>().Where(a => a.TenantId == tenantId);
         if (warehouseId.HasValue)
             q = q.Where(a => a.WarehouseId == warehouseId.Value);
-        if (productId.HasValue)
-            q = q.Where(a => a.ProductId == productId.Value);
         if (!string.IsNullOrWhiteSpace(status))
             q = q.Where(a => a.Status == status);
+        if (reasonId.HasValue)
+            q = q.Where(a => a.ReasonId == reasonId.Value);
+        if (!string.IsNullOrWhiteSpace(movementType))
+            q = q.Where(a => a.MovementType == movementType);
         if (startDate.HasValue)
             q = q.Where(a => a.AdjustmentDate >= startDate.Value);
         if (endDate.HasValue)

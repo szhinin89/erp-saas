@@ -27,26 +27,11 @@ public sealed class StockAdjustmentConfiguration : IEntityTypeConfiguration<Stoc
             .HasColumnName("warehouse_name")
             .HasMaxLength(StockAdjustment.NameSnapshotMaxLen)
             .IsRequired();
-        builder.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
+        builder.Property(x => x.ReasonId).HasColumnName("reason_id").IsRequired();
         builder
-            .Property(x => x.ProductName)
-            .HasColumnName("product_name")
-            .HasMaxLength(StockAdjustment.NameSnapshotMaxLen)
-            .IsRequired();
-        builder
-            .Property(x => x.AdjustmentQty)
-            .HasColumnName("adjustment_qty")
-            .HasColumnType("numeric(18,4)")
-            .IsRequired();
-        builder
-            .Property(x => x.AdjustmentType)
-            .HasColumnName("adjustment_type")
-            .HasMaxLength(StockAdjustment.AdjustmentTypeMaxLen)
-            .IsRequired();
-        builder
-            .Property(x => x.Reason)
-            .HasColumnName("reason")
-            .HasMaxLength(StockAdjustment.ReasonMaxLen)
+            .Property(x => x.MovementType)
+            .HasColumnName("movement_type")
+            .HasMaxLength(StockAdjustment.MovementTypeMaxLen)
             .IsRequired();
         builder
             .Property(x => x.Notes)
@@ -60,6 +45,12 @@ public sealed class StockAdjustmentConfiguration : IEntityTypeConfiguration<Stoc
             .IsRequired();
         builder.Property(x => x.ExecutedAt).HasColumnName("executed_at");
         builder.Property(x => x.ExecutedBy).HasColumnName("executed_by");
+        builder.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
+        builder.Property(x => x.CancelledBy).HasColumnName("cancelled_by");
+        builder
+            .Property(x => x.CancelledReason)
+            .HasColumnName("cancelled_reason")
+            .HasMaxLength(StockAdjustment.CancelledReasonMaxLen);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -73,11 +64,20 @@ public sealed class StockAdjustmentConfiguration : IEntityTypeConfiguration<Stoc
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
+            .HasOne<ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReason>()
+            .WithMany()
+            .HasForeignKey(x => x.ReasonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
             .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_stock_adjustments_tenant_company");
         builder
             .HasIndex(x => new { x.TenantId, x.AdjustmentNumber })
             .IsUnique()
             .HasDatabaseName("uq_stock_adjustments_tenant_number");
+        builder.HasIndex(x => x.ReasonId).HasDatabaseName("ix_stock_adjustments_reason");
+        builder.HasIndex(x => x.WarehouseId).HasDatabaseName("ix_stock_adjustments_warehouse");
+        builder.HasIndex(x => x.Status).HasDatabaseName("ix_stock_adjustments_status");
     }
 }

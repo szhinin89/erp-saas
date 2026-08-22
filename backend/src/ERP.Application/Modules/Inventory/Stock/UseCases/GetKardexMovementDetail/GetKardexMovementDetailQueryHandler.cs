@@ -190,7 +190,7 @@ public sealed class GetKardexMovementDetailQueryHandler
                         null,
                         null,
                         null,
-                        adj.Reason,
+                        adj.MovementType,
                         adj.Notes
                     );
                 }
