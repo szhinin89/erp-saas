@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -43,10 +44,24 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<ICurrentCashSession> CashSession { get; } = new();
+        public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
 
         public Fixture()
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
+            Preferences
+                .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new OperationalPreferences(
+                        SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+                        Cash: new CashPreferences(true, true, 0m, true, true, true),
+                        Purchases: new PurchasesPreferences(null, true, true, true, false),
+                        Inventory: new InventoryPreferences(false, true, false, 0m),
+                        Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                        ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+                        Notifications: new NotificationsPreferences(true, false, "es")
+                    )
+                );
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
             Branch.Setup(b => b.BranchId).Returns(BranchId);
             User.Setup(u => u.UserId).Returns(UserId);
@@ -108,7 +123,8 @@ public sealed class CreateSalesDraftHandlerTests
                 Company.Object,
                 Branch.Object,
                 User.Object,
-                CashSession.Object
+                CashSession.Object,
+                Preferences.Object
             );
 
         public static CreateSalesDraftCommand ValidCommand() =>
@@ -146,6 +162,116 @@ public sealed class CreateSalesDraftHandlerTests
         captured!.CashSessionId.Should().Be(cashSessionId);
         captured.EmissionPointId.Should().Be(emissionPointId);
         captured.BranchId.Should().Be(BranchId);
+    }
+
+    [Fact]
+    public async Task POS_DISCOUNT_RULES_01_rechaza_descuento_manual_por_linea_si_no_esta_permitido()
+    {
+        var f = new Fixture();
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new OperationalPreferences(
+                    SalesPos: new SalesPosPreferences(true, false, false, 0m, null, false, false, null, null),
+                    Cash: new CashPreferences(true, true, 0m, true, true, true),
+                    Purchases: new PurchasesPreferences(null, true, true, true, false),
+                    Inventory: new InventoryPreferences(false, true, false, 0m),
+                    Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                    ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+                    Notifications: new NotificationsPreferences(true, false, "es")
+                )
+            );
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10", DiscountPct: 10m) }
+        );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no permite aplicar descuentos manuales");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task POS_DISCOUNT_RULES_01_rechaza_descuento_manual_por_linea_por_encima_del_tope()
+    {
+        var f = new Fixture();
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new OperationalPreferences(
+                    SalesPos: new SalesPosPreferences(true, false, true, 5m, null, false, false, null, null),
+                    Cash: new CashPreferences(true, true, 0m, true, true, true),
+                    Purchases: new PurchasesPreferences(null, true, true, true, false),
+                    Inventory: new InventoryPreferences(false, true, false, 0m),
+                    Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                    ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+                    Notifications: new NotificationsPreferences(true, false, "es")
+                )
+            );
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10", DiscountPct: 10m) }
+        );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("descuento máximo permitido es 5");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task POS_DISCOUNT_RULES_01_acepta_descuento_manual_por_linea_dentro_del_tope()
+    {
+        var f = new Fixture();
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new OperationalPreferences(
+                    SalesPos: new SalesPosPreferences(true, false, true, 20m, null, false, false, null, null),
+                    Cash: new CashPreferences(true, true, 0m, true, true, true),
+                    Purchases: new PurchasesPreferences(null, true, true, true, false),
+                    Inventory: new InventoryPreferences(false, true, false, 0m),
+                    Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                    ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+                    Notifications: new NotificationsPreferences(true, false, "es")
+                )
+            );
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        var emissionPointId = Guid.NewGuid();
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(emissionPointId);
+        f.EpRepo.Setup(r =>
+                r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((ERP.Domain.Modules.Company.Entities.EmissionPoint?)null);
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10", DiscountPct: 10m) }
+        );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
     }
 
     [Fact]

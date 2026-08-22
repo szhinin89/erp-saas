@@ -20,7 +20,15 @@ public static class SalesPosConfigurationDefinitions
             OrgSettingKeys.SalesPos.MaxDiscountPercent,
             value => IsDecimalInRange(value, 0m, 100m),
             "0"
-        );
+        ) with
+        {
+            DeveloperNotes =
+                "POS-DISCOUNT-RULES-01: 0 (el default) significa SIN tope adicional — el descuento "
+                + "manual solo queda acotado por el rango 0-100 del dominio (SalesInvoiceDetail/"
+                + "SalesInvoice) y por AllowManualDiscount. Un valor > 0 sí actúa como techo real. "
+                + "Decisión deliberada (no 'sin configurar'): el default de fábrica no debe bloquear "
+                + "operación en una empresa que aún no definió un tope explícito.",
+        };
         yield return Decimal(
             OrgSettingKeys.SalesPos.RequireCustomerAboveAmount,
             value => IsDecimalInRange(value, 0m, decimal.MaxValue),

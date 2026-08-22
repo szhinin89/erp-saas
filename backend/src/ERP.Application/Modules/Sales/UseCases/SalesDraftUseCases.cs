@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -195,6 +196,7 @@ public sealed class CreateSalesDraftHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly ICurrentCashSession _cashSession;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public CreateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -210,7 +212,8 @@ public sealed class CreateSalesDraftHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        ICurrentCashSession cashSession
+        ICurrentCashSession cashSession,
+        IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -227,6 +230,7 @@ public sealed class CreateSalesDraftHandler
         _b = b;
         _u = u;
         _cashSession = cashSession;
+        _preferences = preferences;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -319,6 +323,9 @@ public sealed class CreateSalesDraftHandler
             sriPaymentMethodCode: cmd.SriPaymentMethodCode
         );
 
+        // POS-DISCOUNT-RULES-01: preferencia resuelta UNA vez por request, no por línea.
+        var preferences = await _preferences.ResolveAsync(ct);
+
         var linesResult = await SalesLineBuilder.BuildAsync(
             cmd.Lines,
             inv.Id,
@@ -326,6 +333,7 @@ public sealed class CreateSalesDraftHandler
             _itemRepo,
             _tax,
             _pricing,
+            preferences.SalesPos,
             ct
         );
         if (linesResult.Error is not null)
@@ -366,6 +374,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly IPricingResolver _pricing;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public UpdateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -377,7 +386,8 @@ public sealed class UpdateSalesDraftHandler
         ISriTaxResolver tax,
         IPricingResolver pricing,
         ICurrentTenant t,
-        ICurrentUser u
+        ICurrentUser u,
+        IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -390,6 +400,7 @@ public sealed class UpdateSalesDraftHandler
         _pricing = pricing;
         _t = t;
         _u = u;
+        _preferences = preferences;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -452,6 +463,9 @@ public sealed class UpdateSalesDraftHandler
                 notes: cmd.Notes
             );
 
+            // POS-DISCOUNT-RULES-01: preferencia resuelta UNA vez por request, no por línea.
+            var preferences = await _preferences.ResolveAsync(ct);
+
             var linesResult = await SalesLineBuilder.BuildAsync(
                 cmd.Lines,
                 inv.Id,
@@ -459,6 +473,7 @@ public sealed class UpdateSalesDraftHandler
                 _itemRepo,
                 _tax,
                 _pricing,
+                preferences.SalesPos,
                 ct
             );
             if (linesResult.Error is not null)
@@ -581,12 +596,42 @@ file static class SalesLineBuilder
         IItemRepository itemRepo,
         ISriTaxResolver tax,
         IPricingResolver pricingResolver,
+        SalesPosPreferences salesPosPreferences,
         CancellationToken ct
     )
     {
         var lines = new List<SalesInvoiceDetail>();
         foreach (var l in inputs)
         {
+            // POS-DISCOUNT-RULES-01 (sales.pos.allow_manual_discount / max_discount_percent):
+            // l.DiscountPct es siempre un descuento MANUAL de línea — un descuento por lista de
+            // precios/promoción ya viene reflejado en l.UnitPrice (precio ya resuelto más bajo),
+            // nunca en este campo, así que no hay riesgo de bloquear un descuento automático del
+            // pricing engine aquí (regla 4/5 del bloque). No confundir con el piso de precio por
+            // ítem (item.SaleConfig.MaxDiscountPercent, más abajo) — ese valida el precio unitario
+            // contra el catálogo del producto, es un mecanismo distinto y ya existente.
+            if (l.DiscountPct != 0m)
+            {
+                if (!salesPosPreferences.AllowManualDiscount)
+                    return new(
+                        null!,
+                        Result<SalesInvoiceDto>.ValidationFailure(
+                            $"Línea '{l.Description}': esta empresa no permite aplicar descuentos manuales."
+                        )
+                    );
+
+                if (
+                    salesPosPreferences.MaxDiscountPercent > 0m
+                    && l.DiscountPct > salesPosPreferences.MaxDiscountPercent
+                )
+                    return new(
+                        null!,
+                        Result<SalesInvoiceDto>.ValidationFailure(
+                            $"Línea '{l.Description}': el descuento máximo permitido es {salesPosPreferences.MaxDiscountPercent}%."
+                        )
+                    );
+            }
+
             var vatCode = l.VatCode;
             var iceCode = l.IceCode;
             string? snapshotSku = null;
