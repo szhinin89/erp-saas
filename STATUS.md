@@ -1,6 +1,19 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-08-21** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-08-22** · Kernel refactor: **2026-06-05**.
+
+---
+
+## MENU-P0-FIX-01 — Corrección de hallazgos P0 del menú general (2026-08-22)
+
+**Estado: COMPLETADO.** Cierra los hallazgos P0 de la auditoría del menú general (navegación server-driven vs permisos reales de API), sin reorganizar el menú ni tocar lógica de negocio.
+
+- **Reportes**: el frontend inyectaba un grupo "Reportes" sintético (`ensureReportsGroup` en `frontend/src/nav/navConfig.ts`) sin ningún filtro de permisos — cualquier usuario autenticado veía los 3 reportes aunque no tuviera `sales.view`/`purchases.view`/`inventory.stock.view`. El backend ya tenía `NavItem`s reales y correctamente permission-gated para `/reportes/ventas|stock|compras` (`ReportsModule.cs`, sincronizados por `NavigationSyncService` con el mismo `LabelKey` que ya usaba el frontend), por lo que el fallback era puramente redundante. Se eliminó `ensureReportsGroup` y su call site en `useAppLayoutNavigation.ts`; el menú de Reportes ahora viene 100% del backend.
+- **Cuentas por Cobrar / Cuentas por Pagar**: el `NavItem` (`FinanceModule.cs`) exigía `finance.view`, pero `SalesReceivablesController`/`PurchasePayablesController` exigen `sales.view`/`purchases.view` respectivamente — un usuario con `finance.view` pero sin el permiso real veía el ítem en el menú y recibía 403 en cada llamada. Se alineó el permiso del `NavItem` al permiso real de cada API.
+- **Cajas registradoras**: el `NavItem` (`CajaModule.cs`) exigía `caja.manage`, pero el GET/listado real de `CashRegisterController` solo exige `caja.view` — un usuario con permiso de solo lectura no veía la entrada de menú. Se cambió el `NavItem` a `caja.view`; create/update/enable/disable siguen protegidos por `caja.manage` a nivel de API (sin cambios ahí).
+- **Transportistas**: `carrierService.ts` (frontend) llama a `api/v1/logistics/carriers*`, pero no existe ningún controller backend para esa ruta — toda operación devuelve 404. Se retiró el `NavItem` de Transportistas (`MasterDataModule.cs`) para que la pantalla rota no sea alcanzable desde el menú; no se implementó backend de Transportistas (fuera de alcance de este bloque).
+- **Tests**: `KernelRegistryTests.cs` actualizado para reflejar los permisos corregidos de Receivables/Payables. Suites verdes: `ERP.Domain.Tests` (20/20 filtro Navigation|Kernel|Permissions), `ERP.API.Tests` (22/22 filtro Navigation|Menu|Permissions|Reports). `dotnet build` del solution completo sin errores. Sin migración EF (`has-pending-model-changes` → ninguno; la navegación se sincroniza en runtime desde `KernelRegistry`, no vía modelo EF). Frontend: `npm run lint` (0 errores), `npx tsc --noEmit` (limpio), `npm run build` (verde) — warnings preexistentes no relacionados.
+- **No tocado**: `print-agent/`, `SystemProviderSettingsController` (sigue sin exponerse), reorganización del menú por módulos, nombres de ítems.
 
 ---
 

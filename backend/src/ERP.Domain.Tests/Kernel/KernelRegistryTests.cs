@@ -116,14 +116,16 @@ public sealed class KernelRegistryTests
         var navigation = KernelRegistry.Navigation;
         var financePermission = ERP.Domain.Kernel.Permissions.FinancePermissions.View;
 
+        // Permission alineado con el permiso real que exige la API que consume cada pantalla
+        // (SalesReceivablesController / PurchasePayablesController), no FinancePermissions.View.
         var receivables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/receivables");
         receivables.Should().NotBeNull("cuentas por cobrar debe estar en el menú");
-        receivables!.PermissionKey.Should().Be(financePermission);
+        receivables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
         receivables.SortOrder.Should().Be(10);
 
         var payables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/payables");
         payables.Should().NotBeNull("cuentas por pagar debe estar en el menú");
-        payables!.PermissionKey.Should().Be(financePermission);
+        payables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
         payables.SortOrder.Should().Be(20);
 
         var supplierCredits = navigation.SingleOrDefault(n =>

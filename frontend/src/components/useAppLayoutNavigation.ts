@@ -10,7 +10,6 @@ import {
   isPlanBuilderSessionMenu,
   mapSessionMenuToNavGroups,
   ensureTenantHomeOverview,
-  ensureReportsGroup,
   expandPlanCustomRootsToBarGroups,
   sortNavGroupsForMainBar,
   navSubtreeMatchesPath,
@@ -81,8 +80,7 @@ export function useAppLayoutNavigation() {
       sessionMenuDto !== undefined && sessionMenuDto.length > 0
         ? mapSessionMenuToNavGroups(sessionMenuDto, t)
         : [];
-    const withHome = ensureTenantHomeOverview(fromApi, t);
-    const raw = ensureReportsGroup(withHome, t);
+    const raw = ensureTenantHomeOverview(fromApi, t);
 
     if (restrictedPlanMenu) {
       let piped = sortNavGroupsForMainBar(

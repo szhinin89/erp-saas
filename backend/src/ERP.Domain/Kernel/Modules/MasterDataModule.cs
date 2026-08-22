@@ -82,23 +82,8 @@ public static class MasterDataModule
     )]
     public const string Suppliers = "/masterdata/suppliers";
 
-    // ── Contenedor: Transportistas ─────────────────────────────────
-    [NavItem(
-        "Transportistas",
-        LabelKey = "app.nav.item.logistics.carriers",
-        SortOrder = 30,
-        Id = "e1000000-0000-4000-9000-000000000003",
-        PermissionsAnyCsv = LogisticsPermissions.CarriersView
-    )]
-    public const string CarriersGroup = "/logistics/carriers-group";
-
-    [NavItem(
-        "Carriers",
-        Permission = LogisticsPermissions.CarriersView,
-        LabelKey = "app.nav.item.logistics.carriers",
-        SortOrder = 10,
-        Id = "a1000000-0000-4000-9000-000000000003",
-        ParentId = "e1000000-0000-4000-9000-000000000003"
-    )]
-    public const string Carriers = "/logistics/carriers";
+    // Transportistas (MENU-P0-FIX-01): NavItem retirado a propósito — no existe backend
+    // controller para api/v1/logistics/carriers (carrierService.ts en frontend apunta a un
+    // endpoint inexistente, 404 en toda operación). Reintroducir el NavItem (ver historial de
+    // este archivo para la definición previa) solo cuando exista el controller real.
 }

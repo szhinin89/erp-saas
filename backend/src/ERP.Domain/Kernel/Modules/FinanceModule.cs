@@ -6,18 +6,22 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("finance", Icon = "💳", SortOrder = 46)]
 public static class FinanceModule
 {
+    // Permission alineado con SalesReceivablesController (perm:sales.view), no FinancePermissions.View:
+    // el NavItem debe reflejar el permiso real que exige la API que consume esta pantalla.
     [NavItem(
         "Cuentas por cobrar",
-        Permission = FinancePermissions.View,
+        Permission = SalesPermissions.View,
         LabelKey = "app.nav.item.finance.receivables",
         SortOrder = 10,
         Id = "f6000000-0000-4000-9000-000000000001"
     )]
     public const string Receivables = "/finance/receivables";
 
+    // Permission alineado con PurchasePayablesController (perm:purchases.view), no FinancePermissions.View:
+    // el NavItem debe reflejar el permiso real que exige la API que consume esta pantalla.
     [NavItem(
         "Cuentas por pagar",
-        Permission = FinancePermissions.View,
+        Permission = PurchasePermissions.View,
         LabelKey = "app.nav.item.finance.payables",
         SortOrder = 20,
         Id = "f6000000-0000-4000-9000-000000000002"
