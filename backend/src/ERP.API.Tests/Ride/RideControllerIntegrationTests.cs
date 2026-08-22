@@ -153,6 +153,18 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
         Guid sourceEntityId
     )
     {
+        // ELECTRONIC-DOCS-AUDIT-TEST-FIX-01: los domain events disparados por
+        // ElectronicDocument.Create/MarkXmlGenerated/... se auditan vía HttpAuditContext,
+        // que lee ICurrentCompany.CompanyId — fuera de un request HTTP real (este seed usa un
+        // scope de DI crudo), esa empresa "actual" es el mismo MutableCurrentCompany singleton
+        // que CurrentCompanyId expone, y solo queda en Guid.Empty si ningún test la fijó todavía
+        // (orden de ejecución de xUnit no está garantizado). ElectronicDocumentAudit.Create exige
+        // companyId != Guid.Empty (invariante correcta, no se relaja) — se fija aquí a la empresa
+        // que realmente es dueña del documento sembrado, para que el seed nunca dependa del orden
+        // de los demás tests. El llamador sigue libre de fijar CurrentCompanyId a otra empresa
+        // después, para probar el escenario cross-company (ver Other_company_user_never_receives...).
+        CurrentCompanyId = companyId;
+
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var fileStorage = scope.ServiceProvider.GetRequiredService<IFileStorage>();
