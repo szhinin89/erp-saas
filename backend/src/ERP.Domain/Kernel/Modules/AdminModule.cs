@@ -8,7 +8,7 @@ public static class AdminModule
 {
     [NavItem(
         "Users",
-        Permission = AdminPermissions.UsersView,
+        Permission = AccessPermissions.MembershipsView,
         LabelKey = "app.nav.item.admin.users",
         SortOrder = 10,
         Id = "a1000000-0000-4000-9000-000000000008"
@@ -17,7 +17,7 @@ public static class AdminModule
 
     [NavItem(
         "Roles",
-        Permission = AdminPermissions.RolesView,
+        Permission = AccessPermissions.ProfilesView,
         LabelKey = "app.nav.item.admin.roles",
         SortOrder = 20,
         Id = "a1000000-0000-4000-9000-000000000007"

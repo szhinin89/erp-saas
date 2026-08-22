@@ -297,6 +297,25 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_admin_users_and_roles_use_the_permission_that_actually_gates_the_screen()
+    {
+        // ADMIN-PERM-ALIGN-01: el ítem de menú debe exigir el mismo permiso que la pantalla/API
+        // real, nunca AdminPermissions.UsersView/RolesView (legacy, sin efecto — ver
+        // AdminPermissions.cs), para que "aparece en el menú" y "puede entrar" coincidan siempre.
+        var navigation = KernelRegistry.Navigation;
+
+        var users = navigation.Single(n => n.RoutePath == "/access/users");
+        users.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.MembershipsView,
+                "el permiso del menú debe coincidir con el que exige CompanyUserMembershipsController");
+
+        var roles = navigation.Single(n => n.RoutePath == "/admin/roles");
+        roles.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.ProfilesView,
+                "el permiso del menú debe coincidir con el que exigen las mutaciones de AccessProfilesController");
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry

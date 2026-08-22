@@ -80,7 +80,11 @@ const MODULE_PERM_GROUPS: PermGroup[] = [
   {
     module: "Administración",
     planModule: "access",
-    view: ["admin.roles.view", "admin.users.view", "admin.activity.view"],
+    view: [
+      "access.profiles.view",
+      "access.company_user_memberships.view",
+      "admin.activity.view",
+    ],
     create: [],
     edit: [],
     delete: [],
@@ -147,7 +151,7 @@ export function ProfilesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const { canShow, isAdminRole } = usePermissionsUi();
-  const canManage = canShow("admin.roles.view");
+  const canManage = canShow("access.profiles.view");
 
   /* list state */
   const [profiles, setProfiles] = useState<Profile[]>([]);

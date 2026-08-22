@@ -19,7 +19,7 @@ public sealed class SpaMenuCatalogController : ControllerBase
     [HttpGet("profiles")]
     [AppFeature(
         "Perfiles (Roles)",
-        $"perm:{AdminPermissions.RolesView}",
+        $"perm:{AccessPermissions.ProfilesView}",
         "👥",
         "/admin/roles",
         null,
@@ -30,7 +30,7 @@ public sealed class SpaMenuCatalogController : ControllerBase
     [HttpGet("tenant-access")]
     [AppFeature(
         "Acceso usuarios",
-        $"perm:{AdminPermissions.UsersView}",
+        $"perm:{AccessPermissions.MembershipsView}",
         "👤",
         "/access/users",
         null,
