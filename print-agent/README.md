@@ -8,7 +8,7 @@ Agente local independiente para imprimir tirillas POS de ZH Technologies en cada
 print-agent/
 ├── ZH.PrintAgent.sln
 ├── src/
-│   ├── ZH.PrintAgent.App/
+│   ├── ZH.PrintAgent.App/            # incluye wwwroot/admin (panel web)
 │   ├── ZH.PrintAgent.Contracts/
 │   ├── ZH.PrintAgent.Core/
 │   └── ZH.PrintAgent.Infrastructure/
@@ -16,8 +16,11 @@ print-agent/
 │   ├── ZH.PrintAgent.App.Tests/
 │   ├── ZH.PrintAgent.Core.Tests/
 │   └── ZH.PrintAgent.Infrastructure.Tests/
-├── scripts/
-└── installers/windows/
+├── scripts/                          # publish-win-x64.ps1, build-installer.ps1, install/start/stop/... service
+├── installers/windows/
+│   ├── appsettings.Production.sample.json
+│   └── inno/ZH.PrintAgent.iss        # instalador .exe (Inno Setup)
+└── publish/                          # generado (gitignored): win-x64/ e installer/ZH-Print-Agent-Setup.exe
 ```
 
 ## Seguridad local
@@ -196,7 +199,112 @@ dotnet test .\print-agent\ZH.PrintAgent.sln --no-build
 git diff --check
 ```
 
-## Windows Service
+## Instalador Windows (.exe) — recomendado para cajas reales
+
+Para instalar ZH Print Agent en una PC de caja real, el camino recomendado es el instalador de doble
+clic (`ZH-Print-Agent-Setup.exe`), generado con [Inno Setup](https://jrsoftware.org/isinfo.php). No
+requiere `dotnet`, PowerShell manual ni edición de JSON en la caja destino — todo eso ya quedó resuelto
+al construir el instalador. Los scripts sueltos de la sección [Windows Service](#windows-service-scripts-sueltos-camino-manualavanzado)
+siguen disponibles para instalación manual/avanzada o para depurar el servicio ya instalado.
+
+### Construir el instalador
+
+Requiere el SDK de .NET 8 y [Inno Setup 6](https://jrsoftware.org/isdl.php) (`ISCC.exe`) instalados en la
+máquina de build (no en la caja destino).
+
+```powershell
+.\print-agent\scripts\publish-win-x64.ps1
+.\print-agent\scripts\build-installer.ps1
+```
+
+- `publish-win-x64.ps1` publica `ZH.PrintAgent.App` **self-contained** para `win-x64` en `print-agent\publish\win-x64`
+  (limpia el `publish` anterior, y borra `appsettings.Development.json` de la salida si el SDK lo copió).
+  Self-contained se eligió a propósito: una caja recién formateada no tiene por qué traer el runtime de
+  .NET preinstalado, y el objetivo es doble-clic-y-listo. Para un build framework-dependent (requiere
+  tener ya el ASP.NET Core Runtime 8 en cada caja) usar `-SelfContained:$false`.
+- `build-installer.ps1` verifica que `ISCC.exe` exista (si no, falla con instrucciones para instalarlo),
+  ejecuta `publish-win-x64.ps1` automáticamente si falta la publicación, compila
+  `installers\windows\inno\ZH.PrintAgent.iss` y confirma que el resultado exista en:
+  `print-agent\publish\installer\ZH-Print-Agent-Setup.exe`.
+
+`print-agent\publish\` está en `.gitignore` — el `.exe` generado no se versiona; se distribuye por fuera
+del repo (o se regenera en cada build/release).
+
+**MSI/WiX**: fuera de alcance por ahora. `publish-win-x64.ps1` (publicación) y `build-installer.ps1`
+(empaquetado) están separados a propósito para poder agregar un proyecto WiX que consuma la misma
+publicación `print-agent\publish\win-x64` más adelante, sin tocar el paso de publish.
+
+### Qué hace el instalador
+
+1. Pide elevación (`PrivilegesRequired=admin`); si no hay permisos de administrador, Windows/Inno lo
+   rechaza con un mensaje claro antes de instalar nada.
+2. Copia la publicación a `C:\Program Files\ZH Technologies\PrintAgent\`.
+3. Crea (y nunca borra al desinstalar) `C:\ProgramData\ZH Technologies\PrintAgent\{config,data,logs,queue,printed}\`.
+4. Copia `appsettings.Production.sample.json` como `appsettings.Production.json` **solo si no existe ya**
+   (nunca sobrescribe una config real en una actualización). Trae `BindHost=127.0.0.1`, `AllowLan=false`,
+   `SetupCompleted=false` y un `ApiKey` de ejemplo — no contiene secretos reales; la API key real la genera
+   el asistente en `/admin` en el primer arranque.
+5. Detiene el servicio si ya existía (caso actualización) antes de copiar archivos, para no fallar por el
+   `.exe` bloqueado.
+6. Crea el servicio Windows `ZHPrintAgent` (`DisplayName: ZH Print Agent`, `StartupType: Automatic`) si no
+   existe, configura recuperación automática (reinicia el servicio tras 5s/10s/30s ante fallo — al menos
+   3 intentos) e inicia el servicio.
+7. Crea accesos directos en el Menú Inicio → **ZH Print Agent** y **ZH Print Agent Configuración**, ambos
+   apuntan a `http://127.0.0.1:9817/admin`.
+8. Al finalizar, ofrece abrir `http://127.0.0.1:9817/admin` en el navegador (checkbox en la pantalla final,
+   se omite en instalación silenciosa) y siempre muestra un mensaje con la URL por si el navegador no abrió
+   solo.
+
+### Actualizar
+
+Ejecutar el mismo `ZH-Print-Agent-Setup.exe` (versión nueva) encima de una instalación existente: detiene
+el servicio, sobrescribe los binarios en `Program Files`, conserva `ProgramData` intacto (API key,
+impresora, cola, logs) y vuelve a iniciar el servicio al terminar.
+
+### Desinstalar
+
+Desde "Agregar o quitar programas" o el acceso directo **Desinstalar ZH Print Agent**: detiene y elimina
+el servicio, borra los archivos de `Program Files`. **`ProgramData` se conserva por defecto** para no
+perder configuración, cola ni logs. Para una reinstalación completamente limpia (por ejemplo, en un
+equipo de pruebas), borrar manualmente después de desinstalar:
+
+```powershell
+Remove-Item "C:\ProgramData\ZH Technologies\PrintAgent" -Recurse -Force
+```
+
+### Diagnóstico del instalador/servicio
+
+| Verificación | Cómo |
+|---|---|
+| Servicio instalado | `Get-Service ZHPrintAgent` (o `status-windows-service.ps1`) |
+| Servicio corriendo | `Get-Service ZHPrintAgent` → `Status: Running` |
+| Puerto 9817 disponible | `Test-NetConnection 127.0.0.1 -Port 9817`; si otro proceso lo usa, `/health` no responderá |
+| `/health` | `status-windows-service.ps1 -CheckHealth -ApiKey <key>`, o `curl -H "X-ZH-PrintAgent-Key: <key>" http://127.0.0.1:9817/health` |
+| `/health/ready` | Igual que arriba con `/health/ready`; ver pantalla **Estado** del panel para el detalle de errores |
+| Logs | `C:\ProgramData\ZH Technologies\PrintAgent\logs\printagent-YYYY-MM-DD.log` |
+| Cola | Pantalla **Cola** del panel, o `C:\ProgramData\ZH Technologies\PrintAgent\queue\print-jobs.json` |
+| Impresora no encontrada | Pantalla **Impresoras**: confirmar que el nombre coincide con la cola de Windows (`Get-Printer`) |
+| API key inválida | `401 Unauthorized`; regenerar desde `/admin` (una vez completado el setup, hace falta la key vigente) |
+| Puerto ocupado | El servicio no arranca / `/health` no responde; liberar el puerto o cambiar `PrintAgent:Port` en `appsettings.Production.json` y reinstalar |
+| Permiso de Windows | El instalador debe correr como administrador; sin elevación, Windows lo bloquea antes de copiar archivos |
+| Reiniciar el servicio | `.\print-agent\scripts\restart-windows-service.ps1`, o `Restart-Service ZHPrintAgent` |
+
+### Prueba manual end-to-end (requiere Windows)
+
+1. Ejecutar `ZH-Print-Agent-Setup.exe` como administrador.
+2. Confirmar que instala el servicio (`Get-Service ZHPrintAgent`).
+3. Confirmar que lo inicia (`Status: Running`).
+4. Abrir `http://127.0.0.1:9817/admin`.
+5. Completar el asistente (genera la API key, muéstrala una sola vez).
+6. Seleccionar la impresora Windows y el driver `windows-raw`.
+7. Probar impresión.
+8. Reiniciar el servicio o la PC.
+9. Confirmar que la configuración persiste (impresora, API key, `SetupCompleted: true`).
+10. Desinstalar.
+11. Confirmar que el servicio fue eliminado (`Get-Service ZHPrintAgent` → no existe).
+12. Confirmar que `C:\ProgramData\ZH Technologies\PrintAgent\` se conserva por defecto.
+
+## Windows Service (scripts sueltos, camino manual/avanzado)
 
 Publicar:
 
