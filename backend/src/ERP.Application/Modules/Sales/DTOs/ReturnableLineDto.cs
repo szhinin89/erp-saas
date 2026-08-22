@@ -23,5 +23,6 @@ public sealed record ReturnableLineDto(
     Guid? PackagingLevelId,
     decimal ConversionFactor,
     decimal OriginalQuantityInBaseUom,
-    decimal RemainingQuantityInBaseUom
+    decimal RemainingQuantityInBaseUom,
+    string BaseUomCode
 );

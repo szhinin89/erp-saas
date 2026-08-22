@@ -15,7 +15,9 @@ internal static class SalesReceiptPrintPayloadMapper
             Subtotal: line.TaxableBase,
             VatRate: line.VatRate,
             VatAmount: line.VatAmount,
-            Total: line.TaxInclusiveTotal
+            Total: line.TaxInclusiveTotal,
+            UomCode: line.UomCode,
+            ConversionFactor: line.ConversionFactor
         );
 
     public static SalesReceiptPaymentDto MapPayment(SalesInvoicePayment payment) =>

@@ -129,7 +129,7 @@ export function buildReceiptPrintJobRequest(
       merchantName: payload.tradeName ?? payload.companyName,
       headerLines: buildHeaderLines(payload),
       items: payload.lines.map((line) => ({
-        name: line.sku ? `${line.sku} ${line.productName}` : line.productName,
+        name: buildReceiptItemName(line),
         quantity: line.quantity,
         unitPrice: line.unitPrice,
         total: line.total,
@@ -191,6 +191,17 @@ export function printAgentUserMessage(err: unknown): string {
     return err.message;
   }
   return "Error de impresión; puede reintentar.";
+}
+
+/** SALES-PRESENTATIONS-04: nombre de línea impreso en la tirilla — agrega la presentación
+ * vendida (ej. "CAJA x12") solo cuando el ítem se vendió por presentación (ConversionFactor !=
+ * 1); sin presentación (comportamiento actual) el nombre queda exactamente igual que antes. La
+ * cantidad impresa (línea.quantity, ya en la fila "1 x $18.00") sigue siendo la cantidad en la
+ * presentación vendida — nunca la equivalente en unidad base. */
+function buildReceiptItemName(line: SalesReceiptPrintPayloadDto["lines"][number]): string {
+  const base = line.sku ? `${line.sku} ${line.productName}` : line.productName;
+  if (line.conversionFactor === 1) return base;
+  return `${base} — ${line.uomCode} x${line.conversionFactor}`;
 }
 
 function buildHeaderLines(payload: SalesReceiptPrintPayloadDto): string[] {

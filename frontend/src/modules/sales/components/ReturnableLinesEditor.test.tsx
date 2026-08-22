@@ -25,6 +25,11 @@ function buildLine(overrides: Partial<ReturnableLineDto> = {}): ReturnableLineDt
     vatRate: 15,
     iceCode: null,
     iceRate: 0,
+    packagingLevelId: null,
+    conversionFactor: 1,
+    originalQuantityInBaseUom: 5,
+    remainingQuantityInBaseUom: 5,
+    baseUomCode: "UND",
     ...overrides,
   };
 }
@@ -76,5 +81,60 @@ describe("ReturnableLinesEditor — P. unitario migrado a ZHMoneyValue (SALES-DS
     container.querySelectorAll(".zh-money-value").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
+  });
+});
+
+// SALES-PRESENTATIONS-04 — la devolución muestra las cantidades en la MISMA presentación
+// vendida (nunca un selector para cambiarla), con la equivalencia en unidad base como dato
+// secundario cuando el factor de conversión no es 1.
+describe("ReturnableLinesEditor — presentación (SALES-PRESENTATIONS-04)", () => {
+  it("vendido 2 cajas x12, devuelto 1, pendiente 1: muestra unidad y equivalencia base", () => {
+    const { container } = render(
+      <ReturnableLinesEditor
+        lines={[
+          buildLine({
+            uomCode: "CAJA",
+            originalQuantity: 2,
+            returnedQuantity: 1,
+            remainingQuantity: 1,
+            conversionFactor: 12,
+            originalQuantityInBaseUom: 24,
+            remainingQuantityInBaseUom: 12,
+            baseUomCode: "UNIT",
+          }),
+        ]}
+        quantities={{}}
+        onChangeQuantity={vi.fn()}
+      />,
+    );
+
+    expect(container.textContent).toContain("2 CAJA");
+    expect(container.textContent).toContain("= 24 UNIT");
+    expect(container.textContent).toContain("1 CAJA");
+    expect(container.textContent).toContain("= 12 UNIT");
+  });
+
+  it("sin presentación (factor 1): no muestra equivalencia (comportamiento actual)", () => {
+    const { container } = render(
+      <ReturnableLinesEditor
+        lines={[buildLine({ conversionFactor: 1 })]}
+        quantities={{}}
+        onChangeQuantity={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector(".sr-lines-table__equivalence")).toBeNull();
+  });
+
+  it("no permite seleccionar una presentación distinta a la vendida (sin selector)", () => {
+    const { container } = render(
+      <ReturnableLinesEditor
+        lines={[buildLine({ uomCode: "CAJA", conversionFactor: 12 })]}
+        quantities={{}}
+        onChangeQuantity={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector("select")).toBeNull();
   });
 });

@@ -49,6 +49,13 @@
   margin-top: 2px;
 }
 
+/* SALES-PRESENTATIONS-04: equivalencia en unidad base (ej. "= 12 UND") bajo la cantidad en la
+   presentación vendida — solo visible cuando ConversionFactor != 1. */
+.sr-lines-table__equivalence {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+
 .sr-lines-empty {
   color: var(--color-text-secondary);
   font-size: var(--text-body-md-size);

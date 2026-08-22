@@ -247,6 +247,109 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         data.Totals!.GrandTotal.Should().Be(salesReturn.GrandTotal);
     }
 
+    // SALES-PRESENTATIONS-04: la nota de crédito debe reflejar la cantidad VISIBLE devuelta (1
+    // caja), nunca QuantityInBaseUom (12 unidades) — esa cantidad es exclusiva de stock/kardex
+    // (ver AuthorizeSalesReturnUseCases, SALES-PRESENTATIONS-02).
+    [Fact]
+    public async Task GetDataAsync_devolucion_por_presentacion_usa_Quantity_visible_no_QuantityInBaseUom()
+    {
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
+        var inv = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "001-001-000000046",
+            issueDate: new DateOnly(2026, 7, 20),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
+            emissionPointId: EmissionPointId
+        );
+        var invoiceLine = SalesInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Caja x12",
+            quantity: 2m,
+            unitPrice: 18m,
+            vatCode: "2",
+            uomCode: "CAJA",
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+        inv.ReplaceLines(new[] { invoiceLine }, UserId);
+        var invPayment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            invoiceLine.TaxInclusiveTotal
+        );
+        inv.ReplacePayments(new[] { invPayment }, UserId);
+        inv.Authorize(UserId);
+        var authorizedLine = inv.Lines.Single();
+
+        var salesReturn = SalesReturn.CreateDraft(
+            TenantId,
+            CompanyId,
+            inv.Id,
+            CustomerId,
+            "DEV-000002",
+            "Producto en mal estado",
+            UserId
+        );
+        salesReturn.AddLine(
+            SalesReturnDetail.Create(
+                salesReturn.Id,
+                TenantId,
+                authorizedLine.Id,
+                authorizedLine.Description,
+                quantity: 1m, // 1 caja devuelta — mantiene la presentación de la venta
+                authorizedLine.UnitPrice,
+                0m,
+                authorizedLine.VatCode,
+                authorizedLine.VatRate,
+                authorizedLine.UomCode,
+                packagingLevelId: authorizedLine.PackagingLevelId,
+                conversionFactor: authorizedLine.ConversionFactor,
+                baseUomCode: authorizedLine.BaseUomCode
+            ),
+            UserId
+        );
+        salesReturn.AddRefundAllocation(
+            SalesReturnRefundAllocation.Create(
+                salesReturn.Id,
+                TenantId,
+                SalesReturnRefundMethod.Cash,
+                salesReturn.GrandTotal
+            ),
+            UserId
+        );
+        salesReturn.Authorize(UserId);
+        salesReturn.SetCreditNoteDocumentNumber("001-001-000000002");
+
+        var m = new Mocks();
+        m.SeedHappyPath(inv);
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(salesReturn);
+
+        var provider = m.BuildProvider();
+        var result = await provider.GetDataAsync(
+            new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id)
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var detail = result.Value!.Details.Should().ContainSingle().Subject;
+        detail.Quantity.Should().Be(1m); // Quantity visible (1 caja) — nunca 12 (unidad base)
+        detail.UnitPrice.Should().Be(18m);
+        detail.Subtotal.Should().Be(18m); // Quantity(1) * UnitPrice(18) — nunca 216 (1*12*18)
+    }
+
     [Fact]
     public async Task GetDataAsync_devolucion_inexistente_retorna_NotFound()
     {

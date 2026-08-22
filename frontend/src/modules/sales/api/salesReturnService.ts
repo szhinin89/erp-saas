@@ -90,6 +90,14 @@ export interface ReturnableLineDto {
   vatRate: number;
   iceCode: string | null;
   iceRate: number;
+  // SALES-PRESENTATIONS-04: la devolución mantiene SIEMPRE la misma presentación de la venta
+  // original — estos campos son solo informativos (equivalencia en unidad base), nunca un
+  // selector de presentación distinta.
+  packagingLevelId: string | null;
+  conversionFactor: number;
+  originalQuantityInBaseUom: number;
+  remainingQuantityInBaseUom: number;
+  baseUomCode: string;
 }
 
 // ── Payloads ────────────────────────────────────────────────────────────

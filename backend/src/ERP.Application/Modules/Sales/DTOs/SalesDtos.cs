@@ -182,7 +182,13 @@ public sealed record SalesReceiptLineDto(
     decimal Subtotal,
     decimal VatRate,
     decimal VatAmount,
-    decimal Total
+    decimal Total,
+    // SALES-PRESENTATIONS-04: UomCode/ConversionFactor son la presentación VISIBLE vendida (ej.
+    // "CAJA" x12) — nunca QuantityInBaseUom/BaseUomCode, que solo son de stock/kardex. Con
+    // ConversionFactor=1 (sin presentación, comportamiento actual) el frontend no debe mostrar
+    // ninguna etiqueta adicional.
+    string UomCode,
+    decimal ConversionFactor
 );
 
 public sealed record SalesReceiptPaymentDto(string Method, decimal Amount, string? Reference);

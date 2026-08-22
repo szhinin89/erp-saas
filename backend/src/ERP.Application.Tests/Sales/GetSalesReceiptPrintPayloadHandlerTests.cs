@@ -140,6 +140,8 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         payload.Lines[0].VatRate.Should().Be(15m);
         payload.Lines[0].VatAmount.Should().Be(2.70m);
         payload.Lines[0].Total.Should().Be(20.70m);
+        payload.Lines[0].UomCode.Should().Be("UNIT");
+        payload.Lines[0].ConversionFactor.Should().Be(1m);
         payload.Totals.SubtotalWithoutTaxes.Should().Be(20m);
         payload.Totals.DiscountTotal.Should().Be(2m);
         payload.Totals.VatTotal.Should().Be(2.70m);
@@ -152,6 +154,53 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
         payload.CashChange.Should().BeNull("el vuelto no está persistido en Sales/Cash");
         payload.FooterMessage.Should().Be("Gracias por su compra");
         f.VerifyReadOnlyRepositories();
+    }
+
+    // SALES-PRESENTATIONS-04: la tirilla debe mostrar la presentación vendida (UomCode/
+    // ConversionFactor) — nunca la cantidad/unidad base (QuantityInBaseUom/BaseUomCode), que solo
+    // es de stock/kardex.
+    [Fact]
+    public async Task Venta_por_presentacion_expone_UomCode_y_ConversionFactor_de_la_presentacion_vendida()
+    {
+        var invoice = CreateDraftInvoice(EmissionType.Physical);
+        var line = SalesInvoiceDetail.Create(
+            invoice.Id,
+            TenantId,
+            "Caja x12",
+            quantity: 1m,
+            unitPrice: 18m,
+            vatCode: "2",
+            uomCode: "CAJA",
+            snapshotSku: "15865",
+            snapshotItemName: "Atún",
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+        line.ApplyTaxes("2", 15m, "IVA 15%", null, 0m, null);
+        invoice.ReplaceLines(new[] { line }, UserId);
+        var payment = SalesInvoicePayment.Create(
+            invoice.Id,
+            TenantId,
+            PaymentMethodId,
+            "01",
+            "Efectivo",
+            line.TaxInclusiveTotal
+        );
+        invoice.ReplacePayments(new[] { payment }, UserId);
+        invoice.Authorize(UserId);
+
+        var f = new Fixture();
+        f.SalesInvoices.Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invoice);
+
+        var result = await f.BuildHandler()
+            .Handle(new GetSalesReceiptPrintPayloadQuery(invoice.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var payloadLine = result.Value!.Lines.Should().ContainSingle().Subject;
+        payloadLine.Quantity.Should().Be(1m); // cantidad VISIBLE (1 caja), no 12 (unidad base)
+        payloadLine.UomCode.Should().Be("CAJA");
+        payloadLine.ConversionFactor.Should().Be(12m);
     }
 
     [Fact]

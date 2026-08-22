@@ -56,9 +56,25 @@ export function ReturnableLinesEditor({
                     <div className="sr-lines-table__sku zh-code-value">{line.snapshotSku}</div>
                   )}
                 </td>
-                <td className="zh-table-cell--num">{line.originalQuantity}</td>
-                <td className="zh-table-cell--num">{line.returnedQuantity}</td>
-                <td className="zh-table-cell--num">{line.remainingQuantity}</td>
+                <td className="zh-table-cell--num">
+                  {line.originalQuantity} {line.uomCode}
+                  {line.conversionFactor !== 1 && (
+                    <div className="sr-lines-table__equivalence">
+                      = {line.originalQuantityInBaseUom} {line.baseUomCode}
+                    </div>
+                  )}
+                </td>
+                <td className="zh-table-cell--num">
+                  {line.returnedQuantity} {line.uomCode}
+                </td>
+                <td className="zh-table-cell--num">
+                  {line.remainingQuantity} {line.uomCode}
+                  {line.conversionFactor !== 1 && (
+                    <div className="sr-lines-table__equivalence">
+                      = {line.remainingQuantityInBaseUom} {line.baseUomCode}
+                    </div>
+                  )}
+                </td>
                 <td className="zh-table-cell--num">
                   <ZHMoneyValue
                     value={line.unitPrice}

@@ -209,6 +209,10 @@ export interface SalesReceiptLineDto {
   vatRate: number;
   vatAmount: number;
   total: number;
+  /** SALES-PRESENTATIONS-04: unidad/presentación VISIBLE vendida (ej. "CAJA") — factor 1 =
+   * unidad base, sin presentación (comportamiento actual). */
+  uomCode: string;
+  conversionFactor: number;
 }
 
 export interface SalesReceiptPaymentDto {

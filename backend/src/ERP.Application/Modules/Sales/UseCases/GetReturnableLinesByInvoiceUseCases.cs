@@ -71,7 +71,8 @@ public sealed class GetReturnableLinesByInvoiceHandler
                     line.PackagingLevelId,
                     line.ConversionFactor,
                     line.QuantityInBaseUom,
-                    remaining * line.ConversionFactor
+                    remaining * line.ConversionFactor,
+                    line.BaseUomCode
                 )
             );
         }
