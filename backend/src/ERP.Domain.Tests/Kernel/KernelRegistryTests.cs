@@ -332,6 +332,26 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_companies_moved_from_admin_to_settings_group_with_same_permission()
+    {
+        // ADMIN-COMPANIES-REGROUP-01: Empresas administra datos de empresa/fiscales/branding —
+        // conceptualmente Configuración, no Administración (usuarios/perfiles/delegación/
+        // sesiones/actividad). Mismo Id/ruta/permiso que tenía en AdminModule.
+        var navigation = KernelRegistry.Navigation;
+
+        var companies = navigation.Single(n => n.RoutePath == "/companies");
+        companies.GroupCode.Should().Be("settings");
+        companies.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
+        companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
+
+        navigation
+            .Where(n => n.GroupCode == "admin")
+            .Should()
+            .NotContain(n => n.RoutePath == "/companies");
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry

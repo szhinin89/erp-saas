@@ -6,6 +6,21 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("settings", Icon = "⚙", SortOrder = 50, GroupId = "f2d0ca10-0000-4000-8000-000000000008")]
 public static class SettingsModule
 {
+    /// <summary>
+    /// ADMIN-COMPANIES-REGROUP-01: movida desde AdminModule (grupo Administración) — administra
+    /// datos de empresa/fiscales/branding/documentos/operación de cada Company del tenant, lo que
+    /// conceptualmente es Configuración, no usuarios/perfiles/delegación/sesiones/actividad. Mismo
+    /// Id/ruta/permiso que tenía en AdminModule — sin cambios de API ni de lógica de negocio.
+    /// </summary>
+    [NavItem(
+        "Companies",
+        Permission = SettingsPermissions.CompaniesView,
+        LabelKey = "app.nav.item.erp.companies",
+        SortOrder = 5,
+        Id = "00000000-0000-4000-8000-000000000104"
+    )]
+    public const string Companies = "/companies";
+
     [NavItem(
         "Company",
         Permission = SettingsPermissions.CompanyView,

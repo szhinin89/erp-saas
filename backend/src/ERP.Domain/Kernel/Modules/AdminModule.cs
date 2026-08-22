@@ -51,12 +51,7 @@ public static class AdminModule
     )]
     public const string AccessSessions = "/admin/access/sessions";
 
-    [NavItem(
-        "Companies",
-        Permission = SettingsPermissions.CompaniesView,
-        LabelKey = "app.nav.item.erp.companies",
-        SortOrder = 50,
-        Id = "00000000-0000-4000-8000-000000000104"
-    )]
-    public const string Companies = "/companies";
+    // "Companies" (ADMIN-COMPANIES-REGROUP-01) se movió a SettingsModule — administra datos de
+    // empresa/fiscales/branding/documentos, conceptualmente Configuración, no usuarios/perfiles/
+    // delegación/sesiones/actividad. Mismo Id, ruta y permiso preservados.
 }
