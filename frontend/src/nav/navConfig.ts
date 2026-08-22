@@ -54,6 +54,8 @@ const MENU_DESCRIPTION_BY_ROUTE_PREFIX: ReadonlyArray<readonly [string, string]>
   ["/masterdata/suppliers", "Gestión de proveedores y compras"],
   ["/masterdata", "Catálogos base del sistema"],
   ["/inventory/items", "Catálogo, precios e impuestos"],
+  ["/inventory/adjustments", "Ingresos y egresos manuales de stock"],
+  ["/inventory/adjustment-reasons", "Motivos configurables para ajustes de inventario"],
   ["/inventory", "Stock, kardex y movimientos"],
   ["/purchases", "Facturas, recepción y proveedores"],
   ["/sales", "Facturación, clientes y cobranzas"],

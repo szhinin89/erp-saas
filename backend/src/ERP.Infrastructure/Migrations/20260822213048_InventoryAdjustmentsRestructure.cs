@@ -11,6 +11,17 @@ namespace ERP.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // INVENTORY-ADJUSTMENTS-04 — filas de stock_adjustments creadas bajo el modelo anterior
+            // (cabecera con ProductId/AdjustmentQty/Reason string, sin líneas) no tienen ningún
+            // ReasonId real que mapear: no existe backfill posible hacia el nuevo esquema (motivo
+            // configurable, MovementType explícito, líneas con presentación). Son datos de
+            // desarrollo/piloto temprano bajo un modelo ya reemplazado, no ajustes de negocio reales
+            // que deban preservarse. Se limpian aquí, antes del rename+FK, para que la migración sea
+            // aplicable de forma determinística en cualquier entorno que ya haya usado el
+            // StockAdjustment anterior (dev, otros desarrolladores, CI) sin fallar por FK huérfana.
+            migrationBuilder.Sql("DELETE FROM stock_adjustment_lines;");
+            migrationBuilder.Sql("DELETE FROM stock_adjustments;");
+
             migrationBuilder.DropColumn(
                 name: "adjustment_qty",
                 table: "stock_adjustments");

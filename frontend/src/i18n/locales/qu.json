@@ -3514,5 +3514,7 @@
   "inventory.adjustmentReasons.table.requiresNotes": "Exige observación",
   "inventory.adjustmentReasons.table.status": "Estado",
   "inventory.adjustmentReasons.table.sortOrder": "Orden",
-  "inventory.adjustmentReasons.table.actions": "Acciones"
+  "inventory.adjustmentReasons.table.actions": "Acciones",
+  "app.nav.item.inventory.adjustments": "Ajustes de inventario",
+  "app.nav.item.inventory.adjustment-reasons": "Motivos de ajuste"
 }

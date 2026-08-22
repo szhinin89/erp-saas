@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-22T19:07:41.701Z",
+  "generatedAt": "2026-08-22T23:45:10.942Z",
   "summary": {
-    "total": 101,
-    "allowed": 101,
+    "total": 103,
+    "allowed": 103,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -532,6 +532,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/inventory/adjustment-reasons",
+      "files": [
+        "frontend/src/modules/inventory/adjustmentReasons/api/inventoryAdjustmentReasonsService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/inventory/kardex",
       "files": [
         "frontend/src/modules/inventory/stock/api/kardexService.ts"
@@ -543,6 +551,14 @@
       "endpoint": "/api/v1/inventory/stock",
       "files": [
         "frontend/src/modules/inventory/stock/api/stockService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/inventory/stock/adjustments",
+      "files": [
+        "frontend/src/modules/inventory/adjustments/api/stockAdjustmentsService.ts"
       ],
       "legacy": false,
       "allowed": true

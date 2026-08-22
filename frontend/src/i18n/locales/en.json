@@ -3513,5 +3513,7 @@
   "inventory.adjustmentReasons.table.requiresNotes": "Requires notes",
   "inventory.adjustmentReasons.table.status": "Status",
   "inventory.adjustmentReasons.table.sortOrder": "Sort order",
-  "inventory.adjustmentReasons.table.actions": "Actions"
+  "inventory.adjustmentReasons.table.actions": "Actions",
+  "app.nav.item.inventory.adjustments": "Inventory adjustments",
+  "app.nav.item.inventory.adjustment-reasons": "Adjustment reasons"
 }
