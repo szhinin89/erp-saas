@@ -10,13 +10,21 @@ import { z } from "zod";
 export const salesPosPreferencesSchema = z.object({
   allowManualDiscount: z.boolean(),
   maxDiscountPercent: z.coerce.number().min(0).max(100),
+  allowSellWithoutStock: z.boolean(),
 });
 export type SalesPosPreferencesValues = z.infer<typeof salesPosPreferencesSchema>;
 
 export const cashPreferencesSchema = z.object({
   requireReasonForDifference: z.boolean(),
+  allowCloseWithDifference: z.boolean(),
+  maxAllowedDifference: z.coerce.number().min(0),
 });
 export type CashPreferencesValues = z.infer<typeof cashPreferencesSchema>;
+
+export const purchasesPreferencesSchema = z.object({
+  allowConfirmWithoutReceptionXml: z.boolean(),
+});
+export type PurchasesPreferencesValues = z.infer<typeof purchasesPreferencesSchema>;
 
 export const printingPreferencesSchema = z.object({
   salesReceiptMode: z.enum(["AskBeforePrint", "AlwaysPrint", "NeverAutoPrint"]),

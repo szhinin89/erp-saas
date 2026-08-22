@@ -4,6 +4,7 @@ using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -227,7 +228,8 @@ public sealed class ConfirmPurchaseHandlerTests
         bool irbpnrConfigured = false,
         Item? itemForXmlLines = null,
         Item? itemForMarginGuard = null,
-        decimal? marginGuardSalePrice = null
+        decimal? marginGuardSalePrice = null,
+        bool allowConfirmWithoutReceptionXml = true
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -434,6 +436,11 @@ public sealed class ConfirmPurchaseHandlerTests
         user.Setup(u => u.Email).Returns("test@test.com");
         user.Setup(u => u.FullName).Returns("Test User");
 
+        var preferences = new Mock<IOperationalPreferencesResolver>();
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultOperationalPreferences(allowConfirmWithoutReceptionXml));
+
         var handler = new ConfirmPurchaseHandler(
             repo.Object,
             stockRepo.Object,
@@ -445,11 +452,32 @@ public sealed class ConfirmPurchaseHandlerTests
             logger.Object,
             tenant.Object,
             company.Object,
-            user.Object
+            user.Object,
+            preferences.Object
         );
 
         return (handler, repo, stockRepo);
     }
+
+    /// <summary>Defaults que preservan el comportamiento vigente antes de CONFIG-DYNAMIC-OPERATIONS-02 (AllowConfirmWithoutReceptionXml=true → sin bloqueo, igual que siempre).</summary>
+    internal static OperationalPreferences DefaultOperationalPreferences(
+        bool allowConfirmWithoutReceptionXml = true
+    ) =>
+        new(
+            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            Cash: new CashPreferences(true, true, 0m, true, true, true),
+            Purchases: new PurchasesPreferences(
+                null,
+                allowConfirmWithoutReceptionXml,
+                true,
+                true,
+                false
+            ),
+            Inventory: new InventoryPreferences(false, true, false, 0m),
+            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+            Notifications: new NotificationsPreferences(true, false, "es")
+        );
 
     private static decimal ExpectedGrandTotal(PurchaseInvoice inv)
     {
@@ -506,6 +534,69 @@ public sealed class ConfirmPurchaseHandlerTests
                 ),
             Times.Once
         );
+        stockRepo.Verify(
+            s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-02 (purchases.allow_confirm_without_reception_xml=false): factura
+    /// sin ninguna línea vinculada a una recepción XML/TXT (PurchaseReceptionLineId null en todas
+    /// las líneas, como CreateDraftInvoice) debe rechazarse al confirmar.
+    /// </summary>
+    [Fact]
+    public async Task Confirm_rechaza_sin_recepcion_xml_si_la_preferencia_no_lo_permite()
+    {
+        var inv = CreateDraftInvoice(1);
+        var (handler, repo, stockRepo) = BuildHandler(
+            inv,
+            allowConfirmWithoutReceptionXml: false
+        );
+        var total = ExpectedGrandTotal(inv);
+
+        var schedule = new List<ConfirmScheduleInput>
+        {
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
+        };
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, schedule),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        stockRepo.Verify(
+            s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Contraparte de <see cref="Confirm_rechaza_sin_recepcion_xml_si_la_preferencia_no_lo_permite"/>:
+    /// misma factura sin recepción XML, pero con la línea vinculada (CreateXmlDraftInvoice ya fija
+    /// PurchaseReceptionLineId), debe confirmar sin importar la preferencia.
+    /// </summary>
+    [Fact]
+    public async Task Confirm_permite_sin_recepcion_xml_si_alguna_linea_ya_esta_vinculada()
+    {
+        var item = CreateItem(tracksStock: true);
+        var pacaId = item.PackagingLevels.Single(p => p.UomCode == "PACA").Id;
+        var inv = CreateXmlDraftInvoice(
+            item.Id,
+            packagingLevelId: pacaId,
+            conversionFactor: 12m,
+            uomCode: "PACA"
+        );
+        var (handler, _, stockRepo) = BuildHandler(
+            inv,
+            itemForXmlLines: item,
+            allowConfirmWithoutReceptionXml: false
+        );
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
         stockRepo.Verify(
             s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
             Times.Once
@@ -882,6 +973,11 @@ public sealed class ConfirmPurchaseHandlerTests
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
+        var preferencesOverride = new Mock<IOperationalPreferencesResolver>();
+        preferencesOverride
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultOperationalPreferences());
+
         var h = new ConfirmPurchaseHandler(
             repoOverride.Object,
             new Mock<IStockRepository>().Object,
@@ -893,7 +989,8 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
             tenant.Object,
             company.Object,
-            user.Object
+            user.Object,
+            preferencesOverride.Object
         );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);

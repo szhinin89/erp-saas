@@ -4,6 +4,7 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.ValueObjects;
@@ -301,6 +302,11 @@ public sealed class PurchaseWarehouseBranchGuardTests
         var itemRepo = new Mock<IItemRepository>();
         var whRepo = BuildWarehouseRepo();
 
+        var preferences = new Mock<IOperationalPreferencesResolver>();
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ConfirmPurchaseHandlerTests.DefaultOperationalPreferences());
+
         var handler = new ConfirmPurchaseHandler(
             repo.Object,
             stockRepo.Object,
@@ -312,7 +318,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ILogger<ConfirmPurchaseHandler>>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            preferences.Object
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);

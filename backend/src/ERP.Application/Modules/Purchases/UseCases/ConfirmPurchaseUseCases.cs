@@ -3,6 +3,7 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -45,6 +46,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public ConfirmPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -57,7 +59,8 @@ public sealed class ConfirmPurchaseHandler
         ILogger<ConfirmPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
-        ICurrentUser u
+        ICurrentUser u,
+        IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -71,6 +74,7 @@ public sealed class ConfirmPurchaseHandler
         _t = t;
         _c = c;
         _u = u;
+        _preferences = preferences;
     }
 
     public async Task<Result<PurchaseInvoiceDto>> Handle(
@@ -88,6 +92,20 @@ public sealed class ConfirmPurchaseHandler
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");
+
+        // CONFIG-DYNAMIC-OPERATIONS-02 (purchases.allow_confirm_without_reception_xml): si está
+        // desactivada, exige que al menos una línea provenga de Recepción Electrónica
+        // (PurchaseReceptionLineId) antes de poder confirmar — no reemplaza ni afloja el guard de
+        // presentación de STEP 0a (ese sigue aplicando por línea, aquí solo se exige que exista
+        // al menos un vínculo con recepción).
+        var preferences = await _preferences.ResolveAsync(ct);
+        if (
+            !preferences.Purchases.AllowConfirmWithoutReceptionXml
+            && !inv.Lines.Any(l => l.PurchaseReceptionLineId.HasValue)
+        )
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "Esta empresa requiere un documento de recepción XML/TXT vinculado para confirmar la compra."
+            );
 
         // ── STEP 0: Guard bodega↔sucursal (PURCHASE-WAREHOUSE-BRANCH-GUARD-01) ──
         // Defensa en profundidad: aunque Create/UpdatePurchaseDraft ya validan esto al guardar,

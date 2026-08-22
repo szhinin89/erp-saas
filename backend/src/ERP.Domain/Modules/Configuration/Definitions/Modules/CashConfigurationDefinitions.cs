@@ -5,9 +5,11 @@ using System.Globalization;
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
 /// <summary>
-/// CONFIG-DYNAMIC-OPERATIONS-01: Definitions para OrgSettingKeys.Cash. Solo
-/// RequireReasonForDifference tiene efecto real conectado (Fase B) — el resto se guarda y expone
-/// en /settings/operations pero aún no cambia comportamiento (Fase C).
+/// Definitions para OrgSettingKeys.Cash. Conectadas a efecto real en CloseCashSessionHandler:
+/// RequireReasonForDifference (CONFIG-DYNAMIC-OPERATIONS-01), AllowCloseWithDifference y
+/// MaxAllowedDifference (CONFIG-DYNAMIC-OPERATIONS-02) — las tres se evalúan juntas, en ese
+/// orden, cuando session.Difference != 0. RequireOpeningAmount/AllowManualInOutMovements/
+/// RequireReasonForMovements: sin consumidor todavía (Fase C).
 /// </summary>
 public static class CashConfigurationDefinitions
 {

@@ -1,4 +1,5 @@
 using ERP.Application.Modules.ElectronicDocuments.Services;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Infrastructure.Services;
@@ -45,6 +46,8 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
         await using var scope = _scopeFactory.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>();
         var issuer = scope.ServiceProvider.GetRequiredService<IElectronicDocumentIssuer>();
+        var preferencesResolver =
+            scope.ServiceProvider.GetRequiredService<IOperationalPreferencesResolver>();
 
         IReadOnlyList<ElectronicDocument> candidates;
         try
@@ -57,6 +60,13 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
             return;
         }
 
+        // CONFIG-DYNAMIC-OPERATIONS-02 (electronic_documents.auto_retry_enabled): cacheada por
+        // (tenant, company) dentro de la corrida — un lote típico trae varios documentos de la
+        // misma empresa, así que esto resuelve la preferencia una vez por empresa, no por
+        // documento. Solo apaga el reintento AUTOMÁTICO de este job; el reintento manual
+        // (issuer.RetryAsync desde la UI/API) sigue disponible sin importar esta preferencia.
+        var autoRetryEnabledCache = new Dictionary<(Guid TenantId, Guid CompanyId), bool>();
+
         var nowUtc = DateTime.UtcNow;
         foreach (var document in candidates)
         {
@@ -67,6 +77,20 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
                     nowUtc
                 )
             )
+                continue;
+
+            var cacheKey = (document.TenantId, document.CompanyId);
+            if (!autoRetryEnabledCache.TryGetValue(cacheKey, out var autoRetryEnabled))
+            {
+                var preferences = await preferencesResolver.ResolveAsync(
+                    document.TenantId,
+                    document.CompanyId,
+                    cancellationToken
+                );
+                autoRetryEnabled = preferences.ElectronicDocuments.AutoRetryEnabled;
+                autoRetryEnabledCache[cacheKey] = autoRetryEnabled;
+            }
+            if (!autoRetryEnabled)
                 continue;
 
             using var _ = JobExecutionContext.Begin(document.TenantId, document.CompanyId);

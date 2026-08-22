@@ -4,9 +4,11 @@ using ERP.Domain.Configuration.Enums;
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
 /// <summary>
-/// CONFIG-DYNAMIC-OPERATIONS-01: Definitions para OrgSettingKeys.Purchases. Ninguna de estas
-/// keys tiene efecto real conectado todavía (Fase C) — se guardan y exponen en
-/// /settings/operations, marcadas como "aún no conectado" en la UI.
+/// Definitions para OrgSettingKeys.Purchases. AllowConfirmWithoutReceptionXml está conectada
+/// (CONFIG-DYNAMIC-OPERATIONS-02, ConfirmPurchaseHandler — exige al menos una línea con
+/// PurchaseReceptionLineId cuando está en false). El resto (DefaultWarehouseId,
+/// UpdateCostOnConfirm, AllowManualCostChange, RequireReasonForCostChange) sigue sin consumidor,
+/// marcadas como "aún no conectado" en la UI.
 /// </summary>
 public static class PurchasesConfigurationDefinitions
 {

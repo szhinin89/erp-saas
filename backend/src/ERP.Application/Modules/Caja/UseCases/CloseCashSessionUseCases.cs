@@ -123,20 +123,34 @@ public sealed class CloseCashSessionHandler
             return Result<CashSessionDto>.ValidationFailure(ex.Message);
         }
 
-        // CONFIG-DYNAMIC-OPERATIONS-01 (cash.require_reason_for_difference): se valida DESPUÉS de
-        // Close() (que es quien calcula Difference) pero ANTES de SaveChangesAsync — así la
-        // mutación en memoria de session.Close() nunca se persiste si falta el motivo, sin
-        // necesidad de un método aparte "dry-run" en el dominio.
+        // CONFIG-DYNAMIC-OPERATIONS-01/02 (cash.allow_close_with_difference / max_allowed_difference /
+        // require_reason_for_difference): se valida DESPUÉS de Close() (que es quien calcula
+        // Difference) pero ANTES de SaveChangesAsync — así la mutación en memoria de
+        // session.Close() nunca se persiste si el cierre no cumple la preferencia, sin necesidad
+        // de un método aparte "dry-run" en el dominio.
         var preferences = await _preferences.ResolveAsync(ct);
-        if (
-            preferences.Cash.RequireReasonForDifference
-            && session.Difference is not (null or 0m)
-            && string.IsNullOrWhiteSpace(cmd.CloseNotes)
-        )
+        if (session.Difference is not (null or 0m))
         {
-            return Result<CashSessionDto>.ValidationFailure(
-                "Debe indicar un motivo en las notas de cierre porque el arqueo presenta una diferencia."
-            );
+            if (!preferences.Cash.AllowCloseWithDifference)
+                return Result<CashSessionDto>.ValidationFailure(
+                    "Esta empresa no permite cerrar la caja con diferencia. Ajuste el arqueo antes de continuar."
+                );
+
+            if (
+                preferences.Cash.MaxAllowedDifference > 0m
+                && Math.Abs(session.Difference.Value) > preferences.Cash.MaxAllowedDifference
+            )
+                return Result<CashSessionDto>.ValidationFailure(
+                    $"La diferencia del arqueo ({session.Difference.Value}) supera el máximo permitido ({preferences.Cash.MaxAllowedDifference})."
+                );
+
+            if (
+                preferences.Cash.RequireReasonForDifference
+                && string.IsNullOrWhiteSpace(cmd.CloseNotes)
+            )
+                return Result<CashSessionDto>.ValidationFailure(
+                    "Debe indicar un motivo en las notas de cierre porque el arqueo presenta una diferencia."
+                );
         }
 
         await _repo.SaveChangesAsync(ct);

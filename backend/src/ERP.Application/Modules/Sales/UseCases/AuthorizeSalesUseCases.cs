@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -48,6 +49,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public AuthorizeSalesInvoiceHandler(
         ISalesInvoiceRepository repo,
@@ -66,7 +68,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
-        ICurrentUser u
+        ICurrentUser u,
+        IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -86,6 +89,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _t = t;
         _c = c;
         _u = u;
+        _preferences = preferences;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -205,27 +209,37 @@ public sealed class AuthorizeSalesInvoiceHandler
         }
 
         // ── Validar stock disponible por línea (Kardex) ─────────────
-        // "Sin stock suficiente, no se factura" — decisión de negocio explícita.
+        // "Sin stock suficiente, no se factura" — decisión de negocio explícita, salvo que la
+        // empresa haya habilitado sales.pos.allow_sell_without_stock (CONFIG-DYNAMIC-OPERATIONS-02).
+        // Con la preferencia activa, el egreso de inventario más abajo se ejecuta igual y puede
+        // dejar CurrentStock en negativo — StockRepository.CreateAndTrackMovementAsync ya trata
+        // ese caso de forma defensiva (RunningAverageCost cae a 0 cuando la cantidad resultante no
+        // es positiva, en vez de dividir por cero/negativo), así que no hay riesgo de excepción ni
+        // de costeo corrupto — solo de que el costo promedio se reinicie hasta el próximo ingreso.
         // WarehouseId solo está poblado en líneas cuyo ítem controla inventario
         // (impuesto por SalesLineBuilder al crear el borrador).
-        foreach (var line in inv.Lines)
+        var preferences = await _preferences.ResolveAsync(ct);
+        if (!preferences.SalesPos.AllowSellWithoutStock)
         {
-            if (line.ItemId is null || line.WarehouseId is null)
-                continue;
+            foreach (var line in inv.Lines)
+            {
+                if (line.ItemId is null || line.WarehouseId is null)
+                    continue;
 
-            var stock = await _stockRepo.GetStockAsync(
-                tid,
-                line.WarehouseId.Value,
-                line.ItemId.Value,
-                ct
-            );
-            var available = stock?.Quantity ?? 0m;
-            if (available < line.Quantity)
-                return Result<SalesInvoiceDto>.ValidationFailure(
-                    $"Línea '{line.Description}': stock insuficiente en la bodega seleccionada "
-                        + $"(disponible: {available}, solicitado: {line.Quantity}). "
-                        + "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir."
+                var stock = await _stockRepo.GetStockAsync(
+                    tid,
+                    line.WarehouseId.Value,
+                    line.ItemId.Value,
+                    ct
                 );
+                var available = stock?.Quantity ?? 0m;
+                if (available < line.Quantity)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        $"Línea '{line.Description}': stock insuficiente en la bodega seleccionada "
+                            + $"(disponible: {available}, solicitado: {line.Quantity}). "
+                            + "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir."
+                    );
+            }
         }
 
         // ── Generar número secuencial SRI ───────────────────────────

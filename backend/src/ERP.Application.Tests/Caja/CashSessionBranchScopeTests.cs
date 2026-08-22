@@ -25,10 +25,21 @@ public sealed class CashSessionBranchScopeTests
     private static readonly Guid BranchBId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static OperationalPreferences DefaultPreferences(bool requireReasonForDifference = true) =>
+    private static OperationalPreferences DefaultPreferences(
+        bool requireReasonForDifference = true,
+        bool allowCloseWithDifference = true,
+        decimal maxAllowedDifference = 0m
+    ) =>
         new(
             SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
-            Cash: new CashPreferences(true, true, 0m, requireReasonForDifference, true, true),
+            Cash: new CashPreferences(
+                true,
+                allowCloseWithDifference,
+                maxAllowedDifference,
+                requireReasonForDifference,
+                true,
+                true
+            ),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
             Inventory: new InventoryPreferences(false, true, false, 0m),
             Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
@@ -170,6 +181,82 @@ public sealed class CashSessionBranchScopeTests
                     session.Id,
                     new List<CashClosingCountInput> { new(1m, "Billete $1", 80) },
                     CloseNotes: null
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Cerrar_con_diferencia_falla_si_la_preferencia_no_permite_cerrar_con_diferencia()
+    {
+        var session = CreateOpenSession(BranchAId);
+        var f = new CloseFixture(activeBranchId: BranchAId);
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences(allowCloseWithDifference: false));
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new CloseCashSessionCommand(
+                    session.Id,
+                    new List<CashClosingCountInput> { new(1m, "Billete $1", 80) },
+                    CloseNotes: "Diferencia por vuelto mal entregado"
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cerrar_con_diferencia_falla_si_supera_el_maximo_permitido()
+    {
+        var session = CreateOpenSession(BranchAId);
+        var f = new CloseFixture(activeBranchId: BranchAId);
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences(maxAllowedDifference: 5m));
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new CloseCashSessionCommand(
+                    session.Id,
+                    // Sesión abierta con 100; conteo de 80 = diferencia de 20, supera el máximo de 5.
+                    new List<CashClosingCountInput> { new(1m, "Billete $1", 80) },
+                    CloseNotes: "Diferencia por vuelto mal entregado"
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cerrar_con_diferencia_dentro_del_maximo_permitido_funciona()
+    {
+        var session = CreateOpenSession(BranchAId);
+        var f = new CloseFixture(activeBranchId: BranchAId);
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences(maxAllowedDifference: 50m));
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new CloseCashSessionCommand(
+                    session.Id,
+                    new List<CashClosingCountInput> { new(1m, "Billete $1", 80) },
+                    CloseNotes: "Diferencia por vuelto mal entregado"
                 ),
                 CancellationToken.None
             );

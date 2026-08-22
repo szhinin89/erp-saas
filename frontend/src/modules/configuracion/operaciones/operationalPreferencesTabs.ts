@@ -4,6 +4,7 @@ import { SalesPosPreferencesSection } from "./sections/SalesPosPreferencesSectio
 import { CashPreferencesSection } from "./sections/CashPreferencesSection";
 import { PrintingPreferencesSection } from "./sections/PrintingPreferencesSection";
 import { ElectronicDocumentsPreferencesSection } from "./sections/ElectronicDocumentsPreferencesSection";
+import { PurchasesPreferencesSection } from "./sections/PurchasesPreferencesSection";
 import { EmptyPreferencesSection } from "./sections/EmptyPreferencesSection";
 
 export type OperationalPreferencesTabId =
@@ -29,9 +30,9 @@ function emptyTabComponent(titleKey: string): ComponentType {
 }
 
 /**
- * Tabs del hub de Preferencias Operativas (CONFIG-DYNAMIC-OPERATIONS-01). Solo salesPos/cash/
- * printing/electronicDocuments tienen campos editables en esta primera versión — los demás
- * muestran un aviso explícito (EmptyPreferencesSection) en vez de settings decorativos.
+ * Tabs del hub de Preferencias Operativas (CONFIG-DYNAMIC-OPERATIONS-01/02). Solo salesPos/cash/
+ * purchases/printing/electronicDocuments tienen campos editables — los demás muestran un aviso
+ * explícito (EmptyPreferencesSection) en vez de settings decorativos.
  */
 export const operationalPreferencesTabs: OperationalPreferencesTab[] = [
   {
@@ -56,7 +57,7 @@ export const operationalPreferencesTabs: OperationalPreferencesTab[] = [
     id: "purchases",
     labelKey: "settings.operations.tabs.purchases",
     icon: "shopping_cart",
-    component: emptyTabComponent("settings.operations.purchases.title"),
+    component: PurchasesPreferencesSection,
   },
   {
     id: "inventory",

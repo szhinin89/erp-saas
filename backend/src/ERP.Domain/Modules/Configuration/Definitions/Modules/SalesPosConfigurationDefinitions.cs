@@ -5,9 +5,17 @@ using System.Globalization;
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
 /// <summary>
-/// CONFIG-DYNAMIC-OPERATIONS-01: Definitions para OrgSettingKeys.SalesPos. Solo
-/// AllowManualDiscount/MaxDiscountPercent tienen efecto real conectado (Fase B) — el resto se
-/// guarda y expone en /settings/operations pero aún no cambia comportamiento (Fase C).
+/// Definitions para OrgSettingKeys.SalesPos. Conectadas a efecto real: AllowManualDiscount/
+/// MaxDiscountPercent (CONFIG-DYNAMIC-OPERATIONS-01, ApplySalesDiscountHandler +
+/// SalesLineBuilder — ver también POS-DISCOUNT-RULES-01) y AllowSellWithoutStock
+/// (CONFIG-DYNAMIC-OPERATIONS-02, AuthorizeSalesInvoiceHandler). El resto se guarda y expone en
+/// /settings/operations pero aún no cambia comportamiento:
+/// - RequireOpenCashSession: NO conectada — requeriría una ruta de resolución de EmissionPointId
+///   independiente de ICurrentCashSession (hoy CreateSalesDraftHandler exige sesión abierta
+///   precisamente porque de ahí saca EmissionPointId/CashSessionId sin fallback). Conectar esto
+///   es un rediseño, no un simple gate — documentado, no implementado en CONFIG-DYNAMIC-OPERATIONS-02.
+/// - AllowManualPrice, RequireCustomerAboveAmount, AskBeforeIssue, DefaultPriceListId,
+///   DefaultCustomerId: sin consumidor todavía (Fase C).
 /// </summary>
 public static class SalesPosConfigurationDefinitions
 {

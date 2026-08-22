@@ -64,6 +64,16 @@ export function SalesPosPreferencesSection() {
               {...register("maxDiscountPercent")}
             />
           </ZHField>
+
+          <ZHToggle
+            label={t("settings.operations.salesPos.allowSellWithoutStockLabel")}
+            description={t("settings.operations.salesPos.allowSellWithoutStockDesc")}
+            value={page.allowSellWithoutStockValue}
+            onChange={(next) =>
+              page.setValue("allowSellWithoutStock", next, { shouldDirty: true })
+            }
+            disabled={page.saving || !page.canEdit}
+          />
         </div>
       </div>
 

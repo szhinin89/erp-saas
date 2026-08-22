@@ -3,6 +3,7 @@ import {
   cashPreferencesSchema,
   electronicDocumentsPreferencesSchema,
   printingPreferencesSchema,
+  purchasesPreferencesSchema,
   salesPosPreferencesSchema,
 } from "./operationalPreferencesSchemas";
 
@@ -12,6 +13,7 @@ describe("salesPosPreferencesSchema", () => {
       salesPosPreferencesSchema.safeParse({
         allowManualDiscount: true,
         maxDiscountPercent: 15,
+        allowSellWithoutStock: false,
       }).success,
     ).toBe(true);
   });
@@ -21,6 +23,7 @@ describe("salesPosPreferencesSchema", () => {
       salesPosPreferencesSchema.safeParse({
         allowManualDiscount: true,
         maxDiscountPercent: 150,
+        allowSellWithoutStock: false,
       }).success,
     ).toBe(false);
   });
@@ -30,22 +33,50 @@ describe("salesPosPreferencesSchema", () => {
       salesPosPreferencesSchema.safeParse({
         allowManualDiscount: true,
         maxDiscountPercent: -1,
+        allowSellWithoutStock: false,
       }).success,
     ).toBe(false);
   });
 });
 
 describe("cashPreferencesSchema", () => {
-  it("acepta un booleano válido", () => {
+  it("acepta valores válidos", () => {
     expect(
-      cashPreferencesSchema.safeParse({ requireReasonForDifference: false }).success,
+      cashPreferencesSchema.safeParse({
+        requireReasonForDifference: false,
+        allowCloseWithDifference: true,
+        maxAllowedDifference: 5,
+      }).success,
     ).toBe(true);
   });
 
   it("rechaza un valor no booleano", () => {
     expect(
-      cashPreferencesSchema.safeParse({ requireReasonForDifference: "yes" }).success,
+      cashPreferencesSchema.safeParse({
+        requireReasonForDifference: "yes",
+        allowCloseWithDifference: true,
+        maxAllowedDifference: 5,
+      }).success,
     ).toBe(false);
+  });
+
+  it("rechaza un máximo de diferencia negativo", () => {
+    expect(
+      cashPreferencesSchema.safeParse({
+        requireReasonForDifference: false,
+        allowCloseWithDifference: true,
+        maxAllowedDifference: -1,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("purchasesPreferencesSchema", () => {
+  it("acepta un booleano válido", () => {
+    expect(
+      purchasesPreferencesSchema.safeParse({ allowConfirmWithoutReceptionXml: false })
+        .success,
+    ).toBe(true);
   });
 });
 

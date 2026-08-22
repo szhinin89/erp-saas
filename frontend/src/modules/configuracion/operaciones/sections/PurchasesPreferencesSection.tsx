@@ -1,17 +1,15 @@
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
-import { ZHBtn, ZHField, ZHToggle } from "../../../../components/zh/ZHForm";
-import { ZhDecimalInput } from "../../../../components/zh/inputs";
+import { ZHBtn, ZHToggle } from "../../../../components/zh/ZHForm";
 import { useI18n } from "../../../../i18n/i18n";
-import { useCashPreferencesSection } from "./useCashPreferencesSection";
+import { usePurchasesPreferencesSection } from "./usePurchasesPreferencesSection";
 
-export function CashPreferencesSection() {
+export function PurchasesPreferencesSection() {
   const { t } = useI18n();
-  const page = useCashPreferencesSection();
-  const { register } = page;
+  const page = usePurchasesPreferencesSection();
 
   if (!page.canView)
-    return <NoAccessPage title={t("settings.operations.cash.title")} />;
+    return <NoAccessPage title={t("settings.operations.purchases.title")} />;
   if (page.settingsState.loading) return <LoadingState />;
 
   return (
@@ -37,43 +35,22 @@ export function CashPreferencesSection() {
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">point_of_sale</span>
-            <p className="pg-section-label">{t("settings.operations.cash.title")}</p>
+            <span className="material-symbols-outlined pg-section-icon">shopping_cart</span>
+            <p className="pg-section-label">{t("settings.operations.purchases.title")}</p>
           </div>
         </div>
         <div className="pg-section-body">
           <ZHToggle
-            label={t("settings.operations.cash.requireReasonForDifferenceLabel")}
-            description={t("settings.operations.cash.requireReasonForDifferenceDesc")}
-            value={page.requireReasonForDifferenceValue}
+            label={t("settings.operations.purchases.allowConfirmWithoutReceptionXmlLabel")}
+            description={t(
+              "settings.operations.purchases.allowConfirmWithoutReceptionXmlDesc",
+            )}
+            value={page.allowConfirmWithoutReceptionXmlValue}
             onChange={(next) =>
-              page.setValue("requireReasonForDifference", next, { shouldDirty: true })
+              page.setValue("allowConfirmWithoutReceptionXml", next, { shouldDirty: true })
             }
             disabled={page.saving || !page.canEdit}
           />
-
-          <ZHToggle
-            label={t("settings.operations.cash.allowCloseWithDifferenceLabel")}
-            description={t("settings.operations.cash.allowCloseWithDifferenceDesc")}
-            value={page.allowCloseWithDifferenceValue}
-            onChange={(next) =>
-              page.setValue("allowCloseWithDifference", next, { shouldDirty: true })
-            }
-            disabled={page.saving || !page.canEdit}
-          />
-
-          <ZHField
-            label={t("settings.operations.cash.maxAllowedDifferenceLabel")}
-            hint={t("settings.operations.cash.maxAllowedDifferenceHint")}
-            error={page.errors.maxAllowedDifference?.message}
-          >
-            <ZhDecimalInput
-              disabled={page.saving || !page.canEdit || !page.allowCloseWithDifferenceValue}
-              decimals={2}
-              positiveOnly
-              {...register("maxAllowedDifference")}
-            />
-          </ZHField>
         </div>
       </div>
 

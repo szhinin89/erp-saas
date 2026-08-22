@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -125,6 +126,30 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             createdBy: UserId
         );
 
+    /// <summary>Defaults que preservan el comportamiento vigente antes de CONFIG-DYNAMIC-OPERATIONS-02 (AllowSellWithoutStock=false → bloquea stock insuficiente, igual que siempre).</summary>
+    private static OperationalPreferences DefaultOperationalPreferences(
+        bool allowSellWithoutStock = false
+    ) =>
+        new(
+            SalesPos: new SalesPosPreferences(
+                true,
+                false,
+                true,
+                0m,
+                null,
+                allowSellWithoutStock,
+                false,
+                null,
+                null
+            ),
+            Cash: new CashPreferences(true, true, 0m, true, true, true),
+            Purchases: new PurchasesPreferences(null, true, true, true, false),
+            Inventory: new InventoryPreferences(false, true, false, 0m),
+            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+            Notifications: new NotificationsPreferences(true, false, "es")
+        );
+
     private static (
         AuthorizeSalesInvoiceHandler handler,
         Mock<ICompanyClock> companyClock,
@@ -134,9 +159,15 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         DateOnly companyToday,
         BusinessPartner? customerBp = null,
         SalesFiscalPolicyResult? fiscalPolicy = null,
-        bool paymentMethodIsCreditAllowed = false
+        bool paymentMethodIsCreditAllowed = false,
+        bool allowSellWithoutStock = false
     )
     {
+        var preferences = new Mock<IOperationalPreferencesResolver>();
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultOperationalPreferences(allowSellWithoutStock));
+
         var repo = new Mock<ISalesInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
@@ -223,10 +254,214 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
-            user.Object
+            user.Object,
+            preferences.Object
         );
 
         return (handler, companyClock, receivableRepo);
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-02 (sales.pos.allow_sell_without_stock): factura de una sola
+    /// línea CON ItemId/WarehouseId (a diferencia de CreateDraftInvoice, que los omite a propósito
+    /// para no ejercer la validación de stock) y bodega con stock insuficiente para la cantidad
+    /// pedida.
+    /// </summary>
+    private static (
+        AuthorizeSalesInvoiceHandler handler,
+        Mock<IStockRepository> stockRepo
+    ) BuildHandlerWithInsufficientStock(SalesInvoice inv, bool allowSellWithoutStock)
+    {
+        var repo = new Mock<ISalesInvoiceRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+
+        var tax = new Mock<ISriTaxResolver>();
+        tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
+
+        var stockRepo = new Mock<IStockRepository>();
+        stockRepo
+            .Setup(s => s.GetStockAsync(TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.Inventory.Entities.CurrentStock?)null); // sin stock (Quantity efectiva 0)
+        stockRepo
+            .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var edocRepo = new Mock<IElectronicDocumentRepository>();
+        edocRepo
+            .Setup(e => e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ElectronicDocument?)null);
+
+        var companyClock = new Mock<ICompanyClock>();
+        companyClock
+            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var user = new Mock<ICurrentUser>();
+        user.Setup(u => u.UserId).Returns(UserId);
+
+        var bpRepo = new Mock<IBusinessPartnerRepository>();
+        bpRepo
+            .Setup(r => r.GetByIdAsync(inv.CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((BusinessPartner?)null);
+
+        var fiscalPolicyResolver = new Mock<ISalesFiscalPolicyResolver>();
+        fiscalPolicyResolver
+            .Setup(r => r.GetEffectivePolicyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SalesFiscalPolicyResult(
+                    true,
+                    ConsumerFinalPolicyDefaults.FallbackMaxAmount,
+                    ConsumerFinalMaxAmountSource.Fallback,
+                    null
+                )
+            );
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(
+                    TenantId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    requiresReference: false,
+                    isCreditAllowed: false,
+                    sortOrder: 1,
+                    createdBy: UserId
+                )
+            );
+
+        var preferences = new Mock<IOperationalPreferencesResolver>();
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultOperationalPreferences(allowSellWithoutStock));
+
+        var handler = new AuthorizeSalesInvoiceHandler(
+            repo.Object,
+            Mock.Of<ISalesReceivableRepository>(),
+            stockRepo.Object,
+            tax.Object,
+            Mock.Of<IDocumentSequenceRepository>(),
+            Mock.Of<IEmissionPointRepository>(),
+            Mock.Of<IEstablishmentRepository>(),
+            edocRepo.Object,
+            Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
+            companyClock.Object,
+            bpRepo.Object,
+            fiscalPolicyResolver.Object,
+            paymentMethodRepo.Object,
+            Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
+            tenant.Object,
+            company.Object,
+            user.Object,
+            preferences.Object
+        );
+
+        return (handler, stockRepo);
+    }
+
+    private static SalesInvoice CreateDraftInvoiceWithStockTrackedLine(Guid itemId, Guid warehouseId)
+    {
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
+
+        var inv = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "DRAFT-TEST-STOCK",
+            issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
+            emissionPointId: null
+        );
+
+        var line = SalesInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto con stock",
+            quantity: 5,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: itemId,
+            warehouseId: warehouseId
+        );
+        inv.ReplaceLines(new[] { line }, UserId);
+
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            PaymentMethodId,
+            "01",
+            "Efectivo",
+            ExpectedGrandTotal(500m)
+        );
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        return inv;
+    }
+
+    [Fact]
+    public async Task Rejects_insufficient_stock_by_default()
+    {
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var inv = CreateDraftInvoiceWithStockTrackedLine(itemId, warehouseId);
+        var (handler, stockRepo) = BuildHandlerWithInsufficientStock(inv, allowSellWithoutStock: false);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("stock insuficiente");
+        stockRepo.Verify(
+            s => s.AppendMovementAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(), It.IsAny<decimal>(),
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
+                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
+                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
+            ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Allows_insufficient_stock_when_preference_enabled_and_still_posts_the_movement()
+    {
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var inv = CreateDraftInvoiceWithStockTrackedLine(itemId, warehouseId);
+        var (handler, stockRepo) = BuildHandlerWithInsufficientStock(inv, allowSellWithoutStock: true);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stockRepo.Verify(
+            s => s.AppendMovementAsync(
+                TenantId, CompanyId, itemId, warehouseId,
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -5m,
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
+                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
+                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
+            ),
+            Times.Once
+        );
     }
 
     [Fact]

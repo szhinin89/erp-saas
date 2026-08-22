@@ -8,14 +8,14 @@ import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import {
   operationalPreferencesService,
-  type SalesPosPreferencesDto,
+  type PurchasesPreferencesDto,
 } from "../api/operationalPreferencesService";
 import {
-  salesPosPreferencesSchema,
-  type SalesPosPreferencesValues,
+  purchasesPreferencesSchema,
+  type PurchasesPreferencesValues,
 } from "../schemas/operationalPreferencesSchemas";
 
-export function useSalesPosPreferencesSection() {
+export function usePurchasesPreferencesSection() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canView = canShow("settings.operations.view");
@@ -24,46 +24,36 @@ export function useSalesPosPreferencesSection() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [fullGroup, setFullGroup] = useState<SalesPosPreferencesDto | null>(null);
+  const [fullGroup, setFullGroup] = useState<PurchasesPreferencesDto | null>(null);
 
   const settingsState = useAsync(
     () => operationalPreferencesService.getPreferences(),
     canView,
   );
 
-  const form = useForm<SalesPosPreferencesValues>({
-    resolver: zodResolver(salesPosPreferencesSchema),
-    defaultValues: {
-      allowManualDiscount: true,
-      maxDiscountPercent: 0,
-      allowSellWithoutStock: false,
-    },
+  const form = useForm<PurchasesPreferencesValues>({
+    resolver: zodResolver(purchasesPreferencesSchema),
+    defaultValues: { allowConfirmWithoutReceptionXml: true },
   });
 
   const {
-    register,
     handleSubmit,
     reset,
     watch,
     setValue,
-    formState: { errors, isDirty },
+    formState: { isDirty },
   } = form;
-  const allowManualDiscountValue = watch("allowManualDiscount");
-  const allowSellWithoutStockValue = watch("allowSellWithoutStock");
+  const allowConfirmWithoutReceptionXmlValue = watch("allowConfirmWithoutReceptionXml");
 
-  const resetFromData = (dto: SalesPosPreferencesDto) => {
+  const resetFromData = (dto: PurchasesPreferencesDto) => {
     setFullGroup(dto);
-    reset({
-      allowManualDiscount: dto.allowManualDiscount,
-      maxDiscountPercent: dto.maxDiscountPercent,
-      allowSellWithoutStock: dto.allowSellWithoutStock,
-    });
+    reset({ allowConfirmWithoutReceptionXml: dto.allowConfirmWithoutReceptionXml });
   };
 
   useEffect(() => {
     const d = settingsState.data;
     if (!d) return;
-    resetFromData(d.salesPos);
+    resetFromData(d.purchases);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsState.data]);
 
@@ -74,10 +64,10 @@ export function useSalesPosPreferencesSection() {
     setSaving(true);
     try {
       const updated = await operationalPreferencesService.updatePreferences({
-        salesPos: { ...fullGroup, ...values },
+        purchases: { ...fullGroup, ...values },
       });
       setSaved(true);
-      resetFromData(updated.salesPos);
+      resetFromData(updated.purchases);
     } catch (err) {
       const applied = applyServerErrors(err, form.setError, (msg) => setSaveError(msg));
       if (!applied) {
@@ -96,7 +86,7 @@ export function useSalesPosPreferencesSection() {
   const handleDiscard = () => {
     setSaveError(null);
     setSaved(false);
-    if (settingsState.data) resetFromData(settingsState.data.salesPos);
+    if (settingsState.data) resetFromData(settingsState.data.purchases);
   };
 
   return {
@@ -107,11 +97,8 @@ export function useSalesPosPreferencesSection() {
     saved,
     settingsState,
     form,
-    errors,
     isDirty,
-    allowManualDiscountValue,
-    allowSellWithoutStockValue,
-    register,
+    allowConfirmWithoutReceptionXmlValue,
     setValue,
     onSubmit,
     handleDiscard,

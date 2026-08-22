@@ -33,21 +33,31 @@ export function useCashPreferencesSection() {
 
   const form = useForm<CashPreferencesValues>({
     resolver: zodResolver(cashPreferencesSchema),
-    defaultValues: { requireReasonForDifference: true },
+    defaultValues: {
+      requireReasonForDifference: true,
+      allowCloseWithDifference: true,
+      maxAllowedDifference: 0,
+    },
   });
 
   const {
+    register,
     handleSubmit,
     reset,
     watch,
     setValue,
-    formState: { isDirty },
+    formState: { errors, isDirty },
   } = form;
   const requireReasonForDifferenceValue = watch("requireReasonForDifference");
+  const allowCloseWithDifferenceValue = watch("allowCloseWithDifference");
 
   const resetFromData = (dto: CashPreferencesDto) => {
     setFullGroup(dto);
-    reset({ requireReasonForDifference: dto.requireReasonForDifference });
+    reset({
+      requireReasonForDifference: dto.requireReasonForDifference,
+      allowCloseWithDifference: dto.allowCloseWithDifference,
+      maxAllowedDifference: dto.maxAllowedDifference,
+    });
   };
 
   useEffect(() => {
@@ -97,8 +107,11 @@ export function useCashPreferencesSection() {
     saved,
     settingsState,
     form,
+    errors,
     isDirty,
     requireReasonForDifferenceValue,
+    allowCloseWithDifferenceValue,
+    register,
     setValue,
     onSubmit,
     handleDiscard,
