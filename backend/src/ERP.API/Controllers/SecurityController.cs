@@ -3,7 +3,7 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 using ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
-using ERP.Domain.Kernel.Security;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,14 +11,27 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Configuración de seguridad (matrices de delegación y permisos).
-/// Acceso: Admin del tenant (scope propio).
+/// Delegación de administración (matriz manageRoles/manageModules/manageScreens/manageProcesses
+/// por usuario) — ver /admin/security. ADMIN-SECURITY-SPLIT-01: protegido por el sistema de
+/// políticas perm: igual que el resto del ERP, ya no por [Authorize(Roles = SecurityRoles.Admin)]
+/// como única puerta — ese chequeo por rol literal era la excepción del grupo Administración
+/// (los otros cinco controllers ya usaban perm:). El rol Admin sigue teniendo acceso total: el
+/// authorizer de "perm:" hace bypass automático para SecurityRoles.Admin (mismo mecanismo que
+/// NavigationBuilder usa para el menú), así que no se pierde compatibilidad con el rol.
 /// </summary>
 [ApiController]
-[AppFeature("Security API", "perm:security.api", "🧩", null, null, 989, IsVisibleInMenu = false)]
+[AppFeature(
+    "Delegación de administración (API)",
+    $"perm:{AdminPermissions.DelegationView}",
+    "🧩",
+    null,
+    null,
+    989,
+    IsVisibleInMenu = false
+)]
 [Route("api/v1/[controller]")]
 [Authorize(Policy = "Session")]
-[Authorize(Roles = SecurityRoles.Admin)]
+[Authorize(Policy = $"perm:{AdminPermissions.DelegationView}")]
 [Produces("application/json")]
 public class SecurityController : ControllerBase
 {
@@ -42,8 +55,11 @@ public class SecurityController : ControllerBase
         );
     }
 
-    /// <summary>Upsert de scopes de administración por sujeto (Role/User).</summary>
+    /// <summary>Upsert de scopes de administración por sujeto (Role/User). Requiere
+    /// admin.delegation.configure (más restrictivo que la policy del controller, que solo exige
+    /// admin.delegation.view).</summary>
     [HttpPut("admin-scopes")]
+    [Authorize(Policy = $"perm:{AdminPermissions.DelegationConfigure}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

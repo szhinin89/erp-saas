@@ -19,4 +19,14 @@ public static class AdminPermissions
     public const string RolesView = "admin.roles.view";
     public const string UsersView = "admin.users.view";
     public const string ActivityView = "admin.activity.view";
+
+    /// <summary>
+    /// ADMIN-SECURITY-SPLIT-01: permisos de la pantalla "Delegación de administración"
+    /// (/admin/security — matriz de manageRoles/manageModules/manageScreens/manageProcesses por
+    /// usuario). No confundir con los permisos funcionales de Perfiles (AccessPermissions.
+    /// ProfilesView) — esta pantalla solo controla quién puede administrar delegación
+    /// administrativa, nunca permisos operativos de negocio.
+    /// </summary>
+    public const string DelegationView = "admin.delegation.view";
+    public const string DelegationConfigure = "admin.delegation.configure";
 }

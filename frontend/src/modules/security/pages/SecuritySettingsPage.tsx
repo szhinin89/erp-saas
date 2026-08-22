@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   EmptyState,
   LoadingState,
@@ -8,39 +6,15 @@ import {
   NoAccessPage,
 } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import {
-  ZHToggle,
-  ZHField,
-  ZHBtn,
-  ZHFormActions,
-} from "../../../components/zh/ZHForm";
-import { ZHModal } from "../../../components/zh/ZHModal";
+import { ZHToggle } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhSelect } from "../../../components/zh/inputs";
-import { useAuthStore } from "../../../store/authStore";
 import {
   securityService,
   type SecurityAdminMatrix,
   type SecurityUser,
 } from "../api/securityService";
-import {
-  companyUserPreferencesFacade,
-  COMPANY_USER_LOGIN_MODES,
-} from "../../access/facades/companyUserPreferencesFacade";
-import {
-  branchLookupFacade,
-  type BranchListItemDto,
-} from "../../branches/facades/branchLookupFacade";
-import {
-  companyUserPreferencesSchema,
-  type CompanyUserPreferencesFormValues,
-} from "../../../schemas/access/companyUserPreferencesSchema";
-import { isAdminRole } from "../../../access/permissionUi";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatApiError } from "../../lib/formatApiError";
-import { formatApiRequestError } from "../../lib/apiError";
-import { applyServerErrors } from "../../lib/validationErrors";
-import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
 import "./SecuritySettingsPage.css";
 
@@ -75,7 +49,6 @@ function userAllowedScopes(
 }
 
 export function SecuritySettingsPage() {
-  const { user } = useAuthStore();
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
 
@@ -84,112 +57,11 @@ export function SecuritySettingsPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const isAdminUser = isAdminRole(user?.role);
-  const canManagePreferences = canShow("access.company_user_memberships.view");
-
-  /* ── Fase G: modal de preferencias (sucursal por defecto + modo de login) ────── */
-  const [prefsTarget, setPrefsTarget] = useState<SecurityUser | null>(null);
-  const [prefsModalOpen, setPrefsModalOpen] = useState(false);
-  const [prefsLoading, setPrefsLoading] = useState(false);
-  const [prefsSaving, setPrefsSaving] = useState(false);
-  const [prefsSaveError, setPrefsSaveError] = useState("");
-  const [branches, setBranches] = useState<BranchListItemDto[]>([]);
-  const [branchesLoading, setBranchesLoading] = useState(false);
-
-  const {
-    register: registerPrefs,
-    handleSubmit: handlePrefsSubmit,
-    reset: resetPrefs,
-    watch: watchPrefs,
-    setError: setPrefsFieldError,
-    formState: { errors: prefsErrors },
-  } = useForm<CompanyUserPreferencesFormValues>({
-    resolver: zodResolver(companyUserPreferencesSchema),
-    defaultValues: { loginMode: "AskBranch", defaultBranchId: null },
-  });
-  const prefsLoginMode = watchPrefs("loginMode");
-
-  const openPreferences = async (target: SecurityUser) => {
-    setPrefsTarget(target);
-    setPrefsModalOpen(true);
-    setPrefsSaveError("");
-    resetPrefs({ loginMode: "AskBranch", defaultBranchId: null });
-    setPrefsLoading(true);
-    try {
-      if (branches.length === 0) {
-        setBranchesLoading(true);
-        branchLookupFacade
-          .list("all")
-          .then(setBranches)
-          .finally(() => setBranchesLoading(false));
-      }
-      const existing = await companyUserPreferencesFacade.get(
-        target.companyUserMembershipId,
-      );
-      resetPrefs({
-        loginMode: existing?.loginMode ?? "AskBranch",
-        defaultBranchId: existing?.defaultBranchId ?? null,
-      });
-    } catch (e) {
-      setPrefsSaveError(
-        formatApiRequestError(e, {
-          generic: t(
-            "security.preferences.error.load",
-            "No se pudieron cargar las preferencias.",
-          ),
-        }),
-      );
-    } finally {
-      setPrefsLoading(false);
-    }
-  };
-
-  const closePreferences = () => {
-    setPrefsModalOpen(false);
-    setPrefsTarget(null);
-    setPrefsSaveError("");
-  };
-
-  const onSubmitPreferences = handlePrefsSubmit(async (values) => {
-    if (!prefsTarget) return;
-    setPrefsSaving(true);
-    setPrefsSaveError("");
-    try {
-      await companyUserPreferencesFacade.update(
-        prefsTarget.companyUserMembershipId,
-        {
-          loginMode: values.loginMode,
-          defaultBranchId: values.defaultBranchId || null,
-        },
-      );
-      message.success(
-        t(
-          "security.preferences.success",
-          "Preferencias actualizadas correctamente.",
-        ),
-      );
-      closePreferences();
-    } catch (e) {
-      const applied = applyServerErrors(e, setPrefsFieldError, (msg) =>
-        setPrefsSaveError(msg),
-      );
-      if (!applied) {
-        setPrefsSaveError(
-          formatApiRequestError(e, {
-            generic: t(
-              "security.preferences.error.save",
-              "No se pudieron guardar las preferencias.",
-            ),
-          }),
-        );
-      }
-    } finally {
-      setPrefsSaving(false);
-    }
-  });
+  const canView = canShow("admin.delegation.view");
+  const canConfigure = canShow("admin.delegation.configure");
 
   useEffect(() => {
-    if (!isAdminUser) {
+    if (!canView) {
       setLoading(false);
       return;
     }
@@ -212,7 +84,7 @@ export function SecuritySettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isAdminUser]);
+  }, [canView]);
 
   const rows = useMemo(() => {
     if (!matrix) return [];
@@ -265,16 +137,18 @@ export function SecuritySettingsPage() {
     }
   };
 
-  if (!isAdminUser) {
+  if (!canView) {
     return <NoAccessPage title={t("security.title")} />;
   }
 
   return (
     <PageShell
-      kicker={t("app.nav.group.security")}
+      kicker={t("app.nav.group.admin")}
       title={t("security.title")}
       subtitle={t("security.subtitle")}
     >
+      <ZHPageNotice variant="info" message={t("security.profilesNote")} />
+
       {error ? (
         <ZHPageNotice
           variant="error"
@@ -297,16 +171,13 @@ export function SecuritySettingsPage() {
                   {scopeColumns.map((c) => (
                     <th key={c.key}>{t(c.labelKey)}</th>
                   ))}
-                  {canManagePreferences ? (
-                    <th>{t("security.preferences.column", "Preferencias")}</th>
-                  ) : null}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((u) => {
                   const current =
                     scopeStateByUserId.get(u.id) ?? new Set<number>();
-                  const disabled = savingKey === u.id;
+                  const disabled = savingKey === u.id || !canConfigure;
                   return (
                     <tr
                       key={u.id}
@@ -343,18 +214,6 @@ export function SecuritySettingsPage() {
                           </td>
                         );
                       })}
-                      {canManagePreferences ? (
-                        <td className="cell-center">
-                          <ZHBtn
-                            variant="ghost"
-                            size="md"
-                            type="button"
-                            onClick={() => void openPreferences(u)}
-                          >
-                            {t("security.preferences.action", "Preferencias")}
-                          </ZHBtn>
-                        </td>
-                      ) : null}
                     </tr>
                   );
                 })}
@@ -363,96 +222,6 @@ export function SecuritySettingsPage() {
           </div>
         )}
       </ZHCard>
-
-      <ZHModal
-        open={prefsModalOpen}
-        onClose={closePreferences}
-        size="md"
-        title={t(
-          "security.preferences.title",
-          "Preferencias de inicio de sesión",
-        )}
-        subtitle={prefsTarget?.fullName}
-      >
-        {prefsLoading ? (
-          <p className="subtle">{t("common.loading")}</p>
-        ) : (
-          <form onSubmit={onSubmitPreferences}>
-            <ZHField
-              label={t("security.preferences.loginMode", "Modo de ingreso")}
-              error={prefsErrors.loginMode?.message}
-            >
-              <ZhSelect disabled={prefsSaving} {...registerPrefs("loginMode")}>
-                {COMPANY_USER_LOGIN_MODES.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {mode === "AskBranch"
-                      ? t(
-                          "security.preferences.loginMode.askBranch",
-                          "Preguntar sucursal al iniciar sesión",
-                        )
-                      : t(
-                          "security.preferences.loginMode.directToDefault",
-                          "Ingresar directamente a la sucursal por defecto",
-                        )}
-                  </option>
-                ))}
-              </ZhSelect>
-            </ZHField>
-
-            <ZHField
-              label={t(
-                "security.preferences.defaultBranch",
-                "Sucursal por defecto",
-              )}
-              error={prefsErrors.defaultBranchId?.message}
-              hint={
-                prefsLoginMode === "AskBranch"
-                  ? t(
-                      "security.preferences.defaultBranch.optional",
-                      "Opcional en este modo.",
-                    )
-                  : null
-              }
-            >
-              <ZhSelect
-                disabled={prefsSaving || branchesLoading}
-                {...registerPrefs("defaultBranchId")}
-              >
-                <option value="">
-                  {t(
-                    "security.preferences.defaultBranch.none",
-                    "Sin sucursal por defecto",
-                  )}
-                </option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </ZhSelect>
-            </ZHField>
-
-            {prefsSaveError ? (
-              <ZHPageNotice
-                variant="error"
-                message={t("common.errorPrefix")}
-                detail={prefsSaveError}
-              />
-            ) : null}
-
-            <ZHFormActions
-              onCancel={closePreferences}
-              hideDraft
-              saveButtonType="submit"
-              disableSave={prefsSaving}
-              labels={{
-                cancel: t("common.cancel"),
-                save: prefsSaving ? t("common.saving") : t("common.save"),
-              }}
-            />
-          </form>
-        )}
-      </ZHModal>
     </PageShell>
   );
 }

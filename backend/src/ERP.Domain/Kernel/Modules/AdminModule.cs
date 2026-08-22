@@ -25,7 +25,8 @@ public static class AdminModule
     public const string Roles = "/admin/roles";
 
     [NavItem(
-        "Security",
+        "Administration Delegation",
+        Permission = AdminPermissions.DelegationView,
         LabelKey = "app.nav.item.admin.security",
         SortOrder = 30,
         Id = "a1000000-0000-4000-9000-00000000000a"

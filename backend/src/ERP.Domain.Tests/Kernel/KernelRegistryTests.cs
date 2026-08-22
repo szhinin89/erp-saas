@@ -316,6 +316,22 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_admin_security_requires_delegation_view_permission_not_a_bare_role_check()
+    {
+        // ADMIN-SECURITY-SPLIT-01: antes este NavItem no tenía Permission (visible a cualquier
+        // usuario autenticado) mientras la pantalla/API solo estaban protegidas por
+        // [Authorize(Roles = "Admin")]. Ahora exige admin.delegation.view, igual que el resto del
+        // grupo Administración.
+        var navigation = KernelRegistry.Navigation;
+
+        var delegation = navigation.Single(n => n.RoutePath == "/admin/security");
+        delegation.GroupCode.Should().Be("admin");
+        delegation.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.AdminPermissions.DelegationView);
+        delegation.SortOrder.Should().Be(30);
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry
