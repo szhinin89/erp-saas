@@ -279,6 +279,24 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_settings_operational_preferences_with_settings_operations_view_permission()
+    {
+        var navigation = KernelRegistry.Navigation;
+
+        var operationalPreferences = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/settings/operations"
+        );
+        operationalPreferences.Should().NotBeNull(
+            "preferencias operativas debe estar en el menú de Configuración (NAV-CONFIG-FIX-01)"
+        );
+        operationalPreferences!.GroupCode.Should().Be("settings");
+        operationalPreferences
+            .PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.OperationalPreferencesPermissions.View);
+        operationalPreferences.SortOrder.Should().Be(80);
+    }
+
+    [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
         var keys = KernelRegistry

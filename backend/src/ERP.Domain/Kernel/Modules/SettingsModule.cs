@@ -68,4 +68,13 @@ public static class SettingsModule
         Id = "a1000000-0000-4000-9000-000000000012"
     )]
     public const string CommunicationsEmail = "/settings/communications/email";
+
+    [NavItem(
+        "Preferencias operativas",
+        Permission = OperationalPreferencesPermissions.View,
+        LabelKey = "app.nav.item.settings.operationalPreferences",
+        SortOrder = 80,
+        Id = "a1000000-0000-4000-9000-000000000013"
+    )]
+    public const string OperationalPreferences = "/settings/operations";
 }
