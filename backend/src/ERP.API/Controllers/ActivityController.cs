@@ -50,7 +50,12 @@ public class ActivityController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 
-    /// <summary>Últimos movimientos de auditoría sobre una entidad (tenant actual).</summary>
+    /// <summary>
+    /// Últimos movimientos de auditoría sobre una entidad (tenant actual). ADMIN-SESSIONS-
+    /// ACTIVITY-POLISH-01: endpoint funcional, sin consumidor en el frontend todavía — reservado
+    /// para un futuro "Ver actividad de este registro" en fichas de detalle (usuario, documento,
+    /// etc.). No eliminar; no exponer en UI sin ese diseño aprobado (ver activityService.ts).
+    /// </summary>
     [HttpGet("entity")]
     [ProducesResponseType(
         typeof(ApiResponse<IReadOnlyList<UserActivityDto>>),

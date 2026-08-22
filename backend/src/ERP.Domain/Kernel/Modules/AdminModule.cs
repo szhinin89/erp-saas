@@ -33,23 +33,25 @@ public static class AdminModule
     )]
     public const string Security = "/admin/security";
 
-    [NavItem(
-        "Activity",
-        Permission = AdminPermissions.ActivityView,
-        LabelKey = "app.nav.item.admin.activity",
-        SortOrder = 40,
-        Id = "a1000000-0000-4000-9000-000000000009"
-    )]
-    public const string Activity = "/admin/activity";
-
+    // ADMIN-SESSIONS-ACTIVITY-POLISH-01: Sesiones antes de Actividad — orden pedido
+    // (Acceso usuarios, Perfiles, Delegación de administración, Sesiones de usuario, Actividad).
     [NavItem(
         "Sesiones de usuario",
         Permission = AccessPermissions.SessionsView,
         LabelKey = "app.nav.item.admin.accessSessions",
-        SortOrder = 45,
+        SortOrder = 40,
         Id = "a1000000-0000-4000-9000-00000000000b"
     )]
     public const string AccessSessions = "/admin/access/sessions";
+
+    [NavItem(
+        "Activity",
+        Permission = AdminPermissions.ActivityView,
+        LabelKey = "app.nav.item.admin.activity",
+        SortOrder = 50,
+        Id = "a1000000-0000-4000-9000-000000000009"
+    )]
+    public const string Activity = "/admin/activity";
 
     // "Companies" (ADMIN-COMPANIES-REGROUP-01) se movió a SettingsModule — administra datos de
     // empresa/fiscales/branding/documentos, conceptualmente Configuración, no usuarios/perfiles/

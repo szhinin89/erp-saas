@@ -16,8 +16,11 @@ import {
   type SessionStatisticsDto,
   type UserSessionAdminDto,
 } from "../../api/userSessionAdminService";
+import { companyManagementService } from "../../../company-management/api/companyManagementService";
+import type { CompanyListItem } from "../../../../types/companyManagement";
 import { formatApiError } from "../../../lib/formatApiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { useI18n } from "../../../../i18n/i18n";
 
 const STATUS_LABEL: Record<UserSessionAdminDto["status"], string> = {
   Active: "Activa",
@@ -29,9 +32,15 @@ const STATUS_LABEL: Record<UserSessionAdminDto["status"], string> = {
 const PAGE_SIZE = 25;
 
 export function AdminUserSessionsPage() {
+  const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canView = canShow("access.sessions.view");
   const canClose = canShow("access.sessions.close");
+  // Reutiliza companyManagementService (ya usado por /companies) para reemplazar el filtro de
+  // empresa por un selector real en vez de un GUID crudo — solo si el usuario tiene el permiso
+  // que ese servicio exige (erp.companies.view); si no lo tiene, el filtro degrada a texto libre
+  // en vez de romper la pantalla con un 403 al cargar.
+  const canPickCompany = canShow("erp.companies.view");
 
   const [identityUserId, setIdentityUserId] = useState("");
   const [companyId, setCompanyId] = useState("");
@@ -47,6 +56,7 @@ export function AdminUserSessionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,7 +90,16 @@ export function AdminUserSessionsPage() {
     if (canView) void load();
   }, [canView, load]);
 
-  if (!canView) return <NoAccessPage title="Sesiones de Usuario" />;
+  useEffect(() => {
+    if (!canView || !canPickCompany) return;
+    companyManagementService
+      .list(false)
+      .then(setCompanies)
+      .catch(() => setCompanies([]));
+  }, [canView, canPickCompany]);
+
+  if (!canView)
+    return <NoAccessPage title={t("app.nav.item.admin.accessSessions")} />;
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -103,9 +122,9 @@ export function AdminUserSessionsPage() {
 
   return (
     <ErpPageTemplate
-      kicker="Administración"
-      title="Sesiones de Usuario"
-      subtitle="Monitoreo y cierre administrativo de sesiones activas (UserSession)."
+      kicker={t("app.nav.group.admin")}
+      title={t("app.nav.item.admin.accessSessions")}
+      subtitle={t("admin.accessSessions.subtitle")}
       action={
         <ZHBtn
           variant="secondary"
@@ -142,6 +161,10 @@ export function AdminUserSessionsPage() {
       <div className="pg-section">
         <div className="pg-table-controls">
           <div className="pg-table-controls-left">
+            {/* TODO(ADMIN-SESSIONS-ACTIVITY-POLISH-01): no existe hoy un buscador reutilizable
+                de identity users a través de empresas del tenant (LookupUserByUsernameAdmin exige
+                username exacto, no es un picker de búsqueda) — se documenta en vez de improvisar
+                un selector nuevo. Reemplazar por un buscador real cuando exista ese servicio. */}
             <input
               className="zh-input"
               type="text"
@@ -149,13 +172,28 @@ export function AdminUserSessionsPage() {
               value={identityUserId}
               onChange={(e) => setIdentityUserId(e.target.value)}
             />
-            <input
-              className="zh-input"
-              type="text"
-              placeholder="Id. de empresa (GUID)…"
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
-            />
+            {canPickCompany ? (
+              <select
+                className="zh-input"
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+              >
+                <option value="">Todas las empresas</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.tradeName || c.legalName}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="zh-input"
+                type="text"
+                placeholder="Id. de empresa (GUID)…"
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+              />
+            )}
             <select
               className="zh-input"
               value={status}

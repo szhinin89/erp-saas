@@ -29,6 +29,12 @@ export const activityService = {
     );
   },
 
+  /**
+   * ADMIN-SESSIONS-ACTIVITY-POLISH-01: capacidad reservada para un futuro "Ver actividad de este
+   * registro" en fichas de detalle (usuario, documento, etc.) — GetForEntity ya existe en
+   * ActivityController y funciona, pero ninguna pantalla lo consume todavía porque no hay UX
+   * aprobada para dónde/cómo mostrarlo. No eliminar; no exponer sin ese diseño aprobado.
+   */
   forEntity: (opts: {
     entityType: string;
     entityId: string;

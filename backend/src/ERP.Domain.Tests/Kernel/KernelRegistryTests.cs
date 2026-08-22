@@ -243,7 +243,8 @@ public sealed class KernelRegistryTests
         accessSessions
             .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.SessionsView);
-        accessSessions.SortOrder.Should().Be(45);
+        // ADMIN-SESSIONS-ACTIVITY-POLISH-01: reordenado antes de Actividad (SortOrder 45 → 40).
+        accessSessions.SortOrder.Should().Be(40);
 
         navigation.Should().NotContain(n => n.RoutePath == "/rrhh");
 
@@ -349,6 +350,29 @@ public sealed class KernelRegistryTests
             .Where(n => n.GroupCode == "admin")
             .Should()
             .NotContain(n => n.RoutePath == "/companies");
+    }
+
+    [Fact]
+    public void Navigation_admin_group_follows_the_requested_menu_order()
+    {
+        // ADMIN-SESSIONS-ACTIVITY-POLISH-01: Acceso usuarios, Perfiles, Delegación de
+        // administración, Sesiones de usuario, Actividad — en ese orden.
+        var expectedRouteOrder = new[]
+        {
+            "/access/users",
+            "/admin/roles",
+            "/admin/security",
+            "/admin/access/sessions",
+            "/admin/activity",
+        };
+
+        var actualRouteOrder = KernelRegistry
+            .Navigation.Where(n => n.GroupCode == "admin")
+            .OrderBy(n => n.SortOrder)
+            .Select(n => n.RoutePath)
+            .ToArray();
+
+        actualRouteOrder.Should().Equal(expectedRouteOrder);
     }
 
     [Fact]

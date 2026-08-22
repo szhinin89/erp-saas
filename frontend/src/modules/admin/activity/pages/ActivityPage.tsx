@@ -75,7 +75,7 @@ export function ActivityPage() {
     <ErpPageTemplate
       kicker={t("app.nav.group.admin")}
       title={t("app.nav.item.admin.activity")}
-      subtitle="Historial de acciones recientes en su empresa."
+      subtitle={t("admin.activity.subtitle")}
       action={
         <ZHBtn
           variant="secondary"
