@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-21T01:45:49.992Z",
+  "generatedAt": "2026-08-22T00:10:27.062Z",
   "summary": {
-    "total": 98,
-    "allowed": 98,
+    "total": 100,
+    "allowed": 100,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -14,6 +14,7 @@
     "/api/sales",
     "/api/purchases",
     "/api/admin/iam",
+    "/api/communications",
     "/api/companies",
     "/api/dashboard",
     "/api/electronic-invoicing",
@@ -277,6 +278,22 @@
       "endpoint": "/api/v1/catalog/sri-vat-rates",
       "files": [
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/communications/email-settings",
+      "files": [
+        "frontend/src/modules/configuracion/comunicaciones/api/communicationsEmailSettingsService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/communications/email-settings/test",
+      "files": [
+        "frontend/src/modules/configuracion/comunicaciones/api/communicationsEmailSettingsService.ts"
       ],
       "legacy": false,
       "allowed": true
