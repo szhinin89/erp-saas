@@ -41,6 +41,43 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.Communications.ReplyToEmail };
         yield return new object[] { OrgSettingKeys.Communications.MaxRetries };
         yield return new object[] { OrgSettingKeys.Communications.DefaultLanguage };
+        yield return new object[] { OrgSettingKeys.Communications.SalesInvoiceAuthorizedEnabled };
+        yield return new object[] { OrgSettingKeys.Communications.SendCopyToCompanyEmail };
+        yield return new object[] { OrgSettingKeys.SalesPos.RequireOpenCashSession };
+        yield return new object[] { OrgSettingKeys.SalesPos.AllowManualPrice };
+        yield return new object[] { OrgSettingKeys.SalesPos.AllowManualDiscount };
+        yield return new object[] { OrgSettingKeys.SalesPos.MaxDiscountPercent };
+        yield return new object[] { OrgSettingKeys.SalesPos.RequireCustomerAboveAmount };
+        yield return new object[] { OrgSettingKeys.SalesPos.AllowSellWithoutStock };
+        yield return new object[] { OrgSettingKeys.SalesPos.AskBeforeIssue };
+        yield return new object[] { OrgSettingKeys.SalesPos.DefaultPriceListId };
+        yield return new object[] { OrgSettingKeys.SalesPos.DefaultCustomerId };
+        yield return new object[] { OrgSettingKeys.Cash.RequireOpeningAmount };
+        yield return new object[] { OrgSettingKeys.Cash.AllowCloseWithDifference };
+        yield return new object[] { OrgSettingKeys.Cash.MaxAllowedDifference };
+        yield return new object[] { OrgSettingKeys.Cash.RequireReasonForDifference };
+        yield return new object[] { OrgSettingKeys.Cash.AllowManualInOutMovements };
+        yield return new object[] { OrgSettingKeys.Cash.RequireReasonForMovements };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptMode };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptCopies };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptPaperWidth };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptIncludeLogo };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptIncludeAccessKey };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptIncludeCashier };
+        yield return new object[] { OrgSettingKeys.Printing.SalesReceiptOpenCashDrawer };
+        yield return new object[] { OrgSettingKeys.Purchases.DefaultWarehouseId };
+        yield return new object[] { OrgSettingKeys.Purchases.AllowConfirmWithoutReceptionXml };
+        yield return new object[] { OrgSettingKeys.Purchases.UpdateCostOnConfirm };
+        yield return new object[] { OrgSettingKeys.Purchases.AllowManualCostChange };
+        yield return new object[] { OrgSettingKeys.Purchases.RequireReasonForCostChange };
+        yield return new object[] { OrgSettingKeys.Inventory.AllowNegativeStock };
+        yield return new object[] { OrgSettingKeys.Inventory.RequireReasonForAdjustment };
+        yield return new object[] { OrgSettingKeys.Inventory.RequireApprovalForLargeAdjustment };
+        yield return new object[] { OrgSettingKeys.Inventory.LargeAdjustmentThresholdAmount };
+        yield return new object[] { OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled };
+        yield return new object[] { OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts };
+        yield return new object[] { OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization };
+        yield return new object[] { OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization };
     }
 
     [Theory]

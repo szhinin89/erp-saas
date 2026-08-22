@@ -15,6 +15,7 @@ import {
   submitReceiptPrintJob,
   type PrintJobResponse,
 } from "../api/printAgentClient";
+import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
 import {
   ISSUE_STEPS,
   type IssuePhase,
@@ -119,6 +120,32 @@ export function SalesIssueModal({
   const [lastFailedReceiptJobId, setLastFailedReceiptJobId] = useState<
     string | null
   >(null);
+  // Preferencia operativa printing.salesReceipt.mode/copies (CONFIG-DYNAMIC-OPERATIONS-01).
+  // Falla abierta al comportamiento actual (AskBeforePrint, 1 copia) si no se puede cargar —
+  // la impresión de tirilla no debe bloquearse por un problema al leer esta preferencia.
+  const [printingPrefs, setPrintingPrefs] = useState<{
+    mode: "AskBeforePrint" | "AlwaysPrint" | "NeverAutoPrint";
+    copies: number;
+  }>({ mode: "AskBeforePrint", copies: 1 });
+
+  useEffect(() => {
+    let cancelled = false;
+    operationalPreferencesService
+      .getPreferences()
+      .then((dto) => {
+        if (cancelled) return;
+        setPrintingPrefs({
+          mode: dto.printing.salesReceiptMode,
+          copies: dto.printing.salesReceiptCopies,
+        });
+      })
+      .catch(() => {
+        // Mantener el default (AskBeforePrint, 1 copia) — ver comentario arriba.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // ZHModal enfoca automáticamente el primer elemento focusable del cuerpo/footer
   // en orden de documento — el cuerpo de 'confirm' no tiene campos, así que ese
@@ -154,7 +181,11 @@ export function SalesIssueModal({
 
     try {
       const payload = await salesService.getReceiptPrintPayload(result.id);
-      const request = buildReceiptPrintJobRequest(payload);
+      const request = buildReceiptPrintJobRequest(
+        payload,
+        undefined,
+        printingPrefs.copies,
+      );
       const response: PrintJobResponse =
         lastFailedReceiptJobId === request.jobId
           ? await retryReceiptPrintJob(request.jobId)
@@ -182,7 +213,21 @@ export function SalesIssueModal({
           : null,
       );
     }
-  }, [lastFailedReceiptJobId, result]);
+  }, [lastFailedReceiptJobId, result, printingPrefs.copies]);
+
+  // printing.salesReceipt.mode = AlwaysPrint: imprime automáticamente al llegar a "success",
+  // sin esperar el clic manual — una sola vez por factura (guardado por receiptPrintState).
+  useEffect(() => {
+    if (
+      phase === "success" &&
+      result &&
+      printingPrefs.mode === "AlwaysPrint" &&
+      receiptPrintState === "idle"
+    ) {
+      void handlePrintReceipt();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, result, printingPrefs.mode, receiptPrintState]);
 
   if (phase === "idle") return null;
   const dc = getDecimalConfig().totalAmount;
@@ -216,22 +261,24 @@ export function SalesIssueModal({
       </>
     ) : phase === "success" ? (
       <>
-        <ZHBtn
-          type="button"
-          variant="ghost"
-          size="md"
-          disabled={receiptPrintState === "printing"}
-          onClick={() => void handlePrintReceipt()}
-        >
-          <span className="material-symbols-outlined zh-icon-md">
-            receipt_long
-          </span>
-          {receiptPrintState === "printing"
-            ? "Imprimiendo..."
-            : receiptPrintState === "success"
-              ? "Reimprimir tirilla"
-              : "Imprimir tirilla"}
-        </ZHBtn>
+        {printingPrefs.mode !== "NeverAutoPrint" && (
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            size="md"
+            disabled={receiptPrintState === "printing"}
+            onClick={() => void handlePrintReceipt()}
+          >
+            <span className="material-symbols-outlined zh-icon-md">
+              receipt_long
+            </span>
+            {receiptPrintState === "printing"
+              ? "Imprimiendo..."
+              : receiptPrintState === "success"
+                ? "Reimprimir tirilla"
+                : "Imprimir tirilla"}
+          </ZHBtn>
+        )}
         <ZHBtn
           type="button"
           variant="ghost"

@@ -849,6 +849,10 @@ public static class DependencyInjection
             ERP.Infrastructure.Services.InvoiceDefaultsResolver
         >();
         services.AddScoped<
+            ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver,
+            ERP.Infrastructure.Services.OperationalPreferencesResolver
+        >();
+        services.AddScoped<
             ERP.Domain.Modules.Items.Interfaces.ICatalogConfigurationResolver,
             ERP.Infrastructure.Services.CatalogConfigurationResolver
         >();

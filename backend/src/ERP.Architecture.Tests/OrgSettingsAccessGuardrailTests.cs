@@ -16,6 +16,12 @@ namespace ERP.Architecture.Tests;
 /// - UpsertCompanyInvoiceOrgSettingsCommandHandler / GetCompanyInvoiceOrgSettingsQueryHandler
 /// - UpdateConsumerFinalMaxAmountCommandHandler (escribe sales.consumer_final.max_amount)
 /// - UpdateCompanyBrandingHandler (escribe company.branding.*)
+/// - UpdateCompanyEmailSettingsCommandHandler / GetCompanyEmailSettingsQueryHandler (escriben/leen
+///   communications.email.* — faltaban en este allowlist desde COMMUNICATIONS-SETTINGS-UI-01;
+///   agregados en CONFIG-DYNAMIC-OPERATIONS-01 sin cambiar su comportamiento)
+/// - UpdateOperationalPreferencesCommandHandler (escribe sales.pos.*/cash.*/purchases.*/
+///   inventory.*/printing.*/electronic_documents.*/communications.sales_invoice_authorized.*
+///   — CONFIG-DYNAMIC-OPERATIONS-01, mismo patrón que los handlers anteriores)
 ///
 /// Todo lo demás que necesite leer configuración operativa debe depender de un resolver tipado
 /// (IInvoiceDefaultsResolver, ICompanyBrandingResolver, ICatalogConfigurationResolver,
@@ -34,6 +40,9 @@ public sealed class OrgSettingsAccessGuardrailTests
         "ERP.Application.Modules.OrgConfig.UseCases.GetCompanyInvoiceOrgSettings.GetCompanyInvoiceOrgSettingsQueryHandler",
         "ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommandHandler",
         "ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingHandler",
+        "ERP.Application.Modules.Communications.UseCases.UpdateCompanyEmailSettings.UpdateCompanyEmailSettingsCommandHandler",
+        "ERP.Application.Modules.Communications.UseCases.GetCompanyEmailSettings.GetCompanyEmailSettingsQueryHandler",
+        "ERP.Application.Modules.Settings.Operations.UseCases.UpdateOperationalPreferences.UpdateOperationalPreferencesCommandHandler",
     ];
 
     [Fact]

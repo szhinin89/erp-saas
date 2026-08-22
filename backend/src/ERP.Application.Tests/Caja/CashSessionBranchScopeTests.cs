@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -23,6 +24,17 @@ public sealed class CashSessionBranchScopeTests
     private static readonly Guid BranchAId = Guid.NewGuid();
     private static readonly Guid BranchBId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
+
+    private static OperationalPreferences DefaultPreferences(bool requireReasonForDifference = true) =>
+        new(
+            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            Cash: new CashPreferences(true, true, 0m, requireReasonForDifference, true, true),
+            Purchases: new PurchasesPreferences(null, true, true, true, false),
+            Inventory: new InventoryPreferences(false, true, false, 0m),
+            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+            Notifications: new NotificationsPreferences(true, false, "es")
+        );
 
     private static CashSession CreateOpenSession(Guid branchId) =>
         CashSession.Open(
@@ -49,16 +61,28 @@ public sealed class CashSessionBranchScopeTests
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
+        public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
 
         public CloseFixture(Guid activeBranchId)
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             User.Setup(u => u.UserId).Returns(UserId);
+            Preferences
+                .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(DefaultPreferences());
         }
 
         public CloseCashSessionHandler BuildHandler() =>
-            new(Repo.Object, EpRepo.Object, CrRepo.Object, Tenant.Object, Branch.Object, User.Object);
+            new(
+                Repo.Object,
+                EpRepo.Object,
+                CrRepo.Object,
+                Tenant.Object,
+                Branch.Object,
+                User.Object,
+                Preferences.Object
+            );
     }
 
     [Fact]
@@ -96,6 +120,56 @@ public sealed class CashSessionBranchScopeTests
                 new CloseCashSessionCommand(
                     session.Id,
                     new List<CashClosingCountInput> { new(1m, "Billete $1", 100) }
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Cerrar_con_diferencia_sin_notas_falla_si_la_preferencia_lo_exige()
+    {
+        var session = CreateOpenSession(BranchAId);
+        var f = new CloseFixture(activeBranchId: BranchAId);
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences(requireReasonForDifference: true));
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new CloseCashSessionCommand(
+                    session.Id,
+                    new List<CashClosingCountInput> { new(1m, "Billete $1", 80) },
+                    CloseNotes: null
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cerrar_con_diferencia_sin_notas_funciona_si_la_preferencia_no_lo_exige()
+    {
+        var session = CreateOpenSession(BranchAId);
+        var f = new CloseFixture(activeBranchId: BranchAId);
+        f.Preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultPreferences(requireReasonForDifference: false));
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new CloseCashSessionCommand(
+                    session.Id,
+                    new List<CashClosingCountInput> { new(1m, "Billete $1", 80) },
+                    CloseNotes: null
                 ),
                 CancellationToken.None
             );

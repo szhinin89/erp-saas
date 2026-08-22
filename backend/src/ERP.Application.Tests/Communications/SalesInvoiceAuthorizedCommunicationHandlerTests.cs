@@ -4,6 +4,7 @@ using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Company.Entities;
@@ -97,6 +98,21 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
         var act = () => fixture.Handler.Handle(EventFor(document), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
+        fixture.Queue.Verify(
+            q => q.QueueEmailAsync(It.IsAny<QueueEmailRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task factura_autorizada_con_email_on_authorization_desactivado_no_encola()
+    {
+        var invoice = AuthorizedInvoice("cliente@example.com");
+        var document = AuthorizedElectronicDocument(invoice.Id, authorizedXmlPath: "edocs/authorized.xml");
+        var fixture = new Fixture(document, invoice, emailOnAuthorization: false);
+
+        await fixture.Handler.Handle(EventFor(document), CancellationToken.None);
+
         fixture.Queue.Verify(
             q => q.QueueEmailAsync(It.IsAny<QueueEmailRequest>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -234,6 +250,7 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
     private sealed class Fixture
     {
         public Mock<ICommunicationQueue> Queue { get; } = new();
+        public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
         public QueueEmailRequest? CapturedRequest { get; private set; }
         public Result<RideGenerationResultDto> RideResult { get; set; } =
             Result<RideGenerationResultDto>.Success(
@@ -248,8 +265,29 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
 
         public SalesInvoiceAuthorizedCommunicationHandler Handler { get; }
 
-        public Fixture(ElectronicDocument document, SalesInvoice invoice)
+        public Fixture(ElectronicDocument document, SalesInvoice invoice, bool emailOnAuthorization = true)
         {
+            Preferences
+                .Setup(p =>
+                    p.ResolveAsync(document.TenantId, document.CompanyId, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(
+                    new OperationalPreferences(
+                        SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+                        Cash: new CashPreferences(true, true, 0m, true, true, true),
+                        Purchases: new PurchasesPreferences(null, true, true, true, false),
+                        Inventory: new InventoryPreferences(false, true, false, 0m),
+                        Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+                        ElectronicDocuments: new ElectronicDocumentsPreferences(
+                            true,
+                            3,
+                            true,
+                            emailOnAuthorization
+                        ),
+                        Notifications: new NotificationsPreferences(true, false, "es")
+                    )
+                );
+
             var electronicDocuments = new Mock<IElectronicDocumentRepository>();
             electronicDocuments
                 .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
@@ -288,7 +326,8 @@ public sealed class SalesInvoiceAuthorizedCommunicationHandlerTests
                 companies.Object,
                 Queue.Object,
                 sender.Object,
-                Mock.Of<ILogger<SalesInvoiceAuthorizedCommunicationHandler>>()
+                Mock.Of<ILogger<SalesInvoiceAuthorizedCommunicationHandler>>(),
+                Preferences.Object
             );
         }
     }

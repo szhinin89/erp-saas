@@ -26,6 +26,14 @@ public static class CommunicationsConfigurationDefinitions
         yield return String(OrgSettingKeys.Communications.ReplyToEmail, EmailMaxLen, LooksLikeEmail);
         yield return Int(OrgSettingKeys.Communications.MaxRetries, value => IsIntInRange(value, 0, 20), "3");
         yield return String(OrgSettingKeys.Communications.DefaultLanguage, LanguageMaxLen, value => value!.Length is >= 2 and <= LanguageMaxLen, "es");
+        yield return Bool(OrgSettingKeys.Communications.SalesInvoiceAuthorizedEnabled, "true") with
+        {
+            RequiresAudit = true,
+        };
+        yield return Bool(OrgSettingKeys.Communications.SendCopyToCompanyEmail, "false") with
+        {
+            RequiresAudit = true,
+        };
     }
 
     private static ConfigurationDefinition String(

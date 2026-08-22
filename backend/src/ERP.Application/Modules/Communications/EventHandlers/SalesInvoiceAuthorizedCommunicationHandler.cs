@@ -5,6 +5,7 @@ using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -36,6 +37,7 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
     private readonly ICommunicationQueue _communicationQueue;
     private readonly ISender _sender;
     private readonly ILogger<SalesInvoiceAuthorizedCommunicationHandler> _logger;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public SalesInvoiceAuthorizedCommunicationHandler(
         IElectronicDocumentRepository electronicDocuments,
@@ -43,7 +45,8 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
         ICompanyRepository companies,
         ICommunicationQueue communicationQueue,
         ISender sender,
-        ILogger<SalesInvoiceAuthorizedCommunicationHandler> logger
+        ILogger<SalesInvoiceAuthorizedCommunicationHandler> logger,
+        IOperationalPreferencesResolver preferences
     )
     {
         _electronicDocuments = electronicDocuments;
@@ -52,6 +55,7 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
         _communicationQueue = communicationQueue;
         _sender = sender;
         _logger = logger;
+        _preferences = preferences;
     }
 
     public async Task Handle(ElectronicDocumentAuthorizedEvent e, CancellationToken ct)
@@ -101,6 +105,15 @@ public sealed partial class SalesInvoiceAuthorizedCommunicationHandler
         }
 
         if (invoice.Status != SalesInvoiceStatus.Authorized)
+            return;
+
+        // CONFIG-DYNAMIC-OPERATIONS-01 (electronic_documents.email_on_authorization): resuelto con
+        // el tenant/company EXPLÍCITOS del documento, no con ICurrentTenant/ICurrentCompany
+        // ambiente — este handler reacciona a un evento de dominio, no a un request HTTP
+        // autenticado, así que el contexto ambiente no es una fuente confiable de la empresa dueña
+        // del documento.
+        var preferences = await _preferences.ResolveAsync(document.TenantId, document.CompanyId, ct);
+        if (!preferences.ElectronicDocuments.EmailOnAuthorization)
             return;
 
         var recipientEmail = NormalizeEmail(invoice.Customer.Email);

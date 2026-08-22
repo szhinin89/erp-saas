@@ -31,6 +31,12 @@ public static class ConfigurationDefinitionCatalog
             .Concat(CompanyBrandingConfigurationDefinitions.All())
             .Concat(CatalogConfigurationDefinitions.All())
             .Concat(CommunicationsConfigurationDefinitions.All())
+            .Concat(SalesPosConfigurationDefinitions.All())
+            .Concat(CashConfigurationDefinitions.All())
+            .Concat(PurchasesConfigurationDefinitions.All())
+            .Concat(InventoryConfigurationDefinitions.All())
+            .Concat(PrintingConfigurationDefinitions.All())
+            .Concat(ElectronicDocumentsConfigurationDefinitions.All())
             .ToList();
 
         var duplicates = definitions

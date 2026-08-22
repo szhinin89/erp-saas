@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -70,6 +71,7 @@ public sealed class CloseCashSessionHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public CloseCashSessionHandler(
         ICashSessionRepository repo,
@@ -77,7 +79,8 @@ public sealed class CloseCashSessionHandler
         ICashRegisterRepository crRepo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -86,6 +89,7 @@ public sealed class CloseCashSessionHandler
         _t = t;
         _b = b;
         _u = u;
+        _preferences = preferences;
     }
 
     public async Task<Result<CashSessionDto>> Handle(
@@ -117,6 +121,22 @@ public sealed class CloseCashSessionHandler
         catch (InvalidOperationException ex)
         {
             return Result<CashSessionDto>.ValidationFailure(ex.Message);
+        }
+
+        // CONFIG-DYNAMIC-OPERATIONS-01 (cash.require_reason_for_difference): se valida DESPUÉS de
+        // Close() (que es quien calcula Difference) pero ANTES de SaveChangesAsync — así la
+        // mutación en memoria de session.Close() nunca se persiste si falta el motivo, sin
+        // necesidad de un método aparte "dry-run" en el dominio.
+        var preferences = await _preferences.ResolveAsync(ct);
+        if (
+            preferences.Cash.RequireReasonForDifference
+            && session.Difference is not (null or 0m)
+            && string.IsNullOrWhiteSpace(cmd.CloseNotes)
+        )
+        {
+            return Result<CashSessionDto>.ValidationFailure(
+                "Debe indicar un motivo en las notas de cierre porque el arqueo presenta una diferencia."
+            );
         }
 
         await _repo.SaveChangesAsync(ct);

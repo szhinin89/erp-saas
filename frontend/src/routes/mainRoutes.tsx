@@ -81,6 +81,11 @@ const ElectronicDocumentsMonitorPage = lazyNamedPage(
     import("../modules/electronicDocuments/monitor/pages/ElectronicDocumentsMonitorPage"),
   "ElectronicDocumentsMonitorPage",
 );
+const OperationalPreferencesPage = lazyNamedPage(
+  () =>
+    import("../modules/configuracion/operaciones/pages/OperationalPreferencesPage"),
+  "OperationalPreferencesPage",
+);
 
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
@@ -139,6 +144,11 @@ export const mainRoutes = [
     key="settings-communications-email"
     path="/settings/communications/email"
     element={<CommunicationsEmailSettingsPage />}
+  />,
+  <Route
+    key="settings-operations"
+    path="/settings/operations"
+    element={<OperationalPreferencesPage />}
   />,
   <Route
     key="electronic-documents-monitor"

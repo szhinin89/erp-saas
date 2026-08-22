@@ -119,11 +119,12 @@ export function resolvePrintAgentConfig(): PrintAgentConfig {
 export function buildReceiptPrintJobRequest(
   payload: SalesReceiptPrintPayloadDto,
   config: PrintAgentConfig = resolvePrintAgentConfig(),
+  copies = 1,
 ): SubmitPrintJobRequest {
   return {
     jobId: `invoice-${payload.invoiceId}-receipt`,
     printerName: config.printerName,
-    copies: 1,
+    copies,
     receipt: {
       merchantName: payload.tradeName ?? payload.companyName,
       headerLines: buildHeaderLines(payload),

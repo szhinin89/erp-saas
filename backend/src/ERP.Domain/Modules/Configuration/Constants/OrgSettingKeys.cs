@@ -107,5 +107,111 @@ public static class OrgSettingKeys
         public const string ReplyToEmail = "communications.email.reply_to_email";
         public const string MaxRetries = "communications.email.max_retries";
         public const string DefaultLanguage = "communications.email.default_language";
+
+        /// <summary>
+        /// CONFIG-DYNAMIC-OPERATIONS-01: si se envía el correo de "factura autorizada" al cliente.
+        /// Propietario: Empresa (scope=Company). Ausencia de fila → true (comportamiento actual,
+        /// sin cambios, ver SalesInvoiceAuthorizedCommunicationHandler).
+        /// </summary>
+        public const string SalesInvoiceAuthorizedEnabled =
+            "communications.sales_invoice_authorized.enabled";
+
+        /// <summary>
+        /// CONFIG-DYNAMIC-OPERATIONS-01: si además del cliente, se envía copia del correo de
+        /// factura autorizada al correo de la propia empresa. Propietario: Empresa (scope=Company).
+        /// </summary>
+        public const string SendCopyToCompanyEmail = "communications.send_copy_to_company_email";
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas de Ventas/POS. Propietario: Empresa
+    /// (scope=Company). Ver docs del bloque para el mapeo completo Fase A/Fase B/Fase C.
+    /// </summary>
+    public static class SalesPos
+    {
+        public const string RequireOpenCashSession = "sales.pos.require_open_cash_session";
+        public const string AllowManualPrice = "sales.pos.allow_manual_price";
+        public const string AllowManualDiscount = "sales.pos.allow_manual_discount";
+        public const string MaxDiscountPercent = "sales.pos.max_discount_percent";
+        public const string RequireCustomerAboveAmount = "sales.pos.require_customer_above_amount";
+        public const string AllowSellWithoutStock = "sales.pos.allow_sell_without_stock";
+        public const string AskBeforeIssue = "sales.pos.ask_before_issue";
+        public const string DefaultPriceListId = "sales.pos.default_price_list_id";
+        public const string DefaultCustomerId = "sales.pos.default_customer_id";
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas de Caja. Propietario: Empresa
+    /// (scope=Company).
+    /// </summary>
+    public static class Cash
+    {
+        public const string RequireOpeningAmount = "cash.require_opening_amount";
+        public const string AllowCloseWithDifference = "cash.allow_close_with_difference";
+        public const string MaxAllowedDifference = "cash.max_allowed_difference";
+        public const string RequireReasonForDifference = "cash.require_reason_for_difference";
+        public const string AllowManualInOutMovements = "cash.allow_manual_in_out_movements";
+        public const string RequireReasonForMovements = "cash.require_reason_for_movements";
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias de impresión de tirilla de venta. Propietario:
+    /// Empresa (scope=Company). <see cref="SalesReceiptPaperWidth"/> se guarda pero
+    /// deliberadamente NO tiene efecto real — el ancho de papel ya es configurable por impresora
+    /// en ZH Print Agent (PrinterInfo.PaperWidthMm, /admin local); duplicar esa fuente de verdad a
+    /// nivel de empresa fue evaluado y descartado (ver plan CONFIG-DYNAMIC-OPERATIONS-01).
+    /// </summary>
+    public static class Printing
+    {
+        public const string SalesReceiptMode = "printing.sales_receipt.mode";
+        public const string SalesReceiptCopies = "printing.sales_receipt.copies";
+        public const string SalesReceiptPaperWidth = "printing.sales_receipt.paper_width";
+        public const string SalesReceiptIncludeLogo = "printing.sales_receipt.include_logo";
+        public const string SalesReceiptIncludeAccessKey =
+            "printing.sales_receipt.include_access_key";
+        public const string SalesReceiptIncludeCashier = "printing.sales_receipt.include_cashier";
+        public const string SalesReceiptOpenCashDrawer = "printing.sales_receipt.open_cash_drawer";
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas de Compras. Propietario: Empresa
+    /// (scope=Company).
+    /// </summary>
+    public static class Purchases
+    {
+        public const string DefaultWarehouseId = "purchases.default_warehouse_id";
+        public const string AllowConfirmWithoutReceptionXml =
+            "purchases.allow_confirm_without_reception_xml";
+        public const string UpdateCostOnConfirm = "purchases.update_cost_on_confirm";
+        public const string AllowManualCostChange = "purchases.allow_manual_cost_change";
+        public const string RequireReasonForCostChange = "purchases.require_reason_for_cost_change";
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas de Inventario. Propietario: Empresa
+    /// (scope=Company).
+    /// </summary>
+    public static class Inventory
+    {
+        public const string AllowNegativeStock = "inventory.allow_negative_stock";
+        public const string RequireReasonForAdjustment = "inventory.require_reason_for_adjustment";
+        public const string RequireApprovalForLargeAdjustment =
+            "inventory.require_approval_for_large_adjustment";
+        public const string LargeAdjustmentThresholdAmount =
+            "inventory.large_adjustment_threshold_amount";
+    }
+
+    /// <summary>
+    /// CONFIG-DYNAMIC-OPERATIONS-01: preferencias operativas de Documentos Electrónicos.
+    /// Propietario: Empresa (scope=Company). No confundir con SriSettings (certificado/ambiente) —
+    /// eso permanece fuera de este namespace.
+    /// </summary>
+    public static class ElectronicDocuments
+    {
+        public const string AutoRetryEnabled = "electronic_documents.auto_retry_enabled";
+        public const string MaxRetryAttempts = "electronic_documents.max_retry_attempts";
+        public const string GenerateRideOnAuthorization =
+            "electronic_documents.generate_ride_on_authorization";
+        public const string EmailOnAuthorization = "electronic_documents.email_on_authorization";
     }
 }
