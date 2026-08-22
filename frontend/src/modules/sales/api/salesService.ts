@@ -12,7 +12,9 @@ export interface SalesInvoiceDetailDto {
   description: string;
   snapshotSku: string | null;
   snapshotItemName: string | null;
+  packagingLevelId: string | null;
   uomCode: string;
+  baseUomCode: string;
   conversionFactor: number;
   quantityInBaseUom: number;
   quantity: number;
@@ -266,6 +268,10 @@ export interface SalesLineInput {
   discountPct?: number;
   iceCode?: string | null;
   notes?: string | null;
+  /** SALES-PRESENTATIONS-03: null/undefined = venta en unidad base (comportamiento actual
+   * preservado) — el backend resuelve UomCode/ConversionFactor/QuantityInBaseUom, nunca el
+   * frontend; este campo es la única entrada de autoridad, ver SalesLinePackagingResolver. */
+  packagingLevelId?: string | null;
 }
 
 export interface CreateSalesPayload {

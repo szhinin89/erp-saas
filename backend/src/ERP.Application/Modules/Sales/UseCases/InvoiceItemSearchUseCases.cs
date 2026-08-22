@@ -115,7 +115,10 @@ public sealed class SearchItemsForInvoiceHandler
             vatDisplay,
             iceDisplay,
             match.VatCode,
-            match.IceCode
+            match.IceCode,
+            match.BaseUomCode,
+            match.PackagingLevels,
+            match.MatchedPackagingLevelId
         );
     }
 }

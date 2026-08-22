@@ -7,6 +7,7 @@ import { invoiceItemSearchService } from "../api/invoiceItemSearchService";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
 import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";
 import { Badge } from "../../../components/PageShell";
 import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
@@ -23,6 +24,8 @@ import {
   lineExceedsStock,
   stockBadgeInfo,
   parenthesizeRateLabel,
+  stockExceededMessage,
+  presentationEquivalenceLabel,
 } from "../utils/salesCalc";
 import "../styles/sales-product-card.css";
 
@@ -58,6 +61,10 @@ interface SalesInvoiceDetailsSectionProps {
     warehouseId: string,
     option?: ItemWarehouseAvailabilityDto,
   ) => void;
+  /** SALES-PRESENTATIONS-03: cambio de presentación (unidad/caja/pack) de una línea. Opcional
+   * para no forzar a todo consumidor existente a pasarlo — sin este callback, el selector de
+   * presentación simplemente no se renderiza (ver SalesProductCard). */
+  onUpdateLinePresentation?: (key: number, packagingLevelId: string) => void;
   warehouses: WarehouseDto[];
   selectedWarehouseId: string;
   onWarehouseChange: (id: string) => void;
@@ -75,6 +82,7 @@ export function SalesInvoiceDetailsSection({
   onUpdateLine,
   onAddItemLine,
   onUpdateLineWarehouse,
+  onUpdateLinePresentation,
   warehouses,
   selectedWarehouseId,
   onWarehouseChange,
@@ -449,6 +457,7 @@ export function SalesInvoiceDetailsSection({
             selectedWarehouseId={selectedWarehouseId}
             onUpdate={onUpdateLine}
             onUpdateWarehouse={onUpdateLineWarehouse}
+            onUpdatePresentation={onUpdateLinePresentation}
             onRemove={onRemoveLine}
           />
         ))}
@@ -476,6 +485,7 @@ function SalesProductCard({
   selectedWarehouseId,
   onUpdate,
   onUpdateWarehouse,
+  onUpdatePresentation,
   onRemove,
   index,
 }: {
@@ -493,6 +503,7 @@ function SalesProductCard({
     warehouseId: string,
     option?: ItemWarehouseAvailabilityDto,
   ) => void;
+  onUpdatePresentation?: (key: number, packagingLevelId: string) => void;
   onRemove: (key: number) => void;
   /** Posición de la línea en la factura (0-based) — solo para el número visible "N." junto al
    * botón eliminar; no participa en ningún cálculo. */
@@ -523,6 +534,18 @@ function SalesProductCard({
   // Advertencia preventiva (UX) — solo con el dato de disponibilidad ya cargado en pantalla;
   // el backend sigue siendo quien bloquea la emisión (ver lineExceedsStock, salesCalc.ts).
   const exceedsStock = lineExceedsStock(line);
+  // SALES-PRESENTATIONS-03: selector solo visible cuando el ítem tiene más de una presentación
+  // (unidad base + al menos una caja/pack) — con una sola (o ninguna) presentación, no se
+  // muestra selector: el producto se vende en unidad base sin ruido visual, igual que hoy.
+  const packagingOptions = line._packagingLevels ?? [];
+  const hasPresentations = packagingOptions.length > 1 && !!onUpdatePresentation;
+  const selectedPresentation = packagingOptions.find(
+    (p) => p.id === line.packagingLevelId,
+  );
+  const presentationTag = selectedPresentation
+    ? `${selectedPresentation.name} x ${selectedPresentation.baseQuantity} ${line.baseUomCode ?? ""}`.trim()
+    : null;
+  const equivalenceLabel = presentationEquivalenceLabel(line);
 
   return (
     // DS-LINE-CARD-UNIFY-01: wrapper externo unificado (ZHLineCard) en vez de la caja
@@ -565,6 +588,11 @@ function SalesProductCard({
           <div className="sf-product__name zh-row-title" title={name}>
             {name}
           </div>
+          {presentationTag && (
+            // Presentación vendida, junto al nombre — nunca reemplaza el nombre del producto
+            // (regla 10: "nombre producto amplio", la presentación es secundaria).
+            <div className="sf-product__presentation-tag">{presentationTag}</div>
+          )}
         </div>
 
         {/* Col 2: Price List — costo nunca se muestra en el modo de venta POS por defecto */}
@@ -663,7 +691,7 @@ function SalesProductCard({
             </div>
             {exceedsStock && (
               <div className="sf-product__stock-warning">
-                Supera el disponible ({stockQty} UDS)
+                {stockExceededMessage(line)}
               </div>
             )}
             {line._tracksStock && (
@@ -719,6 +747,40 @@ function SalesProductCard({
             los otros dos inputs (1.5px solid + box-shadow var(--color-focus-ring)); solo difiere
             en tamaño/padding por esa razón funcional, no por inconsistencia sin resolver. */}
         <div className="sf-product__qty">
+          {hasPresentations && (
+            // SALES-PRESENTATIONS-03: selector de presentación (unidad/caja/pack) — mismo patrón
+            // inline con ZhSelect que Compras (PurchasesPage.tsx PurchaseLineCard), sin componente
+            // nuevo. Solo visible cuando el ítem tiene más de una presentación configurada.
+            <>
+              <ZHFieldLabel size="sm" className="sf-product__qty-label">
+                Presentación
+              </ZHFieldLabel>
+              <ZhSelect
+                density="compact"
+                className="sf-product__presentation-select"
+                value={line.packagingLevelId ?? ""}
+                onChange={(e) =>
+                  onUpdatePresentation?.(line._key, e.target.value)
+                }
+                disabled={disabled}
+              >
+                {packagingOptions
+                  .filter((p) => p.isBaseUnit)
+                  .map((p) => (
+                    <option key={p.id} value="">
+                      {p.name}
+                    </option>
+                  ))}
+                {packagingOptions
+                  .filter((p) => !p.isBaseUnit)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} x {p.baseQuantity} {line.baseUomCode}
+                    </option>
+                  ))}
+              </ZhSelect>
+            </>
+          )}
           <ZHFieldLabel size="sm" className="sf-product__qty-label">
             Cantidad
           </ZHFieldLabel>
@@ -738,6 +800,11 @@ function SalesProductCard({
             }
             disabled={disabled}
           />
+          {equivalenceLabel && (
+            <div className="sf-product__presentation-equivalence">
+              {equivalenceLabel}
+            </div>
+          )}
         </div>
 
         {/* Col 6: Subtotal — el dato más fuerte del bloque es el Total línea */}

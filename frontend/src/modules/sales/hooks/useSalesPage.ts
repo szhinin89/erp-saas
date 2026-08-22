@@ -58,6 +58,8 @@ import {
   formatVatLabel,
   lineExceedsStock,
   findMergeableLineIndex,
+  resolveDefaultLinePresentation,
+  resolveLinePresentationChange,
   type TaxBreakdownEntry,
 } from "../utils/salesCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -769,10 +771,18 @@ export function useSalesPage() {
           ? item.averageCost
           : undefined;
       const stockQty = item.availableStock ?? undefined;
-      const unitPrice = pvp ?? 0;
       const vatCode = pricing.vatCode ?? "";
       const iceCode = normalizeOptionalCode(pricing.iceCode);
       const lineWarehouseId = item.tracksStock ? selectedWarehouseId : null;
+
+      // SALES-PRESENTATIONS-03: por defecto se vende en unidad base (comportamiento actual
+      // preservado) — salvo que el texto buscado haya coincidido con el barcode de una
+      // presentación específica (ItemPackagingLevel.Barcode), en cuyo caso esa presentación se
+      // autoselecciona (regla 2/5 de la tarea). IsSaleDefault deliberadamente NO se usa todavía
+      // (backend tampoco lo consume en esta fase — ver SalesLinePackagingResolver).
+      const defaultPresentation = resolveDefaultLinePresentation(item);
+      const { packagingLevelId, uomCode, conversionFactor } = defaultPresentation;
+      const unitPrice = (pvp ?? 0) * conversionFactor;
 
       const currentLines = getValues("lines");
 
@@ -787,6 +797,7 @@ export function useSalesPage() {
         vatCode,
         iceCode,
         warehouseId: lineWarehouseId,
+        packagingLevelId,
       });
 
       if (matchIndex >= 0) {
@@ -811,6 +822,10 @@ export function useSalesPage() {
         vatCode,
         discountPct: 0,
         iceCode: iceCode ?? undefined,
+        packagingLevelId,
+        uomCode,
+        baseUomCode: item.baseUomCode,
+        conversionFactor,
         _sku: item.sku,
         _name: item.description,
         _pvp: pvp,
@@ -818,6 +833,7 @@ export function useSalesPage() {
         _stockQty: stockQty,
         _stockWarehouse: selectedWh?.name,
         _tracksStock: item.tracksStock,
+        _packagingLevels: item.packagingLevels,
       };
 
       setValue("lines", [...currentLines, newLine], {
@@ -883,6 +899,35 @@ export function useSalesPage() {
             : l,
         ),
         { shouldDirty: true },
+      );
+    },
+    [getValues, setValue],
+  );
+
+  // SALES-PRESENTATIONS-03: cambio de presentación (unidad/caja/pack) de una línea ya agregada —
+  // recalcula uomCode/baseUomCode/conversionFactor y sugiere un nuevo Precio Facturado
+  // (precio base * factor, ver suggestedUnitPriceForPresentation) sin tocar PricingResolver ni
+  // crear una tabla de precios por presentación. quantityInBaseUom no se guarda aquí: se deriva
+  // en pantalla (lineQuantityInBaseUom) y la persiste el backend al guardar el draft.
+  const onUpdateLinePresentation = useCallback(
+    (key: number, packagingLevelId: string) => {
+      const currentLines = getValues("lines");
+      const line = currentLines.find((l) => l._key === key);
+      if (!line) return;
+      // basePrice: el precio base resuelto UNA vez al agregar el producto (_pvp, nunca mutado
+      // por esta función) — nunca line.unitPrice, que ya puede estar escalado por una
+      // presentación anterior (evitaría doble multiplicación, regla 8).
+      const basePrice = line._pvp ?? line.unitPrice;
+      const change = resolveLinePresentationChange(
+        packagingLevelId,
+        line._packagingLevels ?? [],
+        line.baseUomCode ?? "UNIT",
+        basePrice,
+      );
+      setValue(
+        "lines",
+        currentLines.map((l) => (l._key === key ? { ...l, ...change } : l)),
+        { shouldValidate: true, shouldDirty: true },
       );
     },
     [getValues, setValue],
@@ -1059,6 +1104,10 @@ export function useSalesPage() {
           discountPct: l.discountPct,
           iceCode: l.iceCode,
           notes: l.notes,
+          packagingLevelId: l.packagingLevelId,
+          uomCode: l.uomCode,
+          baseUomCode: l.baseUomCode,
+          conversionFactor: l.conversionFactor,
           _sku: l.snapshotSku ?? undefined,
           _name: l.snapshotItemName ?? undefined,
           // El backend solo persiste warehouseId para ítems que controlan stock
@@ -1132,6 +1181,11 @@ export function useSalesPage() {
           discountPct: l.discountPct ?? 0,
           iceCode: l.iceCode,
           notes: l.notes,
+          // SALES-PRESENTATIONS-03: Quantity/UnitPrice siguen siendo la cantidad/precio en la
+          // presentación vendida — el backend (SalesLinePackagingResolver) es la única autoridad
+          // que resuelve UomCode/ConversionFactor/QuantityInBaseUom a partir de este Id; el
+          // frontend nunca envía esos valores calculados como si fueran la fuente de verdad.
+          packagingLevelId: l.packagingLevelId ?? null,
         })),
         dueDate: data.dueDate || null,
         notes: data.notes || null,
@@ -1632,6 +1686,7 @@ export function useSalesPage() {
     lineKey,
     handleWarehouseChange,
     onUpdateLineWarehouse,
+    onUpdateLinePresentation,
 
     // Payments
     payments,

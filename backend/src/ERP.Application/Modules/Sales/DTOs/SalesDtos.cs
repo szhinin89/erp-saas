@@ -229,6 +229,23 @@ public sealed record SalesListDto(
 /// — those are computed in SearchItemsForInvoiceHandler via ISriCatalogResolver
 /// + SriTaxCalculator to guarantee a single source of truth.
 /// </summary>
+/// <summary>
+/// SALES-PRESENTATIONS-03: presentación vendible de un ítem (ItemPackagingLevel activo),
+/// expuesta al buscador de ventas para que el cajero pueda elegir unidad/caja/pack. Espejo del
+/// mismo concepto que Compras ya expone en <c>PurchaseItemPackagingLevelDto</c> — no se reutiliza
+/// el mismo DTO porque viven en módulos/contratos de API distintos, pero la forma es idéntica a
+/// propósito.
+/// </summary>
+public sealed record InvoiceItemPackagingLevelDto(
+    Guid Id,
+    string Name,
+    string UomCode,
+    decimal BaseQuantity,
+    string? Barcode,
+    bool IsBaseUnit,
+    bool IsSaleDefault
+);
+
 public sealed record InvoiceItemMatch(
     Guid Id,
     string Sku,
@@ -241,7 +258,10 @@ public sealed record InvoiceItemMatch(
     decimal? AverageCost,
     decimal? SalePriceWithoutTax,
     string? VatCode,
-    string? IceCode
+    string? IceCode,
+    string BaseUomCode,
+    IReadOnlyList<InvoiceItemPackagingLevelDto> PackagingLevels,
+    Guid? MatchedPackagingLevelId
 );
 
 public sealed record InvoiceItemSearchResultDto(
@@ -259,5 +279,8 @@ public sealed record InvoiceItemSearchResultDto(
     string VatDisplay,
     string IceDisplay,
     string? VatCode,
-    string? IceCode
+    string? IceCode,
+    string BaseUomCode,
+    IReadOnlyList<InvoiceItemPackagingLevelDto> PackagingLevels,
+    Guid? MatchedPackagingLevelId
 );

@@ -326,6 +326,24 @@
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
+/* SALES-PRESENTATIONS-03: selector de presentación + equivalencia en unidad base — mismo
+   criterio tipográfico secundario que .sf-product__stock-wh/.sf-product__stock-uom. */
+.sf-product__presentation-select {
+  width: 100%;
+  min-width: 140px;
+}
+.sf-product__presentation-equivalence {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+.sf-product__presentation-tag {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 /* ── Columna 6: Base / IVA / Total línea ─────────────────────────
    El total es el dato más fuerte: tamaño y color se diferencian de
    Base/IVA con solo tipografía y un separador — igual criterio que

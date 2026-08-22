@@ -64,6 +64,14 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                     && b.IsActive
                     && EF.Functions.ILike(b.Code, pattern)
                 ),
+                // SALES-PRESENTATIONS-03: un código de barras de presentación (ej. la caja x12
+                // tiene su propio barcode impreso) debe rankear igual que un barcode exacto de
+                // ItemVariantBarcode — es igualmente un escaneo real, no una coincidencia de texto.
+                HasPackagingBarcodeExact = i.PackagingLevels.Any(p =>
+                    p.IsActive
+                    && p.Barcode != null
+                    && EF.Functions.ILike(p.Barcode, trimmedQuery)
+                ),
                 SkuExact = EF.Functions.ILike(i.Code.SKU, trimmedQuery),
                 SkuPartial = EF.Functions.ILike(i.Code.SKU, pattern),
                 NamePartial =
@@ -76,7 +84,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
             {
                 x.Id,
                 x.ShortNameForSort,
-                Rank = x.HasBarcodeExact ? 0
+                Rank = (x.HasBarcodeExact || x.HasPackagingBarcodeExact) ? 0
                     : x.SkuExact ? 1
                     : (x.HasBarcodePartial || x.SkuPartial) ? 2
                     : 3,
@@ -137,7 +145,25 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 // guardado de la línea de venta (fuera de alcance de este read-model batch).
                 i.BaseSalePrice,
                 i.TaxConfig.SaleVatCode,
-                i.TaxConfig.ExciseTaxCode
+                i.TaxConfig.ExciseTaxCode,
+                i.DefaultUomCode,
+                i.PackagingLevels.Where(p => p.IsActive)
+                    .OrderBy(p => p.Level)
+                    .Select(p => new InvoiceItemPackagingLevelDto(
+                        p.Id,
+                        p.Name,
+                        p.UomCode,
+                        p.BaseQuantity,
+                        p.Barcode,
+                        p.IsBaseUnit,
+                        p.IsSaleDefault
+                    ))
+                    .ToList(),
+                i.PackagingLevels.Where(p =>
+                        p.IsActive && p.Barcode != null && EF.Functions.ILike(p.Barcode, trimmedQuery)
+                    )
+                    .Select(p => (Guid?)p.Id)
+                    .FirstOrDefault()
             ))
             .ToListAsync(ct);
 

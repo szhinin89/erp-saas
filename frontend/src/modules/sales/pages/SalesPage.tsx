@@ -571,6 +571,7 @@ export function SalesPage() {
               onUpdateLine={ctx.updateLine}
               onAddItemLine={ctx.addLineWithItem}
               onUpdateLineWarehouse={ctx.onUpdateLineWarehouse}
+              onUpdateLinePresentation={ctx.onUpdateLinePresentation}
               warehouses={ctx.warehouses}
               selectedWarehouseId={ctx.selectedWarehouseId}
               onWarehouseChange={ctx.handleWarehouseChange}

@@ -22,6 +22,14 @@ export const salesLineSchema = z.object({
     .default(0),
   iceCode: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  // ── SALES-PRESENTATIONS-03: venta por presentación ──────────────────
+  // packagingLevelId undefined/null = venta en unidad base (comportamiento actual preservado,
+  // igual que en el backend — ver SalesLinePackagingResolver). quantity sigue siendo la cantidad
+  // ingresada por el usuario en la presentación seleccionada (nunca la cantidad base).
+  packagingLevelId: z.string().nullable().optional(),
+  uomCode: z.string().optional(),
+  baseUomCode: z.string().optional(),
+  conversionFactor: z.number().positive().optional(),
   _sku: z.string().optional(),
   _name: z.string().optional(),
   _cost: z.number().optional(),
@@ -29,6 +37,21 @@ export const salesLineSchema = z.object({
   _stockQty: z.number().optional(),
   _stockWarehouse: z.string().optional(),
   _tracksStock: z.boolean().optional(),
+  /** Presentaciones disponibles del ítem (snapshot tomado al agregar la línea desde el
+   * buscador) — solo para poblar el selector, nunca se envía al backend. */
+  _packagingLevels: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        uomCode: z.string(),
+        baseQuantity: z.number(),
+        barcode: z.string().nullable(),
+        isBaseUnit: z.boolean(),
+        isSaleDefault: z.boolean(),
+      }),
+    )
+    .optional(),
 });
 
 export type SalesLineFormValues = z.infer<typeof salesLineSchema>;

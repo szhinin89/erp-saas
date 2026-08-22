@@ -6,6 +6,12 @@ import {
   calcLineTax,
   calcSummary,
   lineExceedsStock,
+  lineQuantityInBaseUom,
+  stockExceededMessage,
+  presentationEquivalenceLabel,
+  suggestedUnitPriceForPresentation,
+  resolveDefaultLinePresentation,
+  resolveLinePresentationChange,
   findMergeableLineIndex,
   stockBadgeInfo,
   parenthesizeRateLabel,
@@ -68,7 +74,9 @@ export const mockBackendDetails: SalesInvoiceDetailDto[] = [
     description: "Resma de papel A4",
     snapshotSku: "PAP-A4",
     snapshotItemName: "Resma Papel A4 75gr",
+    packagingLevelId: null,
     uomCode: "UNIT",
+    baseUomCode: "UNIT",
     conversionFactor: 1,
     quantityInBaseUom: 10,
     quantity: 10,
@@ -95,7 +103,9 @@ export const mockBackendDetails: SalesInvoiceDetailDto[] = [
     description: "Toner HP 85A",
     snapshotSku: "TON-85A",
     snapshotItemName: "Toner HP 85A Compatible",
+    packagingLevelId: null,
     uomCode: "UNIT",
+    baseUomCode: "UNIT",
     conversionFactor: 1,
     quantityInBaseUom: 2,
     quantity: 2,
@@ -122,7 +132,9 @@ export const mockBackendDetails: SalesInvoiceDetailDto[] = [
     description: "Servicio de consultoría",
     snapshotSku: null,
     snapshotItemName: null,
+    packagingLevelId: null,
     uomCode: "UNIT",
+    baseUomCode: "UNIT",
     conversionFactor: 1,
     quantityInBaseUom: 1,
     quantity: 1,
@@ -330,6 +342,186 @@ describe("lineExceedsStock", () => {
       lineExceedsStock({ _tracksStock: true, _stockQty: undefined, quantity: 100 }),
     ).toBe(false);
   });
+
+  // SALES-PRESENTATIONS-03: compara contra unidad base (quantity * conversionFactor), no contra
+  // la cantidad cruda en la presentación vendida.
+  it("true cuando la cantidad en unidad base (caja x12) supera el stock disponible", () => {
+    // Stock 10 unidades base, venta 1 caja x12 = 12 unidades base requeridas → excede.
+    expect(
+      lineExceedsStock({
+        _tracksStock: true,
+        _stockQty: 10,
+        quantity: 1,
+        conversionFactor: 12,
+      }),
+    ).toBe(true);
+  });
+
+  it("false cuando la cantidad en unidad base (caja x12) no supera el stock disponible", () => {
+    // Stock 20 unidades base, venta 1 caja x12 = 12 unidades base requeridas → no excede.
+    expect(
+      lineExceedsStock({
+        _tracksStock: true,
+        _stockQty: 20,
+        quantity: 1,
+        conversionFactor: 12,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("lineQuantityInBaseUom", () => {
+  it("sin presentación (factor 1), es igual a quantity", () => {
+    expect(lineQuantityInBaseUom({ quantity: 5 })).toBe(5);
+    expect(lineQuantityInBaseUom({ quantity: 5, conversionFactor: 1 })).toBe(5);
+  });
+
+  it("con presentación caja x12, multiplica quantity por el factor", () => {
+    expect(lineQuantityInBaseUom({ quantity: 2, conversionFactor: 12 })).toBe(24);
+  });
+});
+
+describe("stockExceededMessage", () => {
+  it("mensaje simple sin presentación (factor 1)", () => {
+    expect(
+      stockExceededMessage({ quantity: 5, _stockQty: 3 }),
+    ).toBe("Supera el disponible (3 UDS)");
+  });
+
+  it("mensaje claro con equivalencia cuando hay presentación (caja x12)", () => {
+    expect(
+      stockExceededMessage({
+        quantity: 1,
+        conversionFactor: 12,
+        uomCode: "CAJA",
+        baseUomCode: "UNIT",
+        _stockQty: 10,
+      }),
+    ).toBe(
+      "Stock insuficiente: 1 CAJA equivale a 12 UNIT, disponible 10 UNIT.",
+    );
+  });
+});
+
+describe("presentationEquivalenceLabel", () => {
+  it("null cuando no hay presentación (factor 1) — no aporta nada, no se muestra", () => {
+    expect(
+      presentationEquivalenceLabel({ quantity: 5, baseUomCode: "UNIT" }),
+    ).toBeNull();
+  });
+
+  it("'Equivale a X unidades' cuando hay presentación con factor > 1", () => {
+    expect(
+      presentationEquivalenceLabel({
+        quantity: 2,
+        conversionFactor: 12,
+        baseUomCode: "UNIT",
+      }),
+    ).toBe("Equivale a 24 UNIT");
+  });
+});
+
+describe("suggestedUnitPriceForPresentation", () => {
+  it("precio sugerido = precio base * factor de conversión", () => {
+    expect(suggestedUnitPriceForPresentation(1.5, 12)).toBe(18);
+  });
+
+  it("factor 1 (unidad base) deja el precio sin cambios", () => {
+    expect(suggestedUnitPriceForPresentation(1.5, 1)).toBe(1.5);
+  });
+});
+
+// ── resolveDefaultLinePresentation — regla 2/5: barcode de presentación autoselecciona,
+// búsqueda normal usa unidad base por defecto ──────────────────────────────────────
+describe("resolveDefaultLinePresentation", () => {
+  const packagingLevels = [
+    { id: "unit-1", uomCode: "UNIT", baseQuantity: 1 },
+    { id: "caja-12", uomCode: "CAJA", baseQuantity: 12 },
+  ];
+
+  it("sin coincidencia de barcode de presentación, usa unidad base por defecto", () => {
+    const result = resolveDefaultLinePresentation({
+      baseUomCode: "UNIT",
+      packagingLevels,
+      matchedPackagingLevelId: null,
+    });
+    expect(result).toEqual({
+      packagingLevelId: null,
+      uomCode: "UNIT",
+      conversionFactor: 1,
+    });
+  });
+
+  it("con barcode de presentación coincidente (caja x12), la autoselecciona", () => {
+    const result = resolveDefaultLinePresentation({
+      baseUomCode: "UNIT",
+      packagingLevels,
+      matchedPackagingLevelId: "caja-12",
+    });
+    expect(result).toEqual({
+      packagingLevelId: "caja-12",
+      uomCode: "CAJA",
+      conversionFactor: 12,
+    });
+  });
+
+  it("matchedPackagingLevelId que ya no existe en el catálogo, cae a unidad base (no inventa)", () => {
+    const result = resolveDefaultLinePresentation({
+      baseUomCode: "UNIT",
+      packagingLevels,
+      matchedPackagingLevelId: "no-existe",
+    });
+    expect(result.packagingLevelId).toBeNull();
+    expect(result.conversionFactor).toBe(1);
+  });
+});
+
+// ── resolveLinePresentationChange — regla 8: sin doble multiplicación al cambiar de
+// presentación (siempre parte del precio BASE, nunca del unitPrice ya escalado) ──────
+describe("resolveLinePresentationChange", () => {
+  const packagingLevels = [
+    { id: "unit-1", uomCode: "UNIT", baseQuantity: 1 },
+    { id: "caja-12", uomCode: "CAJA", baseQuantity: 12 },
+    { id: "pack-6", uomCode: "PACK", baseQuantity: 6 },
+  ];
+
+  it("cambiar de unidad base a caja x12: recalcula factor, uomCode y precio sugerido", () => {
+    const result = resolveLinePresentationChange(
+      "caja-12",
+      packagingLevels,
+      "UNIT",
+      1.5, // precio base
+    );
+    expect(result).toEqual({
+      packagingLevelId: "caja-12",
+      uomCode: "CAJA",
+      conversionFactor: 12,
+      unitPrice: 18,
+    });
+  });
+
+  it("cambiar de caja x12 a pack x6: recalcula desde el precio BASE, no desde 18 (caja)", () => {
+    // Si partiera de unitPrice=18 (ya escalado por caja) el resultado sería 108 — el cálculo
+    // correcto siempre parte de basePrice=1.5 (regla 8, evita doble multiplicación).
+    const result = resolveLinePresentationChange(
+      "pack-6",
+      packagingLevels,
+      "UNIT",
+      1.5,
+    );
+    expect(result.conversionFactor).toBe(6);
+    expect(result.unitPrice).toBe(9);
+  });
+
+  it("volver a unidad base (packagingLevelId vacío): factor 1, precio = precio base", () => {
+    const result = resolveLinePresentationChange("", packagingLevels, "UNIT", 1.5);
+    expect(result).toEqual({
+      packagingLevelId: null,
+      uomCode: "UNIT",
+      conversionFactor: 1,
+      unitPrice: 1.5,
+    });
+  });
 });
 
 // ── findMergeableLineIndex — condición de fusión al reescanear (SALES-RETAIL-READY-01-FIX04) ──
@@ -441,6 +633,35 @@ describe("findMergeableLineIndex", () => {
       warehouseId: "wh-1",
     });
     expect(idx).toBe(-1);
+  });
+
+  // SALES-PRESENTATIONS-03: reescanear el barcode de una presentación distinta a la ya agregada
+  // no debe fusionar — cada presentación es su propia línea (nunca se mezcla "2 unidades" con
+  // "1 caja" bajo la misma fila).
+  it("no fusiona si la presentación (packagingLevelId) no coincide", () => {
+    const withPresentation = { ...existing, packagingLevelId: "caja-x12" };
+    const idx = findMergeableLineIndex([withPresentation], {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-1",
+      packagingLevelId: null,
+    });
+    expect(idx).toBe(-1);
+  });
+
+  it("fusiona cuando la misma presentación se reescanea (packagingLevelId coincide)", () => {
+    const withPresentation = { ...existing, packagingLevelId: "caja-x12" };
+    const idx = findMergeableLineIndex([withPresentation], {
+      itemId: "item-1",
+      unitPrice: 29.9,
+      vatCode: "0",
+      iceCode: null,
+      warehouseId: "wh-1",
+      packagingLevelId: "caja-x12",
+    });
+    expect(idx).toBe(0);
   });
 });
 

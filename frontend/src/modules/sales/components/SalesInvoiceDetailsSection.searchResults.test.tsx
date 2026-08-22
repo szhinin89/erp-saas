@@ -50,6 +50,9 @@ function makeResult(
     iceDisplay: "—",
     vatCode: "10",
     iceCode: null,
+    baseUomCode: "UNIT",
+    packagingLevels: [],
+    matchedPackagingLevelId: null,
     ...overrides,
   };
 }
