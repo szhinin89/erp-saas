@@ -483,6 +483,117 @@ public sealed class AuthorizeSalesReturnHandlerTests
         );
     }
 
+    // ══════════════════════════════ SALES-PRESENTATIONS-02 ══════════════════════════════
+
+    [Fact]
+    public async Task Presentation_reingresa_stock_en_QuantityInBaseUom_no_en_Quantity_cruda()
+    {
+        // Venta: 2 CAJA x12 (24 unidades base). Devolución: 1 CAJA x12 → debe reingresar 12
+        // unidades base al stock, nunca "1" (Quantity cruda en la presentación devuelta).
+        var warehouseId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
+        var inv = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "001-001-000000099",
+            issueDate: new DateOnly(2026, 7, 25),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId
+        );
+        var line = SalesInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Caja x12",
+            quantity: 2m,
+            unitPrice: 120m,
+            vatCode: "0",
+            uomCode: "CAJA",
+            itemId: itemId,
+            warehouseId: warehouseId,
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+        inv.ReplaceLines(new[] { line }, UserId);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            line.TaxInclusiveTotal
+        );
+        inv.ReplacePayments(new[] { payment }, UserId);
+        inv.Authorize(UserId);
+        var authorizedLine = inv.Lines.Single();
+
+        var salesReturn = SalesReturn.CreateDraft(
+            TenantId,
+            CompanyId,
+            inv.Id,
+            CustomerId,
+            "DEV-000099",
+            "Producto en mal estado",
+            UserId
+        );
+        salesReturn.AddLine(
+            SalesReturnDetail.Create(
+                salesReturn.Id,
+                TenantId,
+                authorizedLine.Id,
+                authorizedLine.Description,
+                quantity: 1m, // 1 CAJA devuelta — mantiene la misma presentación de la venta
+                authorizedLine.UnitPrice,
+                0m,
+                authorizedLine.VatCode,
+                authorizedLine.VatRate,
+                authorizedLine.UomCode,
+                authorizedLine.ItemId,
+                authorizedLine.WarehouseId,
+                packagingLevelId: authorizedLine.PackagingLevelId,
+                conversionFactor: authorizedLine.ConversionFactor,
+                baseUomCode: authorizedLine.BaseUomCode
+            ),
+            UserId
+        );
+
+        var (handler, stockRepo, _) = BuildHandler(inv, salesReturn);
+
+        var result = await handler.Handle(
+            FullRefundCashCommand(salesReturn.Id, salesReturn.GrandTotal),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    itemId,
+                    warehouseId,
+                    StockMovementType.SaleReturn,
+                    12m, // QuantityInBaseUom (1 CAJA * 12), nunca 1 (Quantity cruda)
+                    "UNIT", // BaseUomCode, nunca "CAJA" (UomCode de la presentación devuelta)
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    salesReturn.Id,
+                    "SalesReturn",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
     // ══════════════════════════════ Validaciones ══════════════════════════════
 
     [Fact]

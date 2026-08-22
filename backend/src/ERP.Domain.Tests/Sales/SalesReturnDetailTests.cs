@@ -122,4 +122,44 @@ public sealed class SalesReturnDetailTests
 
         act.Should().Throw<ArgumentException>();
     }
+
+    // ── SALES-PRESENTATIONS-02 ──────────────────────────────────────────
+
+    [Fact]
+    public void Create_sin_presentacion_preserva_comportamiento_actual()
+    {
+        var line = Create(quantity: 3m);
+
+        line.PackagingLevelId.Should().BeNull();
+        line.ConversionFactor.Should().Be(1m);
+        line.QuantityInBaseUom.Should().Be(3m);
+        line.BaseUomCode.Should().Be("UNIT");
+    }
+
+    [Fact]
+    public void Create_con_presentacion_calcula_QuantityInBaseUom_con_el_factor_heredado()
+    {
+        var packagingLevelId = Guid.NewGuid();
+        var line = SalesReturnDetail.Create(
+            ReturnId,
+            TenantId,
+            OriginalInvoiceDetailId,
+            "Caja x12",
+            quantity: 1m,
+            unitPrice: 120m,
+            discountPct: 0m,
+            vatCode: "2",
+            vatRate: 15m,
+            uomCode: "CAJA",
+            packagingLevelId: packagingLevelId,
+            conversionFactor: 12m,
+            baseUomCode: "UNIT"
+        );
+
+        line.PackagingLevelId.Should().Be(packagingLevelId);
+        line.ConversionFactor.Should().Be(12m);
+        line.QuantityInBaseUom.Should().Be(12m);
+        line.BaseUomCode.Should().Be("UNIT");
+        line.UomCode.Should().Be("CAJA");
+    }
 }

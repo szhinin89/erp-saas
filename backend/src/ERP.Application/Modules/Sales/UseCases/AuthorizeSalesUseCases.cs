@@ -233,10 +233,13 @@ public sealed class AuthorizeSalesInvoiceHandler
                     ct
                 );
                 var available = stock?.Quantity ?? 0m;
-                if (available < line.Quantity)
+                // SALES-PRESENTATIONS-02: el stock disponible siempre está en unidad base — la
+                // comparación debe hacerse contra QuantityInBaseUom, nunca contra Quantity cruda
+                // (que puede estar expresada en la presentación vendida, ej. cajas).
+                if (available < line.QuantityInBaseUom)
                     return Result<SalesInvoiceDto>.ValidationFailure(
                         $"Línea '{line.Description}': stock insuficiente en la bodega seleccionada "
-                            + $"(disponible: {available}, solicitado: {line.Quantity}). "
+                            + $"(disponible: {available} {line.BaseUomCode}, solicitado: {line.Quantity} {line.UomCode} = {line.QuantityInBaseUom} {line.BaseUomCode}). "
                             + "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir."
                     );
             }
@@ -300,14 +303,16 @@ public sealed class AuthorizeSalesInvoiceHandler
             if (line.ItemId is null || line.WarehouseId is null)
                 continue;
 
+            // SALES-PRESENTATIONS-02: el kardex siempre se mueve en unidad base — QuantityInBaseUom
+            // y BaseUomCode, nunca Quantity/UomCode (que reflejan la presentación vendida).
             await _stockRepo.AppendMovementAsync(
                 tid,
                 cid,
                 line.ItemId.Value,
                 line.WarehouseId.Value,
                 StockMovementType.SaleExit,
-                -line.Quantity,
-                line.UomCode,
+                -line.QuantityInBaseUom,
+                line.BaseUomCode,
                 inv.IssueDate,
                 inv.InvoiceNumber,
                 inv.Id,

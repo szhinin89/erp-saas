@@ -22,6 +22,7 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
 
         builder.Property(x => x.ItemId).HasColumnName("item_id");
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id");
+        builder.Property(x => x.PackagingLevelId).HasColumnName("packaging_level_id");
         builder
             .Property(x => x.Description)
             .HasColumnName("description")
@@ -40,6 +41,21 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
             .Property(x => x.UomCode)
             .HasColumnName("uom_code")
             .HasMaxLength(SalesReturnDetail.UomCodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.BaseUomCode)
+            .HasColumnName("base_uom_code")
+            .HasMaxLength(SalesReturnDetail.UomCodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.ConversionFactor)
+            .HasColumnName("conversion_factor")
+            .HasColumnType("numeric(18,6)")
+            .IsRequired();
+        builder
+            .Property(x => x.QuantityInBaseUom)
+            .HasColumnName("quantity_in_base_uom")
+            .HasColumnType("numeric(18,4)")
             .IsRequired();
 
         builder

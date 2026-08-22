@@ -136,7 +136,9 @@ public sealed record SalesInvoiceDetailDto(
     string? SnapshotIceName,
     decimal TaxInclusiveTotal,
     string? Notes,
-    short SortOrder
+    short SortOrder,
+    Guid? PackagingLevelId,
+    string BaseUomCode
 );
 
 public sealed record SalesReceiptPrintPayloadDto(

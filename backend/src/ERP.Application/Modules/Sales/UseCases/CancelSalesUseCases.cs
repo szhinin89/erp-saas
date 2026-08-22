@@ -77,6 +77,9 @@ public sealed class CancelSalesInvoiceHandler
 
         // ── Revertir inventario (Kardex) ────────────────────────────
         // WarehouseId solo está poblado en líneas que sí generaron egreso al autorizar.
+        // SALES-PRESENTATIONS-02: debe revertir exactamente lo que se descontó al autorizar
+        // (QuantityInBaseUom/BaseUomCode) — nunca Quantity/UomCode crudos, o el stock queda
+        // desincronizado en cuanto la línea tenga ConversionFactor != 1.
         foreach (var line in inv.Lines)
         {
             if (line.ItemId is null || line.WarehouseId is null)
@@ -88,8 +91,8 @@ public sealed class CancelSalesInvoiceHandler
                 line.ItemId.Value,
                 line.WarehouseId.Value,
                 StockMovementType.SaleReturn,
-                line.Quantity,
-                line.UomCode,
+                line.QuantityInBaseUom,
+                line.BaseUomCode,
                 DateOnly.FromDateTime(DateTime.UtcNow),
                 $"ANULACIÓN: {inv.InvoiceNumber}",
                 inv.Id,

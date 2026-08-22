@@ -50,6 +50,7 @@ public sealed class GetReturnableLinesByInvoiceHandler
                 line.Id,
                 ct
             );
+            var remaining = line.Quantity - returned;
             result.Add(
                 new ReturnableLineDto(
                     line.Id,
@@ -60,13 +61,17 @@ public sealed class GetReturnableLinesByInvoiceHandler
                     line.UomCode,
                     line.Quantity,
                     returned,
-                    line.Quantity - returned,
+                    remaining,
                     line.UnitPrice,
                     line.DiscountPct,
                     line.VatCode,
                     line.VatRate,
                     line.IceCode,
-                    line.IceRate
+                    line.IceRate,
+                    line.PackagingLevelId,
+                    line.ConversionFactor,
+                    line.QuantityInBaseUom,
+                    remaining * line.ConversionFactor
                 )
             );
         }

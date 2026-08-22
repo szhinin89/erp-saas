@@ -411,6 +411,240 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         return inv;
     }
 
+    /// <summary>SALES-PRESENTATIONS-02: línea vendida por presentación (ej. 1 CAJA x12) —
+    /// Quantity/UomCode reflejan lo vendido, QuantityInBaseUom/BaseUomCode lo que debe
+    /// afectar stock/kardex.</summary>
+    private static SalesInvoice CreateDraftInvoiceWithPresentationLine(
+        Guid itemId,
+        Guid warehouseId,
+        decimal quantity,
+        decimal conversionFactor
+    )
+    {
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
+
+        var inv = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "DRAFT-TEST-PRESENTATION",
+            issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
+            emissionPointId: null
+        );
+
+        var line = SalesInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Caja x12",
+            quantity: quantity,
+            unitPrice: 120m,
+            vatCode: "10",
+            uomCode: "CAJA",
+            itemId: itemId,
+            warehouseId: warehouseId,
+            conversionFactor: conversionFactor,
+            baseUomCode: "UNIT"
+        );
+        inv.ReplaceLines(new[] { line }, UserId);
+
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            PaymentMethodId,
+            "01",
+            "Efectivo",
+            ExpectedGrandTotal(quantity * 120m)
+        );
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        return inv;
+    }
+
+    /// <summary>Variante de <see cref="BuildHandlerWithInsufficientStock"/> con stock disponible
+    /// configurable — necesaria para probar el límite exacto en unidad base (SALES-PRESENTATIONS-02),
+    /// a diferencia de la original que siempre simula stock 0.</summary>
+    private static (
+        AuthorizeSalesInvoiceHandler handler,
+        Mock<IStockRepository> stockRepo
+    ) BuildHandlerWithStockQuantity(SalesInvoice inv, decimal availableQuantity)
+    {
+        var repo = new Mock<ISalesInvoiceRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+
+        var tax = new Mock<ISriTaxResolver>();
+        tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
+
+        var stock = ERP.Domain.Modules.Inventory.Entities.CurrentStock.Create(
+            TenantId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            UserId,
+            CompanyId
+        );
+        stock.ApplyMovement(availableQuantity, UserId);
+
+        var stockRepo = new Mock<IStockRepository>();
+        stockRepo
+            .Setup(s => s.GetStockAsync(TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stock);
+        stockRepo
+            .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var edocRepo = new Mock<IElectronicDocumentRepository>();
+        edocRepo
+            .Setup(e => e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ElectronicDocument?)null);
+
+        var companyClock = new Mock<ICompanyClock>();
+        companyClock
+            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var user = new Mock<ICurrentUser>();
+        user.Setup(u => u.UserId).Returns(UserId);
+
+        var bpRepo = new Mock<IBusinessPartnerRepository>();
+        bpRepo
+            .Setup(r => r.GetByIdAsync(inv.CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((BusinessPartner?)null);
+
+        var fiscalPolicyResolver = new Mock<ISalesFiscalPolicyResolver>();
+        fiscalPolicyResolver
+            .Setup(r => r.GetEffectivePolicyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SalesFiscalPolicyResult(
+                    true,
+                    ConsumerFinalPolicyDefaults.FallbackMaxAmount,
+                    ConsumerFinalMaxAmountSource.Fallback,
+                    null
+                )
+            );
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(
+                    TenantId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    requiresReference: false,
+                    isCreditAllowed: false,
+                    sortOrder: 1,
+                    createdBy: UserId
+                )
+            );
+
+        var preferences = new Mock<IOperationalPreferencesResolver>();
+        preferences
+            .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultOperationalPreferences());
+
+        var handler = new AuthorizeSalesInvoiceHandler(
+            repo.Object,
+            Mock.Of<ISalesReceivableRepository>(),
+            stockRepo.Object,
+            tax.Object,
+            Mock.Of<IDocumentSequenceRepository>(),
+            Mock.Of<IEmissionPointRepository>(),
+            Mock.Of<IEstablishmentRepository>(),
+            edocRepo.Object,
+            Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
+            companyClock.Object,
+            bpRepo.Object,
+            fiscalPolicyResolver.Object,
+            paymentMethodRepo.Object,
+            Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
+            tenant.Object,
+            company.Object,
+            user.Object,
+            preferences.Object
+        );
+
+        return (handler, stockRepo);
+    }
+
+    // ── SALES-PRESENTATIONS-02: venta por presentación (caja x12) ──────────
+
+    [Fact]
+    public async Task Presentation_stock_insuficiente_en_unidad_base_bloquea_la_autorizacion()
+    {
+        // Stock 10 unidades base, venta 1 CAJA x12 = 12 unidades base requeridas → debe bloquear.
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var inv = CreateDraftInvoiceWithPresentationLine(
+            itemId,
+            warehouseId,
+            quantity: 1m,
+            conversionFactor: 12m
+        );
+        var (handler, stockRepo) = BuildHandlerWithStockQuantity(inv, availableQuantity: 10m);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("stock insuficiente");
+        stockRepo.Verify(
+            s => s.AppendMovementAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<ERP.Domain.Modules.Inventory.Enums.StockMovementType>(), It.IsAny<decimal>(),
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
+                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
+                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
+            ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Presentation_stock_suficiente_en_unidad_base_autoriza_y_descuenta_QuantityInBaseUom()
+    {
+        // Stock 20 unidades base, venta 1 CAJA x12 = 12 unidades base requeridas → debe autorizar
+        // y descontar exactamente 12 en unidad base (nunca 1, la cantidad vendida cruda).
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var inv = CreateDraftInvoiceWithPresentationLine(
+            itemId,
+            warehouseId,
+            quantity: 1m,
+            conversionFactor: 12m
+        );
+        var (handler, stockRepo) = BuildHandlerWithStockQuantity(inv, availableQuantity: 20m);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        stockRepo.Verify(
+            s => s.AppendMovementAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit, -12m,
+                "UNIT", It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<Guid?>(),
+                It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<decimal?>(), It.IsAny<Guid?>(),
+                It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()
+            ),
+            Times.Once
+        );
+    }
+
     [Fact]
     public async Task Rejects_insufficient_stock_by_default()
     {

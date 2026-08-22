@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Configuration.Interfaces;
@@ -7,7 +8,9 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
@@ -294,6 +297,115 @@ public sealed class CreateSalesDraftHandlerTests
             Times.Never,
             "debe rechazar antes de tocar cualquier otro repositorio si no hay caja abierta"
         );
+    }
+
+    // ── SALES-PRESENTATIONS-02 ──────────────────────────────────────────
+
+    private static Item CreateItemWithPackaging()
+    {
+        var item = Item.Create(
+            TenantId,
+            "SKU-CAJA",
+            "Item con presentación",
+            "Item con presentación",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(),
+            ItemStockConfig.Create(tracksStock: false),
+            UserId
+        );
+        item.ReplacePackagingLevels(
+            [
+                ("UNIDAD X1", 1, 1m, "UNIT", null, null, true, false, true),
+                ("CAJA X12", 2, 12m, "CAJA", null, null, false, false, false),
+            ],
+            UserId
+        );
+        return item;
+    }
+
+    [Fact]
+    public async Task Con_PackagingLevelId_resuelve_ConversionFactor_y_QuantityInBaseUom()
+    {
+        var f = new Fixture();
+        var item = CreateItemWithPackaging();
+        var caja = item.PackagingLevels.Single(p => p.Name == "CAJA X12");
+
+        f.ItemRepo
+            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        f.Pricing
+            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PricingResult>.Failure("Sin precio configurado."));
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput>
+            {
+                new(item.Id, "Caja x12", 2m, 120m, "10", PackagingLevelId: caja.Id),
+            }
+        );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured.Should().NotBeNull();
+        var line = captured!.Lines.Single();
+        line.PackagingLevelId.Should().Be(caja.Id);
+        line.UomCode.Should().Be("CAJA");
+        line.BaseUomCode.Should().Be("UNIT");
+        line.ConversionFactor.Should().Be(12m);
+        line.Quantity.Should().Be(2m);
+        line.QuantityInBaseUom.Should().Be(24m);
+    }
+
+    [Fact]
+    public async Task Sin_PackagingLevelId_preserva_el_comportamiento_actual_venta_en_unidad_base()
+    {
+        var f = new Fixture();
+        var item = CreateItemWithPackaging();
+
+        f.ItemRepo
+            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        f.Pricing
+            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PricingResult>.Failure("Sin precio configurado."));
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(item.Id, "Unidad suelta", 5m, 10m, "10") }
+        );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.PackagingLevelId.Should().BeNull();
+        line.UomCode.Should().Be("UNIT");
+        line.ConversionFactor.Should().Be(1m);
+        line.QuantityInBaseUom.Should().Be(5m);
     }
 
     [Fact]

@@ -19,5 +19,9 @@ public sealed record ReturnableLineDto(
     string VatCode,
     decimal VatRate,
     string? IceCode,
-    decimal IceRate
+    decimal IceRate,
+    Guid? PackagingLevelId,
+    decimal ConversionFactor,
+    decimal OriginalQuantityInBaseUom,
+    decimal RemainingQuantityInBaseUom
 );

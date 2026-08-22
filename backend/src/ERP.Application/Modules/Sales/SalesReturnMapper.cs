@@ -59,7 +59,11 @@ internal static class SalesReturnMapper
             d.LineSubtotal,
             d.TaxableBase,
             d.TaxInclusiveTotal,
-            d.IsFrozen
+            d.IsFrozen,
+            d.PackagingLevelId,
+            d.BaseUomCode,
+            d.ConversionFactor,
+            d.QuantityInBaseUom
         );
 
     private static SalesReturnRefundAllocationDto MapAllocation(SalesReturnRefundAllocation a) =>

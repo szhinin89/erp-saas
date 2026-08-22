@@ -6,6 +6,7 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -26,7 +27,11 @@ public sealed record SalesLineInput(
     string? Notes = null,
     decimal DiscountPct = 0,
     string? IceCode = null,
-    Guid? WarehouseId = null
+    Guid? WarehouseId = null,
+    // SALES-PRESENTATIONS-02: null = venta en unidad base (comportamiento actual preservado,
+    // factor 1). Informado = venta por presentación (ej. caja x12) — resuelto contra
+    // Item.PackagingLevels por SalesLinePackagingResolver, nunca confiado tal cual del cliente.
+    Guid? PackagingLevelId = null
 );
 
 // ── Commands & Queries ──────────────────────────────────────────────────
@@ -587,6 +592,62 @@ public sealed class GetSalesInvoiceListHandler
     }
 }
 
+// SALES-PRESENTATIONS-02 — inspirado en PurchaseLinePackagingResolver (Purchases). A diferencia
+// de Compras, esta fase no consume ItemSupplierCode (Ventas no tiene proveedor) ni IsSaleDefault
+// (decisión explícita: no auto-seleccionar presentación todavía, ver comentario en Resolve).
+file sealed record SalesLinePackagingSnapshot(
+    Guid? PackagingLevelId,
+    string UomCode,
+    string BaseUomCode,
+    decimal ConversionFactor
+);
+
+file static class SalesLinePackagingResolver
+{
+    /// <summary>
+    /// PackagingLevelId null → venta en unidad base (comportamiento actual preservado, factor 1).
+    /// PackagingLevelId informado → venta por presentación; debe pertenecer al ítem y estar activa.
+    /// No consume IsSaleDefault automáticamente en esta fase — queda para una fase posterior que
+    /// decida si auto-seleccionar la presentación de venta por defecto del ítem.
+    /// </summary>
+    public static (SalesLinePackagingSnapshot? Snapshot, string? Error) Resolve(
+        Item item,
+        Guid? packagingLevelId,
+        string description
+    )
+    {
+        if (!packagingLevelId.HasValue)
+            return (
+                new SalesLinePackagingSnapshot(null, item.DefaultUomCode, item.DefaultUomCode, 1m),
+                null
+            );
+
+        var selected = item.PackagingLevels.FirstOrDefault(p =>
+            p.Id == packagingLevelId.Value && p.IsActive
+        );
+        if (selected is null)
+            return (
+                null,
+                $"Línea '{description}': la presentación seleccionada no pertenece al ítem o está inactiva."
+            );
+
+        if (selected.BaseQuantity <= 0)
+            throw new InvalidOperationException(
+                "La cantidad base del empaque debe ser mayor a cero."
+            );
+
+        return (
+            new SalesLinePackagingSnapshot(
+                selected.Id,
+                selected.UomCode,
+                item.DefaultUomCode,
+                selected.BaseQuantity
+            ),
+            null
+        );
+    }
+}
+
 file static class SalesLineBuilder
 {
     public static async Task<LinesBuildResult> BuildAsync(
@@ -637,11 +698,16 @@ file static class SalesLineBuilder
             string? snapshotSku = null;
             string? snapshotItemName = null;
             string uomCode = "UNIT";
+            string? baseUomCode = null;
+            decimal conversionFactor = 1m;
+            Guid? packagingLevelId = null;
             Guid? warehouseId = null;
 
             if (l.ItemId.HasValue)
             {
-                var item = await itemRepo.GetByIdLightAsync(l.ItemId.Value, tid, ct);
+                // GetByIdAsync (no GetByIdLightAsync): necesitamos item.PackagingLevels cargado
+                // para resolver la presentación — mismo criterio que Purchases (PurchaseLineBuilder).
+                var item = await itemRepo.GetByIdAsync(l.ItemId.Value, tid, ct);
                 if (item is null)
                     return new(
                         null!,
@@ -660,7 +726,19 @@ file static class SalesLineBuilder
 
                 snapshotSku = item.Code.SKU;
                 snapshotItemName = item.Code.Description;
-                uomCode = item.DefaultUomCode;
+
+                var (packagingSnapshot, packagingError) = SalesLinePackagingResolver.Resolve(
+                    item,
+                    l.PackagingLevelId,
+                    l.Description
+                );
+                if (packagingError is not null)
+                    return new(null!, Result<SalesInvoiceDto>.ValidationFailure(packagingError));
+
+                uomCode = packagingSnapshot!.UomCode;
+                baseUomCode = packagingSnapshot.BaseUomCode;
+                conversionFactor = packagingSnapshot.ConversionFactor;
+                packagingLevelId = packagingSnapshot.PackagingLevelId;
 
                 // Kardex: la bodega de despacho es obligatoria por línea cuando el ítem
                 // controla inventario — una misma factura puede despachar de bodegas distintas.
@@ -682,11 +760,14 @@ file static class SalesLineBuilder
                 iceCode = item.TaxConfig.ExciseTaxCode;
 
                 // Pricing Engine v2 (SSOT del precio de venta) — resuelve el precio vigente
-                // para validar el piso de descuento configurado en el maestro del ítem.
+                // para validar el piso de descuento configurado en el maestro del ítem. El precio
+                // resuelto es siempre por unidad base — al vender por presentación (ej. caja x12),
+                // el piso de descuento se escala por conversionFactor (SALES-PRESENTATIONS-02);
+                // no se crea una tabla de precios por presentación, ni se toca PricingResolver.
                 var pricingResult = await pricingResolver.ResolveAsync(item.Id, ct: ct);
                 if (pricingResult.IsSuccess)
                 {
-                    var resolvedPrice = pricingResult.Value!.UnitPrice;
+                    var resolvedPrice = pricingResult.Value!.UnitPrice * conversionFactor;
                     var maxDiscountPercent = item.SaleConfig.MaxDiscountPercent;
                     if (maxDiscountPercent.HasValue)
                     {
@@ -724,7 +805,10 @@ file static class SalesLineBuilder
                 iceCode,
                 snapshotSku,
                 snapshotItemName,
-                warehouseId: warehouseId
+                conversionFactor: conversionFactor,
+                warehouseId: warehouseId,
+                baseUomCode: baseUomCode,
+                packagingLevelId: packagingLevelId
             );
 
             var taxResult = await SalesTaxHelper.ResolveTaxesAsync(line, tax, ct);

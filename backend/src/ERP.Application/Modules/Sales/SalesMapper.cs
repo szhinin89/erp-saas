@@ -120,6 +120,8 @@ internal static class SalesMapper
             l.SnapshotIceName,
             l.TaxInclusiveTotal,
             l.Notes,
-            l.SortOrder
+            l.SortOrder,
+            l.PackagingLevelId,
+            l.BaseUomCode
         );
 }

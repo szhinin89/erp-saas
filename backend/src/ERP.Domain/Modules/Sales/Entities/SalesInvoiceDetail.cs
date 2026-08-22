@@ -30,7 +30,9 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     public Guid? WarehouseId { get; private set; }
 
     // ── UoM ─────────────────────────────────────────────────────────────
+    public Guid? PackagingLevelId { get; private set; }
     public string UomCode { get; private set; } = "UNIT";
+    public string BaseUomCode { get; private set; } = "UNIT";
     public decimal ConversionFactor { get; private set; } = 1m;
     public decimal QuantityInBaseUom { get; private set; }
 
@@ -91,7 +93,9 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         string? snapshotSku = null,
         string? snapshotItemName = null,
         decimal conversionFactor = 1m,
-        Guid? warehouseId = null
+        Guid? warehouseId = null,
+        string? baseUomCode = null,
+        Guid? packagingLevelId = null
     )
     {
         if (string.IsNullOrWhiteSpace(description))
@@ -120,6 +124,16 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
                 "El factor de conversión debe ser mayor a cero.",
                 nameof(conversionFactor)
             );
+        if (string.IsNullOrWhiteSpace(baseUomCode ?? uomCode))
+            throw new ArgumentException(
+                "La unidad base de inventario es obligatoria.",
+                nameof(baseUomCode)
+            );
+        if (packagingLevelId == Guid.Empty)
+            throw new ArgumentException(
+                "El nivel de empaque no es válido.",
+                nameof(packagingLevelId)
+            );
 
         var line = new SalesInvoiceDetail
         {
@@ -131,7 +145,9 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
             Description = description.Trim(),
             SnapshotSku = snapshotSku?.Trim(),
             SnapshotItemName = snapshotItemName?.Trim(),
+            PackagingLevelId = packagingLevelId,
             UomCode = uomCode.Trim().ToUpperInvariant(),
+            BaseUomCode = (baseUomCode ?? uomCode).Trim().ToUpperInvariant(),
             ConversionFactor = conversionFactor,
             Quantity = quantity,
             QuantityInBaseUom = Math.Round(

@@ -40,7 +40,11 @@ public sealed record SalesReturnDetailDto(
     decimal LineSubtotal,
     decimal TaxableBase,
     decimal TaxInclusiveTotal,
-    bool IsFrozen
+    bool IsFrozen,
+    Guid? PackagingLevelId,
+    string BaseUomCode,
+    decimal ConversionFactor,
+    decimal QuantityInBaseUom
 );
 
 public sealed record SalesReturnRefundAllocationDto(Guid Id, string Method, decimal Amount);

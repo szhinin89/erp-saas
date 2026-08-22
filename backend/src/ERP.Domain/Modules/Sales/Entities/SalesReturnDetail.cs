@@ -32,7 +32,11 @@ public sealed class SalesReturnDetail : IMustHaveTenant
     public string? SnapshotSku { get; private set; }
     public string? SnapshotItemName { get; private set; }
     public Guid? WarehouseId { get; private set; }
+    public Guid? PackagingLevelId { get; private set; }
     public string UomCode { get; private set; } = "UNIT";
+    public string BaseUomCode { get; private set; } = "UNIT";
+    public decimal ConversionFactor { get; private set; } = 1m;
+    public decimal QuantityInBaseUom { get; private set; }
 
     // ── Quantity & Price (snapshot heredado — nunca recalculado contra el ítem) ──
     public decimal Quantity { get; private set; }
@@ -86,7 +90,10 @@ public sealed class SalesReturnDetail : IMustHaveTenant
         string? snapshotSku = null,
         string? snapshotItemName = null,
         string? iceCode = null,
-        decimal iceRate = 0m
+        decimal iceRate = 0m,
+        Guid? packagingLevelId = null,
+        decimal conversionFactor = 1m,
+        string? baseUomCode = null
     )
     {
         if (originalInvoiceDetailId == Guid.Empty)
@@ -122,6 +129,21 @@ public sealed class SalesReturnDetail : IMustHaveTenant
             throw new ArgumentException("La tasa ICE no puede ser negativa.", nameof(iceRate));
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new ArgumentException("La unidad de medida es obligatoria.", nameof(uomCode));
+        if (conversionFactor <= 0)
+            throw new ArgumentException(
+                "El factor de conversión debe ser mayor a cero.",
+                nameof(conversionFactor)
+            );
+        if (string.IsNullOrWhiteSpace(baseUomCode ?? uomCode))
+            throw new ArgumentException(
+                "La unidad base de inventario es obligatoria.",
+                nameof(baseUomCode)
+            );
+        if (packagingLevelId == Guid.Empty)
+            throw new ArgumentException(
+                "El nivel de empaque no es válido.",
+                nameof(packagingLevelId)
+            );
 
         var line = new SalesReturnDetail
         {
@@ -131,10 +153,18 @@ public sealed class SalesReturnDetail : IMustHaveTenant
             OriginalInvoiceDetailId = originalInvoiceDetailId,
             ItemId = itemId,
             WarehouseId = warehouseId,
+            PackagingLevelId = packagingLevelId,
             Description = description.Trim(),
             SnapshotSku = snapshotSku?.Trim(),
             SnapshotItemName = snapshotItemName?.Trim(),
             UomCode = uomCode.Trim().ToUpperInvariant(),
+            BaseUomCode = (baseUomCode ?? uomCode).Trim().ToUpperInvariant(),
+            ConversionFactor = conversionFactor,
+            QuantityInBaseUom = Math.Round(
+                quantity * conversionFactor,
+                FiscalPrecision.Quantity,
+                MidpointRounding.AwayFromZero
+            ),
             Quantity = quantity,
             UnitPrice = unitPrice,
             DiscountPct = discountPct,

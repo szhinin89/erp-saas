@@ -201,7 +201,9 @@ public sealed class AuthorizeSalesReturnHandler
 
             // 6. Reversión de inventario (Kardex) — documento origen es la propia devolución,
             // nunca la factura (una factura puede tener múltiples devoluciones parciales en el
-            // tiempo).
+            // tiempo). SALES-PRESENTATIONS-02: reingresa QuantityInBaseUom/BaseUomCode — la
+            // devolución siempre hereda la presentación de la línea de venta original, nunca
+            // Quantity/UomCode crudos.
             foreach (var line in salesReturn.Lines)
             {
                 if (line.ItemId is null || line.WarehouseId is null)
@@ -213,8 +215,8 @@ public sealed class AuthorizeSalesReturnHandler
                     line.ItemId.Value,
                     line.WarehouseId.Value,
                     StockMovementType.SaleReturn,
-                    line.Quantity,
-                    line.UomCode,
+                    line.QuantityInBaseUom,
+                    line.BaseUomCode,
                     DateOnly.FromDateTime(DateTime.UtcNow),
                     $"DEV-{salesReturn.ReturnNumber}",
                     salesReturn.Id,

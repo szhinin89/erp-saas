@@ -32,9 +32,15 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
             .HasColumnName("snapshot_item_name")
             .HasMaxLength(SalesInvoiceDetail.ItemNameMaxLen);
 
+        builder.Property(x => x.PackagingLevelId).HasColumnName("packaging_level_id");
         builder
             .Property(x => x.UomCode)
             .HasColumnName("uom_code")
+            .HasMaxLength(SalesInvoiceDetail.UomCodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.BaseUomCode)
+            .HasColumnName("base_uom_code")
             .HasMaxLength(SalesInvoiceDetail.UomCodeMaxLen)
             .IsRequired();
         builder

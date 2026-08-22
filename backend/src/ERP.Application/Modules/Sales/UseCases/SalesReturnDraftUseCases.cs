@@ -344,6 +344,9 @@ file static class SalesReturnLineBuilder
             if (remainingError is not null)
                 return new(null!, Result<SalesReturnDto>.ValidationFailure(remainingError));
 
+            // SALES-PRESENTATIONS-02: la devolución mantiene SIEMPRE la misma presentación de la
+            // venta original (PackagingLevelId/ConversionFactor/BaseUomCode heredados tal cual) —
+            // no se expone forma de devolver en una presentación distinta a la vendida.
             var line = SalesReturnDetail.Create(
                 returnId,
                 tenantId,
@@ -360,7 +363,10 @@ file static class SalesReturnLineBuilder
                 originalLine.SnapshotSku,
                 originalLine.SnapshotItemName,
                 originalLine.IceCode,
-                originalLine.IceRate
+                originalLine.IceRate,
+                originalLine.PackagingLevelId,
+                originalLine.ConversionFactor,
+                originalLine.BaseUomCode
             );
             lines.Add(line);
         }
