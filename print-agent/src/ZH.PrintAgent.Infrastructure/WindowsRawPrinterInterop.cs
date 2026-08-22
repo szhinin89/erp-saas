@@ -1,10 +1,67 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ZH.PrintAgent.Infrastructure;
 
 internal static class WindowsRawPrinterInterop
 {
+    private const int PrinterEnumLocal = 0x00000002;
+    private const int PrinterEnumConnections = 0x00000004;
+
+    public static IReadOnlyList<string> EnumeratePrinterNames()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return Array.Empty<string>();
+        }
+
+        const int flags = PrinterEnumLocal | PrinterEnumConnections;
+        EnumPrinters(flags, null, 4, IntPtr.Zero, 0, out var neededBytes, out _);
+        if (neededBytes <= 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        var buffer = Marshal.AllocHGlobal(neededBytes);
+        try
+        {
+            if (!EnumPrinters(flags, null, 4, buffer, neededBytes, out _, out var returned))
+            {
+                throw CreateWin32Exception("Unable to enumerate Windows printers.");
+            }
+
+            var structSize = Marshal.SizeOf<PrinterInfo4>();
+            var names = new List<string>(returned);
+            for (var i = 0; i < returned; i++)
+            {
+                var current = Marshal.PtrToStructure<PrinterInfo4>(buffer + (i * structSize));
+                if (!string.IsNullOrWhiteSpace(current.PrinterName))
+                {
+                    names.Add(current.PrinterName);
+                }
+            }
+
+            return names;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    public static string? GetDefaultPrinterName()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return null;
+        }
+
+        var buffer = new StringBuilder(512);
+        var size = buffer.Capacity;
+        return GetDefaultPrinter(buffer, ref size) ? buffer.ToString() : null;
+    }
+
     public static bool CanOpenPrinter(string printerName)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -103,6 +160,19 @@ internal static class WindowsRawPrinterInterop
     [DllImport("winspool.drv", SetLastError = true)]
     private static extern bool WritePrinter(IntPtr printerHandle, byte[] bytes, int byteCount, out int bytesWritten);
 
+    [DllImport("winspool.drv", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool EnumPrinters(
+        int flags,
+        string? name,
+        int level,
+        IntPtr printerEnum,
+        int bufferSize,
+        out int bytesNeeded,
+        out int countReturned);
+
+    [DllImport("winspool.drv", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool GetDefaultPrinter(StringBuilder buffer, ref int bufferSize);
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct DocumentInfo
     {
@@ -114,5 +184,17 @@ internal static class WindowsRawPrinterInterop
 
         [MarshalAs(UnmanagedType.LPWStr)]
         public string DataType;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct PrinterInfo4
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string? PrinterName;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string? ServerName;
+
+        public uint Attributes;
     }
 }

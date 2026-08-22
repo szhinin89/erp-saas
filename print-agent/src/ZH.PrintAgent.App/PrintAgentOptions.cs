@@ -13,6 +13,9 @@ public sealed record PrintAgentOptions
     public string ApiKey { get; init; } = "local-dev-key-change-me";
     public long MaxPayloadBytes { get; init; } = 65536;
     public string DataDirectory { get; init; } = "data";
+    public string LogDirectory { get; init; } = "logs";
+    public int LogRetentionDays { get; init; } = 30;
+    public bool SetupCompleted { get; init; }
     public int PollIntervalMilliseconds { get; init; } = 500;
     public int MaxAttempts { get; init; } = 3;
     public int BaseRetryDelaySeconds { get; init; } = 5;

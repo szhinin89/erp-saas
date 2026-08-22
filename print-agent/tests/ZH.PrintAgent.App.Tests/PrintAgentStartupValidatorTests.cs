@@ -51,10 +51,70 @@ public sealed class PrintAgentStartupValidatorTests
         PrintAgentStartupValidator.Validate(options, "Development");
     }
 
+    [Fact]
+    public void Validate_allows_bootstrap_mode_in_production_on_loopback()
+    {
+        var options = new PrintAgentOptions
+        {
+            SetupCompleted = false,
+            AllowLan = false,
+            BindHost = "127.0.0.1",
+            ApiKey = PrintAgentStartupValidator.SampleProductionApiKey,
+            Printers = Array.Empty<PrinterInfo>()
+        };
+
+        PrintAgentStartupValidator.Validate(options, "Production");
+    }
+
+    [Fact]
+    public void Validate_fails_bootstrap_mode_in_production_when_lan_allowed()
+    {
+        var options = new PrintAgentOptions
+        {
+            SetupCompleted = false,
+            AllowLan = true,
+            BindHost = "0.0.0.0",
+            ApiKey = PrintAgentStartupValidator.SampleProductionApiKey,
+            Printers = Array.Empty<PrinterInfo>()
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            PrintAgentStartupValidator.Validate(options, "Production"));
+
+        Assert.Contains("ApiKey", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidateSetupCompletion_returns_errors_instead_of_throwing()
+    {
+        var options = new PrintAgentOptions
+        {
+            SetupCompleted = false,
+            AllowLan = false,
+            BindHost = "127.0.0.1",
+            ApiKey = PrintAgentStartupValidator.SampleProductionApiKey,
+            Printers = Array.Empty<PrinterInfo>()
+        };
+
+        var errors = PrintAgentStartupValidator.ValidateSetupCompletion(options, "Production");
+
+        Assert.NotEmpty(errors);
+        Assert.Contains(errors, error => error.Contains("ApiKey", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ValidateSetupCompletion_succeeds_with_real_key_and_printer()
+    {
+        var errors = PrintAgentStartupValidator.ValidateSetupCompletion(ValidProductionOptions(), "Production");
+
+        Assert.Empty(errors);
+    }
+
     private static PrintAgentOptions ValidProductionOptions()
     {
         return new PrintAgentOptions
         {
+            SetupCompleted = true,
             ApiKey = "cash-register-secret",
             Printers = new[]
             {

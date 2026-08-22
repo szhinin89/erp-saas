@@ -11,6 +11,8 @@ public sealed record PrintJob
     public PrintJobStatus Status { get; init; } = PrintJobStatus.Pending;
     public int Attempts { get; init; }
     public string? LastError { get; init; }
+    public bool Reviewed { get; init; }
+    public DateTimeOffset? ReviewedAt { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
     public DateTimeOffset? ProcessingStartedAt { get; init; }
@@ -99,6 +101,16 @@ public sealed record PrintJob
             ProcessingStartedAt = null,
             NextAttemptAt = null,
             LastError = reason,
+            UpdatedAt = now
+        };
+    }
+
+    public PrintJob MarkReviewed(DateTimeOffset now)
+    {
+        return this with
+        {
+            Reviewed = true,
+            ReviewedAt = now,
             UpdatedAt = now
         };
     }

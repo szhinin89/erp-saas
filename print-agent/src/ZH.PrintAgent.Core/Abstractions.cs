@@ -34,6 +34,11 @@ public interface ISystemClock
     DateTimeOffset UtcNow { get; }
 }
 
+public interface IWindowsPrinterEnumerator
+{
+    Task<IReadOnlyList<DetectedPrinter>> EnumerateAsync(CancellationToken cancellationToken);
+}
+
 public sealed class SystemClock : ISystemClock
 {
     public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;

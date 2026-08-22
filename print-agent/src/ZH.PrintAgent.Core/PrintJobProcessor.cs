@@ -8,6 +8,7 @@ public sealed class PrintJobProcessor
     private readonly IReceiptPrinter printer;
     private readonly IPrinterLockProvider lockProvider;
     private readonly ReceiptFormatter formatter;
+    private readonly IPrinterCatalog printerCatalog;
     private readonly ISystemClock clock;
     private readonly PrintProcessingOptions options;
 
@@ -16,6 +17,7 @@ public sealed class PrintJobProcessor
         IReceiptPrinter printer,
         IPrinterLockProvider lockProvider,
         ReceiptFormatter formatter,
+        IPrinterCatalog printerCatalog,
         ISystemClock clock,
         PrintProcessingOptions options)
     {
@@ -23,6 +25,7 @@ public sealed class PrintJobProcessor
         this.printer = printer;
         this.lockProvider = lockProvider;
         this.formatter = formatter;
+        this.printerCatalog = printerCatalog;
         this.clock = clock;
         this.options = options;
     }
@@ -36,7 +39,9 @@ public sealed class PrintJobProcessor
         }
 
         await using var printerLock = await lockProvider.AcquireAsync(leased.PrinterName, cancellationToken);
-        var formattedReceipt = formatter.Format80Mm(leased.Receipt);
+        var printerInfo = await printerCatalog.FindEnabledAsync(leased.PrinterName, cancellationToken);
+        var columns = ReceiptFormatter.ColumnsForWidth(printerInfo?.PaperWidthMm ?? 80);
+        var formattedReceipt = formatter.Format(leased.Receipt, columns);
 
         try
         {

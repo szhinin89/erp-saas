@@ -90,6 +90,24 @@ public sealed class PrintJobService
         await store.UpdateAsync(retry, cancellationToken);
         return retry;
     }
+
+    public async Task<PrintJob?> MarkReviewedAsync(string jobId, CancellationToken cancellationToken)
+    {
+        var job = await store.GetAsync(jobId, cancellationToken);
+        if (job is null)
+        {
+            return null;
+        }
+
+        if (job.Status is not (PrintJobStatus.Failed or PrintJobStatus.NeedsReview))
+        {
+            return job;
+        }
+
+        var reviewed = job.MarkReviewed(clock.UtcNow);
+        await store.UpdateAsync(reviewed, cancellationToken);
+        return reviewed;
+    }
 }
 
 public sealed record SubmitPrintJobResult(

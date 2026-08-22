@@ -16,6 +16,8 @@ public sealed record PrintJobResponse
     public bool Duplicate { get; init; }
     public int Attempts { get; init; }
     public string? LastError { get; init; }
+    public bool Reviewed { get; init; }
+    public DateTimeOffset? ReviewedAt { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
     public DateTimeOffset? NextAttemptAt { get; init; }
@@ -27,6 +29,7 @@ public sealed record PrinterInfo
     public string Driver { get; init; } = "simulated";
     public bool Enabled { get; init; } = true;
     public bool IsDefault { get; init; }
+    public int PaperWidthMm { get; init; } = 80;
 }
 
 public static class PrinterDrivers
@@ -39,6 +42,12 @@ public static class PrinterDrivers
         return string.Equals(driver, Simulated, StringComparison.OrdinalIgnoreCase) ||
                string.Equals(driver, WindowsRaw, StringComparison.OrdinalIgnoreCase);
     }
+}
+
+public sealed record DetectedPrinter
+{
+    public string Name { get; init; } = string.Empty;
+    public bool IsWindowsDefault { get; init; }
 }
 
 public sealed record PrinterConfigurationResponse

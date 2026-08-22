@@ -15,6 +15,8 @@ public static class PrintJobMapping
             Duplicate = duplicate,
             Attempts = job.Attempts,
             LastError = job.LastError,
+            Reviewed = job.Reviewed,
+            ReviewedAt = job.ReviewedAt,
             CreatedAt = job.CreatedAt,
             UpdatedAt = job.UpdatedAt,
             NextAttemptAt = job.NextAttemptAt

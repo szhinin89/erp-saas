@@ -2,7 +2,10 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using ZH.PrintAgent.App;
+using ZH.PrintAgent.App.Logging;
 using ZH.PrintAgent.Contracts;
 using ZH.PrintAgent.Core;
 using ZH.PrintAgent.Infrastructure;
@@ -14,8 +17,16 @@ builder.Host.UseWindowsService(options =>
     options.ServiceName = "ZH Print Agent";
 });
 
+var bootstrapOptions = builder.Configuration.GetSection(PrintAgentOptions.SectionName).Get<PrintAgentOptions>()
+                        ?? new PrintAgentOptions();
+
+var settingsFilePath = Path.Combine(bootstrapOptions.DataDirectory, "config", "settings.json");
+await PrintAgentSettingsStore.EnsureCreatedAsync(settingsFilePath, bootstrapOptions);
+
+builder.Configuration.AddJsonFile(settingsFilePath, optional: true, reloadOnChange: true);
+
 var agentOptions = builder.Configuration.GetSection(PrintAgentOptions.SectionName).Get<PrintAgentOptions>()
-                   ?? new PrintAgentOptions();
+                    ?? new PrintAgentOptions();
 
 PrintAgentStartupValidator.Validate(agentOptions, builder.Environment.EnvironmentName);
 
@@ -25,8 +36,14 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Listen(IPAddress.Parse(agentOptions.BindHost), agentOptions.Port);
 });
 
+var logDirectory = Path.IsPathRooted(agentOptions.LogDirectory)
+    ? agentOptions.LogDirectory
+    : Path.Combine(agentOptions.DataDirectory, agentOptions.LogDirectory);
+LogRetention.PruneOldLogs(logDirectory, agentOptions.LogRetentionDays);
+
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole();
+builder.Logging.AddProvider(new FileLoggerProvider(logDirectory));
 
 builder.Services.Configure<JsonOptions>(options =>
 {
@@ -39,11 +56,12 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(agentOptions.AllowedCorsOrigins.ToArray())
-            .WithMethods("GET", "POST", "OPTIONS")
+            .WithMethods("GET", "POST", "PUT", "OPTIONS")
             .WithHeaders("Content-Type", PrintAgentOptions.ApiKeyHeaderName);
     });
 });
 
+builder.Services.Configure<PrintAgentOptions>(builder.Configuration.GetSection(PrintAgentOptions.SectionName));
 builder.Services.AddSingleton(agentOptions);
 builder.Services.AddSingleton<ISystemClock, SystemClock>();
 builder.Services.AddSingleton(new PrintProcessingOptions
@@ -56,7 +74,10 @@ builder.Services.AddSingleton<IPrintJobStore>(_ =>
     new JsonPrintJobStore(Path.Combine(agentOptions.DataDirectory, "queue", "print-jobs.json")));
 builder.Services.AddSingleton<ReceiptFormatter>();
 builder.Services.AddSingleton<IPrinterLockProvider, KeyedSemaphorePrinterLockProvider>();
-builder.Services.AddSingleton<IPrinterCatalog>(_ => new ConfiguredPrinterCatalog(agentOptions.Printers));
+builder.Services.AddSingleton<IPrinterCatalog>(sp =>
+    new ConfiguredPrinterCatalog(() =>
+        sp.GetRequiredService<IOptionsMonitor<PrintAgentOptions>>().CurrentValue.Printers));
+builder.Services.AddSingleton<IWindowsPrinterEnumerator, WindowsPrinterEnumerator>();
 builder.Services.AddSingleton(_ =>
     new SimulatedReceiptPrinter(
         Path.Combine(agentOptions.DataDirectory, "printed"),
@@ -70,6 +91,9 @@ builder.Services.AddHostedService<PrintWorkerHostedService>();
 var app = builder.Build();
 
 app.UseCors("local-only");
+
+var optionsMonitor = app.Services.GetRequiredService<IOptionsMonitor<PrintAgentOptions>>();
+
 app.Use(async (context, next) =>
 {
     if (context.Request.ContentLength > agentOptions.MaxPayloadBytes)
@@ -85,7 +109,14 @@ app.Use(async (context, next) =>
         return;
     }
 
-    if (!IsAuthorized(context.Request, agentOptions.ApiKey))
+    var path = context.Request.Path;
+    if (IsAdminBootstrapExempt(path, optionsMonitor.CurrentValue))
+    {
+        await next(context);
+        return;
+    }
+
+    if (!IsAuthorized(context.Request, optionsMonitor.CurrentValue.ApiKey))
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         await context.Response.WriteAsJsonAsync(new { error = "Missing or invalid print agent API key." });
@@ -93,6 +124,20 @@ app.Use(async (context, next) =>
     }
 
     await next(context);
+});
+
+var adminWebRoot = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "admin");
+Directory.CreateDirectory(adminWebRoot);
+var adminFileProvider = new PhysicalFileProvider(adminWebRoot);
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    RequestPath = "/admin",
+    FileProvider = adminFileProvider
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    RequestPath = "/admin",
+    FileProvider = adminFileProvider
 });
 
 app.MapGet("/health", () => Results.Ok(new
@@ -171,7 +216,24 @@ app.MapGet("/printers/config", async (
     });
 });
 
-app.Run();
+app.MapAdminEndpoints(settingsFilePath);
+
+await app.RunAsync();
+
+static bool IsAdminBootstrapExempt(PathString path, PrintAgentOptions options)
+{
+    if (!path.StartsWithSegments("/admin") && !path.StartsWithSegments("/api/admin"))
+    {
+        return false;
+    }
+
+    if (options.SetupCompleted || options.AllowLan)
+    {
+        return false;
+    }
+
+    return IPAddress.TryParse(options.BindHost, out var address) && IPAddress.IsLoopback(address);
+}
 
 static bool IsAuthorized(HttpRequest request, string apiKey)
 {
@@ -190,3 +252,5 @@ static bool IsAuthorized(HttpRequest request, string apiKey)
     return expectedBytes.Length == providedBytes.Length &&
            CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
 }
+
+public partial class Program;

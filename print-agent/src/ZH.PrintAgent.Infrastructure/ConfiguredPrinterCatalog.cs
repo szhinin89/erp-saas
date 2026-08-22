@@ -5,20 +5,21 @@ namespace ZH.PrintAgent.Infrastructure;
 
 public sealed class ConfiguredPrinterCatalog : IPrinterCatalog
 {
-    private readonly IReadOnlyList<PrinterInfo> printers;
+    private readonly Func<IReadOnlyList<PrinterInfo>> printersAccessor;
 
-    public ConfiguredPrinterCatalog(IReadOnlyList<PrinterInfo> printers)
+    public ConfiguredPrinterCatalog(Func<IReadOnlyList<PrinterInfo>> printersAccessor)
     {
-        this.printers = printers;
+        this.printersAccessor = printersAccessor;
     }
 
     public Task<IReadOnlyList<PrinterInfo>> ListAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(printers);
+        return Task.FromResult(printersAccessor());
     }
 
     public Task<PrinterInfo?> FindEnabledAsync(string printerName, CancellationToken cancellationToken)
     {
+        var printers = printersAccessor();
         var printer = printers.FirstOrDefault(candidate =>
             candidate.Enabled &&
             string.Equals(candidate.Name, printerName, StringComparison.OrdinalIgnoreCase));

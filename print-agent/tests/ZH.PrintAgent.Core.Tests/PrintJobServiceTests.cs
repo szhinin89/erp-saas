@@ -121,6 +121,50 @@ public sealed class PrintJobServiceTests
         Assert.Null(retried.LastError);
     }
 
+    [Fact]
+    public async Task MarkReviewedAsync_marks_needs_review_job_as_reviewed()
+    {
+        var store = new InMemoryPrintJobStore();
+        var clock = new FixedClock();
+        var service = new PrintJobService(store, TestPrinterCatalog.Default(), clock);
+        var job = PrintJob
+            .Create(ValidRequest("needs-review-job", "POS-80"), clock.UtcNow)
+            .MarkNeedsReview(clock.UtcNow, "printer offline while processing");
+        await store.TryAddAsync(job, CancellationToken.None);
+
+        var reviewed = await service.MarkReviewedAsync("needs-review-job", CancellationToken.None);
+
+        Assert.NotNull(reviewed);
+        Assert.True(reviewed.Reviewed);
+        Assert.NotNull(reviewed.ReviewedAt);
+        Assert.Equal(PrintJobStatus.NeedsReview, reviewed.Status);
+    }
+
+    [Fact]
+    public async Task MarkReviewedAsync_is_a_noop_for_printed_jobs()
+    {
+        var store = new InMemoryPrintJobStore();
+        var clock = new FixedClock();
+        var service = new PrintJobService(store, TestPrinterCatalog.Default(), clock);
+        var job = PrintJob.Create(ValidRequest("printed-job", "POS-80"), clock.UtcNow).MarkPrinted(clock.UtcNow);
+        await store.TryAddAsync(job, CancellationToken.None);
+
+        var result = await service.MarkReviewedAsync("printed-job", CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.False(result.Reviewed);
+    }
+
+    [Fact]
+    public async Task MarkReviewedAsync_returns_null_for_unknown_job()
+    {
+        var service = new PrintJobService(new InMemoryPrintJobStore(), TestPrinterCatalog.Default(), new FixedClock());
+
+        var result = await service.MarkReviewedAsync("does-not-exist", CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
     public static SubmitPrintJobRequest ValidRequest(string jobId, string printerName)
     {
         return new SubmitPrintJobRequest
@@ -190,6 +234,7 @@ public sealed class PrintJobProcessorTests
             new FailingPrinter(),
             new NoopPrinterLockProvider(),
             new ReceiptFormatter(),
+            TestPrinterCatalog.Default(),
             clock,
             new PrintProcessingOptions { MaxAttempts = 2, BaseRetryDelay = TimeSpan.FromSeconds(7) });
 
@@ -215,6 +260,7 @@ public sealed class PrintJobProcessorTests
             new SuccessfulPrinter(),
             new NoopPrinterLockProvider(),
             new ReceiptFormatter(),
+            TestPrinterCatalog.Default(),
             clock,
             new PrintProcessingOptions { ProcessingStaleAfter = TimeSpan.FromMinutes(5) });
 

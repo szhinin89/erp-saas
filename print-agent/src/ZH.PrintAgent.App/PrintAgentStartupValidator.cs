@@ -11,8 +11,25 @@ public static class PrintAgentStartupValidator
     public static void Validate(PrintAgentOptions options, string environmentName)
     {
         ValidateBindOptions(options);
-        ValidateProductionApiKey(options, environmentName);
-        ValidatePrinterConfiguration(options, environmentName);
+
+        foreach (var error in ValidateProductionApiKeyErrors(options, environmentName)
+                     .Concat(ValidatePrinterConfigurationErrors(options, environmentName)))
+        {
+            throw new InvalidOperationException(error);
+        }
+    }
+
+    /// <summary>
+    /// Runs the same rules as <see cref="Validate"/> for the printer/API-key configuration, but returns
+    /// error strings instead of throwing, so the setup-completion endpoint can surface them as a 400
+    /// instead of letting an incomplete wizard produce a config that crash-loops on next restart.
+    /// </summary>
+    public static IReadOnlyList<string> ValidateSetupCompletion(PrintAgentOptions options, string environmentName)
+    {
+        var asCompleted = options with { SetupCompleted = true };
+        return ValidateProductionApiKeyErrors(asCompleted, environmentName)
+            .Concat(ValidatePrinterConfigurationErrors(asCompleted, environmentName))
+            .ToArray();
     }
 
     private static void ValidateBindOptions(PrintAgentOptions options)
@@ -28,42 +45,64 @@ public static class PrintAgentStartupValidator
         }
     }
 
-    private static void ValidateProductionApiKey(PrintAgentOptions options, string environmentName)
+    private static IEnumerable<string> ValidateProductionApiKeyErrors(PrintAgentOptions options, string environmentName)
     {
         if (!IsProduction(environmentName))
         {
-            return;
+            yield break;
         }
 
-        if (string.IsNullOrWhiteSpace(options.ApiKey) ||
+        var isDefaultKey =
+            string.IsNullOrWhiteSpace(options.ApiKey) ||
             string.Equals(options.ApiKey, DevelopmentApiKey, StringComparison.Ordinal) ||
-            string.Equals(options.ApiKey, SampleProductionApiKey, StringComparison.Ordinal))
+            string.Equals(options.ApiKey, SampleProductionApiKey, StringComparison.Ordinal);
+
+        if (!isDefaultKey)
         {
-            throw new InvalidOperationException("PrintAgent:ApiKey must be changed before running in Production.");
+            yield break;
         }
+
+        if (!options.SetupCompleted)
+        {
+            // Bootstrap mode: allow booting with the sentinel key so the local /admin wizard can run,
+            // but only while the instance is not reachable from outside this machine.
+            if (options.AllowLan || !IPAddress.TryParse(options.BindHost, out var address) || !IPAddress.IsLoopback(address))
+            {
+                yield return "PrintAgent:ApiKey must be changed before running in Production with AllowLan enabled or a non-loopback BindHost.";
+            }
+
+            yield break;
+        }
+
+        yield return "PrintAgent:ApiKey must be changed before running in Production.";
     }
 
-    private static void ValidatePrinterConfiguration(PrintAgentOptions options, string environmentName)
+    private static IEnumerable<string> ValidatePrinterConfigurationErrors(PrintAgentOptions options, string environmentName)
     {
+        if (!options.SetupCompleted)
+        {
+            // The setup wizard is what configures printers - don't crash-loop before it can run.
+            yield break;
+        }
+
         var enabledPrinters = options.Printers.Where(printer => printer.Enabled).ToArray();
         if (IsProduction(environmentName) && enabledPrinters.Length == 0)
         {
-            throw new InvalidOperationException("At least one enabled printer must be configured in Production.");
+            yield return "At least one enabled printer must be configured in Production.";
         }
 
         foreach (var printer in enabledPrinters)
         {
             if (!PrinterDrivers.IsSupported(printer.Driver))
             {
-                throw new InvalidOperationException(
-                    $"Printer '{printer.Name}' uses unsupported driver '{printer.Driver}'.");
+                yield return $"Printer '{printer.Name}' uses unsupported driver '{printer.Driver}'.";
+                continue;
             }
 
             if (!AllowsSimulatedPrinters(environmentName) &&
                 string.Equals(printer.Driver, PrinterDrivers.Simulated, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException(
-                    "Simulated printers are allowed only in Development/Test environments.");
+                yield return "Simulated printers are allowed only in Development/Test environments.";
             }
         }
     }

@@ -119,7 +119,7 @@ public sealed class RoutingReceiptPrinterTests
     {
         var output = Path.Combine(Path.GetTempPath(), "zh-print-agent-tests", Guid.NewGuid().ToString("N"), "printed");
         var router = new RoutingReceiptPrinter(
-            new ConfiguredPrinterCatalog(new[]
+            new ConfiguredPrinterCatalog(() => new[]
             {
                 new PrinterInfo { Name = "POS-80", Driver = PrinterDrivers.Simulated, Enabled = true }
             }),

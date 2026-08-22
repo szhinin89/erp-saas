@@ -1,7 +1,9 @@
 param(
     [string]$ServiceName = "ZHPrintAgent",
     [string]$DisplayName = "ZH Print Agent",
-    [string]$PublishDirectory = "$PSScriptRoot\..\publish"
+    [string]$PublishDirectory = "$PSScriptRoot\..\publish",
+    [string]$DataDirectory = "C:\ProgramData\ZH Technologies\PrintAgent",
+    [string]$AdminUrl = "http://127.0.0.1:9817/admin"
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,15 +21,30 @@ function Assert-ProductionSettings {
 
     $settingsPath = Join-Path $Directory "appsettings.Production.json"
     if (-not (Test-Path -LiteralPath $settingsPath)) {
-        throw "Production settings not found: $settingsPath. Copy appsettings.Production.sample.json and configure the local printer/API key first."
+        throw "Production settings not found: $settingsPath. Copy appsettings.Production.sample.json first."
     }
 
     $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
     $apiKey = $settings.PrintAgent.ApiKey
-    if ([string]::IsNullOrWhiteSpace($apiKey) -or
+    $allowLan = [bool]$settings.PrintAgent.AllowLan
+    $isSentinelKey = [string]::IsNullOrWhiteSpace($apiKey) -or
         $apiKey -eq "local-dev-key-change-me" -or
-        $apiKey -eq "replace-with-cash-register-local-secret") {
-        throw "PrintAgent:ApiKey must be changed before installing the Windows Service."
+        $apiKey -eq "replace-with-cash-register-local-secret"
+
+    if ($isSentinelKey -and $allowLan) {
+        throw "PrintAgent:ApiKey must be changed before installing with AllowLan enabled."
+    }
+
+    if ($isSentinelKey) {
+        Write-Host "Note: PrintAgent:ApiKey is still the sample value. The service will boot into local setup mode - complete the wizard at $AdminUrl before this till can be used."
+    }
+}
+
+function New-DataDirectories {
+    param([string]$Root)
+
+    foreach ($subfolder in @("config", "data", "logs", "queue", "printed")) {
+        New-Item -ItemType Directory -Force -Path (Join-Path $Root $subfolder) | Out-Null
     }
 }
 
@@ -41,6 +58,7 @@ if (-not (Test-Path -LiteralPath $exePath)) {
 }
 
 Assert-ProductionSettings -Directory $resolvedPublishDirectory
+New-DataDirectories -Root $DataDirectory
 
 $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($existing) {
@@ -59,3 +77,5 @@ sc.exe failureflag $ServiceName 1 | Out-Null
 
 Start-Service -Name $ServiceName
 Get-Service -Name $ServiceName
+
+Write-Host "`nOpen $AdminUrl on this machine to finish configuring the till (printer, API key, test print)."
