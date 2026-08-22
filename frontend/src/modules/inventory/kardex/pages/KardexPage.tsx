@@ -7,6 +7,7 @@ import {
   type BadgeVariant,
 } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { useI18n } from "../../../../i18n/i18n";
 import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
@@ -49,6 +50,7 @@ function movementBadgeVariant(typeName: string): BadgeVariant {
 }
 
 export function KardexPage() {
+  const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canView = canShow("inventory.stock.view");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,7 +111,11 @@ export function KardexPage() {
   ]);
 
   if (!canView)
-    return <NoAccessPage title="Centro de Investigación de Inventario" />;
+    return (
+      <NoAccessPage
+        title={t("kardex.title", "Kardex / Movimientos de inventario")}
+      />
+    );
 
   const qty = getDecimalConfig().quantity;
   const cost = getDecimalConfig().purchaseUnitPrice;
@@ -117,8 +123,11 @@ export function KardexPage() {
 
   return (
     <ErpPageTemplate
-      title="Centro de Investigación de Inventario"
-      subtitle="Trazabilidad completa de movimientos de inventario — Compras, Ventas y ajustes en un solo lugar."
+      title={t("kardex.title", "Kardex / Movimientos de inventario")}
+      subtitle={t(
+        "kardex.subtitle",
+        "Trazabilidad completa de movimientos de inventario — Compras, Ventas y ajustes en un solo lugar.",
+      )}
     >
       <ZHTabBar
         tabs={[{ id: "kardex", label: "Kardex", icon: "history" }]}
@@ -362,11 +371,9 @@ export function KardexPage() {
           </div>
         )}
 
-        {/* ── Filtro de tipo de movimiento (client-side, sobre lo ya cargado) + exportaciones ── */}
+        {/* ── Filtro de tipo de movimiento (client-side, sobre lo ya cargado) ── */}
         {ctx.movements.length > 0 && (
-          <div
-            className="kdx-toolbar"
-          >
+          <div className="kdx-toolbar">
             <select
               value={ctx.movementTypeFilter}
               onChange={(e) => ctx.setMovementTypeFilter(e.target.value)}
@@ -378,26 +385,6 @@ export function KardexPage() {
                 </option>
               ))}
             </select>
-            <div className="kdx-toolbar-actions">
-              <ZHBtn type="button" variant="secondary" disabled title="Próximamente">
-                <span className="material-symbols-outlined zh-icon-md">
-                  grid_on
-                </span>
-                Excel
-              </ZHBtn>
-              <ZHBtn type="button" variant="secondary" disabled title="Próximamente">
-                <span className="material-symbols-outlined zh-icon-md">
-                  picture_as_pdf
-                </span>
-                PDF
-              </ZHBtn>
-              <ZHBtn type="button" variant="secondary" disabled title="Próximamente">
-                <span className="material-symbols-outlined zh-icon-md">
-                  print
-                </span>
-                Imprimir
-              </ZHBtn>
-            </div>
           </div>
         )}
 

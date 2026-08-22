@@ -33,8 +33,11 @@ export function CompanySettingsHubPage() {
   return (
     <ErpPageTemplate
       kicker={t("settings.company.kicker")}
-      title="Configuración Empresarial"
-      subtitle="Perfil, marca y parámetros de la empresa."
+      title={t("settings.company.pageTitle", "Datos de la empresa")}
+      subtitle={t(
+        "settings.company.pageSubtitle",
+        "Perfil, marca y parámetros de la empresa.",
+      )}
     >
       <div className="prd-tabs" role="tablist">
         {companySettingsTabs.map((tab) => (

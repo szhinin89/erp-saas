@@ -331,8 +331,8 @@ export function TreeEditorPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t("catalog.kicker", "Catálogo")}
-      title={t("catalog.tree.title", "Árbol de catálogo")}
+      kicker={t("catalog.kicker", "Productos y servicios")}
+      title={t("catalog.tree.title", "Categorías de productos")}
     >
       {error && (
         <ZHPageNotice

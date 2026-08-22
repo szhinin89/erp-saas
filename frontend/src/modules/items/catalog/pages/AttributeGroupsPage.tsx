@@ -49,15 +49,15 @@ export function AttributeGroupsPage() {
       <NoAccessPage
         title={t(
           "catalog.attributeGroups.title",
-          "Grupos de atributos",
+          "Atributos de productos",
         )}
       />
     );
 
   return (
     <ErpPageTemplate
-      kicker={t("catalog.kicker", "Catálogo")}
-      title={t("catalog.attributeGroups.title", "Grupos de atributos")}
+      kicker={t("catalog.kicker", "Productos y servicios")}
+      title={t("catalog.attributeGroups.title", "Atributos de productos")}
     >
       {ctx.error && (
         <ZHPageNotice
@@ -97,7 +97,7 @@ export function AttributeGroupsPage() {
       />
       <CatalogFormModal
         ctx={ctx}
-        entityLabel={t("catalog.attributeGroups.entity", "Grupo de atributos")}
+        entityLabel={t("catalog.attributeGroups.entity", "Atributo de producto")}
       >
         <ZHGrid cols={2}>
           <ZHField

@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { useI18n } from "../../../i18n/i18n";
 import { Badge } from "../../../components/PageShell";
 import {
   ZHBtn,
@@ -127,6 +128,7 @@ type LocModal = { mode: "create" | "edit"; data?: BpLocationDto } | null;
 type ConModal = { mode: "create" | "edit"; data?: BpContactDto } | null;
 
 export function MasterDataBusinessPartnerDetailPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { canShow } = usePermissionsUi();
@@ -507,7 +509,7 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   return (
     <ErpPageTemplate
-      kicker="MasterData"
+      kicker={t("masterdata.kicker", "Clientes y proveedores")}
       title={bp ? bp.tradeName?.trim() || bp.legalName : "BusinessPartner"}
       subtitle={bp ? `${bp.identificationType} ${bp.identificationNumber}` : ""}
       action={

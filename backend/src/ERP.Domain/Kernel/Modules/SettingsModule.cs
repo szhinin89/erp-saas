@@ -12,8 +12,10 @@ public static class SettingsModule
     /// conceptualmente es Configuración, no usuarios/perfiles/delegación/sesiones/actividad. Mismo
     /// Id/ruta/permiso que tenía en AdminModule — sin cambios de API ni de lógica de negocio.
     /// </summary>
+    // MENU-UX-RENAME-01: label de negocio "Mis empresas" (antes "Empresas") — distingue el
+    // multiempresa del suscriptor de la empresa activa (ver Company abajo).
     [NavItem(
-        "Companies",
+        "Mis empresas",
         Permission = SettingsPermissions.CompaniesView,
         LabelKey = "app.nav.item.erp.companies",
         SortOrder = 5,
@@ -21,8 +23,10 @@ public static class SettingsModule
     )]
     public const string Companies = "/companies";
 
+    // MENU-UX-RENAME-01: label de negocio "Datos de la empresa" (antes "Company"/"Datos de
+    // Empresa") — pantalla de la empresa activa (perfil/fiscal/marca), no el multiempresa.
     [NavItem(
-        "Company",
+        "Datos de la empresa",
         Permission = SettingsPermissions.CompanyView,
         LabelKey = "app.nav.item.settings.company",
         SortOrder = 10,

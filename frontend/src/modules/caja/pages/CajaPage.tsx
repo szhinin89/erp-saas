@@ -13,12 +13,14 @@ import {
 } from "../../../components/PageShell";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
+import { useI18n } from "../../../i18n/i18n";
 import { useCajaPage } from "../hooks/useCajaPage";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
 
 export function CajaPage() {
+  const { t } = useI18n();
   const ctx = useCajaPage();
 
   const statusLabel = (s: string) => (s === "Open" ? "Abierta" : "Cerrada");
@@ -37,7 +39,10 @@ export function CajaPage() {
   };
 
   return (
-    <PageShell title="Caja" kicker="Gestión de efectivo">
+    <PageShell
+      title={t("caja.title", "Turno de caja")}
+      kicker={t("caja.kicker", "Gestión de efectivo")}
+    >
       <div className="cj-content">
         {ctx.mySession && ctx.tab === "listado" && (
           <ZHPageNotice

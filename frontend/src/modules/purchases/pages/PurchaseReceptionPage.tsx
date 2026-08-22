@@ -207,8 +207,11 @@ export function PurchaseReceptionPage() {
 
   return (
     <ErpPageTemplate
-      title="Recepción electrónica"
-      subtitle="Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP. La vinculación de productos con el catálogo de Items se hace desde la pantalla de Compras al crear o abrir la compra."
+      title={t("purchases.reception.title", "Recepción electrónica (TXT)")}
+      subtitle={t(
+        "purchases.reception.subtitle",
+        "Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP. La vinculación de productos con el catálogo de Items se hace desde la pantalla de Compras al crear o abrir la compra.",
+      )}
     >
       <div className="pg-section pur-reception-top">
         <div className="pur-reception-upload">

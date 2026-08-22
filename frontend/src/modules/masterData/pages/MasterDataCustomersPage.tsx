@@ -339,7 +339,7 @@ export function MasterDataCustomersPage() {
 
   return (
     <ErpPageTemplate
-      kicker="MasterData"
+      kicker={t("masterdata.kicker", "Clientes y proveedores")}
       title={t("masterdata.customers.title")}
       subtitle={t("masterdata.customers.subtitle")}
     >

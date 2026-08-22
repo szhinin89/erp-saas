@@ -157,14 +157,14 @@ export function ItemsPage() {
     }
   };
 
-  if (!canView) return <NoAccessPage title={t("items.title", "Ítems")} />;
+  if (!canView) return <NoAccessPage title={t("items.title", "Productos")} />;
 
   const anyError = error || toggleError;
 
   return (
     <ErpPageTemplate
       kicker={t("app.nav.group.inventario", "Inventario")}
-      title={t("items.title", "Ítems")}
+      title={t("items.title", "Productos")}
       action={
         canCreate ? (
           <ZHBtn

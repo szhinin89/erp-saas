@@ -91,7 +91,7 @@ export function AttributeDefinitionsPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t("catalog.kicker", "Catálogo")}
+      kicker={t("catalog.kicker", "Productos y servicios")}
       title={t(
         "catalog.attributeDefinitions.title",
         "Definiciones de atributos",

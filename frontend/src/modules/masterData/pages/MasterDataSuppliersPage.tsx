@@ -517,7 +517,7 @@ export function MasterDataSuppliersPage() {
 
   return (
     <ErpPageTemplate
-      kicker="MasterData"
+      kicker={t("masterdata.kicker", "Clientes y proveedores")}
       title={t("masterdata.suppliers.title")}
       subtitle={t("masterdata.suppliers.subtitle")}
     >

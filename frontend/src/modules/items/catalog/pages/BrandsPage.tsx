@@ -50,7 +50,7 @@ export function BrandsPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t("catalog.kicker", "Catálogo")}
+      kicker={t("catalog.kicker", "Productos y servicios")}
       title={t("catalog.brands.title", "Marcas")}
     >
       {ctx.error && (
