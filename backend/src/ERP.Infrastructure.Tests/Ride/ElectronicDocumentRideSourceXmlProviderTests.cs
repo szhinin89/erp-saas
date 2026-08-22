@@ -4,6 +4,7 @@ using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Audit;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -95,6 +96,12 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         });
         services.AddScoped(_ => Mock.Of<ICompanyRepository>());
         services.AddScoped(_ => Mock.Of<ICommunicationQueue>());
+        // SalesInvoiceAuthorizedCommunicationHandler (MediatR real, ver comentario de clase) exige
+        // IOperationalPreferencesResolver en su constructor — nunca se invoca en estos escenarios
+        // porque ISalesInvoiceRepository.GetByIdAsync (mock arriba) siempre devuelve null y el
+        // handler retorna antes de llegar a _preferences.ResolveAsync (ver TryQueueAsync). Un test
+        // double vacío alcanza para que el contenedor de DI pueda construir el handler.
+        services.AddScoped(_ => Mock.Of<IOperationalPreferencesResolver>());
         services.AddLogging();
         services.AddScoped<
             ERP.Application.Common.Services.ICompanyClock,

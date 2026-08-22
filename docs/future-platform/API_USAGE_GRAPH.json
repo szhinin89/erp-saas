@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-22T00:10:27.062Z",
+  "generatedAt": "2026-08-22T15:39:27.477Z",
   "summary": {
-    "total": 100,
-    "allowed": 100,
+    "total": 101,
+    "allowed": 101,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -856,6 +856,14 @@
       "endpoint": "/api/v1/settings/geography/countries",
       "files": [
         "frontend/src/modules/branches/api/branchService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/operations",
+      "files": [
+        "frontend/src/modules/configuracion/operaciones/api/operationalPreferencesService.ts"
       ],
       "legacy": false,
       "allowed": true
