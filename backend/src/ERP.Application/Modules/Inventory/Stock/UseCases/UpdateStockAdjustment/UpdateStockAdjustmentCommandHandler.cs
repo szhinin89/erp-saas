@@ -75,7 +75,10 @@ public sealed class UpdateStockAdjustmentCommandHandler
         if (reason is null)
             return Result<StockAdjustmentDto>.ValidationFailure("El motivo seleccionado no existe.");
 
-        var lineResult = await _lineResolver.ResolveAsync(tid, adj.CompanyId, request.Lines, ct);
+        // Pasar adj.Id explícitamente: el padre ya existe (no es Added), así que sus líneas nuevas
+        // deben llevar el FK real desde el inicio — ver comentario en
+        // StockAdjustmentLineResolver.ResolveAsync (bug encontrado en INVENTORY-ADJUSTMENTS-04).
+        var lineResult = await _lineResolver.ResolveAsync(tid, adj.CompanyId, request.Lines, ct, adj.Id);
         if (!lineResult.IsSuccess)
             return Result<StockAdjustmentDto>.ValidationFailure(lineResult.Error!);
 

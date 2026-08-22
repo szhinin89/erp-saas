@@ -20,7 +20,23 @@ internal sealed class StockAdjustmentLineResolver
         Guid tenantId,
         Guid companyId,
         IReadOnlyList<CreateStockAdjustmentLineInput> inputs,
-        CancellationToken ct
+        CancellationToken ct,
+        // INVENTORY-ADJUSTMENTS-04 — bug encontrado en la validación e2e: al no pasar el
+        // StockAdjustmentId real cuando ya se conoce (UpdateStockAdjustmentCommandHandler, donde el
+        // agregado padre YA existe con un Id real), StockAdjustmentLine.Create() dejaba el FK en su
+        // default (Guid.Empty). Para CreateStockAdjustmentCommandHandler eso es inofensivo — el
+        // padre se agrega como Added y todo el grafo se inserta en cascada sin importar el valor
+        // "original" de ningún hijo. Pero para Update, el padre ya está trackeado (Modified, no
+        // Added): EF Core descubre la línea nueva por fixup de navegación y, como
+        // StockAdjustmentId cambia de Guid.Empty (su snapshot "original" implícito) al Id real del
+        // padre, lo detecta como una diferencia GENUINA de valores — exactamente lo que
+        // NewChildEntityTrackingInterceptor está diseñado a NO auto-corregir (para no enmascarar
+        // bugs reales), así que la línea queda mal clasificada Modified en vez de Added y EF emite
+        // un UPDATE contra una fila que nunca existió → DbUpdateConcurrencyException ("0 rows
+        // affected") → 409 en cada intento de reemplazar las líneas de un ajuste ya persistido.
+        // Pasar el StockAdjustmentId real desde el inicio (cuando se conoce) elimina la diferencia
+        // espuria de raíz.
+        Guid stockAdjustmentId = default
     )
     {
         var lines = new List<StockAdjustmentLine>();
@@ -68,7 +84,8 @@ internal sealed class StockAdjustmentLineResolver
                     input.Quantity,
                     input.UnitCostBase,
                     input.LineNotes,
-                    sort++
+                    sort++,
+                    stockAdjustmentId
                 )
             );
         }
