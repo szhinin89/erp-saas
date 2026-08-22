@@ -77,6 +77,18 @@ if (builder.Environment.IsProduction())
             "Production requires Cors:AllowedOrigins configured — no silent fallback to localhost."
         );
     }
+
+    var passwordResetBaseUrl = builder.Configuration["PasswordReset:PublicBaseUrl"];
+    if (
+        string.IsNullOrWhiteSpace(passwordResetBaseUrl)
+        || passwordResetBaseUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+        || passwordResetBaseUrl.Contains("127.0.0.1", StringComparison.Ordinal)
+    )
+    {
+        throw new InvalidOperationException(
+            "Production requires PasswordReset:PublicBaseUrl configured to a real public URL — no silent fallback to localhost."
+        );
+    }
 }
 
 builder.Host.UseSerilog(

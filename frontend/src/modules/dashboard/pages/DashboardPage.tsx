@@ -8,6 +8,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useDashboardKpis } from "../hooks/useDashboardData";
+import { formatLongDate } from "../../../lib/formatters/dateFormatters";
 import "./DashboardPage.css";
 
 function fmt(n: number | undefined, decimals = 2) {
@@ -28,15 +29,7 @@ export function DashboardPage() {
 
   const kpis = useDashboardKpis();
 
-  const today = new Date().toLocaleDateString(
-    locale === "en" ? "en-US" : "es-ES",
-    {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
+  const today = formatLongDate(new Date(), locale);
 
   const d = kpis.data;
   const loading = kpis.loading;

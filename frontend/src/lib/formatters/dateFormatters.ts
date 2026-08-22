@@ -36,6 +36,22 @@ export function formatDateTimeSeconds(iso: string | null | undefined): string {
 }
 
 /**
+ * Fecha larga en el idioma de la UI (ej. "lunes, 21 de agosto de 2026"), para
+ * saludos/encabezados — no para datos tabulares (usar `formatDate` para eso).
+ * Único punto autorizado para `Intl`/`toLocaleDateString` en el proyecto:
+ * locale español fijo en `es-EC` (nunca `es-ES` como fallback genérico).
+ */
+export function formatLongDate(date: Date, uiLocale: "es" | "en" | "qu"): string {
+  const intlLocale = uiLocale === "en" ? "en-US" : "es-EC";
+  return date.toLocaleDateString(intlLocale, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/**
  * Fecha calendario "hoy" en la hora LOCAL del dispositivo — nunca UTC.
  * `toISOString()` siempre convierte a UTC: entre las 19:00 y 23:59 hora Ecuador
  * (UTC-5), UTC ya cruzó a mañana, así que devolvía la fecha equivocada (causa
