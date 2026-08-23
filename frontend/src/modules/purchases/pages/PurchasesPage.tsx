@@ -2356,14 +2356,15 @@ function PurchaseLineCard({
             />
           </div>
           {vm.commercial.costs.showDeviationAlert && (
-            <div className="pdl-cost-alert">
-              <span
-                className="material-symbols-outlined pdl-cost-alert__icon"
-              >
-                warning
-              </span>
-              {vm.commercial.costs.deviationLabel}
-            </div>
+            <ZHCompactNotice
+              notice={buildNotice({
+                severity: "warning",
+                intent: "status",
+                source: "domain-status",
+                label: t("purchases.lines.costDeviation", "Costo fuera de rango"),
+                detail: vm.commercial.costs.deviationLabel,
+              })}
+            />
           )}
           <div className="pdl-ctx-col__margin">
             <div className="pdl-margin-row">
