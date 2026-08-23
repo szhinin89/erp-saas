@@ -106,12 +106,17 @@
 }
 
 /* ── Emission Data ────────────────────────────────────────────── */
+/* SALES-POS-UI-REFINE-01: grilla de 2 columnas en vez de una columna simple — compacta la
+   sección informativa (Sucursal/Caja/Punto/Tipo Emisión/Tipo Documento/Forma Pago SRI/Nro.)
+   a la mitad de alto aproximadamente, sin quitar ningún dato. Los selects (Tipo Documento,
+   Forma Pago SRI) ocupan una celda cada uno igual que los demás pares etiqueta/valor. */
 .sf-emission {
   font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  align-items: start;
 }
 /* SALES-DS-VISUAL-REAL-17: el JSX ahora renderiza estas etiquetas con `ZHFieldLabel size="sm"`
    (antes un <span> con esta clase imitando el token) — font-size/font-weight ELIMINADOS de

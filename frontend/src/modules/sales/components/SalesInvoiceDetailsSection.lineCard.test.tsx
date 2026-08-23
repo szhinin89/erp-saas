@@ -118,7 +118,7 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
 
   it("muestra el precio facturado", () => {
     renderSection([baseLine({ unitPrice: 26 })]);
-    expect(screen.getByText("Precio Facturado")).not.toBeNull();
+    expect(screen.getByText("Precio facturado sin IVA")).not.toBeNull();
     expect(screen.getByDisplayValue("26.00")).not.toBeNull();
   });
 

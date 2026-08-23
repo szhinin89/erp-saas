@@ -353,7 +353,7 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     expect(moneyValue?.textContent).toBe("$115.00");
   });
 
-  it("resumen de cobro (Total factura / Total cobrado / Pendiente) usa ZHMoneyValue", () => {
+  it("resumen de cobro (Total cobrado / Pendiente) usa ZHMoneyValue", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
         paidTotal: 50,
@@ -370,12 +370,11 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     );
     const { container } = renderSalesPage();
 
+    // "Total factura" ya no se repite acá (SALES-POS-UI-REFINE-01) — el total principal
+    // vive únicamente en "Total a Cobrar" (sf-total-box). Solo queda "Total cobrado".
     const rows = container.querySelectorAll(".sales-summary-row__amount");
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(1);
     expect(rows[0].querySelector(".zh-money-value")?.textContent).toBe(
-      "$115.00",
-    );
-    expect(rows[1].querySelector(".zh-money-value")?.textContent).toBe(
       "$50.00",
     );
 

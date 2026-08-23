@@ -642,7 +642,7 @@ function SalesProductCard({
           </div>
           <div className="sf-product__price-block">
             <ZHFieldLabel size="sm" className="sf-product__price-label">
-              Precio Facturado
+              Precio facturado sin IVA
             </ZHFieldLabel>
             <ZHInputGroup className="sf-product__price-wrap" prefix="$">
               <ZhDecimalInput

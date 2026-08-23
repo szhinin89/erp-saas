@@ -432,7 +432,7 @@ export function SalesIssueModal({
             </dd>
             {cashDue > 0 && (
               <>
-                <dt>Dinero entregado</dt>
+                <dt>Monto recibido</dt>
                 <dd>
                   <ZHMoneyValue value={cashReceived} decimals={dc} />
                 </dd>

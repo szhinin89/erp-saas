@@ -3,11 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import { ZHToggleTile } from "../../../components/zh/ZHToggleTile";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
-import { ZhDecimalInput, ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
+import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
@@ -20,78 +19,18 @@ import { CreditSimulatorModal } from "../components/CreditSimulatorModal";
 import { QuickCustomerModal } from "../components/QuickCustomerModal";
 import { SalesElectronicDiagnosticDrawer } from "../components/SalesElectronicDiagnosticDrawer";
 import { SalesIssueModal } from "../components/SalesIssueModal";
-import {
-  useSalesPage,
-  type SalesPageContext,
-  type CashSessionCheckErrorReason,
-} from "../hooks/useSalesPage";
+import { CashSessionNotice } from "../components/CashSessionNotice";
+import { SalesFormChecklist } from "../components/SalesFormChecklist";
+import { EmitButton } from "../components/EmitButton";
+import { PaymentMethodsSection } from "../components/PaymentMethodsSection";
+import { remainingToCollect } from "../components/paymentRemaining";
+import { useSalesPage } from "../hooks/useSalesPage";
 import { useRideActions } from "../hooks/useRideActions";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-import { PAYMENT_EXCEEDS_TOLERANCE } from "../constants/tolerances";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../../electronicDocuments/monitor/components/electronic-documents-monitor.css";
 import "./SalesPage.css";
-
-// Mensaje por motivo real de falla al consultar GET /cash-sessions/my — nunca el mismo texto que
-// "no hay caja abierta" (esa es la única respuesta 200 OK con `null`, ver useSalesPage.ts).
-const CASH_SESSION_ERROR_MESSAGE: Record<CashSessionCheckErrorReason, string> =
-  {
-    permission:
-      "No se pudo verificar la caja abierta por falta de permiso para consultar caja.",
-    context:
-      "No se pudo verificar la caja abierta por contexto incompleto de empresa/sucursal.",
-    server:
-      "No se pudo verificar la caja abierta. Reintente o revise conexión/servidor.",
-  };
-
-/** Aviso de estado de caja — distingue "no hay caja" (confirmado) de "no se pudo verificar"
- * (permiso/contexto/servidor), con acción de reintento para el segundo caso. */
-function CashSessionNotice({ ctx }: { ctx: SalesPageContext }) {
-  if (ctx.cashSessionCheckError) {
-    return (
-      <div className="sf-cash-session-notice">
-        <ZHPageNotice
-          variant="error"
-          message={CASH_SESSION_ERROR_MESSAGE[ctx.cashSessionCheckError]}
-        />
-        <ZHBtn
-          variant="ghost"
-          size="xs"
-          type="button"
-          onClick={ctx.refreshCashSession}
-        >
-          Reintentar
-        </ZHBtn>
-      </div>
-    );
-  }
-  if (ctx.hasCashSession === false) {
-    return (
-      <ZHPageNotice
-        variant="warning"
-        message="No tiene una caja abierta. Debe abrir una caja antes de autorizar facturas."
-      />
-    );
-  }
-  return null;
-}
-
-/** Saldo pendiente de cobro excluyendo los pagos ya asignados a una forma de pago específica —
- * único punto de este cálculo (redondeo a la precisión configurada), usado tanto para el
- * disponible mostrado en PaymentDetailModal como para precargar el monto de un nuevo pago en
- * la grilla de formas de cobro. Puede devolver negativo (ya se cobró de más con otras formas);
- * cada llamador decide si clamplear a 0 según su propio uso. */
-function remainingToCollect(
-  ctx: SalesPageContext,
-  excludePaymentMethodId: string,
-): number {
-  const factor = 10 ** getDecimalConfig().totalAmount;
-  const othersTotal = ctx.payments
-    .filter((p) => p.paymentMethodId !== excludePaymentMethodId)
-    .reduce((s, p) => s + (p.amount || 0), 0);
-  return Math.round((ctx.summary.total - othersTotal) * factor) / factor;
-}
 
 export function SalesPage() {
   const ctx = useSalesPage();
@@ -299,7 +238,87 @@ export function SalesPage() {
             {/* Checklist + Next Step (only in draft mode) */}
             {ctx.isDraft && !ctx.readOnly && <SalesFormChecklist ctx={ctx} />}
 
-            {/* Datos de Emisión */}
+            {/* Cliente — prioridad visual sobre Datos de Emisión: es el primer dato
+                obligatorio y accionable del cajero (SALES-POS-UI-REFINE-01). */}
+            <div className="sf-sidebar__section">
+              <div className="sf-sidebar__header zh-section-title">
+                <span className="material-symbols-outlined sf-sidebar__header-icon">
+                  person
+                </span>
+                Cliente
+                <span
+                  className="material-symbols-outlined sf-sidebar__header-right"
+                  title="Nuevo cliente"
+                >
+                  person_add
+                </span>
+              </div>
+              <ZHField
+                density="compact"
+                fieldError={ctx.errors.customerId?.message}
+              >
+                <CustomerPicker
+                  value={ctx.formWatch.customerId || null}
+                  onChange={ctx.handleCustomerChange}
+                  disabled={ctx.fieldDisabled}
+                  onCreateNew={ctx.openNewCustomerModal}
+                  onEditSelected={
+                    ctx.customerProfile ? ctx.openEditCustomerModal : undefined
+                  }
+                  editLabel="Editar datos"
+                />
+              </ZHField>
+              {ctx.customerProfile && (
+                <div className="sales-form-customer-profile">
+                  {ctx.customerProfile.address && (
+                    <div className="sales-form-profile-row">
+                      <span className="material-symbols-outlined zh-icon-sm">
+                        location_on
+                      </span>
+                      {ctx.customerProfile.address}
+                    </div>
+                  )}
+                  {ctx.customerProfile.email && (
+                    <div className="sales-form-profile-row">
+                      <span className="material-symbols-outlined zh-icon-sm">
+                        mail
+                      </span>
+                      {ctx.customerProfile.email}
+                    </div>
+                  )}
+                  {ctx.customerProfile.phone && (
+                    <div className="sales-form-profile-row">
+                      <span className="material-symbols-outlined zh-icon-sm">
+                        phone
+                      </span>
+                      {ctx.customerProfile.phone}
+                    </div>
+                  )}
+                </div>
+              )}
+              {ctx.isConsumerFinalCustomer && ctx.consumerFinalPolicy && (
+                <ZHPageNotice
+                  variant={ctx.consumerFinalAmountExceeded ? "error" : "info"}
+                  message={
+                    ctx.consumerFinalAmountExceeded
+                      ? ctx.consumerFinalPolicy.amountExceededMessage
+                      : "Consumidor Final: solo ventas a contado."
+                  }
+                  detail={
+                    ctx.consumerFinalAmountExceeded
+                      ? undefined
+                      : `Monto máximo permitido: ${formatMoney(
+                          ctx.consumerFinalPolicy.consumerFinalMaxAmount,
+                          getDecimalConfig().totalAmount,
+                        )}. Para superarlo, seleccione un cliente identificado.`
+                  }
+                />
+              )}
+            </div>
+
+            {/* Datos de Emisión — informativo/no accionable (el servidor resuelve Caja/Punto/
+                Sucursal desde ICurrentCashSession), compactado en grilla de 2 columnas
+                (SALES-POS-UI-REFINE-01) para ceder espacio prioritario a Cliente arriba. */}
             <div className="sf-sidebar__section">
               <div className="sf-sidebar__header zh-section-title">
                 <span className="material-symbols-outlined sf-sidebar__header-icon">
@@ -415,83 +434,6 @@ export function SalesPage() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Cliente */}
-            <div className="sf-sidebar__section">
-              <div className="sf-sidebar__header zh-section-title">
-                <span className="material-symbols-outlined sf-sidebar__header-icon">
-                  person
-                </span>
-                Cliente
-                <span
-                  className="material-symbols-outlined sf-sidebar__header-right"
-                  title="Nuevo cliente"
-                >
-                  person_add
-                </span>
-              </div>
-              <ZHField
-                density="compact"
-                fieldError={ctx.errors.customerId?.message}
-              >
-                <CustomerPicker
-                  value={ctx.formWatch.customerId || null}
-                  onChange={ctx.handleCustomerChange}
-                  disabled={ctx.fieldDisabled}
-                  onCreateNew={ctx.openNewCustomerModal}
-                  onEditSelected={
-                    ctx.customerProfile ? ctx.openEditCustomerModal : undefined
-                  }
-                  editLabel="Editar datos"
-                />
-              </ZHField>
-              {ctx.customerProfile && (
-                <div className="sales-form-customer-profile">
-                  {ctx.customerProfile.address && (
-                    <div className="sales-form-profile-row">
-                      <span className="material-symbols-outlined zh-icon-sm">
-                        location_on
-                      </span>
-                      {ctx.customerProfile.address}
-                    </div>
-                  )}
-                  {ctx.customerProfile.email && (
-                    <div className="sales-form-profile-row">
-                      <span className="material-symbols-outlined zh-icon-sm">
-                        mail
-                      </span>
-                      {ctx.customerProfile.email}
-                    </div>
-                  )}
-                  {ctx.customerProfile.phone && (
-                    <div className="sales-form-profile-row">
-                      <span className="material-symbols-outlined zh-icon-sm">
-                        phone
-                      </span>
-                      {ctx.customerProfile.phone}
-                    </div>
-                  )}
-                </div>
-              )}
-              {ctx.isConsumerFinalCustomer && ctx.consumerFinalPolicy && (
-                <ZHPageNotice
-                  variant={ctx.consumerFinalAmountExceeded ? "error" : "info"}
-                  message={
-                    ctx.consumerFinalAmountExceeded
-                      ? ctx.consumerFinalPolicy.amountExceededMessage
-                      : "Consumidor Final: solo ventas a contado."
-                  }
-                  detail={
-                    ctx.consumerFinalAmountExceeded
-                      ? undefined
-                      : `Monto máximo permitido: ${formatMoney(
-                          ctx.consumerFinalPolicy.consumerFinalMaxAmount,
-                          getDecimalConfig().totalAmount,
-                        )}. Para superarlo, seleccione un cliente identificado.`
-                  }
-                />
-              )}
             </div>
 
             {/* Resumen Impuestos + Total */}
@@ -867,465 +809,6 @@ export function SalesPage() {
         onSave={ctx.handleSaveQuickCustomer}
         onCancel={() => ctx.setModalNewCustomer(false)}
       />
-    </div>
-  );
-}
-
-// ── Form Readiness Checklist ─────────────────────────────────────────────
-function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
-  const hasCustomer = !!ctx.formWatch.customerId.trim();
-  const hasLines = ctx.lines.length > 0;
-  const hasEmissionPoint = ctx.hasCashSession === true;
-  const paid = ctx.paidTotal;
-  const total = ctx.summary.total;
-  const paymentOk = ctx.paymentOk;
-  const paymentExceeds = paid > total + PAYMENT_EXCEEDS_TOLERANCE;
-
-  const canSaveDraft = hasCustomer && hasLines;
-  const canEmit =
-    canSaveDraft &&
-    hasEmissionPoint &&
-    paymentOk &&
-    !ctx.cashInsufficient &&
-    !ctx.hasInsufficientStock;
-
-  const nextStep = !hasCustomer
-    ? "Seleccione un cliente para comenzar."
-    : !hasLines
-      ? "Agregue productos a la factura."
-      : ctx.hasInsufficientStock
-        ? "Hay líneas con cantidad mayor al stock disponible — ajústelas antes de emitir."
-        : !hasEmissionPoint
-          ? ctx.cashSessionCheckError
-            ? "No se pudo verificar la caja — reintente arriba antes de emitir."
-            : "Debe abrir una caja antes de emitir."
-          : paymentExceeds
-            ? "El cobro excede el total — ajuste las formas de pago."
-            : total > 0 && !paymentOk
-              ? "Configure las formas de cobro para poder emitir."
-              : ctx.cashInsufficient
-                ? "El monto recibido en efectivo es menor al total a cobrar."
-                : canSaveDraft && !ctx.editing
-                  ? "Guarde el borrador primero. Luego podrá emitir la factura."
-                  : canEmit && ctx.editing
-                    ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
-                    : null;
-
-  type ItemStatus = "ok" | "missing" | "error";
-  const item = (label: string, status: ItemStatus) => (
-    <div className="sf-checklist__item">
-      <span
-        className={`material-symbols-outlined sf-checklist__icon sf-checklist__icon--${status}`}
-      >
-        {status === "ok"
-          ? "check_circle"
-          : status === "error"
-            ? "error"
-            : "radio_button_unchecked"}
-      </span>
-      <span className={`sf-checklist__label--${status}`}>{label}</span>
-    </div>
-  );
-
-  return (
-    <>
-      <div className="sf-checklist">
-        <div className="sf-checklist__title zh-section-title">
-          Estado del formulario
-        </div>
-        {item("Cliente seleccionado", hasCustomer ? "ok" : "missing")}
-        {item("Productos agregados", hasLines ? "ok" : "missing")}
-        {ctx.hasInsufficientStock &&
-          item("Cantidad supera el stock disponible en una línea", "error")}
-        {item(
-          ctx.cashSessionCheckError ? "Caja abierta (sin verificar)" : "Caja abierta",
-          ctx.hasCashSession === true
-            ? "ok"
-            : ctx.hasCashSession === false || ctx.cashSessionCheckError
-              ? "error"
-              : "missing",
-        )}
-        {item(
-          paymentExceeds ? "Cobro excede el total" : "Formas de cobro",
-          paymentOk
-            ? "ok"
-            : paymentExceeds
-              ? "error"
-              : paid > 0
-                ? "missing"
-                : "missing",
-        )}
-        {ctx.cashDue > 0 &&
-          item(
-            "Monto recibido en efectivo",
-            ctx.cashInsufficient ? "error" : "ok",
-          )}
-      </div>
-      {nextStep && (
-        <div className="sf-next-step">
-          <span className="material-symbols-outlined sf-next-step__icon">
-            arrow_forward
-          </span>
-          {nextStep}
-        </div>
-      )}
-    </>
-  );
-}
-
-// ── Emit Button with tooltip ────────────────────────────────────────────
-// Único botón de acción del formulario de venta: "Nueva Venta → Emitir
-// Factura → Modal de confirmación → Emisión → Pantalla de éxito" es el
-// flujo completo visible al usuario. Este botón solo abre el modal
-// (ctx.openIssueFlow) — toda la lógica de negocio vive en el hook.
-// El atajo de teclado F8 dispara la misma acción (ver useSalesPage.ts).
-function EmitButton({ ctx }: { ctx: SalesPageContext }) {
-  const reasons: string[] = [];
-  if (!ctx.formWatch.customerId.trim()) reasons.push("Seleccione un cliente");
-  if (ctx.lines.length === 0) reasons.push("Agregue al menos un producto");
-  if (ctx.hasCashSession === true && ctx.summary.total > 0 && !ctx.paymentOk)
-    reasons.push("Registre formas de pago por el total de la factura");
-  if (ctx.cashInsufficient)
-    reasons.push("El monto recibido en efectivo es menor al total a cobrar");
-  if (ctx.hasInsufficientStock)
-    reasons.push("Hay una línea con cantidad mayor al stock disponible");
-
-  return (
-    <div className="sales-emit-wrap">
-      <ZHBtn
-        variant="cta"
-        onClick={ctx.openIssueFlow}
-        disabled={!ctx.canEmit}
-        title={
-          reasons.length > 0
-            ? `No se puede emitir: ${reasons.join(", ")}`
-            : undefined
-        }
-      >
-        <span className="material-symbols-outlined zh-icon-lg">
-          play_arrow
-        </span>
-        {ctx.isElectronic
-          ? "Emitir Factura Electrónica (F8)"
-          : "Emitir Factura (F8)"}
-      </ZHBtn>
-      {!ctx.canEmit && !ctx.fieldDisabled && reasons.length > 0 && (
-        <div className="sf-save-tooltip">{reasons.join(" · ")}</div>
-      )}
-    </div>
-  );
-}
-
-// ── Payment Methods Section (internal) ─────────────────────────────────
-function PaymentMethodsSection({
-  ctx,
-}: {
-  ctx: ReturnType<typeof useSalesPage>;
-}) {
-  return (
-    <div className="sf-sidebar__section">
-      <div className="sf-sidebar__header zh-section-title">
-        <span className="material-symbols-outlined sf-sidebar__header-icon">
-          payments
-        </span>
-        Formas de Cobro
-        {!ctx.readOnly && ctx.payments.length > 0 && (
-          <span
-            className="material-symbols-outlined sf-sidebar__header-right zh-icon-md"
-            title="Limpiar cobros"
-            onClick={() => ctx.setInvoicePayments([])}
-          >
-            delete_sweep
-          </span>
-        )}
-      </div>
-      {ctx.readOnly ? (
-        <div className="sales-payment-readonly-list">
-          {(ctx.editing?.payments ?? [])
-            .filter((p) => p.amount > 0)
-            .map((p) => (
-              <div key={p.id} className="sales-payment-chip">
-                {p.paymentMethodName}{" "}
-                <span className="sales-payment-chip__amount">
-                  <ZHMoneyValue
-                    value={p.amount}
-                    decimals={getDecimalConfig().totalAmount}
-                  />
-                </span>
-              </div>
-            ))}
-        </div>
-      ) : (
-        <>
-          {ctx.isCreditTerm &&
-            !ctx.payments.some((p) =>
-              ctx.paymentMethods.find(
-                (pm) => pm.id === p.paymentMethodId && pm.isCreditAllowed,
-              ),
-            ) && (
-              <ZHPageNotice
-                variant="info"
-                message="Esta venta es a crédito. Seleccione el método de pago Crédito para continuar."
-              />
-            )}
-          <div className="sales-payment-grid">
-            {ctx.paymentMethods.map((pm) => {
-              const entries = ctx.payments.filter(
-                (ip) => ip.paymentMethodId === pm.id,
-              );
-              const entry = entries[0];
-              const totalForMethod = entries.reduce(
-                (s, e) => s + (e.amount || 0),
-                0,
-              );
-              const hasValue = totalForMethod > 0;
-              const isCredit = pm.isCreditAllowed;
-              // BUGFIX-SALES-CREDIT-PAYMENT-CONSISTENCY-01: el backend bloquea Contado + método
-              // Crédito (AuthorizeSalesInvoiceHandler) — se deshabilita aquí para prevenir el
-              // intento, nunca reemplaza esa validación.
-              const creditTileDisabled =
-                ctx.fieldDisabled || (isCredit && !ctx.isCreditTerm);
-              const calcRemaining = () =>
-                Math.max(0, remainingToCollect(ctx, pm.id));
-
-              return (
-                <div key={pm.id} className="sales-payment-method">
-                  <ZHToggleTile
-                    active={hasValue}
-                    disabled={creditTileDisabled}
-                    title={pm.name}
-                    subtitle={
-                      isCredit && !ctx.isCreditTerm
-                        ? "Requiere condición de pago a crédito"
-                        : undefined
-                    }
-                    onClick={() => {
-                      if (creditTileDisabled) return;
-                      if (isCredit) {
-                        const rem = calcRemaining();
-                        ctx.setCreditAmount(rem);
-                        ctx.setCreditRows(ctx.simulateCreditInstallments(rem));
-                        ctx.setModalCredit(true);
-                      } else if (pm.requiresReference) {
-                        ctx.setDetailMethodId(pm.id);
-                        ctx.setDetailMethodType(pm.detailType);
-                        ctx.setDetailMethodName(pm.name);
-                        const existing = ctx.payments.filter(
-                          (p) => p.paymentMethodId === pm.id,
-                        );
-                        if (existing.length > 0) {
-                          ctx.setDetailRows(
-                            existing.map((e, i) => ({
-                              _k: i + 1,
-                              amount: e.amount,
-                              card:
-                                pm.detailType === "Card"
-                                  ? (e.cardDetail ?? {})
-                                  : undefined,
-                              transfer:
-                                pm.detailType === "Transfer"
-                                  ? (e.transferDetail ?? {})
-                                  : undefined,
-                              cheque:
-                                pm.detailType === "Check"
-                                  ? (e.chequeDetail ?? {})
-                                  : undefined,
-                            })),
-                          );
-                          ctx.setDetailKey(existing.length + 1);
-                        } else {
-                          ctx.setDetailRows([]);
-                          ctx.setDetailKey(1);
-                        }
-                        ctx.setModalDetail(true);
-                      } else if (!hasValue) {
-                        const rem = calcRemaining();
-                        if (rem > 0) {
-                          ctx.setInvoicePayments((prev) => [
-                            ...prev,
-                            {
-                              _key: ctx.payKey,
-                              paymentMethodId: pm.id,
-                              amount: rem,
-                              reference: null,
-                            },
-                          ]);
-                          ctx.setPayKey((k) => k + 1);
-                        }
-                      }
-                    }}
-                  />
-                  {hasValue && !isCredit && !pm.requiresReference && (
-                    <div className="sales-payment-amount-row">
-                      <span className="sales-payment-dollar">$</span>
-                      <ZhDecimalInput
-                        decimals={getDecimalConfig().totalAmount}
-                        positiveOnly
-                        defaultValue={formatMoney(
-                          entry!.amount,
-                          getDecimalConfig().totalAmount,
-                        )}
-                        disabled={ctx.fieldDisabled}
-                        onBlur={(e) => {
-                          const val = Number(e.target.value) || 0;
-                          if (val > 0) {
-                            ctx.setInvoicePayments((prev) =>
-                              prev.map((p) =>
-                                p._key === entry!._key
-                                  ? { ...p, amount: val }
-                                  : p,
-                              ),
-                            );
-                          } else {
-                            ctx.setInvoicePayments((prev) =>
-                              prev.filter((p) => p._key !== entry!._key),
-                            );
-                          }
-                        }}
-                        className="sales-payment-input"
-                      />
-                      <ZHIconButton
-                        icon="close"
-                        title="Eliminar pago"
-                        variant="danger"
-                        onClick={() =>
-                          ctx.setInvoicePayments((prev) =>
-                            prev.filter((p) => p._key !== entry!._key),
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                  {hasValue && pm.requiresReference && !isCredit && (
-                    <span className="sales-payment-ref-amount">
-                      <ZHMoneyValue
-                        value={totalForMethod}
-                        decimals={getDecimalConfig().totalAmount}
-                      />{" "}
-                      <span className="sales-payment-ref-count">
-                        ({entries.length})
-                      </span>
-                    </span>
-                  )}
-                  {hasValue && isCredit && (
-                    <span
-                      className="sales-payment-credit-amount"
-                      onClick={() => {
-                        ctx.setCreditAmount(entry!.amount);
-                        ctx.setCreditRows(
-                          ctx.simulateCreditInstallments(entry!.amount),
-                        );
-                        ctx.setModalCredit(true);
-                      }}
-                    >
-                      <ZHMoneyValue
-                        value={entry!.amount}
-                        decimals={getDecimalConfig().totalAmount}
-                      />
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {ctx.cashDue > 0 && (
-            <div
-              className={`sales-cash-box${ctx.cashInsufficient ? " sales-cash-box--insufficient" : ""}`}
-            >
-              <div className="sales-cash-box__row">
-                <span className="sales-cash-box__label">
-                  Monto recibido (Efectivo):
-                </span>
-                <div className="sales-cash-box__input-wrap">
-                  <span className="sales-cash-box__currency">$</span>
-                  <ZhDecimalInput
-                    decimals={getDecimalConfig().totalAmount}
-                    positiveOnly
-                    defaultValue={
-                      ctx.cashReceived > 0
-                        ? formatMoney(
-                            ctx.cashReceived,
-                            getDecimalConfig().totalAmount,
-                          )
-                        : ""
-                    }
-                    disabled={ctx.fieldDisabled}
-                    onBlur={(e) =>
-                      ctx.setCashReceived(Number(e.target.value) || 0)
-                    }
-                    className="sales-cash-input"
-                  />
-                </div>
-              </div>
-              <div
-                className={`sales-cash-box__total-row${ctx.cashInsufficient ? " sales-cash-box__total-row--insufficient" : ""}`}
-              >
-                <span>{ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}</span>
-                <span className="sales-cash-box__amount">
-                  <ZHMoneyValue
-                    value={
-                      ctx.cashInsufficient
-                        ? ctx.cashDue - ctx.cashReceived
-                        : ctx.cashChange
-                    }
-                    decimals={getDecimalConfig().totalAmount}
-                  />
-                </span>
-              </div>
-            </div>
-          )}
-          {(() => {
-            const paid = ctx.paidTotal;
-            const total = ctx.summary.total;
-            const factor = 10 ** getDecimalConfig().totalAmount;
-            const diff = Math.round((total - paid) * factor) / factor;
-            const exceeds = diff < 0;
-            return (
-              <div
-                className={`sales-summary-box${diff === 0 ? " sales-summary-box--complete" : ""}${exceeds ? " sales-summary-box--exceeds" : ""}`}
-              >
-                <div className="sales-summary-row">
-                  <span>Total factura:</span>
-                  <span className="sales-summary-row__amount">
-                    <ZHMoneyValue
-                      value={total}
-                      decimals={getDecimalConfig().totalAmount}
-                    />
-                  </span>
-                </div>
-                <div className="sales-summary-row">
-                  <span>Total cobrado:</span>
-                  <span className="sales-summary-row__amount">
-                    <ZHMoneyValue
-                      value={paid}
-                      decimals={getDecimalConfig().totalAmount}
-                    />
-                  </span>
-                </div>
-                <div
-                  className={`sales-summary-total-row${diff === 0 ? " sales-summary-total-row--complete" : ""}${exceeds ? " sales-summary-total-row--exceeds" : ""}`}
-                >
-                  <span>
-                    {diff === 0
-                      ? "✓ Cobro completo"
-                      : exceeds
-                        ? "✗ Excede"
-                        : "Pendiente:"}
-                  </span>
-                  {diff !== 0 && (
-                    <span className="sales-summary-total-row__amount">
-                      <ZHMoneyValue
-                        value={Math.abs(diff)}
-                        decimals={getDecimalConfig().totalAmount}
-                      />
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-        </>
-      )}
     </div>
   );
 }
