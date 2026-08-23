@@ -6,6 +6,8 @@ import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhTextarea } from "../../../components/zh/inputs";
@@ -350,7 +352,14 @@ export function PurchaseCreditNoteFormPage() {
       </ZHCard>
 
       {/* Sección 3: Tipo de nota de crédito — inmutable una vez guardada la NC fiscal */}
-      <ZHCard title={t("purchases.creditNote.type.title", "Tipo de nota de crédito")}>
+      <ZHCard
+        title={
+          <>
+            {t("purchases.creditNote.type.title", "Tipo de nota de crédito")}
+            <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_CREDIT_NOTE} />
+          </>
+        }
+      >
         <div className="zh-radio-group">
           <label className="zh-radio-option">
             <input

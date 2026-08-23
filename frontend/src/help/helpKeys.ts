@@ -11,6 +11,16 @@ export const HELP_KEYS = {
   SALES_PRODUCT_SEARCH: "sales.productSearch",
   SALES_STOCK: "sales.stock",
   SALES_PRICING: "sales.pricing",
+  PURCHASES_SUPPLIER: "purchases.supplier",
+  PURCHASES_SRI_AUTHORIZATION: "purchases.sri.authorization",
+  PURCHASES_SRI_AUTHORIZATION_DATE: "purchases.sri.authorizationDate",
+  PURCHASES_XML_RECEIVED: "purchases.lines.xmlReceived",
+  PURCHASES_ITEM_MATCHING: "purchases.lines.itemMatching",
+  PURCHASES_WAREHOUSE: "purchases.logistics.warehouse",
+  PURCHASES_VAT: "purchases.summary.vat",
+  PURCHASES_RETENTIONS: "purchases.retention",
+  PURCHASES_PAYMENT_SCHEDULE: "purchases.schedule",
+  PURCHASES_CREDIT_NOTE: "purchases.creditNote.type",
 } as const;
 
 export type HelpKeyId = (typeof HELP_KEYS)[keyof typeof HELP_KEYS];

@@ -95,8 +95,8 @@ export type ZHFieldHintType =
 export type ZHFieldDensity = "default" | "compact";
 
 export function ZHField(props: {
-  /** Omitir cuando el campo ya tiene rótulo por contexto (p. ej. dentro de una sección colapsable con su propio título). */
-  label?: string;
+  /** Omitir cuando el campo ya tiene rótulo por contexto (p. ej. dentro de una sección colapsable con su propio título). ReactNode para permitir un ZHFieldHelp junto al texto — el 99% de los consumidores sigue pasando un string plano. */
+  label?: React.ReactNode;
   required?: boolean;
   /** Mensaje de validación (p. ej. Zod + react-hook-form); en español. Si hay `fieldError`, sustituye al `hint` visual de ayuda. */
   fieldError?: string | null;

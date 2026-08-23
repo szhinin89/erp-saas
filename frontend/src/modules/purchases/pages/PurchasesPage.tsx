@@ -36,6 +36,8 @@ import {
   ZHPromptModal,
 } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import {
   lineNet,
   calcLineTax,
@@ -393,6 +395,7 @@ export function PurchasesPage() {
                   storefront
                 </span>
                 {t("purchases.supplier.title", "Datos del proveedor")}
+                <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_SUPPLIER} />
               </h4>
               <div className="pf-mini-card__body">
                 <ZHField
@@ -677,7 +680,12 @@ export function PurchasesPage() {
                   </ZHField>
                   <ZHField
                     density="compact"
-                    label={t("purchases.electronic.authorizationNumber", "Nro. autorización")}
+                    label={
+                      <>
+                        {t("purchases.electronic.authorizationNumber", "Nro. autorización")}
+                        <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_SRI_AUTHORIZATION} />
+                      </>
+                    }
                   >
                     <ZhTextInput
                       {...ctx.register("authorizationNumber")}
@@ -691,7 +699,12 @@ export function PurchasesPage() {
                       toDateTimeLocalInputValue() al poblar el formulario (reset()). */}
                   <ZHField
                     density="compact"
-                    label={t("purchases.electronic.authorizationDate", "Fecha y hora autorización")}
+                    label={
+                      <>
+                        {t("purchases.electronic.authorizationDate", "Fecha y hora autorización")}
+                        <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_SRI_AUTHORIZATION_DATE} />
+                      </>
+                    }
                   >
                     <ZhDateTimeInput
                       density="compact"
@@ -715,7 +728,12 @@ export function PurchasesPage() {
               <div className="pf-mini-card__body">
                 <ZHField
                   density="compact"
-                  label={t("purchases.logistics.destinationWarehouse", "Bodega destino")}
+                  label={
+                    <>
+                      {t("purchases.logistics.destinationWarehouse", "Bodega destino")}
+                      <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_WAREHOUSE} />
+                    </>
+                  }
                 >
                   <ZhSelect
                     value={ctx.formWatch.globalWarehouseId}
@@ -2034,6 +2052,7 @@ function PurchaseLineCard({
             </span>
             <h4 className="pdl-block__title zh-section-title">
               {t("purchases.lines.receivedProduct", "Producto recibido (XML)")}
+              <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_XML_RECEIVED} />
             </h4>
           </header>
           {!vm.xml.hasOrigin && (
@@ -2137,6 +2156,7 @@ function PurchaseLineCard({
             </span>
             <h4 className="pdl-block__title zh-section-title">
               {t("purchases.lines.systemProduct", "Presentación e inventario")}
+              <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_ITEM_MATCHING} />
             </h4>
             {vm.item.isLoading && (
               <span
@@ -2716,6 +2736,7 @@ function PaymentScheduleSection({
             calendar_month
           </span>
           {t("purchases.schedule.title", "Plazos de pago")}
+          <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_PAYMENT_SCHEDULE} />
           {ctx.hasPersistedSchedule && (
             <Badge
               variant="success"
@@ -3004,6 +3025,7 @@ function RetentionSection({
             receipt
           </span>{" "}
           {t("purchases.retention.title", "Retenciones")}
+          <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_RETENTIONS} />
         </h4>
         <div className="pf-retention-actions">
           {!ctx.withholding && (
@@ -3296,7 +3318,10 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </span>
         </div>
         <div className="pf-totals__row">
-          <span className="pf-totals__label">{t("purchases.lines.vatShort", "IVA")}</span>
+          <span className="pf-totals__label">
+            {t("purchases.lines.vatShort", "IVA")}
+            <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_VAT} />
+          </span>
           <span className="pf-totals__value">
             <ZHMoneyValue
               value={ctx.editing ? ctx.editing.totalVat : ctx.localSummary.vat}

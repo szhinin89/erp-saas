@@ -55,4 +55,46 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short: "Precio sin IVA, IVA calculado y precio final por unidad.",
     long: "El precio final es el que paga el cliente; el costo nunca se muestra en ventas.",
   },
+  [HELP_KEYS.PURCHASES_SUPPLIER]: {
+    title: "Proveedor",
+    short: "Selecciónelo por RUC o nombre; sus datos fiscales se completan automáticamente.",
+  },
+  [HELP_KEYS.PURCHASES_SRI_AUTHORIZATION]: {
+    title: "Autorización SRI",
+    short: "Número de autorización emitido por el SRI para este comprobante electrónico.",
+  },
+  [HELP_KEYS.PURCHASES_SRI_AUTHORIZATION_DATE]: {
+    title: "Fecha y hora de autorización",
+    short: "Fecha y hora en que el SRI autorizó este comprobante.",
+  },
+  [HELP_KEYS.PURCHASES_XML_RECEIVED]: {
+    title: "XML recibido",
+    short: "Indica si esta línea proviene del XML/TXT enviado por el proveedor.",
+    long: "Si la compra fue manual, no hay XML de origen.",
+  },
+  [HELP_KEYS.PURCHASES_ITEM_MATCHING]: {
+    title: "Matching de ítems",
+    short: "Compara el producto de la línea con el ítem ya registrado en el catálogo interno.",
+  },
+  [HELP_KEYS.PURCHASES_WAREHOUSE]: {
+    title: "Bodega",
+    short: "Bodega destino donde ingresará el stock de esta compra.",
+    long: "Puede sobrescribirse por línea si un producto va a otra bodega.",
+  },
+  [HELP_KEYS.PURCHASES_VAT]: {
+    title: "IVA",
+    short: "Impuesto al valor agregado calculado sobre las líneas gravadas de la factura.",
+  },
+  [HELP_KEYS.PURCHASES_RETENTIONS]: {
+    title: "Retenciones",
+    short: "Retenciones de IVA y Renta aplicadas según el proveedor y el tipo de ítem.",
+  },
+  [HELP_KEYS.PURCHASES_PAYMENT_SCHEDULE]: {
+    title: "Plazos de pago",
+    short: "Cuotas y fechas de vencimiento de esta compra a crédito.",
+  },
+  [HELP_KEYS.PURCHASES_CREDIT_NOTE]: {
+    title: "Nota de crédito",
+    short: "Tipo de nota de crédito según si el origen es una compra registrada o un XML recibido.",
+  },
 };
