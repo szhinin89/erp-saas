@@ -17,7 +17,7 @@ describe("PageShell — título de pestaña", () => {
       </PageShell>,
     );
 
-    expect(document.title).toBe("Geografía · ZH Technologies ERP");
+    expect(document.title).toBe("Geografía");
   });
 
   it("ErpPageTemplate propaga el título a la pestaña vía PageShell", () => {
@@ -27,7 +27,7 @@ describe("PageShell — título de pestaña", () => {
       </ErpPageTemplate>,
     );
 
-    expect(document.title).toBe("Ajustes de inventario · ZH Technologies ERP");
+    expect(document.title).toBe("Ajustes de inventario");
   });
 
   it("un re-render con nuevo título actualiza la pestaña", () => {
@@ -43,6 +43,6 @@ describe("PageShell — título de pestaña", () => {
       </PageShell>,
     );
 
-    expect(document.title).toBe("Ajuste AJ-000001 · ZH Technologies ERP");
+    expect(document.title).toBe("Ajuste AJ-000001");
   });
 });

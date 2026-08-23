@@ -8,14 +8,13 @@ import { useEffect } from "react";
  */
 export const DEFAULT_DOCUMENT_TITLE = "ZH Technologies · ERP";
 
-/** Sufijo por defecto que se anexa al título de cada pantalla. */
-export const DEFAULT_DOCUMENT_TITLE_SUFFIX = "ZH Technologies ERP";
-
 export interface UseDocumentTitleOptions {
-  /** Sufijo a anexar tras " · ". Default: `DEFAULT_DOCUMENT_TITLE_SUFFIX`. */
+  /**
+   * Sufijo opcional a anexar tras " · ". Por defecto NO se anexa ningún
+   * sufijo — APP-DOCUMENT-TITLE-02: la pestaña debe mostrar solo el título
+   * de la pantalla, para poder distinguir varias pestañas abiertas.
+   */
   suffix?: string;
-  /** Si es true, usa `title` tal cual, sin anexar sufijo. */
-  skipSuffix?: boolean;
   /**
    * Título alternativo mientras el llamador considere que la pantalla está
    * cargando (ver `loading`). El hook no infiere estado de carga alguno.
@@ -28,8 +27,9 @@ export interface UseDocumentTitleOptions {
 /**
  * Sincroniza el título de la pestaña del navegador con el título de la pantalla.
  *
- * El hook NO traduce: el llamador pasa texto ya traducido. Solo formatea
- * (`"<título> · <sufijo>"`) y aplica el fallback.
+ * El hook NO traduce: el llamador pasa texto ya traducido. Solo aplica el
+ * título tal cual (sin sufijo por defecto — ver `UseDocumentTitleOptions.suffix`
+ * para el caso opt-in) y el fallback cuando no hay título.
  *
  * Comportamiento en desmontaje: **no** restaura el fallback. React Router
  * desmonta la página saliente y monta la entrante en el mismo ciclo de commit,
@@ -44,7 +44,7 @@ export function useDocumentTitle(
   title: string | undefined,
   options?: UseDocumentTitleOptions,
 ): void {
-  const { suffix, skipSuffix, loadingTitle, loading } = options ?? {};
+  const { suffix, loadingTitle, loading } = options ?? {};
 
   useEffect(() => {
     const effective = loading && loadingTitle ? loadingTitle : title;
@@ -55,8 +55,6 @@ export function useDocumentTitle(
       return;
     }
 
-    document.title = skipSuffix
-      ? trimmed
-      : `${trimmed} · ${suffix ?? DEFAULT_DOCUMENT_TITLE_SUFFIX}`;
-  }, [title, suffix, skipSuffix, loadingTitle, loading]);
+    document.title = suffix ? `${trimmed} · ${suffix}` : trimmed;
+  }, [title, suffix, loadingTitle, loading]);
 }

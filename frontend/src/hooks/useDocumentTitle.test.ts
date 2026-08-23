@@ -11,10 +11,10 @@ beforeEach(() => {
 });
 
 describe("useDocumentTitle", () => {
-  it("anexa el sufijo por defecto a un título normal", () => {
+  it("usa el título tal cual, sin sufijo por defecto", () => {
     renderHook(() => useDocumentTitle("Geografía"));
 
-    expect(document.title).toBe("Geografía · ZH Technologies ERP");
+    expect(document.title).toBe("Geografía");
   });
 
   it("usa el fallback exacto cuando el título es undefined", () => {
@@ -30,13 +30,13 @@ describe("useDocumentTitle", () => {
     expect(document.title).toBe("ZH Technologies · ERP");
   });
 
-  it("con skipSuffix usa el título tal cual", () => {
-    renderHook(() => useDocumentTitle("Geografía", { skipSuffix: true }));
+  it("un título dinámico se usa tal cual", () => {
+    renderHook(() => useDocumentTitle("Ajuste AJ-000001"));
 
-    expect(document.title).toBe("Geografía");
+    expect(document.title).toBe("Ajuste AJ-000001");
   });
 
-  it("respeta un sufijo personalizado", () => {
+  it("respeta un sufijo explícito (opt-in)", () => {
     renderHook(() => useDocumentTitle("Caja", { suffix: "ERP Demo" }));
 
     expect(document.title).toBe("Caja · ERP Demo");
@@ -49,10 +49,10 @@ describe("useDocumentTitle", () => {
       { initialProps: { title: undefined as string | undefined, loading: true } },
     );
 
-    expect(document.title).toBe("Cargando… · ZH Technologies ERP");
+    expect(document.title).toBe("Cargando…");
 
     rerender({ title: "Ajuste AJ-000001", loading: false });
-    expect(document.title).toBe("Ajuste AJ-000001 · ZH Technologies ERP");
+    expect(document.title).toBe("Ajuste AJ-000001");
   });
 
   it("actualiza el título cuando cambia el valor (registro cargado async)", () => {
@@ -61,20 +61,20 @@ describe("useDocumentTitle", () => {
       { initialProps: { title: "Nuevo ajuste" } },
     );
 
-    expect(document.title).toBe("Nuevo ajuste · ZH Technologies ERP");
+    expect(document.title).toBe("Nuevo ajuste");
 
     rerender({ title: "Ajuste AJ-000001" });
-    expect(document.title).toBe("Ajuste AJ-000001 · ZH Technologies ERP");
+    expect(document.title).toBe("Ajuste AJ-000001");
   });
 
   it("al desmontar NO restaura el fallback (evita parpadeo entre navegaciones)", () => {
     const { unmount } = renderHook(() => useDocumentTitle("Compras"));
 
-    expect(document.title).toBe("Compras · ZH Technologies ERP");
+    expect(document.title).toBe("Compras");
 
     unmount();
 
     // El título permanece: la pantalla entrante lo fija en su propio montaje.
-    expect(document.title).toBe("Compras · ZH Technologies ERP");
+    expect(document.title).toBe("Compras");
   });
 });
