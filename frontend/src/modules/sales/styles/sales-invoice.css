@@ -71,32 +71,48 @@
 }
 
 /* ── Tabs (ZHTabBar, look local al sidebar POS — ver SALES-DS-TABS-02) ── */
+/* SALES-POS-TABS-ALIGN-FIX-01: el grupo pasa a tener un único borde exterior + radius solo en
+   las esquinas externas (el contenedor `.prd-tabs` es dueño del borde/radius; `overflow: hidden`
+   recorta las esquinas de los botones a esa forma). Antes cada botón conservaba su propio
+   border-radius superior individual (heredado de `.prd-tab-btn`, items-catalog.css) y solo el
+   primero sumaba un `border-right` propio — esa combinación producía una esquina redondeada de
+   "Historial" chocando contra el borde recto de `.sf-sidebar`, visible como un borde más marcado
+   a la derecha, y una costura entre pestañas en vez de un único grupo. El ajuste queda scoped a
+   `.sf-sidebar` — la clase base `.prd-tab-btn` (items-catalog.css) no cambia, así que el resto de
+   pantallas que la reutilizan no se ven afectadas. */
 .sf-sidebar .prd-tabs {
-  border-bottom: none;
-  margin-bottom: 0;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
+  margin-bottom: 0;
 }
 .sf-sidebar .prd-tab-btn {
+  appearance: none;
+  box-sizing: border-box;
   flex: 1;
   justify-content: center;
+  align-items: center;
   gap: 6px;
   padding: 12px 8px;
-  /* font-size/font-weight: heredados de .prd-tab-btn (items-catalog.css, 13px/500) —
-     no se reinventa tipografía aquí, solo el layout "fill" y el look de pill activo/inactivo
+  /* font-size/font-weight/line-height: heredados de .prd-tab-btn (items-catalog.css, 13px/500/1)
+     — no se reinventa tipografía aquí, solo el layout "fill" y el look de pill activo/inactivo
      propio del sidebar POS (SALES-DS-VISUAL-BASELINE-15). */
-  border-bottom: none;
+  border: none;
+  border-radius: 0;
   margin-bottom: 0;
   transition: all 0.15s;
   background: var(--color-surface-container-low);
   color: var(--color-text-secondary);
 }
-.sf-sidebar .prd-tab-btn:first-child {
-  border-right: 1px solid var(--color-border);
+/* Único divisor interno entre pestañas (nunca en el borde exterior del grupo) — reemplaza el
+   border-right suelto que tenía antes solo el primer botón. */
+.sf-sidebar .prd-tab-btn + .prd-tab-btn {
+  border-left: 1px solid var(--color-border);
 }
 .sf-sidebar .prd-tab-btn--active {
   background: var(--color-primary);
   color: var(--color-on-primary);
-  border-bottom: none;
 }
 .sf-sidebar .prd-tab-btn--active .prd-tab-icon {
   color: var(--color-on-primary);

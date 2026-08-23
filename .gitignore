@@ -99,3 +99,5 @@ frontend/e2e/artifacts/
 *.trx
 *.coveragexml
 .aider*
+
+audit-output/
