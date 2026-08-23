@@ -1,0 +1,129 @@
+/* ZH-NOTICE-ARCH-01 — Avisos compactos accionables. Solo tokens de design-tokens.css. */
+
+.zh-notice-badge-trigger {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  transition: var(--transition);
+}
+
+.zh-notice-badge-trigger:hover {
+  filter: brightness(0.96);
+}
+
+.zh-notice-badge-trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.zh-notice-compact {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+/* z-index: mismo criterio documentado en zh-help.css (1200, por encima de dropdowns/header,
+   por debajo de overlays de módulo tipo ZHModal). */
+.zh-notice-popover {
+  position: fixed;
+  z-index: 1200;
+  max-width: 320px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-left: 3px solid var(--color-text-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.zh-notice-popover--info {
+  border-left-color: var(--color-info);
+}
+.zh-notice-popover--success {
+  border-left-color: var(--color-success);
+}
+.zh-notice-popover--warning {
+  border-left-color: var(--color-warning);
+}
+.zh-notice-popover--danger {
+  border-left-color: var(--color-error);
+}
+
+.zh-notice-popover__title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label-md-size);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.zh-notice-popover__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.zh-notice-popover__detail {
+  margin: 0;
+  font-size: var(--text-body-md-size);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.zh-notice-popover__action {
+  align-self: flex-start;
+}
+
+.zh-notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.zh-notice-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.zh-notice-list__icon {
+  font-size: 16px;
+  margin-top: 1px;
+}
+
+.zh-notice-list__icon--info {
+  color: var(--color-info);
+}
+.zh-notice-list__icon--success {
+  color: var(--color-success);
+}
+.zh-notice-list__icon--warning {
+  color: var(--color-warning);
+}
+.zh-notice-list__icon--danger {
+  color: var(--color-error);
+}
+
+.zh-notice-list__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zh-notice-list__label {
+  font-size: var(--text-body-md-size);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.zh-notice-list__detail {
+  font-size: var(--text-help-size);
+  line-height: var(--text-help-height);
+  color: var(--color-text-secondary);
+}

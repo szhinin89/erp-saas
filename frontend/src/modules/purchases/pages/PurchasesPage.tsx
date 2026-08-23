@@ -38,6 +38,8 @@ import {
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
+import { ZHCompactNotice } from "../../../components/zh/notices";
+import { buildNotice, type NoticeSeverity } from "../../../notices";
 import {
   lineNet,
   calcLineTax,
@@ -1214,6 +1216,12 @@ const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
   danger: "red",
 };
 
+/** readiness.tone ("success"|"warning"|"danger") ya usa el mismo vocabulario que NoticeSeverity
+ * salvo "info" (sin equivalente en readiness) — conversión trivial de tipo, sin lógica. */
+function toneToSeverity(tone: "success" | "warning" | "danger"): NoticeSeverity {
+  return tone;
+}
+
 type PurchaseLineDraft = PurchaseLineFormValues;
 type TFunction = ReturnType<typeof useI18n>["t"];
 type ChecklistTone = "success" | "warning" | "danger" | "neutral";
@@ -2001,32 +2009,31 @@ function PurchaseLineCard({
                 />
               )}
             {readiness.blocking && (
-              <div className="pdl-cost-alert">
-                <span className="material-symbols-outlined pdl-cost-alert__icon">
-                  warning
-                </span>
-                <span>
-                  {readiness.detail}
-                  {showReadinessActions && (
-                    <>
-                      {" "}
-                      {t("purchases.lineReadiness.nextAction", "Acción")}:{" "}
-                      {showReadinessActions}
-                    </>
-                  )}
-                </span>
-              </div>
+              <ZHCompactNotice
+                notice={buildNotice({
+                  severity: toneToSeverity(readiness.tone),
+                  intent: "blocking",
+                  source: "domain-status",
+                  label: readiness.label,
+                  detail: showReadinessActions
+                    ? `${readiness.detail} ${t("purchases.lineReadiness.nextAction", "Acción")}: ${showReadinessActions}`
+                    : readiness.detail,
+                })}
+              />
             )}
             {/* PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — no bloqueante, independiente del
                 bloqueo de arriba: ambos pueden coexistir (p. ej. falta bodega Y falta precio de
                 venta a la vez). */}
             {readiness.warning && (
-              <div className="pdl-cost-alert">
-                <span className="material-symbols-outlined pdl-cost-alert__icon">
-                  warning
-                </span>
-                <span>{readiness.warning.detail}</span>
-              </div>
+              <ZHCompactNotice
+                notice={buildNotice({
+                  severity: toneToSeverity(readiness.warning.tone),
+                  intent: "status",
+                  source: "domain-status",
+                  label: readiness.warning.label,
+                  detail: readiness.warning.detail,
+                })}
+              />
             )}
           </>
         ) : (
