@@ -26,6 +26,7 @@ import {
   type CashSessionCheckErrorReason,
 } from "../hooks/useSalesPage";
 import { useRideActions } from "../hooks/useRideActions";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { PAYMENT_EXCEEDS_TOLERANCE } from "../constants/tolerances";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
@@ -99,6 +100,15 @@ export function SalesPage() {
   const [searchParams] = useSearchParams();
   const openedFromParam = useRef(false);
   const [sriDiagnosticOpen, setSriDiagnosticOpen] = useState(false);
+
+  // Esta pantalla tiene layout propio (sf-layout) y no pasa por PageShell, así que
+  // debe sincronizar el título de la pestaña explícitamente. Los textos de esta
+  // página son literales en español (misma convención que "Nueva Factura" abajo).
+  useDocumentTitle(
+    ctx.editing
+      ? `Factura ${ctx.editing.invoiceNumber}`
+      : "Punto de venta",
+  );
 
   // Entrada cruzada desde el Kardex ("Ver documento origen"): abre la factura referida.
   useEffect(() => {

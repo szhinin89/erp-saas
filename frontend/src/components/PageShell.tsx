@@ -1,4 +1,5 @@
 ﻿import { useI18n } from "../i18n/i18n";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ZHScreenHeading } from "./zh/ZHLayout";
 import { ZHCard as Card } from "./zh/ZHCard";
 
@@ -19,6 +20,11 @@ export function PageShell({
   action,
   children,
 }: Props) {
+  // Punto único de sincronización del título de la pestaña del navegador:
+  // toda pantalla que renderiza por PageShell (directo o vía ErpPageTemplate)
+  // obtiene título dinámico sin cambios propios.
+  useDocumentTitle(title);
+
   return (
     <div className="page-shell page-shell--compactHeading">
       <div className="page-shell-heading">
