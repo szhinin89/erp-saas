@@ -81,6 +81,8 @@
    `.sf-sidebar` — la clase base `.prd-tab-btn` (items-catalog.css) no cambia, así que el resto de
    pantallas que la reutilizan no se ven afectadas. */
 .sf-sidebar .prd-tabs {
+  display: flex;
+  width: 100%;
   gap: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -90,7 +92,8 @@
 .sf-sidebar .prd-tab-btn {
   appearance: none;
   box-sizing: border-box;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   justify-content: center;
   align-items: center;
   gap: 6px;
