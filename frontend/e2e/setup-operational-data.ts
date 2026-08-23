@@ -186,16 +186,24 @@ async function ensureStock(
   const stocks = (await stockResponse.json()).data ?? [];
   if (stocks[0]?.availableQuantity > 0) return;
 
+  const reasonId = await ensureIngresoAdjustmentReason(api, headers);
+
   const draft = await api.post(`${API_BASE}/api/v1/inventory/stock/adjustments`, {
     headers,
     data: {
       warehouseId: warehouse.id,
       warehouseName: warehouse.name,
-      productId: item.id,
-      productName: itemName,
-      adjustmentQty: 10,
-      reason: "E2E initial stock",
+      movementType: "Ingreso",
+      reasonId,
       notes: `E2E-STOCK-INITIAL-${item.id}`,
+      lines: [
+        {
+          itemId: item.id,
+          itemName,
+          quantity: 10,
+          unitCostBase: 1,
+        },
+      ],
     },
   });
   if (!draft.ok()) {
@@ -208,4 +216,38 @@ async function ensureStock(
   if (!executed.ok()) {
     throw new Error(`stock adjustment execute failed: ${executed.status()} ${await executed.text()}`);
   }
+}
+
+const E2E_ADJUSTMENT_REASON_CODE = "E2E-INGRESO";
+
+async function ensureIngresoAdjustmentReason(
+  api: APIRequestContext,
+  headers: Record<string, string>,
+): Promise<string> {
+  const list = await api.get(
+    `${API_BASE}/api/v1/inventory/adjustment-reasons?includeInactive=true`,
+    { headers },
+  );
+  if (!list.ok()) {
+    throw new Error(`adjustment reasons lookup failed: ${list.status()} ${await list.text()}`);
+  }
+  const existing = ((await list.json()).data ?? []).find(
+    (r: { code?: string }) => r.code === E2E_ADJUSTMENT_REASON_CODE,
+  );
+  if (existing) return existing.id;
+
+  const created = await api.post(`${API_BASE}/api/v1/inventory/adjustment-reasons`, {
+    headers,
+    data: {
+      code: E2E_ADJUSTMENT_REASON_CODE,
+      name: "Stock inicial E2E",
+      allowedMovementType: "Ingreso",
+      requiresNotes: false,
+      sortOrder: 0,
+    },
+  });
+  if (!created.ok()) {
+    throw new Error(`adjustment reason create failed: ${created.status()} ${await created.text()}`);
+  }
+  return (await created.json()).data.id;
 }
