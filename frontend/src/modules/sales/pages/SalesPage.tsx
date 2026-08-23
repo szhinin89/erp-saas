@@ -10,6 +10,8 @@ import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
+import { ZHSectionHelp, ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { CustomerPicker } from "../components/CustomerPicker";
@@ -296,24 +298,24 @@ export function SalesPage() {
                   )}
                 </div>
               )}
-              {ctx.isConsumerFinalCustomer && ctx.consumerFinalPolicy && (
-                <ZHPageNotice
-                  variant={ctx.consumerFinalAmountExceeded ? "error" : "info"}
-                  message={
-                    ctx.consumerFinalAmountExceeded
-                      ? ctx.consumerFinalPolicy.amountExceededMessage
-                      : "Consumidor Final: solo ventas a contado."
-                  }
-                  detail={
-                    ctx.consumerFinalAmountExceeded
-                      ? undefined
-                      : `Monto máximo permitido: ${formatMoney(
-                          ctx.consumerFinalPolicy.consumerFinalMaxAmount,
-                          getDecimalConfig().totalAmount,
-                        )}. Para superarlo, seleccione un cliente identificado.`
-                  }
-                />
-              )}
+              {ctx.isConsumerFinalCustomer &&
+                ctx.consumerFinalPolicy &&
+                (ctx.consumerFinalAmountExceeded ? (
+                  <ZHPageNotice
+                    variant="error"
+                    message={ctx.consumerFinalPolicy.amountExceededMessage}
+                  />
+                ) : (
+                  <ZHSectionHelp
+                    helpKey={HELP_KEYS.SALES_CUSTOMER_CONSUMER_FINAL}
+                    variables={{
+                      maxConsumerFinalAmount: formatMoney(
+                        ctx.consumerFinalPolicy.consumerFinalMaxAmount,
+                        getDecimalConfig().totalAmount,
+                      ),
+                    }}
+                  />
+                ))}
             </div>
 
             {/* Datos de Emisión — informativo/no accionable (el servidor resuelve Caja/Punto/
@@ -325,6 +327,7 @@ export function SalesPage() {
                   apartment
                 </span>
                 Datos de Emisión
+                <ZHFieldHelp helpKey={HELP_KEYS.SALES_EMISSION_SECTION} />
               </div>
               <div className="sf-emission">
                 {/* Caja / Punto de emisión / Sucursal: solo informativos — el servidor los
@@ -343,6 +346,7 @@ export function SalesPage() {
                     <ZHFieldLabel size="sm" className="sf-emission__label">
                       {"Caja:"}
                     </ZHFieldLabel>
+                    <ZHFieldHelp helpKey={HELP_KEYS.SALES_CASH_SESSION} />
                     <span className="sf-emission__value">
                       {ctx.myCashSession.cashRegisterCodeSnapshot} —{" "}
                       {ctx.myCashSession.cashRegisterNameSnapshot}
@@ -369,6 +373,7 @@ export function SalesPage() {
                     <ZHFieldLabel size="sm" className="sf-emission__label">
                       {"Tipo Emisión:"}
                     </ZHFieldLabel>
+                    <ZHFieldHelp helpKey={HELP_KEYS.SALES_EMISSION_TYPE} />
                     <span className="sf-emission__value">
                       {(ctx.myCashSession?.emissionType ??
                         ctx.editing?.emissionType) === "Electronic"

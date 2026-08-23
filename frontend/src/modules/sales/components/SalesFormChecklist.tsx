@@ -1,5 +1,7 @@
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { PAYMENT_EXCEEDS_TOLERANCE } from "../constants/tolerances";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 
 export interface SalesFormChecklistProps {
   ctx: SalesPageContext;
@@ -58,7 +60,10 @@ export function SalesFormChecklist({ ctx }: SalesFormChecklistProps) {
         check_circle
       </span>
       <div>
-        <div className="sf-next-step__title">Listo para emitir</div>
+        <div className="sf-next-step__title">
+          Listo para emitir
+          <ZHFieldHelp helpKey={HELP_KEYS.SALES_CHECKLIST} />
+        </div>
         <div>La factura cumple los requisitos para emitir.</div>
       </div>
     </div>
@@ -68,7 +73,10 @@ export function SalesFormChecklist({ ctx }: SalesFormChecklistProps) {
         arrow_forward
       </span>
       <div>
-        <div className="sf-next-step__title">Siguiente paso</div>
+        <div className="sf-next-step__title">
+          Siguiente paso
+          <ZHFieldHelp helpKey={HELP_KEYS.SALES_CHECKLIST} />
+        </div>
         {/* Fallback defensivo: en la cadena de mensajes actual (sin cambios) hay un caso límite
             teórico — total 0 con todo lo demás en regla — donde `nextStep` puede resolver null.
             Antes ese caso ocultaba todo el bloque en silencio; ahora, al mostrarse siempre el

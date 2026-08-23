@@ -16,6 +16,8 @@ import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import {
   lineNet,
@@ -404,6 +406,8 @@ export function SalesInvoiceDetailsSection({
                         )}
                       </div>
 
+                      <ZHFieldHelp helpKey={HELP_KEYS.SALES_PRICING} />
+
                       <ZHBtn
                         type="button"
                         variant="primary"
@@ -426,6 +430,7 @@ export function SalesInvoiceDetailsSection({
             </div>
           )}
         </div>
+        <ZHFieldHelp helpKey={HELP_KEYS.SALES_PRODUCT_SEARCH} />
         <ZhWarehouseSelector
           value={selectedWarehouseId || null}
           onChange={(id) => onWarehouseChange(id)}
@@ -670,6 +675,7 @@ function SalesProductCard({
             <ZHFieldLabel size="sm" className="sf-product__stock-label">
               Stock
             </ZHFieldLabel>
+            <ZHFieldHelp helpKey={HELP_KEYS.SALES_STOCK} />
             <div
               className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
             >

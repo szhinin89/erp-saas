@@ -2,6 +2,8 @@ import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHToggleTile } from "../../../components/zh/ZHToggleTile";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
@@ -21,6 +23,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
           payments
         </span>
         Formas de Cobro
+        <ZHFieldHelp helpKey={HELP_KEYS.SALES_PAYMENTS_SECTION} />
         {!ctx.readOnly && ctx.payments.length > 0 && (
           <span
             className="material-symbols-outlined sf-sidebar__header-right zh-icon-md"
@@ -228,6 +231,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 <span className="sales-cash-box__label">
                   Monto recibido (Efectivo):
                 </span>
+                <ZHFieldHelp helpKey={HELP_KEYS.SALES_PAYMENTS_CASH_RECEIVED} />
                 <div className="sales-cash-box__input-wrap">
                   <span className="sales-cash-box__currency">$</span>
                   <ZhDecimalInput
@@ -252,7 +256,12 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
               <div
                 className={`sales-cash-box__total-row${ctx.cashInsufficient ? " sales-cash-box__total-row--insufficient" : ""}`}
               >
-                <span>{ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}</span>
+                <span>
+                  {ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}
+                  {!ctx.cashInsufficient && (
+                    <ZHFieldHelp helpKey={HELP_KEYS.SALES_PAYMENTS_CHANGE} />
+                  )}
+                </span>
                 <span className="sales-cash-box__amount">
                   <ZHMoneyValue
                     value={
