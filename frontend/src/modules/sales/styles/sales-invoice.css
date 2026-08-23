@@ -491,56 +491,10 @@
   color: var(--color-text-primary);
 }
 
-/* ── Form Readiness Checklist (sf-checklist) ──────────────── */
-.sf-checklist {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 16px 12px;
-  border-bottom: 1px solid var(--color-border);
-}
-/* Tipografía movida a la utilidad global .zh-section-title (zh-ui.css,
-   SALES-DS-GLOBAL-VISUAL-16) — el JSX aplica ambas clases
-   (`sf-checklist__title zh-section-title`). Aquí solo queda el color y el
-   margen (layout). */
-.sf-checklist__title {
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
-}
-.sf-checklist__item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-label-sm-size);
-  line-height: 1.4;
-  padding: 2px 0;
-}
-.sf-checklist__icon {
-  font-size: 14px;
-  flex-shrink: 0;
-}
-.sf-checklist__icon--ok {
-  color: var(--color-success);
-}
-.sf-checklist__icon--missing {
-  color: var(--color-outline);
-}
-.sf-checklist__icon--error {
-  color: var(--color-error);
-}
-.sf-checklist__label--ok {
-  color: var(--color-text-secondary);
-}
-.sf-checklist__label--missing {
-  color: var(--color-text-primary);
-  font-weight: 500;
-}
-.sf-checklist__label--error {
-  color: var(--color-error);
-  font-weight: 500;
-}
-
-/* ── Next Step Guide ── */
+/* ── Next Step Guide (compacta "Estado del formulario" — SALES-POS-CHECKLIST-COMPACT-01) ──
+   Reemplaza la lista completa de requisitos (sf-checklist, eliminada — sin consumidores TSX)
+   por un único bloque de una línea: "Siguiente paso" (pendiente, tinte primario) o "Listo para
+   emitir" (variante --ready, tinte de éxito) — mismos tokens, menos altura ocupada. */
 .sf-next-step {
   display: flex;
   align-items: center;
@@ -549,12 +503,18 @@
   background: color-mix(in srgb, var(--color-primary) 6%, transparent);
   border-bottom: 1px solid var(--color-border);
   font-size: var(--text-help-size);
-  font-weight: 500;
   color: var(--color-primary);
+}
+.sf-next-step--ready {
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+  color: var(--color-success);
 }
 .sf-next-step__icon {
   font-size: 16px;
   flex-shrink: 0;
+}
+.sf-next-step__title {
+  font-weight: 700;
 }
 
 /* ── Authorize confirmation summary ── */

@@ -45,64 +45,37 @@ export function SalesFormChecklist({ ctx }: SalesFormChecklistProps) {
                     ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
                     : null;
 
-  type ItemStatus = "ok" | "missing" | "error";
-  const item = (label: string, status: ItemStatus) => (
-    <div className="sf-checklist__item">
-      <span
-        className={`material-symbols-outlined sf-checklist__icon sf-checklist__icon--${status}`}
-      >
-        {status === "ok"
-          ? "check_circle"
-          : status === "error"
-            ? "error"
-            : "radio_button_unchecked"}
+  // SALES-POS-CHECKLIST-COMPACT-01: se retiró la lista completa de requisitos
+  // (Cliente seleccionado / Productos agregados / Caja abierta / Formas de cobro) — el botón
+  // Emitir (EmitButton.tsx) ya explica el motivo puntual por tooltip cuando está deshabilitado,
+  // así que repetir cada requisito acá era redundante y ocupaba altura del sidebar sin aportar
+  // información nueva. Queda solo un bloque de una línea: "Siguiente paso" (mismo mensaje
+  // jerárquico `nextStep` de siempre, sin cambios) mientras falte algo, o "Listo para emitir"
+  // una vez que `canEmit` es true — el cálculo de `canEmit`/`nextStep` no cambió.
+  return canEmit ? (
+    <div className="sf-next-step sf-next-step--ready">
+      <span className="material-symbols-outlined sf-next-step__icon">
+        check_circle
       </span>
-      <span className={`sf-checklist__label--${status}`}>{label}</span>
-    </div>
-  );
-
-  return (
-    <>
-      <div className="sf-checklist">
-        <div className="sf-checklist__title zh-section-title">
-          Estado del formulario
-        </div>
-        {item("Cliente seleccionado", hasCustomer ? "ok" : "missing")}
-        {item("Productos agregados", hasLines ? "ok" : "missing")}
-        {ctx.hasInsufficientStock &&
-          item("Cantidad supera el stock disponible en una línea", "error")}
-        {item(
-          ctx.cashSessionCheckError ? "Caja abierta (sin verificar)" : "Caja abierta",
-          ctx.hasCashSession === true
-            ? "ok"
-            : ctx.hasCashSession === false || ctx.cashSessionCheckError
-              ? "error"
-              : "missing",
-        )}
-        {item(
-          paymentExceeds ? "Cobro excede el total" : "Formas de cobro",
-          paymentOk
-            ? "ok"
-            : paymentExceeds
-              ? "error"
-              : paid > 0
-                ? "missing"
-                : "missing",
-        )}
-        {ctx.cashDue > 0 &&
-          item(
-            "Monto recibido en efectivo",
-            ctx.cashInsufficient ? "error" : "ok",
-          )}
+      <div>
+        <div className="sf-next-step__title">Listo para emitir</div>
+        <div>La factura cumple los requisitos para emitir.</div>
       </div>
-      {nextStep && (
-        <div className="sf-next-step">
-          <span className="material-symbols-outlined sf-next-step__icon">
-            arrow_forward
-          </span>
-          {nextStep}
-        </div>
-      )}
-    </>
+    </div>
+  ) : (
+    <div className="sf-next-step">
+      <span className="material-symbols-outlined sf-next-step__icon">
+        arrow_forward
+      </span>
+      <div>
+        <div className="sf-next-step__title">Siguiente paso</div>
+        {/* Fallback defensivo: en la cadena de mensajes actual (sin cambios) hay un caso límite
+            teórico — total 0 con todo lo demás en regla — donde `nextStep` puede resolver null.
+            Antes ese caso ocultaba todo el bloque en silencio; ahora, al mostrarse siempre el
+            bloque "Siguiente paso" cuando no está listo, se cubre con un mensaje genérico en vez
+            de dejarlo vacío. */}
+        <div>{nextStep ?? "Complete los datos requeridos para emitir."}</div>
+      </div>
+    </div>
   );
 }
