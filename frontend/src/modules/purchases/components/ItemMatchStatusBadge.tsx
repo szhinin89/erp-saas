@@ -4,13 +4,6 @@ import { useI18n } from "../../../i18n/i18n";
 import { useItemUiStore } from "../../items/store/itemUiStore";
 import type { ItemMatchStatus } from "../api/purchaseReceptionService";
 
-const STATUS_ICON: Record<ItemMatchStatus, string> = {
-  PENDING: "🔴",
-  NEEDS_REVIEW: "🟡",
-  AUTO_MATCHED: "🟢",
-  MANUALLY_MATCHED: "🔵",
-};
-
 const STATUS_VARIANT: Record<
   ItemMatchStatus,
   "green" | "red" | "blue" | "orange"
@@ -25,12 +18,7 @@ export function ItemMatchStatusBadge({ status }: { status: ItemMatchStatus }) {
   const { t } = useI18n();
   const label = t(`purchases.itemMatchStatus.${status}`, status);
 
-  return (
-    <Badge
-      variant={STATUS_VARIANT[status]}
-      label={`${STATUS_ICON[status]} ${label}`}
-    />
-  );
+  return <Badge variant={STATUS_VARIANT[status]} label={label} />;
 }
 
 /**
