@@ -14,7 +14,7 @@ import "./initial-load.css";
 const SEVERITY_FILTERS: { key: "all" | "errors" | "warnings"; label: string }[] = [
   { key: "all", label: "Todas" },
   { key: "errors", label: "Con error" },
-  { key: "warnings", label: "Sin error" },
+  { key: "warnings", label: "Importables con advertencia" },
 ];
 
 function buildColumns(
@@ -124,6 +124,34 @@ export function ImportWizardPage({
     confirmBatch,
     reset,
   } = useImportWizard(importType, templateFileName);
+  const previewRows = preview?.items ?? [];
+  const previewIssues = previewRows.flatMap((row) => row.issues);
+  const categoryCreationWarnings = previewIssues.filter(
+    (issue) => issue.code === "CATEGORY_WILL_BE_CREATED",
+  ).length;
+  const brandCreationWarnings = previewIssues.filter(
+    (issue) => issue.code === "BRAND_WILL_BE_CREATED",
+  ).length;
+  const hasCatalogCreationWarnings =
+    batch?.autoCreateCatalogValues === true &&
+    (categoryCreationWarnings > 0 || brandCreationWarnings > 0);
+  const catalogCreationWarningCount = categoryCreationWarnings + brandCreationWarnings;
+  const catalogCreationDetail = [
+    categoryCreationWarnings > 0
+      ? `${categoryCreationWarnings} ${
+          categoryCreationWarnings === 1 ? "categoría" : "categorías"
+        }`
+      : null,
+    brandCreationWarnings > 0
+      ? `${brandCreationWarnings} ${brandCreationWarnings === 1 ? "marca" : "marcas"}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" y ");
+  const catalogCreationNoticeDetail =
+    catalogCreationWarningCount === 1
+      ? `El preview muestra ${catalogCreationDetail} pendiente de creación. Se creará automáticamente porque AutoCreateCatalogValues está activo.`
+      : `El preview muestra ${catalogCreationDetail} pendientes de creación. Se crearán automáticamente porque AutoCreateCatalogValues está activo.`;
 
   return (
     <ErpPageTemplate
@@ -225,7 +253,7 @@ export function ImportWizardPage({
               </div>
               <ZHDataTable
                 columns={columns}
-                rows={preview?.items ?? []}
+                rows={previewRows}
                 rowKey={(r) => r.id}
                 loading={previewLoading}
                 emptyMessage="No hay filas para este filtro."
@@ -269,7 +297,33 @@ export function ImportWizardPage({
           </>
         }
       >
-        Esta acción crea los registros válidos en el sistema. No se puede deshacer.
+        <div className="il-confirm-summary">
+          <p className="zh-form-help il-confirm-summary__intro">
+            Esta acción crea los registros válidos en el sistema. No se puede deshacer.
+          </p>
+          {batch && (
+            <>
+              <div className="zh-form-actions-row">
+                <Badge label={`${batch.validRows} filas válidas`} variant="success" />
+                <Badge
+                  label={`${batch.warningRows} con advertencias`}
+                  variant={batch.warningRows > 0 ? "warning" : "neutral"}
+                />
+                <Badge
+                  label={`${batch.issueRows} con errores`}
+                  variant={batch.issueRows > 0 ? "error" : "neutral"}
+                />
+              </div>
+              {hasCatalogCreationWarnings && (
+                <ZHPageNotice
+                  variant="warning"
+                  message="Se crearán valores de catálogo al confirmar."
+                  detail={catalogCreationNoticeDetail}
+                />
+              )}
+            </>
+          )}
+        </div>
       </ZHModal>
     </ErpPageTemplate>
   );
