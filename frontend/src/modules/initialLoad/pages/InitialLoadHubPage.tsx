@@ -11,6 +11,7 @@ interface ImportBlock {
   title: string;
   description: string;
   route?: string;
+  pendingReason?: string;
 }
 
 const BLOCKS: ImportBlock[] = [
@@ -37,6 +38,7 @@ const BLOCKS: ImportBlock[] = [
     importType: "Prices",
     title: "Precios",
     description: "Importación de precios base.",
+    pendingReason: "Pendiente: Precios multi-lista",
   },
   {
     importType: "InitialStock",
@@ -78,6 +80,9 @@ export function InitialLoadHubPage() {
             className={block.route ? undefined : "il-card--disabled"}
           >
             <p>{block.description}</p>
+            {!block.route && block.pendingReason && (
+              <p className="il-card__pending">{block.pendingReason}</p>
+            )}
           </ZHCard>
         ))}
       </div>
