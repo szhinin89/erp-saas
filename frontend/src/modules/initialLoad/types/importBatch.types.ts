@@ -23,6 +23,7 @@ export interface ImportBatchDto {
   importType: ImportType;
   status: ImportStatus;
   label: string | null;
+  autoCreateCatalogValues: boolean;
   totalRows: number;
   validRows: number;
   issueRows: number;

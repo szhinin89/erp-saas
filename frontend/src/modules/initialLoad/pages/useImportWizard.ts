@@ -5,6 +5,7 @@ import { formatApiRequestError } from "../../lib/apiError";
 import type {
   ImportBatchDto,
   ImportBatchRowPreviewDto,
+  ImportType,
   PagedResult,
 } from "../types/importBatch.types";
 
@@ -18,8 +19,16 @@ type WizardStep =
 
 const POLL_INTERVAL_MS = 2000;
 const PREVIEW_PAGE_SIZE = 25;
+const GENERIC_ERROR = { generic: "No se pudo completar la operación." };
 
-export function useInitialLoadCustomersPage() {
+/**
+ * Wizard genérico de Carga Inicial (INITIAL-LOAD-ARCH-01) — un archivo → validar → preview →
+ * confirmar → resultado, parametrizado por <see cref="ImportType"/>. Extraído de
+ * useInitialLoadCustomersPage.ts (INITIAL-LOAD-SUPPLIERS-01) para que Proveedores reutilice el
+ * mismo flujo sin duplicar lógica; cada import type solo aporta su plantilla y columnas de
+ * preview desde el componente que llama a este hook.
+ */
+export function useImportWizard(importType: ImportType, templateFileName: string) {
   const [batch, setBatch] = useState<ImportBatchDto | null>(null);
   const [step, setStep] = useState<WizardStep>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -35,6 +44,8 @@ export function useInitialLoadCustomersPage() {
     importedRows: number;
     failedRows: number;
   } | null>(null);
+
+  const [autoCreateCatalogValues, setAutoCreateCatalogValues] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -60,7 +71,7 @@ export function useInitialLoadCustomersPage() {
           }
         } catch (err) {
           stopPolling();
-          setError(formatApiRequestError(err, { generic: "No se pudo completar la operación." }));
+          setError(formatApiRequestError(err, GENERIC_ERROR));
         }
       }, POLL_INTERVAL_MS);
     },
@@ -69,35 +80,44 @@ export function useInitialLoadCustomersPage() {
 
   const downloadTemplate = useCallback(async () => {
     try {
-      const blob = await initialLoadService.downloadTemplate("Customers");
-      downloadBlob(blob, "plantilla-clientes.xlsx");
+      const blob = await initialLoadService.downloadTemplate(importType);
+      downloadBlob(blob, templateFileName);
     } catch (err) {
-      setError(formatApiRequestError(err, { generic: "No se pudo completar la operación." }));
+      setError(formatApiRequestError(err, GENERIC_ERROR));
     }
-  }, []);
+  }, [importType, templateFileName]);
 
-  const handleFileSelected = useCallback(async (file: File) => {
-    setError(null);
-    setStep("uploading");
-    setUploadProgress(0);
-    try {
-      const created = await initialLoadService.createBatch("Customers");
-      const uploaded = await initialLoadService.uploadFile(created.id, file, setUploadProgress);
-      setBatch(uploaded);
-      setStep("validating");
+  const handleFileSelected = useCallback(
+    async (file: File) => {
+      setError(null);
+      setStep("uploading");
+      setUploadProgress(0);
+      try {
+        const created = await initialLoadService.createBatch(
+          importType,
+          undefined,
+          autoCreateCatalogValues,
+        );
+        const uploaded = await initialLoadService.uploadFile(created.id, file, setUploadProgress);
+        setBatch(uploaded);
+        setStep("validating");
 
-      const validated = await initialLoadService.validateBatch(uploaded.id);
-      setBatch(validated);
-      if (validated.status === "Validating") {
-        pollUntilSettled(uploaded.id, (b) => setStep(b.status === "Failed" ? "idle" : "validated"));
-      } else {
-        setStep(validated.status === "Failed" ? "idle" : "validated");
+        const validated = await initialLoadService.validateBatch(uploaded.id);
+        setBatch(validated);
+        if (validated.status === "Validating") {
+          pollUntilSettled(uploaded.id, (b) =>
+            setStep(b.status === "Failed" ? "idle" : "validated"),
+          );
+        } else {
+          setStep(validated.status === "Failed" ? "idle" : "validated");
+        }
+      } catch (err) {
+        setStep("idle");
+        setError(formatApiRequestError(err, GENERIC_ERROR));
       }
-    } catch (err) {
-      setStep("idle");
-      setError(formatApiRequestError(err, { generic: "No se pudo completar la operación." }));
-    }
-  }, [pollUntilSettled]);
+    },
+    [importType, autoCreateCatalogValues, pollUntilSettled],
+  );
 
   const loadPreview = useCallback(
     async (page: number, filter: "all" | "errors" | "warnings") => {
@@ -115,7 +135,7 @@ export function useInitialLoadCustomersPage() {
         setPreview(result);
         setPreviewPage(page);
       } catch (err) {
-        setError(formatApiRequestError(err, { generic: "No se pudo completar la operación." }));
+        setError(formatApiRequestError(err, GENERIC_ERROR));
       } finally {
         setPreviewLoading(false);
       }
@@ -161,7 +181,7 @@ export function useInitialLoadCustomersPage() {
       }
     } catch (err) {
       setStep("validated");
-      setError(formatApiRequestError(err, { generic: "No se pudo completar la operación." }));
+      setError(formatApiRequestError(err, GENERIC_ERROR));
     }
   }, [batch, pollUntilSettled]);
 
@@ -175,6 +195,7 @@ export function useInitialLoadCustomersPage() {
     setPreviewPage(1);
     setSeverityFilter("all");
     setConfirmResult(null);
+    setAutoCreateCatalogValues(false);
   }, [stopPolling]);
 
   return {
@@ -188,6 +209,8 @@ export function useInitialLoadCustomersPage() {
     severityFilter,
     confirmModalOpen,
     confirmResult,
+    autoCreateCatalogValues,
+    setAutoCreateCatalogValues,
     downloadTemplate,
     handleFileSelected,
     loadPreview,

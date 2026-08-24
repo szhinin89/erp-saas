@@ -23,7 +23,8 @@ const BLOCKS: ImportBlock[] = [
   {
     importType: "Suppliers",
     title: "Proveedores",
-    description: "Importación de proveedores.",
+    description: "Importa proveedores desde una plantilla Excel.",
+    route: "/initial-load/suppliers",
   },
   {
     importType: "Items",
@@ -44,8 +45,9 @@ const BLOCKS: ImportBlock[] = [
 
 /**
  * Hub de Carga Inicial (INITIAL-LOAD-ARCH-01) — grid de tarjetas, una por tipo de dato maestro.
- * Solo "Clientes" está habilitada en esta entrega; el resto muestra "Próximamente" con el mismo
- * idioma visual que los tabs deshabilitados de CompanySettingsHubPage.
+ * "Clientes" y "Proveedores" (INITIAL-LOAD-SUPPLIERS-01) están habilitadas; el resto muestra
+ * "Próximamente" con el mismo idioma visual que los tabs deshabilitados de
+ * CompanySettingsHubPage.
  */
 export function InitialLoadHubPage() {
   const navigate = useNavigate();

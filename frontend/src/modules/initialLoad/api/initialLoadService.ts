@@ -12,8 +12,16 @@ import type {
 const BASE = "/api/v1/initial-load";
 
 export const initialLoadService = {
-  createBatch(importType: ImportType, label?: string): Promise<ImportBatchDto> {
-    return apiPost<ImportBatchDto>(`${BASE}/batches`, { importType, label });
+  createBatch(
+    importType: ImportType,
+    label?: string,
+    autoCreateCatalogValues?: boolean,
+  ): Promise<ImportBatchDto> {
+    return apiPost<ImportBatchDto>(`${BASE}/batches`, {
+      importType,
+      label,
+      autoCreateCatalogValues,
+    });
   },
 
   uploadFile(

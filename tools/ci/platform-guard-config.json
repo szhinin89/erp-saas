@@ -52,6 +52,7 @@
     "/api/config",
     "/api/expenses",
     "/api/finance",
+    "/api/initial-load",
     "/api/inventory",
     "/api/item-types",
     "/api/logistics",

@@ -34,6 +34,7 @@ public static class DependencyInjection
         // como diccionario. Agregar un import type nuevo es agregar una implementación aquí —
         // el motor genérico (entidades, casos de uso, controller) no cambia.
         services.AddScoped<IImportProcessor, CustomerImportProcessor>();
+        services.AddScoped<IImportProcessor, SupplierImportProcessor>();
         services.AddScoped<IReadOnlyDictionary<ImportType, IImportProcessor>>(sp =>
             sp.GetServices<IImportProcessor>().ToDictionary(p => p.ImportType, p => p)
         );

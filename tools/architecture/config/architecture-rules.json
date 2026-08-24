@@ -195,7 +195,7 @@
       ]
     },
     "duplicateServices": {
-      "allowedMultiRegistration": ["ICompanyBootstrapStep"]
+      "allowedMultiRegistration": ["ICompanyBootstrapStep", "IImportProcessor"]
     },
     "subscriber": {
       "scanPath": "backend/src",
