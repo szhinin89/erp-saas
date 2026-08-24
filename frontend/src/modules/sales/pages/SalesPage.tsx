@@ -69,6 +69,8 @@ export function SalesPage() {
       : s === "Authorized"
         ? "success"
         : "error";
+  const emissionType =
+    ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
 
   return (
     <div className="sales-page-root">
@@ -367,19 +369,21 @@ export function SalesPage() {
                     el backend a través de CashSessionDto.emissionType (myCashSession) — se
                     prefiere sobre el snapshot de la factura (ctx.editing) para que se vea de
                     inmediato al abrir la pantalla, antes de crear ningún borrador. */}
-                {(ctx.myCashSession?.emissionType ??
-                  ctx.editing?.emissionType) && (
+                {emissionType && (
                   <div>
                     <ZHFieldLabel size="sm" className="sf-emission__label">
                       {"Tipo Emisión:"}
                     </ZHFieldLabel>
                     <ZHFieldHelp helpKey={HELP_KEYS.SALES_EMISSION_TYPE} />
-                    <span className="sf-emission__value">
-                      {(ctx.myCashSession?.emissionType ??
-                        ctx.editing?.emissionType) === "Electronic"
-                        ? "🟢 Electrónica"
-                        : "🔵 Física"}
-                    </span>
+                    <Badge
+                      variant={
+                        emissionType === "Electronic" ? "success" : "info"
+                      }
+                      label={
+                        emissionType === "Electronic" ? "Electrónica" : "Física"
+                      }
+                      size="md"
+                    />
                   </div>
                 )}
                 <div>
@@ -550,111 +554,123 @@ export function SalesPage() {
                 <span className="sf-bottombar__sri-key zh-code-value">
                   {ctx.editing?.accessKey ?? "— se genera al emitir —"}
                 </span>
-                {ctx.editing && (
+              </div>
+            )}
+
+            <div className="sf-bottombar__spacer" />
+
+            <div className="sf-bottombar__primary-actions">
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => void ctx.clearForm()}
+              >
+                <span className="material-symbols-outlined zh-icon-lg">
+                  delete_sweep
+                </span>
+                Limpiar Todo
+              </ZHBtn>
+
+              {ctx.isDraft && <EmitButton ctx={ctx} />}
+
+              {ctx.editing &&
+                ctx.isElectronic &&
+                ctx.editing.status === "Authorized" &&
+                ctx.editing.electronicStatus === "None" && (
+                  <ZHBtn
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void ctx.handleGenerateElectronicDocument()}
+                    disabled={ctx.saving}
+                    title="Esta factura fue autorizada pero nunca generó su documento electrónico — regenera el registro en el Monitor."
+                  >
+                    <span className="material-symbols-outlined zh-icon-lg">
+                      bolt
+                    </span>
+                    Generar documento electrónico
+                  </ZHBtn>
+                )}
+
+              {ctx.editing && ctx.editing.status === "Authorized" && (
+                <ZHBtn
+                  variant="secondary"
+                  size="sm"
+                  className="sales-bottombar-btn--danger"
+                  onClick={() => ctx.setModalCancelReason(true)}
+                >
+                  <span className="material-symbols-outlined zh-icon-lg">
+                    block
+                  </span>
+                  Anular
+                </ZHBtn>
+              )}
+            </div>
+
+            {ctx.editing && (
+              <div
+                className="sf-bottombar__secondary-actions"
+                aria-label="Acciones secundarias de factura"
+              >
+                {ctx.editing && ctx.isElectronic && (
                   <ZHIconButton
                     icon="troubleshoot"
                     title="Ver diagnóstico SRI"
                     onClick={() => setSriDiagnosticOpen(true)}
                   />
                 )}
+
+                {ctx.editing && ctx.editing.status === "Authorized" && (
+                  <ZHBtn
+                    variant="secondary"
+                    size="sm"
+                    disabled={ride.ridePending}
+                    onClick={() => void ride.handleViewRide(ctx.editing!.id)}
+                    title="Abre el PDF del RIDE en una pestaña nueva. Reutiliza el ya generado si no cambió nada."
+                  >
+                    <span className="material-symbols-outlined zh-icon-lg">
+                      picture_as_pdf
+                    </span>
+                    Ver RIDE
+                  </ZHBtn>
+                )}
+
+                {ctx.editing && ctx.editing.status === "Authorized" && (
+                  <ZHBtn
+                    variant="secondary"
+                    size="sm"
+                    disabled={ride.ridePending}
+                    onClick={() =>
+                      void ride.handleDownloadRide(
+                        ctx.editing!.id,
+                        ctx.editing!.invoiceNumber,
+                      )
+                    }
+                  >
+                    <span className="material-symbols-outlined zh-icon-lg">
+                      download
+                    </span>
+                    Descargar RIDE
+                  </ZHBtn>
+                )}
+
+                {ctx.editing && ctx.editing.status === "Authorized" && (
+                  <ZHBtn
+                    variant="secondary"
+                    size="sm"
+                    disabled={ride.ridePending}
+                    onClick={() =>
+                      void ride.handleRegenerateRide(ctx.editing!.id)
+                    }
+                    title="Fuerza una nueva generación del RIDE aunque el ya almacenado siga siendo válido."
+                  >
+                    <span className="material-symbols-outlined zh-icon-lg">
+                      refresh
+                    </span>
+                    Regenerar RIDE
+                  </ZHBtn>
+                )}
               </div>
-            )}
-
-            <div className="sf-bottombar__spacer" />
-
-            <ZHBtn
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => void ctx.clearForm()}
-            >
-              <span className="material-symbols-outlined zh-icon-lg">
-                delete_sweep
-              </span>
-              Limpiar Todo
-            </ZHBtn>
-
-            {ctx.isDraft && <EmitButton ctx={ctx} />}
-
-            {ctx.editing &&
-              ctx.isElectronic &&
-              ctx.editing.status === "Authorized" &&
-              ctx.editing.electronicStatus === "None" && (
-                <ZHBtn
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void ctx.handleGenerateElectronicDocument()}
-                  disabled={ctx.saving}
-                  title="Esta factura fue autorizada pero nunca generó su documento electrónico — regenera el registro en el Monitor."
-                >
-                  <span className="material-symbols-outlined zh-icon-lg">
-                    bolt
-                  </span>
-                  Generar documento electrónico
-                </ZHBtn>
-              )}
-
-            {ctx.editing && ctx.editing.status === "Authorized" && (
-              <ZHBtn
-                variant="secondary"
-                size="sm"
-                disabled={ride.ridePending}
-                onClick={() => void ride.handleViewRide(ctx.editing!.id)}
-                title="Abre el PDF del RIDE en una pestaña nueva. Reutiliza el ya generado si no cambió nada."
-              >
-                <span className="material-symbols-outlined zh-icon-lg">
-                  picture_as_pdf
-                </span>
-                Ver RIDE
-              </ZHBtn>
-            )}
-
-            {ctx.editing && ctx.editing.status === "Authorized" && (
-              <ZHBtn
-                variant="secondary"
-                size="sm"
-                disabled={ride.ridePending}
-                onClick={() =>
-                  void ride.handleDownloadRide(
-                    ctx.editing!.id,
-                    ctx.editing!.invoiceNumber,
-                  )
-                }
-              >
-                <span className="material-symbols-outlined zh-icon-lg">
-                  download
-                </span>
-                Descargar RIDE
-              </ZHBtn>
-            )}
-
-            {ctx.editing && ctx.editing.status === "Authorized" && (
-              <ZHBtn
-                variant="secondary"
-                size="sm"
-                disabled={ride.ridePending}
-                onClick={() => void ride.handleRegenerateRide(ctx.editing!.id)}
-                title="Fuerza una nueva generación del RIDE aunque el ya almacenado siga siendo válido."
-              >
-                <span className="material-symbols-outlined zh-icon-lg">
-                  refresh
-                </span>
-                Regenerar RIDE
-              </ZHBtn>
-            )}
-
-            {ctx.editing && ctx.editing.status === "Authorized" && (
-              <ZHBtn
-                variant="secondary"
-                size="sm"
-                className="sales-bottombar-btn--danger"
-                onClick={() => ctx.setModalCancelReason(true)}
-              >
-                <span className="material-symbols-outlined zh-icon-lg">
-                  block
-                </span>
-                Anular
-              </ZHBtn>
             )}
           </div>
         </div>

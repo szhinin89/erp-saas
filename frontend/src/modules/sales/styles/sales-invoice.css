@@ -354,6 +354,23 @@
   flex: 1;
 }
 
+.sf-bottombar__primary-actions,
+.sf-bottombar__secondary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sf-bottombar__secondary-actions {
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-container-low);
+}
+
 /* .sf-bottombar__emit / .sf-bottombar__emit-icon ELIMINADOS (SALES-DS-CTA-11)
    — EmitButton migrado a ZHBtn variant="cta" (ver .zh-btn--cta en zh-ui.css)
    con ícono zh-icon-lg; sin consumidores locales. */
@@ -405,6 +422,10 @@
   }
   .sf-bottombar__spacer {
     display: none;
+  }
+  .sf-bottombar__primary-actions,
+  .sf-bottombar__secondary-actions {
+    justify-content: flex-start;
   }
 }
 
