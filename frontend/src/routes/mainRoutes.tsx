@@ -110,6 +110,10 @@ const InitialLoadProductCatalogPage = lazyNamedPage(
   () => import("../modules/initialLoad/pages/InitialLoadProductCatalogPage"),
   "InitialLoadProductCatalogPage",
 );
+const InitialLoadInitialStockPage = lazyNamedPage(
+  () => import("../modules/initialLoad/pages/InitialLoadInitialStockPage"),
+  "InitialLoadInitialStockPage",
+);
 
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
@@ -208,6 +212,11 @@ export const mainRoutes = [
     key="initial-load-products"
     path="/initial-load/products"
     element={<InitialLoadProductCatalogPage />}
+  />,
+  <Route
+    key="initial-load-initial-stock"
+    path="/initial-load/initial-stock"
+    element={<InitialLoadInitialStockPage />}
   />,
   <Route
     key="electronic-documents-monitor"

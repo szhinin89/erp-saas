@@ -41,16 +41,18 @@ const BLOCKS: ImportBlock[] = [
   {
     importType: "InitialStock",
     title: "Stock Inicial",
-    description: "Importación de saldos iniciales de inventario.",
+    description:
+      "Carga existencias iniciales por producto y bodega — nunca crea productos ni bodegas.",
+    route: "/initial-load/initial-stock",
   },
 ];
 
 /**
  * Hub de Carga Inicial (INITIAL-LOAD-ARCH-01) — grid de tarjetas, una por tipo de dato maestro.
- * "Clientes", "Proveedores" (INITIAL-LOAD-SUPPLIERS-01) y "Catálogo de Productos" (mismo
- * ImportType.Items — rediseño "importación inteligente" de INITIAL-LOAD-ITEMS-01) están
- * habilitadas; el resto muestra "Próximamente" con el mismo idioma visual que los tabs
- * deshabilitados de CompanySettingsHubPage.
+ * "Clientes", "Proveedores" (INITIAL-LOAD-SUPPLIERS-01), "Catálogo de Productos" (mismo
+ * ImportType.Items — rediseño "importación inteligente" de INITIAL-LOAD-ITEMS-01) y "Stock
+ * Inicial" (INITIAL-LOAD-INITIAL-STOCK-01) están habilitadas; el resto muestra "Próximamente"
+ * con el mismo idioma visual que los tabs deshabilitados de CompanySettingsHubPage.
  */
 export function InitialLoadHubPage() {
   const navigate = useNavigate();
