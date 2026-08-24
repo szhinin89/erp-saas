@@ -39,7 +39,7 @@ export function ElectronicDocumentsDashboardCards({
 
   return (
     <>
-      <ZHGrid cols={3}>
+      <div className="edm-dashboard-primary">
         <ReportKpiCard
           label={t("electronicDocuments.monitor.dashboard.pending")}
           value={value(dashboard?.pending)}
@@ -61,16 +61,6 @@ export function ElectronicDocumentsDashboardCards({
           onClick={() => onFilterState("Authorized")}
           active={activeState === "Authorized"}
         />
-      </ZHGrid>
-
-      <ZHGrid cols={3}>
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.rejected")}
-          value={value(dashboard?.rejected)}
-          valueTone="danger"
-          onClick={() => onFilterState("Rejected")}
-          active={activeState === "Rejected"}
-        />
         <ReportKpiCard
           label={t("electronicDocuments.monitor.dashboard.error")}
           value={value(dashboard?.error)}
@@ -78,43 +68,67 @@ export function ElectronicDocumentsDashboardCards({
           onClick={() => onFilterState(ERROR_STATES)}
           active={activeState === ERROR_STATES}
         />
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.totalToday")}
-          value={value(dashboard?.totalToday)}
-          onClick={onFilterToday}
-          active={isTodayActive}
-        />
-      </ZHGrid>
+      </div>
 
-      <ZHGrid cols={3}>
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.authorizedToday")}
-          value={value(dashboard?.authorizedToday)}
-          valueTone="success"
-        />
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.errorsToday")}
-          value={value(dashboard?.errorsToday)}
-          valueTone="danger"
-        />
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.pendingRetries")}
-          value={value(dashboard?.pendingRetries)}
-        />
-      </ZHGrid>
-
-      <ZHGrid cols={3}>
-        <ReportKpiCard
-          label={t(
-            "electronicDocuments.monitor.dashboard.averageAuthorizationTime",
+      <section
+        className="edm-dashboard-secondary"
+        aria-label={t(
+          "electronicDocuments.monitor.dashboard.secondarySection",
+          "Detalle operativo",
+        )}
+      >
+        <div className="edm-dashboard-secondary__title zh-section-title">
+          {t(
+            "electronicDocuments.monitor.dashboard.secondarySection",
+            "Detalle operativo",
           )}
-          value={
-            loading || dashboard === null
-              ? "—"
-              : formatMinutes(dashboard.averageAuthorizationMinutes, naLabel)
-          }
-        />
-      </ZHGrid>
+        </div>
+        <ZHGrid cols={3}>
+          <ReportKpiCard
+            label={t("electronicDocuments.monitor.dashboard.rejected")}
+            value={value(dashboard?.rejected)}
+            valueTone="danger"
+            layout="horizontal"
+            onClick={() => onFilterState("Rejected")}
+            active={activeState === "Rejected"}
+          />
+          <ReportKpiCard
+            label={t("electronicDocuments.monitor.dashboard.totalToday")}
+            value={value(dashboard?.totalToday)}
+            layout="horizontal"
+            onClick={onFilterToday}
+            active={isTodayActive}
+          />
+          <ReportKpiCard
+            label={t("electronicDocuments.monitor.dashboard.authorizedToday")}
+            value={value(dashboard?.authorizedToday)}
+            valueTone="success"
+            layout="horizontal"
+          />
+          <ReportKpiCard
+            label={t("electronicDocuments.monitor.dashboard.errorsToday")}
+            value={value(dashboard?.errorsToday)}
+            valueTone="danger"
+            layout="horizontal"
+          />
+          <ReportKpiCard
+            label={t("electronicDocuments.monitor.dashboard.pendingRetries")}
+            value={value(dashboard?.pendingRetries)}
+            layout="horizontal"
+          />
+          <ReportKpiCard
+            label={t(
+              "electronicDocuments.monitor.dashboard.averageAuthorizationTime",
+            )}
+            value={
+              loading || dashboard === null
+                ? "—"
+                : formatMinutes(dashboard.averageAuthorizationMinutes, naLabel)
+            }
+            layout="horizontal"
+          />
+        </ZHGrid>
+      </section>
     </>
   );
 }
