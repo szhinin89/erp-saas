@@ -1,6 +1,6 @@
 ﻿import type { ItemDto } from "../../../types/items";
-import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 
 type Props = {
   items: ItemDto[];
@@ -122,32 +122,21 @@ export function ItemListTable({
               </td>
               <td>
                 <div className="prd-row-actions">
-                  <ZHBtn
-                    type="button"
+                  <ZHIconButton
+                    icon="visibility"
                     variant="ghost"
-                    size="sm"
                     onClick={() => onView(item)}
                     title={t("common.viewDetail", "Ver detalle")}
-                  >
-                    <span className="material-symbols-outlined zh-icon-lg">
-                      visibility
-                    </span>
-                  </ZHBtn>
-                  <ZHBtn
-                    type="button"
+                  />
+                  <ZHIconButton
+                    icon="edit"
                     variant="ghost"
-                    size="sm"
                     onClick={() => onEdit(item)}
                     title={t("common.edit", "Editar")}
-                  >
-                    <span className="material-symbols-outlined zh-icon-lg">
-                      edit
-                    </span>
-                  </ZHBtn>
-                  <ZHBtn
-                    type="button"
+                  />
+                  <ZHIconButton
+                    icon={item.isActive ? "toggle_on" : "toggle_off"}
                     variant="ghost"
-                    size="sm"
                     onClick={() => onToggle(item)}
                     disabled={toggling}
                     title={
@@ -155,11 +144,7 @@ export function ItemListTable({
                         ? t("common.disable", "Deshabilitar")
                         : t("common.enable", "Habilitar")
                     }
-                  >
-                    <span className="material-symbols-outlined zh-icon-lg">
-                      {item.isActive ? "toggle_on" : "toggle_off"}
-                    </span>
-                  </ZHBtn>
+                  />
                 </div>
               </td>
             </tr>
