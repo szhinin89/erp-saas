@@ -28,8 +28,10 @@ const BLOCKS: ImportBlock[] = [
   },
   {
     importType: "Items",
-    title: "Ítems",
-    description: "Importación del catálogo de ítems.",
+    title: "Catálogo de Productos",
+    description:
+      "Importa productos completos (categoría, marca, códigos de barra, PVP, proveedor) desde una sola plantilla Excel.",
+    route: "/initial-load/products",
   },
   {
     importType: "Prices",
@@ -45,9 +47,10 @@ const BLOCKS: ImportBlock[] = [
 
 /**
  * Hub de Carga Inicial (INITIAL-LOAD-ARCH-01) — grid de tarjetas, una por tipo de dato maestro.
- * "Clientes" y "Proveedores" (INITIAL-LOAD-SUPPLIERS-01) están habilitadas; el resto muestra
- * "Próximamente" con el mismo idioma visual que los tabs deshabilitados de
- * CompanySettingsHubPage.
+ * "Clientes", "Proveedores" (INITIAL-LOAD-SUPPLIERS-01) y "Catálogo de Productos" (mismo
+ * ImportType.Items — rediseño "importación inteligente" de INITIAL-LOAD-ITEMS-01) están
+ * habilitadas; el resto muestra "Próximamente" con el mismo idioma visual que los tabs
+ * deshabilitados de CompanySettingsHubPage.
  */
 export function InitialLoadHubPage() {
   const navigate = useNavigate();

@@ -35,6 +35,7 @@ public static class DependencyInjection
         // el motor genérico (entidades, casos de uso, controller) no cambia.
         services.AddScoped<IImportProcessor, CustomerImportProcessor>();
         services.AddScoped<IImportProcessor, SupplierImportProcessor>();
+        services.AddScoped<IImportProcessor, ItemImportProcessor>();
         services.AddScoped<IReadOnlyDictionary<ImportType, IImportProcessor>>(sp =>
             sp.GetServices<IImportProcessor>().ToDictionary(p => p.ImportType, p => p)
         );
