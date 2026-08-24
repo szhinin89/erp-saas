@@ -94,6 +94,14 @@ const OperationalPreferencesPage = lazyNamedPage(
     import("../modules/configuracion/operaciones/pages/OperationalPreferencesPage"),
   "OperationalPreferencesPage",
 );
+const InitialLoadHubPage = lazyNamedPage(
+  () => import("../modules/initialLoad/pages/InitialLoadHubPage"),
+  "InitialLoadHubPage",
+);
+const InitialLoadCustomersPage = lazyNamedPage(
+  () => import("../modules/initialLoad/pages/InitialLoadCustomersPage"),
+  "InitialLoadCustomersPage",
+);
 
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
@@ -174,6 +182,14 @@ export const mainRoutes = [
     key="settings-operations"
     path="/settings/operations"
     element={<OperationalPreferencesPage />}
+  />,
+
+  // -- Carga Inicial (INITIAL-LOAD-ARCH-01) ------------------------------
+  <Route key="initial-load-hub" path="/initial-load" element={<InitialLoadHubPage />} />,
+  <Route
+    key="initial-load-customers"
+    path="/initial-load/customers"
+    element={<InitialLoadCustomersPage />}
   />,
   <Route
     key="electronic-documents-monitor"

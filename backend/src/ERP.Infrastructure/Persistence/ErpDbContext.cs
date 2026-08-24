@@ -245,6 +245,16 @@ public class ErpDbContext : DbContext
     public DbSet<EmissionPoint> EmissionPoints => Set<EmissionPoint>();
     public DbSet<DocumentSequence> DocumentSequences => Set<DocumentSequence>();
 
+    // ── Carga Inicial (INITIAL-LOAD-ARCH-01) ────────────────────────────────
+    public DbSet<ERP.Domain.Modules.InitialLoad.Entities.ImportBatch> ImportBatches =>
+        Set<ERP.Domain.Modules.InitialLoad.Entities.ImportBatch>();
+    public DbSet<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchFile> ImportBatchFiles =>
+        Set<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchFile>();
+    public DbSet<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchRow> ImportBatchRows =>
+        Set<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchRow>();
+    public DbSet<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchIssue> ImportBatchIssues =>
+        Set<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchIssue>();
+
     // ── Items BC (canonical catalog) ──────────────────────────────────────
     public DbSet<ItemCategoryNode> ItemCategoryNodes => Set<ItemCategoryNode>();
     public DbSet<Item> Items => Set<Item>();

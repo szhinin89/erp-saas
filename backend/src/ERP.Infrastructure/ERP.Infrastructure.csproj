@@ -34,6 +34,7 @@
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
+        <PackageReference Include="ClosedXML" Version="0.104.2" />
     </ItemGroup>
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>

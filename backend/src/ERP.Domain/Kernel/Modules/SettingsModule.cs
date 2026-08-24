@@ -126,4 +126,17 @@ public static class SettingsModule
         Id = "a1000000-0000-4000-9000-000000000006"
     )]
     public const string Geography = "/settings/geography";
+
+    // INITIAL-LOAD-ARCH-01: registro de navegación separado del [AppFeature] del controller —
+    // el AppFeatureDiscoveryService sincroniza app_features (catálogo de permisos), pero la
+    // barra lateral (GET /api/v1/me/menu) se arma desde este KernelRegistry ([Module]/[NavItem]),
+    // un mecanismo distinto. Un item nuevo necesita ambos para aparecer en el menú real.
+    [NavItem(
+        "Carga Inicial",
+        Permission = InitialLoadPermissions.View,
+        LabelKey = "app.nav.item.settings.initialLoad",
+        SortOrder = 100,
+        Id = "3679c0d4-3482-42cb-91dc-c3a270aa0e26"
+    )]
+    public const string InitialLoad = "/initial-load";
 }

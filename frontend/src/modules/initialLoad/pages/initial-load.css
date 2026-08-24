@@ -1,0 +1,21 @@
+.il-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4, 16px);
+}
+
+@media (max-width: 900px) {
+  .il-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .il-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.il-card--disabled {
+  opacity: 0.6;
+}

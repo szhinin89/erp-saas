@@ -20,6 +20,7 @@ using ERP.Domain.Geography.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Menu.Interfaces;
 using ERP.Domain.Security.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -33,6 +34,9 @@ using ERP.Infrastructure.Persistence.Interceptors;
 using ERP.Infrastructure.Persistence.Outbox;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.MasterData;
+using ERP.Infrastructure.Persistence.Repositories.InitialLoad;
+using ERP.Infrastructure.InitialLoad;
+using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Seeding.InstallData;
@@ -137,6 +141,11 @@ public static class DependencyInjection
         services.AddScoped<IDashboardKpiReader, DashboardKpiReader>();
 
         // ── MasterData BC ─────────────────────────────────────────────────────
+        services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
+        services.AddScoped<IImportBatchRowRepository, ImportBatchRowRepository>();
+        services.AddScoped<IImportBatchIssueRepository, ImportBatchIssueRepository>();
+        services.AddScoped<ICustomerImportSheetReader, ClosedXmlCustomerImportSheetReader>();
+
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<ILegalEntityTypeRepository, LegalEntityTypeRepository>();
         services.AddScoped<IBusinessPartnerRoleRepository, BusinessPartnerRoleRepository>();
