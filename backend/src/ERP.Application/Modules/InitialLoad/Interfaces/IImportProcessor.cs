@@ -20,9 +20,16 @@ public interface IImportProcessor
 
     Task<ImportReadResult> ReadAsync(Stream fileContent, CancellationToken ct);
 
+    /// <summary>
+    /// <paramref name="autoCreateCatalogValues"/> viene de <c>ImportBatch.AutoCreateCatalogValues</c>
+    /// (INITIAL-LOAD-ITEMS-01 → Catálogo de Productos) — la mayoría de processors la ignora; solo
+    /// la usa un processor cuyo import type soporte crear entradas de catálogo faltantes en vez
+    /// de bloquear la fila.
+    /// </summary>
     Task<RowValidationResult> ValidateRowAsync(
         int rowNumber,
         IReadOnlyDictionary<string, string?> rawRow,
+        bool autoCreateCatalogValues,
         CancellationToken ct
     );
 

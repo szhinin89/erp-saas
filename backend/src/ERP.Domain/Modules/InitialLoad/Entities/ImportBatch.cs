@@ -23,6 +23,15 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
     public ImportStatus Status { get; private set; }
     public string? Label { get; private set; }
 
+    /// <summary>
+    /// Modo opcional (INITIAL-LOAD-ITEMS-01 → Catálogo de Productos): cuando está activo, un
+    /// <c>IImportProcessor</c> puede crear entradas de catálogo (p. ej. Categoría/Marca) que no
+    /// existan aún, en vez de bloquear la fila. Default false — bloquear es el comportamiento
+    /// seguro; el usuario debe optar explícitamente por la creación automática. Fijo desde
+    /// <see cref="Create"/>, no editable después.
+    /// </summary>
+    public bool AutoCreateCatalogValues { get; private set; }
+
     public int TotalRows { get; private set; }
     public int ValidRows { get; private set; }
     public int IssueRows { get; private set; }
@@ -43,7 +52,8 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
         Guid companyId,
         ImportType importType,
         Guid createdBy,
-        string? label = null
+        string? label = null,
+        bool autoCreateCatalogValues = false
     )
     {
         if (companyId == Guid.Empty)
@@ -56,6 +66,7 @@ public sealed class ImportBatch : AuditableEntity, ICompanyOperationalEntity
             ImportType = importType,
             Status = ImportStatus.Draft,
             Label = string.IsNullOrWhiteSpace(label) ? null : label.Trim(),
+            AutoCreateCatalogValues = autoCreateCatalogValues,
         };
         batch.SetCreated(createdBy);
         return batch;

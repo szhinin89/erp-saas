@@ -57,6 +57,7 @@ public sealed class CustomerImportProcessor : IImportProcessor
     public async Task<RowValidationResult> ValidateRowAsync(
         int rowNumber,
         IReadOnlyDictionary<string, string?> rawRow,
+        bool autoCreateCatalogValues,
         CancellationToken ct
     )
     {

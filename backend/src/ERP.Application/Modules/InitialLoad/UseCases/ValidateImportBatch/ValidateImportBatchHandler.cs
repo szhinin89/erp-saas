@@ -122,6 +122,7 @@ public sealed class ValidateImportBatchHandler
             var validation = await processor.ValidateRowAsync(
                 row.RowNumber,
                 readResult.Rows[i],
+                batch.AutoCreateCatalogValues,
                 cancellationToken
             );
 

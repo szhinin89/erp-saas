@@ -18,6 +18,11 @@ public sealed class ImportBatchConfiguration : IEntityTypeConfiguration<ImportBa
         builder.Property(x => x.ImportType).HasColumnName("import_type").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").IsRequired();
         builder.Property(x => x.Label).HasColumnName("label").HasMaxLength(200);
+        builder
+            .Property(x => x.AutoCreateCatalogValues)
+            .HasColumnName("auto_create_catalog_values")
+            .IsRequired()
+            .HasDefaultValue(false);
 
         builder.Property(x => x.TotalRows).HasColumnName("total_rows").IsRequired();
         builder.Property(x => x.ValidRows).HasColumnName("valid_rows").IsRequired();

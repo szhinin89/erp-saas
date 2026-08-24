@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.DTOs;
+using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
@@ -8,19 +9,27 @@ using MediatR;
 namespace ERP.Application.Modules.InitialLoad.UseCases.CreateImportBatch;
 
 /// <summary>
-/// Rechaza explícitamente cualquier <see cref="ImportType"/> distinto de
-/// <see cref="ImportType.Customers"/> — único punto server-side que mantiene "solo Clientes
-/// disponible" en esta entrega aunque el enum ya reserve valores para futuros import types.
+/// Solo permite crear un lote para un <see cref="ImportType"/> que tenga un
+/// <see cref="IImportProcessor"/> registrado — el motor no hardcodea qué tipos están
+/// disponibles (INITIAL-LOAD-SUPPLIERS-01: antes rechazaba explícitamente todo lo que no fuera
+/// Customers; agregar un import type nuevo ahora es solo registrar su processor, sin tocar este
+/// handler).
 /// </summary>
 public sealed class CreateImportBatchHandler
     : IRequestHandler<CreateImportBatchCommand, Result<ImportBatchDto>>
 {
     private readonly IImportBatchRepository _batchRepo;
+    private readonly IReadOnlyDictionary<ImportType, IImportProcessor> _processors;
     private readonly IOperationalContext _ctx;
 
-    public CreateImportBatchHandler(IImportBatchRepository batchRepo, IOperationalContext ctx)
+    public CreateImportBatchHandler(
+        IImportBatchRepository batchRepo,
+        IReadOnlyDictionary<ImportType, IImportProcessor> processors,
+        IOperationalContext ctx
+    )
     {
         _batchRepo = batchRepo;
+        _processors = processors;
         _ctx = ctx;
     }
 
@@ -29,7 +38,7 @@ public sealed class CreateImportBatchHandler
         CancellationToken cancellationToken
     )
     {
-        if (cmd.ImportType != ImportType.Customers)
+        if (!_processors.ContainsKey(cmd.ImportType))
             return Result<ImportBatchDto>.ValidationFailure(
                 "Este tipo de importación aún no está disponible."
             );
@@ -39,7 +48,8 @@ public sealed class CreateImportBatchHandler
             _ctx.CompanyId,
             cmd.ImportType,
             _ctx.UserId,
-            cmd.Label
+            cmd.Label,
+            cmd.AutoCreateCatalogValues
         );
 
         await _batchRepo.AddAsync(batch, cancellationToken);
