@@ -22,6 +22,13 @@
   gap: var(--space-3);
 }
 
+@media (max-width: 900px) {
+  .pur-reception-upload,
+  .pur-reception-kpis {
+    flex-basis: 100%;
+  }
+}
+
 @media (max-width: 600px) {
   .pur-reception-kpis {
     grid-template-columns: repeat(2, 1fr);
@@ -154,6 +161,7 @@
 .pur-process-value {
   display: flex;
   align-items: center;
+  gap: var(--space-1);
 }
 
 .pur-process-value--muted {

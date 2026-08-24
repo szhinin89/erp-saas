@@ -7,6 +7,7 @@ import {
 } from "../../../components/zh/ZHDataTable";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import {
   formatDate,
@@ -307,9 +308,16 @@ export function PurchaseReceptionPage() {
 
       {ctx.result && ctx.summary.skipped > 0 && (
         <div className="pg-section">
-          <Badge
+          <ZHPageNotice
             variant="neutral"
-            label={`Omitidas (no soportadas en esta fase): ${ctx.summary.skipped}`}
+            message={t(
+              "purchases.reception.skippedUnsupported.title",
+              "Comprobantes omitidos",
+            )}
+            detail={`${ctx.summary.skipped} ${t(
+              "purchases.reception.skippedUnsupported.detail",
+              "no se cargaron porque todavía no están soportados en esta fase.",
+            )}`}
           />
         </div>
       )}

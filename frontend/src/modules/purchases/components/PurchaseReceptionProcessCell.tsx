@@ -1,4 +1,5 @@
 import { Badge } from "../../../components/PageShell";
+import { ZHCompactNotice } from "../../../components/zh/notices";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 import {
@@ -24,6 +25,16 @@ export function PurchaseReceptionProcessCell({
   // El detalle/XML todavía no existe mientras el documento no salga de IMPORTED (recién llegado
   // del TXT, sin "Consultar XML" todavía).
   const hasDetail = row.documentStatus !== "IMPORTED";
+  const processingWarningNotice =
+    row.processingStatus === "PROCESSED_WITH_WARNINGS" && row.processingNotes
+      ? {
+          severity: "warning" as const,
+          intent: "status" as const,
+          source: "domain-status" as const,
+          label: t("purchases.reception.processing.warningNotice", "Aviso XML"),
+          detail: row.processingNotes,
+        }
+      : null;
 
   return (
     <div className="pur-process-cell">
@@ -45,17 +56,22 @@ export function PurchaseReceptionProcessCell({
       </span>
       <span className="pur-process-value">
         {hasDetail ? (
-          <Badge
-            variant={PROCESSING_STATUS_VARIANT[row.processingStatus]}
-            label={processingStatusLabel[row.processingStatus]}
-            title={
-              row.processingNotes ??
-              t(
-                "purchases.reception.processing.defaultNote",
-                "El detalle del XML se interpretó sin advertencias.",
-              )
-            }
-          />
+          <>
+            <Badge
+              variant={PROCESSING_STATUS_VARIANT[row.processingStatus]}
+              label={processingStatusLabel[row.processingStatus]}
+              title={
+                row.processingNotes ??
+                t(
+                  "purchases.reception.processing.defaultNote",
+                  "El detalle del XML se interpretó sin advertencias.",
+                )
+              }
+            />
+            {processingWarningNotice && (
+              <ZHCompactNotice notice={processingWarningNotice} />
+            )}
+          </>
         ) : (
           <span className="pur-process-value--muted">
             {t("purchases.reception.process.notAvailable", "—")}
