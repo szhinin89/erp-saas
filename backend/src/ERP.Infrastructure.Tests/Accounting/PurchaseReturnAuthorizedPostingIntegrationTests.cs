@@ -220,6 +220,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         // PurchaseReturnAuditHandler (Entity Audit, ADR-022) también escucha
         // PurchaseReturnAuthorizedEvent — mismo criterio que PurchaseInvoiceConfirmedPostingIntegrationTests.

@@ -233,7 +233,23 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        // SalesInvoiceCogsPostingTranslator (ACCOUNTING-INVENTORY-COGS-07) también escucha
+        // SalesInvoiceAuthorizedEvent — el escaneo de ensamblado de AddMediatR lo descubre igual
+        // que al Translator principal, así que requiere su propia cadena de dependencias
+        // registrada aquí (mismo criterio que PurchaseInvoiceAuditHandler en
+        // PurchaseInvoiceConfirmedPostingIntegrationTests). IDatabaseExceptionTranslator usa la
+        // implementación real (sin estado, sin dependencias) porque no hay excepción de unicidad
+        // que traducir en este flujo — no se necesita un doble de prueba.
+        services.AddScoped<
+            ERP.Application.Common.Persistence.IDatabaseExceptionTranslator,
+            ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Inventory.Interfaces.IStockRepository,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository
+        >();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SalesInvoiceAuthorizedPostingTranslator).Assembly

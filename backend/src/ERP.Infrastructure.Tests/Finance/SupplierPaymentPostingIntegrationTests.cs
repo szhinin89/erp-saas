@@ -138,6 +138,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(

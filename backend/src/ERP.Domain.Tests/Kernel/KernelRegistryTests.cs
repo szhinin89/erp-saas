@@ -471,4 +471,48 @@ public sealed class KernelRegistryTests
             }
         }
     }
+
+    [Fact]
+    public void Navigation_contains_accounting_journal_entries_chart_of_accounts_and_reports_as_independent_items()
+    {
+        // ACCOUNTING-MODULE-MENU-STRUCTURE-FIX-10D: reemplaza el ítem único "Contabilidad" (hub
+        // de tarjetas, ACCOUNTING-NAV-VISIBILITY-FIX-10C) por tres ítems planos independientes —
+        // mismo criterio que ProductsModule. El hub /accounting sigue existiendo como landing
+        // opcional, pero ya no es la única navegación del módulo: el menú expone las 3 pantallas
+        // reales directamente, cada una con su propia ruta ya implementada.
+        var navigation = KernelRegistry.Navigation;
+        var accountingPermission = ERP.Domain.Kernel.Permissions.AccountingPermissions.View;
+
+        var journalEntries = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/accounting/journal-entries"
+        );
+        journalEntries.Should().NotBeNull("Asientos contables debe estar en el menú principal");
+        journalEntries!.GroupCode.Should().Be("accounting");
+        journalEntries.PermissionKey.Should().Be(accountingPermission);
+
+        var chartOfAccounts = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/accounting/chart-of-accounts"
+        );
+        chartOfAccounts.Should().NotBeNull("Plan de cuentas debe estar en el menú principal");
+        chartOfAccounts!.GroupCode.Should().Be("accounting");
+        chartOfAccounts.PermissionKey.Should().Be(accountingPermission);
+
+        var reports = navigation.SingleOrDefault(n => n.RoutePath == "/accounting/reports");
+        reports.Should().NotBeNull("Reportes debe estar en el menú principal");
+        reports!.GroupCode.Should().Be("accounting");
+        reports.PermissionKey.Should().Be(accountingPermission);
+
+        // El hub de tarjetas ya no se registra como ítem de menú — sigue existiendo como
+        // página React (AccountingHubPage.tsx, alcanzable por URL directa), pero no aparece en
+        // el menú lateral: la navegación real ahora entra por los 3 ítems de arriba.
+        navigation.Should().NotContain(n => n.RoutePath == "/accounting");
+    }
+
+    [Fact]
+    public void Modules_contains_accounting_module()
+    {
+        var modules = KernelRegistry.Modules;
+
+        modules.Should().Contain(m => m.Code == "accounting");
+    }
 }

@@ -77,16 +77,44 @@ public sealed class SalesReturnPostingPipelineTests
         return rule;
     }
 
+    // ACCOUNTING-POSTING-RULES-AUDIT-03: PostingAccountGuard solo usa el Id pasado a
+    // GetByIdAsync como clave de búsqueda — nunca compara account.Id contra ese parámetro — así
+    // que una única cuenta "siempre postable" alcanza para esta suite (el foco es la integración
+    // Translator → PostingEngine, no la validación de cuentas, que tiene su propia suite dedicada).
+    private static Account PostableAccount() =>
+        Account.Create(
+            TenantId,
+            CompanyId,
+            ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.01"),
+            "Cuenta de prueba",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            CreatedBy
+        );
+
     private sealed class Mocks
     {
         public Mock<IJournalEntryRepository> JournalEntries { get; } = new();
         public Mock<IPostingRuleRepository> PostingRules { get; } = new();
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
         public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
+        public Mock<IAccountRepository> Accounts { get; } = new();
         public Mock<ILogger<SalesReturnAuthorizedPostingTranslator>> Logger { get; } = new();
 
         public Mocks()
         {
+            Accounts
+                .Setup(r =>
+                    r.GetByIdAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(PostableAccount());
             JournalEntries
                 .Setup(r =>
                     r.AcquireIdempotencyLockAsync(
@@ -117,7 +145,9 @@ public sealed class SalesReturnPostingPipelineTests
                 JournalEntries.Object,
                 PostingRules.Object,
                 AccountingPeriods.Object,
-                JournalEntrySequences.Object
+                JournalEntrySequences.Object,
+                Accounts.Object,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<PostingEngine>.Instance
             );
 
         public SalesReturnAuthorizedPostingTranslator BuildTranslator(IPostingEngine engine) =>

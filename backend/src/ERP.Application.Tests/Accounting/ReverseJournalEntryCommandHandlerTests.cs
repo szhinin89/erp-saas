@@ -127,11 +127,47 @@ public sealed class ReverseJournalEntryCommandHandlerTests
         original.Status.Should().Be(JournalEntryStatus.Reversed);
         original.ReverseReason.Should().Be("Error de digitación");
 
+        // ACCOUNTING-REVERSALS-05: el reverso debe invertir Débito/Crédito por línea y conservar
+        // la referencia bidireccional al original (ya probado a nivel de dominio en
+        // JournalEntryTests.cs — aquí se confirma que el handler expone ese mismo comportamiento).
+        captured.Lines.Should().Contain(l => l.AccountId == DebitAccountId && l.Credit == 100m && l.Debit == 0m);
+        captured.Lines.Should().Contain(l => l.AccountId == CreditAccountId && l.Debit == 100m && l.Credit == 0m);
+        captured.OriginalJournalEntryId.Should().Be(original.Id);
+        original.ReverseJournalEntryId.Should().Be(captured.Id);
+
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
             Times.Once
         );
         m.JournalEntries.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Asiento_de_otra_empresa_retorna_NotFound_y_nunca_se_reversa()
+    {
+        var period = OpenPeriod();
+        var original = PostedEntry(period.Id);
+        var m = new Mocks();
+        // GetByIdAsync está scoped por (TenantId, CompanyId) — un asiento de otra empresa/tenant
+        // nunca aparece bajo la clave (TenantId, CompanyId) de este test, así que el repositorio
+        // (fail-closed) devuelve null exactamente igual que "no existe".
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((JournalEntry?)null);
+
+        var handler = m.BuildHandler();
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(original.Id, "Intento cross-tenant"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        original.Status.Should().Be(JournalEntryStatus.Posted, because: "el asiento real de otra empresa nunca debe verse afectado");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]

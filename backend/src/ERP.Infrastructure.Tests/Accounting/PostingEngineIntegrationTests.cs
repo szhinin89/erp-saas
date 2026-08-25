@@ -175,7 +175,9 @@ public sealed class PostingEngineIntegrationTests : IAsyncLifetime
             new JournalEntryRepository(db),
             new PostingRuleRepository(db),
             new AccountingPeriodRepository(db),
-            new JournalEntrySequenceRepository(db)
+            new JournalEntrySequenceRepository(db),
+            new AccountRepository(db),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<PostingEngine>.Instance
         );
 
     [Fact]

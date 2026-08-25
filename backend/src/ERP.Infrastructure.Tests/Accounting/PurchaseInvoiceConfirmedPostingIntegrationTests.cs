@@ -197,6 +197,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         // PurchaseInvoiceAuditHandler (Entity Audit, ADR-022) también escucha
         // PurchaseInvoiceConfirmedEvent — el escaneo de ensamblado de AddMediatR lo descubre

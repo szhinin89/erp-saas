@@ -4,6 +4,7 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace ERP.Application.Tests.Accounting;
@@ -49,26 +50,47 @@ public sealed class PostingEngineTests
         return period;
     }
 
+    private static Account PostableAccount(string code = "1.1.01") =>
+        Account.Create(
+            TenantId,
+            CompanyId,
+            AccountCode.Create(code),
+            "Cuenta de prueba",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            CreatedBy
+        );
+
     // Fase 3.5.5: la regla ahora necesita PostingRuleLine para que JournalFactory genere líneas
     // reales — Débito GrandTotal (115) == Crédito Subtotal (100) + Crédito TaxVat (15), balanceado
-    // con los montos fijos de Fact().
-    private static PostingRule Rule()
+    // con los montos fijos de Fact(). ACCOUNTING-POSTING-RULES-AUDIT-03: las 3 cuentas se crean
+    // primero (Account.Create asigna su Id) y la regla referencia esos Id reales — PostingAccountGuard
+    // resuelve cada AccountId contra IAccountRepository, así que deben existir en los mocks.
+    private static (PostingRule Rule, Account Debit, Account CreditSubtotal, Account CreditVat) RuleWithAccounts()
     {
+        var debit = PostableAccount("1.1.01");
+        var creditSubtotal = PostableAccount("4.1.01");
+        var creditVat = PostableAccount("2.1.01");
+
         var rule = PostingRule.Create(
             TenantId,
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            Guid.NewGuid(),
-            Guid.NewGuid(),
+            null,
+            null,
             null,
             CreatedBy
         );
-        rule.AddLine(Guid.NewGuid(), AccountNature.Debit, PostingAmountKind.GrandTotal);
-        rule.AddLine(Guid.NewGuid(), AccountNature.Credit, PostingAmountKind.Subtotal);
-        rule.AddLine(Guid.NewGuid(), AccountNature.Credit, PostingAmountKind.TaxVat);
-        return rule;
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(creditSubtotal.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
+        rule.AddLine(creditVat.Id, AccountNature.Credit, PostingAmountKind.TaxVat);
+        return (rule, debit, creditSubtotal, creditVat);
     }
+
+    private static PostingRule Rule() => RuleWithAccounts().Rule;
 
     private sealed class Mocks
     {
@@ -76,6 +98,15 @@ public sealed class PostingEngineTests
         public Mock<IPostingRuleRepository> PostingRules { get; } = new();
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
         public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
+        public Mock<IAccountRepository> Accounts { get; } = new();
+
+        /// <summary>Registra una cuenta en el mock para que PostingAccountGuard la resuelva por Id.</summary>
+        public void RegisterAccount(Account account) =>
+            Accounts
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(account);
 
         public Mocks()
         {
@@ -115,7 +146,9 @@ public sealed class PostingEngineTests
                 JournalEntries.Object,
                 PostingRules.Object,
                 AccountingPeriods.Object,
-                JournalEntrySequences.Object
+                JournalEntrySequences.Object,
+                Accounts.Object,
+                NullLogger<PostingEngine>.Instance
             );
     }
 
@@ -206,6 +239,10 @@ public sealed class PostingEngineTests
     public async Task Hecho_nuevo_con_regla_y_periodo_abierto_crea_el_asiento()
     {
         var m = new Mocks();
+        var (rule, debit, creditSubtotal, creditVat) = RuleWithAccounts();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(creditSubtotal);
+        m.RegisterAccount(creditVat);
         m.JournalEntries.Setup(r =>
                 r.FindByKeyAsync(
                     TenantId,
@@ -226,7 +263,7 @@ public sealed class PostingEngineTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(Rule());
+            .ReturnsAsync(rule);
         m.AccountingPeriods.Setup(r =>
                 r.FindContainingDateAsync(
                     TenantId,
@@ -355,6 +392,125 @@ public sealed class PostingEngineTests
                 ),
             Times.Never
         );
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // ── ACCOUNTING-POSTING-RULES-AUDIT-03: PostingAccountGuard ─────────────────────────────
+
+    private void SetupUpToPeriod(Mocks m, PostingRule rule)
+    {
+        m.JournalEntries.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "InvoiceIssued",
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((JournalEntry?)null);
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "InvoiceIssued",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(rule);
+        m.AccountingPeriods.Setup(r =>
+                r.FindContainingDateAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(OpenPeriod());
+    }
+
+    [Fact]
+    public async Task Regla_con_cuenta_inactiva_retorna_POSTING_ACCOUNT_INVALID_y_no_persiste()
+    {
+        var m = new Mocks();
+        var (rule, debit, creditSubtotal, creditVat) = RuleWithAccounts();
+        debit.Disable(CreatedBy);
+        m.RegisterAccount(debit);
+        m.RegisterAccount(creditSubtotal);
+        m.RegisterAccount(creditVat);
+        SetupUpToPeriod(m, rule);
+
+        var engine = m.BuildEngine();
+        var result = await engine.PostAsync(Fact());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Regla_con_cuenta_AllowsPosting_false_retorna_POSTING_ACCOUNT_INVALID_y_no_persiste()
+    {
+        var m = new Mocks();
+        var debit = Account.Create(
+            TenantId,
+            CompanyId,
+            AccountCode.Create("1.1.02"),
+            "Cuenta resumen (no admite movimiento)",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: false,
+            CreatedBy
+        );
+        var creditSubtotal = PostableAccount("4.1.02");
+        var creditVat = PostableAccount("2.1.02");
+
+        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(creditSubtotal.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
+        rule.AddLine(creditVat.Id, AccountNature.Credit, PostingAmountKind.TaxVat);
+
+        m.RegisterAccount(debit);
+        m.RegisterAccount(creditSubtotal);
+        m.RegisterAccount(creditVat);
+        SetupUpToPeriod(m, rule);
+
+        var engine = m.BuildEngine();
+        var result = await engine.PostAsync(Fact());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Regla_con_cuenta_inexistente_retorna_POSTING_ACCOUNT_INVALID_y_no_persiste()
+    {
+        var m = new Mocks();
+        var (rule, debit, creditSubtotal, _) = RuleWithAccounts();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(creditSubtotal);
+        // La tercera cuenta (creditVat) nunca se registra en el mock — GetByIdAsync devuelve
+        // null por defecto (Moq sin Setup), simulando una cuenta borrada/de otra empresa.
+        SetupUpToPeriod(m, rule);
+
+        var engine = m.BuildEngine();
+        var result = await engine.PostAsync(Fact());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
             Times.Never

@@ -285,6 +285,35 @@ public sealed class PurchaseCreditNoteTests
         evt.PurchaseCreditNoteId.Should().Be(creditNote.Id);
         evt.TotalAmount.Should().Be(115m);
         evt.AppliedToPayableAmount.Should().Be(115m);
+        evt.IceAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public void Authorize_con_ICE_propaga_IceAmount_al_PurchaseCreditNoteAuthorizedEvent()
+    {
+        // ACCOUNTING-PURCHASE-CREDIT-NOTE-ICE-08B: IceAmount ya se calculaba en la entidad
+        // (RecalculateTotals, vía TaxSummaries) pero nunca llegaba al evento — este test confirma
+        // que ahora sí, con el mismo monto ya congelado, sin recalcular.
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(vatCode: "10", vatRate: 15m, iceCode: "3023", iceRate: 10m, taxableBase: 100m),
+            }
+        );
+        var totalDue = creditNote.TotalAmount;
+
+        creditNote.Authorize(totalDue, UserId, Guid.NewGuid(), "hash-authorize-ice-001");
+
+        var evt = creditNote
+            .DomainEvents.Should()
+            .ContainSingle(e => e is PurchaseCreditNoteAuthorizedEvent)
+            .Which.Should()
+            .BeOfType<PurchaseCreditNoteAuthorizedEvent>()
+            .Which;
+
+        evt.IceAmount.Should().Be(creditNote.IceAmount);
+        evt.IceAmount.Should().Be(10m); // 100 * 10% = 10, mismo cálculo que CreateDraft_con_TaxSummaryLines_calcula_IceAmount_con_SriTaxCalculator
+        evt.TotalAmount.Should().Be(creditNote.Subtotal + creditNote.IceAmount + creditNote.VatAmount);
     }
 
     [Fact]

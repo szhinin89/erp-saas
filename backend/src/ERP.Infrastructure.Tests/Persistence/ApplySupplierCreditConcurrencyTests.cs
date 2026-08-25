@@ -779,6 +779,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         // SupplierCreditAuditHandler (Entity Audit, ADR-022) también escucha
         // SupplierCreditAppliedEvent/SupplierCreditApplicationReversedEvent — el escaneo de
