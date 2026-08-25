@@ -816,6 +816,10 @@ public static class DependencyInjection
         services.AddScoped<MasterDataClassificationBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, SalesBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, CajaBootstrapStep>();
+        services.AddScoped<AccountingBootstrapStep>();
+        services.AddScoped<ICompanyBootstrapStep>(sp =>
+            sp.GetRequiredService<AccountingBootstrapStep>()
+        );
         services.AddScoped<ICompanyBootstrapStep, AccessBootstrapStep>();
 
         // ── Global bootstrap (una sola vez por instalación, cada arranque) ─────
@@ -825,6 +829,7 @@ public static class DependencyInjection
             ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator
         >();
         services.AddScoped<ERP.Infrastructure.Seeding.E2E.E2ESeedService>();
+        services.AddScoped<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
         services.AddScoped<
             ERP.Infrastructure.Seeding.Global.IGlobalBootstrapStep,
             ERP.Infrastructure.Seeding.Global.Steps.NavigationBootstrapStep

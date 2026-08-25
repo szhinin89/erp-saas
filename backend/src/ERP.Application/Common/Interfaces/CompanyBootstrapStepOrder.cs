@@ -30,6 +30,12 @@ public static class CompanyBootstrapStepOrder
     /// <summary>Caja Principal. Depende de Organization (sucursal) y ElectronicDocuments (punto de emisión por defecto).</summary>
     public const int Caja = 45;
 
+    /// <summary>
+    /// Plan de cuentas mínimo + período contable anual (ACCOUNTING-INITIAL-CHART-SEED-11). No
+    /// depende de ningún otro step — solo necesita TenantId/CompanyId.
+    /// </summary>
+    public const int Accounting = 47;
+
     /// <summary>Perfiles de acceso por defecto. Último — no depende de ningún otro step.</summary>
     public const int Access = 50;
 }

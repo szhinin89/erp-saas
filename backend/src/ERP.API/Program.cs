@@ -398,6 +398,18 @@ if (!app.Environment.IsProduction() && app.Configuration.GetValue("E2E:SeedEnabl
         .EnsureAsync();
 }
 
+// ACCOUNTING-INITIAL-CHART-SEED-11: backfilla Plan de Cuentas/AccountingPeriod mínimos para
+// companies activas creadas antes de que AccountingBootstrapStep existiera (p. ej. "ZH TECH" en
+// la base local) — nunca en Production, puramente aditivo/idempotente (ver doc comment del
+// servicio), sin bandera de configuración adicional porque no crea usuarios/tenants/companies.
+if (!app.Environment.IsProduction())
+{
+    using var accountingBackfillScope = app.Services.CreateScope();
+    await accountingBackfillScope
+        .ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>()
+        .EnsureAsync();
+}
+
 if (
     app.Environment.IsDevelopment()
     && app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false)
