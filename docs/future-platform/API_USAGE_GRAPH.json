@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-24T17:36:41.091Z",
+  "generatedAt": "2026-08-25T02:15:22.251Z",
   "summary": {
-    "total": 104,
-    "allowed": 104,
+    "total": 105,
+    "allowed": 105,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -55,6 +55,14 @@
     "/api/superadmin"
   ],
   "endpoints": [
+    {
+      "endpoint": "/api/v1/accounting",
+      "files": [
+        "frontend/src/modules/accounting/api/accountingApi.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
     {
       "endpoint": "/api/v1/accounting/accounts",
       "files": [
