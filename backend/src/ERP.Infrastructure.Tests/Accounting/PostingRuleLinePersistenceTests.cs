@@ -3,6 +3,7 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
+using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using MediatR;
@@ -185,6 +186,55 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
         remaining
             .Should()
             .Be(0, because: "ON DELETE CASCADE elimina las líneas junto con su regla padre");
+    }
+
+    // ── ACCOUNTING-POSTING-RULES-UI-FIX-12B ──────────────────────────────────────────────────
+    // GetByIdAsync/GetByCompanyAsync no traían .Include(x => x.Lines) — a diferencia del test de
+    // arriba (que sí incluye Lines manualmente contra el DbContext crudo), estos ejercitan el
+    // repositorio real que GetPostingRulesHandler/GetPostingRuleByIdHandler consumen, para que una
+    // regresión futura de este Include específico falle aquí y no solo se descubra en producción.
+
+    [Fact]
+    public async Task GetByCompanyAsync_incluye_las_lineas_de_cada_regla()
+    {
+        var rule = BuildRuleWithLines(out var debitAccountId, out var creditAccountId);
+
+        await using (var db = CreateContext())
+        {
+            db.PostingRules.Add(rule);
+            await db.SaveChangesAsync();
+        }
+
+        await using var verifyDb = CreateContext();
+        var repo = new PostingRuleRepository(verifyDb);
+        var rules = await repo.GetByCompanyAsync(_tenantId, _companyId);
+
+        var loaded = rules.Should().ContainSingle(r => r.Id == rule.Id).Subject;
+        loaded.Lines.Should().HaveCount(2);
+        loaded.Lines.Should().Contain(l => l.AccountId == debitAccountId);
+        loaded.Lines.Should().Contain(l => l.AccountId == creditAccountId);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_incluye_las_lineas_de_la_regla()
+    {
+        var rule = BuildRuleWithLines(out var debitAccountId, out var creditAccountId);
+
+        await using (var db = CreateContext())
+        {
+            db.PostingRules.Add(rule);
+            await db.SaveChangesAsync();
+        }
+
+        await using var verifyDb = CreateContext();
+        var repo = new PostingRuleRepository(verifyDb);
+        var loaded = await repo.GetByIdAsync(_tenantId, _companyId, rule.Id);
+
+        loaded.Should().NotBeNull();
+        var lines = loaded.Lines;
+        lines.Should().HaveCount(2);
+        lines.Should().Contain(l => l.AccountId == debitAccountId);
+        lines.Should().Contain(l => l.AccountId == creditAccountId);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

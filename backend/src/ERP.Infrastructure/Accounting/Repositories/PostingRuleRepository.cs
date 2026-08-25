@@ -17,12 +17,21 @@ public sealed class PostingRuleRepository : IPostingRuleRepository
     private IQueryable<PostingRule> Scoped(Guid tenantId, Guid companyId) =>
         _context.PostingRules.Where(x => x.TenantId == tenantId && x.CompanyId == companyId);
 
+    // ACCOUNTING-POSTING-RULES-UI-FIX-12B: GetByIdAsync/GetByCompanyAsync no traían
+    // .Include(x => x.Lines) — mismo motivo ya documentado en FindByKeyAsync más abajo (PostingRule
+    // no usa lazy loading, sealed, sin navegación virtual), pero nadie lo había notado porque hasta
+    // ACCOUNTING-POSTING-RULES-UI-12 ningún consumidor real de estos dos métodos leía Lines (los
+    // handlers de administración solo tocaban DebitAccountId/CreditAccountId legacy). La pantalla
+    // de Reglas contables sí depende de Lines — sin este fix, GetPostingRulesQuery devolvía las 7
+    // reglas con `lines: []` cada una (activas, con SourceModule/FactType correctos), así que la
+    // pantalla no tenía nada real que mostrar en Debe/Haber aunque los 21/63 registros ya existían
+    // en `posting_rules`/`posting_rule_lines`.
     public Task<PostingRule?> GetByIdAsync(
         Guid tenantId,
         Guid companyId,
         Guid id,
         CancellationToken ct = default
-    ) => Scoped(tenantId, companyId).FirstOrDefaultAsync(x => x.Id == id, ct);
+    ) => Scoped(tenantId, companyId).Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<PostingRule>> GetByCompanyAsync(
         Guid tenantId,
@@ -30,6 +39,7 @@ public sealed class PostingRuleRepository : IPostingRuleRepository
         CancellationToken ct = default
     ) =>
         await Scoped(tenantId, companyId)
+            .Include(x => x.Lines)
             .OrderBy(x => x.SourceModule)
             .ThenBy(x => x.FactType)
             .ToListAsync(ct);
