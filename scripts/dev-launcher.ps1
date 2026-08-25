@@ -324,17 +324,22 @@ function Invoke-Clean {
             -ErrorAction SilentlyContinue |
             ForEach-Object {
 
+                # $_ dentro de un bloque catch se rebinda al ErrorRecord capturado (sin
+                # propiedad FullName) — se captura la carpeta actual en $dirPath ANTES del
+                # try/catch para que el mensaje de error pueda seguir refiriéndose a ella.
+                $dirPath = $_.FullName
+
                 try {
                     Remove-Item `
-                        $_.FullName `
+                        $dirPath `
                         -Force `
                         -Recurse `
                         -ErrorAction Stop
 
-                    Write-Ok "Eliminado $($_.FullName)"
+                    Write-Ok "Eliminado $dirPath"
                 }
                 catch {
-                    Write-Warn "No se pudo eliminar $($_.FullName)"
+                    Write-Warn "No se pudo eliminar $dirPath"
                 }
             }
     }
