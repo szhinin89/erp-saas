@@ -1,0 +1,430 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PageShell, Badge } from "../../../components/PageShell";
+import { ZHCard } from "../../../components/zh/ZHCard";
+import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
+import { message } from "../../../lib/messages";
+import { formatApiRequestError } from "../../lib/apiError";
+import { applyServerErrors } from "../../lib/validationErrors";
+import { accountingApi, type AccountDto } from "../api/accountingApi";
+import {
+  ACCOUNT_NATURE_OPTIONS,
+  ACCOUNT_TYPE_OPTIONS,
+  createAccountSchema,
+  editAccountSchema,
+  emptyCreateAccountForm,
+  type CreateAccountFormValues,
+  type EditAccountFormValues,
+} from "../schemas/accountSchema";
+
+import "../../../styles/shared/items-catalog.css";
+
+const ACCOUNT_TYPE_LABEL: Record<string, string> = Object.fromEntries(
+  ACCOUNT_TYPE_OPTIONS.map((o) => [o.value, o.label]),
+);
+const ACCOUNT_NATURE_LABEL: Record<string, string> = Object.fromEntries(
+  ACCOUNT_NATURE_OPTIONS.map((o) => [o.value, o.label]),
+);
+
+type Mode = "list" | "create" | "edit";
+
+/**
+ * Plan de Cuentas (ACCOUNTING-CHART-OF-ACCOUNTS-02). Auditoría de reutilización: revisadas
+ * `JournalEntriesPage.tsx`/`JournalEntryDetailPage.tsx` (mismo módulo, mismo patrón
+ * PageShell+ZHCard+ZHDataTable ya establecido para Contabilidad) y `FinancialDestinationsPage.tsx`
+ * (formulario RHF+Zod+ZHField/ZHGrid+applyServerErrors sobre una cuenta contable, catálogo
+ * comparable). Reutiliza PageShell/ZHCard/ZHBtn/ZHIconButton/ZHDataTable/Badge/ZHPageNotice/
+ * ZHField/ZHGrid/ZhTextInput/ZhSelect — sin componentes nuevos. Solo Create/Update/Enable/Disable:
+ * sin edición de Code/AccountType/Nature (clasificación inmutable tras crear, ver accountSchema.ts)
+ * y sin tocar el Posting Engine.
+ */
+export function ChartOfAccountsPage() {
+  const navigate = useNavigate();
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<Mode>("list");
+  const [editing, setEditing] = useState<AccountDto | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const createForm = useForm<CreateAccountFormValues>({
+    resolver: zodResolver(createAccountSchema),
+    defaultValues: emptyCreateAccountForm(),
+  });
+  const editForm = useForm<EditAccountFormValues>({
+    resolver: zodResolver(editAccountSchema),
+    defaultValues: { name: "", parentAccountId: "", allowsPosting: true },
+  });
+
+  const fetchAccounts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await accountingApi.listAccounts();
+      setAccounts(list);
+    } catch (err: unknown) {
+      message.error(formatApiRequestError(err, { generic: "No se pudo cargar el Plan de Cuentas." }));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchAccounts();
+  }, [fetchAccounts]);
+
+  const sortedAccounts = useMemo(
+    () => [...accounts].sort((a, b) => a.code.localeCompare(b.code)),
+    [accounts],
+  );
+
+  const filteredAccounts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return sortedAccounts.filter((a) => {
+      if (typeFilter && a.accountType !== typeFilter) return false;
+      if (statusFilter === "active" && !a.isActive) return false;
+      if (statusFilter === "inactive" && a.isActive) return false;
+      if (term && !a.code.toLowerCase().includes(term) && !a.name.toLowerCase().includes(term))
+        return false;
+      return true;
+    });
+  }, [sortedAccounts, typeFilter, statusFilter, search]);
+
+  const openCreate = () => {
+    setEditing(null);
+    createForm.reset(emptyCreateAccountForm());
+    setSaveError("");
+    setMode("create");
+  };
+
+  const openEdit = (a: AccountDto) => {
+    setEditing(a);
+    editForm.reset({
+      name: a.name,
+      parentAccountId: a.parentAccountId ?? "",
+      allowsPosting: a.allowsPosting,
+    });
+    setSaveError("");
+    setMode("edit");
+  };
+
+  const handleCancel = () => {
+    setEditing(null);
+    setSaveError("");
+    setMode("list");
+  };
+
+  const onCreateValid = createForm.handleSubmit(async (values) => {
+    setSaveError("");
+    setSaving(true);
+    try {
+      await accountingApi.createAccount({
+        code: values.code,
+        name: values.name,
+        parentAccountId: values.parentAccountId ? values.parentAccountId : null,
+        accountType: values.accountType,
+        nature: values.nature,
+        allowsPosting: values.allowsPosting,
+      });
+      message.success("Cuenta creada correctamente.");
+      setMode("list");
+      void fetchAccounts();
+    } catch (err: unknown) {
+      const applied = applyServerErrors(err, createForm.setError, (msg) => setSaveError(msg));
+      if (!applied) setSaveError(formatApiRequestError(err, { generic: "No se pudo crear la cuenta." }));
+    } finally {
+      setSaving(false);
+    }
+  });
+
+  const onEditValid = editForm.handleSubmit(async (values) => {
+    if (!editing) return;
+    setSaveError("");
+    setSaving(true);
+    try {
+      await accountingApi.updateAccount(editing.id, {
+        id: editing.id,
+        name: values.name,
+        parentAccountId: values.parentAccountId ? values.parentAccountId : null,
+        allowsPosting: values.allowsPosting,
+      });
+      message.success("Cuenta actualizada correctamente.");
+      setMode("list");
+      setEditing(null);
+      void fetchAccounts();
+    } catch (err: unknown) {
+      const applied = applyServerErrors(err, editForm.setError, (msg) => setSaveError(msg));
+      if (!applied)
+        setSaveError(formatApiRequestError(err, { generic: "No se pudo actualizar la cuenta." }));
+    } finally {
+      setSaving(false);
+    }
+  });
+
+  const handleToggleActive = async (a: AccountDto) => {
+    try {
+      if (a.isActive) await accountingApi.disableAccount(a.id);
+      else await accountingApi.enableAccount(a.id);
+      message.success(a.isActive ? "Cuenta desactivada." : "Cuenta activada.");
+      void fetchAccounts();
+    } catch (err: unknown) {
+      message.error(formatApiRequestError(err, { generic: "No se pudo cambiar el estado de la cuenta." }));
+    }
+  };
+
+  const columns: ZHDataTableColumn<AccountDto>[] = [
+    {
+      key: "code",
+      header: "Código",
+      render: (row) => <code className="prd-sku">{row.code}</code>,
+    },
+    {
+      key: "name",
+      header: "Nombre",
+      render: (row) => (
+        <span>
+          {"    ".repeat(row.level)}
+          {row.level > 0 ? "└ " : ""}
+          {row.name}
+        </span>
+      ),
+    },
+    {
+      key: "accountType",
+      header: "Tipo",
+      render: (row) => ACCOUNT_TYPE_LABEL[row.accountType] ?? row.accountType,
+    },
+    {
+      key: "nature",
+      header: "Naturaleza",
+      render: (row) => ACCOUNT_NATURE_LABEL[row.nature] ?? row.nature,
+    },
+    {
+      key: "level",
+      header: "Nivel",
+      align: "center",
+      render: (row) => row.level,
+    },
+    {
+      key: "allowsPosting",
+      header: "Permite movimiento",
+      align: "center",
+      render: (row) => (
+        <Badge label={row.allowsPosting ? "Sí" : "No"} variant={row.allowsPosting ? "green" : "gray"} />
+      ),
+    },
+    {
+      key: "isActive",
+      header: "Estado",
+      render: (row) => (
+        <Badge label={row.isActive ? "Activa" : "Inactiva"} variant={row.isActive ? "green" : "gray"} />
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (row) => (
+        <div className="prd-row-actions">
+          <ZHIconButton icon="edit" title="Editar" variant="ghost" onClick={() => openEdit(row)} />
+          <ZHIconButton
+            icon={row.isActive ? "toggle_on" : "toggle_off"}
+            title={row.isActive ? "Desactivar" : "Activar"}
+            variant="ghost"
+            onClick={() => void handleToggleActive(row)}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  const parentOptions = editing
+    ? sortedAccounts.filter((a) => a.id !== editing.id)
+    : sortedAccounts;
+
+  return (
+    <PageShell
+      kicker="Contabilidad"
+      title="Plan de cuentas"
+      subtitle="Cuentas contables de la empresa — clasificación, jerarquía y estado"
+      action={
+        mode === "list" ? (
+          <div className="zh-form-actions-row">
+            <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting")}>
+              Contabilidad
+            </ZHBtn>
+            <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/journal-entries")}>
+              Asientos contables
+            </ZHBtn>
+            <ZHBtn type="button" variant="primary" onClick={openCreate}>
+              <span className="material-symbols-outlined">add</span>
+              Nueva cuenta
+            </ZHBtn>
+          </div>
+        ) : undefined
+      }
+    >
+      {mode === "list" && (
+        <ZHCard
+          title="Listado"
+          actions={
+            <div className="zh-form-actions-row">
+              <ZhTextInput
+                placeholder="Buscar por código o nombre..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <ZhSelect value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <option value="">Todos los tipos</option>
+                {ACCOUNT_TYPE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </ZhSelect>
+              <ZhSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">Todos los estados</option>
+                <option value="active">Activas</option>
+                <option value="inactive">Inactivas</option>
+              </ZhSelect>
+              <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void fetchAccounts()} disabled={loading}>
+                Actualizar
+              </ZHBtn>
+            </div>
+          }
+        >
+          <ZHDataTable
+            columns={columns}
+            rows={filteredAccounts}
+            rowKey={(row) => row.id}
+            loading={loading}
+            emptyMessage="No hay cuentas registradas."
+          />
+        </ZHCard>
+      )}
+
+      {mode === "create" && (
+        <ZHCard title="Nueva cuenta">
+          {saveError && <ZHPageNotice variant="error" message={saveError} />}
+          <ZHGrid cols={2}>
+            <ZHField label="Código" required fieldError={createForm.formState.errors.code?.message}>
+              <ZhTextInput
+                className="zh-input--upper"
+                maxLength={30}
+                disabled={saving}
+                {...createForm.register("code")}
+              />
+            </ZHField>
+            <ZHField label="Nombre" required fieldError={createForm.formState.errors.name?.message}>
+              <ZhTextInput maxLength={150} disabled={saving} {...createForm.register("name")} />
+            </ZHField>
+            <ZHField
+              label="Tipo de cuenta"
+              required
+              fieldError={createForm.formState.errors.accountType?.message}
+            >
+              <ZhSelect disabled={saving} {...createForm.register("accountType")}>
+                {ACCOUNT_TYPE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </ZhSelect>
+            </ZHField>
+            <ZHField label="Naturaleza" required fieldError={createForm.formState.errors.nature?.message}>
+              <ZhSelect disabled={saving} {...createForm.register("nature")}>
+                {ACCOUNT_NATURE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </ZhSelect>
+            </ZHField>
+            <ZHField label="Cuenta padre" fieldError={createForm.formState.errors.parentAccountId?.message}>
+              <ZhSelect disabled={saving} {...createForm.register("parentAccountId")}>
+                <option value="">(cuenta raíz — sin padre)</option>
+                {sortedAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} — {a.name}
+                  </option>
+                ))}
+              </ZhSelect>
+            </ZHField>
+            <ZHField label="Permite movimiento">
+              <ZhSelect
+                disabled={saving}
+                {...createForm.register("allowsPosting", { setValueAs: (v) => v === "true" })}
+              >
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </ZhSelect>
+            </ZHField>
+          </ZHGrid>
+          <div className="prd-crud-actions">
+            <ZHBtn variant="primary" size="md" onClick={() => void onCreateValid()} disabled={saving}>
+              {saving ? "Guardando..." : "Crear"}
+            </ZHBtn>
+            <ZHBtn variant="ghost" size="md" onClick={handleCancel}>
+              Cancelar
+            </ZHBtn>
+          </div>
+        </ZHCard>
+      )}
+
+      {mode === "edit" && editing && (
+        <ZHCard title={`Editar cuenta — ${editing.code}`}>
+          {saveError && <ZHPageNotice variant="error" message={saveError} />}
+          <ZHGrid cols={2}>
+            <ZHField label="Código" readOnly>
+              <ZhTextInput className="zh-input--upper" value={editing.code} disabled />
+            </ZHField>
+            <ZHField label="Tipo" readOnly>
+              <ZhTextInput value={ACCOUNT_TYPE_LABEL[editing.accountType] ?? editing.accountType} disabled />
+            </ZHField>
+            <ZHField label="Naturaleza" readOnly>
+              <ZhTextInput value={ACCOUNT_NATURE_LABEL[editing.nature] ?? editing.nature} disabled />
+            </ZHField>
+            <ZHField label="Nombre" required fieldError={editForm.formState.errors.name?.message}>
+              <ZhTextInput maxLength={150} disabled={saving} {...editForm.register("name")} />
+            </ZHField>
+            <ZHField label="Cuenta padre" fieldError={editForm.formState.errors.parentAccountId?.message}>
+              <ZhSelect disabled={saving} {...editForm.register("parentAccountId")}>
+                <option value="">(cuenta raíz — sin padre)</option>
+                {parentOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} — {a.name}
+                  </option>
+                ))}
+              </ZhSelect>
+            </ZHField>
+            <ZHField label="Permite movimiento">
+              <ZhSelect
+                disabled={saving}
+                {...editForm.register("allowsPosting", { setValueAs: (v) => v === "true" })}
+              >
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </ZhSelect>
+            </ZHField>
+          </ZHGrid>
+          <div className="prd-crud-actions">
+            <ZHBtn variant="primary" size="md" onClick={() => void onEditValid()} disabled={saving}>
+              {saving ? "Guardando..." : "Actualizar"}
+            </ZHBtn>
+            <ZHBtn variant="ghost" size="md" onClick={handleCancel}>
+              Cancelar
+            </ZHBtn>
+          </div>
+        </ZHCard>
+      )}
+    </PageShell>
+  );
+}

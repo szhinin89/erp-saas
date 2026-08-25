@@ -29,6 +29,26 @@ const CreditTermsPage = lazyNamedPage(
   () => import("../modules/finance/pages/CreditTermsPage"),
   "CreditTermsPage",
 );
+const AccountingHubPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/AccountingHubPage"),
+  "AccountingHubPage",
+);
+const JournalEntriesPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/JournalEntriesPage"),
+  "JournalEntriesPage",
+);
+const JournalEntryDetailPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/JournalEntryDetailPage"),
+  "JournalEntryDetailPage",
+);
+const ChartOfAccountsPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/ChartOfAccountsPage"),
+  "ChartOfAccountsPage",
+);
+const AccountingReportsPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/AccountingReportsPage"),
+  "AccountingReportsPage",
+);
 const AccountsReceivablePage = lazyNamedPage(
   () => import("../modules/finance/pages/AccountsReceivablePage"),
   "AccountsReceivablePage",
@@ -259,6 +279,29 @@ export const catalogRoutes = [
     key="cash-registers"
     path="/cash/registers"
     element={<CashRegistersPage />}
+  />,
+
+  // -- Accounting -----------------------------------------------------------
+  <Route key="accounting-root" path="/accounting" element={<AccountingHubPage />} />,
+  <Route
+    key="accounting-journal-entries"
+    path="/accounting/journal-entries"
+    element={<JournalEntriesPage />}
+  />,
+  <Route
+    key="accounting-journal-entry-detail"
+    path="/accounting/journal-entries/:id"
+    element={<JournalEntryDetailPage />}
+  />,
+  <Route
+    key="accounting-chart-of-accounts"
+    path="/accounting/chart-of-accounts"
+    element={<ChartOfAccountsPage />}
+  />,
+  <Route
+    key="accounting-reports"
+    path="/accounting/reports"
+    element={<AccountingReportsPage />}
   />,
 
   // -- Finance ------------------------------------------------------------

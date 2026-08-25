@@ -60,7 +60,7 @@ const MENU_DESCRIPTION_BY_ROUTE_PREFIX: ReadonlyArray<readonly [string, string]>
   ["/purchases", "Facturas, recepción y proveedores"],
   ["/sales", "Facturación, clientes y cobranzas"],
   ["/finance", "Caja, pagos y cuentas por cobrar"],
-  ["/accounting", "Asientos, períodos y reglas contables"],
+  ["/accounting", "Asientos, plan de cuentas y reportes contables"],
   ["/logistica", "Sucursales, bodegas y transporte"],
   ["/settings", "Parámetros de empresa y sistema"],
   ["/configuracion", "Parámetros de empresa y sistema"],
