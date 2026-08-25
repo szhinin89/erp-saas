@@ -39,6 +39,10 @@ function statusBadge(status: string): { label: string; variant: "gray" | "green"
  * Listado de asientos contables (ACCOUNTING-LEDGER-VISIBILITY-01) — consume exclusivamente
  * `GET /api/v1/accounting/journal-entries`. Solo lectura: sin crear/editar/eliminar asientos
  * desde esta pantalla (el Posting Engine sigue siendo la única vía de escritura).
+ * ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: pantalla principal, accesible solo desde el menú
+ * (`AccountingModule.cs`) — sin botones cruzados hacia Plan de cuentas/Reportes (navegación
+ * duplicada del menú). El único link saliente es contextual: "Ver detalle" por fila, hacia
+ * `/accounting/journal-entries/:id`.
  */
 export function JournalEntriesPage() {
   const navigate = useNavigate();
@@ -159,19 +163,6 @@ export function JournalEntriesPage() {
       kicker="Contabilidad"
       title="Asientos contables"
       subtitle="Consulta de asientos generados por el motor de contabilización"
-      action={
-        <div className="zh-form-actions-row">
-          <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting")}>
-            Contabilidad
-          </ZHBtn>
-          <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/reports")}>
-            Reportes
-          </ZHBtn>
-          <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/chart-of-accounts")}>
-            Plan de cuentas
-          </ZHBtn>
-        </div>
-      }
     >
       <ZHCard
         title="Listado"

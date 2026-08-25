@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageShell, Badge } from "../../../components/PageShell";
@@ -42,10 +41,10 @@ type Mode = "list" | "create" | "edit";
  * comparable). Reutiliza PageShell/ZHCard/ZHBtn/ZHIconButton/ZHDataTable/Badge/ZHPageNotice/
  * ZHField/ZHGrid/ZhTextInput/ZhSelect — sin componentes nuevos. Solo Create/Update/Enable/Disable:
  * sin edición de Code/AccountType/Nature (clasificación inmutable tras crear, ver accountSchema.ts)
- * y sin tocar el Posting Engine.
+ * y sin tocar el Posting Engine. ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: pantalla principal,
+ * accesible solo desde el menú — sin botones cruzados hacia Asientos contables/Reportes.
  */
 export function ChartOfAccountsPage() {
-  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("list");
@@ -257,18 +256,10 @@ export function ChartOfAccountsPage() {
       subtitle="Cuentas contables de la empresa — clasificación, jerarquía y estado"
       action={
         mode === "list" ? (
-          <div className="zh-form-actions-row">
-            <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting")}>
-              Contabilidad
-            </ZHBtn>
-            <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/journal-entries")}>
-              Asientos contables
-            </ZHBtn>
-            <ZHBtn type="button" variant="primary" onClick={openCreate}>
-              <span className="material-symbols-outlined">add</span>
-              Nueva cuenta
-            </ZHBtn>
-          </div>
+          <ZHBtn type="button" variant="primary" onClick={openCreate}>
+            <span className="material-symbols-outlined">add</span>
+            Nueva cuenta
+          </ZHBtn>
         ) : undefined
       }
     >

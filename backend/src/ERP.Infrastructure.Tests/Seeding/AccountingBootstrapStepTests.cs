@@ -126,6 +126,121 @@ public sealed class AccountingBootstrapStepTests
         accounts.Should().Contain(a => a.Code.Value == "6.1.01.001" && a.Name == "Gastos administrativos");
     }
 
+    [Fact]
+    public async Task Primera_ejecucion_crea_7_posting_rules_con_al_menos_2_lineas_cada_una()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rules = await db
+            .PostingRules.Include(r => r.Lines)
+            .Where(r => r.CompanyId == _companyId)
+            .ToListAsync();
+
+        rules.Should().HaveCount(7);
+        rules.Should().OnlyContain(r => r.IsActive);
+        rules.Should().OnlyContain(r => r.Lines.Count >= 2);
+        rules
+            .Select(r => (r.SourceModule, r.FactType))
+            .Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    ("Sales", "InvoiceIssued"),
+                    ("Sales", "CostOfGoodsSold"),
+                    ("Sales", "CostOfGoodsSoldReversed"),
+                    ("Purchases", "InvoiceReceived"),
+                    ("Purchases", "PurchaseCreditNoteAuthorized"),
+                    ("Finance", "CollectionApplied"),
+                    ("Finance", "SupplierPaymentApplied"),
+                }
+            );
+        rules.Should()
+            .NotContain(r => r.SourceModule == "Purchases" && r.FactType == "PurchaseCreditNoteCancelled");
+    }
+
+    [Fact]
+    public async Task Cada_posting_rule_referencia_solo_cuentas_del_plan_sembrado()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var accountIds = (await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync())
+            .Select(a => a.Id)
+            .ToHashSet();
+        var rules = await db
+            .PostingRules.Include(r => r.Lines)
+            .Where(r => r.CompanyId == _companyId)
+            .ToListAsync();
+
+        rules.SelectMany(r => r.Lines).Should().OnlyContain(l => accountIds.Contains(l.AccountId));
+    }
+
+    [Fact]
+    public async Task Ejecutar_dos_veces_no_duplica_posting_rules()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        (await verifyDb.PostingRules.CountAsync(r => r.CompanyId == _companyId)).Should().Be(7);
+    }
+
+    [Fact]
+    public async Task No_toca_una_posting_rule_ya_editada_por_el_admin()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var rule = await db.PostingRules.SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+            );
+            rule.Disable(_actorId);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb
+            .PostingRules.Where(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+            )
+            .ToListAsync();
+        rules.Should()
+            .ContainSingle(because: "la regla ya existe (aunque deshabilitada) — el seed nunca re-crea ni reactiva una regla existente")
+            .Which.IsActive.Should()
+            .BeFalse();
+    }
+
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
     {
         public Guid TenantId => tenantId;

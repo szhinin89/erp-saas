@@ -23,13 +23,22 @@ namespace ERP.Domain.Kernel.Modules;
 // protege hoy los tres endpoints reales (journal-entries*/accounts*/reports*, ver
 // AccountingController/AccountingReportsController) — no se inventan permisos granulares
 // (accounting.journalEntries.view/etc.) sin una autorización de backend real detrás; inventarlos
-// habría sido un permiso hueco, sin ningún efecto de seguridad. El hub /accounting
-// (AccountingHubPage.tsx) NO se elimina — sigue existiendo como landing opcional (accesible por
-// URL directa o desde cualquiera de las 3 páginas vía su botón "Contabilidad"), pero deja de ser
-// la única forma de navegar el módulo: el menú ahora expone las 3 pantallas directamente. Sin
-// tocar Posting Engine, reportes, plan de cuentas, asientos, ni crear pantallas de Configuración
-// contable/Períodos contables (siguen sin CRUD real — no se agregan al menú, restricción
-// explícita del ticket).
+// habría sido un permiso hueco, sin ningún efecto de seguridad. Sin tocar Posting Engine,
+// reportes, plan de cuentas, asientos, ni crear pantallas de Configuración contable/Períodos
+// contables (siguen sin CRUD real en frontend — no se agregan al menú, restricción explícita del
+// ticket).
+//
+// ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: el hub /accounting (AccountingHubPage.tsx,
+// mencionado como landing opcional en el comentario original de 10D) SÍ se eliminó — duplicaba
+// la navegación del menú sin aportar nada que las 3 pantallas principales no dieran ya. La ruta
+// /accounting sigue existiendo solo como redirect técnico a /accounting/journal-entries (frontend,
+// catalogRoutes.tsx) — nunca como NavItem aquí.
+//
+// ACCOUNTING-NAV-ORPHAN-ROUTES-AUDIT-11D: auditado — no hay ninguna pantalla real de
+// Configuración contable/Reglas contables/Períodos contables en el frontend (accountingApi.ts no
+// consume posting-rules*/accounting-periods* en absoluto); esos endpoints de backend existen sin
+// UI, así que no califican como "pantalla real" para agregar al menú (regla 4/8 del ticket). Los
+// 3 NavItems de abajo siguen siendo la lista completa y correcta de pantallas principales.
 [Module("accounting", Icon = "📒", SortOrder = 46)]
 public static class AccountingModule
 {

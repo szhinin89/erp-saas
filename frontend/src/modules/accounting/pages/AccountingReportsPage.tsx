@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { PageShell } from "../../../components/PageShell";
-import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { GeneralJournalReportTab } from "./reports/GeneralJournalReportTab";
 import { GeneralLedgerReportTab } from "./reports/GeneralLedgerReportTab";
@@ -41,10 +39,10 @@ const TABS: ZHTab<ReportTabId>[] = [
  * Reutiliza PageShell/ZHTabBar/ZHCard/ZHFilterBar/ZHField/ZHBtn/ZhSelect/ZhDateInput/ZHDataTable/
  * ZHMoneyValue/ZHPageNotice/Badge — sin componentes nuevos. Solo lectura: los cinco reportes leen
  * exclusivamente JournalEntry/JournalEntryLine ya Posted, sin recalcular nada de Ventas/Compras/
- * Inventario/Finanzas.
+ * Inventario/Finanzas. ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: pantalla principal, accesible
+ * solo desde el menú — sin botones cruzados hacia Asientos contables/Plan de cuentas.
  */
 export function AccountingReportsPage() {
-  const navigate = useNavigate();
   const [tab, setTab] = useState<ReportTabId>("general-journal");
 
   return (
@@ -52,16 +50,6 @@ export function AccountingReportsPage() {
       kicker="Contabilidad"
       title="Reportes contables"
       subtitle="Libro Diario, Libro Mayor, Balance de Comprobación, Estado de Resultados y Balance General — solo lectura, a partir de asientos ya contabilizados"
-      action={
-        <div className="zh-form-actions-row">
-          <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting")}>
-            Contabilidad
-          </ZHBtn>
-          <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/journal-entries")}>
-            Ver asientos
-          </ZHBtn>
-        </div>
-      }
     >
       <ZHTabBar tabs={TABS} activeTab={tab} onChange={setTab} ariaLabel="Reportes contables" />
       {tab === "general-journal" && <GeneralJournalReportTab />}

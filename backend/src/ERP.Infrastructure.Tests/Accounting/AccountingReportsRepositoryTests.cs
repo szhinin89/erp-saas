@@ -354,6 +354,75 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         result.Value.AssetLines.Should().NotContain(l => l.AccountId == otherCash.Id, "Balance General está scoped a _companyId — nunca debe fugar datos de otra Company");
     }
 
+    // ── ACCOUNTING-REPORTS-QUERY-TRANSLATION-BUG-11E ──────────────────────
+    // GetPostedLinesByAccountAsync (Libro Mayor) proyectaba a JournalEntryLineReportRow (un
+    // `record`, no una entidad EF) y recién DESPUÉS aplicaba .OrderBy(r => r.EntryDate) — Npgsql/
+    // EF Core no puede traducir un OrderBy sobre un miembro de un objeto recién construido en la
+    // proyección anterior ("could not be translated"), y este caso NUNCA se detectó antes porque
+    // los tests de Libro Mayor existentes (GetAccountingReportsUseCasesTests) mockean
+    // IJournalEntryRepository por completo — nunca ejercitan la traducción SQL real. Este test usa
+    // Postgres real (Testcontainers) exactamente para cerrar ese hueco: si la query vuelve a
+    // quedar en una forma no traducible, este test falla con la misma excepción que vio el
+    // usuario en producción, en vez de pasar en silencio como el mock.
+    [Fact]
+    public async Task GetPostedLinesByAccountAsync_es_traducible_a_SQL_y_devuelve_movimientos_ordenados()
+    {
+        var first = BalancedEntry(new DateOnly(2026, 8, 5), 100m, _companyId);
+        first.AddLine(_cashAccountId, null, 100m, 0m);
+        first.AddLine(_salesAccountId, null, 0m, 100m);
+        first.Post(_createdBy, 1);
+
+        var second = BalancedEntry(new DateOnly(2026, 8, 10), 50m, _companyId);
+        second.AddLine(_cashAccountId, null, 50m, 0m);
+        second.AddLine(_salesAccountId, null, 0m, 50m);
+        second.Post(_createdBy, 2);
+
+        await using (var db = CreateContext())
+        {
+            db.JournalEntries.AddRange(first, second);
+            await db.SaveChangesAsync();
+        }
+
+        var repo = new JournalEntryRepository(CreateContext());
+
+        var rows = await repo.GetPostedLinesByAccountAsync(
+            _tenantId, _companyId, _cashAccountId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)
+        );
+
+        rows.Should().HaveCount(2);
+        rows[0].EntryNumber.Should().Be(1, "el resultado debe llegar ordenado por EntryDate/EntryNumber, no en orden de inserción");
+        rows[1].EntryNumber.Should().Be(2);
+
+        var handler = new GetGeneralLedgerReportHandler(
+            repo,
+            new AccountRepository(CreateContext()),
+            new NoOpSourceResolver(),
+            new FixedCurrentTenant(_tenantId),
+            new FixedCurrentCompany(_companyId)
+        );
+
+        var result = await handler.Handle(
+            new GetGeneralLedgerReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), AccountId: _cashAccountId),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Accounts.Should().ContainSingle().Which.Movements.Should().HaveCount(2);
+    }
+
+    private sealed class NoOpSourceResolver : ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceResolver
+    {
+        public Task<IReadOnlyDictionary<Guid, ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo>> ResolveManyAsync(
+            Guid tenantId,
+            Guid companyId,
+            IReadOnlyList<ERP.Application.Modules.Accounting.Queries.JournalEntrySourceRequest> requests,
+            CancellationToken ct = default
+        ) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo>>(
+                new Dictionary<Guid, ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo>()
+            );
+    }
+
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
     {
         public Guid TenantId => tenantId;

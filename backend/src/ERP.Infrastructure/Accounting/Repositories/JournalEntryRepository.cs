@@ -295,22 +295,28 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
                 && x.EntryDate >= fromDate
                 && x.EntryDate <= toDate
             )
+            // Proyecta a un tipo anónimo (entry, line) primero — EF Core no puede traducir un
+            // OrderBy aplicado DESPUÉS de proyectar al constructor de un record
+            // (JournalEntryLineReportRow es un `record`, no una entidad mapeada; ver el
+            // InvalidOperationException "could not be translated" que este fix corrige). Ordenar
+            // sobre las columnas reales de la entidad y recién al final construir el record.
             .SelectMany(
                 x => x.Lines.Where(l => l.AccountId == accountId),
-                (entry, line) => new JournalEntryLineReportRow(
-                    entry.Id,
-                    entry.EntryNumber,
-                    entry.EntryDate,
-                    entry.Description,
-                    entry.SourceModule,
-                    entry.SourceEventType,
-                    entry.SourceEventId,
-                    line.Id,
-                    line.Debit,
-                    line.Credit
-                )
+                (entry, line) => new { entry, line }
             )
-            .OrderBy(r => r.EntryDate)
-            .ThenBy(r => r.EntryNumber)
+            .OrderBy(x => x.entry.EntryDate)
+            .ThenBy(x => x.entry.EntryNumber)
+            .Select(x => new JournalEntryLineReportRow(
+                x.entry.Id,
+                x.entry.EntryNumber,
+                x.entry.EntryDate,
+                x.entry.Description,
+                x.entry.SourceModule,
+                x.entry.SourceEventType,
+                x.entry.SourceEventId,
+                x.line.Id,
+                x.line.Debit,
+                x.line.Credit
+            ))
             .ToListAsync(ct);
 }

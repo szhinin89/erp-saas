@@ -29,10 +29,6 @@ const CreditTermsPage = lazyNamedPage(
   () => import("../modules/finance/pages/CreditTermsPage"),
   "CreditTermsPage",
 );
-const AccountingHubPage = lazyNamedPage(
-  () => import("../modules/accounting/pages/AccountingHubPage"),
-  "AccountingHubPage",
-);
 const JournalEntriesPage = lazyNamedPage(
   () => import("../modules/accounting/pages/JournalEntriesPage"),
   "JournalEntriesPage",
@@ -282,7 +278,15 @@ export const catalogRoutes = [
   />,
 
   // -- Accounting -----------------------------------------------------------
-  <Route key="accounting-root" path="/accounting" element={<AccountingHubPage />} />,
+  // ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: /accounting ya no es una pantalla funcional
+  // propia (el hub de tarjetas se eliminó — duplicaba el menú) — solo redirige a la pantalla
+  // canónica principal del módulo. No aparece en el menú (AccountingModule.cs, backend, ya
+  // registra las 3 pantallas principales directamente, sin este ítem).
+  <Route
+    key="accounting-root"
+    path="/accounting"
+    element={<Navigate to="/accounting/journal-entries" replace />}
+  />,
   <Route
     key="accounting-journal-entries"
     path="/accounting/journal-entries"

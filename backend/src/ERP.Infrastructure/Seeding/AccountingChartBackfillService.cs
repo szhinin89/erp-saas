@@ -21,6 +21,15 @@ namespace ERP.Infrastructure.Seeding;
 /// <see cref="E2E.E2ESeedService"/> no requiere una bandera adicional porque es puramente
 /// aditivo (nunca crea usuarios/tenants/companies, solo completa Accounting de companies que ya
 /// existen), pero comparte el mismo gate de entorno por seguridad.
+///
+/// ACCOUNTING-POSTING-RULES-SEED-11B: el filtro original ("sin ninguna cuenta") dejaba afuera a
+/// companies que ya recibieron el backfill de cuentas en una corrida anterior de este mismo
+/// servicio (p. ej. "ZH TECH", backfillada en ACCOUNTING-INITIAL-CHART-SEED-11) — esas nunca
+/// volverían a pasar por <see cref="AccountingBootstrapStep"/> y por lo tanto nunca recibirían
+/// las <c>PostingRule</c> nuevas de esta fase. Se amplía a "sin cuentas O sin reglas de
+/// contabilización" — <see cref="AccountingBootstrapStep.ExecuteAsync"/> sigue siendo idempotente
+/// por bloque (cuentas/período/reglas), así que una company con cuentas completas pero sin reglas
+/// solo ejecuta el bloque de reglas, sin re-tocar cuentas/período ya sembrados.
 /// </summary>
 public sealed partial class AccountingChartBackfillService
 {
@@ -47,13 +56,19 @@ public sealed partial class AccountingChartBackfillService
         if (_environment.IsProduction())
             return;
 
-        var companiesWithoutChart = await _db
+        var companiesPendingBackfill = await _db
             .Companies.IgnoreQueryFilters()
-            .Where(c => c.IsActive && !_db.Accounts.Any(a => a.CompanyId == c.Id))
+            .Where(c =>
+                c.IsActive
+                && (
+                    !_db.Accounts.Any(a => a.CompanyId == c.Id)
+                    || !_db.PostingRules.Any(r => r.CompanyId == c.Id)
+                )
+            )
             .Select(c => new { c.Id, c.TenantId })
             .ToListAsync(cancellationToken);
 
-        if (companiesWithoutChart.Count == 0)
+        if (companiesPendingBackfill.Count == 0)
         {
             LogNoCompaniesToBackfill();
             return;
@@ -64,7 +79,7 @@ public sealed partial class AccountingChartBackfillService
         // bootstrap de una company nueva.
         var systemActorId = Guid.NewGuid();
 
-        foreach (var company in companiesWithoutChart)
+        foreach (var company in companiesPendingBackfill)
         {
             using var _ = JobExecutionContext.Begin(company.TenantId, company.Id);
             await _accountingBootstrapStep.ExecuteAsync(
@@ -83,7 +98,7 @@ public sealed partial class AccountingChartBackfillService
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Backfilled minimal chart of accounts + accounting period for company {CompanyId}."
+        Message = "Backfilled minimal Accounting configuration (chart of accounts/period/posting rules) for company {CompanyId}."
     )]
     private partial void LogCompanyBackfilled(Guid companyId);
 }

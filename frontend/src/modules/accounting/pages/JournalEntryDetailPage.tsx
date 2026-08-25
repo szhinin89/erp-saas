@@ -42,6 +42,8 @@ function InfoLabel({ children }: { children: ReactNode }) {
  * (`table table--compact table--neutral`, clases reales de `zh-ui.css`) en vez de `ZHDataTable`
  * porque necesita un `<tfoot>` de totales — `ZHDataTable` no expone ese slot; no es un raw-HTML
  * evitable, es la única forma de tener el pie de totales dentro de la grilla.
+ * ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: auditada — ya solo tenía links contextuales
+ * legítimos (volver al listado, asiento reverso relacionado, documento origen), sin cambios.
  */
 export function JournalEntryDetailPage() {
   const { id } = useParams<{ id: string }>();
