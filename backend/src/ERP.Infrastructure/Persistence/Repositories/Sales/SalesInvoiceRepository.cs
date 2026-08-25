@@ -92,6 +92,39 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
     public async Task<
         IReadOnlyDictionary<
             Guid,
+            (string InvoiceNumber, string CustomerName, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        if (ids.Count == 0)
+            return new Dictionary<Guid, (string, string, string, DateOnly)>();
+
+        var rows = await Scoped(tenantId)
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.InvoiceNumber,
+                CustomerName = x.Customer.Name,
+                x.Status,
+                x.IssueDate,
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (x.InvoiceNumber, x.CustomerName, x.Status.ToString(), x.IssueDate)
+        );
+    }
+
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
             (
                 string InvoiceNumber,
                 string CustomerName,

@@ -353,6 +353,27 @@ public static class DependencyInjection
             ERP.Application.Modules.Accounting.Posting.PostingEngine
         >();
 
+        // ACCOUNTING-SOURCE-TRACEABILITY-04: cada IJournalEntrySourceModuleResolver se registra
+        // por separado (Strategy) — JournalEntrySourceResolver los resuelve como IEnumerable<T> y
+        // despacha por SourceModule. Agregar un módulo nuevo (p.ej. Finance) es solo una línea
+        // más aquí, sin tocar el composite ni los query handlers de JournalEntry.
+        services.AddScoped<
+            ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceModuleResolver,
+            ERP.Application.Modules.Accounting.Queries.SalesJournalSourceResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceModuleResolver,
+            ERP.Application.Modules.Accounting.Queries.PurchaseJournalSourceResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceModuleResolver,
+            ERP.Application.Modules.Accounting.Queries.FinanceJournalSourceResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceResolver,
+            ERP.Application.Modules.Accounting.Queries.JournalEntrySourceResolver
+        >();
+
         services.AddScoped<
             ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository,
             ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments.ElectronicDocumentRepository

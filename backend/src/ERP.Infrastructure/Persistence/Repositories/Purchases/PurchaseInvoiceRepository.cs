@@ -66,6 +66,39 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             .ToDictionaryAsync(x => x.Id, x => x.SupplierName, ct);
     }
 
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> purchaseInvoiceIds,
+        CancellationToken ct = default
+    )
+    {
+        if (purchaseInvoiceIds.Count == 0)
+            return new Dictionary<Guid, (string, string, string, DateOnly)>();
+
+        var rows = await Scoped(tenantId)
+            .AsNoTracking()
+            .Where(x => purchaseInvoiceIds.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.InvoiceNumber,
+                x.SupplierName,
+                x.Status,
+                x.IssueDate,
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (x.InvoiceNumber, x.SupplierName, x.Status.ToString(), x.IssueDate)
+        );
+    }
+
     public async Task<(
         IReadOnlyList<PurchaseInvoice> Items,
         IReadOnlyDictionary<Guid, int> LineCounts,

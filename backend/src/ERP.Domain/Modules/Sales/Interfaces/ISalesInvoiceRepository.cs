@@ -54,6 +54,24 @@ public interface ISalesInvoiceRepository
     );
 
     /// <summary>
+    /// ACCOUNTING-SOURCE-TRACEABILITY-04: proyección liviana para resolver el origen documental
+    /// humano de un JournalEntry (número, cliente, estado, fecha) — mismo criterio que
+    /// <see cref="GetSummariesByIdsAsync"/> (consumidor externo al módulo, sin cargar el
+    /// agregado completo), agregada aparte para no romper ese contrato ya usado por el Monitor
+    /// de Documentos Electrónicos.
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string InvoiceNumber, string CustomerName, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Facturas emitidas en el rango de fechas indicado (inclusive), con líneas cargadas para
     /// que los totales calculados (Subtotal/TotalVat/TotalDiscount/GrandTotal) resuelvan
     /// correctamente incluso para facturas aún no autorizadas. Usado por el reporte básico de

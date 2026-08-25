@@ -1,7 +1,9 @@
 tools/architecture/architecture-report.json
 
-# QA engine generated reports (CI artifacts)
-reports/
+# QA engine generated reports (CI artifacts) — anchored to repo root: unanchored "reports/"
+# was also matching source directories named "Reports" anywhere in the tree (e.g.
+# backend/src/ERP.Application/Modules/Accounting/UseCases/Reports/), silently untracking them.
+/reports/
 
 # Build
 **/bin/

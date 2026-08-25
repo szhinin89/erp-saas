@@ -75,6 +75,23 @@ public interface IPurchaseInvoiceRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ACCOUNTING-SOURCE-TRACEABILITY-04: proyección liviana para resolver el origen documental
+    /// humano de un JournalEntry (número, proveedor, estado, fecha) — mismo criterio que
+    /// <see cref="GetSupplierNamesByIdsAsync"/> (consumidor externo al módulo, sin cargar el
+    /// agregado completo), agregada aparte para no romper ese contrato ya usado por CxP.
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> purchaseInvoiceIds,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default);
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,

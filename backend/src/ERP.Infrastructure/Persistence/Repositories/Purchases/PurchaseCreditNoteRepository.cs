@@ -58,6 +58,40 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             .Select(x => (Guid?)x.PurchaseInvoiceId)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
+            (Guid SupplierId, string CreditNoteNumber, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        if (ids.Count == 0)
+            return new Dictionary<Guid, (Guid, string, string, DateOnly)>();
+
+        var rows = await _db
+            .PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.SupplierId,
+                x.CreditNoteNumber,
+                x.Status,
+                x.IssueDate,
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (x.SupplierId, x.CreditNoteNumber, x.Status.ToString(), x.IssueDate)
+        );
+    }
+
     public Task<bool> ExistsByReceptionDocumentIdAsync(
         Guid tenantId,
         Guid receptionDocumentId,

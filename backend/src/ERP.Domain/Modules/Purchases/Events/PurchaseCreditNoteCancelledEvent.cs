@@ -3,9 +3,11 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Modules.Purchases.Events;
 
 /// <summary>
-/// Nota de crédito de compra (descuento/promoción) cancelada — mismo criterio de evento inerte que
-/// <see cref="PurchaseCreditNoteAuthorizedEvent"/> (diseño FLOW-READY-02C §4.3): sin <c>IAuditEvent</c>
-/// ni traductor contable en esta fase.
+/// Nota de crédito de compra (descuento/promoción) cancelada — mismo criterio de diseño que
+/// <see cref="PurchaseCreditNoteAuthorizedEvent"/> (FLOW-READY-02C §4.3): sin <c>IAuditEvent</c>.
+/// Desde ACCOUNTING-CREDIT-NOTES-POSTING-08, <c>PurchaseCreditNoteCancelledPostingTranslator</c>
+/// reversa el asiento original si <see cref="AppliedToPayableAmount"/> no es null (la NC llegó a
+/// autorizarse y contabilizarse); si es null (cancelada desde Draft), no hay nada que reversar.
 /// </summary>
 public sealed class PurchaseCreditNoteCancelledEvent : BaseDomainEvent
 {

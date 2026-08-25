@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting;
 
@@ -26,7 +27,9 @@ public sealed class PostingEngine : IPostingEngine
         IJournalEntryRepository journalEntryRepository,
         IPostingRuleRepository postingRuleRepository,
         IAccountingPeriodRepository accountingPeriodRepository,
-        IJournalEntrySequenceRepository journalEntrySequenceRepository
+        IJournalEntrySequenceRepository journalEntrySequenceRepository,
+        IAccountRepository accountRepository,
+        ILogger<PostingEngine> logger
     )
     {
         _postingRuleRepository = postingRuleRepository;
@@ -35,6 +38,7 @@ public sealed class PostingEngine : IPostingEngine
             new PostingRuleResolver(postingRuleRepository),
             new PostingPeriodResolver(accountingPeriodRepository),
             new PostingPeriodGuard(),
+            new PostingAccountGuard(accountRepository, logger),
             new JournalFactory(),
             new JournalValidator(),
             journalEntryRepository,

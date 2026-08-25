@@ -4,9 +4,12 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 namespace ERP.Application.Modules.Accounting.Posting;
 
 /// <summary>
-/// Orden obligatorio del pipeline (ADR-026 §8): Idempotency → PostingRuleResolver →
-/// PostingPeriodResolver → PostingPeriodGuard → JournalFactory → JournalValidator →
-/// ReserveNextNumberAsync → Post() → Persistencia. No se altera este orden.
+/// Orden obligatorio del pipeline (ADR-026 §8, ACCOUNTING-POSTING-RULES-AUDIT-03):
+/// Idempotency → PostingRuleResolver → PostingPeriodResolver → PostingPeriodGuard →
+/// PostingAccountGuard → JournalFactory → JournalValidator → ReserveNextNumberAsync → Post() →
+/// Persistencia. No se altera este orden. PostingAccountGuard corre después del período (chequeo
+/// más barato primero) y siempre antes de JournalFactory — ninguna cuenta inválida llega a
+/// producir una JournalEntryLine, ni siquiera en memoria.
 /// </summary>
 /// <remarks>
 /// El pipeline solo prepara el asiento (AddAsync deja el JournalEntry en staging en el
@@ -27,6 +30,7 @@ internal sealed class PostingPipeline
     private readonly PostingRuleResolver _ruleResolver;
     private readonly PostingPeriodResolver _periodResolver;
     private readonly PostingPeriodGuard _periodGuard;
+    private readonly PostingAccountGuard _accountGuard;
     private readonly JournalFactory _journalFactory;
     private readonly JournalValidator _journalValidator;
     private readonly IJournalEntryRepository _journalEntryRepository;
@@ -37,6 +41,7 @@ internal sealed class PostingPipeline
         PostingRuleResolver ruleResolver,
         PostingPeriodResolver periodResolver,
         PostingPeriodGuard periodGuard,
+        PostingAccountGuard accountGuard,
         JournalFactory journalFactory,
         JournalValidator journalValidator,
         IJournalEntryRepository journalEntryRepository,
@@ -47,6 +52,7 @@ internal sealed class PostingPipeline
         _ruleResolver = ruleResolver;
         _periodResolver = periodResolver;
         _periodGuard = periodGuard;
+        _accountGuard = accountGuard;
         _journalFactory = journalFactory;
         _journalValidator = journalValidator;
         _journalEntryRepository = journalEntryRepository;
@@ -82,7 +88,18 @@ internal sealed class PostingPipeline
                 guardResult.Code
             );
 
-        // Fase 3.5.5: JournalFactory ahora recibe también la PostingRule ya resuelta (2 líneas
+        var accountGuardResult = await _accountGuard.EnsureAccountsPostableAsync(
+            fact,
+            ruleResult.Value!,
+            ct
+        );
+        if (!accountGuardResult.IsSuccess)
+            return Result<PostingOutcomeDto>.ValidationFailure(
+                accountGuardResult.Error!,
+                accountGuardResult.Code
+            );
+
+        // Fase 3.5.5: JournalFactory ahora recibe también la PostingRule ya resuelta (líneas
         // arriba) para leer PostingRule.Lines y construir JournalEntryLine reales — el orden de
         // las etapas no cambia, solo se propaga un dato ya calculado a una etapa posterior.
         var entry = _journalFactory.Create(fact, ruleResult.Value!, guardResult.Value!);

@@ -24,6 +24,19 @@ public sealed record PostingRuleLineInput(
     PostingAmountKind AmountKind
 );
 
+/// <summary>
+/// ACCOUNTING-POSTING-RULES-AUDIT-03 — decisión explícita sobre la convivencia de
+/// <c>DebitAccountId</c>/<c>CreditAccountId</c> (legacy) con <c>Lines</c>: <b>Lines es la única
+/// fuente que <see cref="Posting.JournalFactory"/> lee para construir un asiento</b> —
+/// DebitAccountId/CreditAccountId nunca producen una <c>JournalEntryLine</c> (ver remarks de
+/// <see cref="Posting.JournalFactory"/>). Por eso <see cref="CreatePostingRuleCommand"/> exige
+/// <c>Lines.Count &gt;= 2</c> ("líneas efectivas") — una regla con solo los campos legacy
+/// poblados y sin <c>Lines</c> se guardaría pero jamás produciría un asiento (fallaría en
+/// <c>JournalValidator</c> con "menos de 2 líneas" recién cuando llegue el primer hecho real,
+/// un error tardío y evitable). Los campos legacy siguen aceptándose y validándose (existencia/
+/// misma Company/activa/AllowsPosting) por compatibilidad de contrato — nunca se eliminan en este
+/// ticket sin auditoría (ver entregable) — pero son puramente informativos en tiempo de ejecución.
+/// </summary>
 public sealed record CreatePostingRuleCommand(
     string SourceModule,
     string FactType,
@@ -33,6 +46,12 @@ public sealed record CreatePostingRuleCommand(
     IReadOnlyList<PostingRuleLineInput>? Lines = null
 ) : IRequest<Result<PostingRuleDto>>, ICompanyScopedRequest;
 
+/// <summary>
+/// No modifica <c>Lines</c> (sin consumidor todavía que edite líneas post-creación — fuera de
+/// alcance de ACCOUNTING-POSTING-RULES-AUDIT-03, que es auditoría/endurecimiento, no rediseño).
+/// Solo los campos legacy DebitAccountId/CreditAccountId se validan aquí (existencia/misma
+/// Company/activa/AllowsPosting) cuando se proveen — mismo criterio que Create.
+/// </summary>
 public sealed record UpdatePostingRuleCommand(
     Guid Id,
     Guid? DebitAccountId,
@@ -109,6 +128,7 @@ public sealed class CreatePostingRuleHandler
     : IRequestHandler<CreatePostingRuleCommand, Result<PostingRuleDto>>
 {
     private readonly IPostingRuleRepository _repo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -116,6 +136,7 @@ public sealed class CreatePostingRuleHandler
 
     public CreatePostingRuleHandler(
         IPostingRuleRepository repo,
+        IAccountRepository accountRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u,
@@ -123,6 +144,7 @@ public sealed class CreatePostingRuleHandler
     )
     {
         _repo = repo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
         _u = u;
@@ -151,6 +173,32 @@ public sealed class CreatePostingRuleHandler
                 $"Ya existe una regla de contabilización para '{cmd.SourceModule}'/'{cmd.FactType}' en esta empresa."
             );
 
+        // ACCOUNTING-POSTING-RULES-AUDIT-03: "líneas efectivas" — ver remarks de
+        // CreatePostingRuleCommand. Sin esto, una regla con solo DebitAccountId/CreditAccountId
+        // (legacy, nunca leídos por JournalFactory) se guardaría inservible.
+        if (cmd.Lines is null || cmd.Lines.Count < 2)
+            return Result<PostingRuleDto>.ValidationFailure(
+                "La regla necesita al menos 2 líneas (Lines) — es lo único que el Posting Engine "
+                    + "lee para construir un asiento; DebitAccountId/CreditAccountId son heredados "
+                    + "y no producen líneas de asiento."
+            );
+
+        var accountIds = cmd
+            .Lines.Select(l => l.AccountId)
+            .Concat(cmd.DebitAccountId is { } d ? new[] { d } : Array.Empty<Guid>())
+            .Concat(cmd.CreditAccountId is { } cr ? new[] { cr } : Array.Empty<Guid>())
+            .Distinct();
+
+        var accountError = await PostingRuleAccountValidation.ValidateAsync(
+            _accountRepo,
+            tenantId,
+            companyId,
+            accountIds,
+            ct
+        );
+        if (accountError is not null)
+            return Result<PostingRuleDto>.ValidationFailure(accountError);
+
         try
         {
             var rule = PostingRule.Create(
@@ -164,7 +212,7 @@ public sealed class CreatePostingRuleHandler
                 _u.UserId
             );
 
-            foreach (var line in cmd.Lines ?? Array.Empty<PostingRuleLineInput>())
+            foreach (var line in cmd.Lines)
                 rule.AddLine(line.AccountId, line.Nature, line.AmountKind);
 
             await _repo.AddAsync(rule, ct);
@@ -188,18 +236,21 @@ public sealed class UpdatePostingRuleHandler
     : IRequestHandler<UpdatePostingRuleCommand, Result<PostingRuleDto>>
 {
     private readonly IPostingRuleRepository _repo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public UpdatePostingRuleHandler(
         IPostingRuleRepository repo,
+        IAccountRepository accountRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
         _u = u;
@@ -210,14 +261,63 @@ public sealed class UpdatePostingRuleHandler
         CancellationToken ct
     )
     {
-        var rule = await _repo.GetByIdAsync(_t.TenantId, _c.CompanyId, cmd.Id, ct);
+        var tenantId = _t.TenantId;
+        var companyId = _c.CompanyId;
+
+        var rule = await _repo.GetByIdAsync(tenantId, companyId, cmd.Id, ct);
         if (rule is null)
             return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
+
+        var accountIds = (cmd.DebitAccountId is { } d ? new[] { d } : Array.Empty<Guid>())
+            .Concat(cmd.CreditAccountId is { } cr ? new[] { cr } : Array.Empty<Guid>())
+            .Distinct();
+
+        var accountError = await PostingRuleAccountValidation.ValidateAsync(
+            _accountRepo,
+            tenantId,
+            companyId,
+            accountIds,
+            ct
+        );
+        if (accountError is not null)
+            return Result<PostingRuleDto>.ValidationFailure(accountError);
 
         rule.UpdateMapping(cmd.DebitAccountId, cmd.CreditAccountId, cmd.TaxCode, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PostingRuleDto>.Success(Map.ToDto(rule));
+    }
+}
+
+/// <summary>
+/// ACCOUNTING-POSTING-RULES-AUDIT-03: validación de cuentas compartida por Create/Update — toda
+/// cuenta referenciada por una PostingRule (Lines o legacy DebitAccountId/CreditAccountId) debe
+/// existir, pertenecer a la misma Company/Tenant, estar activa y admitir movimiento
+/// (AllowsPosting). Misma regla que <see cref="Posting.PostingAccountGuard"/> aplica en tiempo de
+/// ejecución — esta es la validación de configuración (falla rápido al guardar en vez de recién
+/// cuando llegue el primer hecho contable real).
+/// </summary>
+file static class PostingRuleAccountValidation
+{
+    public static async Task<string?> ValidateAsync(
+        IAccountRepository accountRepo,
+        Guid tenantId,
+        Guid companyId,
+        IEnumerable<Guid> accountIds,
+        CancellationToken ct
+    )
+    {
+        foreach (var accountId in accountIds)
+        {
+            var account = await accountRepo.GetByIdAsync(tenantId, companyId, accountId, ct);
+            if (account is null)
+                return $"La cuenta '{accountId}' no existe en esta empresa.";
+            if (!account.IsActive)
+                return $"La cuenta '{account.Code.Value}' ({account.Name}) está inactiva y no puede usarse en una regla de contabilización.";
+            if (!account.AllowsPosting)
+                return $"La cuenta '{account.Code.Value}' ({account.Name}) no admite movimientos (AllowsPosting = false).";
+        }
+        return null;
     }
 }
 

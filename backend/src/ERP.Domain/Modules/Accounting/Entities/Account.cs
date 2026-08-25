@@ -98,4 +98,23 @@ public sealed class Account : AuditableEntity, ITenantScopedEntity, ICompanyOper
         Name = name.Trim();
         SetUpdated(updatedBy);
     }
+
+    /// <summary>
+    /// ACCOUNTING-CHART-OF-ACCOUNTS-02: reubica la cuenta en la jerarquía. Existencia del padre,
+    /// pertenencia a la misma Company y ausencia de ciclos son invariantes cross-aggregate — se
+    /// validan en Application antes de llamar este método (mismo criterio ya documentado en los
+    /// <c>&lt;remarks&gt;</c> de esta clase para <see cref="ParentAccountId"/>).
+    /// </summary>
+    public void UpdateParent(Guid? parentAccountId, Guid updatedBy)
+    {
+        ParentAccountId = parentAccountId;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>ACCOUNTING-CHART-OF-ACCOUNTS-02: habilita/deshabilita que esta cuenta reciba líneas de asiento.</summary>
+    public void SetAllowsPosting(bool allowsPosting, Guid updatedBy)
+    {
+        AllowsPosting = allowsPosting;
+        SetUpdated(updatedBy);
+    }
 }

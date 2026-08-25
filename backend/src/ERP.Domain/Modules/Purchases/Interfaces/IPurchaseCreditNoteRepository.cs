@@ -89,4 +89,23 @@ public interface IPurchaseCreditNoteRepository
         Guid? excludePurchaseCreditNoteId = null,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// ACCOUNTING-CREDIT-NOTES-POSTING-08: proyección liviana para resolver el origen documental
+    /// humano de un JournalEntry — mismo criterio que
+    /// <c>ISalesInvoiceRepository.GetJournalSourceSummariesByIdsAsync</c>/
+    /// <c>IPurchaseInvoiceRepository.GetJournalSourceSummariesByIdsAsync</c>. Sin Include de
+    /// líneas/resúmenes fiscales. <c>SupplierId</c> se resuelve a nombre en Application (mismo
+    /// repositorio de BusinessPartner ya usado por Finance), no aquí.
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (Guid SupplierId, string CreditNoteNumber, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
 }
