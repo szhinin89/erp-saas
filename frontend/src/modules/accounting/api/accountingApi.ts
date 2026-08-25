@@ -116,6 +116,36 @@ export interface JournalEntriesFilter {
   sourceModule?: string;
 }
 
+// ── DTOs (espejo exacto de PostingRuleDto/PostingRuleLineDto en ERP.Application — ACCOUNTING-POSTING-RULES-UI-12) ──
+
+export interface PostingRuleLineDto {
+  id: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  accountNature: string;
+  accountIsActive: boolean;
+  accountAllowsPosting: boolean;
+  /** Dirección (Debe/Haber) de ESTA línea — no confundir con accountNature (naturaleza propia de la cuenta). */
+  nature: string;
+  amountKind: string;
+  sortOrder: number;
+}
+
+export interface PostingRuleDto {
+  id: string;
+  sourceModule: string;
+  factType: string;
+  debitAccountId: string | null;
+  creditAccountId: string | null;
+  taxCode: string | null;
+  isActive: boolean;
+  lines: PostingRuleLineDto[];
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 // ── DTOs (espejo exacto de GeneralJournal/GeneralLedger/TrialBalance en ERP.Application — ACCOUNTING-REPORTS-09) ──
 
 export interface GeneralJournalLineDto {
@@ -238,6 +268,10 @@ export interface GetBalanceSheetReportResponse {
  * nunca recalcula, solo lee JournalEntry/JournalEntryLine ya contabilizados; desde
  * ACCOUNTING-FINANCIAL-STATEMENTS-10 el backend expone esas rutas vía
  * `AccountingReportsController` (split mecánico, misma ruta `api/v1/accounting/reports/*`).
+ * `listPostingRules` (ACCOUNTING-POSTING-RULES-UI-12) consume `GET posting-rules` — el endpoint
+ * ya admitía Create/Update/Enable/Disable (ACCOUNTING-POSTING-RULES-AUDIT-03), pero esta pantalla
+ * es deliberadamente solo lectura: revisión/auditoría de las reglas sembradas por
+ * ACCOUNTING-POSTING-RULES-SEED-11B, sin editor todavía.
  */
 export const accountingApi = {
   listAccounts: () => apiGet<AccountDto[]>(`${BASE}/accounts`),
@@ -256,6 +290,8 @@ export const accountingApi = {
   enableAccount: (id: string) => apiPatch<AccountDto>(`${BASE}/accounts/${id}/enable`, {}),
 
   disableAccount: (id: string) => apiPatch<AccountDto>(`${BASE}/accounts/${id}/disable`, {}),
+
+  listPostingRules: () => apiGet<PostingRuleDto[]>(`${BASE}/posting-rules`),
 
   listJournalEntries: (page = 1, pageSize = 20, filter: JournalEntriesFilter = {}) => {
     const params = new URLSearchParams();

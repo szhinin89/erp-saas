@@ -102,6 +102,7 @@
   "app.nav.group.accounting": "Accounting",
   "app.nav.item.accounting.journalEntries": "Journal Entries",
   "app.nav.item.accounting.chartOfAccounts": "Chart of Accounts",
+  "app.nav.item.accounting.postingRules": "Posting Rules",
   "app.nav.item.accounting.reports": "Reports",
   "app.nav.group.products": "Products and Services",
   "app.nav.group.sales": "Sales",

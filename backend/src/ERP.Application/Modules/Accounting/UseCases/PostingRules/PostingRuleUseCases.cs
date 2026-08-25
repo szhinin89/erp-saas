@@ -217,7 +217,8 @@ public sealed class CreatePostingRuleHandler
 
             await _repo.AddAsync(rule, ct);
             await _repo.SaveChangesAsync(ct);
-            return Result<PostingRuleDto>.Success(Map.ToDto(rule));
+            var accounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
+            return Result<PostingRuleDto>.Success(Map.ToDto(rule, accounts.ToDictionary(a => a.Id)));
         }
         catch (ArgumentException ex)
         {
@@ -285,7 +286,8 @@ public sealed class UpdatePostingRuleHandler
         rule.UpdateMapping(cmd.DebitAccountId, cmd.CreditAccountId, cmd.TaxCode, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
-        return Result<PostingRuleDto>.Success(Map.ToDto(rule));
+        var accounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
+        return Result<PostingRuleDto>.Success(Map.ToDto(rule, accounts.ToDictionary(a => a.Id)));
     }
 }
 
@@ -325,18 +327,21 @@ public sealed class EnablePostingRuleHandler
     : IRequestHandler<EnablePostingRuleCommand, Result<PostingRuleDto>>
 {
     private readonly IPostingRuleRepository _repo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public EnablePostingRuleHandler(
         IPostingRuleRepository repo,
+        IAccountRepository accountRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
         _u = u;
@@ -361,7 +366,8 @@ public sealed class EnablePostingRuleHandler
         }
 
         await _repo.SaveChangesAsync(ct);
-        return Result<PostingRuleDto>.Success(Map.ToDto(rule));
+        var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
+        return Result<PostingRuleDto>.Success(Map.ToDto(rule, accounts.ToDictionary(a => a.Id)));
     }
 }
 
@@ -369,18 +375,21 @@ public sealed class DisablePostingRuleHandler
     : IRequestHandler<DisablePostingRuleCommand, Result<PostingRuleDto>>
 {
     private readonly IPostingRuleRepository _repo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public DisablePostingRuleHandler(
         IPostingRuleRepository repo,
+        IAccountRepository accountRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
         _u = u;
@@ -405,7 +414,8 @@ public sealed class DisablePostingRuleHandler
         }
 
         await _repo.SaveChangesAsync(ct);
-        return Result<PostingRuleDto>.Success(Map.ToDto(rule));
+        var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
+        return Result<PostingRuleDto>.Success(Map.ToDto(rule, accounts.ToDictionary(a => a.Id)));
     }
 }
 
@@ -415,12 +425,19 @@ public sealed class GetPostingRulesHandler
     : IRequestHandler<GetPostingRulesQuery, Result<IReadOnlyList<PostingRuleDto>>>
 {
     private readonly IPostingRuleRepository _repo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
 
-    public GetPostingRulesHandler(IPostingRuleRepository repo, ICurrentTenant t, ICurrentCompany c)
+    public GetPostingRulesHandler(
+        IPostingRuleRepository repo,
+        IAccountRepository accountRepo,
+        ICurrentTenant t,
+        ICurrentCompany c
+    )
     {
         _repo = repo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
     }
@@ -431,7 +448,11 @@ public sealed class GetPostingRulesHandler
     )
     {
         var items = await _repo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
-        return Result<IReadOnlyList<PostingRuleDto>>.Success(items.Select(Map.ToDto).ToList());
+        var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
+        var accountsById = accounts.ToDictionary(a => a.Id);
+        return Result<IReadOnlyList<PostingRuleDto>>.Success(
+            items.Select(r => Map.ToDto(r, accountsById)).ToList()
+        );
     }
 }
 
@@ -439,16 +460,19 @@ public sealed class GetPostingRuleByIdHandler
     : IRequestHandler<GetPostingRuleByIdQuery, Result<PostingRuleDto>>
 {
     private readonly IPostingRuleRepository _repo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
 
     public GetPostingRuleByIdHandler(
         IPostingRuleRepository repo,
+        IAccountRepository accountRepo,
         ICurrentTenant t,
         ICurrentCompany c
     )
     {
         _repo = repo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
     }
@@ -459,17 +483,27 @@ public sealed class GetPostingRuleByIdHandler
     )
     {
         var rule = await _repo.GetByIdAsync(_t.TenantId, _c.CompanyId, q.Id, ct);
-        return rule is null
-            ? Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.")
-            : Result<PostingRuleDto>.Success(Map.ToDto(rule));
+        if (rule is null)
+            return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
+
+        var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
+        return Result<PostingRuleDto>.Success(Map.ToDto(rule, accounts.ToDictionary(a => a.Id)));
     }
 }
 
 // ── Mapping ─────────────────────────────────────────────────────────────
 
+/// <summary>
+/// ACCOUNTING-POSTING-RULES-UI-12: <paramref name="accountsById"/> se resuelve una sola vez por
+/// request (todas las cuentas de la Company, ya paginado por naturaleza — el Plan de Cuentas es
+/// siempre pequeño, mismo criterio que <c>JournalEntryLineDto</c>) — nunca N+1 por línea. Una
+/// línea cuya cuenta no aparece en el diccionario (borrado físico imposible por regla del
+/// proyecto, pero defensivo ante datos inconsistentes) cae a placeholders explícitos en vez de
+/// lanzar, para que la pantalla de auditoría pueda seguir mostrando el resto de la regla.
+/// </summary>
 file static class Map
 {
-    public static PostingRuleDto ToDto(PostingRule r) =>
+    public static PostingRuleDto ToDto(PostingRule r, IReadOnlyDictionary<Guid, Account> accountsById) =>
         new(
             r.Id,
             r.SourceModule,
@@ -478,15 +512,31 @@ file static class Map
             r.CreditAccountId,
             r.TaxCode,
             r.IsActive,
-            r.Lines.Select(l => new PostingRuleLineDto(
-                    l.Id,
-                    l.AccountId,
-                    l.Nature.ToString(),
-                    l.AmountKind.ToString(),
-                    l.SortOrder
-                ))
+            r.Lines.OrderBy(l => l.SortOrder)
+                .Select(l => ToLineDto(l, accountsById))
                 .ToList(),
             r.CreatedAt,
             r.UpdatedAt
         );
+
+    private static PostingRuleLineDto ToLineDto(
+        PostingRuleLine l,
+        IReadOnlyDictionary<Guid, Account> accountsById
+    )
+    {
+        accountsById.TryGetValue(l.AccountId, out var account);
+        return new PostingRuleLineDto(
+            l.Id,
+            l.AccountId,
+            account?.Code.Value ?? "—",
+            account?.Name ?? "Cuenta no encontrada",
+            account?.AccountType.ToString() ?? "—",
+            account?.Nature.ToString() ?? "—",
+            account?.IsActive ?? false,
+            account?.AllowsPosting ?? false,
+            l.Nature.ToString(),
+            l.AmountKind.ToString(),
+            l.SortOrder
+        );
+    }
 }

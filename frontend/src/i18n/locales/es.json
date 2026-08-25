@@ -106,6 +106,7 @@
   "app.nav.group.accounting": "Contabilidad",
   "app.nav.item.accounting.journalEntries": "Asientos contables",
   "app.nav.item.accounting.chartOfAccounts": "Plan de cuentas",
+  "app.nav.item.accounting.postingRules": "Reglas contables",
   "app.nav.item.accounting.reports": "Reportes",
   "app.nav.group.products": "Productos y servicios",
   "app.nav.group.sales": "Ventas",

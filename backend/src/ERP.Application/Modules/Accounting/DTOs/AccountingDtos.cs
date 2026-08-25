@@ -48,10 +48,28 @@ public sealed record PostingRuleDto(
     DateTime? UpdatedAt
 );
 
-/// <summary>Fase 5.6.2 — expone las líneas reales que consume JournalFactory (rule.Lines), a diferencia de los campos planos legacy DebitAccountId/CreditAccountId.</summary>
+/// <summary>
+/// Fase 5.6.2 — expone las líneas reales que consume JournalFactory (rule.Lines), a diferencia de
+/// los campos planos legacy DebitAccountId/CreditAccountId. <c>Nature</c> es la dirección
+/// (Debit/Credit) de ESTA línea dentro del asiento — no confundir con
+/// <c>AccountNature</c>, la naturaleza contable propia de la cuenta referenciada (mismo criterio
+/// de resolución que <see cref="JournalEntryLineDto"/>: Account* se resuelve en Application
+/// contra el Plan de Cuentas de la Company, nunca se desnormaliza en <c>PostingRuleLine</c>).
+/// ACCOUNTING-POSTING-RULES-UI-12: Account*/AccountIsActive/AccountAllowsPosting agregados para
+/// que la UI pueda mostrar, antes de emitir un documento real, si una línea referencia una cuenta
+/// que <c>PostingAccountGuard</c> rechazaría en tiempo de ejecución (inactiva o que no admite
+/// asientos) — sin este dato la única forma de descubrirlo era que el primer hecho contable real
+/// fallara con POSTING_ACCOUNT_INVALID.
+/// </summary>
 public sealed record PostingRuleLineDto(
     Guid Id,
     Guid AccountId,
+    string AccountCode,
+    string AccountName,
+    string AccountType,
+    string AccountNature,
+    bool AccountIsActive,
+    bool AccountAllowsPosting,
     string Nature,
     string AmountKind,
     short SortOrder

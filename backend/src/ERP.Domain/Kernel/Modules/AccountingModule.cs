@@ -37,8 +37,13 @@ namespace ERP.Domain.Kernel.Modules;
 // ACCOUNTING-NAV-ORPHAN-ROUTES-AUDIT-11D: auditado — no hay ninguna pantalla real de
 // Configuración contable/Reglas contables/Períodos contables en el frontend (accountingApi.ts no
 // consume posting-rules*/accounting-periods* en absoluto); esos endpoints de backend existen sin
-// UI, así que no califican como "pantalla real" para agregar al menú (regla 4/8 del ticket). Los
-// 3 NavItems de abajo siguen siendo la lista completa y correcta de pantallas principales.
+// UI, así que no calificaban como "pantalla real" para agregar al menú (regla 4/8 del ticket).
+//
+// ACCOUNTING-POSTING-RULES-UI-12: "Reglas contables" pasó a ser pantalla real de solo lectura
+// (PostingRulesPage.tsx, consume GET /api/v1/accounting/posting-rules) — deja de aplicar la
+// exclusión de 11D para este caso puntual; se agrega como 4to NavItem plano, mismo criterio que
+// los 3 anteriores (AccountingPermissions.View, sin permiso granular nuevo). Accounting
+// Periods/Configuración contable siguen sin UI real, así que siguen fuera del menú.
 [Module("accounting", Icon = "📒", SortOrder = 46)]
 public static class AccountingModule
 {
@@ -59,6 +64,15 @@ public static class AccountingModule
         Id = "ac000000-0000-4000-9000-000000000002"
     )]
     public const string ChartOfAccounts = "/accounting/chart-of-accounts";
+
+    [NavItem(
+        "Reglas contables",
+        Permission = AccountingPermissions.View,
+        LabelKey = "app.nav.item.accounting.postingRules",
+        SortOrder = 25,
+        Id = "ac000000-0000-4000-9000-000000000004"
+    )]
+    public const string PostingRules = "/accounting/posting-rules";
 
     [NavItem(
         "Reportes",

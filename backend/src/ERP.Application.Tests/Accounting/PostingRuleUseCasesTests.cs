@@ -59,14 +59,27 @@ public sealed class PostingRuleUseCasesTests
                     )
                 )
                 .ReturnsAsync((PostingRule?)null);
+            // ACCOUNTING-POSTING-RULES-UI-12: Create/Update/Enable/Disable ahora resuelven
+            // Account*/AccountIsActive/AccountAllowsPosting para el PostingRuleDto de respuesta
+            // (GetByCompanyAsync) — sin este default, ToDictionary sobre `null` lanza en cada
+            // handler que no registró explícitamente una cuenta. RegisterAccount agrega a la
+            // misma lista respaldada por _registeredAccounts.
+            Accounts
+                .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => _registeredAccounts.AsReadOnly());
         }
 
-        public void RegisterAccount(Account account) =>
+        private readonly List<Account> _registeredAccounts = new();
+
+        public void RegisterAccount(Account account)
+        {
             Accounts
                 .Setup(r =>
                     r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(account);
+            _registeredAccounts.Add(account);
+        }
 
         public CreatePostingRuleHandler BuildCreateHandler() =>
             new(
@@ -371,5 +384,105 @@ public sealed class PostingRuleUseCasesTests
         rule.DebitAccountId.Should().Be(newDebit.Id);
         rule.TaxCode.Should().Be("TAX1");
         m.PostingRules.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ── Get (ACCOUNTING-POSTING-RULES-UI-12) ──────────────────────────────────
+
+    [Fact]
+    public async Task GetPostingRules_resuelve_datos_de_cuenta_por_cada_linea()
+    {
+        var debit = PostableAccount("1.1.03.001");
+        var credit = PostableAccount("4.1.01.001");
+        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
+
+        var m = new Mocks();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(credit);
+        m.PostingRules
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { rule });
+
+        var handler = new GetPostingRulesHandler(
+            m.PostingRules.Object,
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+
+        var result = await handler.Handle(new GetPostingRulesQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        var dto = result.Value!.Single();
+        dto.Lines.Should().HaveCount(2);
+        dto.Lines.Should()
+            .Contain(l =>
+                l.AccountId == debit.Id
+                && l.AccountCode == "1.1.03.001"
+                && l.AccountType == "Asset"
+                && l.AccountNature == "Debit"
+                && l.AccountIsActive
+                && l.AccountAllowsPosting
+            );
+        dto.Lines.Should().Contain(l => l.AccountId == credit.Id && l.AccountCode == "4.1.01.001");
+    }
+
+    [Fact]
+    public async Task GetPostingRules_linea_con_cuenta_inactiva_refleja_AccountIsActive_false()
+    {
+        var debit = PostableAccount("1.1.03.001");
+        var credit = PostableAccount("4.1.01.001");
+        credit.Disable(CreatedBy);
+        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
+
+        var m = new Mocks();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(credit);
+        m.PostingRules
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { rule });
+
+        var handler = new GetPostingRulesHandler(
+            m.PostingRules.Object,
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+
+        var result = await handler.Handle(new GetPostingRulesQuery(), CancellationToken.None);
+
+        result.Value!.Single().Lines.Should().Contain(l => l.AccountId == credit.Id && !l.AccountIsActive);
+    }
+
+    [Fact]
+    public async Task GetPostingRuleById_resuelve_datos_de_cuenta()
+    {
+        var debit = PostableAccount("1.1.03.001");
+        var credit = PostableAccount("4.1.01.001");
+        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
+
+        var m = new Mocks();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(credit);
+        m.PostingRules
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+
+        var handler = new GetPostingRuleByIdHandler(
+            m.PostingRules.Object,
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+
+        var result = await handler.Handle(new GetPostingRuleByIdQuery(rule.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Lines.Should().Contain(l => l.AccountId == debit.Id && l.AccountCode == "1.1.03.001");
     }
 }

@@ -41,6 +41,10 @@ const ChartOfAccountsPage = lazyNamedPage(
   () => import("../modules/accounting/pages/ChartOfAccountsPage"),
   "ChartOfAccountsPage",
 );
+const PostingRulesPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/PostingRulesPage"),
+  "PostingRulesPage",
+);
 const AccountingReportsPage = lazyNamedPage(
   () => import("../modules/accounting/pages/AccountingReportsPage"),
   "AccountingReportsPage",
@@ -281,7 +285,8 @@ export const catalogRoutes = [
   // ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: /accounting ya no es una pantalla funcional
   // propia (el hub de tarjetas se eliminó — duplicaba el menú) — solo redirige a la pantalla
   // canónica principal del módulo. No aparece en el menú (AccountingModule.cs, backend, ya
-  // registra las 3 pantallas principales directamente, sin este ítem).
+  // registra las pantallas principales directamente, sin este ítem — 4 desde
+  // ACCOUNTING-POSTING-RULES-UI-12: Asientos/Plan de cuentas/Reglas contables/Reportes).
   <Route
     key="accounting-root"
     path="/accounting"
@@ -301,6 +306,11 @@ export const catalogRoutes = [
     key="accounting-chart-of-accounts"
     path="/accounting/chart-of-accounts"
     element={<ChartOfAccountsPage />}
+  />,
+  <Route
+    key="accounting-posting-rules"
+    path="/accounting/posting-rules"
+    element={<PostingRulesPage />}
   />,
   <Route
     key="accounting-reports"
