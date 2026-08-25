@@ -6,124 +6,168 @@ import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { useI18n } from "../../../i18n/i18n";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { accountingApi, type PostingRuleDto, type PostingRuleLineDto } from "../api/accountingApi";
+import {
+  accountNatureLabel,
+  accountTypeLabel,
+  amountKindLabel,
+  factTypeLabel,
+  lineDirectionLabel,
+  sourceModuleLabel,
+  type TFunction,
+} from "../labels/accountingLabels";
 
 import "../../../styles/shared/items-catalog.css";
-
-const SOURCE_MODULE_OPTIONS = [
-  { value: "", label: "Todos los módulos" },
-  { value: "Sales", label: "Ventas" },
-  { value: "Purchases", label: "Compras" },
-  { value: "Finance", label: "Finanzas" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Todos los estados" },
-  { value: "active", label: "Activa" },
-  { value: "inactive", label: "Inactiva" },
-];
 
 interface RuleProblem {
   label: string;
 }
 
-function findRuleProblems(rule: PostingRuleDto): RuleProblem[] {
+function findRuleProblems(rule: PostingRuleDto, t: TFunction): RuleProblem[] {
   const problems: RuleProblem[] = [];
-  if (rule.lines.length < 2) problems.push({ label: "Menos de 2 líneas — nunca produciría un asiento" });
+  if (rule.lines.length < 2) {
+    problems.push({ label: t("accounting.postingRules.problem.lessThanTwoLines") });
+  }
   const debitLines = rule.lines.filter((l) => l.nature === "Debit");
   const creditLines = rule.lines.filter((l) => l.nature === "Credit");
-  if (debitLines.length === 0) problems.push({ label: "Sin líneas en el Debe" });
-  if (creditLines.length === 0) problems.push({ label: "Sin líneas en el Haber" });
+  if (debitLines.length === 0) {
+    problems.push({ label: t("accounting.postingRules.problem.noDebitLines") });
+  }
+  if (creditLines.length === 0) {
+    problems.push({ label: t("accounting.postingRules.problem.noCreditLines") });
+  }
   const badAccounts = rule.lines.filter((l) => !l.accountIsActive || !l.accountAllowsPosting);
   for (const l of badAccounts) {
-    if (!l.accountIsActive)
-      problems.push({ label: `Cuenta ${l.accountCode} (${l.accountName}) está inactiva` });
-    if (!l.accountAllowsPosting)
-      problems.push({ label: `Cuenta ${l.accountCode} (${l.accountName}) no admite movimientos` });
+    if (!l.accountIsActive) {
+      problems.push({
+        label: t("accounting.postingRules.problem.inactiveAccount", {
+          code: l.accountCode,
+          name: l.accountName,
+        }),
+      });
+    }
+    if (!l.accountAllowsPosting) {
+      problems.push({
+        label: t("accounting.postingRules.problem.nonPostableAccount", {
+          code: l.accountCode,
+          name: l.accountName,
+        }),
+      });
+    }
   }
   return problems;
 }
 
-const LINE_COLUMNS: ZHDataTableColumn<PostingRuleLineDto>[] = [
-  {
-    key: "account",
-    header: "Cuenta",
-    render: (row) => (
-      <span>
-        <code className="prd-sku">{row.accountCode}</code> {row.accountName}
-      </span>
-    ),
-  },
-  { key: "accountType", header: "Tipo", render: (row) => row.accountType },
-  { key: "accountNature", header: "Naturaleza", render: (row) => row.accountNature },
-  { key: "amountKind", header: "AmountKind", render: (row) => row.amountKind },
-  {
-    key: "accountIsActive",
-    header: "Cuenta activa",
-    align: "center",
-    render: (row) => (
-      <Badge label={row.accountIsActive ? "Sí" : "No"} variant={row.accountIsActive ? "green" : "red"} />
-    ),
-  },
-  {
-    key: "accountAllowsPosting",
-    header: "Permite asiento",
-    align: "center",
-    render: (row) => (
-      <Badge
-        label={row.accountAllowsPosting ? "Sí" : "No"}
-        variant={row.accountAllowsPosting ? "green" : "red"}
-      />
-    ),
-  },
-];
+function createLineColumns(t: TFunction): ZHDataTableColumn<PostingRuleLineDto>[] {
+  return [
+    {
+      key: "account",
+      header: t("accounting.postingRules.column.account"),
+      render: (row) => (
+        <span>
+          <code className="prd-sku">{row.accountCode}</code> {row.accountName}
+        </span>
+      ),
+    },
+    {
+      key: "accountType",
+      header: t("accounting.postingRules.column.accountType"),
+      render: (row) => accountTypeLabel(t, row.accountType),
+    },
+    {
+      key: "accountNature",
+      header: t("accounting.postingRules.column.accountNature"),
+      render: (row) => accountNatureLabel(t, row.accountNature),
+    },
+    {
+      key: "amountKind",
+      header: t("accounting.postingRules.column.amountKind"),
+      render: (row) => amountKindLabel(t, row.amountKind),
+    },
+    {
+      key: "accountIsActive",
+      header: t("accounting.postingRules.column.accountIsActive"),
+      align: "center",
+      render: (row) => (
+        <Badge
+          label={row.accountIsActive ? t("common.yes") : t("common.no")}
+          variant={row.accountIsActive ? "green" : "red"}
+        />
+      ),
+    },
+    {
+      key: "accountAllowsPosting",
+      header: t("accounting.postingRules.column.accountAllowsPosting"),
+      align: "center",
+      render: (row) => (
+        <Badge
+          label={row.accountAllowsPosting ? t("common.yes") : t("common.no")}
+          variant={row.accountAllowsPosting ? "green" : "red"}
+        />
+      ),
+    },
+  ];
+}
 
-function PostingRuleCard({ rule }: { rule: PostingRuleDto }) {
-  const debitLines = rule.lines.filter((l) => l.nature === "Debit").sort((a, b) => a.sortOrder - b.sortOrder);
-  const creditLines = rule.lines.filter((l) => l.nature === "Credit").sort((a, b) => a.sortOrder - b.sortOrder);
-  const problems = findRuleProblems(rule);
+function PostingRuleCard({ rule, t }: { rule: PostingRuleDto; t: TFunction }) {
+  const debitLines = rule.lines
+    .filter((l) => l.nature === "Debit")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const creditLines = rule.lines
+    .filter((l) => l.nature === "Credit")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const problems = findRuleProblems(rule, t);
+  const lineColumns = createLineColumns(t);
 
   return (
     <ZHCard
       title={
         <span>
-          <strong>{rule.sourceModule}</strong> / {rule.factType}
+          <strong>{sourceModuleLabel(t, rule.sourceModule)}</strong> / {factTypeLabel(t, rule.factType)}
         </span>
       }
       actions={
         <div className="zh-form-actions-row">
-          <Badge label={rule.isActive ? "Activa" : "Inactiva"} variant={rule.isActive ? "green" : "gray"} />
-          <Badge label={`${rule.lines.length} líneas`} variant="blue" />
+          <Badge
+            label={
+              rule.isActive
+                ? t("accounting.postingRules.status.active")
+                : t("accounting.postingRules.status.inactive")
+            }
+            variant={rule.isActive ? "green" : "gray"}
+          />
+          <Badge label={t("accounting.postingRules.linesCount", { count: rule.lines.length })} variant="blue" />
         </div>
       }
     >
       {problems.length > 0 && (
         <ZHPageNotice
           variant="warning"
-          message="Esta regla tiene problemas que impedirían o distorsionarían el asiento generado"
+          message={t("accounting.postingRules.problem.message")}
           detail={problems.map((p) => p.label).join(" · ")}
         />
       )}
 
       <div className="zh-mb-16">
-        <h4>Debe</h4>
+        <h4>{lineDirectionLabel(t, "Debit")}</h4>
         <ZHDataTable
-          columns={LINE_COLUMNS}
+          columns={lineColumns}
           rows={debitLines}
           rowKey={(row) => row.id}
-          emptyMessage="Sin líneas en el Debe."
+          emptyMessage={t("accounting.postingRules.empty.debitLines")}
         />
       </div>
 
       <div>
-        <h4>Haber</h4>
+        <h4>{lineDirectionLabel(t, "Credit")}</h4>
         <ZHDataTable
-          columns={LINE_COLUMNS}
+          columns={lineColumns}
           rows={creditLines}
           rowKey={(row) => row.id}
-          emptyMessage="Sin líneas en el Haber."
+          emptyMessage={t("accounting.postingRules.empty.creditLines")}
         />
       </div>
     </ZHCard>
@@ -145,11 +189,31 @@ function PostingRuleCard({ rule }: { rule: PostingRuleDto }) {
  * ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C).
  */
 export function PostingRulesPage() {
+  const { t } = useI18n();
   const [rules, setRules] = useState<PostingRuleDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [sourceModule, setSourceModule] = useState("");
   const [factType, setFactType] = useState("");
   const [status, setStatus] = useState("");
+
+  const sourceModuleOptions = useMemo(
+    () => [
+      { value: "", label: t("accounting.postingRules.filter.allModules") },
+      { value: "Sales", label: sourceModuleLabel(t, "Sales") },
+      { value: "Purchases", label: sourceModuleLabel(t, "Purchases") },
+      { value: "Finance", label: sourceModuleLabel(t, "Finance") },
+    ],
+    [t],
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { value: "", label: t("accounting.postingRules.filter.allStatuses") },
+      { value: "active", label: t("accounting.postingRules.status.active") },
+      { value: "inactive", label: t("accounting.postingRules.status.inactive") },
+    ],
+    [t],
+  );
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -158,12 +222,12 @@ export function PostingRulesPage() {
       setRules(list);
     } catch (err: unknown) {
       message.error(
-        formatApiRequestError(err, { generic: "No se pudo cargar las reglas de contabilización." }),
+        formatApiRequestError(err, { generic: t("accounting.postingRules.error.load") }),
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void fetchRules();
@@ -172,8 +236,11 @@ export function PostingRulesPage() {
   const factTypeOptions = useMemo(() => {
     const scoped = sourceModule ? rules.filter((r) => r.sourceModule === sourceModule) : rules;
     const unique = Array.from(new Set(scoped.map((r) => r.factType))).sort();
-    return [{ value: "", label: "Todos los hechos contables" }, ...unique.map((f) => ({ value: f, label: f }))];
-  }, [rules, sourceModule]);
+    return [
+      { value: "", label: t("accounting.postingRules.filter.allFactTypes") },
+      ...unique.map((f) => ({ value: f, label: factTypeLabel(t, f) })),
+    ];
+  }, [rules, sourceModule, t]);
 
   const filteredRules = useMemo(() => {
     return rules
@@ -195,14 +262,14 @@ export function PostingRulesPage() {
 
   return (
     <PageShell
-      kicker="Contabilidad"
-      title="Reglas contables"
-      subtitle="Configuración de mapeo cuenta/Debe-Haber que el motor de contabilización usa para generar cada asiento"
+      kicker={t("app.nav.group.accounting")}
+      title={t("accounting.postingRules.title")}
+      subtitle={t("accounting.postingRules.subtitle")}
     >
-      <ZHCard title="Filtros">
+      <ZHCard title={t("accounting.postingRules.filtersTitle")}>
         <ZHFilterBar onClear={handleClearFilters} disabled={loading}>
           <div className="zh-filterbar__field">
-            <ZHField label="Módulo origen" density="compact">
+            <ZHField label={t("accounting.postingRules.filter.sourceModule")} density="compact">
               <ZhSelect
                 value={sourceModule}
                 disabled={loading}
@@ -211,7 +278,7 @@ export function PostingRulesPage() {
                   setFactType("");
                 }}
               >
-                {SOURCE_MODULE_OPTIONS.map((o) => (
+                {sourceModuleOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -220,7 +287,7 @@ export function PostingRulesPage() {
             </ZHField>
           </div>
           <div className="zh-filterbar__field">
-            <ZHField label="Hecho contable" density="compact">
+            <ZHField label={t("accounting.postingRules.filter.factType")} density="compact">
               <ZhSelect value={factType} disabled={loading} onChange={(e) => setFactType(e.target.value)}>
                 {factTypeOptions.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -231,9 +298,9 @@ export function PostingRulesPage() {
             </ZHField>
           </div>
           <div className="zh-filterbar__field">
-            <ZHField label="Estado" density="compact">
+            <ZHField label={t("common.status")} density="compact">
               <ZhSelect value={status} disabled={loading} onChange={(e) => setStatus(e.target.value)}>
-                {STATUS_OPTIONS.map((o) => (
+                {statusOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -243,7 +310,7 @@ export function PostingRulesPage() {
           </div>
           <div className="zh-filterbar__field">
             <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void fetchRules()} disabled={loading}>
-              Actualizar
+              {t("common.refresh")}
             </ZHBtn>
           </div>
         </ZHFilterBar>
@@ -252,16 +319,16 @@ export function PostingRulesPage() {
       {!loading && rules.length === 0 && (
         <ZHPageNotice
           variant="warning"
-          message="No existen reglas contables configuradas. Cree o ejecute la configuración inicial antes de emitir documentos."
+          message={t("accounting.postingRules.empty.noRules")}
         />
       )}
 
       {!loading && rules.length > 0 && filteredRules.length === 0 && (
-        <ZHPageNotice variant="info" message="Ningún resultado con los filtros seleccionados." />
+        <ZHPageNotice variant="info" message={t("accounting.postingRules.empty.noFilterResults")} />
       )}
 
       {filteredRules.map((rule) => (
-        <PostingRuleCard key={rule.id} rule={rule} />
+        <PostingRuleCard key={rule.id} rule={rule} t={t} />
       ))}
     </PageShell>
   );
