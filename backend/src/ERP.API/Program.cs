@@ -126,8 +126,16 @@ builder.Services.AddCors(options =>
 
             policy
                 .WithOrigins(origins)
-                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .WithHeaders("Authorization", "Content-Type", "Accept")
+                .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .WithHeaders(
+                    "Authorization",
+                    "Content-Type",
+                    "Accept",
+                    "x-correlation-id",
+                    "X-Company-Id",
+                    "x-company-session-version",
+                    "X-Branch-Id"
+                )
                 .AllowCredentials();
         }
     );
