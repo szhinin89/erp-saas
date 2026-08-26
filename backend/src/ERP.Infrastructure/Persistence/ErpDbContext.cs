@@ -12,6 +12,7 @@ using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
+using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Entities;
@@ -342,6 +343,13 @@ public class ErpDbContext : DbContext
         Set<PurchaseCreditNoteDetail>();
     public DbSet<PurchaseCreditNoteTaxSummary> PurchaseCreditNoteTaxSummaries =>
         Set<PurchaseCreditNoteTaxSummary>();
+
+    // ── Expenses BC ────────────────────────────────────────────────────────
+    public DbSet<ExpenseCategoryNode> ExpenseCategoryNodes => Set<ExpenseCategoryNode>();
+    public DbSet<ExpenseDocument> ExpenseDocuments => Set<ExpenseDocument>();
+    public DbSet<ExpenseLine> ExpenseLines => Set<ExpenseLine>();
+    public DbSet<ExpensePaymentSchedule> ExpensePaymentSchedules =>
+        Set<ExpensePaymentSchedule>();
 
     // ── Sales BC ──────────────────────────────────────────────────────────
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();

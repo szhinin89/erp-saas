@@ -16,11 +16,11 @@ public sealed class KernelRegistryTests
     // (Condiciones de Crédito) ya implementados y activos, y CajaModule usa rutas reales
     // "/cash", "/cash/registers". No son fragmentos legacy: solo se bloquean aquí los nombres
     // realmente retirados y sin ningún uso actual en el Kernel ("purchasing" → sucedido por
-    // "purchases", "expenses" sin uso, "products."/"inventory.products" → sucedido por "items.").
+    // "purchases", "products."/"inventory.products" → sucedido por "items."). "expenses"
+    // vuelve como vocabulario vigente del módulo independiente de Gastos.
     private static readonly string[] LegacyFragments =
     [
         "purchasing",
-        "expenses",
         "inventory.products",
         "products.",
     ];

@@ -712,6 +712,17 @@ public static class DependencyInjection
             ERP.Domain.Modules.Purchases.Interfaces.IPurchaseCreditNoteRepository,
             ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository
         >();
+
+        // ── Expenses BC ───────────────────────────────────────────────────────
+        services.AddScoped<
+            ERP.Domain.Modules.Expenses.Interfaces.IExpenseCategoryRepository,
+            ERP.Infrastructure.Persistence.Repositories.Expenses.ExpenseCategoryRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository,
+            ERP.Infrastructure.Persistence.Repositories.Expenses.ExpenseDocumentRepository
+        >();
+
         services.AddScoped<
             ERP.Domain.Modules.Finance.Interfaces.ICompanyFinancialDestinationRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.CompanyFinancialDestinationRepository
