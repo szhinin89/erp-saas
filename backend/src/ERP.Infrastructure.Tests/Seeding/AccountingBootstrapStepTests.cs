@@ -43,7 +43,7 @@ public sealed class AccountingBootstrapStepTests
     }
 
     [Fact]
-    public async Task Primera_ejecucion_crea_13_cuentas_y_un_periodo_anual_abierto()
+    public async Task Primera_ejecucion_crea_plantilla_retail_y_un_periodo_anual_abierto()
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
@@ -52,9 +52,25 @@ public sealed class AccountingBootstrapStepTests
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
 
         var accounts = await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
-        accounts.Should().HaveCount(13);
-        accounts.Should().OnlyContain(a => a.IsActive && a.AllowsPosting);
-        accounts.Should().Contain(a => a.Code.Value == "1.1.01.001" && a.Name == "Caja General");
+        accounts.Should().HaveCount(AccountingBootstrapStep.RetailChartAccountCount);
+        accounts.Should().OnlyContain(a => a.IsActive);
+        accounts
+            .Where(a => a.ParentAccountId is null)
+            .Should()
+            .OnlyContain(a => !a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "1.1.01.001" && a.Name == "Caja general");
+        accounts.Should().Contain(a => a.Code.Value == "1.1.01.002" && a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "1.1.03.002" && a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "4.1.01.002" && a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "6.5.01.001" && a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "1" && !a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "2" && !a.AllowsPosting);
+        accounts.Should().Contain(a => a.Code.Value == "4.1.01" && !a.AllowsPosting);
+        var cashParent = accounts.Single(a => a.Code.Value == "1.1.01");
+        accounts
+            .Single(a => a.Code.Value == "1.1.01.001")
+            .ParentAccountId.Should()
+            .Be(cashParent.Id);
         accounts
             .Where(a => a.AccountType is AccountType.Asset or AccountType.Cost or AccountType.Expense)
             .Should()
@@ -90,7 +106,9 @@ public sealed class AccountingBootstrapStepTests
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        (await verifyDb.Accounts.CountAsync(a => a.CompanyId == _companyId)).Should().Be(13);
+        (await verifyDb.Accounts.CountAsync(a => a.CompanyId == _companyId))
+            .Should()
+            .Be(AccountingBootstrapStep.RetailChartAccountCount);
         (await verifyDb.AccountingPeriods.CountAsync(p => p.CompanyId == _companyId)).Should().Be(1);
     }
 
@@ -122,8 +140,106 @@ public sealed class AccountingBootstrapStepTests
 
         await using var verifyDb = NewDbContext(dbName);
         var accounts = await verifyDb.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
-        accounts.Should().HaveCount(13);
-        accounts.Should().Contain(a => a.Code.Value == "6.1.01.001" && a.Name == "Gastos administrativos");
+        accounts.Should().HaveCount(AccountingBootstrapStep.RetailChartAccountCount);
+        accounts.Should()
+            .Contain(a => a.Code.Value == "6.1.01.001" && a.Name == "Gastos administrativos generales");
+    }
+
+    [Fact]
+    public async Task Si_empresa_tenia_seed_minimo_crea_solo_las_cuentas_retail_faltantes()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var legacyAccounts = new[]
+            {
+                ("1.1.01.001", "Caja General Legacy", AccountType.Asset, AccountNature.Debit),
+                ("1.1.02.001", "Bancos Legacy", AccountType.Asset, AccountNature.Debit),
+                ("1.1.03.001", "Cuentas por cobrar clientes Legacy", AccountType.Asset, AccountNature.Debit),
+                ("1.1.04.001", "Inventario mercaderías Legacy", AccountType.Asset, AccountNature.Debit),
+                ("1.1.05.001", "IVA crédito tributario Legacy", AccountType.Asset, AccountNature.Debit),
+                ("2.1.01.001", "Cuentas por pagar proveedores Legacy", AccountType.Liability, AccountNature.Credit),
+                ("2.1.02.001", "IVA por pagar Legacy", AccountType.Liability, AccountNature.Credit),
+                ("2.1.03.001", "ICE por pagar Legacy", AccountType.Liability, AccountNature.Credit),
+                ("3.1.01.001", "Capital Legacy", AccountType.Equity, AccountNature.Credit),
+                ("3.1.02.001", "Resultados acumulados Legacy", AccountType.Equity, AccountNature.Credit),
+                ("4.1.01.001", "Ventas Legacy", AccountType.Income, AccountNature.Credit),
+                ("5.1.01.001", "Costo de ventas Legacy", AccountType.Cost, AccountNature.Debit),
+                ("6.1.01.001", "Gastos administrativos Legacy", AccountType.Expense, AccountNature.Debit),
+            };
+
+            foreach (var (code, name, type, nature) in legacyAccounts)
+            {
+                db.Accounts.Add(
+                    ERP.Domain.Modules.Accounting.Entities.Account.Create(
+                        _tenantId,
+                        _companyId,
+                        ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create(code),
+                        name,
+                        parentAccountId: null,
+                        accountType: type,
+                        nature: nature,
+                        allowsPosting: true,
+                        createdBy: _actorId
+                    )
+                );
+            }
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var accounts = await verifyDb.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
+        accounts.Should().HaveCount(AccountingBootstrapStep.RetailChartAccountCount);
+        accounts.Should().ContainSingle(a => a.Code.Value == "1.1.01.001");
+        accounts.Single(a => a.Code.Value == "1.1.01.001").Name.Should().Be("Caja General Legacy");
+        accounts.Single(a => a.Code.Value == "1.1.01.001").ParentAccountId.Should().BeNull();
+        accounts.Should().Contain(a => a.Code.Value == "1.1.01.002" && a.Name == "Caja chica");
+        accounts.Should().Contain(a => a.Code.Value == "4.1.01.002" && a.Name == "Ventas tarifa 0%");
+    }
+
+    [Fact]
+    public async Task No_sobrescribe_cuenta_existente_editada_por_usuario()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            db.Accounts.Add(
+                ERP.Domain.Modules.Accounting.Entities.Account.Create(
+                    _tenantId,
+                    _companyId,
+                    ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.01.001"),
+                    "Caja editada por admin",
+                    parentAccountId: null,
+                    accountType: AccountType.Asset,
+                    nature: AccountNature.Debit,
+                    allowsPosting: false,
+                    createdBy: _actorId
+                )
+            );
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var edited = await verifyDb.Accounts.SingleAsync(a =>
+            a.CompanyId == _companyId && a.Code.Value == "1.1.01.001"
+        );
+        edited.Name.Should().Be("Caja editada por admin");
+        edited.AllowsPosting.Should().BeFalse();
+        edited.ParentAccountId.Should().BeNull();
     }
 
     [Fact]
@@ -160,6 +276,42 @@ public sealed class AccountingBootstrapStepTests
             );
         rules.Should()
             .NotContain(r => r.SourceModule == "Purchases" && r.FactType == "PurchaseCreditNoteCancelled");
+    }
+
+    [Fact]
+    public async Task No_crea_posting_rule_si_una_cuenta_requerida_no_permite_asiento()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            db.Accounts.Add(
+                ERP.Domain.Modules.Accounting.Entities.Account.Create(
+                    _tenantId,
+                    _companyId,
+                    ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.01.001"),
+                    "Caja no postable",
+                    parentAccountId: null,
+                    accountType: AccountType.Asset,
+                    nature: AccountNature.Debit,
+                    allowsPosting: false,
+                    createdBy: _actorId
+                )
+            );
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
+        rules.Should()
+            .NotContain(r => r.SourceModule == "Finance" && r.FactType == "CollectionApplied");
+        rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
     }
 
     [Fact]

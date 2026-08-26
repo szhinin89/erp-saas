@@ -9,19 +9,20 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding.Steps;
 
 /// <summary>
-/// ACCOUNTING-INITIAL-CHART-SEED-11: sin este step, una Company nueva nunca tenía Plan de
-/// Cuentas ni un AccountingPeriod abierto — el diagnóstico previo (ACCOUNTING-DATA-SEED-AND-
-/// SMOKE-10G) confirmó que esto deja al Posting Engine sin ningún <c>PostingRule</c> posible
-/// (no hay cuentas a las que apuntar) y, por lo tanto, sin ningún <c>JournalEntry</c> real, aun
-/// con ventas/compras operando con normalidad. Plan de cuentas mínimo (Tipo A — infraestructura
-/// de sistema, mismo criterio que Caja Principal/Bodega Principal: genérico, editable después
-/// por el admin, nunca datos de negocio inventados) — 13 cuentas hoja, sin jerarquía padre/
-/// resumen, cubriendo Activo/Pasivo/Patrimonio/Ingresos/Costos/Gastos con la Nature contable
-/// estándar de cada tipo. Un único AccountingPeriod anual (PeriodNumber=1, año calendario
-/// actual) — suficiente para que <c>PostingPeriodResolver</c> encuentre período abierto para
-/// cualquier fecha del año en curso; no crea 12 períodos mensuales (el ticket pide un rango
-/// único 01-01..12-31). Idempotente por Code (cuentas) y por FiscalYear (período) — solo crea lo
-/// que falta, nunca duplica ni toca cuentas/períodos ya existentes.
+/// ACCOUNTING-INITIAL-CHART-SEED-11 / ACCOUNTING-BASE-CHART-TEMPLATE-13: sin este step, una
+/// Company nueva nunca tenía Plan de Cuentas ni un AccountingPeriod abierto — el diagnóstico
+/// previo (ACCOUNTING-DATA-SEED-AND-SMOKE-10G) confirmó que esto deja al Posting Engine sin
+/// ningún <c>PostingRule</c> posible (no hay cuentas a las que apuntar) y, por lo tanto, sin
+/// ningún <c>JournalEntry</c> real, aun con ventas/compras operando con normalidad.
+///
+/// ACCOUNTING-BASE-CHART-TEMPLATE-13 amplía el seed inicial de 13 cuentas hoja a una plantilla
+/// retail Ecuador jerárquica: cuentas padre/resumen con <c>AllowsPosting=false</c> y cuentas
+/// operativas finales con <c>AllowsPosting=true</c>. La plantilla usa como blueprint el plan real
+/// de Sumak, pero no lo copia literalmente: evita cajas/locales/bancos/personas/proveedores
+/// específicos y conserva los códigos operativos del seed mínimo previo para que las
+/// <c>PostingRule</c> existentes y empresas ya configuradas no se rompan. Idempotente por Code
+/// (cuentas) y por FiscalYear (período): solo crea lo faltante, nunca duplica ni toca cuentas/
+/// períodos ya existentes.
 ///
 /// ACCOUNTING-POSTING-RULES-SEED-11B: además del plan de cuentas, siembra las
 /// <see cref="PostingRule"/>/<see cref="PostingRuleLine"/> mínimas para los 7 hechos contables que
@@ -48,29 +49,121 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         _logger = logger;
     }
 
-    private sealed record MinimalAccount(
+    private sealed record RetailAccount(
         string Code,
         string Name,
+        string? ParentCode,
         AccountType Type,
-        AccountNature Nature
+        AccountNature Nature,
+        bool AllowsPosting
     );
 
-    private static readonly IReadOnlyList<MinimalAccount> MinimalChart =
+    public const int RetailChartAccountCount = 90;
+
+    private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
-        new("1.1.01.001", "Caja General", AccountType.Asset, AccountNature.Debit),
-        new("1.1.02.001", "Bancos", AccountType.Asset, AccountNature.Debit),
-        new("1.1.03.001", "Cuentas por cobrar clientes", AccountType.Asset, AccountNature.Debit),
-        new("1.1.04.001", "Inventario mercaderías", AccountType.Asset, AccountNature.Debit),
-        new("1.1.05.001", "IVA crédito tributario", AccountType.Asset, AccountNature.Debit),
-        new("2.1.01.001", "Cuentas por pagar proveedores", AccountType.Liability, AccountNature.Credit),
-        new("2.1.02.001", "IVA por pagar", AccountType.Liability, AccountNature.Credit),
-        new("2.1.03.001", "ICE por pagar", AccountType.Liability, AccountNature.Credit),
-        new("3.1.01.001", "Capital", AccountType.Equity, AccountNature.Credit),
-        new("3.1.02.001", "Resultados acumulados", AccountType.Equity, AccountNature.Credit),
-        new("4.1.01.001", "Ventas", AccountType.Income, AccountNature.Credit),
-        new("5.1.01.001", "Costo de ventas", AccountType.Cost, AccountNature.Debit),
-        new("6.1.01.001", "Gastos administrativos", AccountType.Expense, AccountNature.Debit),
+        new("1", "Activo", null, AccountType.Asset, AccountNature.Debit, false),
+        new("1.1", "Activo corriente", "1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.01", "Efectivo y equivalentes", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.01.001", "Caja general", "1.1.01", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.01.002", "Caja chica", "1.1.01", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.01.003", "Fondos por depositar", "1.1.01", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.02", "Bancos", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.02.001", "Bancos cuenta corriente", "1.1.02", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.02.002", "Bancos cuenta ahorros", "1.1.02", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.03", "Cuentas y documentos por cobrar", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.03.001", "Cuentas por cobrar clientes", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.03.002", "Cuentas por cobrar tarjetas credito/debito", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.03.003", "Otras cuentas por cobrar", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.03.004", "Anticipos a proveedores", "1.1.03", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.04", "Inventarios", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.04.001", "Inventario mercaderias", "1.1.04", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.04.002", "Inventario en transito", "1.1.04", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.04.003", "Inventario por ajustes", "1.1.04", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.05", "Impuestos a favor", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.05.001", "IVA credito tributario", "1.1.05", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.05.002", "IVA retenido por clientes", "1.1.05", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.05.003", "Retenciones renta a favor", "1.1.05", AccountType.Asset, AccountNature.Debit, true),
+        new("1.1.06", "Pagos anticipados", "1.1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.1.06.001", "Seguros pagados por anticipado", "1.1.06", AccountType.Asset, AccountNature.Debit, true),
+        new("1.2", "Activo no corriente", "1", AccountType.Asset, AccountNature.Debit, false),
+        new("1.2.01", "Propiedad, planta y equipo", "1.2", AccountType.Asset, AccountNature.Debit, false),
+        new("1.2.01.001", "Equipos de computacion", "1.2.01", AccountType.Asset, AccountNature.Debit, true),
+        new("1.2.01.002", "Muebles y enseres", "1.2.01", AccountType.Asset, AccountNature.Debit, true),
+        new("2", "Pasivo", null, AccountType.Liability, AccountNature.Credit, false),
+        new("2.1", "Pasivo corriente", "2", AccountType.Liability, AccountNature.Credit, false),
+        new("2.1.01", "Cuentas y documentos por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
+        new("2.1.01.001", "Cuentas por pagar proveedores", "2.1.01", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.01.002", "Anticipos de clientes", "2.1.01", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.02", "IVA por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
+        new("2.1.02.001", "IVA cobrado en ventas", "2.1.02", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.02.002", "Retenciones IVA por pagar", "2.1.02", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.02.003", "Retenciones renta por pagar", "2.1.02", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.03", "Impuestos especiales por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
+        new("2.1.03.001", "ICE por pagar", "2.1.03", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.03.002", "IRBP por pagar", "2.1.03", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.03.003", "Impuesto a la renta por pagar", "2.1.03", AccountType.Liability, AccountNature.Credit, true),
+        new("2.1.04", "Nomina y beneficios por pagar", "2.1", AccountType.Liability, AccountNature.Credit, false),
+        new("2.1.04.001", "Sueldos por pagar", "2.1.04", AccountType.Liability, AccountNature.Credit, true),
+        new("3", "Patrimonio", null, AccountType.Equity, AccountNature.Credit, false),
+        new("3.1", "Capital y resultados", "3", AccountType.Equity, AccountNature.Credit, false),
+        new("3.1.01.001", "Capital", "3.1", AccountType.Equity, AccountNature.Credit, true),
+        new("3.1.02.001", "Resultados acumulados", "3.1", AccountType.Equity, AccountNature.Credit, true),
+        new("3.1.03.001", "Resultado del ejercicio", "3.1", AccountType.Equity, AccountNature.Credit, true),
+        new("4", "Ingresos", null, AccountType.Income, AccountNature.Credit, false),
+        new("4.1", "Ingresos operacionales", "4", AccountType.Income, AccountNature.Credit, false),
+        new("4.1.01", "Ventas de mercaderia", "4.1", AccountType.Income, AccountNature.Credit, false),
+        new("4.1.01.001", "Ventas tarifa general", "4.1.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.1.01.002", "Ventas tarifa 0%", "4.1.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.1.01.003", "Ventas exentas de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.1.01.004", "Ventas no objeto de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.1.01.005", "Ventas de servicios retail", "4.1.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.2", "Otros ingresos", "4", AccountType.Income, AccountNature.Credit, false),
+        new("4.2.01.001", "Ingresos por ajustes positivos de inventario", "4.2", AccountType.Income, AccountNature.Credit, true),
+        new("4.2.01.003", "Diferencias positivas de caja", "4.2", AccountType.Income, AccountNature.Credit, true),
+        new("5", "Costos", null, AccountType.Cost, AccountNature.Debit, false),
+        new("5.1", "Costo de ventas", "5", AccountType.Cost, AccountNature.Debit, false),
+        new("5.1.01.001", "Costo de ventas mercaderia", "5.1", AccountType.Cost, AccountNature.Debit, true),
+        new("5.1.01.002", "Costo de servicios retail", "5.1", AccountType.Cost, AccountNature.Debit, true),
+        new("5.1.01.003", "Costo ICE/IRBP no recuperable", "5.1", AccountType.Cost, AccountNature.Debit, true),
+        new("5.1.02", "Ajustes de inventario", "5", AccountType.Cost, AccountNature.Debit, false),
+        new("5.1.02.001", "Mermas y faltantes de inventario", "5.1.02", AccountType.Cost, AccountNature.Debit, true),
+        new("5.1.02.002", "Descuadres negativos de inventario", "5.1.02", AccountType.Cost, AccountNature.Debit, true),
+        new("6", "Gastos", null, AccountType.Expense, AccountNature.Debit, false),
+        new("6.1", "Gastos administrativos", "6", AccountType.Expense, AccountNature.Debit, false),
+        new("6.1.01.001", "Gastos administrativos generales", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.002", "Suministros de oficina", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.003", "Servicios basicos", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.004", "Arriendos", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.005", "Honorarios profesionales", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.006", "Mantenimiento y reparaciones", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2", "Gastos de venta", "6", AccountType.Expense, AccountNature.Debit, false),
+        new("6.2.01.001", "Publicidad y marketing", "6.2", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01.002", "Comisiones de venta", "6.2", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01.003", "Empaques, fundas y suministros de venta", "6.2", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01.004", "Transporte y entregas a clientes", "6.2", AccountType.Expense, AccountNature.Debit, true),
+        new("6.3", "Gastos financieros", "6", AccountType.Expense, AccountNature.Debit, false),
+        new("6.3.01.001", "Comisiones bancarias", "6.3", AccountType.Expense, AccountNature.Debit, true),
+        new("6.3.01.002", "Comisiones tarjetas credito/debito", "6.3", AccountType.Expense, AccountNature.Debit, true),
+        new("6.3.01.003", "Intereses financieros", "6.3", AccountType.Expense, AccountNature.Debit, true),
+        new("6.4", "Impuestos y no deducibles", "6", AccountType.Expense, AccountNature.Debit, false),
+        new("6.4.01.001", "Impuestos no recuperables", "6.4", AccountType.Expense, AccountNature.Debit, true),
+        new("6.4.01.002", "Multas y gastos no deducibles", "6.4", AccountType.Expense, AccountNature.Debit, true),
+        new("6.5", "Descuadres y perdidas operativas", "6", AccountType.Expense, AccountNature.Debit, false),
+        new("6.5.01.001", "Descuadres de caja", "6.5", AccountType.Expense, AccountNature.Debit, true),
+        new("6.5.01.002", "Mermas retail", "6.5", AccountType.Expense, AccountNature.Debit, true),
     ];
+
+    internal static readonly IReadOnlyCollection<string> RequiredRetailAccountCodes =
+        RetailChart.Select(a => a.Code).ToArray();
+
+    static AccountingBootstrapStep()
+    {
+        if (RetailChart.Count != RetailChartAccountCount)
+            throw new InvalidOperationException(
+                $"Retail chart template count mismatch. Expected {RetailChartAccountCount}, got {RetailChart.Count}."
+            );
+    }
 
     private sealed record MinimalPostingRuleLine(
         string AccountCode,
@@ -84,11 +177,13 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         IReadOnlyList<MinimalPostingRuleLine> Lines
     );
 
+    private sealed record AccountSeedLookup(Guid Id, bool IsActive, bool AllowsPosting);
+
     // ACCOUNTING-POSTING-RULES-SEED-11B: un (SourceModule, FactType) por cada traductor real
     // confirmado leyendo el código fuente de cada uno (ver doc comment de la clase) —
     // Purchases/PurchaseCreditNoteCancelled queda deliberadamente fuera (reversa el asiento
     // original, no resuelve regla nueva). Mapeos de cuentas genéricos usando exclusivamente las
-    // 13 cuentas de MinimalChart — ninguna cuenta ni empresa hardcodeada. Líneas cuyo
+    // cuentas de RetailChart — ninguna cuenta ni empresa hardcodeada. Líneas cuyo
     // PostingAmountKind resuelve en 0 (p. ej. ICE/IRBPNR ausentes) se omiten automáticamente en
     // JournalFactory, así que la misma regla sirve con y sin esos componentes.
     private static readonly IReadOnlyList<MinimalPostingRule> MinimalPostingRules =
@@ -165,33 +260,44 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     {
         var (tenantId, companyId, actorId) = context;
 
-        var existingCodes = await _db
+        var existingAccounts = await _db
             .Accounts.IgnoreQueryFilters()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
-            .Select(a => a.Code.Value)
+            .Select(a => new { a.Id, Code = a.Code.Value })
             .ToListAsync(cancellationToken);
-        var existingCodeSet = existingCodes.ToHashSet(StringComparer.Ordinal);
+        var accountIdByCode = existingAccounts.ToDictionary(
+            a => a.Code,
+            a => a.Id,
+            StringComparer.Ordinal
+        );
 
-        var missing = MinimalChart.Where(m => !existingCodeSet.Contains(m.Code)).ToList();
-        if (missing.Count > 0)
+        var seededCount = 0;
+        foreach (var m in RetailChart)
         {
-            foreach (var m in missing)
-            {
-                var account = Account.Create(
-                    tenantId,
-                    companyId,
-                    AccountCode.Create(m.Code),
-                    m.Name,
-                    parentAccountId: null,
-                    accountType: m.Type,
-                    nature: m.Nature,
-                    allowsPosting: true,
-                    createdBy: actorId
-                );
-                _db.Accounts.Add(account);
-            }
+            if (accountIdByCode.ContainsKey(m.Code))
+                continue;
+
+            var parentAccountId = m.ParentCode is null ? (Guid?)null : accountIdByCode[m.ParentCode];
+            var account = Account.Create(
+                tenantId,
+                companyId,
+                AccountCode.Create(m.Code),
+                m.Name,
+                parentAccountId,
+                m.Type,
+                m.Nature,
+                m.AllowsPosting,
+                actorId
+            );
+            _db.Accounts.Add(account);
+            accountIdByCode[m.Code] = account.Id;
+            seededCount++;
+        }
+
+        if (seededCount > 0)
+        {
             await _db.SaveChangesAsync(cancellationToken);
-            LogAccountsSeeded(missing.Count, companyId);
+            LogAccountsSeeded(seededCount, companyId);
         }
         else
         {
@@ -255,19 +361,41 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             return;
         }
 
-        var accountIdByCode = await _db
+        var accountByCode = await _db
             .Accounts.IgnoreQueryFilters()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
-            .Select(a => new { a.Id, Code = a.Code.Value })
-            .ToDictionaryAsync(a => a.Code, a => a.Id, StringComparer.Ordinal, cancellationToken);
+            .Select(a => new
+            {
+                a.Id,
+                Code = a.Code.Value,
+                a.IsActive,
+                a.AllowsPosting,
+            })
+            .ToDictionaryAsync(
+                a => a.Code,
+                a => new AccountSeedLookup(a.Id, a.IsActive, a.AllowsPosting),
+                StringComparer.Ordinal,
+                cancellationToken
+            );
 
+        var seededRulesCount = 0;
         foreach (var m in missingRules)
         {
             var missingAccountCode = m.Lines.Select(l => l.AccountCode)
-                .FirstOrDefault(code => !accountIdByCode.ContainsKey(code));
+                .FirstOrDefault(code => !accountByCode.ContainsKey(code));
             if (missingAccountCode is not null)
             {
                 LogPostingRuleSkippedMissingAccount(m.SourceModule, m.FactType, missingAccountCode, companyId);
+                continue;
+            }
+
+            var invalidAccountCode = m.Lines.Select(l => l.AccountCode)
+                .FirstOrDefault(code =>
+                    !accountByCode[code].IsActive || !accountByCode[code].AllowsPosting
+                );
+            if (invalidAccountCode is not null)
+            {
+                LogPostingRuleSkippedInvalidAccount(m.SourceModule, m.FactType, invalidAccountCode, companyId);
                 continue;
             }
 
@@ -283,24 +411,31 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             );
 
             foreach (var line in m.Lines)
-                rule.AddLine(accountIdByCode[line.AccountCode], line.Nature, line.AmountKind);
+                rule.AddLine(accountByCode[line.AccountCode].Id, line.Nature, line.AmountKind);
 
             _db.PostingRules.Add(rule);
+            seededRulesCount++;
+        }
+
+        if (seededRulesCount == 0)
+        {
+            LogPostingRulesSkipped(companyId);
+            return;
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        LogPostingRulesSeeded(missingRules.Count, companyId);
+        LogPostingRulesSeeded(seededRulesCount, companyId);
     }
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Seeded {Count} minimal chart-of-accounts entries for company {CompanyId}."
+        Message = "Seeded {Count} retail chart-of-accounts entries for company {CompanyId}."
     )]
     private partial void LogAccountsSeeded(int count, Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Debug,
-        Message = "Chart of accounts already complete for company {CompanyId}. Skipping."
+        Message = "Retail chart of accounts already complete for company {CompanyId}. Skipping."
     )]
     private partial void LogAccountsSkipped(Guid companyId);
 
@@ -318,13 +453,13 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Seeded {Count} minimal posting rules for company {CompanyId}."
+        Message = "Seeded {Count} retail posting rules for company {CompanyId}."
     )]
     private partial void LogPostingRulesSeeded(int count, Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Debug,
-        Message = "Minimal posting rules already complete for company {CompanyId}. Skipping."
+        Message = "Retail posting rules already complete for company {CompanyId}. Skipping."
     )]
     private partial void LogPostingRulesSkipped(Guid companyId);
 
@@ -334,6 +469,18 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             + "referenced account code {AccountCode} not found in the chart of accounts."
     )]
     private partial void LogPostingRuleSkippedMissingAccount(
+        string sourceModule,
+        string factType,
+        string accountCode,
+        Guid companyId
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Skipped seeding posting rule {SourceModule}/{FactType} for company {CompanyId} — "
+            + "referenced account code {AccountCode} is inactive or does not allow posting."
+    )]
+    private partial void LogPostingRuleSkippedInvalidAccount(
         string sourceModule,
         string factType,
         string accountCode,

@@ -1,6 +1,20 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-08-22** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-08-25** · Kernel refactor: **2026-06-05**.
+
+---
+
+## ACCOUNTING-POSTING-SMOKE-11C — Retail Posting Smoke (2026-08-25)
+
+**Estado: VALIDADO.** Se validó con flujo real el flujo de posting contable retail sobre la empresa E2E configurada, usando la misma plantilla de plan de cuentas de 90 cuentas y las 7 PostingRules ya sembradas.
+
+- **Documentos operativos validados**: factura de compra confirmada, factura de venta autorizada, cobro de cliente aplicado, pago a proveedor aplicado.
+- **Asientos contables generados**: Purchases/InvoiceReceived, Sales/InvoiceIssued, Sales/CostOfGoodsSold, Finance/CollectionApplied, Finance/SupplierPaymentApplied.
+- **Resultado**: `journal_entries` pasó de 0 a 5. Todos los asientos quedaron `Posted` y balanceados (Debe = Haber). La API de Libro Diario devolvió los asientos generados con trazabilidad al documento fuente.
+- **No se ejecutó posting retroactivo. No se modificaron documentos operativos existentes.**
+- El smoke usó la empresa/usuario E2E oficial en lugar de ZH TECH para evitar tocar credenciales reales de administrador.
+- El estado electrónico SRI falló en dev local por indisponibilidad del servicio externo — no afectó el posting contable.
+- **Pendiente**: verificar visibilidad en Swagger de los endpoints de Mayor y Balance de Comprobación.
 
 ---
 

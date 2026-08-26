@@ -9,18 +9,14 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding;
 
 /// <summary>
-/// ACCOUNTING-INITIAL-CHART-SEED-11: <see cref="AccountingBootstrapStep"/> (registrado en
-/// <c>CompanyBootstrapOrchestrator</c>) solo corre para empresas NUEVAS — <c>Company</c>
-/// existentes creadas antes de que este step existiera (p. ej. "ZH TECH" en la base local, ver
-/// diagnóstico ACCOUNTING-DATA-SEED-AND-SMOKE-10G) nunca vuelven a pasar por el bootstrap de
-/// creación. Este servicio cierra esa brecha exclusivamente fuera de Production: en cada arranque
-/// de la API, busca companies activas sin ninguna cuenta contable y les aplica el mismo step
-/// (reutilizado, no duplicado) — genérico por Company, nunca hardcodeado a un CompanyId
-/// específico. Idempotente por construcción (el step ya solo crea lo que falta); no toca
-/// documentos operativos ni crea asientos. Nunca se ejecuta en Production — a diferencia de
-/// <see cref="E2E.E2ESeedService"/> no requiere una bandera adicional porque es puramente
-/// aditivo (nunca crea usuarios/tenants/companies, solo completa Accounting de companies que ya
-/// existen), pero comparte el mismo gate de entorno por seguridad.
+/// ACCOUNTING-INITIAL-CHART-SEED-11 / ACCOUNTING-BASE-CHART-TEMPLATE-13:
+/// <see cref="AccountingBootstrapStep"/> (registrado en <c>CompanyBootstrapOrchestrator</c>) solo
+/// corre para empresas NUEVAS — <c>Company</c> existentes creadas antes de que este step existiera
+/// nunca vuelven a pasar por el bootstrap de creación. Este servicio cierra esa brecha
+/// exclusivamente fuera de Production: en cada arranque de la API, busca companies activas con
+/// cuentas retail faltantes o sin reglas contables y les aplica el mismo step (reutilizado, no
+/// duplicado). El step solo crea cuentas/reglas faltantes; nunca modifica cuentas existentes,
+/// documentos operativos ni asientos.
 ///
 /// ACCOUNTING-POSTING-RULES-SEED-11B: el filtro original ("sin ninguna cuenta") dejaba afuera a
 /// companies que ya recibieron el backfill de cuentas en una corrida anterior de este mismo
@@ -28,8 +24,9 @@ namespace ERP.Infrastructure.Seeding;
 /// volverían a pasar por <see cref="AccountingBootstrapStep"/> y por lo tanto nunca recibirían
 /// las <c>PostingRule</c> nuevas de esta fase. Se amplía a "sin cuentas O sin reglas de
 /// contabilización" — <see cref="AccountingBootstrapStep.ExecuteAsync"/> sigue siendo idempotente
-/// por bloque (cuentas/período/reglas), así que una company con cuentas completas pero sin reglas
-/// solo ejecuta el bloque de reglas, sin re-tocar cuentas/período ya sembrados.
+/// por bloque (cuentas/período/reglas). ACCOUNTING-BASE-CHART-TEMPLATE-13 amplía el filtro: una
+/// company con las 13 cuentas mínimas y reglas ya sembradas igualmente debe pasar si le faltan
+/// cuentas de la nueva plantilla retail; las cuentas existentes quedan intactas.
 /// </summary>
 public sealed partial class AccountingChartBackfillService
 {
@@ -56,17 +53,33 @@ public sealed partial class AccountingChartBackfillService
         if (_environment.IsProduction())
             return;
 
-        var companiesPendingBackfill = await _db
+        var activeCompanies = await _db
             .Companies.IgnoreQueryFilters()
-            .Where(c =>
-                c.IsActive
-                && (
-                    !_db.Accounts.Any(a => a.CompanyId == c.Id)
-                    || !_db.PostingRules.Any(r => r.CompanyId == c.Id)
-                )
-            )
+            .Where(c => c.IsActive)
             .Select(c => new { c.Id, c.TenantId })
             .ToListAsync(cancellationToken);
+
+        var requiredAccountCodes = AccountingBootstrapStep.RequiredRetailAccountCodes;
+        var companiesPendingBackfill = new List<(Guid Id, Guid TenantId)>();
+        foreach (var company in activeCompanies)
+        {
+            var accountCodes = await _db
+                .Accounts.IgnoreQueryFilters()
+                .Where(a => a.TenantId == company.TenantId && a.CompanyId == company.Id)
+                .Select(a => a.Code.Value)
+                .ToListAsync(cancellationToken);
+            var accountCodeSet = accountCodes.ToHashSet(StringComparer.Ordinal);
+            var hasAllRetailAccounts = requiredAccountCodes.All(accountCodeSet.Contains);
+            var hasPostingRules = await _db
+                .PostingRules.IgnoreQueryFilters()
+                .AnyAsync(
+                    r => r.TenantId == company.TenantId && r.CompanyId == company.Id,
+                    cancellationToken
+                );
+
+            if (!hasAllRetailAccounts || !hasPostingRules)
+                companiesPendingBackfill.Add((company.Id, company.TenantId));
+        }
 
         if (companiesPendingBackfill.Count == 0)
         {
@@ -92,13 +105,13 @@ public sealed partial class AccountingChartBackfillService
 
     [LoggerMessage(
         Level = LogLevel.Debug,
-        Message = "All active companies already have a chart of accounts. Nothing to backfill."
+        Message = "All active companies already have the retail Accounting template. Nothing to backfill."
     )]
     private partial void LogNoCompaniesToBackfill();
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Backfilled minimal Accounting configuration (chart of accounts/period/posting rules) for company {CompanyId}."
+        Message = "Backfilled retail Accounting configuration (chart of accounts/period/posting rules) for company {CompanyId}."
     )]
     private partial void LogCompanyBackfilled(Guid companyId);
 }
