@@ -40,6 +40,9 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasColumnType("date")
             .IsRequired();
         builder.Property(x => x.PaymentMethodId).HasColumnName("payment_method_id");
+        builder
+            .Property(x => x.FinancialDestinationId)
+            .HasColumnName("financial_destination_id");
         builder.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(100);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.AppliedAtUtc).HasColumnName("applied_at_utc");
@@ -63,6 +66,14 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasOne<PaymentMethod>()
             .WithMany()
             .HasForeignKey(x => x.PaymentMethodId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — mismo criterio: FK sin navegación de
+        // dominio, Restrict (un destino financiero en uso por pagos históricos no puede borrarse).
+        builder
+            .HasOne<CompanyFinancialDestination>()
+            .WithMany()
+            .HasForeignKey(x => x.FinancialDestinationId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Líneas de aplicación — Cascade porque una línea no tiene sentido de existir sin su pago

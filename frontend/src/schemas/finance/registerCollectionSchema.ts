@@ -17,6 +17,7 @@ export function buildRegisterCollectionSchema(maxAmount: number) {
       ),
     installmentId: z.string().optional().nullable(),
     paymentMethodId: z.string().optional().nullable(),
+    financialDestinationId: z.string().optional().nullable(),
     reference: z.string().max(200, "Máximo 200 caracteres.").optional(),
   });
 }

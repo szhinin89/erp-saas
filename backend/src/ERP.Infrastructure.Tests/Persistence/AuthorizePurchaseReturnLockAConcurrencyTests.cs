@@ -422,6 +422,7 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             payments,
             payables,
             purchaseReturnRepo,
+            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
             uow,
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentCompany(() => _companyId),

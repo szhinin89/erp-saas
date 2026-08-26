@@ -126,8 +126,20 @@ public sealed class BootstrapStepGovernanceTests
         var text = File.ReadAllText(diFile);
 
         // Captura la última clase calificada antes de '>' en: AddScoped<...InterfaceSimpleName, [ns.]ClassName>
-        var pattern = $@"{interfaceSimpleName}\s*,\s*(?:[\w.]+\.)?(\w+)\s*>";
-        return Regex.Matches(text, pattern).Select(m => m.Groups[1].Value).ToHashSet();
+        var directPattern = $@"{interfaceSimpleName}\s*,\s*(?:[\w.]+\.)?(\w+)\s*>";
+        var directMatches = Regex.Matches(text, directPattern).Select(m => m.Groups[1].Value);
+
+        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 (hallazgo, no relacionado al ticket) —
+        // AccountingBootstrapStep necesita exponerse también como su tipo concreto (consumido
+        // directamente por AccountingChartBackfillService), así que se registra vía factory
+        // delegate: AddScoped<InterfaceSimpleName>(sp => sp.GetRequiredService<ClassName>()).
+        // El patrón directo de arriba no lo detecta — sin este segundo patrón, un registro
+        // legítimo se reportaría como "step huérfano" (falso positivo).
+        var factoryPattern =
+            $@"AddScoped<{interfaceSimpleName}>\s*\(\s*\w+\s*=>\s*\w+\.GetRequiredService<(\w+)>\s*\(\s*\)\s*\)";
+        var factoryMatches = Regex.Matches(text, factoryPattern).Select(m => m.Groups[1].Value);
+
+        return directMatches.Concat(factoryMatches).ToHashSet();
     }
 
     private static string ResolveBackendRoot()

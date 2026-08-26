@@ -23,7 +23,13 @@ public sealed record RegisterCollectionCommand(
     DateOnly PaymentDate,
     Guid? PaymentMethodId,
     string? Reference,
-    IReadOnlyList<PaymentApplicationLineInput> Lines
+    IReadOnlyList<PaymentApplicationLineInput> Lines,
+    /// <summary>
+    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) que
+    /// recibió el cobro. Opcional: sin especificar, la contabilización sigue usando la cuenta
+    /// fija de la PostingRule (comportamiento previo, sin cambios).
+    /// </summary>
+    Guid? FinancialDestinationId = null
 ) : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
 
 /// <summary>Fase 5.5.5.3 — registra un pago (AP) aplicándolo contra una o más <c>PurchasePayable</c>.</summary>
@@ -33,7 +39,9 @@ public sealed record RegisterPaymentCommand(
     DateOnly PaymentDate,
     Guid? PaymentMethodId,
     string? Reference,
-    IReadOnlyList<PaymentApplicationLineInput> Lines
+    IReadOnlyList<PaymentApplicationLineInput> Lines,
+    /// <summary>ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) que originó el pago. Opcional, mismo criterio que en <see cref="RegisterCollectionCommand"/>.</summary>
+    Guid? FinancialDestinationId = null
 ) : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
 
 /// <summary>Fase 5.5.5.3 — reversa un cobro ya aplicado y decrementa el saldo de cada CxC afectada.</summary>
@@ -110,6 +118,7 @@ public sealed class RegisterCollectionCommandHandler
 {
     private readonly IPaymentRepository _payments;
     private readonly ISalesReceivableRepository _receivables;
+    private readonly ICompanyFinancialDestinationRepository _financialDestinations;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -117,6 +126,7 @@ public sealed class RegisterCollectionCommandHandler
     public RegisterCollectionCommandHandler(
         IPaymentRepository payments,
         ISalesReceivableRepository receivables,
+        ICompanyFinancialDestinationRepository financialDestinations,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -124,6 +134,7 @@ public sealed class RegisterCollectionCommandHandler
     {
         _payments = payments;
         _receivables = receivables;
+        _financialDestinations = financialDestinations;
         _t = t;
         _c = c;
         _u = u;
@@ -137,6 +148,23 @@ public sealed class RegisterCollectionCommandHandler
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
+        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — un destino financiero explícitamente
+        // elegido debe existir, pertenecer a esta empresa y estar activo (a diferencia del caso
+        // "sin especificar", que nunca bloquea el cobro — ver PostingRule fallback en el
+        // traductor). El repositorio ya filtra por empresa activa (ForOperationalScope).
+        if (cmd.FinancialDestinationId is { } financialDestinationId)
+        {
+            var destination = await _financialDestinations.GetByIdAsync(
+                tenantId,
+                financialDestinationId,
+                ct
+            );
+            if (destination is null || !destination.IsActive)
+                return Result<PaymentDto>.ValidationFailure(
+                    "El destino financiero indicado no existe, no pertenece a esta empresa o está inactivo."
+                );
+        }
+
         Payment payment;
         try
         {
@@ -149,7 +177,8 @@ public sealed class RegisterCollectionCommandHandler
                 cmd.PaymentDate,
                 cmd.PaymentMethodId,
                 cmd.Reference,
-                _u.UserId
+                _u.UserId,
+                cmd.FinancialDestinationId
             );
         }
         catch (ArgumentException ex)
@@ -218,6 +247,7 @@ public sealed class RegisterPaymentCommandHandler
     private readonly IPaymentRepository _payments;
     private readonly IPurchasePayableRepository _payables;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly ICompanyFinancialDestinationRepository _financialDestinations;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -227,6 +257,7 @@ public sealed class RegisterPaymentCommandHandler
         IPaymentRepository payments,
         IPurchasePayableRepository payables,
         IPurchaseReturnRepository purchaseReturnRepo,
+        ICompanyFinancialDestinationRepository financialDestinations,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -236,6 +267,7 @@ public sealed class RegisterPaymentCommandHandler
         _payments = payments;
         _payables = payables;
         _purchaseReturnRepo = purchaseReturnRepo;
+        _financialDestinations = financialDestinations;
         _uow = uow;
         _t = t;
         _c = c;
@@ -246,6 +278,22 @@ public sealed class RegisterPaymentCommandHandler
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
+
+        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — mismo criterio que
+        // RegisterCollectionCommandHandler: un destino explícito debe ser válido; sin especificar
+        // nunca bloquea el pago.
+        if (cmd.FinancialDestinationId is { } financialDestinationId)
+        {
+            var destination = await _financialDestinations.GetByIdAsync(
+                tenantId,
+                financialDestinationId,
+                ct
+            );
+            if (destination is null || !destination.IsActive)
+                return Result<PaymentDto>.ValidationFailure(
+                    "El destino financiero indicado no existe, no pertenece a esta empresa o está inactivo."
+                );
+        }
 
         Payment payment;
         try
@@ -259,7 +307,8 @@ public sealed class RegisterPaymentCommandHandler
                 cmd.PaymentDate,
                 cmd.PaymentMethodId,
                 cmd.Reference,
-                _u.UserId
+                _u.UserId,
+                cmd.FinancialDestinationId
             );
         }
         catch (ArgumentException ex)
@@ -617,6 +666,7 @@ file static class Map
                 ))
                 .ToList(),
             p.CreatedAt,
-            p.UpdatedAt
+            p.UpdatedAt,
+            p.FinancialDestinationId
         );
 }

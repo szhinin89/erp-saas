@@ -4,7 +4,10 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
+using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
+using ERP.Domain.Modules.Finance.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -26,11 +29,49 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
     private static readonly Guid PartnerId = Guid.NewGuid();
 
-    private static CollectionAppliedEvent CollectionEvent(Guid paymentId, decimal amount = 300m) =>
-        new(TenantId, paymentId, CompanyId, PartnerId, amount, new DateOnly(2026, 8, 10));
+    private static CollectionAppliedEvent CollectionEvent(
+        Guid paymentId,
+        decimal amount = 300m,
+        Guid? financialDestinationId = null
+    ) =>
+        new(
+            TenantId,
+            paymentId,
+            CompanyId,
+            PartnerId,
+            amount,
+            new DateOnly(2026, 8, 10),
+            financialDestinationId
+        );
 
-    private static SupplierPaymentAppliedEvent SupplierPaymentEvent(Guid paymentId, decimal amount = 300m) =>
-        new(TenantId, paymentId, CompanyId, PartnerId, amount, new DateOnly(2026, 8, 10));
+    private static SupplierPaymentAppliedEvent SupplierPaymentEvent(
+        Guid paymentId,
+        decimal amount = 300m,
+        Guid? financialDestinationId = null
+    ) =>
+        new(
+            TenantId,
+            paymentId,
+            CompanyId,
+            PartnerId,
+            amount,
+            new DateOnly(2026, 8, 10),
+            financialDestinationId
+        );
+
+    private static CompanyFinancialDestination BankDestination(Guid accountingAccountId) =>
+        CompanyFinancialDestination.Create(
+            TenantId,
+            CompanyId,
+            "BANCO-01",
+            "Banco Pichincha",
+            FinancialDestinationTypeCode.BankAccount,
+            accountingAccountId,
+            "USD",
+            CreatedBy,
+            bankInstitutionCode: "PICHINCHA",
+            bankAccountIdentifierNormalized: "1234567890"
+        );
 
     private static Account PostableAccount(string code, string name) =>
         Account.Create(
@@ -71,6 +112,7 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
         public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
         public Mock<IAccountRepository> Accounts { get; } = new();
+        public Mock<ICompanyFinancialDestinationRepository> FinancialDestinations { get; } = new();
         public JournalEntry? Captured { get; private set; }
 
         public Mocks()
@@ -112,6 +154,13 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
                 .ReturnsAsync(1);
         }
 
+        public void RegisterFinancialDestination(CompanyFinancialDestination destination) =>
+            FinancialDestinations
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(destination);
+
         public void RegisterAccount(Account account) =>
             Accounts
                 .Setup(r =>
@@ -147,7 +196,7 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         var paymentId = Guid.NewGuid();
         await translator.Handle(CollectionEvent(paymentId, 300m), CancellationToken.None);
@@ -182,7 +231,7 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new SupplierPaymentAppliedPostingTranslator(engine, NullLogger<SupplierPaymentAppliedPostingTranslator>.Instance);
+        var translator = new SupplierPaymentAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<SupplierPaymentAppliedPostingTranslator>.Instance);
 
         var paymentId = Guid.NewGuid();
         await translator.Handle(SupplierPaymentEvent(paymentId, 300m), CancellationToken.None);
@@ -231,7 +280,7 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
             .ReturnsAsync(existing);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         await translator.Handle(CollectionEvent(paymentId, 300m), CancellationToken.None);
 
@@ -260,11 +309,89 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         await translator.Handle(CollectionEvent(Guid.NewGuid(), 300m), CancellationToken.None);
 
         m.Captured.Should().BeNull("una cuenta inválida nunca debe producir un asiento, ni siquiera parcial");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // ── ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 ───────────────────────
+
+    [Fact]
+    public async Task Cobro_con_destino_financiero_transferencia_postea_a_Banco_en_vez_de_Caja()
+    {
+        var m = new Mocks();
+        var cashDefault = PostableAccount("1.1.01", "Caja");
+        var bank = PostableAccount("1.1.02", "Banco");
+        var receivable = PostableAccount("1.1.05", "Cuentas por Cobrar");
+        m.RegisterAccount(cashDefault);
+        m.RegisterAccount(bank);
+        m.RegisterAccount(receivable);
+        var destination = BankDestination(bank.Id);
+        m.RegisterFinancialDestination(destination);
+        // La PostingRule sigue apuntando a Caja por defecto — el override debe ganar.
+        var rule = Rule("Finance", "CollectionApplied", cashDefault.Id, receivable.Id);
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+        m.JournalEntries
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((JournalEntry?)null);
+
+        var engine = m.BuildEngine();
+        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+
+        var paymentId = Guid.NewGuid();
+        await translator.Handle(
+            CollectionEvent(paymentId, 300m, destination.Id),
+            CancellationToken.None
+        );
+
+        m.Captured.Should().NotBeNull();
+        var entry = m.Captured!;
+        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
+        entry.Lines.Should().Contain(l => l.AccountId == bank.Id && l.Debit == 300m && l.Credit == 0m);
+        entry.Lines.Should().Contain(l => l.AccountId == receivable.Id && l.Credit == 300m && l.Debit == 0m);
+        entry.Lines.Should().NotContain(l => l.AccountId == cashDefault.Id);
+    }
+
+    [Fact]
+    public async Task Cobro_con_destino_financiero_cuya_cuenta_ya_no_es_postable_bloquea_solo_el_posting()
+    {
+        var m = new Mocks();
+        var cashDefault = PostableAccount("1.1.01", "Caja");
+        var bank = PostableAccount("1.1.02", "Banco");
+        bank.Disable(CreatedBy); // La cuenta se desactivó DESPUÉS de configurar el destino financiero.
+        var receivable = PostableAccount("1.1.05", "Cuentas por Cobrar");
+        m.RegisterAccount(cashDefault);
+        m.RegisterAccount(bank);
+        m.RegisterAccount(receivable);
+        var destination = BankDestination(bank.Id);
+        m.RegisterFinancialDestination(destination);
+        var rule = Rule("Finance", "CollectionApplied", cashDefault.Id, receivable.Id);
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+        m.JournalEntries
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((JournalEntry?)null);
+
+        var engine = m.BuildEngine();
+        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+
+        var act = async () =>
+            await translator.Handle(
+                CollectionEvent(Guid.NewGuid(), 300m, destination.Id),
+                CancellationToken.None
+            );
+
+        await act.Should().NotThrowAsync("el cobro ya aplicado nunca debe verse afectado por un fallo de posting");
+        m.Captured.Should().BeNull("la cuenta efectiva (override) es inválida — ningún asiento parcial");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
             Times.Never

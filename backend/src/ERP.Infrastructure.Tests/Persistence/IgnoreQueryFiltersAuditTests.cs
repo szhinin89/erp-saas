@@ -27,6 +27,8 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/Steps/ElectronicDocumentsBootstrapStep.cs", // idem
         "src/ERP.Infrastructure/Seeding/Steps/InventoryBootstrapStep.cs", // idem
         "src/ERP.Infrastructure/Seeding/Steps/SalesBootstrapStep.cs", // idem
+        "src/ERP.Infrastructure/Seeding/Steps/AccountingBootstrapStep.cs", // bootstrap needs cross-tenant visibility (hallazgo pre-existente, corregido en ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14: faltaba en esta allowlist desde ACCOUNTING-INITIAL-CHART-SEED-11)
+        "src/ERP.Infrastructure/Seeding/AccountingChartBackfillService.cs", // backfill dev-only de companies ya existentes — mismo motivo que MasterDataClassificationBackfillService (hallazgo pre-existente, corregido en ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14)
         "src/ERP.Infrastructure/Seeding/DefaultProfileSeeder.cs", // seeder needs cross-tenant visibility
         "src/ERP.Infrastructure/Persistence/Repositories/Caja/CashRegisterRepository.cs", // uniqueness check por código explícito con tenantId/branchId, incluye deshabilitados
         "src/ERP.Infrastructure/Persistence/Repositories/Caja/CashSessionRepository.cs", // filtros explícitos por tenantId; existencia/lookup independiente del query filter ambiental

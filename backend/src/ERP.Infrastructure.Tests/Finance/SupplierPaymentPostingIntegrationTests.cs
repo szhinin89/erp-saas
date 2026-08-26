@@ -10,6 +10,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Finance.Events;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Tenants.Entities;
@@ -139,6 +140,10 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<
+            ICompanyFinancialDestinationRepository,
+            CompanyFinancialDestinationRepository
+        >();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
@@ -220,6 +225,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
             new PaymentRepository(db),
             new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(companyId)),
+            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),

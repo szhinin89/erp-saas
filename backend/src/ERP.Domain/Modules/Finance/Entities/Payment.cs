@@ -36,6 +36,16 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     /// <summary>Catálogo <c>PaymentMethod</c> (Sales) — referencia por Id, sin navegación de dominio (mismo criterio que AccountingPeriodId en JournalEntry).</summary>
     public Guid? PaymentMethodId { get; private set; }
 
+    /// <summary>
+    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero real (caja/banco,
+    /// <c>CompanyFinancialDestination</c>) que recibió/originó el efectivo de este cobro/pago,
+    /// referencia por Id sin navegación de dominio (mismo criterio que <see cref="PaymentMethodId"/>).
+    /// Opcional: un pago sin destino específico sigue contabilizando con la cuenta fija de la
+    /// <c>PostingRule</c> (comportamiento previo, sin cambios) — ver <see cref="Events.CollectionAppliedEvent"/>/
+    /// <see cref="Events.SupplierPaymentAppliedEvent"/> para cómo Accounting lo consume.
+    /// </summary>
+    public Guid? FinancialDestinationId { get; private set; }
+
     public string? Reference { get; private set; }
     public PaymentStatus Status { get; private set; }
     public DateTime? AppliedAtUtc { get; private set; }
@@ -56,7 +66,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
         DateOnly paymentDate,
         Guid? paymentMethodId,
         string? reference,
-        Guid createdBy
+        Guid createdBy,
+        Guid? financialDestinationId = null
     )
     {
         if (partnerId == Guid.Empty)
@@ -77,6 +88,7 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
             Amount = amount,
             PaymentDate = paymentDate,
             PaymentMethodId = paymentMethodId,
+            FinancialDestinationId = financialDestinationId,
             Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
             Status = PaymentStatus.Draft,
         };
@@ -168,7 +180,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
                     CompanyId,
                     PartnerId,
                     Amount,
-                    PaymentDate
+                    PaymentDate,
+                    FinancialDestinationId
                 )
                 : new SupplierPaymentAppliedEvent(
                     TenantId,
@@ -176,7 +189,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
                     CompanyId,
                     PartnerId,
                     Amount,
-                    PaymentDate
+                    PaymentDate,
+                    FinancialDestinationId
                 )
         );
     }

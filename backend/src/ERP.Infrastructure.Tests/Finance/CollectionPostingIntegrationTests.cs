@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Finance.Events;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -262,6 +263,10 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<
+            ICompanyFinancialDestinationRepository,
+            CompanyFinancialDestinationRepository
+        >();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
@@ -340,6 +345,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         new(
             new PaymentRepository(db),
             new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
+            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(companyId)),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)

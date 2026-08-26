@@ -47,7 +47,13 @@ internal sealed class PostingAccountGuard
         CancellationToken ct
     )
     {
-        var accountIds = rule.Lines.Select(l => l.AccountId).Distinct();
+        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — valida la cuenta EFECTIVA de cada línea
+        // (la que JournalFactory realmente va a usar, incluido un posible override de Finance),
+        // nunca la cuenta fija de la PostingRule a secas — de lo contrario un destino financiero
+        // inválido pasaría este guard sin ser detectado.
+        var accountIds = rule
+            .Lines.Select(l => PostingLineAccountResolver.ResolveAccountId(fact, l))
+            .Distinct();
 
         foreach (var accountId in accountIds)
         {

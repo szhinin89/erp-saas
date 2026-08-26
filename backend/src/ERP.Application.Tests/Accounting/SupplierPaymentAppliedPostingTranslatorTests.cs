@@ -1,14 +1,21 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
+using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
+using ERP.Domain.Modules.Finance.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace ERP.Application.Tests.Accounting;
 
-/// <summary>Fase 5.6.3 — SupplierPaymentAppliedPostingTranslator (Fase 5.6.1).</summary>
+/// <summary>
+/// Fase 5.6.3 — SupplierPaymentAppliedPostingTranslator (Fase 5.6.1). ACCOUNTING-PAYMENT-METHOD-
+/// ACCOUNT-MAPPING-14 agrega la resolución de override de cuenta vía destino financiero.
+/// </summary>
 public sealed class SupplierPaymentAppliedPostingTranslatorTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
@@ -17,7 +24,8 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
 
     private static SupplierPaymentAppliedEvent Event(
         DateOnly? paymentDate = null,
-        Guid? paymentId = null
+        Guid? paymentId = null,
+        Guid? financialDestinationId = null
     ) =>
         new(
             TenantId,
@@ -25,16 +33,32 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
             CompanyId,
             SupplierId,
             250m,
-            paymentDate ?? new DateOnly(2026, 7, 25)
+            paymentDate ?? new DateOnly(2026, 7, 25),
+            financialDestinationId
+        );
+
+    private static CompanyFinancialDestination BankDestination(Guid accountingAccountId) =>
+        CompanyFinancialDestination.Create(
+            TenantId,
+            CompanyId,
+            "BANCO-01",
+            "Banco Pichincha",
+            FinancialDestinationTypeCode.BankAccount,
+            accountingAccountId,
+            "USD",
+            Guid.NewGuid(),
+            bankInstitutionCode: "PICHINCHA",
+            bankAccountIdentifierNormalized: "1234567890"
         );
 
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
+        public Mock<ICompanyFinancialDestinationRepository> FinancialDestinations { get; } = new();
         public Mock<ILogger<SupplierPaymentAppliedPostingTranslator>> Logger { get; } = new();
 
         public SupplierPaymentAppliedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, Logger.Object);
+            new(PostingEngine.Object, FinancialDestinations.Object, Logger.Object);
 
         public void VerifyWarningLogged(Times times) =>
             Logger.Verify(
@@ -83,6 +107,72 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
         captured.TotalVat.Should().Be(0m);
         captured.TotalIce.Should().Be(0m);
         captured.TotalDiscount.Should().Be(0m);
+        captured.OverrideAccountId.Should().BeNull();
+        captured.OverrideAccountNature.Should().BeNull();
+        captured.OverrideAmountKind.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Pago_con_destino_financiero_valido_override_cuenta_haber()
+    {
+        var m = new Mocks();
+        var accountId = Guid.NewGuid();
+        var destination = BankDestination(accountId);
+        m.FinancialDestinations
+            .Setup(r => r.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(destination);
+        PostingFact? captured = null;
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
+
+        var translator = m.BuildTranslator();
+        await translator.Handle(Event(financialDestinationId: destination.Id), CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.OverrideAccountId.Should().Be(accountId);
+        captured.OverrideAccountNature.Should().Be(AccountNature.Credit);
+        captured.OverrideAmountKind.Should().Be(PostingAmountKind.GrandTotal);
+    }
+
+    [Fact]
+    public async Task Pago_con_destino_financiero_inexistente_no_bloquea_y_usa_fallback()
+    {
+        var m = new Mocks();
+        var missingDestinationId = Guid.NewGuid();
+        m.FinancialDestinations
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, missingDestinationId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyFinancialDestination?)null);
+        PostingFact? captured = null;
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
+
+        var translator = m.BuildTranslator();
+        var act = async () =>
+            await translator.Handle(
+                Event(financialDestinationId: missingDestinationId),
+                CancellationToken.None
+            );
+
+        await act.Should().NotThrowAsync();
+        captured.Should().NotBeNull();
+        captured!.OverrideAccountId.Should().BeNull();
+        m.VerifyWarningLogged(Times.Once());
     }
 
     [Fact]

@@ -16,13 +16,21 @@ public sealed class CollectionAppliedEvent : BaseDomainEvent, IAuditEvent
     public decimal Amount { get; }
     public DateOnly PaymentDate { get; }
 
+    /// <summary>
+    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero elegido para este cobro
+    /// (<c>CompanyFinancialDestination</c>), si el usuario especificó uno; <c>null</c> preserva el
+    /// comportamiento previo (cuenta fija de la <c>PostingRule</c>).
+    /// </summary>
+    public Guid? FinancialDestinationId { get; }
+
     public CollectionAppliedEvent(
         Guid tenantId,
         Guid paymentId,
         Guid companyId,
         Guid customerId,
         decimal amount,
-        DateOnly paymentDate
+        DateOnly paymentDate,
+        Guid? financialDestinationId = null
     )
     {
         TenantId = tenantId;
@@ -31,6 +39,7 @@ public sealed class CollectionAppliedEvent : BaseDomainEvent, IAuditEvent
         CustomerId = customerId;
         Amount = amount;
         PaymentDate = paymentDate;
+        FinancialDestinationId = financialDestinationId;
     }
 
     Guid IAuditEvent.EntityId => PaymentId;
@@ -51,13 +60,21 @@ public sealed class SupplierPaymentAppliedEvent : BaseDomainEvent, IAuditEvent
     public decimal Amount { get; }
     public DateOnly PaymentDate { get; }
 
+    /// <summary>
+    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero elegido para este pago
+    /// (<c>CompanyFinancialDestination</c>), si el usuario especificó uno; <c>null</c> preserva el
+    /// comportamiento previo (cuenta fija de la <c>PostingRule</c>).
+    /// </summary>
+    public Guid? FinancialDestinationId { get; }
+
     public SupplierPaymentAppliedEvent(
         Guid tenantId,
         Guid paymentId,
         Guid companyId,
         Guid supplierId,
         decimal amount,
-        DateOnly paymentDate
+        DateOnly paymentDate,
+        Guid? financialDestinationId = null
     )
     {
         TenantId = tenantId;
@@ -66,6 +83,7 @@ public sealed class SupplierPaymentAppliedEvent : BaseDomainEvent, IAuditEvent
         SupplierId = supplierId;
         Amount = amount;
         PaymentDate = paymentDate;
+        FinancialDestinationId = financialDestinationId;
     }
 
     Guid IAuditEvent.EntityId => PaymentId;

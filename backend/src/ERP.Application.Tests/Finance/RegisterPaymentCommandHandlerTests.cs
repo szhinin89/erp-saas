@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Application.Modules.Finance.UseCases.Payments;
+using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
@@ -46,6 +48,7 @@ public sealed class RegisterPaymentCommandHandlerTests
         Mock<IPaymentRepository> payments,
         Mock<IPurchasePayableRepository> payables,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
+        Mock<ICompanyFinancialDestinationRepository> financialDestinations,
         Mock<IUnitOfWork> uow,
         Mock<ICurrentTenant> tenant,
         Mock<ICurrentCompany> company,
@@ -55,6 +58,7 @@ public sealed class RegisterPaymentCommandHandlerTests
         var payments = new Mock<IPaymentRepository>();
         var payables = new Mock<IPurchasePayableRepository>();
         var purchaseReturnRepo = new Mock<IPurchaseReturnRepository>();
+        var financialDestinations = new Mock<ICompanyFinancialDestinationRepository>();
         var uow = new Mock<IUnitOfWork>();
         var tenant = new Mock<ICurrentTenant>();
         var company = new Mock<ICurrentCompany>();
@@ -64,13 +68,14 @@ public sealed class RegisterPaymentCommandHandlerTests
         company.Setup(c => c.CompanyId).Returns(CompanyId);
         user.Setup(u => u.UserId).Returns(UserId);
 
-        return (payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        return (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user);
     }
 
     private static RegisterPaymentCommandHandler BuildHandler(
         Mock<IPaymentRepository> payments,
         Mock<IPurchasePayableRepository> payables,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
+        Mock<ICompanyFinancialDestinationRepository> financialDestinations,
         Mock<IUnitOfWork> uow,
         Mock<ICurrentTenant> tenant,
         Mock<ICurrentCompany> company,
@@ -80,6 +85,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments.Object,
             payables.Object,
             purchaseReturnRepo.Object,
+            financialDestinations.Object,
             uow.Object,
             tenant.Object,
             company.Object,
@@ -105,7 +111,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Pago_valido_aplica_el_pago_y_actualiza_el_saldo_de_la_CxP()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
         SetupPayable(payables, payable);
 
@@ -113,6 +119,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -147,7 +154,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Pago_valido_publica_SupplierPaymentAppliedEvent_en_el_Payment_persistido()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
         SetupPayable(payables, payable);
 
@@ -168,6 +175,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -191,7 +199,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Pago_con_InstallmentId_lo_propaga_a_la_linea_de_aplicacion_del_pago()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(300m);
         var schedule = new List<Domain.Modules.Purchases.Entities.PurchasePaymentSchedule>
         {
@@ -231,6 +239,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -254,7 +263,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Pago_que_excede_el_saldo_pendiente_retorna_ValidationFailure_sin_lanzar()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
         payable.RegisterPayment(70m, UserId); // saldo restante: 30
         SetupPayable(payables, payable);
@@ -263,6 +272,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -291,7 +301,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Pago_sobre_CxP_inexistente_retorna_NotFound_sin_abrir_locks_ni_confirmar()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var missingId = Guid.NewGuid();
         payables
             .Setup(r =>
@@ -303,6 +313,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -337,7 +348,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Pago_sobre_CxP_anulada_retorna_ValidationFailure()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
         payable.CancelPayable();
         SetupPayable(payables, payable);
@@ -346,6 +357,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -378,7 +390,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Orden_transaccional_BeginTx_descubrimiento_LockA_recarga_mutacion_SaveChanges_Commit()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
 
         var sequence = new MockSequence();
@@ -417,6 +429,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -445,7 +458,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Multiples_CxP_de_facturas_distintas_adquieren_locks_deduplicados_en_orden_ascendente_antes_de_mutar()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
 
         // GUIDs deliberadamente NO ordenados como texto en el orden en que se declaran.
         var invoiceHigh = Guid.Parse("ffffffff-0000-0000-0000-000000000001");
@@ -497,6 +510,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,
@@ -536,7 +550,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     [Fact]
     public async Task Estado_anulado_detectado_solo_en_la_recarga_post_lock_rechaza_y_hace_rollback()
     {
-        var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
+        var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
 
         payables
@@ -554,6 +568,7 @@ public sealed class RegisterPaymentCommandHandlerTests
             payments,
             payables,
             purchaseReturnRepo,
+            financialDestinations,
             uow,
             tenant,
             company,

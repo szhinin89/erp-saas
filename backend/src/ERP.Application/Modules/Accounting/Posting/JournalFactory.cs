@@ -41,7 +41,8 @@ internal sealed class JournalFactory
 
             var debit = line.Nature == AccountNature.Debit ? amount : 0m;
             var credit = line.Nature == AccountNature.Credit ? amount : 0m;
-            entry.AddLine(line.AccountId, description, debit, credit);
+            var accountId = PostingLineAccountResolver.ResolveAccountId(fact, line);
+            entry.AddLine(accountId, description, debit, credit);
         }
 
         return entry;

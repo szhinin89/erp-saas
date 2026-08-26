@@ -20,6 +20,10 @@ import {
   type PaymentMethodDto,
 } from "../../sales/facades/paymentMethodLookupFacade";
 import {
+  financialDestinationService,
+  type CompanyFinancialDestinationDto,
+} from "../api/financialDestinationService";
+import {
   buildRegisterPaymentSchema,
   type RegisterPaymentFormValues,
 } from "../../../schemas/finance/registerPaymentSchema";
@@ -39,6 +43,9 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
+  const [financialDestinations, setFinancialDestinations] = useState<
+    CompanyFinancialDestinationDto[]
+  >([]);
   const submittingRef = useRef(false);
 
   const maxAmount = payable?.balanceDue ?? 0;
@@ -50,7 +57,13 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
     formState: { errors },
   } = useForm<RegisterPaymentFormValues>({
     resolver: zodResolver(buildRegisterPaymentSchema(maxAmount)),
-    defaultValues: { amount: maxAmount, installmentId: "", paymentMethodId: "", reference: "" },
+    defaultValues: {
+      amount: maxAmount,
+      installmentId: "",
+      paymentMethodId: "",
+      financialDestinationId: "",
+      reference: "",
+    },
   });
 
   useEffect(() => {
@@ -59,6 +72,7 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
       amount: payable.balanceDue,
       installmentId: "",
       paymentMethodId: "",
+      financialDestinationId: "",
       reference: "",
     });
     setSubmitError("");
@@ -66,6 +80,10 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
       .list(true)
       .then(setMethods)
       .catch(() => setMethods([]));
+    financialDestinationService
+      .list(true)
+      .then(setFinancialDestinations)
+      .catch(() => setFinancialDestinations([]));
   }, [open, payable, reset]);
 
   const handleClose = () => {
@@ -85,6 +103,7 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
         amount: values.amount,
         paymentDate: new Date().toISOString().slice(0, 10),
         paymentMethodId: values.paymentMethodId || null,
+        financialDestinationId: values.financialDestinationId || null,
         reference: values.reference || null,
         lines: [
           {
@@ -160,6 +179,25 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
             {methods.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
+              </option>
+            ))}
+          </ZhSelect>
+        </ZHField>
+
+        <ZHField
+          label="Destino financiero (opcional)"
+          error={errors.financialDestinationId?.message}
+          hint="Cuenta contable usada para generar asientos automáticos cuando esta forma de pago/destino financiero se use en cobros o pagos."
+        >
+          <ZhSelect
+            className="zh-input"
+            disabled={saving}
+            {...register("financialDestinationId")}
+          >
+            <option value="">Sin especificar</option>
+            {financialDestinations.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
               </option>
             ))}
           </ZhSelect>

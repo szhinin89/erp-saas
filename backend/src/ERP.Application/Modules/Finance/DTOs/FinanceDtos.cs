@@ -43,7 +43,9 @@ public sealed record PaymentDto(
     string? ReverseReason,
     IReadOnlyList<PaymentApplicationLineDto> Lines,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    /// <summary>ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) del cobro/pago, si se especificó.</summary>
+    Guid? FinancialDestinationId = null
 );
 
 /// <summary>Entrada de una línea de aplicación al registrar un cobro/pago — DocumentId es SalesReceivable.Id o PurchasePayable.Id según el comando.</summary>

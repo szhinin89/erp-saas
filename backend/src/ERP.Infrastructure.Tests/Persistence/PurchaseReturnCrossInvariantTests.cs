@@ -427,6 +427,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new PaymentRepository(db),
             new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentCompany(() => _companyId),

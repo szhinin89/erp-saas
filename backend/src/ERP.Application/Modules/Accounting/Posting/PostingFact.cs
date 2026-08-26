@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.Accounting.Enums;
+
 namespace ERP.Application.Modules.Accounting.Posting;
 
 /// <summary>
@@ -35,5 +37,16 @@ public sealed record PostingFact(
     decimal? HistoricalCostTotal = null,
     // FLOW-READY-02F.2 — IRBPNR (Compras). Mismo criterio aditivo que los 5 campos anteriores:
     // opcional, agregado al final, ningún call site existente se rompe.
-    decimal? TotalIrbpnr = null
+    decimal? TotalIrbpnr = null,
+    // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — override opcional de UNA cuenta de
+    // PostingRule.Lines, resuelto y validado por el módulo de origen (Finance) ANTES de crear
+    // este PostingFact, nunca por Accounting (mismo principio que Subtotal/TotalVat arriba: "ya
+    // resueltos, Accounting los consume tal cual"). Identifica la línea a sustituir por
+    // (AmountKind, Nature) — nunca por SourceModule/FactType, para no introducir un condicional
+    // cerrado por tipo de hecho contable en JournalFactory (ADR-026 §6.2). Con ambos en null
+    // (default), el comportamiento es idéntico al actual: JournalFactory usa la cuenta fija de la
+    // PostingRule. Ver JournalFactory.ResolveLineAccountId/PostingAccountGuard.
+    PostingAmountKind? OverrideAmountKind = null,
+    AccountNature? OverrideAccountNature = null,
+    Guid? OverrideAccountId = null
 );
