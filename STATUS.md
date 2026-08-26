@@ -4,17 +4,34 @@
 
 ---
 
+## ACCOUNTING-REPORT-ENDPOINTS-SWAGGER-AUDIT-11D — Auditoría de reportes contables en Swagger (2026-08-25)
+
+**Estado: CERRADO — sin bug, sin cambios de código.** Auditó por qué Mayor (`general-ledger`) y Balance de Comprobación (`trial-balance`) "no aparecieron en Swagger" durante ACCOUNTING-POSTING-SMOKE-11C.
+
+- **Revisado**: `AccountingReportsController.cs` (los 5 endpoints — `general-journal`, `general-ledger`, `trial-balance`, `income-statement`, `balance-sheet` — todos con `[HttpGet]`/`[Route("api/v1/accounting/reports")]`/`[Authorize(Policy = "perm:AccountingPermissions.View")]` correctos, sin `[ApiExplorerSettings(IgnoreApi = true)]` ni condicional de registro), `AccountingController.cs` (sin colisión de rutas), `SwaggerExtensions.cs` (un solo `SwaggerDoc("v1", ...)`, sin `DocInclusionPredicate` ni filtro que excluya acciones específicas — los únicos 2 controllers con `IgnoreApi = true` en todo el proyecto son `DevCacheController`/`SpaMenuCatalogController`, no relacionados), y `accountingApi.ts`/`*ReportTab.tsx` del frontend (los 5 endpoints sí están consumidos por UI real).
+- **Verificación en vivo**: `dotnet build` (0 errores) → API levantada localmente → `GET /swagger/v1/swagger.json` → los 5 paths de `api/v1/accounting/reports/*` están presentes, incluidos `general-ledger` y `trial-balance`.
+- **Causa exacta**: no hay ningún bug ni endpoint faltante — los 5 reportes están correctamente expuestos, autorizados y documentados en Swagger. La ausencia observada en el smoke 11C fue una omisión de verificación de ese smoke (no llegó a revisarlos), no una condición real del sistema.
+- **Sin cambios de código** — ni en `PostingEngine`, ni en rutas, ni en reportes, ni en frontend.
+
+---
+
 ## ACCOUNTING-POSTING-SMOKE-11C — Retail Posting Smoke (2026-08-25)
 
-**Estado: VALIDADO.** Se validó con flujo real el flujo de posting contable retail sobre la empresa E2E configurada, usando la misma plantilla de plan de cuentas de 90 cuentas y las 7 PostingRules ya sembradas.
+**Estado: Validated / Approved.**
 
-- **Documentos operativos validados**: factura de compra confirmada, factura de venta autorizada, cobro de cliente aplicado, pago a proveedor aplicado.
-- **Asientos contables generados**: Purchases/InvoiceReceived, Sales/InvoiceIssued, Sales/CostOfGoodsSold, Finance/CollectionApplied, Finance/SupplierPaymentApplied.
-- **Resultado**: `journal_entries` pasó de 0 a 5. Todos los asientos quedaron `Posted` y balanceados (Debe = Haber). La API de Libro Diario devolvió los asientos generados con trazabilidad al documento fuente.
-- **No se ejecutó posting retroactivo. No se modificaron documentos operativos existentes.**
-- El smoke usó la empresa/usuario E2E oficial en lugar de ZH TECH para evitar tocar credenciales reales de administrador.
-- El estado electrónico SRI falló en dev local por indisponibilidad del servicio externo — no afectó el posting contable.
-- **Pendiente**: verificar visibilidad en Swagger de los endpoints de Mayor y Balance de Comprobación.
+- **Empresa usada**: E2E Company (empresa/usuario de prueba oficial `E2ESeedService`) — no ZH TECH, para evitar tocar credenciales reales de administrador.
+- **Documentos validados**: factura de compra confirmada, factura de venta autorizada, cobro de cliente aplicado, pago a proveedor aplicado.
+- **Asientos generados**: Purchases/InvoiceReceived, Sales/InvoiceIssued, Sales/CostOfGoodsSold, Finance/CollectionApplied, Finance/SupplierPaymentApplied.
+- **Resultado**:
+  - `journal_entries` 0 → 5.
+  - Todos `Posted`.
+  - Todos balanceados, Debit = Credit.
+  - Libro Diario (API) con trazabilidad hacia los documentos fuente.
+- **Notas**:
+  - Sin posting retroactivo.
+  - Sin modificación de documentos operativos existentes.
+  - SRI no disponible en dev local — no bloquea contabilidad.
+  - Mayor y Balance de Comprobación quedaron en auditoría Swagger — **cerrado sin hallazgos en ACCOUNTING-REPORT-ENDPOINTS-SWAGGER-AUDIT-11D** (ver arriba): ambos endpoints existen, están autorizados y expuestos correctamente.
 
 ---
 
