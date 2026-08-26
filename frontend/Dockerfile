@@ -15,6 +15,9 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY tools/ tools/
 COPY frontend/ frontend/
 
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN cd frontend && npm run build
 
 # ---- Stage 2: nginx estático ----
