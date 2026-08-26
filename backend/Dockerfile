@@ -30,8 +30,35 @@ RUN dotnet publish src/ERP.API/ERP.API.csproj \
     --no-restore
 
 # ---- Stage 2: runtime ----
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
+# Ubuntu/noble (glibc, familia Debian) — no Alpine/musl. Para .NET 10, Microsoft ya
+# no publica tag "bookworm-slim" (mcr.microsoft.com/dotnet/aspnet:10.0-bookworm-slim
+# no existe); "noble" (Ubuntu 24.04) es la imagen glibc/apt-based equivalente y es el
+# tag base que usa "10.0"/"10.0.203" sin sufijo. QuestPDF/SkiaSharp requieren
+# librerías nativas de render que la imagen Alpine no trae de forma estable —
+# causaban crash nativo (SIGSEGV, exit 139) en el arranque bajo Coolify/Vultr.
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        tzdata \
+        fontconfig \
+        libfontconfig1 \
+        libfreetype6 \
+        libharfbuzz0b \
+        libjpeg-turbo8 \
+        libpng16-16 \
+        libwebp7 \
+        libx11-6 \
+        libxext6 \
+        libxrender1 \
+        libxcb1 \
+        zlib1g \
+        curl \
+        wget \
+        tini \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV DOTNET_RUNNING_IN_CONTAINER=true \
     ASPNETCORE_URLS=http://+:8080 \
@@ -44,4 +71,11 @@ COPY --from=build /app/publish .
 # Migraciones (db.Database.MigrateAsync()) se aplican automáticamente en el
 # arranque de ERP.API contra la base de datos existente — no se ejecuta ningún
 # comando de inicialización destructivo desde esta imagen.
-ENTRYPOINT ["dotnet", "ERP.API.dll"]
+#
+# tini como PID 1: sin un init real, dotnet corre como PID 1 y el manejador de
+# señales del runtime (createdump/SIGABRT en excepciones no controladas) puede
+# reportar un exit code distinto al real (observado: 139/SIGSEGV en vez del
+# 134/SIGABRT correcto) — Coolify/Docker interpretan eso como crash nativo y
+# reinician el contenedor en loop. tini reenvía señales y reaporta el exit
+# code real del proceso hijo.
+ENTRYPOINT ["/usr/bin/tini", "--", "dotnet", "ERP.API.dll"]
