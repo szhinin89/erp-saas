@@ -24,7 +24,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: zhin@2024
+          POSTGRES_PASSWORD: ci_test_password
           POSTGRES_DB: dberpsaas
         ports:
           - 5435:5432
@@ -58,7 +58,7 @@ jobs:
       - name: EF database update
         working-directory: backend/src
         env:
-          ConnectionStrings__DefaultConnection: Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=zhin@2024
+          ConnectionStrings__DefaultConnection: Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=ci_test_password
         run: |
           dotnet ef database update \
             --project ERP.Infrastructure/ERP.Infrastructure.csproj \
@@ -70,7 +70,7 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Development
           ASPNETCORE_URLS: http://0.0.0.0:5003
-          ConnectionStrings__DefaultConnection: Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=zhin@2024
+          ConnectionStrings__DefaultConnection: Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=ci_test_password
           ConnectionStrings__Redis: ""
           HealthChecks__EnableRedis: "false"
           Development__SeedDemoTenant: "true"
