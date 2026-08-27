@@ -10,6 +10,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { NoAccessPage, PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHFormAlert, ZHFormActions } from "../../../components/zh/ZHForm";
+import { ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { todayIso, toDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
@@ -58,6 +59,7 @@ const PERMISSIONS = {
   view: "expenses.documents.view",
   create: "expenses.documents.create",
   update: "expenses.documents.update",
+  confirm: "expenses.documents.confirm",
   catalogView: "expenses.catalog.view",
 } as const;
 
@@ -82,6 +84,7 @@ export function ExpenseDocumentFormPage() {
   const canView = has(PERMISSIONS.view);
   const canCreate = has(PERMISSIONS.create);
   const canUpdate = has(PERMISSIONS.update);
+  const canConfirm = has(PERMISSIONS.confirm);
   const canReadCatalog = has(PERMISSIONS.catalogView);
 
   const [header, setHeader] = useState<ExpenseDocumentHeaderState>(EMPTY_HEADER);
@@ -96,6 +99,8 @@ export function ExpenseDocumentFormPage() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [headerErrors, setHeaderErrors] = useState<ExpenseDocumentHeaderErrors>({});
   const [lineErrors, setLineErrors] = useState<ExpenseLineFieldErrors>({});
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const accountsById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
@@ -105,6 +110,7 @@ export function ExpenseDocumentFormPage() {
   const canSave = isNew ? canCreate : canUpdate;
   const isDraft = document?.status ? document.status === "Draft" : true;
   const disabled = saving || !isDraft || !canSave;
+  const canShowConfirmButton = !isNew && canConfirm && document?.status === "Draft";
   const catalogReady =
     canReadCatalog && hasConfiguredExpenseSubcategory(tree, accountsById);
 
@@ -244,6 +250,29 @@ export function ExpenseDocumentFormPage() {
     }
   };
 
+  const handleConfirm = async () => {
+    if (isNew || !id) return;
+
+    setConfirming(true);
+    try {
+      await expenseDocumentService.confirm(id);
+      message.success("Gasto confirmado. Se genero el asiento contable.");
+      setConfirmModalOpen(false);
+      // EXPENSES-CONFIRM-FRONTEND-08: recargar desde API (no solo aplicar la respuesta del
+      // confirm) para reflejar exactamente lo que el backend persistio, incluyendo el snapshot
+      // de cuenta contable recongelado por linea.
+      await load();
+    } catch (error) {
+      message.error(
+        formatApiRequestError(error, {
+          generic: "No se pudo confirmar el gasto.",
+        }),
+      );
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   return (
     <PageShell
       kicker="Gastos"
@@ -252,6 +281,19 @@ export function ExpenseDocumentFormPage() {
       action={
         <div className="exp-doc-actions">
           {document && <ExpenseDocumentStatusBadge status={document.status} />}
+          {canShowConfirmButton && (
+            <ZHBtn
+              type="button"
+              variant="primary"
+              disabled={confirming}
+              onClick={() => setConfirmModalOpen(true)}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                task_alt
+              </span>
+              Confirmar gasto
+            </ZHBtn>
+          )}
           <ZHBtn
             type="button"
             variant="ghost"
@@ -344,6 +386,16 @@ export function ExpenseDocumentFormPage() {
           </ZHCard>
         </aside>
       </div>
+
+      <ZHConfirmModal
+        open={confirmModalOpen}
+        variant="warning"
+        title="Confirmar gasto"
+        message="Al confirmar, el gasto generara asiento contable y ya no podra editarse."
+        confirmLabel={confirming ? "Confirmando..." : "Confirmar gasto"}
+        onCancel={() => setConfirmModalOpen(false)}
+        onConfirm={handleConfirm}
+      />
     </PageShell>
   );
 }

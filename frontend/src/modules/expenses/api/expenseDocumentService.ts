@@ -118,4 +118,6 @@ export const expenseDocumentService = {
 
   update: (id: string, payload: UpdateExpenseDraftPayload) =>
     apiPut<ExpenseDocumentDetailDto>(`${BASE}/${id}`, payload),
+
+  confirm: (id: string) => apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/confirm`, {}),
 };
