@@ -4,6 +4,16 @@ namespace ERP.Domain.Modules.Expenses.Interfaces;
 
 public interface IExpenseDocumentRepository
 {
+    Task<(IReadOnlyList<ExpenseDocument> Items, IReadOnlyDictionary<Guid, int> LineCounts, int Total)> GetPagedAsync(
+        Guid tenantId,
+        Guid branchId,
+        string? search = null,
+        string? status = null,
+        int pageNumber = 1,
+        int pageSize = 25,
+        CancellationToken ct = default
+    );
+
     Task<ExpenseDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     Task<ExpenseDocument?> GetBySupplierAndDocumentNumberAsync(

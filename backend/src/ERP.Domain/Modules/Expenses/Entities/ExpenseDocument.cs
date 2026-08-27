@@ -139,6 +139,61 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         SetUpdated(updatedBy);
     }
 
+    public void UpdateDraft(
+        Guid supplierId,
+        string supplierName,
+        string supplierTaxId,
+        DateOnly issueDate,
+        DateOnly accountingDate,
+        string documentType,
+        string documentNumber,
+        Guid paymentTermId,
+        string paymentTermName,
+        int paymentTermInstallments,
+        int paymentTermDaysBetween,
+        Guid updatedBy,
+        string? authorizationNumber = null,
+        DateTime? authorizationDate = null,
+        DateOnly? dueDate = null,
+        string? notes = null
+    )
+    {
+        EnsureDraft();
+        if (supplierId == Guid.Empty)
+            throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
+        if (string.IsNullOrWhiteSpace(supplierName))
+            throw new ArgumentException("El nombre del proveedor es obligatorio.", nameof(supplierName));
+        if (string.IsNullOrWhiteSpace(supplierTaxId))
+            throw new ArgumentException("El RUC/CI del proveedor es obligatorio.", nameof(supplierTaxId));
+        if (string.IsNullOrWhiteSpace(documentType))
+            throw new ArgumentException("El tipo de documento es obligatorio.", nameof(documentType));
+        if (string.IsNullOrWhiteSpace(documentNumber))
+            throw new ArgumentException("El número de documento es obligatorio.", nameof(documentNumber));
+        if (paymentTermId == Guid.Empty)
+            throw new ArgumentException("La condición de pago es obligatoria.", nameof(paymentTermId));
+        if (paymentTermInstallments < 1)
+            throw new ArgumentException("Las cuotas deben ser al menos 1.", nameof(paymentTermInstallments));
+        if (paymentTermDaysBetween < 0)
+            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(paymentTermDaysBetween));
+
+        SupplierId = supplierId;
+        SupplierName = supplierName.Trim();
+        SupplierTaxId = supplierTaxId.Trim();
+        IssueDate = issueDate;
+        AccountingDate = accountingDate;
+        DocumentType = documentType.Trim();
+        DocumentNumber = documentNumber.Trim();
+        AuthorizationNumber = OptionalCode.Normalize(authorizationNumber);
+        AuthorizationDate = authorizationDate;
+        PaymentTermId = paymentTermId;
+        PaymentTermName = paymentTermName.Trim();
+        PaymentTermInstallments = paymentTermInstallments;
+        PaymentTermDaysBetween = paymentTermDaysBetween;
+        DueDate = dueDate;
+        Notes = notes?.Trim();
+        SetUpdated(updatedBy);
+    }
+
     public void ReplacePaymentSchedule(
         IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments
     )

@@ -50,6 +50,7 @@ public sealed class ExpenseLine : IMustHaveTenant
         decimal vatRate = 0m,
         string? snapshotVatName = null,
         decimal discountPct = 0m,
+        decimal? discountAmount = null,
         string? snapshotAccountingAccountCode = null,
         string? snapshotAccountingAccountName = null,
         string? notes = null
@@ -79,6 +80,8 @@ public sealed class ExpenseLine : IMustHaveTenant
             throw new ArgumentException("El valor unitario no puede ser negativo.", nameof(unitAmount));
         if (discountPct is < 0 or > 100)
             throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(discountPct));
+        if (discountAmount is < 0)
+            throw new ArgumentException("El descuento no puede ser negativo.", nameof(discountAmount));
         if (string.IsNullOrWhiteSpace(vatCode))
             throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
         if (vatRate < 0)
@@ -102,22 +105,45 @@ public sealed class ExpenseLine : IMustHaveTenant
             SnapshotVatName = Normalize(snapshotVatName),
             Notes = Normalize(notes),
         };
-        line.RecalculateAmounts();
+        line.RecalculateAmounts(discountAmount);
         return line;
     }
 
     internal void SetSortOrder(short order) => SortOrder = order;
 
-    private void RecalculateAmounts()
+    private void RecalculateAmounts(decimal? explicitDiscountAmount = null)
     {
-        DiscountAmount =
-            DiscountPct > 0
-                ? Math.Round(
-                    LineSubtotal * DiscountPct / 100m,
-                    FiscalPrecision.TaxAmount,
-                    MidpointRounding.AwayFromZero
-                )
-                : 0m;
+        if (explicitDiscountAmount.HasValue)
+        {
+            DiscountAmount = Math.Round(
+                explicitDiscountAmount.Value,
+                FiscalPrecision.TaxAmount,
+                MidpointRounding.AwayFromZero
+            );
+            if (DiscountAmount > LineSubtotal)
+                throw new InvalidOperationException(
+                    "El descuento no puede superar el subtotal de la línea."
+                );
+            DiscountPct =
+                LineSubtotal == 0
+                    ? 0m
+                    : Math.Round(
+                        DiscountAmount * 100m / LineSubtotal,
+                        2,
+                        MidpointRounding.AwayFromZero
+                    );
+        }
+        else
+        {
+            DiscountAmount =
+                DiscountPct > 0
+                    ? Math.Round(
+                        LineSubtotal * DiscountPct / 100m,
+                        FiscalPrecision.TaxAmount,
+                        MidpointRounding.AwayFromZero
+                    )
+                    : 0m;
+        }
 
         if (TaxableBase < 0)
             throw new InvalidOperationException("La base imponible de la línea no puede ser negativa.");
