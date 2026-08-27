@@ -45,6 +45,25 @@ internal sealed class JournalFactory
             entry.AddLine(accountId, description, debit, credit);
         }
 
+        // EXPENSES-POSTING-ALLOCATIONS-06 — líneas dinámicas por cuenta, además (nunca en lugar)
+        // de las líneas fijas de PostingRule.Lines arriba. Cardinalidad variable, resuelta por el
+        // módulo de origen (cada PostingAllocation ya validó su propia cuenta y monto > 0 en su
+        // constructor — ver PostingAllocation.cs), nunca por SourceModule/FactType (ADR-026 §6.2).
+        if (fact.Allocations is { Count: > 0 } allocations)
+        {
+            foreach (var allocation in allocations)
+            {
+                var debit = allocation.Nature == AccountNature.Debit ? allocation.Amount : 0m;
+                var credit = allocation.Nature == AccountNature.Credit ? allocation.Amount : 0m;
+                entry.AddLine(
+                    allocation.AccountingAccountId,
+                    allocation.Description ?? description,
+                    debit,
+                    credit
+                );
+            }
+        }
+
         return entry;
     }
 

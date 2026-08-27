@@ -48,5 +48,10 @@ public sealed record PostingFact(
     // PostingRule. Ver JournalFactory.ResolveLineAccountId/PostingAccountGuard.
     PostingAmountKind? OverrideAmountKind = null,
     AccountNature? OverrideAccountNature = null,
-    Guid? OverrideAccountId = null
+    Guid? OverrideAccountId = null,
+    // EXPENSES-POSTING-ALLOCATIONS-06 — líneas dinámicas por cuenta, cardinalidad variable
+    // (a diferencia de los campos anteriores, todos monto único). Mismo criterio aditivo:
+    // opcional, agregada al final, null por defecto — ningún call site existente se rompe.
+    // Ver PostingAllocation.cs y JournalFactory.Create para cómo se consume.
+    IReadOnlyCollection<PostingAllocation>? Allocations = null
 );

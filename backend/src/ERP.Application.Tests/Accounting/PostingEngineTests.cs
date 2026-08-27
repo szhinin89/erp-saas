@@ -516,4 +516,79 @@ public sealed class PostingEngineTests
             Times.Never
         );
     }
+
+    // ── EXPENSES-POSTING-ALLOCATIONS-06: PostingAccountGuard también valida fact.Allocations ──
+
+    private static PostingFact FactWithAllocations(
+        IReadOnlyCollection<PostingAllocation> allocations
+    ) =>
+        new(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            new DateOnly(2026, 7, 15),
+            100m,
+            15m,
+            0m,
+            0m,
+            115m,
+            Allocations: allocations
+        );
+
+    [Fact]
+    public async Task Allocation_con_cuenta_inexistente_retorna_POSTING_ACCOUNT_INVALID_y_no_persiste()
+    {
+        var m = new Mocks();
+        var (rule, debit, creditSubtotal, creditVat) = RuleWithAccounts();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(creditSubtotal);
+        m.RegisterAccount(creditVat);
+        SetupUpToPeriod(m, rule);
+
+        // La cuenta de la allocation nunca se registra en el mock — GetByIdAsync devuelve null,
+        // simulando una cuenta borrada/de otra empresa referenciada por una ExpenseLine.
+        var allocations = new[] { new PostingAllocation(Guid.NewGuid(), 50m, AccountNature.Debit) };
+
+        var engine = m.BuildEngine();
+        var result = await engine.PostAsync(FactWithAllocations(allocations));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Allocation_con_cuenta_inactiva_retorna_POSTING_ACCOUNT_INVALID_y_no_persiste()
+    {
+        var m = new Mocks();
+        var (rule, debit, creditSubtotal, creditVat) = RuleWithAccounts();
+        m.RegisterAccount(debit);
+        m.RegisterAccount(creditSubtotal);
+        m.RegisterAccount(creditVat);
+        SetupUpToPeriod(m, rule);
+
+        var inactiveAllocationAccount = PostableAccount("6.1.01");
+        inactiveAllocationAccount.Disable(CreatedBy);
+        m.RegisterAccount(inactiveAllocationAccount);
+
+        var allocations = new[]
+        {
+            new PostingAllocation(inactiveAllocationAccount.Id, 50m, AccountNature.Debit),
+        };
+
+        var engine = m.BuildEngine();
+        var result = await engine.PostAsync(FactWithAllocations(allocations));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
 }

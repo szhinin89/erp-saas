@@ -25,7 +25,8 @@ public sealed class JournalFactoryTests
         decimal totalVat = 15m,
         decimal totalIce = 0m,
         decimal totalDiscount = 0m,
-        decimal grandTotal = 115m
+        decimal grandTotal = 115m,
+        IReadOnlyCollection<PostingAllocation>? allocations = null
     ) =>
         new(
             TenantId,
@@ -38,7 +39,8 @@ public sealed class JournalFactoryTests
             totalVat,
             totalIce,
             totalDiscount,
-            grandTotal
+            grandTotal,
+            Allocations: allocations
         );
 
     private static AccountingPeriod OpenPeriod() =>
@@ -281,5 +283,94 @@ public sealed class JournalFactoryTests
                 l => l.AccountId == iceAccount,
                 because: "la línea de ICE se omite porque el monto resuelto es cero — nunca se contabiliza en cero"
             );
+    }
+
+    // ── EXPENSES-POSTING-ALLOCATIONS-06: líneas dinámicas por cuenta (PostingFact.Allocations) ──
+
+    [Fact]
+    public async Task Fact_con_una_allocation_genera_una_JournalEntryLine_adicional()
+    {
+        var allocationAccount = Guid.NewGuid();
+        var creditAccount = Guid.NewGuid();
+        var rule = EmptyRule();
+        rule.AddLine(creditAccount, AccountNature.Credit, PostingAmountKind.GrandTotal);
+
+        var allocations = new[]
+        {
+            new PostingAllocation(allocationAccount, 115m, AccountNature.Debit, "Gasto de oficina"),
+        };
+
+        var m = new Mocks();
+        m.SetupRule(rule);
+
+        var result = await m.BuildEngine().PostAsync(Fact(allocations: allocations));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().HaveCount(2);
+        m.Captured.Lines.Should()
+            .Contain(l =>
+                l.AccountId == allocationAccount
+                && l.Debit == 115m
+                && l.Credit == 0m
+                && l.Description == "Gasto de oficina"
+            );
+    }
+
+    [Fact]
+    public async Task Fact_con_tres_allocations_genera_tres_JournalEntryLines_una_por_cuenta()
+    {
+        var accountA = Guid.NewGuid();
+        var accountB = Guid.NewGuid();
+        var accountC = Guid.NewGuid();
+        var creditAccount = Guid.NewGuid();
+        var rule = EmptyRule();
+        rule.AddLine(creditAccount, AccountNature.Credit, PostingAmountKind.GrandTotal);
+
+        var allocations = new[]
+        {
+            new PostingAllocation(accountA, 50m, AccountNature.Debit),
+            new PostingAllocation(accountB, 40m, AccountNature.Debit),
+            new PostingAllocation(accountC, 25m, AccountNature.Debit),
+        };
+
+        var m = new Mocks();
+        m.SetupRule(rule);
+
+        var result = await m.BuildEngine().PostAsync(Fact(grandTotal: 115m, allocations: allocations));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().HaveCount(4); // 1 crédito fijo + 3 allocations
+        m.Captured.Lines.Should().Contain(l => l.AccountId == accountA && l.Debit == 50m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == accountB && l.Debit == 40m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == accountC && l.Debit == 25m);
+    }
+
+    [Fact]
+    public async Task Asiento_con_allocations_queda_balanceado_Debe_igual_a_Haber()
+    {
+        var accountA = Guid.NewGuid();
+        var accountB = Guid.NewGuid();
+        var accountC = Guid.NewGuid();
+        var creditAccount = Guid.NewGuid();
+        var rule = EmptyRule();
+        rule.AddLine(creditAccount, AccountNature.Credit, PostingAmountKind.GrandTotal);
+
+        var allocations = new[]
+        {
+            new PostingAllocation(accountA, 50m, AccountNature.Debit),
+            new PostingAllocation(accountB, 40m, AccountNature.Debit),
+            new PostingAllocation(accountC, 25m, AccountNature.Debit),
+        };
+
+        var m = new Mocks();
+        m.SetupRule(rule);
+
+        var result = await m.BuildEngine().PostAsync(Fact(grandTotal: 115m, allocations: allocations));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
+        // Post() invoca EnsureBalanced() internamente — un asiento desbalanceado nunca llega a
+        // Posted, así que este estado por sí solo ya prueba el balance.
+        m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
     }
 }

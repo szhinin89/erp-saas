@@ -51,8 +51,15 @@ internal sealed class PostingAccountGuard
         // (la que JournalFactory realmente va a usar, incluido un posible override de Finance),
         // nunca la cuenta fija de la PostingRule a secas — de lo contrario un destino financiero
         // inválido pasaría este guard sin ser detectado.
+        // EXPENSES-POSTING-ALLOCATIONS-06 — además de las cuentas fijas de rule.Lines, valida toda
+        // cuenta referenciada por fact.Allocations (líneas dinámicas) con la misma exigencia:
+        // existe, misma Company/Tenant, activa, AllowsPosting. Ninguna allocation con cuenta
+        // inválida llega a producir una JournalEntryLine.
         var accountIds = rule
             .Lines.Select(l => PostingLineAccountResolver.ResolveAccountId(fact, l))
+            .Concat(
+                fact.Allocations?.Select(a => a.AccountingAccountId) ?? Enumerable.Empty<Guid>()
+            )
             .Distinct();
 
         foreach (var accountId in accountIds)
