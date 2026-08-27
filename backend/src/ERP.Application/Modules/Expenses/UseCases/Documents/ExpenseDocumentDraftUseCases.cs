@@ -759,7 +759,9 @@ file static class ExpenseDraftRules
         new(message, ApiResponseCodes.Common.ValidationError);
 }
 
-file static class ExpenseDocumentMapper
+// EXPENSES-CONFIRM-07: internal (no file-scoped) para que ExpenseDocumentConfirmUseCases.cs
+// reutilice el mismo mapeo — una sola fuente de verdad para ExpenseDocumentDetailDto.
+internal static class ExpenseDocumentMapper
 {
     public static ExpenseDocumentListItemDto ToListItem(ExpenseDocument document, int lineCount) =>
         new(

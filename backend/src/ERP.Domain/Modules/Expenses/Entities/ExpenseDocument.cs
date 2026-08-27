@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Expenses.Enums;
+using ERP.Domain.Modules.Expenses.Events;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
@@ -234,6 +235,66 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
             _paymentSchedules.Add(
                 ExpensePaymentSchedule.Create(Id, TenantId, inst.Number, inst.DueDate, inst.Amount, inst.Notes)
             );
+    }
+
+    /// <summary>
+    /// EXPENSES-CONFIRM-07 — confirma el borrador y deja el documento listo para postear.
+    /// <paramref name="lineAccountSnapshots"/> trae, por línea (clave <c>ExpenseLine.Id</c>), la
+    /// cuenta contable YA validada por Application (activa, postable, misma empresa, tipo Gasto)
+    /// contra la subcategoría vigente — este método solo recongela el snapshot de cada línea con
+    /// ese dato (la subcategoría pudo cambiar de cuenta desde que el borrador se creó/editó) y
+    /// congela los totales (<c>Confirmed*</c>), nunca vuelve a resolver ni validar cuentas por su
+    /// cuenta (esa responsabilidad es de Application/Accounting, no de este aggregate).
+    /// </summary>
+    public void Confirm(
+        IReadOnlyDictionary<Guid, (Guid AccountId, string? Code, string? Name)> lineAccountSnapshots,
+        Guid confirmedBy
+    )
+    {
+        EnsureDraft();
+        if (_lines.Count == 0)
+            throw new InvalidOperationException(
+                "El gasto debe tener al menos una línea para confirmarse."
+            );
+
+        foreach (var line in _lines)
+        {
+            if (!lineAccountSnapshots.TryGetValue(line.Id, out var snapshot))
+                throw new InvalidOperationException(
+                    "Falta la cuenta contable resuelta para una línea del gasto."
+                );
+            line.RefreshAccountSnapshot(snapshot.AccountId, snapshot.Code, snapshot.Name);
+        }
+
+        ConfirmedSubtotal = _lines.Sum(l => l.LineSubtotal);
+        ConfirmedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
+        ConfirmedTotalTax = _lines.Sum(l => l.VatAmount);
+        ConfirmedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal);
+        Status = ExpenseStatus.Confirmed;
+        SetUpdated(confirmedBy);
+
+        var lineAllocations = _lines
+            .Select(l => new ExpenseDocumentConfirmedLineAllocation(
+                l.Id,
+                l.SnapshotAccountingAccountId,
+                l.TaxableBase,
+                l.Description
+            ))
+            .ToList();
+
+        RaiseDomainEvent(
+            new ExpenseDocumentConfirmedEvent(
+                TenantId,
+                Id,
+                SupplierId,
+                DocumentNumber,
+                CompanyId,
+                AccountingDate,
+                TotalVat,
+                GrandTotal,
+                lineAllocations
+            )
+        );
     }
 
     private void EnsureDraft()

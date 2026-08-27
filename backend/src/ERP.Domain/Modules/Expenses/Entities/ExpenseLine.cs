@@ -111,6 +111,26 @@ public sealed class ExpenseLine : IMustHaveTenant
 
     internal void SetSortOrder(short order) => SortOrder = order;
 
+    /// <summary>
+    /// EXPENSES-CONFIRM-07 — recongela el snapshot de cuenta contable al confirmar el documento
+    /// (llamado únicamente desde <c>ExpenseDocument.Confirm()</c>, mismo assembly). La subcategoría
+    /// pudo cambiar de cuenta contable (<c>ExpenseCategoryNode.ChangeSubcategoryAccount</c>) entre
+    /// la creación del borrador y la confirmación — este método asegura que el asiento se genere
+    /// con la cuenta vigente al momento de confirmar, nunca con una snapshot obsoleta.
+    /// </summary>
+    internal void RefreshAccountSnapshot(Guid accountingAccountId, string? code, string? name)
+    {
+        if (accountingAccountId == Guid.Empty)
+            throw new ArgumentException(
+                "La cuenta contable snapshot es obligatoria.",
+                nameof(accountingAccountId)
+            );
+
+        SnapshotAccountingAccountId = accountingAccountId;
+        SnapshotAccountingAccountCode = Normalize(code);
+        SnapshotAccountingAccountName = Normalize(name);
+    }
+
     private void RecalculateAmounts(decimal? explicitDiscountAmount = null)
     {
         if (explicitDiscountAmount.HasValue)

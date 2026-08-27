@@ -11,4 +11,5 @@ public static class ExpensePermissions
     public const string DocumentsView = "expenses.documents.view";
     public const string DocumentsCreate = "expenses.documents.create";
     public const string DocumentsUpdate = "expenses.documents.update";
+    public const string DocumentsConfirm = "expenses.documents.confirm";
 }

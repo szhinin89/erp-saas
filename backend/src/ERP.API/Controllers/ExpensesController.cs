@@ -101,4 +101,9 @@ public sealed class ExpensesController : ControllerBase
                 ct
             )
         );
+
+    [HttpPost("{id:guid}/confirm")]
+    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsConfirm}")]
+    public async Task<IActionResult> Confirm(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new ConfirmExpenseDocumentCommand(id), ct));
 }

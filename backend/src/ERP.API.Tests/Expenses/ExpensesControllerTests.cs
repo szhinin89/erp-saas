@@ -57,6 +57,7 @@ public sealed class ExpensesControllerTests
     [InlineData(nameof(ExpensesController.GetById), ExpensePermissions.DocumentsView)]
     [InlineData(nameof(ExpensesController.CreateDraft), ExpensePermissions.DocumentsCreate)]
     [InlineData(nameof(ExpensesController.UpdateDraft), ExpensePermissions.DocumentsUpdate)]
+    [InlineData(nameof(ExpensesController.Confirm), ExpensePermissions.DocumentsConfirm)]
     public void Cada_endpoint_expone_su_permiso_propio(string methodName, string permission)
     {
         var method = typeof(ExpensesController).GetMethod(methodName)!;
@@ -165,6 +166,69 @@ public sealed class ExpensesControllerTests
         var response = await controller.CreateDraft(SampleCreateRequest(), CancellationToken.None);
 
         response.Should().BeOfType<UnprocessableEntityObjectResult>();
+    }
+
+    [Fact]
+    public async Task Confirm_exitoso_retorna_200_y_envia_command_con_el_id_de_ruta()
+    {
+        object? sent = null;
+        var id = Guid.NewGuid();
+        var dto = SampleDetail(id) with { Status = ExpenseStatus.Confirmed };
+        var controller = BuildController(req =>
+        {
+            sent = req;
+            return Result<ExpenseDocumentDetailDto>.Success(dto);
+        });
+
+        var response = await controller.Confirm(id, CancellationToken.None);
+
+        response.Should().BeOfType<OkObjectResult>();
+        sent.Should().BeEquivalentTo(new ConfirmExpenseDocumentCommand(id));
+    }
+
+    [Fact]
+    public async Task Confirm_de_documento_no_Draft_retorna_422()
+    {
+        var controller = BuildController(_ =>
+            Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                "Solo se pueden confirmar gastos en estado borrador."
+            )
+        );
+
+        var response = await controller.Confirm(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().BeOfType<UnprocessableEntityObjectResult>();
+    }
+
+    [Fact]
+    public async Task Confirm_con_posting_fallido_no_retorna_200()
+    {
+        // El codigo de fallo de posting (p. ej. "RULE_NOT_FOUND") se propaga tal cual desde
+        // IPostingEngine — no es el generico ValidationError, por lo que ApiResultExtensions lo
+        // mapea a 400, no 422. Lo que importa para EXPENSES-CONFIRM-07 es que nunca sea 200.
+        var controller = BuildController(_ =>
+            Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                "No existe regla de contabilizacion.",
+                "RULE_NOT_FOUND"
+            )
+        );
+
+        var response = await controller.Confirm(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().NotBeOfType<OkObjectResult>();
+        response.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task Confirm_de_documento_inexistente_retorna_404()
+    {
+        var controller = BuildController(_ =>
+            Result<ExpenseDocumentDetailDto>.NotFound("Gasto no encontrado.")
+        );
+
+        var response = await controller.Confirm(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().BeOfType<NotFoundObjectResult>();
     }
 
     private static CreateExpenseDraftRequest SampleCreateRequest()
