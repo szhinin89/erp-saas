@@ -483,6 +483,8 @@
   "app.nav.item.purchases.configuration": "Allichay",
   "app.nav.item.purchases.reports": "Willakuykuna",
   "app.nav.item.purchases.preferences": "Rantiy Allichaykuna",
+  "app.nav.group.expenses": "Gastos",
+  "app.nav.item.expenses.catalog": "Gastos catálogo",
   "purchases.reception.summary.readyPurchases.title": "Rantikuna Listo",
   "purchases.reception.summary.readyPurchases.description": "Compras ya ingresadas al sistema",
   "purchases.reception.summary.toReview.title": "Rikuna Tiyan",

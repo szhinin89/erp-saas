@@ -69,6 +69,10 @@ const FinancialDestinationsPage = lazyNamedPage(
   () => import("../modules/finance/pages/FinancialDestinationsPage"),
   "FinancialDestinationsPage",
 );
+const ExpenseCategoriesPage = lazyNamedPage(
+  () => import("../modules/expenses/pages/ExpenseCategoriesPage"),
+  "ExpenseCategoriesPage",
+);
 const PaymentTermsPage = lazyNamedPage(
   () => import("../modules/masterData/pages/PaymentTermsPage"),
   "PaymentTermsPage",
@@ -348,6 +352,13 @@ export const catalogRoutes = [
     key="settings-financial-destinations"
     path="/settings/financial-destinations"
     element={<FinancialDestinationsPage />}
+  />,
+
+  // -- Expenses -----------------------------------------------------------
+  <Route
+    key="expenses-categories"
+    path="/expenses/categories"
+    element={<ExpenseCategoriesPage />}
   />,
 
   // -- MasterData / Payment Terms -----------------------------------------

@@ -195,6 +195,8 @@
   "app.nav.item.purchases.configuration": "Configuración",
   "app.nav.item.purchases.reports": "Reportes",
   "app.nav.item.purchases.preferences": "Preferencias de Compras",
+  "app.nav.group.expenses": "Gastos",
+  "app.nav.item.expenses.catalog": "Catálogo de Gastos",
   "purchases.reception.summary.readyPurchases.title": "Compras listas",
   "purchases.reception.summary.readyPurchases.description": "Compras ya ingresadas al sistema",
   "purchases.reception.summary.toReview.title": "Por revisar",
