@@ -15,7 +15,7 @@ namespace ERP.API.Controllers;
     "ReceiptText",
     "/expenses/categories",
     null,
-    46,
+    47,
     IsVisibleInMenu = false
 )]
 [ApiController]
@@ -29,6 +29,7 @@ public sealed class ExpenseCategoriesController : ControllerBase
     public ExpenseCategoriesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
+    [HttpGet("tree")]
     [Authorize(Policy = $"perm:{ExpensePermissions.CatalogView}")]
     public async Task<IActionResult> GetTree(
         [FromQuery] bool includeInactive = false,
@@ -73,6 +74,7 @@ public sealed class ExpenseCategoriesController : ControllerBase
         );
 
     [HttpPost("{id:guid}/activate")]
+    [HttpPatch("{id:guid}/activate")]
     [Authorize(Policy = $"perm:{ExpensePermissions.CatalogActivate}")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
@@ -80,6 +82,7 @@ public sealed class ExpenseCategoriesController : ControllerBase
         );
 
     [HttpPost("{id:guid}/deactivate")]
+    [HttpPatch("{id:guid}/deactivate")]
     [Authorize(Policy = $"perm:{ExpensePermissions.CatalogDeactivate}")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
