@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Entities;
@@ -350,6 +351,11 @@ public class ErpDbContext : DbContext
     public DbSet<ExpenseLine> ExpenseLines => Set<ExpenseLine>();
     public DbSet<ExpensePaymentSchedule> ExpensePaymentSchedules =>
         Set<ExpensePaymentSchedule>();
+
+    // ── Payables BC (PAYABLES-GENERIC-FOUNDATION-09) ────────────────────────
+    public DbSet<AccountsPayable> AccountsPayables => Set<AccountsPayable>();
+    public DbSet<AccountsPayableInstallment> AccountsPayableInstallments =>
+        Set<AccountsPayableInstallment>();
 
     // ── Sales BC ──────────────────────────────────────────────────────────
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();

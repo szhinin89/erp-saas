@@ -723,6 +723,16 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Repositories.Expenses.ExpenseDocumentRepository
         >();
 
+        // ── Payables BC (PAYABLES-GENERIC-FOUNDATION-09) ─────────────────────────
+        services.AddScoped<
+            ERP.Domain.Modules.Payables.Interfaces.IAccountsPayableRepository,
+            ERP.Infrastructure.Persistence.Repositories.Payables.AccountsPayableRepository
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Payables.UseCases.IAccountsPayableService,
+            ERP.Application.Modules.Payables.UseCases.AccountsPayableService
+        >();
+
         services.AddScoped<
             ERP.Domain.Modules.Finance.Interfaces.ICompanyFinancialDestinationRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.CompanyFinancialDestinationRepository

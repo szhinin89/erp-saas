@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
+using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -10,7 +11,10 @@ using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Events;
 using ERP.Domain.Modules.Expenses.Interfaces;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace ERP.Application.Tests.Expenses;
@@ -37,6 +41,57 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
         result.Value.GrandTotal.Should().Be(115m);
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Confirmar_gasto_crea_CxP_generica_con_OriginType_ExpenseDocument()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        fx.Payables.Verify(
+            p =>
+                p.CreateFromOriginAsync(
+                    It.Is<CreateAccountsPayableFromOriginRequest>(req =>
+                        req.OriginType == AccountsPayableOriginType.ExpenseDocument
+                        && req.OriginId == document.Id
+                        && req.SupplierId == SupplierId
+                        && req.TotalAmount == 115m
+                    ),
+                    UserId,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Si_falla_la_creacion_de_CxP_la_confirmacion_igual_tiene_exito()
+    {
+        // La CxP se crea DESPUES de que el posting ya se confirmo y persistio — un fallo aqui no
+        // debe revertir la confirmacion (a diferencia del posting, que si es estricto). Ver
+        // comentario en ConfirmExpenseDocumentHandler.
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+        fx.Payables
+            .Setup(p =>
+                p.CreateFromOriginAsync(
+                    It.IsAny<CreateAccountsPayableFromOriginRequest>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(new InvalidOperationException("Ya existe una cuota con el número 1."));
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
     }
 
     [Fact]
@@ -195,6 +250,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         public Mock<IExpenseDocumentRepository> Docs { get; } = new();
         public Mock<IExpenseCategoryRepository> CategoryRepo { get; } = new();
         public Mock<IAccountRepository> Accounts { get; } = new();
+        public Mock<IAccountsPayableService> Payables { get; } = new();
 
         public ExpenseCategoryNode Type { get; }
         public ExpenseCategoryNode Category { get; }
@@ -206,10 +262,12 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                 Docs.Object,
                 CategoryRepo.Object,
                 Accounts.Object,
+                Payables.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-                Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+                Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+                NullLogger<ConfirmExpenseDocumentHandler>.Instance
             );
 
         public Fixture()
@@ -230,6 +288,26 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             Docs
                 .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
+            Payables
+                .Setup(p =>
+                    p.CreateFromOriginAsync(
+                        It.IsAny<CreateAccountsPayableFromOriginRequest>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) =>
+                    {
+                        var payable = AccountsPayable.CreateFromOrigin(
+                            req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                            req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                            req.IssueDate, req.AccountingDate, createdBy
+                        );
+                        payable.AddInstallment(1, req.DueDate, req.TotalAmount);
+                        return payable;
+                    }
+                );
         }
 
         public Account ExpenseAccount(

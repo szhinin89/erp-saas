@@ -2,14 +2,17 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.Exceptions;
+using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Expenses.UseCases.Documents;
 
@@ -28,26 +31,32 @@ public sealed class ConfirmExpenseDocumentHandler
     private readonly IExpenseDocumentRepository _repo;
     private readonly IExpenseCategoryRepository _categories;
     private readonly IAccountRepository _accounts;
+    private readonly IAccountsPayableService _payables;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
+    private readonly ILogger<ConfirmExpenseDocumentHandler> _logger;
 
     public ConfirmExpenseDocumentHandler(
         IExpenseDocumentRepository repo,
         IExpenseCategoryRepository categories,
         IAccountRepository accounts,
+        IAccountsPayableService payables,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
-        ICurrentUser user
+        ICurrentUser user,
+        ILogger<ConfirmExpenseDocumentHandler> logger
     )
     {
         _repo = repo;
         _categories = categories;
         _accounts = accounts;
+        _payables = payables;
         _tenant = tenant;
         _company = company;
+        _logger = logger;
         _branch = branch;
         _user = user;
     }
@@ -124,6 +133,44 @@ public sealed class ConfirmExpenseDocumentHandler
         catch (ExpensePostingFailedException ex)
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
+        }
+
+        // PAYABLES-GENERIC-FOUNDATION-09: "al confirmar gasto, después de posting contable
+        // exitoso, crear AccountsPayable" — el posting ya se confirmó y persistió arriba (si
+        // hubiera fallado, ya habríamos retornado). A diferencia del posting, un fallo aquí NO
+        // debe revertir la confirmación ya persistida (el gasto ya tiene asiento contable real) —
+        // se registra para seguimiento manual, mismo criterio que Purchases usa para gaps de
+        // configuración que no bloquean el documento de origen. CreateFromOriginAsync es
+        // idempotente, así que un reintento manual posterior es seguro.
+        try
+        {
+            await _payables.CreateFromOriginAsync(
+                new CreateAccountsPayableFromOriginRequest(
+                    _tenant.TenantId,
+                    _company.CompanyId,
+                    document.BranchId,
+                    document.SupplierId,
+                    AccountsPayableOriginType.ExpenseDocument,
+                    document.Id,
+                    document.DocumentType,
+                    document.DocumentNumber,
+                    document.IssueDate,
+                    document.AccountingDate,
+                    document.DueDate ?? document.AccountingDate,
+                    document.GrandTotal
+                ),
+                _user.UserId,
+                ct
+            );
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            _logger.LogWarning(
+                ex,
+                "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
+                document.Id,
+                document.DocumentNumber
+            );
         }
 
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));
