@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-26T22:09:50.300Z",
+  "generatedAt": "2026-08-27T21:13:03.661Z",
   "summary": {
-    "total": 106,
-    "allowed": 106,
+    "total": 107,
+    "allowed": 107,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -512,6 +512,14 @@
       "endpoint": "/api/v1/expenses/categories",
       "files": [
         "frontend/src/modules/expenses/api/expenseCategoryService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/expenses/documents",
+      "files": [
+        "frontend/src/modules/expenses/api/expenseDocumentService.ts"
       ],
       "legacy": false,
       "allowed": true

@@ -41,7 +41,8 @@ public sealed record ExpenseLineDto(
     decimal VatRate,
     decimal VatAmount,
     decimal TaxInclusiveTotal,
-    short SortOrder
+    short SortOrder,
+    string? Notes = null
 );
 
 public sealed record ExpensePaymentScheduleDto(

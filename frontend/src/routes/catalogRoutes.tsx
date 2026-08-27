@@ -73,6 +73,14 @@ const ExpenseCategoriesPage = lazyNamedPage(
   () => import("../modules/expenses/pages/ExpenseCategoriesPage"),
   "ExpenseCategoriesPage",
 );
+const ExpenseDocumentsPage = lazyNamedPage(
+  () => import("../modules/expenses/pages/ExpenseDocumentsPage"),
+  "ExpenseDocumentsPage",
+);
+const ExpenseDocumentFormPage = lazyNamedPage(
+  () => import("../modules/expenses/pages/ExpenseDocumentFormPage"),
+  "ExpenseDocumentFormPage",
+);
 const PaymentTermsPage = lazyNamedPage(
   () => import("../modules/masterData/pages/PaymentTermsPage"),
   "PaymentTermsPage",
@@ -355,6 +363,26 @@ export const catalogRoutes = [
   />,
 
   // -- Expenses -----------------------------------------------------------
+  <Route
+    key="expenses-root"
+    path="/expenses"
+    element={<Navigate to="/expenses/documents" replace />}
+  />,
+  <Route
+    key="expenses-documents"
+    path="/expenses/documents"
+    element={<ExpenseDocumentsPage />}
+  />,
+  <Route
+    key="expenses-documents-new"
+    path="/expenses/documents/new"
+    element={<ExpenseDocumentFormPage />}
+  />,
+  <Route
+    key="expenses-documents-detail"
+    path="/expenses/documents/:id"
+    element={<ExpenseDocumentFormPage />}
+  />,
   <Route
     key="expenses-categories"
     path="/expenses/categories"

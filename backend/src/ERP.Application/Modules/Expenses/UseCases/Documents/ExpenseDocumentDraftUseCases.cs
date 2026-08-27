@@ -824,6 +824,7 @@ file static class ExpenseDocumentMapper
             line.VatRate,
             line.VatAmount,
             line.TaxInclusiveTotal,
-            line.SortOrder
+            line.SortOrder,
+            line.Notes
         );
 }

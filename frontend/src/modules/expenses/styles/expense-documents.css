@@ -1,0 +1,208 @@
+.exp-doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.exp-doc-list-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.exp-doc-list-cell strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: var(--text-title-sm-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exp-doc-list-cell span {
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-sm-size);
+  letter-spacing: 0;
+}
+
+.exp-doc-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.exp-doc-form-main,
+.exp-doc-form-side,
+.exp-doc-card-body,
+.exp-doc-section,
+.exp-doc-lines,
+.exp-doc-totals {
+  display: flex;
+  flex-direction: column;
+}
+
+.exp-doc-form-main,
+.exp-doc-card-body,
+.exp-doc-section,
+.exp-doc-lines {
+  gap: var(--space-4);
+}
+
+.exp-doc-form-side {
+  position: sticky;
+  top: var(--space-4);
+  gap: var(--space-4);
+}
+
+.exp-doc-section__heading,
+.exp-doc-line__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.exp-doc-section__heading--actions {
+  align-items: center;
+}
+
+.exp-doc-section__heading h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--text-headline-sm-size);
+  font-weight: var(--text-headline-sm-weight);
+  letter-spacing: 0;
+}
+
+.exp-doc-section__heading p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-md-size);
+  line-height: var(--text-body-md-height);
+  letter-spacing: 0;
+}
+
+.exp-doc-subcategory {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.exp-doc-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-xs);
+}
+
+.exp-doc-line__number {
+  color: var(--color-text-primary);
+  font-size: var(--text-title-sm-size);
+  font-weight: var(--text-title-sm-weight);
+  letter-spacing: 0;
+}
+
+.exp-doc-line__grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.5fr) repeat(4, minmax(110px, 1fr));
+  gap: var(--space-3);
+}
+
+.exp-doc-number-input {
+  text-align: right;
+}
+
+.exp-doc-line__totals {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-md-size);
+  letter-spacing: 0;
+}
+
+.exp-doc-line__totals span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.exp-doc-totals {
+  gap: var(--space-3);
+}
+
+.exp-doc-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-md-size);
+  letter-spacing: 0;
+}
+
+.exp-doc-total-row--grand {
+  border-bottom: 0;
+  color: var(--color-text-primary);
+  font-size: var(--text-title-md-size);
+  font-weight: var(--text-title-md-weight);
+}
+
+.exp-doc-catalog-link {
+  align-self: flex-start;
+  color: var(--color-primary);
+  font-size: var(--text-body-sm-size);
+  font-weight: var(--text-label-md-weight);
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.exp-doc-catalog-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1120px) {
+  .exp-doc-form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .exp-doc-form-side {
+    position: static;
+  }
+}
+
+@media (max-width: 900px) {
+  .exp-doc-subcategory,
+  .exp-doc-line__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .exp-doc-section__heading,
+  .exp-doc-section__heading--actions,
+  .exp-doc-line__top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .exp-doc-actions {
+    justify-content: flex-start;
+  }
+
+  .exp-doc-line__totals {
+    justify-content: flex-start;
+  }
+}
