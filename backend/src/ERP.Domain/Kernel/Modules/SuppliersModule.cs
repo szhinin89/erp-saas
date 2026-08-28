@@ -14,12 +14,20 @@ namespace ERP.Domain.Kernel.Modules;
 public static class SuppliersModule
 {
     // Movido desde MasterDataModule — mismo Id/ruta/permiso.
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update/Disable/ConfigureCompany
+    // (useMasterDataSuppliersPage.ts canCreate/canUpdate/canDisable/canConfigure,
+    // MasterDataBusinessPartnerDetailPage.tsx canUpdate/canDisable) son acciones reales de esta
+    // pantalla y no estaban en el catálogo asignable — ningún perfil no-Admin podía recibirlas.
     [NavItem(
         "Proveedores",
         Permission = MasterDataPermissions.BusinessPartnersView,
         LabelKey = "app.nav.item.masterdata.suppliers",
         SortOrder = 5,
-        Id = "a1000000-0000-4000-9000-000000000102"
+        Id = "a1000000-0000-4000-9000-000000000102",
+        RelatedActionPermissionsCsv = MasterDataPermissions.BusinessPartnersCreate + ","
+            + MasterDataPermissions.BusinessPartnersUpdate + ","
+            + MasterDataPermissions.BusinessPartnersDisable + ","
+            + MasterDataPermissions.BusinessPartnersConfigureCompany
     )]
     public const string Suppliers = "/masterdata/suppliers";
 
@@ -64,13 +72,17 @@ public static class SuppliersModule
     )]
     public const string Returns = "/purchases/returns";
 
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Update (aplicar/reembolsar crédito —
+    // ApplySupplierCreditModal.tsx/RegisterSupplierCreditRefundModal.tsx, SupplierCreditController)
+    // es la única acción de escritura real de esta pantalla y no estaba en el catálogo asignable.
     [NavItem(
         "Créditos de proveedor",
         Permission = FinancePermissions.View,
         LabelKey = "app.nav.item.finance.supplierCredits",
         SortOrder = 50,
         Id = "f6000000-0000-4000-9000-000000000003",
-        ParentId = "e3000000-0000-4000-9000-000000000010"
+        ParentId = "e3000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = FinancePermissions.Update
     )]
     public const string SupplierCredits = "/finance/supplier-credits";
 

@@ -151,12 +151,16 @@ public static class SettingsModule
     )]
     public const string PaymentTermsCustomer = "/master/payment-terms";
 
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update (CreditTermsPage.tsx →
+    // creditTermService.create/update/enable/disable, CreditTermsController) son acciones reales
+    // de esta pantalla y no estaban en el catálogo asignable.
     [NavItem(
         "Condiciones de Crédito",
         Permission = FinancePermissions.View,
         LabelKey = "app.nav.item.finance.creditTerms",
         SortOrder = 94,
-        Id = "b2000000-0000-4000-9000-000000000001"
+        Id = "b2000000-0000-4000-9000-000000000001",
+        RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.Update
     )]
     public const string CreditTerms = "/finance/credit-terms";
 

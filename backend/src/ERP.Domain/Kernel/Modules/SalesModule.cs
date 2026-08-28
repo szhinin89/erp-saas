@@ -28,6 +28,10 @@ public static class SalesModule
     // ADMIN-PERMISSIONS-SSOT-KERNEL-02: Create/Update como acciones relacionadas — a diferencia de
     // CustomersModule.Receivables (mismo permiso base, pero solo lectura), esta pantalla sí crea/
     // edita ventas.
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Ride.View/Regenerate (ver/regenerar el RIDE de la
+    // factura — useRideActions.ts, consumido desde SalesPage.tsx) tampoco estaban en el catálogo
+    // asignable; se agregan aquí (pantalla donde realmente se usan) en vez de crear un NavItem
+    // propio para un permiso transversal de borde HTTP sin pantalla propia.
     [NavItem(
         "Facturas de venta / Punto de venta",
         Permission = SalesPermissions.View,
@@ -36,6 +40,7 @@ public static class SalesModule
         Id = "d1000000-0000-4000-9000-000000000001",
         ParentId = "e4000000-0000-4000-9000-000000000010",
         RelatedActionPermissionsCsv = SalesPermissions.Create + "," + SalesPermissions.Update
+            + "," + RidePermissions.View + "," + RidePermissions.Regenerate
     )]
     public const string Invoices = "/sales";
 
@@ -49,12 +54,17 @@ public static class SalesModule
     )]
     public const string Returns = "/sales/returns";
 
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Detail/Retry (ver detalle/reintentar un documento
+    // varado — useElectronicDocumentsMonitor.ts) son acciones reales de esta pantalla, no
+    // estaban en el catálogo asignable.
     [NavItem(
         "Electronic Documents Monitor",
         Permission = ElectronicDocumentsPermissions.View,
         LabelKey = "app.nav.item.electronicDocuments.monitor",
         SortOrder = 40,
-        ParentId = "e4000000-0000-4000-9000-000000000010"
+        ParentId = "e4000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = ElectronicDocumentsPermissions.Detail + ","
+            + ElectronicDocumentsPermissions.Retry
     )]
     public const string ElectronicDocumentsMonitor = "/electronic-documents/monitor";
 
@@ -69,13 +79,18 @@ public static class SalesModule
     )]
     public const string CajaGroup = "/cash/operation-group";
 
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Open/Close/Record (abrir/cerrar turno, registrar
+    // movimiento — CajaPage.tsx/useCajaPage.ts → CashSessionController) son acciones reales
+    // distintas de View y no estaban en el catálogo asignable.
     [NavItem(
         "Turno de Caja",
         Permission = CajaPermissions.View,
         LabelKey = "app.nav.item.caja.sessions",
         SortOrder = 10,
         Id = "f5000000-0000-4000-9000-000000000001",
-        ParentId = "f5000000-0000-4000-9000-000000000010"
+        ParentId = "f5000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = CajaPermissions.Open + "," + CajaPermissions.Close + ","
+            + CajaPermissions.Record
     )]
     public const string CajaSessions = "/cash";
 
@@ -115,13 +130,17 @@ public static class SalesModule
     // Cajas registradoras (fusionado desde CajaModule.ConfigurationGroup) — permission alineado
     // con el GET/listado real de CashRegisterController (perm:caja.view): create/update/enable/
     // disable siguen protegidos por CajaPermissions.Manage a nivel de API.
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Manage (create/update/enable/disable —
+    // useCashRegistersPage.ts canManage) es real y no estaba en el catálogo asignable pese a que
+    // el comentario anterior ya documentaba su existencia a nivel de API.
     [NavItem(
         "Cajas registradoras",
         Permission = CajaPermissions.View,
         LabelKey = "app.nav.item.caja.registers",
         SortOrder = 30,
         Id = "f5000000-0000-4000-9000-000000000002",
-        ParentId = "e4000000-0000-4000-9000-000000000020"
+        ParentId = "e4000000-0000-4000-9000-000000000020",
+        RelatedActionPermissionsCsv = CajaPermissions.Manage
     )]
     public const string CajaRegisters = "/cash/registers";
 

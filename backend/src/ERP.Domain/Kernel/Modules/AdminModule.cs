@@ -6,12 +6,19 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("admin", Icon = "🛡️", SortOrder = 60)]
 public static class AdminModule
 {
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: IdentityUsersCreate ("Agregar usuario" cuando el
+    // username no existe aún — IdentityUsersController) e IdentityUsersAssignTemporaryPassword
+    // ("Restablecer contraseña" — UserSecuritySection.tsx) son acciones reales de esta pantalla que
+    // no estaban en el catálogo asignable: ningún perfil no-Admin podía recibirlas nunca (el toggle
+    // no existía en Asignación de permisos), aunque el botón de UI y el endpoint sí las exigían.
     [NavItem(
         "Usuarios",
         Permission = AccessPermissions.MembershipsView,
         LabelKey = "app.nav.item.admin.users",
         SortOrder = 10,
-        Id = "a1000000-0000-4000-9000-000000000008"
+        Id = "a1000000-0000-4000-9000-000000000008",
+        RelatedActionPermissionsCsv = AccessPermissions.IdentityUsersCreate + ","
+            + AccessPermissions.IdentityUsersAssignTemporaryPassword
     )]
     public const string Users = "/access/users";
 
@@ -42,24 +49,32 @@ public static class AdminModule
     // (manageRoles/manageModules/manageScreens/manageProcesses), no delegación temporal
     // (delegante/delegado/fechas/motivo/estado); el nombre anterior prometía algo que la pantalla
     // no hace. Mismo Id/ruta/permiso — la delegación temporal real queda para un ticket futuro.
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: DelegationConfigure (PUT admin-scopes —
+    // SecuritySettingsPage.tsx "Guardar"/canConfigure) es la única acción de escritura real de
+    // esta pantalla y no estaba en el catálogo asignable.
     [NavItem(
         "Seguridad administrativa",
         Permission = AdminPermissions.DelegationView,
         LabelKey = "app.nav.item.admin.security",
         SortOrder = 40,
-        Id = "a1000000-0000-4000-9000-00000000000a"
+        Id = "a1000000-0000-4000-9000-00000000000a",
+        RelatedActionPermissionsCsv = AdminPermissions.DelegationConfigure
     )]
     public const string Security = "/admin/security";
 
     // ADMIN-SESSIONS-ACTIVITY-POLISH-01 / ADMINISTRATION-CLEAN-ACCESS-01: orden final —
     // Usuarios, Perfiles, Asignación de permisos, Seguridad administrativa, Sesiones de usuario,
     // Actividad.
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: SessionsClose (POST .../close —
+    // AdminUserSessionsPage.tsx "Cerrar sesión"/canClose) es la única acción de escritura real de
+    // esta pantalla y no estaba en el catálogo asignable.
     [NavItem(
         "Sesiones de usuario",
         Permission = AccessPermissions.SessionsView,
         LabelKey = "app.nav.item.admin.accessSessions",
         SortOrder = 50,
-        Id = "a1000000-0000-4000-9000-00000000000b"
+        Id = "a1000000-0000-4000-9000-00000000000b",
+        RelatedActionPermissionsCsv = AccessPermissions.SessionsClose
     )]
     public const string AccessSessions = "/admin/access/sessions";
 

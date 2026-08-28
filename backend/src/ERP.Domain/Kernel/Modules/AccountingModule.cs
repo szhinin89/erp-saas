@@ -56,12 +56,19 @@ public static class AccountingModule
     )]
     public const string JournalEntries = "/accounting/journal-entries";
 
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: a diferencia de Asientos contables/Reportes (solo
+    // lectura) y Reglas contables (solo lectura por decisión de 12), Plan de cuentas SÍ tiene
+    // Crear/Actualizar/Deshabilitar reales (ChartOfAccountsPage.tsx → accountingApi.createAccount/
+    // updateAccount, AccountingController.CreateAccount/UpdateAccount/DisableAccount) — no estaban
+    // en el catálogo asignable pese a exigirlos el endpoint.
     [NavItem(
         "Plan de cuentas",
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.chartOfAccounts",
         SortOrder = 20,
-        Id = "ac000000-0000-4000-9000-000000000002"
+        Id = "ac000000-0000-4000-9000-000000000002",
+        RelatedActionPermissionsCsv = AccountingPermissions.Create + ","
+            + AccountingPermissions.Update + "," + AccountingPermissions.Delete
     )]
     public const string ChartOfAccounts = "/accounting/chart-of-accounts";
 
