@@ -311,4 +311,39 @@ public sealed class AccountsPayableQueryUseCasesTests
 
         offendingTypes.Should().BeEmpty();
     }
+
+    [Fact]
+    public void No_existen_referencias_al_repositorio_legacy_IPurchasePayableRepository()
+    {
+        // PAYABLES-LEGACY-CLEANUP-13 — IPurchasePayableRepository/PurchasePayableRepository y el
+        // use case legacy PurchasePayableUseCases (con sus DTOs PurchasePayableDto/
+        // GetPayablesListQuery/etc.) fueron eliminados por completo: AccountsPayableRepository/
+        // IAccountsPayableRepository son la única fuente de acceso a datos de CxP.
+        var forbiddenNames = new[]
+        {
+            "IPurchasePayableRepository",
+            "PurchasePayableRepository",
+            "PurchasePayableUseCases",
+            "PurchasePayableDto",
+            "PurchasePayableInstallmentDto",
+            "GetPayableByIdQuery",
+            "GetPayablesListQuery",
+            "PayablesListResponse",
+        };
+
+        var assemblies = new[]
+        {
+            typeof(AccountsPayable).Assembly, // ERP.Domain
+            typeof(GetAccountsPayableByIdQuery).Assembly, // ERP.Application
+            typeof(ERP.Infrastructure.Persistence.Repositories.Payables.AccountsPayableRepository).Assembly, // ERP.Infrastructure
+        };
+
+        var offending = assemblies
+            .SelectMany(a => a.GetTypes())
+            .Where(t => forbiddenNames.Contains(t.Name))
+            .Select(t => t.FullName)
+            .ToList();
+
+        offending.Should().BeEmpty();
+    }
 }

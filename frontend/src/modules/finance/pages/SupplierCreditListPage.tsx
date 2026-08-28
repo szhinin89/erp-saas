@@ -14,7 +14,7 @@ const PAGE_SIZE = 25;
 /**
  * Listado de créditos de proveedor — consume exclusivamente
  * `GET /api/v1/finance/supplier-credits`. Mismo patrón de lista que
- * `PurchaseReturnListPage.tsx`/`AccountsPayablePage.tsx` (P0-02 Fase 12 / P0-03).
+ * `PurchaseReturnListPage.tsx` (P0-02 Fase 12 / P0-03).
  * `AvailableAmount` mostrado es siempre el valor cacheado del servidor (§4.2 del diseño).
  */
 export function SupplierCreditListPage() {

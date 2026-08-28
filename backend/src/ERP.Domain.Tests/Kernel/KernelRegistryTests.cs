@@ -145,26 +145,19 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_contains_finance_receivables_payables_and_supplier_credits_moved_into_sales_and_purchases()
+    public void Navigation_contains_finance_receivables_and_supplier_credits_moved_into_sales_and_purchases()
     {
         var navigation = KernelRegistry.Navigation;
         var financePermission = ERP.Domain.Kernel.Permissions.FinancePermissions.View;
 
         // MENU-MODULE-REORG-01: movidas a Ventas → Operación / Compras → Operación (mismos
         // Ids/rutas). Permission alineado con el permiso real que exige la API que consume cada
-        // pantalla (SalesReceivablesController / PurchasePayablesController), no
-        // FinancePermissions.View.
+        // pantalla (SalesReceivablesController), no FinancePermissions.View.
         var receivables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/receivables");
         receivables.Should().NotBeNull("cuentas por cobrar debe estar en el menú");
         receivables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
         receivables.GroupCode.Should().Be("sales");
         receivables.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000010"));
-
-        var payables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/payables");
-        payables.Should().NotBeNull("cuentas por pagar debe estar en el menú");
-        payables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
-        payables.GroupCode.Should().Be("purchases");
-        payables.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
 
         var supplierCredits = navigation.SingleOrDefault(n =>
             n.RoutePath == "/finance/supplier-credits"
@@ -184,6 +177,23 @@ public sealed class KernelRegistryTests
         var creditTerms = navigation.Single(n => n.RoutePath == "/finance/credit-terms");
         creditTerms.GroupCode.Should().Be("masterdata", "credit-terms no debe moverse a otro módulo");
         creditTerms.ParentItemId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Navigation_no_longer_contains_the_legacy_purchases_only_payables_screen()
+    {
+        // PAYABLES-LEGACY-CLEANUP-13 — /finance/payables (PurchasePayablesController, solo
+        // Compras) fue eliminado por completo; la única pantalla de CxP viva es la genérica
+        // /payables (PayablesModule.List, AccountsPayable, Compras + Gastos). Guard de regresión:
+        // si alguien reintrodujera el NavItem legacy, este test lo detecta.
+        var navigation = KernelRegistry.Navigation;
+
+        navigation.Should().NotContain(n => n.RoutePath == "/finance/payables");
+
+        var payables = navigation.Where(n => n.RoutePath == "/payables").ToList();
+        payables.Should().ContainSingle("debe existir exactamente una pantalla de CxP genérica");
+        payables[0].PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PayablesPermissions.View);
+        payables[0].GroupCode.Should().Be("payables");
     }
 
     [Fact]

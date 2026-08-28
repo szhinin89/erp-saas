@@ -53,10 +53,6 @@ const AccountsReceivablePage = lazyNamedPage(
   () => import("../modules/finance/pages/AccountsReceivablePage"),
   "AccountsReceivablePage",
 );
-const AccountsPayablePage = lazyNamedPage(
-  () => import("../modules/finance/pages/AccountsPayablePage"),
-  "AccountsPayablePage",
-);
 const SupplierCreditListPage = lazyNamedPage(
   () => import("../modules/finance/pages/SupplierCreditListPage"),
   "SupplierCreditListPage",
@@ -348,11 +344,6 @@ export const catalogRoutes = [
     key="finance-receivables"
     path="/finance/receivables"
     element={<AccountsReceivablePage />}
-  />,
-  <Route
-    key="finance-payables"
-    path="/finance/payables"
-    element={<AccountsPayablePage />}
   />,
   <Route
     key="finance-supplier-credits"

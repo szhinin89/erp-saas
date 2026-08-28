@@ -17,8 +17,8 @@ import "../../../styles/shared/items-catalog.css";
 /**
  * FINANCE-RECEIVABLES-LIST-ENTERPRISE-01 — deriva el label/color del badge a partir de
  * `statusLabel` (ya calculado por el backend desde status persistido + saldo + mora — ver
- * SalesReceivableDtoMapper). Mismo patrón que `getPayableStatusBadge` en AccountsPayablePage
- * (CxP), adaptado a los 5 estados de CxC: Pendiente/Parcial/Pagada/Vencida/Anulada.
+ * SalesReceivableDtoMapper). Mismo patrón que `PayableStatusBadge` en el módulo genérico de CxP
+ * (`modules/payables`), adaptado a los 5 estados de CxC: Pendiente/Parcial/Pagada/Vencida/Anulada.
  */
 function getReceivableStatusBadge(r: SalesReceivableDto): {
   label: string;

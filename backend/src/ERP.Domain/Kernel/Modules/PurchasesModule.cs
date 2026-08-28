@@ -50,17 +50,11 @@ public static class PurchasesModule
     )]
     public const string Returns = "/purchases/returns";
 
-    // Movido desde FinanceModule (antes /finance/payables en el grupo "finance" separado) —
-    // mismo Id/ruta/permiso, ahora dentro de Compras → Operación.
-    [NavItem(
-        "Cuentas por pagar",
-        Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.finance.payables",
-        SortOrder = 40,
-        Id = "f6000000-0000-4000-9000-000000000002",
-        ParentId = "e3000000-0000-4000-9000-000000000010"
-    )]
-    public const string Payables = "/finance/payables";
+    // PAYABLES-LEGACY-CLEANUP-13 — el NavItem "Cuentas por pagar" (/finance/payables, antes aquí)
+    // se eliminó junto con PurchasePayablesController/PurchasePayableUseCases: era el flujo legacy
+    // de CxP exclusivo de Compras, reemplazado por la pantalla genérica /payables
+    // (PayablesModule.List), que cubre Compras + Gastos desde AccountsPayable. No queda ningún
+    // NavItem apuntando a /finance/payables.
 
     // Movido desde FinanceModule (antes /finance/supplier-credits en el grupo "finance"
     // separado) — mismo Id/ruta/permiso, ahora dentro de Compras → Operación.

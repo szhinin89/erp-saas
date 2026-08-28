@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-28T02:30:00.211Z",
+  "generatedAt": "2026-08-28T02:53:44.965Z",
   "summary": {
-    "total": 108,
-    "allowed": 108,
+    "total": 107,
+    "allowed": 107,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -46,7 +46,6 @@
     "/api/kits",
     "/api/onboarding",
     "/api/pricing",
-    "/api/purchase-payables",
     "/api/sales-receivables",
     "/api/setup",
     "/api/supplier-catalog",
@@ -674,7 +673,8 @@
     {
       "endpoint": "/api/v1/payables",
       "files": [
-        "frontend/src/modules/payables/api/payablesService.ts"
+        "frontend/src/modules/payables/api/payablesService.ts",
+        "frontend/src/routes/payablesRoutes.legacyCleanup.test.tsx"
       ],
       "legacy": false,
       "allowed": true
@@ -692,14 +692,6 @@
       "endpoint": "/api/v1/pricing",
       "files": [
         "frontend/src/modules/pricing/api/pricingService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/purchase-payables",
-      "files": [
-        "frontend/src/modules/finance/api/payableService.ts"
       ],
       "legacy": false,
       "allowed": true

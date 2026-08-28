@@ -31,25 +31,10 @@ public interface IAccountsPayableRepository
     Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>
-    /// Listado paginado filtrado por origen (p. ej. solo <c>PurchaseInvoice</c>, para
-    /// <c>PurchasePayablesController</c>) — necesario para que el usuario consulte/seleccione qué
-    /// cuenta por pagar liquidar antes de registrar un pago.
-    /// </summary>
-    Task<(IReadOnlyList<AccountsPayable> Items, int Total)> GetPagedAsync(
-        Guid tenantId,
-        Guid companyId,
-        AccountsPayableOriginType originType,
-        AccountsPayableStatus? status,
-        Guid? supplierId,
-        int page,
-        int pageSize,
-        CancellationToken ct = default
-    );
-
-    /// <summary>
     /// PAYABLES-READ-API-11 — listado paginado genérico (cualquier origen) para
-    /// <c>PayablesController</c>, a diferencia de <see cref="GetPagedAsync"/> (que exige un
-    /// <see cref="AccountsPayableOriginType"/> fijo, usado por <c>PurchasePayablesController</c>).
+    /// <c>PayablesController</c> (PAYABLES-LEGACY-CLEANUP-13: reemplaza por completo al antiguo
+    /// <c>GetPagedAsync</c> de origen fijo que usaba el ya eliminado
+    /// <c>PurchasePayablesController</c>).
     /// <paramref name="search"/> filtra por <c>DocumentNumber</c> o nombre del proveedor
     /// (razón social/comercial); <paramref name="dueDateFrom"/>/<paramref name="dueDateTo"/>
     /// filtran por el vencimiento más próximo entre las cuotas (<c>Installments.Min(DueDate)</c>).

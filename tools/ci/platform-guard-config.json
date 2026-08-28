@@ -73,7 +73,6 @@
     "/api/kits",
     "/api/onboarding",
     "/api/pricing",
-    "/api/purchase-payables",
     "/api/sales-receivables",
     "/api/setup",
     "/api/supplier-catalog",
