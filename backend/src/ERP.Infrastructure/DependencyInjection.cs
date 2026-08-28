@@ -729,6 +729,17 @@ public static class DependencyInjection
             ERP.Application.Modules.Payables.UseCases.AccountsPayableService
         >();
 
+        // SUPPLIER-PAYMENTS-FOUNDATION-15B — fundación de Pagos a Proveedores (sin caso de uso ni
+        // controller todavía).
+        services.AddScoped<
+            ERP.Domain.Modules.Payables.Interfaces.ISupplierPaymentRepository,
+            ERP.Infrastructure.Persistence.Repositories.Payables.SupplierPaymentRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Payables.Interfaces.ISupplierPaymentSequenceRepository,
+            ERP.Infrastructure.Persistence.Repositories.Payables.SupplierPaymentSequenceRepository
+        >();
+
         services.AddScoped<
             ERP.Domain.Modules.Finance.Interfaces.ICompanyFinancialDestinationRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.CompanyFinancialDestinationRepository

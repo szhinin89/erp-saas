@@ -354,6 +354,17 @@ public class ErpDbContext : DbContext
     public DbSet<AccountsPayableInstallment> AccountsPayableInstallments =>
         Set<AccountsPayableInstallment>();
 
+    // ── SupplierPayment (SUPPLIER-PAYMENTS-FOUNDATION-15B) ──────────────────
+    public DbSet<SupplierPayment> SupplierPayments => Set<SupplierPayment>();
+    public DbSet<SupplierPaymentMethodLine> SupplierPaymentMethodLines =>
+        Set<SupplierPaymentMethodLine>();
+    public DbSet<SupplierPaymentApplicationLine> SupplierPaymentApplicationLines =>
+        Set<SupplierPaymentApplicationLine>();
+    public DbSet<SupplierPaymentAllocationLine> SupplierPaymentAllocationLines =>
+        Set<SupplierPaymentAllocationLine>();
+    public DbSet<SupplierPaymentSequence> SupplierPaymentSequences =>
+        Set<SupplierPaymentSequence>();
+
     // ── Sales BC ──────────────────────────────────────────────────────────
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
     public DbSet<SalesInvoiceDetail> SalesInvoiceDetails => Set<SalesInvoiceDetail>();

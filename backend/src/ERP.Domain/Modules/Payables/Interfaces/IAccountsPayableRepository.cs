@@ -53,6 +53,18 @@ public interface IAccountsPayableRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// SUPPLIER-PAYMENTS-REGISTER-15C — carga (tracking, con cuotas) la <see cref="AccountsPayable"/>
+    /// dueña de una cuota puntual. <c>SupplierPayment</c> referencia cuotas por su Id sin conocer la
+    /// cabecera — el caso de uso de registro necesita la cabecera completa para invocar
+    /// <see cref="AccountsPayable.RegisterPaymentToInstallment"/> y recalcular sus totales.
+    /// </summary>
+    Task<AccountsPayable?> GetByInstallmentIdAsync(
+        Guid tenantId,
+        Guid installmentId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(AccountsPayable payable, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

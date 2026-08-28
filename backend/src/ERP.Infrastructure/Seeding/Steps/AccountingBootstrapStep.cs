@@ -25,8 +25,9 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// períodos ya existentes.
 ///
 /// ACCOUNTING-POSTING-RULES-SEED-11B: además del plan de cuentas, siembra las
-/// <see cref="PostingRule"/>/<see cref="PostingRuleLine"/> mínimas para los 7 hechos contables que
-/// hoy tienen traductor real (ver <c>MinimalPostingRules</c>) — sin esto, el Posting Engine
+/// <see cref="PostingRule"/>/<see cref="PostingRuleLine"/> mínimas para los hechos contables que
+/// hoy tienen traductor real (ver <c>MinimalPostingRules</c>; incluye
+/// SUPPLIER-PAYMENTS-POSTING-15D: <c>Payables/SupplierPaymentConfirmed</c>) — sin esto, el Posting Engine
 /// resolvía "RULE_NOT_FOUND" (fail-closed, <c>PostingRuleResolver</c>) para toda venta/compra/
 /// cobro/pago real, aun con Plan de Cuentas ya sembrado (diagnóstico ACCOUNTING-DATA-SEED-AND-
 /// SMOKE-10G). <c>Purchases/PurchaseCreditNoteCancelled</c> NO tiene regla — ese hecho reversa el
@@ -247,6 +248,18 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // proveedor) se eliminó junto con RegisterPaymentCommand/SupplierPaymentAppliedPostingTranslator:
         // sin nada que dispare ese FactType, sembrar la PostingRule por empresa nueva sería
         // configuración muerta desde el día uno.
+        //
+        // SUPPLIER-PAYMENTS-POSTING-15D — "Payables"/"SupplierPaymentConfirmed" reemplaza esa
+        // configuración muerta: única línea fija (Debe CxP por el total del pago); el Haber por
+        // cada medio de pago (1..N líneas, caja/banco) es completamente dinámico vía
+        // PostingFact.Allocations en SupplierPaymentConfirmedPostingTranslator, no representable
+        // como PostingRuleLine fija (cardinalidad variable, mismo criterio que
+        // "Expenses"/"DocumentConfirmed").
+        new(
+            "Payables",
+            "SupplierPaymentConfirmed",
+            [new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal)]
+        ),
     ];
 
     public async Task ExecuteAsync(

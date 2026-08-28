@@ -35,6 +35,16 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
                 ct
             );
 
+    public Task<AccountsPayable?> GetByInstallmentIdAsync(
+        Guid tenantId,
+        Guid installmentId,
+        CancellationToken ct = default
+    ) =>
+        _db.AccountsPayables
+            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+            .Where(x => x.TenantId == tenantId && x.Installments.Any(i => i.Id == installmentId))
+            .FirstOrDefaultAsync(ct);
+
     public Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
         _db.AccountsPayables
             .AsNoTracking()

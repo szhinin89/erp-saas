@@ -33,4 +33,52 @@ public sealed class PayablesLegacyCleanupTests
 
         controllersEndingInPayablesController.Should().ContainSingle().Which.Should().Be("PayablesController");
     }
+
+    /// <summary>
+    /// SUPPLIER-PAYMENTS-REGISTER-15C — <c>SupplierPaymentsController</c> es el único endpoint de
+    /// escritura para pagos a proveedores; no debe existir un endpoint legacy
+    /// <c>POST /api/v1/finance/payments</c> (o similar) que registre pagos AP fuera de
+    /// <c>SupplierPayment</c>. <c>FinancePaymentsController</c> sigue existiendo solo para Collections
+    /// (AR) — <c>RegisterCollection</c>.
+    /// </summary>
+    [Fact]
+    public void No_existe_endpoint_legacy_de_registro_de_pago_a_proveedor()
+    {
+        var apiAssembly = typeof(ERP.API.Controllers.PayablesController).Assembly;
+        var financeController = apiAssembly
+            .GetTypes()
+            .Single(t => t.Name == "FinancePaymentsController");
+
+        var methodNames = financeController
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .ToList();
+
+        methodNames.Should().NotContain(new[] { "RegisterPayment", "ReversePayment" });
+    }
+
+    /// <summary>
+    /// SUPPLIER-PAYMENTS-REGISTER-15C — <c>SupplierPaymentsController</c> expone exactamente el
+    /// endpoint de registro esperado, en la ruta genérica <c>/api/v1/supplier-payments</c> — nunca
+    /// anidado bajo <c>/finance/</c> ni bajo <c>/payables/</c> (que sigue siendo solo lectura).
+    /// </summary>
+    [Fact]
+    public void SupplierPaymentsController_expone_unicamente_el_endpoint_de_registro()
+    {
+        var apiAssembly = typeof(ERP.API.Controllers.PayablesController).Assembly;
+        var controller = apiAssembly.GetTypes().Single(t => t.Name == "SupplierPaymentsController");
+
+        var route = controller
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.RouteAttribute), inherit: true)
+            .Cast<Microsoft.AspNetCore.Mvc.RouteAttribute>()
+            .Single();
+        route.Template.Should().Be("api/v1/supplier-payments");
+
+        var publicMethods = controller
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => !m.IsSpecialName)
+            .Select(m => m.Name)
+            .ToList();
+        publicMethods.Should().ContainSingle().Which.Should().Be("Register");
+    }
 }

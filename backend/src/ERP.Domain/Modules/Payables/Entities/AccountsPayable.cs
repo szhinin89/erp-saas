@@ -128,6 +128,36 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
         Reverse(AccountsPayableAdjustmentType.Payment, amount, updatedBy, "pagado");
 
     /// <summary>
+    /// SUPPLIER-PAYMENTS-REGISTER-15C — aplica un pago a UNA cuota puntual, elegida explícitamente
+    /// por el usuario en <c>SupplierPayment</c>. A diferencia de <see cref="RegisterPayment"/> (que
+    /// reparte por FIFO entre todas las cuotas), aquí el llamador ya decidió qué cuota se paga — el
+    /// motor FIFO no debe reasignar el monto a otra cuota distinta de la seleccionada.
+    /// </summary>
+    public void RegisterPaymentToInstallment(Guid installmentId, decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto del pago debe ser mayor a cero.", nameof(amount));
+        if (Status == AccountsPayableStatus.Cancelled)
+            throw new InvalidOperationException(
+                "No se puede aplicar un pago sobre una cuenta por pagar anulada."
+            );
+
+        var installment = _installments.FirstOrDefault(i => i.Id == installmentId);
+        if (installment is null)
+            throw new InvalidOperationException(
+                "La cuota indicada no pertenece a esta cuenta por pagar."
+            );
+        if (amount > installment.OutstandingAmount)
+            throw new InvalidOperationException(
+                "El monto del pago excede el saldo pendiente de la cuota."
+            );
+
+        installment.Apply(AccountsPayableAdjustmentType.Payment, amount);
+        RecalculateStatus();
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
     /// Reconoce una devolución de compra autorizada directamente contra esta CxP (reemplaza
     /// <c>PurchasePayable.ApplyReturnCredit</c>) — nunca reutiliza <see cref="RegisterPayment"/>, es
     /// un track independiente de <see cref="OutstandingAmount"/>.
