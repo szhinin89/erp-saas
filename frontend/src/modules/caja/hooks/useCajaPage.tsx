@@ -19,7 +19,11 @@ import {
   type CloseCashSessionFormValues,
 } from "../schemas/cajaSchema";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
+import { useAuthStore } from "../../../store/authStore";
 import { applyServerErrors } from "../../lib/validationErrors";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
+import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 
 type Tab = "listado" | "abrir" | "detalle" | "cerrar";
 
@@ -39,6 +43,7 @@ export function useCajaPage() {
   // ── Reference data ─────────────────────────────────────────────────
   const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
+  const currentUserName = useAuthStore((s) => s.user?.fullName) ?? null;
 
   // ── Forms ──────────────────────────────────────────────────────────
   const openForm = useForm<OpenCashSessionFormValues>({
@@ -116,8 +121,55 @@ export function useCajaPage() {
     }
   }, []);
 
+  // ── Movement type labels ───────────────────────────────────────────
+  const movementTypes = [
+    { value: "ManualIncome", label: "Ingreso manual" },
+    { value: "ManualExpense", label: "Egreso manual" },
+    { value: "Withdrawal", label: "Retiro" },
+  ];
+
   // ── Open session ───────────────────────────────────────────────────
+  // CRITICAL-CONFIRMATIONS-CASH-02: abrir un turno es una acción con impacto de dinero
+  // operativo — se confirma antes de ejecutar (resumen de caja/sucursal, usuario y monto
+  // inicial), nunca actualiza estado local antes de que el backend confirme éxito, y muestra
+  // éxito/error reales al terminar.
   const handleOpen = openForm.handleSubmit(async (data) => {
+    if (saving) return;
+
+    const register = cashRegisters.find((r) => r.id === data.cashRegisterId);
+    const confirmed = await message.confirm({
+      title: "Abrir turno de caja",
+      message: (
+        <>
+          <p className="zh-confirm-message">
+            Se iniciará un turno operativo de caja. Mientras esté abierto, todas las ventas y
+            movimientos registrados en esta caja quedarán asociados a este turno hasta que se
+            cierre.
+          </p>
+          <p className="zh-confirm-message">
+            {register ? (
+              <>
+                Caja: <strong>{register.code} — {register.name}</strong> ({register.branchName}
+                ).
+                <br />
+              </>
+            ) : null}
+            {currentUserName ? (
+              <>
+                Usuario: <strong>{currentUserName}</strong>.
+                <br />
+              </>
+            ) : null}
+            Monto inicial: <strong>{formatMoneyWithSymbol(data.openingAmount)}</strong>.
+          </p>
+        </>
+      ),
+      variant: "warning",
+      confirmLabel: "Abrir caja",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setSaveError("");
     setSaving(true);
     try {
@@ -131,18 +183,48 @@ export function useCajaPage() {
       openForm.reset(emptyOpenForm());
       setTab("detalle");
       fetchList();
+      message.success("Caja abierta correctamente.");
     } catch (err: unknown) {
       const applied = applyServerErrors(err, openForm.setError, (msg) =>
         setSaveError(msg),
       );
-      if (!applied) setSaveError("Error al abrir la caja.");
+      if (!applied)
+        setSaveError(
+          formatApiRequestError(err, { generic: "No se pudo abrir la caja." }),
+        );
     }
     setSaving(false);
   });
 
   // ── Record movement ────────────────────────────────────────────────
+  // CRITICAL-CONFIRMATIONS-CASH-02: un ingreso/egreso manual afecta el saldo de caja de
+  // inmediato — se confirma antes de ejecutar (tipo, concepto y monto), con variant warning
+  // para ingreso y danger para egreso/retiro (mayor riesgo de descuadre).
   const handleRecordMovement = movementForm.handleSubmit(async (data) => {
-    if (!viewing) return;
+    if (!viewing || saving) return;
+
+    const typeLabel =
+      movementTypes.find((mt) => mt.value === data.movementType)?.label ??
+      data.movementType;
+    const isIncome = data.movementType === "ManualIncome";
+
+    const confirmed = await message.confirm({
+      title: isIncome ? "Registrar ingreso de caja" : "Registrar egreso de caja",
+      message: (
+        <p className="zh-confirm-message">
+          Tipo: <strong>{typeLabel}</strong>
+          <br />
+          Concepto: <strong>{data.description}</strong>
+          <br />
+          Monto: <strong>{formatMoneyWithSymbol(data.amount)}</strong>
+        </p>
+      ),
+      variant: isIncome ? "warning" : "danger",
+      confirmLabel: isIncome ? "Registrar ingreso" : "Registrar egreso",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setSaveError("");
     setSaving(true);
     try {
@@ -154,11 +236,17 @@ export function useCajaPage() {
       movementForm.reset(emptyMovementForm());
       await loadDetail(viewing.id);
       fetchMySession();
+      message.success("Movimiento registrado correctamente.");
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, movementForm.setError, (msg) =>
-        setSaveError(msg),
-      );
-      if (!applied) setSaveError("Error al registrar el movimiento.");
+      // A diferencia de abrir/cerrar caja, aquí el ticket exige explícitamente un toast
+      // message.error con el mensaje real del backend — se muestra siempre (además de resaltar
+      // el campo específico vía applyServerErrors cuando el 422 viene mapeado por campo).
+      applyServerErrors(err, movementForm.setError, () => {});
+      const errorMessage = formatApiRequestError(err, {
+        generic: "No se pudo registrar el movimiento.",
+      });
+      setSaveError(errorMessage);
+      message.error(errorMessage);
     }
     setSaving(false);
   });
@@ -179,8 +267,46 @@ export function useCajaPage() {
     [closingCountsWatch],
   );
 
+  // CRITICAL-CONFIRMATIONS-CASH-02: cerrar caja finaliza el turno y bloquea nuevos
+  // movimientos — confirmación fuerte con el mismo resumen (esperado/contado/diferencia) ya
+  // visible en pantalla, advertencia reforzada (variant danger) si hay descuadre.
   const handleClose = closeForm.handleSubmit(async (data) => {
-    if (!viewing) return;
+    if (!viewing || saving) return;
+
+    const expected = viewing.currentBalance;
+    const counted = countedTotal;
+    const difference = counted - expected;
+    const hasMismatch = difference !== 0;
+
+    const confirmed = await message.confirm({
+      title: "Cerrar turno de caja",
+      message: (
+        <>
+          <p className="zh-confirm-message">
+            Vas a cerrar este turno de caja. Al confirmar, el turno finaliza y no se podrán
+            registrar más movimientos en esta sesión.
+          </p>
+          <p className="zh-confirm-message">
+            Esperado: <strong>{formatMoneyWithSymbol(expected)}</strong>
+            <br />
+            Contado: <strong>{formatMoneyWithSymbol(counted)}</strong>
+            <br />
+            Diferencia: <strong>{formatMoneyWithSymbol(difference)}</strong>
+          </p>
+          {hasMismatch ? (
+            <p className="zh-confirm-message">
+              <strong>Hay una diferencia entre el saldo esperado y lo contado.</strong> Revisa
+              el arqueo antes de continuar si no es intencional.
+            </p>
+          ) : null}
+        </>
+      ),
+      variant: hasMismatch ? "danger" : "warning",
+      confirmLabel: "Confirmar cierre",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setSaveError("");
     setSaving(true);
     try {
@@ -196,21 +322,18 @@ export function useCajaPage() {
       setMySession(null);
       setTab("detalle");
       fetchList();
+      message.success("Caja cerrada correctamente.");
     } catch (err: unknown) {
       const applied = applyServerErrors(err, closeForm.setError, (msg) =>
         setSaveError(msg),
       );
-      if (!applied) setSaveError("Error al cerrar la caja.");
+      if (!applied)
+        setSaveError(
+          formatApiRequestError(err, { generic: "No se pudo cerrar la caja." }),
+        );
     }
     setSaving(false);
   });
-
-  // ── Movement type labels ───────────────────────────────────────────
-  const movementTypes = [
-    { value: "ManualIncome", label: "Ingreso manual" },
-    { value: "ManualExpense", label: "Egreso manual" },
-    { value: "Withdrawal", label: "Retiro" },
-  ];
 
   return {
     tab,
