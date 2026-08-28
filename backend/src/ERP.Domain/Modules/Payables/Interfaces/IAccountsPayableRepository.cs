@@ -46,6 +46,28 @@ public interface IAccountsPayableRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// PAYABLES-READ-API-11 — listado paginado genérico (cualquier origen) para
+    /// <c>PayablesController</c>, a diferencia de <see cref="GetPagedAsync"/> (que exige un
+    /// <see cref="AccountsPayableOriginType"/> fijo, usado por <c>PurchasePayablesController</c>).
+    /// <paramref name="search"/> filtra por <c>DocumentNumber</c> o nombre del proveedor
+    /// (razón social/comercial); <paramref name="dueDateFrom"/>/<paramref name="dueDateTo"/>
+    /// filtran por el vencimiento más próximo entre las cuotas (<c>Installments.Min(DueDate)</c>).
+    /// </summary>
+    Task<(IReadOnlyList<AccountsPayable> Items, int Total)> SearchAsync(
+        Guid tenantId,
+        Guid companyId,
+        AccountsPayableOriginType? originType,
+        AccountsPayableStatus? status,
+        Guid? supplierId,
+        DateOnly? dueDateFrom,
+        DateOnly? dueDateTo,
+        string? search,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(AccountsPayable payable, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
