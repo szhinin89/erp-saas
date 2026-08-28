@@ -21,6 +21,14 @@ namespace ERP.Infrastructure.Tests.Seeding;
 /// </summary>
 public sealed class AccountingBootstrapStepTests
 {
+    /// <summary>
+    /// ACCOUNTING-BOOTSTRAP-TESTS-FIX: <c>MinimalPostingRules</c> tiene 8 entradas desde
+    /// SUPPLIER-PAYMENTS-POSTING-15D/SUPPLIER-PAYMENTS-REVERSE-16 (agregaron "Payables"/
+    /// "SupplierPaymentConfirmed" y "Payables"/"SupplierPaymentReversed"). Antes eran 6 — los
+    /// tests quedaron desactualizados y fallaban contra el código real, no al revés.
+    /// </summary>
+    private const int ExpectedPostingRulesCount = 8;
+
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _actorId = Guid.NewGuid();
@@ -243,7 +251,7 @@ public sealed class AccountingBootstrapStepTests
     }
 
     [Fact]
-    public async Task Primera_ejecucion_crea_7_posting_rules_con_al_menos_2_lineas_cada_una()
+    public async Task Primera_ejecucion_crea_8_posting_rules_minimas_una_por_cada_traductor_real()
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
@@ -256,9 +264,8 @@ public sealed class AccountingBootstrapStepTests
             .Where(r => r.CompanyId == _companyId)
             .ToListAsync();
 
-        rules.Should().HaveCount(6);
+        rules.Should().HaveCount(ExpectedPostingRulesCount);
         rules.Should().OnlyContain(r => r.IsActive);
-        rules.Should().OnlyContain(r => r.Lines.Count >= 2);
         rules
             .Select(r => (r.SourceModule, r.FactType))
             .Should()
@@ -271,8 +278,43 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "InvoiceReceived"),
                     ("Purchases", "PurchaseCreditNoteAuthorized"),
                     ("Finance", "CollectionApplied"),
+                    ("Payables", "SupplierPaymentConfirmed"),
+                    ("Payables", "SupplierPaymentReversed"),
                 }
             );
+
+        // Las 6 reglas "clásicas" tienen todas sus líneas fijas (>=2). Las 2 reglas de Pagos a
+        // Proveedores (SUPPLIER-PAYMENTS-POSTING-15D/SUPPLIER-PAYMENTS-REVERSE-16) solo fijan la
+        // línea de CxP — el Haber/Debe por cada medio de pago es dinámico vía
+        // PostingFact.Allocations, no representable como PostingRuleLine, así que cada una tiene
+        // exactamente 1 línea fija.
+        var rulesWithFixedTwoOrMoreLines = rules.Where(r =>
+            r.SourceModule != "Payables"
+        );
+        rulesWithFixedTwoOrMoreLines.Should().OnlyContain(r => r.Lines.Count >= 2);
+
+        var supplierPaymentConfirmed = rules.Single(r =>
+            r.SourceModule == "Payables" && r.FactType == "SupplierPaymentConfirmed"
+        );
+        supplierPaymentConfirmed.Lines.Should().ContainSingle();
+        var confirmedLine = supplierPaymentConfirmed.Lines.Single();
+        confirmedLine.Nature.Should().Be(AccountNature.Debit);
+        confirmedLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == confirmedLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001");
+
+        var supplierPaymentReversed = rules.Single(r =>
+            r.SourceModule == "Payables" && r.FactType == "SupplierPaymentReversed"
+        );
+        supplierPaymentReversed.Lines.Should().ContainSingle();
+        var reversedLine = supplierPaymentReversed.Lines.Single();
+        reversedLine.Nature.Should().Be(AccountNature.Credit);
+        reversedLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == reversedLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001");
+
         // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" ya no se siembra
         // (sin RegisterPaymentCommand/traductor que lo dispare, sería configuración muerta).
         rules.Should().NotContain(r => r.SourceModule == "Finance" && r.FactType == "SupplierPaymentApplied");
@@ -354,7 +396,9 @@ public sealed class AccountingBootstrapStepTests
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        (await verifyDb.PostingRules.CountAsync(r => r.CompanyId == _companyId)).Should().Be(6);
+        (await verifyDb.PostingRules.CountAsync(r => r.CompanyId == _companyId))
+            .Should()
+            .Be(ExpectedPostingRulesCount);
     }
 
     [Fact]
