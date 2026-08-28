@@ -1,0 +1,47 @@
+.pay-list-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pay-list-cell strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: var(--text-title-sm-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pay-list-cell span {
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-sm-size);
+  letter-spacing: 0;
+}
+
+.pay-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.pay-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.pay-detail-origin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-primary);
+  font-weight: var(--text-title-sm-weight);
+  text-decoration: none;
+}
+
+.pay-detail-origin-link:hover {
+  text-decoration: underline;
+}

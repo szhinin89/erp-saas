@@ -58,6 +58,7 @@
     "/api/logistics",
     "/api/me",
     "/api/org-config",
+    "/api/payables",
     "/api/payment-methods",
     "/api/ride",
     "/api/saas",

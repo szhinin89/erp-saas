@@ -486,6 +486,8 @@
   "app.nav.group.expenses": "Gastos",
   "app.nav.item.expenses.documents": "Gastos qillqakuna",
   "app.nav.item.expenses.catalog": "Gastos catálogo",
+  "app.nav.group.payables": "Qullqi Pagay",
+  "app.nav.item.payables.list": "Qullqi Pagay",
   "purchases.reception.summary.readyPurchases.title": "Rantikuna Listo",
   "purchases.reception.summary.readyPurchases.description": "Compras ya ingresadas al sistema",
   "purchases.reception.summary.toReview.title": "Rikuna Tiyan",

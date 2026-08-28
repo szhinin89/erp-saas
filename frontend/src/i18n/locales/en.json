@@ -194,6 +194,8 @@
   "app.nav.group.expenses": "Expenses",
   "app.nav.item.expenses.documents": "Expense Documents",
   "app.nav.item.expenses.catalog": "Expense Catalog",
+  "app.nav.group.payables": "Accounts Payable",
+  "app.nav.item.payables.list": "Accounts Payable",
   "purchases.reception.summary.readyPurchases.title": "Purchases ready",
   "purchases.reception.summary.readyPurchases.description": "Purchases already entered in the system",
   "purchases.reception.summary.toReview.title": "To review",

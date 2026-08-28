@@ -85,6 +85,14 @@ const PaymentTermsPage = lazyNamedPage(
   () => import("../modules/masterData/pages/PaymentTermsPage"),
   "PaymentTermsPage",
 );
+const PayablesPage = lazyNamedPage(
+  () => import("../modules/payables/pages/PayablesPage"),
+  "PayablesPage",
+);
+const PayableDetailPage = lazyNamedPage(
+  () => import("../modules/payables/pages/PayableDetailPage"),
+  "PayableDetailPage",
+);
 const PurchasesPage = lazyNamedPage(
   () => import("../modules/purchases/pages/PurchasesPage"),
   "PurchasesPage",
@@ -361,6 +369,10 @@ export const catalogRoutes = [
     path="/settings/financial-destinations"
     element={<FinancialDestinationsPage />}
   />,
+
+  // -- Payables (generico: Compras + Gastos) -------------------------------
+  <Route key="payables-list" path="/payables" element={<PayablesPage />} />,
+  <Route key="payables-detail" path="/payables/:id" element={<PayableDetailPage />} />,
 
   // -- Expenses -----------------------------------------------------------
   <Route

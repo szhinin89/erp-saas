@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-27T21:13:03.661Z",
+  "generatedAt": "2026-08-28T02:30:00.211Z",
   "summary": {
-    "total": 107,
-    "allowed": 107,
+    "total": 108,
+    "allowed": 108,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -31,6 +31,7 @@
     "/api/logistics",
     "/api/me",
     "/api/org-config",
+    "/api/payables",
     "/api/payment-methods",
     "/api/ride",
     "/api/saas",
@@ -666,6 +667,14 @@
       "endpoint": "/api/v1/org-config",
       "files": [
         "frontend/src/modules/configuracion/empresa/api/orgConfigService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/payables",
+      "files": [
+        "frontend/src/modules/payables/api/payablesService.ts"
       ],
       "legacy": false,
       "allowed": true
