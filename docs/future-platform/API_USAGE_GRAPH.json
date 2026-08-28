@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-28T18:40:49.043Z",
+  "generatedAt": "2026-08-28T21:08:07.093Z",
   "summary": {
-    "total": 110,
-    "allowed": 110,
+    "total": 111,
+    "allowed": 111,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -14,6 +14,7 @@
     "/api/sales",
     "/api/purchases",
     "/api/admin/iam",
+    "/api/admin/permissions",
     "/api/communications",
     "/api/companies",
     "/api/dashboard",
@@ -108,6 +109,14 @@
       "endpoint": "/api/v1/admin/iam/users",
       "files": [
         "frontend/src/modules/access/users/api/membershipService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/admin/permissions/catalog",
+      "files": [
+        "frontend/src/modules/access/api/adminPermissionsService.ts"
       ],
       "legacy": false,
       "allowed": true

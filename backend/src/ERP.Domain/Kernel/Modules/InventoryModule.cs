@@ -31,7 +31,9 @@ public static class InventoryModule
         LabelKey = "app.nav.item.inventory.warehouses",
         SortOrder = 10,
         Id = "a1000000-0000-4000-9000-000000000002",
-        ParentId = "e2000000-0000-4000-9000-000000000010"
+        ParentId = "e2000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = InventoryPermissions.WarehousesCreate + ","
+            + InventoryPermissions.WarehousesUpdate + "," + InventoryPermissions.WarehousesDelete
     )]
     public const string Warehouses = "/inventory/warehouses";
 
@@ -63,7 +65,10 @@ public static class InventoryModule
         Permission = InventoryPermissions.AdjustmentsView,
         LabelKey = "app.nav.item.inventory.adjustments",
         SortOrder = 40,
-        ParentId = "e2000000-0000-4000-9000-000000000010"
+        ParentId = "e2000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = InventoryPermissions.AdjustmentsCreate + ","
+            + InventoryPermissions.AdjustmentsUpdate + "," + InventoryPermissions.AdjustmentsConfirm
+            + "," + InventoryPermissions.AdjustmentsCancel
     )]
     public const string Adjustments = "/inventory/adjustments";
 
@@ -97,7 +102,8 @@ public static class InventoryModule
         Permission = InventoryPermissions.AdjustmentReasonsView,
         LabelKey = "app.nav.item.inventory.adjustment-reasons",
         SortOrder = 20,
-        ParentId = "e2000000-0000-4000-9000-000000000020"
+        ParentId = "e2000000-0000-4000-9000-000000000020",
+        RelatedActionPermissionsCsv = InventoryPermissions.AdjustmentReasonsManage
     )]
     public const string AdjustmentReasons = "/inventory/adjustment-reasons";
 

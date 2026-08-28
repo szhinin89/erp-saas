@@ -7,10 +7,12 @@ import { useAuthStore } from "../../../store/authStore";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { PermissionsAssignmentPage } from "./PermissionsAssignmentPage";
 import { profileService } from "../api/profileService";
+import { adminPermissionsService } from "../api/adminPermissionsService";
 
 /**
- * ADMINISTRATION-CLEAN-ACCESS-01: pantalla nueva, solo permisos por perfil. No crea usuarios ni
- * perfiles — reutiliza los mismos endpoints ya existentes de AccessProfilesController.
+ * ADMIN-PERMISSIONS-SSOT-KERNEL-02: el árbol de grupos/pantallas/acciones ahora se carga desde
+ * adminPermissionsService.getCatalog() (backend, derivado de KernelRegistry) — no hay
+ * MODULE_PERM_GROUPS hardcodeado en el componente. Estos tests fijan esa fuente única.
  */
 
 vi.mock("../api/profileService", () => ({
@@ -23,6 +25,12 @@ vi.mock("../api/profileService", () => ({
   },
 }));
 
+vi.mock("../api/adminPermissionsService", () => ({
+  adminPermissionsService: {
+    getCatalog: vi.fn(),
+  },
+}));
+
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
 }));
@@ -32,6 +40,47 @@ const PROFILE = {
   name: "Ventas Jr.",
   description: "Perfil de ventas junior",
   isActive: true,
+};
+
+// Catálogo real de una sola pantalla (Pagos a proveedores) — mismo ejemplo literal usado en el
+// backend para probar view + acciones relacionadas (create/reverse).
+const CATALOG = {
+  groups: [
+    {
+      code: "suppliers",
+      labelKey: "app.nav.group.suppliers",
+      sortOrder: 12,
+      items: [
+        {
+          id: "item-supplier-payments",
+          labelKey: "app.nav.item.payables.supplierPayments",
+          route: "/supplier-payments",
+          permission: "supplier-payments.view",
+          sortOrder: 40,
+          actions: [
+            {
+              code: "supplier-payments.view",
+              label: "Ver / Acceder",
+              description: "Permite ver y acceder a esta pantalla.",
+              sortOrder: 0,
+            },
+            {
+              code: "supplier-payments.create",
+              label: "Crear",
+              description: "Permite crear nuevos registros.",
+              sortOrder: 1,
+            },
+            {
+              code: "supplier-payments.reverse",
+              label: "Reversar",
+              description: "Permite reversar la operación.",
+              sortOrder: 2,
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 function renderPage(initialPath = "/admin/permissions") {
@@ -71,9 +120,7 @@ beforeEach(() => {
   vi.mocked(profileService.list).mockResolvedValue([PROFILE]);
   vi.mocked(profileService.getPermissions).mockResolvedValue({
     profileId: PROFILE.id,
-    items: [
-      { permissionKey: "masterdata.businesspartners.view", isAllowed: true },
-    ],
+    items: [{ permissionKey: "supplier-payments.view", isAllowed: true }],
   });
   vi.mocked(profileService.upsertPermissions).mockResolvedValue({
     saved: [],
@@ -82,6 +129,7 @@ beforeEach(() => {
   });
   vi.mocked(profileService.create).mockReset();
   vi.mocked(profileService.update).mockReset();
+  vi.mocked(adminPermissionsService.getCatalog).mockResolvedValue(CATALOG);
   setAuth("Admin");
 });
 
@@ -112,61 +160,88 @@ describe("PermissionsAssignmentPage — access gate", () => {
   });
 });
 
-describe("PermissionsAssignmentPage — asignación por perfil", () => {
-  it("carga el listado de perfiles al montar", async () => {
+describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", () => {
+  it("carga el catálogo y el listado de perfiles al montar", async () => {
     renderPage();
 
     await waitFor(() => {
+      expect(adminPermissionsService.getCatalog).toHaveBeenCalled();
       expect(profileService.list).toHaveBeenCalled();
     });
   });
 
-  it("sin perfil seleccionado, no carga permisos ni muestra el árbol de módulos", async () => {
+  it("sin perfil seleccionado, no carga permisos ni muestra el árbol", async () => {
     renderPage();
 
     await waitFor(() => expect(profileService.list).toHaveBeenCalled());
 
     expect(profileService.getPermissions).not.toHaveBeenCalled();
-    expect(screen.queryByText("Permisos del perfil")).toBeNull();
+    expect(screen.queryByText("Pagos a proveedores")).toBeNull();
   });
 
-  it("preseleccionando ?profileId= carga los permisos de ese perfil", async () => {
+  it("preseleccionando ?profileId= carga permisos y renderiza grupo/pantalla/acciones desde el catálogo", async () => {
     renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
 
     await waitFor(() => {
       expect(profileService.getPermissions).toHaveBeenCalledWith(PROFILE.id);
     });
-    await waitFor(() => {
-      expect(screen.getByText("Permisos del perfil")).toBeTruthy();
-    });
+
+    expect(await screen.findByText("Proveedores")).toBeTruthy();
+    expect(await screen.findByText("Pagos a proveedores")).toBeTruthy();
+    expect(screen.getByText("Ver / Acceder")).toBeTruthy();
+    expect(screen.getByText("Crear")).toBeTruthy();
+    expect(screen.getByText("Reversar")).toBeTruthy();
   });
 
-  it("togglear un permiso y guardar llama a upsertPermissions con ese perfil", async () => {
+  it("no queda ninguna referencia a los módulos hardcodeados de MODULE_PERM_GROUPS", async () => {
     renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
 
-    await waitFor(() => {
-      expect(screen.getByText("Permisos del perfil")).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    expect(screen.queryByText("Clientes / Proveedores")).toBeNull();
+    expect(screen.queryByText("RIDE (Ventas)")).toBeNull();
+    expect(screen.queryByText("Facturación Electrónica")).toBeNull();
+  });
+
+  it("togglear una acción y guardar llama a upsertPermissions solo con códigos del catálogo", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
 
     const switches = screen.getAllByRole("switch");
-    fireEvent.click(switches[0]);
+    fireEvent.click(switches[1]); // "Crear"
 
     fireEvent.click(screen.getByRole("button", { name: /Guardar permisos/i }));
 
     await waitFor(() => {
-      expect(profileService.upsertPermissions).toHaveBeenCalledWith(
-        PROFILE.id,
-        expect.any(Array),
-      );
+      expect(profileService.upsertPermissions).toHaveBeenCalled();
     });
+    const [, sentItems] = vi.mocked(profileService.upsertPermissions).mock.calls[0];
+    const catalogCodes = new Set([
+      "supplier-payments.view",
+      "supplier-payments.create",
+      "supplier-payments.reverse",
+    ]);
+    for (const item of sentItems) expect(catalogCodes.has(item.permissionKey)).toBe(true);
+  });
+
+  it("el filtro de texto oculta pantallas que no coinciden", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    fireEvent.change(screen.getByPlaceholderText(/Buscar pantalla o grupo/i), {
+      target: { value: "no-existe-esta-pantalla" },
+    });
+
+    expect(screen.queryByText("Pagos a proveedores")).toBeNull();
+    expect(screen.getByText(/Ningún grupo o pantalla coincide/i)).toBeTruthy();
   });
 
   it("no expone ningún campo de creación de usuario o perfil", async () => {
     renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
 
-    await waitFor(() => {
-      expect(screen.getByText("Permisos del perfil")).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
 
     expect(screen.queryByLabelText(/Nombre del perfil/i)).toBeNull();
     expect(screen.queryByText(/Nuevo perfil/i)).toBeNull();

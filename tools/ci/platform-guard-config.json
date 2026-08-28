@@ -41,6 +41,7 @@
     "/api/sales",
     "/api/purchases",
     "/api/admin/iam",
+    "/api/admin/permissions",
     "/api/communications",
     "/api/companies",
     "/api/dashboard",

@@ -15,7 +15,9 @@ public static class ProductsModule
         Permission = InventoryPermissions.ItemsView,
         LabelKey = "app.nav.item.inventory.items",
         SortOrder = 10,
-        Id = "a1000000-0000-4000-9000-000000000001"
+        Id = "a1000000-0000-4000-9000-000000000001",
+        RelatedActionPermissionsCsv = InventoryPermissions.ItemsCreate + ","
+            + InventoryPermissions.ItemsEdit
     )]
     public const string Items = "/inventory/items";
 

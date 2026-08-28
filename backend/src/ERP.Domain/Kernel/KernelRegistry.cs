@@ -25,6 +25,16 @@ public static class KernelRegistry
 
     public static IReadOnlyList<NavigationItemDefinition> Navigation { get; } = BuildNavigation();
 
+    /// <summary>
+    /// ADMIN-PERMISSIONS-SSOT-KERNEL-02: unión de <see cref="NavigationItemDefinition.PermissionKey"/>
+    /// (uno por cada NavItem con permiso de acceso real, excluyendo contenedores que solo usan
+    /// <c>PermissionsAnyCsv</c>) y <see cref="NavigationItemDefinition.RelatedActionPermissionKeys"/>
+    /// de cada ítem. Fuente única para el catálogo de permisos asignables
+    /// (<c>GetPermissionCatalogHandler</c>) y para rechazar claves desconocidas al guardar permisos
+    /// de perfil (<c>UpsertProfilePermissionsHandler</c>) — un solo cálculo, dos consumidores.
+    /// </summary>
+    public static IReadOnlySet<string> AssignablePermissionKeys { get; } = BuildAssignablePermissionKeys();
+
     private static List<ModuleDefinition> BuildModules()
     {
         return KernelAssembly
@@ -114,13 +124,32 @@ public static class KernelRegistry
                                         | StringSplitOptions.RemoveEmptyEntries
                                 )
                             )
-                            : null
+                            : null,
+                        SplitCsv(navAttr.RelatedActionPermissionsCsv)
                     )
                 );
             }
         }
 
         return items.OrderBy(i => i.GroupId).ThenBy(i => i.SortOrder).ToList();
+    }
+
+    private static IReadOnlyList<string>? SplitCsv(string? csv) =>
+        csv is null
+            ? null
+            : csv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    private static HashSet<string> BuildAssignablePermissionKeys()
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var item in Navigation)
+        {
+            if (item.PermissionKey is not null)
+                keys.Add(item.PermissionKey);
+            if (item.RelatedActionPermissionKeys is not null)
+                keys.UnionWith(item.RelatedActionPermissionKeys);
+        }
+        return keys;
     }
 
     private static Guid DeterministicGuid(string seed)

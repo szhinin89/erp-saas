@@ -39,7 +39,8 @@ public static class SuppliersModule
         LabelKey = "app.nav.item.purchases.invoices",
         SortOrder = 10,
         Id = "c1000000-0000-4000-9000-000000000001",
-        ParentId = "e3000000-0000-4000-9000-000000000010"
+        ParentId = "e3000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = PurchasePermissions.Create + "," + PurchasePermissions.Update
     )]
     public const string Invoices = "/purchases";
 
@@ -79,7 +80,9 @@ public static class SuppliersModule
         Permission = ExpensePermissions.DocumentsView,
         LabelKey = "app.nav.item.expenses.documents",
         SortOrder = 20,
-        Id = "e5000000-0000-4000-9000-000000000002"
+        Id = "e5000000-0000-4000-9000-000000000002",
+        RelatedActionPermissionsCsv = ExpensePermissions.DocumentsCreate + ","
+            + ExpensePermissions.DocumentsUpdate + "," + ExpensePermissions.DocumentsConfirm
     )]
     public const string ExpenseDocuments = "/expenses/documents";
 
@@ -88,7 +91,10 @@ public static class SuppliersModule
         Permission = ExpensePermissions.CatalogView,
         LabelKey = "app.nav.item.expenses.catalog",
         SortOrder = 21,
-        Id = "e5000000-0000-4000-9000-000000000001"
+        Id = "e5000000-0000-4000-9000-000000000001",
+        RelatedActionPermissionsCsv = ExpensePermissions.CatalogCreate + ","
+            + ExpensePermissions.CatalogUpdate + "," + ExpensePermissions.CatalogActivate + ","
+            + ExpensePermissions.CatalogDeactivate
     )]
     public const string ExpenseCatalog = "/expenses/categories";
 
@@ -102,12 +108,16 @@ public static class SuppliersModule
     )]
     public const string Payables = "/payables";
 
+    // ADMIN-PERMISSIONS-SSOT-KERNEL-02: ejemplo literal del ticket — Create/Reverse deben aparecer
+    // como acciones relacionadas junto al permiso de acceso (View) en Asignación de permisos.
     [NavItem(
         "Pagos a proveedores",
         Permission = SupplierPaymentsPermissions.View,
         LabelKey = "app.nav.item.payables.supplierPayments",
         SortOrder = 40,
-        Id = "c9000000-0000-4000-9000-000000000002"
+        Id = "c9000000-0000-4000-9000-000000000002",
+        RelatedActionPermissionsCsv = SupplierPaymentsPermissions.Create + ","
+            + SupplierPaymentsPermissions.Reverse
     )]
     public const string SupplierPayments = "/supplier-payments";
 

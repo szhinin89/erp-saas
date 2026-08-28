@@ -10,6 +10,15 @@ namespace ERP.Domain.Kernel.Attributes;
 /// módulo, referenciando su <c>Id</c>. <see cref="PermissionsAnyCsv"/> es una lista CSV de
 /// claves de permiso (OR) usada típicamente por ítems contenedor para mostrarse solo si el
 /// usuario puede ver al menos uno de sus hijos.
+/// <see cref="RelatedActionPermissionsCsv"/> (ADMIN-PERMISSIONS-SSOT-KERNEL-02) es una lista CSV
+/// de constantes de permiso reales del mismo dominio funcional que este NavItem (crear/
+/// actualizar/eliminar/confirmar/reversar/etc., construida concatenando constantes — no strings
+/// sueltos, para seguridad en tiempo de compilación), expuestas como acciones asignables en la
+/// pantalla Asignación de permisos junto al permiso de acceso (<see cref="Permission"/>) de este
+/// NavItem. No afecta visibilidad de menú — solo alimenta
+/// <see cref="Kernel.KernelRegistry.AssignablePermissionKeys"/>. Se deja vacío cuando la pantalla
+/// no tiene acciones granulares reales distintas de su permiso de acceso — no se inventa
+/// granularidad que la API no exige.
 /// </summary>
 [AttributeUsage(AttributeTargets.Field)]
 public sealed class NavItemAttribute(string label) : Attribute
@@ -21,4 +30,5 @@ public sealed class NavItemAttribute(string label) : Attribute
     public string? Id { get; init; }
     public string? ParentId { get; init; }
     public string? PermissionsAnyCsv { get; init; }
+    public string? RelatedActionPermissionsCsv { get; init; }
 }

@@ -3,6 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Navigation;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Kernel;
 using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
@@ -46,6 +47,20 @@ public class UpsertProfilePermissionsHandler
 
         if (command.Items is null || command.Items.Count == 0)
             return Result<PermissionUpsertResultDto>.Failure("Debe enviar al menos 1 permiso.");
+
+        // ADMIN-PERMISSIONS-SSOT-KERNEL-02: rechazo atómico — si algún permiso no existe en el
+        // catálogo derivado del Kernel Registry, no se guarda nada (nunca un guardado parcial de
+        // los válidos). ValidationError mapea a 422 vía ApiResultExtensions.MapFailure.
+        var unknownKeys = command
+            .Items.Select(i => i.PermissionKey?.Trim() ?? string.Empty)
+            .Where(k => k.Length > 0 && !KernelRegistry.AssignablePermissionKeys.Contains(k))
+            .Distinct()
+            .ToList();
+        if (unknownKeys.Count > 0)
+            return Result<PermissionUpsertResultDto>.Failure(
+                $"Permiso(s) desconocido(s): {string.Join(", ", unknownKeys)}.",
+                ApiResponseCodes.Common.ValidationError
+            );
 
         var profile = await _repo.GetProfileByIdAsync(
             _currentTenant.TenantId,

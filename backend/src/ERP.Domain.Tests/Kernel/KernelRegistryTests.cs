@@ -691,4 +691,76 @@ public sealed class KernelRegistryTests
 
         modules.Should().Contain(m => m.Code == "accounting");
     }
+
+    // ── ADMIN-PERMISSIONS-SSOT-KERNEL-02 ────────────────────────────────────────────────
+
+    [Fact]
+    public void AssignablePermissionKeys_is_a_subset_of_the_full_permissions_registry()
+    {
+        // El catálogo de permisos asignables (menú + acciones relacionadas) nunca debe exponer
+        // una clave que no exista realmente en KernelRegistry.Permissions.
+        var allPermissions = new HashSet<string>(KernelRegistry.Permissions, StringComparer.Ordinal);
+
+        KernelRegistry.AssignablePermissionKeys.Should().OnlyContain(k => allPermissions.Contains(k));
+    }
+
+    [Fact]
+    public void AssignablePermissionKeys_contains_every_navitem_permission_with_a_real_permission_key()
+    {
+        // Completitud: todo NavItem con Permission propio (no contenedor OR) debe estar
+        // representado en el set — garantiza que un [NavItem] nuevo aparece automáticamente en
+        // el catálogo sin tocar el handler que lo construye.
+        var itemPermissions = KernelRegistry
+            .Navigation.Where(n => n.PermissionKey is not null)
+            .Select(n => n.PermissionKey!);
+
+        foreach (var key in itemPermissions)
+            KernelRegistry.AssignablePermissionKeys.Should().Contain(key);
+    }
+
+    [Fact]
+    public void Navigation_supplier_payments_declares_create_and_reverse_as_related_actions()
+    {
+        // Ejemplo literal del ticket: supplier-payments.view viene del NavItem;
+        // supplier-payments.create y .reverse deben aparecer como acciones relacionadas.
+        var item = KernelRegistry.Navigation.Single(n => n.RoutePath == "/supplier-payments");
+
+        item.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.View);
+        item.RelatedActionPermissionKeys.Should().BeEquivalentTo(
+            new[]
+            {
+                ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.Create,
+                ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.Reverse,
+            }
+        );
+    }
+
+    [Fact]
+    public void Navigation_items_without_a_direct_permission_only_use_the_OR_container_pattern()
+    {
+        // Cada NavItem debe tener algún gate de permiso: o un Permission propio, o un
+        // PermissionsAnyCsv (contenedor visual). Nunca ninguno de los dos.
+        KernelRegistry.Navigation.Should().OnlyContain(
+            n => n.PermissionKey != null || !string.IsNullOrEmpty(n.PermissionKeysAnyJson)
+        );
+    }
+
+    [Fact]
+    public void Known_legacy_permissions_are_never_assignable_via_the_catalog()
+    {
+        // admin.roles.view / admin.users.view (legacy documentados), logistics.carriers.view y
+        // finance.delete (huérfanos, sin NavItem ni controller real) no deben colarse en el
+        // catálogo — por construcción, ya que nada los referencia desde un NavItem ni desde
+        // RelatedActionPermissionsCsv.
+        var legacyKeys = new[]
+        {
+            "admin.roles.view",
+            "admin.users.view",
+            "logistics.carriers.view",
+            "finance.delete",
+        };
+
+        foreach (var key in legacyKeys)
+            KernelRegistry.AssignablePermissionKeys.Should().NotContain(key);
+    }
 }

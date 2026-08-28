@@ -33,7 +33,9 @@ public static class SettingsModule
         LabelKey = "app.nav.item.erp.companies",
         SortOrder = 10,
         Id = "00000000-0000-4000-8000-000000000104",
-        ParentId = "00000000-0000-4000-8000-000000000105"
+        ParentId = "00000000-0000-4000-8000-000000000105",
+        RelatedActionPermissionsCsv = SettingsPermissions.CompaniesCreate + ","
+            + SettingsPermissions.CompaniesUpdate
     )]
     public const string Companies = "/companies";
 
@@ -54,7 +56,9 @@ public static class SettingsModule
         Permission = SettingsPermissions.BranchesView,
         LabelKey = "app.nav.item.settings.branches",
         SortOrder = 20,
-        Id = "a1000000-0000-4000-9000-000000000005"
+        Id = "a1000000-0000-4000-9000-000000000005",
+        RelatedActionPermissionsCsv = SettingsPermissions.BranchesCreate + ","
+            + SettingsPermissions.BranchesUpdate + "," + SettingsPermissions.BranchesDelete
     )]
     public const string Branches = "/settings/branches";
 
@@ -63,7 +67,9 @@ public static class SettingsModule
         Permission = SettingsPermissions.EstablishmentsView,
         LabelKey = "app.nav.item.settings.establishments",
         SortOrder = 30,
-        Id = "a1000000-0000-4000-9000-000000000010"
+        Id = "a1000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = SettingsPermissions.EstablishmentsCreate + ","
+            + SettingsPermissions.EstablishmentsUpdate + "," + SettingsPermissions.EstablishmentsDisable
     )]
     public const string Establishments = "/settings/establishments";
 
@@ -72,7 +78,9 @@ public static class SettingsModule
         Permission = SettingsPermissions.EmissionPointsView,
         LabelKey = "app.nav.item.settings.emissionPoints",
         SortOrder = 40,
-        Id = "a1000000-0000-4000-9000-00000000000f"
+        Id = "a1000000-0000-4000-9000-00000000000f",
+        RelatedActionPermissionsCsv = SettingsPermissions.EmissionPointsCreate + ","
+            + SettingsPermissions.EmissionPointsUpdate + "," + SettingsPermissions.EmissionPointsDelete
     )]
     public const string EmissionPoints = "/settings/emission-points";
 
@@ -81,7 +89,8 @@ public static class SettingsModule
         Permission = SettingsPermissions.FinancialDestinationsView,
         LabelKey = "app.nav.item.settings.financialDestinations",
         SortOrder = 50,
-        Id = "a1000000-0000-4000-9000-000000000011"
+        Id = "a1000000-0000-4000-9000-000000000011",
+        RelatedActionPermissionsCsv = SettingsPermissions.FinancialDestinationsManage
     )]
     public const string FinancialDestinations = "/settings/financial-destinations";
 
@@ -94,7 +103,8 @@ public static class SettingsModule
         Permission = ElectronicInvoicingPermissions.View,
         LabelKey = "app.nav.item.settings.electronicInvoicing",
         SortOrder = 60,
-        Id = "a1000000-0000-4000-9000-000000000014"
+        Id = "a1000000-0000-4000-9000-000000000014",
+        RelatedActionPermissionsCsv = ElectronicInvoicingPermissions.Configure
     )]
     public const string ElectronicInvoicing = "/settings/electronic-invoicing";
 
@@ -103,7 +113,8 @@ public static class SettingsModule
         Permission = CommunicationsPermissions.View,
         LabelKey = "app.nav.item.settings.communicationsEmail",
         SortOrder = 70,
-        Id = "a1000000-0000-4000-9000-000000000012"
+        Id = "a1000000-0000-4000-9000-000000000012",
+        RelatedActionPermissionsCsv = CommunicationsPermissions.Configure
     )]
     public const string CommunicationsEmail = "/settings/communications/email";
 
@@ -114,7 +125,8 @@ public static class SettingsModule
         Permission = OperationalPreferencesPermissions.View,
         LabelKey = "app.nav.item.settings.operationalPreferences",
         SortOrder = 80,
-        Id = "a1000000-0000-4000-9000-000000000013"
+        Id = "a1000000-0000-4000-9000-000000000013",
+        RelatedActionPermissionsCsv = OperationalPreferencesPermissions.Configure
     )]
     public const string OperationalPreferences = "/settings/operations";
 
@@ -134,7 +146,8 @@ public static class SettingsModule
         Permission = MasterDataPermissions.PaymentTermsView,
         LabelKey = "app.nav.item.masterdata.paymentTerms",
         SortOrder = 92,
-        Id = "a1000000-0000-4000-9000-000000000103"
+        Id = "a1000000-0000-4000-9000-000000000103",
+        RelatedActionPermissionsCsv = MasterDataPermissions.PaymentTermsManage
     )]
     public const string PaymentTermsCustomer = "/master/payment-terms";
 
@@ -156,7 +169,8 @@ public static class SettingsModule
         Permission = InitialLoadPermissions.View,
         LabelKey = "app.nav.item.settings.initialLoad",
         SortOrder = 100,
-        Id = "3679c0d4-3482-42cb-91dc-c3a270aa0e26"
+        Id = "3679c0d4-3482-42cb-91dc-c3a270aa0e26",
+        RelatedActionPermissionsCsv = InitialLoadPermissions.Create + "," + InitialLoadPermissions.Confirm
     )]
     public const string InitialLoad = "/initial-load";
 }

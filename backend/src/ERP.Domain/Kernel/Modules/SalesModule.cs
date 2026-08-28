@@ -25,13 +25,17 @@ public static class SalesModule
     )]
     public const string OperationGroup = "/sales/operation-group";
 
+    // ADMIN-PERMISSIONS-SSOT-KERNEL-02: Create/Update como acciones relacionadas — a diferencia de
+    // CustomersModule.Receivables (mismo permiso base, pero solo lectura), esta pantalla sí crea/
+    // edita ventas.
     [NavItem(
         "Facturas de venta / Punto de venta",
         Permission = SalesPermissions.View,
         LabelKey = "app.nav.item.sales.invoices",
         SortOrder = 10,
         Id = "d1000000-0000-4000-9000-000000000001",
-        ParentId = "e4000000-0000-4000-9000-000000000010"
+        ParentId = "e4000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = SalesPermissions.Create + "," + SalesPermissions.Update
     )]
     public const string Invoices = "/sales";
 

@@ -11,6 +11,24 @@
   max-width: 420px;
 }
 
+/* ── PermissionsAssignmentPage catálogo dinámico (ADMIN-PERMISSIONS-SSOT-KERNEL-02) ── */
+.pa-filter-wrap {
+  max-width: 420px;
+}
+
+.pa-group {
+  margin-bottom: var(--space-4);
+}
+
+.pa-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
 .pa-status-row {
   margin-top: var(--space-4);
 }

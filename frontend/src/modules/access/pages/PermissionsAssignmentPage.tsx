@@ -2,10 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useI18n } from "../../../i18n/i18n";
 import { profileService, type Profile } from "../api/profileService";
+import {
+  adminPermissionsService,
+  type PermissionCatalog,
+  type PermissionCatalogItem,
+} from "../api/adminPermissionsService";
 import { ZHField, ZHFormSection, ZHToggle, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { NoAccessPage } from "../../../components/PageShell";
-import { ZhSelect } from "../../../components/zh/inputs";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { formatApiRequestError } from "../../lib/apiError";
 import "./ProfilesPage.css";
@@ -13,133 +18,16 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
 
 /**
- * ADMINISTRATION-CLEAN-ACCESS-01: pantalla propia de responsabilidad única — asigna permisos a un
- * perfil. Extraída de la sección "Permissions" que vivía embebida en el mismo formulario/modal de
- * ProfilesPage.tsx (mezcla crítica). No crea usuarios ni perfiles: reutiliza los mismos endpoints
- * ya existentes de AccessProfilesController (GET/PUT .../profiles/{id}/permissions) que ya usaba
- * ProfilesPage — sin cambios de backend/permisos.
+ * ADMIN-PERMISSIONS-SSOT-KERNEL-02: el árbol de grupos/pantallas/acciones se carga desde
+ * `GET /api/v1/admin/permissions/catalog` — derivado 100% de KernelRegistry en el backend
+ * (mismo origen que el menú server-driven). No hay ningún catálogo de permisos hardcodeado en
+ * este archivo: agregar un `[NavItem]` nuevo en el Kernel lo hace aparecer aquí automáticamente,
+ * sin tocar este componente. No crea usuarios ni perfiles: reutiliza los mismos endpoints ya
+ * existentes de AccessProfilesController (GET/PUT .../profiles/{id}/permissions).
  *
  * No existe el concepto de override de permisos por usuario en el dominio (solo perfil→permiso),
  * así que esta pantalla asigna permisos únicamente por perfil.
  */
-
-/* ── Permission groups mapped to CRUD columns ───────────────── */
-type PermGroup = {
-  module: string;
-  planModule: string;
-  view: string[];
-  create: string[];
-  edit: string[];
-  delete: string[];
-};
-
-const MODULE_PERM_GROUPS: PermGroup[] = [
-  {
-    module: "Clientes / Proveedores",
-    planModule: "sales",
-    view: ["masterdata.businesspartners.view"],
-    create: ["masterdata.businesspartners.create"],
-    edit: ["masterdata.businesspartners.update"],
-    delete: ["masterdata.businesspartners.disable"],
-  },
-  {
-    module: "Inventario",
-    planModule: "inventory",
-    view: ["inventory.Items.view", "inventory.warehouses.view"],
-    create: ["inventory.Items.create", "inventory.warehouses.create"],
-    edit: ["inventory.Items.update", "inventory.warehouses.update"],
-    delete: ["inventory.Items.delete"],
-  },
-  {
-    module: "Configuración",
-    planModule: "access",
-    view: [
-      "settings.branches.view",
-      "settings.company.view",
-      "settings.geography.view",
-    ],
-    create: ["settings.branches.create"],
-    edit: ["settings.branches.update"],
-    delete: ["settings.branches.delete"],
-  },
-  {
-    module: "Facturación Electrónica",
-    planModule: "access",
-    view: ["electronic-invoicing.view"],
-    create: [],
-    edit: ["electronic-invoicing.configure"],
-    delete: [],
-  },
-  {
-    module: "Administración",
-    planModule: "access",
-    view: [
-      "access.profiles.view",
-      "access.company_user_memberships.view",
-      "admin.activity.view",
-    ],
-    create: [],
-    edit: [],
-    delete: [],
-  },
-  {
-    module: "RIDE (Ventas)",
-    planModule: "sales",
-    view: ["ride.view"],
-    create: [],
-    edit: ["ride.regenerate"],
-    delete: [],
-  },
-];
-
-/* ── Helpers ────────────────────────────────────────────────── */
-function allOn(keys: string[], state: Record<string, boolean>): boolean {
-  return keys.length > 0 && keys.every((k) => !!state[k]);
-}
-
-function setKeys(
-  keys: string[],
-  value: boolean,
-  state: Record<string, boolean>,
-): Record<string, boolean> {
-  const next = { ...state };
-  for (const k of keys) next[k] = value;
-  return next;
-}
-
-function countModulesWithAnyPerm(state: Record<string, boolean>): number {
-  return MODULE_PERM_GROUPS.filter((g) =>
-    [...g.view, ...g.create, ...g.edit, ...g.delete].some((k) => !!state[k]),
-  ).length;
-}
-
-function buildEmptyPermState(): Record<string, boolean> {
-  const s: Record<string, boolean> = {};
-  for (const g of MODULE_PERM_GROUPS) {
-    for (const k of [...g.view, ...g.create, ...g.edit, ...g.delete])
-      s[k] = false;
-  }
-  return s;
-}
-
-/* ── Column toggle with cascade ─────────────────────────────── */
-function handleColumnToggle(
-  group: PermGroup,
-  col: "view" | "create" | "edit" | "delete",
-  checked: boolean,
-  state: Record<string, boolean>,
-): Record<string, boolean> {
-  let next = setKeys(group[col], checked, state);
-  if (checked) {
-    // cascading: any action requires view
-    if (col !== "view") next = setKeys(group.view, true, next);
-    // delete also requires edit
-    if (col === "delete") next = setKeys(group.edit, true, next);
-  }
-  return next;
-}
-
-/* ── Main component ─────────────────────────────────────────── */
 export function PermissionsAssignmentPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
@@ -149,18 +37,62 @@ export function PermissionsAssignmentPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProfileId = searchParams.get("profileId") ?? "";
 
+  const [catalog, setCatalog] = useState<PermissionCatalog | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState("");
 
-  const [permState, setPermState] =
-    useState<Record<string, boolean>>(buildEmptyPermState);
+  const [filterText, setFilterText] = useState("");
+
+  const [permState, setPermState] = useState<Record<string, boolean>>({});
   const [permLoading, setPermLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [rejectedPerms, setRejectedPerms] = useState<
     { permissionKey: string; reason: string }[]
   >([]);
+
+  /* ── Catálogo dinámico (una sola vez, independiente del perfil) ─────── */
+  const loadCatalog = useCallback(async () => {
+    setCatalogLoading(true);
+    setCatalogError("");
+    try {
+      const res = await adminPermissionsService.getCatalog();
+      setCatalog(res ?? { groups: [] });
+    } catch (err) {
+      setCatalogError(
+        formatApiRequestError(err, {
+          generic: t("permissionsAssignment.error.loadCatalog"),
+        }),
+      );
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
+
+  const allItems = useMemo<PermissionCatalogItem[]>(
+    () => catalog?.groups.flatMap((g) => g.items) ?? [],
+    [catalog],
+  );
+
+  const allActionCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const item of allItems) for (const action of item.actions) codes.add(action.code);
+    return codes;
+  }, [allItems]);
+
+  const buildEmptyPermState = useCallback((): Record<string, boolean> => {
+    const s: Record<string, boolean> = {};
+    for (const code of allActionCodes) s[code] = false;
+    return s;
+  }, [allActionCodes]);
 
   /* ── Load profile list ─────────────────────────────────────── */
   const loadProfiles = useCallback(async () => {
@@ -184,29 +116,33 @@ export function PermissionsAssignmentPage() {
   }, [loadProfiles]);
 
   /* ── Load permissions for the selected profile ─────────────── */
-  const loadPermissions = useCallback(async (profileId: string) => {
-    setPermLoading(true);
-    setSaveError("");
-    setRejectedPerms([]);
-    try {
-      const res = await profileService.getPermissions(profileId);
-      const next = buildEmptyPermState();
-      for (const item of res?.items ?? []) {
-        if (item.permissionKey in next)
-          next[item.permissionKey] = !!item.isAllowed;
+  const loadPermissions = useCallback(
+    async (profileId: string) => {
+      setPermLoading(true);
+      setSaveError("");
+      setRejectedPerms([]);
+      try {
+        const res = await profileService.getPermissions(profileId);
+        const next = buildEmptyPermState();
+        for (const item of res?.items ?? []) {
+          if (item.permissionKey in next) next[item.permissionKey] = !!item.isAllowed;
+        }
+        setPermState(next);
+      } catch (err) {
+        setPermState(buildEmptyPermState());
+        setSaveError(formatApiRequestError(err, { generic: t("profiles.perms.error.load") }));
+      } finally {
+        setPermLoading(false);
       }
-      setPermState(next);
-    } catch {
-      setPermState(buildEmptyPermState());
-    } finally {
-      setPermLoading(false);
-    }
-  }, []);
+    },
+    [buildEmptyPermState, t],
+  );
 
   useEffect(() => {
+    if (!catalog) return;
     if (selectedProfileId) void loadPermissions(selectedProfileId);
     else setPermState(buildEmptyPermState());
-  }, [selectedProfileId, loadPermissions]);
+  }, [selectedProfileId, loadPermissions, buildEmptyPermState, catalog]);
 
   const selectedProfile = useMemo(
     () => profiles.find((p) => p.id === selectedProfileId) ?? null,
@@ -218,37 +154,66 @@ export function PermissionsAssignmentPage() {
     else setSearchParams({});
   };
 
+  /* ── Toggle con cascada por ítem: cualquier acción distinta de la principal
+     (actions[0], el permiso de acceso) exige que la principal esté activa; apagar la
+     principal apaga el resto de acciones del mismo ítem. ────────────────────────── */
+  const toggleAction = (item: PermissionCatalogItem, actionCode: string, checked: boolean) => {
+    setPermState((state) => {
+      const next = { ...state, [actionCode]: checked };
+      const baseCode = item.actions[0]?.code;
+      if (baseCode) {
+        if (checked && actionCode !== baseCode) next[baseCode] = true;
+        if (!checked && actionCode === baseCode) {
+          for (const action of item.actions) next[action.code] = false;
+        }
+      }
+      return next;
+    });
+  };
+
   /* ── Save ────────────────────────────────────────────────────── */
   const onSave = async () => {
     if (!selectedProfileId) return;
     setSaving(true);
     setSaveError("");
     try {
-      const permItems = Object.entries(permState).map(
-        ([permissionKey, isAllowed]) => ({ permissionKey, isAllowed }),
-      );
-      const upsertResult = await profileService.upsertPermissions(
-        selectedProfileId,
-        permItems,
-      );
+      // Bloqueo local defensivo: nunca enviar un código que no venga del catálogo cargado,
+      // aunque estructuralmente la UI ya solo renderiza toggles por código de catálogo.
+      const permItems = Object.entries(permState)
+        .filter(([permissionKey]) => allActionCodes.has(permissionKey))
+        .map(([permissionKey, isAllowed]) => ({ permissionKey, isAllowed }));
+      const upsertResult = await profileService.upsertPermissions(selectedProfileId, permItems);
       const planRejections = (upsertResult?.rejected ?? []).filter(
         (r) => r.rejectionCode === "blocked_by_plan",
       );
       setRejectedPerms(planRejections);
     } catch (err) {
-      setSaveError(
-        formatApiRequestError(err, { generic: t("profiles.perms.error.save") }),
-      );
+      setSaveError(formatApiRequestError(err, { generic: t("profiles.perms.error.save") }));
     } finally {
       setSaving(false);
     }
   };
 
-  const modulesWithPerms = countModulesWithAnyPerm(permState);
-  const progressPct = Math.round(
-    (modulesWithPerms / MODULE_PERM_GROUPS.length) * 100,
-  );
-  const modulesWithoutPerms = MODULE_PERM_GROUPS.length - modulesWithPerms;
+  /* ── Filtro por texto sobre grupo/pantalla ───────────────────── */
+  const normalizedFilter = filterText.trim().toLowerCase();
+  const visibleGroups = useMemo(() => {
+    if (!catalog) return [];
+    if (!normalizedFilter) return catalog.groups;
+    return catalog.groups
+      .map((g) => {
+        const groupLabel = t(g.labelKey).toLowerCase();
+        if (groupLabel.includes(normalizedFilter)) return g;
+        const items = g.items.filter((i) => t(i.labelKey).toLowerCase().includes(normalizedFilter));
+        return items.length > 0 ? { ...g, items } : null;
+      })
+      .filter((g): g is NonNullable<typeof g> => g !== null);
+  }, [catalog, normalizedFilter, t]);
+
+  const itemsWithAnyPerm = allItems.filter((item) =>
+    item.actions.some((a) => !!permState[a.code]),
+  ).length;
+  const progressPct = allItems.length > 0 ? Math.round((itemsWithAnyPerm / allItems.length) * 100) : 0;
+  const itemsWithoutPerms = allItems.length - itemsWithAnyPerm;
 
   if (!user || (!isAdminRole && !canManage)) {
     return <NoAccessPage title={t("permissionsAssignment.title")} />;
@@ -260,12 +225,13 @@ export function PermissionsAssignmentPage() {
       title={t("permissionsAssignment.title")}
       subtitle={t("permissionsAssignment.subtitle")}
     >
+      <ZHPageNotice variant="info" message={t("permissionsAssignment.sourceNotice")} />
+
       {listError ? (
-        <ZHPageNotice
-          variant="error"
-          message={t("common.errorPrefix")}
-          detail={listError}
-        />
+        <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={listError} />
+      ) : null}
+      {catalogError ? (
+        <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={catalogError} />
       ) : null}
 
       <div className="pg-section prf-modal-section-flush">
@@ -277,9 +243,7 @@ export function PermissionsAssignmentPage() {
               disabled={listLoading}
               onChange={(e) => onSelectProfile(e.target.value)}
             >
-              <option value="">
-                {t("permissionsAssignment.selectProfilePlaceholder")}
-              </option>
+              <option value="">{t("permissionsAssignment.selectProfilePlaceholder")}</option>
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -291,58 +255,62 @@ export function PermissionsAssignmentPage() {
       </div>
 
       {!selectedProfile ? (
-        <p className="subtle pg-state-pad">
-          {t("permissionsAssignment.noProfileSelected")}
-        </p>
+        <p className="subtle pg-state-pad">{t("permissionsAssignment.noProfileSelected")}</p>
+      ) : catalogLoading ? (
+        <p className="subtle pg-state-pad">{t("common.loading")}</p>
+      ) : allItems.length === 0 ? (
+        <p className="subtle pg-state-pad">{t("permissionsAssignment.emptyCatalog")}</p>
       ) : (
         <>
           <div className="pg-section prf-modal-section-flush">
-            <div className="pg-section-header">
-              <span className="material-symbols-outlined prf-modal-section-icon">
-                rule
-              </span>
-              {t("profiles.perms.title")}
+            <div className="pa-filter-wrap">
+              <ZhTextInput
+                className="zh-input"
+                placeholder={t("permissionsAssignment.filterPlaceholder")}
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+              />
             </div>
+          </div>
 
+          <div className="pg-section prf-modal-section-flush">
             {permLoading ? (
               <p className="subtle prf-modal-loading">{t("common.loading")}</p>
+            ) : visibleGroups.length === 0 ? (
+              <p className="subtle pg-state-pad">{t("permissionsAssignment.noFilterMatches")}</p>
             ) : (
-              MODULE_PERM_GROUPS.map((group) => (
-                <ZHFormSection key={group.module} title={group.module}>
-                  <div className="zh-stack zh-gap-8">
-                    {(["view", "create", "edit", "delete"] as const).map(
-                      (col) =>
-                        group[col].length > 0 && (
-                          <ZHToggle
-                            key={col}
-                            label={t(`profiles.perms.${col}`)}
-                            description={t(`profiles.perms.${col}.desc`)}
-                            value={allOn(group[col], permState)}
-                            onChange={(checked) =>
-                              setPermState((s) =>
-                                handleColumnToggle(group, col, checked, s),
-                              )
-                            }
-                          />
-                        ),
-                    )}
-                  </div>
-                </ZHFormSection>
+              visibleGroups.map((group) => (
+                <div key={group.code} className="pa-group">
+                  <h4 className="pa-group-title">{t(group.labelKey)}</h4>
+                  {group.items.map((item) => (
+                    <ZHFormSection key={item.id} title={t(item.labelKey)} description={item.route}>
+                      <div className="zh-stack zh-gap-8">
+                        {item.actions.map((action) => (
+                          <div key={action.code} title={action.code}>
+                            <ZHToggle
+                              label={action.label}
+                              description={action.description}
+                              value={!!permState[action.code]}
+                              onChange={(checked) => toggleAction(item, action.code, checked)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </ZHFormSection>
+                  ))}
+                </div>
               ))
             )}
 
             <div className="prf-modal-status-row pa-status-row">
-              {modulesWithoutPerms > 0 ? (
+              {itemsWithoutPerms > 0 ? (
                 <>
                   <span className="material-symbols-outlined prf-modal-status-row-icon">
                     pending_actions
                   </span>
                   <p className="subtle prf-modal-status-row-text">
-                    {t("profiles.form.missingModules", {
-                      count: modulesWithoutPerms,
-                    })}
-                    {" "}
-                    ({progressPct}%)
+                    {t("permissionsAssignment.missingScreens", { count: itemsWithoutPerms })} (
+                    {progressPct}%)
                   </p>
                 </>
               ) : (
@@ -351,7 +319,7 @@ export function PermissionsAssignmentPage() {
                     check_circle
                   </span>
                   <p className="subtle prf-modal-status-row-text">
-                    {t("profiles.form.allModulesSet")}
+                    {t("permissionsAssignment.allScreensSet")}
                   </p>
                 </>
               )}
@@ -362,18 +330,12 @@ export function PermissionsAssignmentPage() {
             <ZHPageNotice
               variant="warning"
               message={`${rejectedPerms.length} permiso(s) no guardados -- fuera del plan`}
-              detail={rejectedPerms
-                .map((r) => `${r.permissionKey}: ${r.reason}`)
-                .join("\n")}
+              detail={rejectedPerms.map((r) => `${r.permissionKey}: ${r.reason}`).join("\n")}
             />
           )}
 
           {saveError && (
-            <ZHPageNotice
-              variant="error"
-              message={t("common.errorPrefix")}
-              detail={saveError}
-            />
+            <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={saveError} />
           )}
 
           <ZHFormActions
@@ -383,9 +345,7 @@ export function PermissionsAssignmentPage() {
             onSave={() => void onSave()}
             labels={{
               cancel: t("common.cancel"),
-              save: saving
-                ? t("common.saving")
-                : t("permissionsAssignment.saveAction"),
+              save: saving ? t("common.saving") : t("permissionsAssignment.saveAction"),
             }}
           />
         </>
