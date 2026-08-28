@@ -29,7 +29,9 @@ public sealed record CreateExpenseCategoryNodeCommand(
     ExpenseCategoryNodeLevel Level,
     Guid? ParentId,
     Guid? AccountingAccountId,
-    string? Description = null
+    string? Description = null,
+    bool IsDeductible = true,
+    bool RequiresInvoice = true
 ) : IRequest<Result<ExpenseCategoryNodeDto>>, ICompanyScopedRequest;
 
 public sealed record UpdateExpenseCategoryNodeCommand(
@@ -37,7 +39,9 @@ public sealed record UpdateExpenseCategoryNodeCommand(
     string Code,
     string Name,
     Guid? AccountingAccountId,
-    string? Description = null
+    string? Description = null,
+    bool IsDeductible = true,
+    bool RequiresInvoice = true
 ) : IRequest<Result<ExpenseCategoryNodeDto>>, ICompanyScopedRequest;
 
 public sealed record ActivateExpenseCategoryNodeCommand(Guid Id)
@@ -298,7 +302,9 @@ public sealed class CreateExpenseCategoryNodeHandler
                     cmd.Name,
                     cmd.AccountingAccountId!.Value,
                     _u.UserId,
-                    cmd.Description
+                    cmd.Description,
+                    cmd.IsDeductible,
+                    cmd.RequiresInvoice
                 ),
                 _ => throw new ArgumentException("Nivel de categoria de gasto no soportado."),
             };
@@ -459,6 +465,7 @@ public sealed class UpdateExpenseCategoryNodeHandler
                 return accountValidation;
 
             node.ChangeSubcategoryAccount(cmd.AccountingAccountId.Value, _u.UserId);
+            node.UpdateSubcategoryTaxRules(cmd.IsDeductible, cmd.RequiresInvoice, _u.UserId);
         }
 
         try
@@ -574,6 +581,8 @@ file static class Map
             node.Description,
             node.Level,
             node.AccountingAccountId,
+            node.IsDeductible,
+            node.RequiresInvoice,
             node.IsActive
         );
 
@@ -602,6 +611,8 @@ file static class Map
                 node.Description,
                 node.Level,
                 node.AccountingAccountId,
+                node.IsDeductible,
+                node.RequiresInvoice,
                 node.IsActive,
                 Build(node.Id)
             );

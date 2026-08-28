@@ -848,6 +848,7 @@ public static class DependencyInjection
         services.AddScoped<ICompanyBootstrapStep>(sp =>
             sp.GetRequiredService<AccountingBootstrapStep>()
         );
+        services.AddScoped<ICompanyBootstrapStep, ExpensesCatalogBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, AccessBootstrapStep>();
 
         // ── Global bootstrap (una sola vez por instalación, cada arranque) ─────

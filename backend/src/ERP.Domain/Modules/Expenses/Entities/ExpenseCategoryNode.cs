@@ -16,6 +16,8 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
     public string? Description { get; private set; }
     public ExpenseCategoryNodeLevel Level { get; private set; }
     public Guid? AccountingAccountId { get; private set; }
+    public bool IsDeductible { get; private set; }
+    public bool RequiresInvoice { get; private set; }
     public bool IsActive { get; private set; } = true;
 
     private ExpenseCategoryNode() { }
@@ -79,7 +81,9 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         string name,
         Guid accountingAccountId,
         Guid createdBy,
-        string? description = null
+        string? description = null,
+        bool isDeductible = true,
+        bool requiresInvoice = true
     )
     {
         ArgumentNullException.ThrowIfNull(parentCategory);
@@ -99,7 +103,9 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
             createdBy,
             parentCategory.Id,
             accountingAccountId,
-            description
+            description,
+            isDeductible,
+            requiresInvoice
         );
     }
 
@@ -112,7 +118,9 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         Guid createdBy,
         Guid? parentId,
         Guid? accountingAccountId,
-        string? description
+        string? description,
+        bool isDeductible = false,
+        bool requiresInvoice = false
     )
     {
         if (tenantId == Guid.Empty)
@@ -141,6 +149,8 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
             Description = NormalizeDescription(description),
             Level = level,
             AccountingAccountId = accountingAccountId,
+            IsDeductible = level == ExpenseCategoryNodeLevel.Subcategory && isDeductible,
+            RequiresInvoice = level == ExpenseCategoryNodeLevel.Subcategory && requiresInvoice,
             IsActive = true,
         };
         node.SetCreated(createdBy);
@@ -161,6 +171,22 @@ public sealed class ExpenseCategoryNode : AuditableEntity, ITenantScopedEntity, 
         Code = code.Trim().ToUpperInvariant();
         Name = name.Trim();
         Description = NormalizeDescription(description);
+        SetUpdated(updatedBy);
+    }
+
+    public void UpdateSubcategoryTaxRules(
+        bool isDeductible,
+        bool requiresInvoice,
+        Guid updatedBy
+    )
+    {
+        if (Level != ExpenseCategoryNodeLevel.Subcategory)
+            throw new InvalidOperationException(
+                "Solo una subcategoría puede configurar reglas tributarias de gasto."
+            );
+
+        IsDeductible = isDeductible;
+        RequiresInvoice = requiresInvoice;
         SetUpdated(updatedBy);
     }
 

@@ -11,6 +11,8 @@ public sealed record ExpenseCategoryNodeDto(
     string? Description,
     ExpenseCategoryNodeLevel Level,
     Guid? AccountingAccountId,
+    bool IsDeductible,
+    bool RequiresInvoice,
     bool IsActive
 );
 
@@ -23,6 +25,8 @@ public sealed record ExpenseCategoryTreeNodeDto(
     string? Description,
     ExpenseCategoryNodeLevel Level,
     Guid? AccountingAccountId,
+    bool IsDeductible,
+    bool RequiresInvoice,
     bool IsActive,
     IReadOnlyList<ExpenseCategoryTreeNodeDto> Children
 );

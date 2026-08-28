@@ -36,6 +36,9 @@ public static class CompanyBootstrapStepOrder
     /// </summary>
     public const int Accounting = 47;
 
+    /// <summary>Catalogo generico de gastos. Depende de Accounting (cuentas de gasto postables).</summary>
+    public const int ExpensesCatalog = 48;
+
     /// <summary>Perfiles de acceso por defecto. Último — no depende de ningún otro step.</summary>
     public const int Access = 50;
 }

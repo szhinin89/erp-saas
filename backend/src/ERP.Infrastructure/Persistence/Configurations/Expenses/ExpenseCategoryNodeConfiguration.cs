@@ -44,6 +44,8 @@ public sealed class ExpenseCategoryNodeConfiguration
             .HasMaxLength(ExpenseCategoryNode.DescriptionMaxLen);
         builder.Property(x => x.Level).HasColumnName("level").HasConversion<int>().IsRequired();
         builder.Property(x => x.AccountingAccountId).HasColumnName("accounting_account_id");
+        builder.Property(x => x.IsDeductible).HasColumnName("is_deductible").IsRequired();
+        builder.Property(x => x.RequiresInvoice).HasColumnName("requires_invoice").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

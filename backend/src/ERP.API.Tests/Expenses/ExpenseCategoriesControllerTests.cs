@@ -53,6 +53,8 @@ public sealed class ExpenseCategoriesControllerTests
             null,
             ExpenseCategoryNodeLevel.Type,
             null,
+            false,
+            false,
             true
         );
 
