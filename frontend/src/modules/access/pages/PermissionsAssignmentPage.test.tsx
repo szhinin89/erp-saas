@@ -122,6 +122,7 @@ beforeEach(() => {
     profileId: PROFILE.id,
     items: [{ permissionKey: "supplier-payments.view", isAllowed: true }],
   });
+  vi.mocked(profileService.upsertPermissions).mockReset();
   vi.mocked(profileService.upsertPermissions).mockResolvedValue({
     saved: [],
     rejected: [],
@@ -246,5 +247,61 @@ describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", (
     expect(screen.queryByLabelText(/Nombre del perfil/i)).toBeNull();
     expect(screen.queryByText(/Nuevo perfil/i)).toBeNull();
     expect(profileService.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("PermissionsAssignmentPage — refactor visual compacto (PERMISSIONS-ASSIGNMENT-UI-COMPACT-03)", () => {
+  it('"Marcar todo" activa las 3 acciones y "Desmarcar todo" las apaga, sin llamar al backend', async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Marcar todo" }));
+    let switches = screen.getAllByRole("switch");
+    expect(switches.every((s) => s.getAttribute("aria-checked") === "true")).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Desmarcar todo" }));
+    switches = screen.getAllByRole("switch");
+    expect(switches.every((s) => s.getAttribute("aria-checked") === "false")).toBe(true);
+
+    expect(profileService.upsertPermissions).not.toHaveBeenCalled();
+  });
+
+  it('"Solo permisos de acceso (Ver)" activa únicamente la primera acción de cada pantalla', async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Solo permisos de acceso (Ver)" }),
+    );
+
+    const switches = screen.getAllByRole("switch");
+    expect(switches[0].getAttribute("aria-checked")).toBe("true");
+    expect(switches.slice(1).every((s) => s.getAttribute("aria-checked") === "false")).toBe(true);
+  });
+
+  it("el chevron contrae y expande el bloque de la pantalla sin perder el estado de los toggles", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+    expect(screen.getByText("Crear")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Contraer Pagos a proveedores/i }));
+    expect(screen.queryByText("Crear")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Expandir Pagos a proveedores/i }));
+    expect(screen.getByText("Crear")).toBeTruthy();
+  });
+
+  it("muestra el resumen de pantallas/permisos totales y el conteo por bloque", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    expect(screen.getByText("Total: 1 pantallas, 3 permisos")).toBeTruthy();
+    expect(screen.getByText("Acceso: 1")).toBeTruthy();
+    expect(screen.getByText("Acciones: 2")).toBeTruthy();
+    expect(screen.getByText("3 permisos")).toBeTruthy();
   });
 });

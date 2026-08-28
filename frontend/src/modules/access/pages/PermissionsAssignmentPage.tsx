@@ -7,9 +7,9 @@ import {
   type PermissionCatalog,
   type PermissionCatalogItem,
 } from "../api/adminPermissionsService";
-import { ZHField, ZHFormSection, ZHToggle, ZHFormActions } from "../../../components/zh/ZHForm";
+import { ZHField, ZHToggle, ZHFormActions, ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { NoAccessPage } from "../../../components/PageShell";
+import { NoAccessPage, Badge } from "../../../components/PageShell";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -25,6 +25,9 @@ import { useAuthStore } from "../../../store/authStore";
  * sin tocar este componente. No crea usuarios ni perfiles: reutiliza los mismos endpoints ya
  * existentes de AccessProfilesController (GET/PUT .../profiles/{id}/permissions).
  *
+ * PERMISSIONS-ASSIGNMENT-UI-COMPACT-03: refactor puramente visual — mismo estado/mismos
+ * handlers de guardado/filtro/selección de perfil que antes, solo cambia cómo se presenta cada
+ * pantalla (bloque compacto tipo card con grid de acciones, en vez de una lista vertical larga).
  * No existe el concepto de override de permisos por usuario en el dominio (solo perfil→permiso),
  * así que esta pantalla asigna permisos únicamente por perfil.
  */
@@ -46,6 +49,7 @@ export function PermissionsAssignmentPage() {
   const [listError, setListError] = useState("");
 
   const [filterText, setFilterText] = useState("");
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const [permState, setPermState] = useState<Record<string, boolean>>({});
   const [permLoading, setPermLoading] = useState(false);
@@ -156,7 +160,7 @@ export function PermissionsAssignmentPage() {
 
   /* ── Toggle con cascada por ítem: cualquier acción distinta de la principal
      (actions[0], el permiso de acceso) exige que la principal esté activa; apagar la
-     principal apaga el resto de acciones del mismo ítem. ────────────────────────── */
+     principal apaga el resto de acciones del mismo ítem. Sin cambios de comportamiento. ── */
   const toggleAction = (item: PermissionCatalogItem, actionCode: string, checked: boolean) => {
     setPermState((state) => {
       const next = { ...state, [actionCode]: checked };
@@ -167,6 +171,40 @@ export function PermissionsAssignmentPage() {
           for (const action of item.actions) next[action.code] = false;
         }
       }
+      return next;
+    });
+  };
+
+  /* ── Acciones rápidas: conveniencias de edición masiva sobre el mismo permState,
+     mismo mecanismo que togglear una a una — no llaman a ningún servicio nuevo. ── */
+  const markAll = () => {
+    setPermState((state) => {
+      const next = { ...state };
+      for (const code of allActionCodes) next[code] = true;
+      return next;
+    });
+  };
+
+  const unmarkAll = () => {
+    setPermState(buildEmptyPermState());
+  };
+
+  const onlyAccess = () => {
+    setPermState(() => {
+      const next = buildEmptyPermState();
+      for (const item of allItems) {
+        const baseCode = item.actions[0]?.code;
+        if (baseCode) next[baseCode] = true;
+      }
+      return next;
+    });
+  };
+
+  const toggleCollapsed = (itemId: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
       return next;
     });
   };
@@ -209,11 +247,10 @@ export function PermissionsAssignmentPage() {
       .filter((g): g is NonNullable<typeof g> => g !== null);
   }, [catalog, normalizedFilter, t]);
 
-  const itemsWithAnyPerm = allItems.filter((item) =>
-    item.actions.some((a) => !!permState[a.code]),
-  ).length;
-  const progressPct = allItems.length > 0 ? Math.round((itemsWithAnyPerm / allItems.length) * 100) : 0;
-  const itemsWithoutPerms = allItems.length - itemsWithAnyPerm;
+  /* ── Resumen: pantallas totales, permisos totales, acceso vs. acciones ─ */
+  const totalActionsCount = allItems.reduce((sum, item) => sum + item.actions.length, 0);
+  const accessCount = allItems.length;
+  const relatedActionsCount = totalActionsCount - accessCount;
 
   if (!user || (!isAdminRole && !canManage)) {
     return <NoAccessPage title={t("permissionsAssignment.title")} />;
@@ -224,19 +261,9 @@ export function PermissionsAssignmentPage() {
       kicker={t("app.nav.group.admin")}
       title={t("permissionsAssignment.title")}
       subtitle={t("permissionsAssignment.subtitle")}
-    >
-      <ZHPageNotice variant="info" message={t("permissionsAssignment.sourceNotice")} />
-
-      {listError ? (
-        <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={listError} />
-      ) : null}
-      {catalogError ? (
-        <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={catalogError} />
-      ) : null}
-
-      <div className="pg-section prf-modal-section-flush">
-        <div className="pa-profile-select-wrap">
-          <ZHField label={t("permissionsAssignment.selectProfile")}>
+      action={
+        <div className="pa-header-toolbar">
+          <ZHField className="pa-header-field" label={t("permissionsAssignment.selectProfile")}>
             <ZhSelect
               className="zh-input"
               value={selectedProfileId}
@@ -251,8 +278,24 @@ export function PermissionsAssignmentPage() {
               ))}
             </ZhSelect>
           </ZHField>
+          <ZhTextInput
+            className="zh-input pa-filter-input"
+            placeholder={t("permissionsAssignment.filterPlaceholder")}
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            aria-label={t("permissionsAssignment.filterPlaceholder")}
+          />
         </div>
-      </div>
+      }
+    >
+      <ZHPageNotice variant="info" message={t("permissionsAssignment.sourceNotice")} />
+
+      {listError ? (
+        <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={listError} />
+      ) : null}
+      {catalogError ? (
+        <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={catalogError} />
+      ) : null}
 
       {!selectedProfile ? (
         <p className="subtle pg-state-pad">{t("permissionsAssignment.noProfileSelected")}</p>
@@ -262,68 +305,117 @@ export function PermissionsAssignmentPage() {
         <p className="subtle pg-state-pad">{t("permissionsAssignment.emptyCatalog")}</p>
       ) : (
         <>
-          <div className="pg-section prf-modal-section-flush">
-            <div className="pa-filter-wrap">
-              <ZhTextInput
-                className="zh-input"
-                placeholder={t("permissionsAssignment.filterPlaceholder")}
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-              />
-            </div>
+          <div className="pa-quick-actions">
+            <span className="pa-quick-actions-label">
+              {t("permissionsAssignment.quickActions.label")}
+            </span>
+            <ZHBtn variant="secondary" size="xs" type="button" onClick={markAll}>
+              {t("permissionsAssignment.quickActions.markAll")}
+            </ZHBtn>
+            <ZHBtn variant="secondary" size="xs" type="button" onClick={unmarkAll}>
+              {t("permissionsAssignment.quickActions.unmarkAll")}
+            </ZHBtn>
+            <ZHBtn variant="secondary" size="xs" type="button" onClick={onlyAccess}>
+              {t("permissionsAssignment.quickActions.onlyAccess")}
+            </ZHBtn>
+            <span className="pa-legend">
+              <span className="pa-legend-item">
+                <span className="pa-legend-dot pa-legend-dot--access" />
+                {t("permissionsAssignment.legend.access")}
+              </span>
+              <span className="pa-legend-item">
+                <span className="pa-legend-dot pa-legend-dot--action" />
+                {t("permissionsAssignment.legend.action")}
+              </span>
+            </span>
           </div>
 
-          <div className="pg-section prf-modal-section-flush">
-            {permLoading ? (
-              <p className="subtle prf-modal-loading">{t("common.loading")}</p>
-            ) : visibleGroups.length === 0 ? (
-              <p className="subtle pg-state-pad">{t("permissionsAssignment.noFilterMatches")}</p>
-            ) : (
-              visibleGroups.map((group) => (
-                <div key={group.code} className="pa-group">
-                  <h4 className="pa-group-title">{t(group.labelKey)}</h4>
-                  {group.items.map((item) => (
-                    <ZHFormSection key={item.id} title={t(item.labelKey)} description={item.route}>
-                      <div className="zh-stack zh-gap-8">
-                        {item.actions.map((action) => (
-                          <div key={action.code} title={action.code}>
-                            <ZHToggle
-                              label={action.label}
-                              description={action.description}
-                              value={!!permState[action.code]}
-                              onChange={(checked) => toggleAction(item, action.code, checked)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </ZHFormSection>
-                  ))}
-                </div>
-              ))
-            )}
+          {permLoading ? (
+            <p className="subtle prf-modal-loading">{t("common.loading")}</p>
+          ) : visibleGroups.length === 0 ? (
+            <p className="subtle pg-state-pad">{t("permissionsAssignment.noFilterMatches")}</p>
+          ) : (
+            visibleGroups.map((group) => (
+              <div key={group.code} className="pa-group">
+                <h4 className="pa-group-title">{t(group.labelKey)}</h4>
+                {group.items.map((item) => {
+                  const collapsed = collapsedIds.has(item.id);
+                  const itemLabel = t(item.labelKey);
+                  return (
+                    <div key={item.id} className="pg-section pa-item-card">
+                      <button
+                        type="button"
+                        className="pg-section-header pa-item-header"
+                        onClick={() => toggleCollapsed(item.id)}
+                        aria-expanded={!collapsed}
+                        aria-label={t(
+                          collapsed
+                            ? "permissionsAssignment.expandItem"
+                            : "permissionsAssignment.collapseItem",
+                          { name: itemLabel },
+                        )}
+                      >
+                        <span className="pg-section-header-left pa-item-header-left">
+                          <span className="material-symbols-outlined pg-section-icon pa-item-chevron">
+                            {collapsed ? "chevron_right" : "expand_more"}
+                          </span>
+                          <span className="pa-item-title-wrap">
+                            <span className="pa-item-title">{itemLabel}</span>
+                            <Badge label={item.route} variant="neutral" code />
+                          </span>
+                        </span>
+                        <Badge
+                          label={t("permissionsAssignment.actionsCount", {
+                            count: item.actions.length,
+                          })}
+                          variant="neutral"
+                        />
+                      </button>
+                      {!collapsed && (
+                        <div className="pg-section-body pa-actions-grid">
+                          {item.actions.map((action, index) => (
+                            <div
+                              key={action.code}
+                              title={action.code}
+                              className={
+                                index === 0
+                                  ? "pa-action-tile pa-action-tile--access"
+                                  : "pa-action-tile pa-action-tile--action"
+                              }
+                            >
+                              <ZHToggle
+                                label={action.label}
+                                description={action.description}
+                                value={!!permState[action.code]}
+                                onChange={(checked) => toggleAction(item, action.code, checked)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          )}
 
-            <div className="prf-modal-status-row pa-status-row">
-              {itemsWithoutPerms > 0 ? (
-                <>
-                  <span className="material-symbols-outlined prf-modal-status-row-icon">
-                    pending_actions
-                  </span>
-                  <p className="subtle prf-modal-status-row-text">
-                    {t("permissionsAssignment.missingScreens", { count: itemsWithoutPerms })} (
-                    {progressPct}%)
-                  </p>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined prf-modal-status-row-icon prf-modal-status-row-icon--success">
-                    check_circle
-                  </span>
-                  <p className="subtle prf-modal-status-row-text">
-                    {t("permissionsAssignment.allScreensSet")}
-                  </p>
-                </>
-              )}
-            </div>
+          <div className="pa-summary-bar">
+            <span className="material-symbols-outlined pa-summary-icon">verified_user</span>
+            <span className="subtle pa-summary-text">
+              {t("permissionsAssignment.summary.total", {
+                screens: accessCount,
+                permissions: totalActionsCount,
+              })}
+            </span>
+            <Badge
+              label={t("permissionsAssignment.summary.access", { count: accessCount })}
+              variant="info"
+            />
+            <Badge
+              label={t("permissionsAssignment.summary.actions", { count: relatedActionsCount })}
+              variant="success"
+            />
           </div>
 
           {rejectedPerms.length > 0 && (

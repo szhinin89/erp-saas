@@ -6,18 +6,63 @@
   gap: var(--space-2);
 }
 
-/* ── PermissionsAssignmentPage (ADMINISTRATION-CLEAN-ACCESS-01) ────────── */
-.pa-profile-select-wrap {
-  max-width: 420px;
+/* ── PermissionsAssignmentPage — catálogo dinámico, layout compacto
+   (PERMISSIONS-ASSIGNMENT-UI-COMPACT-03) ──────────────────────────────
+   Reutiliza .pg-section/.pg-section-header/.pg-section-body (tarjeta con
+   header+body ya definida globalmente) — solo se ajusta densidad (padding)
+   y se agrega el grid de acciones. Reutiliza .badge/.zh-toggle sin tocarlos. */
+
+/* PERMISSIONS-ASSIGNMENT-HEADER-COMPACT-04 — barra de trabajo compacta en el slot
+   `action` del header: Perfil + Buscar en una sola fila, ancho acotado (el reset
+   global `input,select,textarea{width:100%}` de zh-ui.css los haría crecer y
+   envolver a dos líneas si no se fija un ancho aquí). Card sutil (superficie+borde)
+   para que el bloque se lea como una unidad, no como controles sueltos flotando. */
+.pa-header-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
-/* ── PermissionsAssignmentPage catálogo dinámico (ADMIN-PERMISSIONS-SSOT-KERNEL-02) ── */
-.pa-filter-wrap {
-  max-width: 420px;
+/* Label a la izquierda del control (en vez de arriba) — fila más corta, misma
+   altura que el buscador. Solo dentro de esta toolbar: no toca .zh-field global. */
+.pa-header-field.zh-field {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pa-header-field .zh-field-label {
+  white-space: nowrap;
+}
+
+.pa-header-field .zh-field-control select {
+  width: 200px;
+}
+
+.pa-filter-input {
+  width: 200px;
+}
+
+@media (max-width: 640px) {
+  .pa-header-toolbar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pa-header-field .zh-field-control select,
+  .pa-filter-input {
+    width: 100%;
+  }
 }
 
 .pa-group {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .pa-group-title {
@@ -26,11 +71,148 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-secondary);
-  margin: var(--space-4) 0 var(--space-2);
+  margin: 0 0 var(--space-2);
 }
 
-.pa-status-row {
-  margin-top: var(--space-4);
+/* ── Barra de acciones rápidas + leyenda ─────────────────────────────── */
+.pa-quick-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.pa-quick-actions-label {
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  color: var(--color-text-secondary);
+  margin-right: var(--space-1);
+}
+
+.pa-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.pa-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.pa-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.pa-legend-dot--access {
+  background: var(--color-primary);
+}
+
+.pa-legend-dot--action {
+  background: var(--color-success);
+}
+
+/* ── Bloque por pantalla (card compacta) ─────────────────────────────── */
+.pa-item-card {
+  margin-bottom: var(--space-3);
+}
+
+.pa-item-header {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.pa-item-header:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.pa-item-header-left {
+  min-width: 0;
+}
+
+.pa-item-chevron {
+  color: var(--color-text-secondary);
+}
+
+.pa-item-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pa-item-title {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Grid de acciones — wrap automático, compacto ────────────────────── */
+.pa-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.pa-action-tile {
+  border-radius: var(--radius-lg);
+  border-left: 3px solid transparent;
+}
+
+.pa-action-tile .zh-toggle {
+  padding: 10px 12px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.pa-action-tile--access {
+  border-left-color: var(--color-primary);
+}
+
+.pa-action-tile--action {
+  border-left-color: var(--color-success);
+}
+
+/* ── Resumen inferior ─────────────────────────────────────────────────── */
+.pa-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+}
+
+.pa-summary-icon {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+}
+
+.pa-summary-text {
+  margin-right: var(--space-2);
 }
 
 /* ── Modal: cuerpo dos columnas ──────────────────────────────── */
@@ -108,78 +290,6 @@
   margin: 0;
   font-size: var(--text-label-sm-size);
   line-height: 1.5;
-}
-
-/* ── Estado de configuración / progreso ───────────────────────── */
-.prf-modal-status-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.prf-modal-status-label {
-  margin: 0;
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-}
-
-.prf-modal-progress-value {
-  font-size: var(--text-label-sm-size);
-  font-weight: 700;
-  color: var(--color-text-secondary);
-}
-
-.prf-modal-progress-value--active {
-  color: var(--color-success);
-}
-
-.prf-modal-progress {
-  display: block;
-  width: 100%;
-  height: 8px;
-  margin: 0 0 var(--space-2);
-  border: none;
-  border-radius: 99px;
-  overflow: hidden;
-  background: var(--color-border);
-  appearance: none;
-}
-
-.prf-modal-progress::-webkit-progress-bar {
-  background: var(--color-border);
-  border-radius: 99px;
-}
-
-.prf-modal-progress::-webkit-progress-value {
-  background: var(--color-success);
-  border-radius: 99px;
-  transition: width 0.3s ease;
-}
-
-.prf-modal-progress::-moz-progress-bar {
-  background: var(--color-success);
-  border-radius: 99px;
-}
-
-.prf-modal-status-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.prf-modal-status-row-icon {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.prf-modal-status-row-icon--success {
-  color: var(--color-success);
-}
-
-.prf-modal-status-row-text {
-  margin: 0;
-  font-size: var(--text-label-sm-size);
 }
 
 /* ── Badge seguridad ─────────────────────────────────────────── */
