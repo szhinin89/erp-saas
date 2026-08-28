@@ -36,6 +36,7 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
             .HasMaxLength(SupplierPayment.ReceiptNumberMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.ReversedAtUtc).HasColumnName("reversed_at_utc");
+        builder.Property(x => x.ReversedBy).HasColumnName("reversed_by");
         builder.Property(x => x.ReverseReason).HasColumnName("reverse_reason");
 
         builder.Ignore(x => x.DisplayNumber);

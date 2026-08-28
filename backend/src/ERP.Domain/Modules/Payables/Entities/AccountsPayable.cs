@@ -158,6 +158,33 @@ public sealed class AccountsPayable : AuditableEntity, ITenantScopedEntity, ICom
     }
 
     /// <summary>
+    /// SUPPLIER-PAYMENTS-REVERSE-16 — reversa un pago previamente aplicado a UNA cuota puntual
+    /// (inverso exacto de <see cref="RegisterPaymentToInstallment"/>). Igual que su contraparte
+    /// directa, nunca reasigna por FIFO — la cuota a liberar ya la decidió
+    /// <c>SupplierPaymentApplicationLine</c> en su momento, y es exactamente esa la que debe
+    /// recuperar saldo.
+    /// </summary>
+    public void ReversePaymentToInstallment(Guid installmentId, decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+
+        var installment = _installments.FirstOrDefault(i => i.Id == installmentId);
+        if (installment is null)
+            throw new InvalidOperationException(
+                "La cuota indicada no pertenece a esta cuenta por pagar."
+            );
+        if (amount > installment.PaidAmount)
+            throw new InvalidOperationException(
+                "El monto a reversar excede el monto pagado registrado en la cuota."
+            );
+
+        installment.Reverse(AccountsPayableAdjustmentType.Payment, amount);
+        RecalculateStatus();
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
     /// Reconoce una devolución de compra autorizada directamente contra esta CxP (reemplaza
     /// <c>PurchasePayable.ApplyReturnCredit</c>) — nunca reutiliza <see cref="RegisterPayment"/>, es
     /// un track independiente de <see cref="OutstandingAmount"/>.

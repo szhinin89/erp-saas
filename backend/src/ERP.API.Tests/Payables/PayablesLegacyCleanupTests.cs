@@ -81,6 +81,6 @@ public sealed class PayablesLegacyCleanupTests
             .Where(m => !m.IsSpecialName)
             .Select(m => m.Name)
             .ToList();
-        publicMethods.Should().BeEquivalentTo(new[] { "Register", "GetById", "GetList" });
+        publicMethods.Should().BeEquivalentTo(new[] { "Register", "GetById", "GetList", "Reverse" });
     }
 }

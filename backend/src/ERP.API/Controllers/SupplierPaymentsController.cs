@@ -50,6 +50,17 @@ public sealed class SupplierPaymentsController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetSupplierPaymentByIdQuery(id), ct));
 
+    [HttpPost("{id:guid}/reverse")]
+    [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.Reverse}")]
+    public async Task<IActionResult> Reverse(
+        Guid id,
+        [FromBody] ReverseSupplierPaymentRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new ReverseSupplierPaymentCommand(id, body.Reason), ct)
+        );
+
     [HttpGet]
     [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.View}")]
     public async Task<IActionResult> GetList(

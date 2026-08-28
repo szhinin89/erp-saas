@@ -371,6 +371,64 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new FixedCurrentUser(_createdBy)
         );
 
+    private ReverseSupplierPaymentCommandHandler BuildReverseHandler(ErpDbContext db) =>
+        new(
+            new SupplierPaymentRepository(db),
+            new AccountsPayableRepository(db),
+            new UnitOfWork(db),
+            new FixedCurrentTenant(_tenantId),
+            new FixedCurrentCompany(_companyId),
+            new FixedCurrentUser(_createdBy)
+        );
+
+    /// <summary>SUPPLIER-PAYMENTS-REVERSE-16 — siembra tanto la regla de confirmación como la de
+    /// reverso, más un único período compartido (mismo criterio que
+    /// CollectionPostingIntegrationTests.SeedAppliedAndReversedRulesAndPeriodAsync).</summary>
+    private async Task SeedConfirmedAndReversedRulesAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
+    {
+        var confirmedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Payables",
+            "SupplierPaymentConfirmed",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        confirmedRule.AddLine(_payablesAccountId, AccountNature.Debit, PostingAmountKind.GrandTotal);
+
+        var reversedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Payables",
+            "SupplierPaymentReversed",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        reversedRule.AddLine(_payablesAccountId, AccountNature.Credit, PostingAmountKind.GrandTotal);
+
+        var period = AccountingPeriod.Create(
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
+            new DateOnly(entryDate.Year, entryDate.Month, 1),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
+
+        db.PostingRules.AddRange(confirmedRule, reversedRule);
+        db.AccountingPeriods.Add(period);
+        await db.SaveChangesAsync();
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // 1 medio / 1 cuota
     // ══════════════════════════════════════════════════════════════════════
@@ -644,6 +702,263 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         installment.PaidAmount.Should().Be(0m, "la cuota no debe quedar parcialmente pagada");
         installment.OutstandingAmount.Should().Be(300m);
         journalEntryCount.Should().Be(0);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SUPPLIER-PAYMENTS-REVERSE-16 — reversa de pagos confirmados
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Reversar_pago_total_vuelve_la_cuota_de_Paid_a_Pending_y_postea_asiento_inverso_balanceado()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        var (dbReverse, _) = BuildWiredContext();
+        var reverseResult = await BuildReverseHandler(dbReverse)
+            .Handle(
+                new ReverseSupplierPaymentCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
+
+        reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
+        reverseResult.Value!.Status.Should().Be("Reversed");
+
+        await using var verifyDb = CreateContext();
+        var payment = await verifyDb.SupplierPayments.FirstAsync(x => x.Id == paymentId);
+        payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
+        payment.ReverseReason.Should().Be("Error de digitación");
+        payment.ReversedAtUtc.Should().NotBeNull();
+        payment.ReversedBy.Should().NotBeNull();
+
+        var installment = await verifyDb.AccountsPayableInstallments.FirstAsync(x =>
+            x.Id == _purchaseInstallmentId
+        );
+        installment.PaidAmount.Should().Be(0m);
+        installment.OutstandingAmount.Should().Be(300m);
+        installment.Status.Should().Be(AccountsPayableStatus.Pending);
+
+        var payable = await verifyDb.AccountsPayables.FirstAsync(x => x.Id == _purchasePayableId);
+        payable.Status.Should().Be(AccountsPayableStatus.Pending);
+
+        var reversedEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstOrDefaultAsync(x =>
+                x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+            );
+        reversedEntry.Should().NotBeNull();
+        reversedEntry!.SourceModule.Should().Be("Payables");
+        reversedEntry.Status.Should().Be(JournalEntryStatus.Posted);
+        reversedEntry.Lines.Should().HaveCount(2, "1 crédito CxP + 1 débito por el único medio original");
+        reversedEntry.Lines.Sum(l => l.Debit).Should().Be(reversedEntry.Lines.Sum(l => l.Credit));
+        reversedEntry.Lines.Sum(l => l.Debit).Should().Be(300m);
+
+        var confirmedEntry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentConfirmed"
+        );
+        confirmedEntry.Should().NotBeNull(because: "el asiento original de confirmación no debe desaparecer");
+    }
+
+    [Fact]
+    public async Task Reversar_pago_parcial_deja_saldos_correctos_en_la_cuota_y_la_cabecera()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+
+        // Pago parcial: 100 de los 300 de la cuota.
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    100m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        var (dbReverse, _) = BuildWiredContext();
+        var reverseResult = await BuildReverseHandler(dbReverse)
+            .Handle(
+                new ReverseSupplierPaymentCommand(paymentId, "Cheque rechazado"),
+                CancellationToken.None
+            );
+
+        reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
+
+        await using var verifyDb = CreateContext();
+        var installment = await verifyDb.AccountsPayableInstallments.FirstAsync(x =>
+            x.Id == _purchaseInstallmentId
+        );
+        installment.PaidAmount.Should().Be(0m);
+        installment.OutstandingAmount.Should().Be(300m);
+        installment.Status.Should().Be(AccountsPayableStatus.Pending);
+    }
+
+    [Fact]
+    public async Task Reversar_pago_con_2_medios_genera_asiento_inverso_con_2_debitos_banco_caja()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[]
+                    {
+                        new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m),
+                        new SupplierPaymentMethodLineRequest(_transferMethodId, _bankDestinationId, 200m),
+                    },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[]
+                    {
+                        new SupplierPaymentAllocationLineRequest(0, 0, 100m),
+                        new SupplierPaymentAllocationLineRequest(1, 0, 200m),
+                    }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        var (dbReverse, _) = BuildWiredContext();
+        var reverseResult = await BuildReverseHandler(dbReverse)
+            .Handle(
+                new ReverseSupplierPaymentCommand(paymentId, "Duplicado"),
+                CancellationToken.None
+            );
+
+        reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
+
+        await using var verifyDb = CreateContext();
+        var reversedEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstAsync(x =>
+                x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+            );
+        reversedEntry.Lines.Should()
+            .HaveCount(3, "1 crédito CxP + 2 débitos, uno por cada medio original (banco y caja)");
+        reversedEntry.Lines.Count(l => l.Debit > 0).Should().Be(2);
+        reversedEntry.Lines.Sum(l => l.Debit).Should().Be(reversedEntry.Lines.Sum(l => l.Credit));
+        reversedEntry.Lines.Sum(l => l.Debit).Should().Be(300m);
+    }
+
+    [Fact]
+    public async Task Bloquea_doble_reversa_end_to_end()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                ),
+                CancellationToken.None
+            );
+        var paymentId = registerResult.Value!.Id;
+
+        var (dbFirstReverse, _) = BuildWiredContext();
+        var firstReverse = await BuildReverseHandler(dbFirstReverse)
+            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 1"), CancellationToken.None);
+        firstReverse.IsSuccess.Should().BeTrue(because: firstReverse.Error);
+
+        var (dbSecondReverse, _) = BuildWiredContext();
+        var secondReverse = await BuildReverseHandler(dbSecondReverse)
+            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Motivo 2"), CancellationToken.None);
+
+        secondReverse.IsSuccess.Should().BeFalse("un pago ya Reversed no puede reversarse otra vez");
+
+        await using var verifyDb = CreateContext();
+        var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
+            x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+        );
+        reversedEntryCount.Should().Be(1, "la segunda reversa nunca debe generar un segundo asiento inverso");
+    }
+
+    [Fact]
+    public async Task Si_falla_el_posting_inverso_el_pago_sigue_Confirmed_y_los_saldos_no_cambian()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        // Solo siembra la regla de confirmación — la de reverso queda deliberadamente ausente
+        // para forzar RULE_NOT_FOUND en el Posting Engine al reversar.
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        var (dbReverse, _) = BuildWiredContext();
+        var reverseResult = await BuildReverseHandler(dbReverse)
+            .Handle(
+                new ReverseSupplierPaymentCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
+
+        reverseResult.IsSuccess.Should().BeFalse("un reverso nunca debe quedar confirmado sin asiento inverso");
+
+        await using var verifyDb = CreateContext();
+        var payment = await verifyDb.SupplierPayments.FirstAsync(x => x.Id == paymentId);
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed, "el reverso fallido no debe mutar el estado");
+
+        var installment = await verifyDb.AccountsPayableInstallments.FirstAsync(x =>
+            x.Id == _purchaseInstallmentId
+        );
+        installment.PaidAmount.Should().Be(300m, "el reverso fallido no debe liberar saldo");
+        installment.OutstandingAmount.Should().Be(0m);
+
+        var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
+            x.SourceEventType == "SupplierPaymentReversed"
+        );
+        reversedEntryCount.Should().Be(0);
     }
 
     private sealed class DeferredPublisher : IPublisher

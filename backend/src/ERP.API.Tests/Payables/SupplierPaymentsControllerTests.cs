@@ -247,4 +247,73 @@ public sealed class SupplierPaymentsControllerTests
             .Should()
             .Be(new GetSupplierPaymentsListQuery(supplierId, "Confirmed", 2, 10));
     }
+
+    // ── POST /{id}/reverse ────────────────────────────────────────────────────
+
+    [Fact]
+    public void Reverse_exige_perm_supplier_payments_reverse()
+    {
+        var method = typeof(SupplierPaymentsController).GetMethod(
+            nameof(SupplierPaymentsController.Reverse)
+        )!;
+        var attr = method
+            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+            .Cast<AuthorizeAttribute>()
+            .Single();
+
+        attr.Policy.Should().Be($"perm:{SupplierPaymentsPermissions.Reverse}");
+    }
+
+    [Fact]
+    public async Task Reverse_retorna_200_y_envia_el_command_correcto()
+    {
+        var id = Guid.NewGuid();
+        object? sentRequest = null;
+        var controller = BuildController(req =>
+        {
+            sentRequest = req;
+            return Result<SupplierPaymentDto>.Success(SampleDto(id) with { Status = "Reversed" });
+        });
+
+        var response = await controller.Reverse(
+            id,
+            new ReverseSupplierPaymentRequest("Error de digitación"),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<OkObjectResult>();
+        sentRequest.Should().Be(new ReverseSupplierPaymentCommand(id, "Error de digitación"));
+    }
+
+    [Fact]
+    public async Task Reverse_con_pago_ya_reversado_retorna_422()
+    {
+        var controller = BuildController(_ =>
+            Result<SupplierPaymentDto>.ValidationFailure("Solo un pago Confirmed puede reversarse.")
+        );
+
+        var response = await controller.Reverse(
+            Guid.NewGuid(),
+            new ReverseSupplierPaymentRequest("Motivo"),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<UnprocessableEntityObjectResult>();
+    }
+
+    [Fact]
+    public async Task Reverse_de_pago_inexistente_retorna_404()
+    {
+        var controller = BuildController(_ =>
+            Result<SupplierPaymentDto>.NotFound("Pago a proveedor no encontrado.")
+        );
+
+        var response = await controller.Reverse(
+            Guid.NewGuid(),
+            new ReverseSupplierPaymentRequest("Motivo"),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<NotFoundObjectResult>();
+    }
 }

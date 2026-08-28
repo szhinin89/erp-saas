@@ -43,6 +43,7 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
 
     public SupplierPaymentStatus Status { get; private set; }
     public DateTime? ReversedAtUtc { get; private set; }
+    public Guid? ReversedBy { get; private set; }
     public string? ReverseReason { get; private set; }
 
     /// <summary>Número visible en pantallas/reportes: <see cref="ReceiptNumber"/> si existe, si no <see cref="SystemNumber"/>.</summary>
@@ -191,6 +192,54 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
         );
 
         return payment;
+    }
+
+    /// <summary>
+    /// SUPPLIER-PAYMENTS-REVERSE-16 — reversa un pago ya confirmado: única transición de estado
+    /// válida es Confirmed → Reversed (nunca Reversed → Reversed, "bloquear doble reversa"). No
+    /// muta ninguna línea (medios/aplicaciones/allocations quedan intactas como registro histórico
+    /// de lo que se pagó) — el efecto de la reversa sobre <c>AccountsPayableInstallment</c> es
+    /// responsabilidad del caso de uso de Application (mismo principio que <see cref="Create"/>: el
+    /// agregado no conoce <c>AccountsPayable</c>, solo publica el evento para que Application y
+    /// Accounting reaccionen).
+    /// </summary>
+    public void Reverse(string reason, Guid reversedBy, DateTime reversedAtUtc)
+    {
+        if (Status != SupplierPaymentStatus.Confirmed)
+            throw new InvalidOperationException(
+                $"Solo un pago Confirmed puede reversarse (estado actual: {Status})."
+            );
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("El motivo del reverso es obligatorio.", nameof(reason));
+
+        var trimmedReason = reason.Trim();
+
+        Status = SupplierPaymentStatus.Reversed;
+        ReversedAtUtc = reversedAtUtc;
+        ReversedBy = reversedBy;
+        ReverseReason = trimmedReason;
+        SetUpdated(reversedBy);
+
+        RaiseDomainEvent(
+            new SupplierPaymentReversedEvent(
+                TenantId,
+                Id,
+                CompanyId,
+                SupplierId,
+                TotalAmount,
+                PaymentDate,
+                trimmedReason,
+                _methodLines
+                    .Select(l => new SupplierPaymentConfirmedMethodLine(l.FinancialDestinationId, l.Amount))
+                    .ToList(),
+                _applicationLines
+                    .Select(l => new SupplierPaymentReversedApplicationLine(
+                        l.AccountsPayableInstallmentId,
+                        l.AmountApplied
+                    ))
+                    .ToList()
+            )
+        );
     }
 
     /// <summary>

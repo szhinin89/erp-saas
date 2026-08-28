@@ -260,6 +260,15 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             "SupplierPaymentConfirmed",
             [new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal)]
         ),
+        // SUPPLIER-PAYMENTS-REVERSE-16 — asiento inverso exacto: única línea fija (Haber CxP por
+        // el total reversado); el Debe por cada medio de pago original es dinámico vía
+        // PostingFact.Allocations en SupplierPaymentReversedPostingTranslator, mismo criterio que
+        // la confirmación.
+        new(
+            "Payables",
+            "SupplierPaymentReversed",
+            [new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal)]
+        ),
     ];
 
     public async Task ExecuteAsync(

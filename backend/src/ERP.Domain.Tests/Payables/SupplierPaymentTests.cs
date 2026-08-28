@@ -348,4 +348,75 @@ public sealed class SupplierPaymentTests
 
         offending.Should().BeEmpty();
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SUPPLIER-PAYMENTS-REVERSE-16 — SupplierPayment.Reverse
+    // ══════════════════════════════════════════════════════════════════════
+
+    private static SupplierPayment CreateSimplePayment(decimal amount = 300m)
+    {
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), amount) };
+        var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount) };
+        var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, amount) };
+        return CreatePayment(amount, methods, applications, allocations);
+    }
+
+    [Fact]
+    public void Reverse_pago_Confirmed_cambia_estado_a_Reversed_y_guarda_ReversedAt_ReversedBy_Reason()
+    {
+        var payment = CreateSimplePayment();
+        var reversedBy = Guid.NewGuid();
+        var reversedAt = DateTime.UtcNow;
+
+        payment.Reverse("Error de digitación", reversedBy, reversedAt);
+
+        payment.Status.Should().Be(SupplierPaymentStatus.Reversed);
+        payment.ReversedAtUtc.Should().Be(reversedAt);
+        payment.ReversedBy.Should().Be(reversedBy);
+        payment.ReverseReason.Should().Be("Error de digitación");
+    }
+
+    [Fact]
+    public void Reverse_publica_SupplierPaymentReversedEvent_con_snapshot_de_medios_y_aplicaciones()
+    {
+        var destinationId = Guid.NewGuid();
+        var installmentId = Guid.NewGuid();
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationId, 300m) };
+        var applications = new[] { new SupplierPaymentApplicationLineInput(installmentId, 300m) };
+        var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
+        var payment = CreatePayment(300m, methods, applications, allocations);
+
+        payment.Reverse("Duplicado", Guid.NewGuid(), DateTime.UtcNow);
+
+        var evt = payment.DomainEvents.OfType<SupplierPaymentReversedEvent>().Single();
+        evt.SupplierPaymentId.Should().Be(payment.Id);
+        evt.TotalAmount.Should().Be(300m);
+        evt.ReverseReason.Should().Be("Duplicado");
+        evt.MethodLines.Should()
+            .BeEquivalentTo(new[] { new SupplierPaymentConfirmedMethodLine(destinationId, 300m) });
+        evt.ApplicationLines.Should()
+            .BeEquivalentTo(new[] { new SupplierPaymentReversedApplicationLine(installmentId, 300m) });
+    }
+
+    [Fact]
+    public void Bloquea_doble_reversa()
+    {
+        var payment = CreateSimplePayment();
+        payment.Reverse("Primer motivo", Guid.NewGuid(), DateTime.UtcNow);
+
+        var act = () => payment.Reverse("Segundo intento", Guid.NewGuid(), DateTime.UtcNow);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Bloquea_reversa_sin_motivo()
+    {
+        var payment = CreateSimplePayment();
+
+        var act = () => payment.Reverse("   ", Guid.NewGuid(), DateTime.UtcNow);
+
+        act.Should().Throw<ArgumentException>();
+        payment.Status.Should().Be(SupplierPaymentStatus.Confirmed, "un intento inválido no debe mutar el estado");
+    }
 }

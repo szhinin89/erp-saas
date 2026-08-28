@@ -154,4 +154,76 @@ public sealed class AccountsPayableTests
 
         propertyNames.Should().NotContain(forbiddenPropertyNames);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SUPPLIER-PAYMENTS-REVERSE-16 — ReversePaymentToInstallment (inverso de
+    // RegisterPaymentToInstallment)
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void ReversePaymentToInstallment_de_pago_total_vuelve_la_cuota_de_Paid_a_Pending()
+    {
+        var payable = CreatePayable();
+        var installment = payable.AddInstallment(1, new DateOnly(2026, 9, 26), 300m);
+        payable.RegisterPaymentToInstallment(installment.Id, 300m, UserId);
+        payable.Status.Should().Be(AccountsPayableStatus.Paid);
+
+        payable.ReversePaymentToInstallment(installment.Id, 300m, UserId);
+
+        installment.PaidAmount.Should().Be(0m);
+        installment.OutstandingAmount.Should().Be(300m);
+        installment.Status.Should().Be(AccountsPayableStatus.Pending);
+        payable.Status.Should().Be(AccountsPayableStatus.Pending);
+    }
+
+    [Fact]
+    public void ReversePaymentToInstallment_de_pago_parcial_deja_la_cuota_en_PartiallyPaid()
+    {
+        var payable = CreatePayable();
+        var installment = payable.AddInstallment(1, new DateOnly(2026, 9, 26), 300m);
+        payable.RegisterPaymentToInstallment(installment.Id, 300m, UserId);
+
+        payable.ReversePaymentToInstallment(installment.Id, 100m, UserId);
+
+        installment.PaidAmount.Should().Be(200m);
+        installment.OutstandingAmount.Should().Be(100m);
+        installment.Status.Should().Be(AccountsPayableStatus.PartiallyPaid);
+        payable.Status.Should().Be(AccountsPayableStatus.PartiallyPaid);
+    }
+
+    [Fact]
+    public void ReversePaymentToInstallment_rechaza_monto_mayor_al_pagado_nunca_deja_PaidAmount_negativo()
+    {
+        var payable = CreatePayable();
+        var installment = payable.AddInstallment(1, new DateOnly(2026, 9, 26), 300m);
+        payable.RegisterPaymentToInstallment(installment.Id, 100m, UserId);
+
+        var act = () => payable.ReversePaymentToInstallment(installment.Id, 150m, UserId);
+
+        act.Should().Throw<InvalidOperationException>();
+        installment.PaidAmount.Should().Be(100m, "el intento rechazado no debe mutar el saldo");
+    }
+
+    [Fact]
+    public void ReversePaymentToInstallment_rechaza_cuota_que_no_pertenece_a_esta_CxP()
+    {
+        var payable = CreatePayable();
+        payable.AddInstallment(1, new DateOnly(2026, 9, 26), 300m);
+
+        var act = () => payable.ReversePaymentToInstallment(Guid.NewGuid(), 100m, UserId);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void ReversePaymentToInstallment_rechaza_monto_menor_o_igual_a_cero()
+    {
+        var payable = CreatePayable();
+        var installment = payable.AddInstallment(1, new DateOnly(2026, 9, 26), 300m);
+        payable.RegisterPaymentToInstallment(installment.Id, 300m, UserId);
+
+        var act = () => payable.ReversePaymentToInstallment(installment.Id, 0m, UserId);
+
+        act.Should().Throw<ArgumentException>();
+    }
 }
