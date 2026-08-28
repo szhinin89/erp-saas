@@ -197,6 +197,54 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_supplier_payments_lives_next_to_payables_not_under_expenses_or_purchases()
+    {
+        // NAVIGATION-MENU-CLEANUP-PAYABLES-EXPENSES-01 — "Pagos a proveedores" consume
+        // AccountsPayable igual que la pantalla genérica de Cuentas por Pagar: debe compartir su
+        // grupo ("payables"), nunca colgar de "expenses" (Gastos solo expone sus propias
+        // pantallas) ni de "purchases" (CxP no es exclusiva de Compras).
+        var navigation = KernelRegistry.Navigation;
+
+        navigation.Should().NotContain(n => n.RoutePath == "/finance/payables");
+        navigation.Should().NotContain(n => n.RoutePath == "/api/v1/purchase-payables");
+
+        var supplierPayments = navigation.Where(n => n.RoutePath == "/supplier-payments").ToList();
+        supplierPayments.Should().ContainSingle("debe existir exactamente un ítem de Pagos a proveedores");
+        supplierPayments[0].PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.View);
+        supplierPayments[0].GroupCode.Should()
+            .Be("payables", "Pagos a proveedores debe vivir junto a Cuentas por pagar, no bajo Gastos/Compras");
+
+        var payables = navigation.Single(n => n.RoutePath == "/payables");
+        payables.GroupCode.Should().Be(
+            supplierPayments[0].GroupCode,
+            "ambos ítems deben compartir el mismo grupo — 'junto a', no anidados entre sí"
+        );
+        supplierPayments[0].ParentItemId.Should()
+            .BeNull("son ítems hermanos, no uno contenedor del otro");
+    }
+
+    [Fact]
+    public void Navigation_expenses_group_contains_only_its_own_document_and_catalog_screens()
+    {
+        // NAVIGATION-MENU-CLEANUP-PAYABLES-EXPENSES-01 — Gastos no debe volver a arrastrar
+        // Cuentas por Pagar ni Pagos a Proveedores (ambos cross-cutting, viven en "payables").
+        var navigation = KernelRegistry.Navigation;
+
+        var expensesItems = navigation.Where(n => n.GroupCode == "expenses").ToList();
+
+        expensesItems.Should().NotBeEmpty();
+        expensesItems.Should()
+            .OnlyContain(
+                n => n.RoutePath.StartsWith("/expenses/", StringComparison.Ordinal),
+                "el grupo 'expenses' solo debe exponer rutas propias de Gastos"
+            );
+        expensesItems.Select(n => n.RoutePath)
+            .Should()
+            .BeEquivalentTo(new[] { "/expenses/documents", "/expenses/categories" });
+    }
+
+    [Fact]
     public void Navigation_contains_sales_stock_and_purchases_reports_moved_into_their_modules()
     {
         // MENU-MODULE-REORG-01: los 3 reportes salieron del módulo "reports" (retirado) y ahora

@@ -199,6 +199,7 @@
   "app.nav.item.expenses.catalog": "Catálogo de Gastos",
   "app.nav.group.payables": "Cuentas por Pagar",
   "app.nav.item.payables.list": "Cuentas por pagar",
+  "app.nav.item.payables.supplierPayments": "Pagos a proveedores",
   "purchases.reception.summary.readyPurchases.title": "Compras listas",
   "purchases.reception.summary.readyPurchases.description": "Compras ya ingresadas al sistema",
   "purchases.reception.summary.toReview.title": "Por revisar",
