@@ -246,8 +246,8 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     /// <param name="returnNumber">Ya capturado por <c>PurchaseReturnSequence.CaptureNextAsync</c> (Fase 2) — el dominio solo lo persiste.</param>
     /// <param name="originalLinesByDetailId">Snapshot de la <c>PurchaseInvoiceDetail</c> original de cada línea, resuelto por Application, indexado por <c>OriginalInvoiceDetailId</c>.</param>
     /// <param name="balanceDueBeforeApplication">
-    /// <c>PurchasePayable.BalanceDue</c> ya cargado bajo lock por el caller — el dominio de
-    /// <see cref="PurchaseReturn"/> no conoce el repositorio de <c>PurchasePayable</c>, es un
+    /// <c>AccountsPayable.OutstandingAmount</c> ya cargado bajo lock por el caller — el dominio de
+    /// <see cref="PurchaseReturn"/> no conoce el repositorio de <c>AccountsPayable</c>, es un
     /// agregado distinto (§6, §11.2).
     /// </param>
     /// <param name="currencyCode">Snapshot de <c>PurchaseInvoice.CurrencyCode</c> — solo se usa para fijar <c>SupplierCredit.CurrencyCode</c> si se crea crédito.</param>

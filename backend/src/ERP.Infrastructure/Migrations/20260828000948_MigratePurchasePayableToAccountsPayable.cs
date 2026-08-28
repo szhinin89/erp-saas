@@ -19,12 +19,6 @@ namespace ERP.Infrastructure.Migrations
                 name: "FK_supplier_credit_movements_purchase_payables_target_purchase~",
                 table: "supplier_credit_movements");
 
-            migrationBuilder.DropTable(
-                name: "purchase_payable_installments");
-
-            migrationBuilder.DropTable(
-                name: "purchase_payables");
-
             migrationBuilder.AddColumn<decimal>(
                 name: "credit_note_amount",
                 table: "accounts_payable_installments",
@@ -52,6 +46,83 @@ namespace ERP.Infrastructure.Migrations
                 type: "numeric(18,2)",
                 nullable: false,
                 defaultValue: 0m);
+
+            // PAYABLES-CLEAN-CLOSEOUT-14 — carry-forward de datos: cualquier fila existente en
+            // purchase_payables/purchase_payable_installments debe sobrevivir como AccountsPayable/
+            // AccountsPayableInstallment con el MISMO Id (payment_application_lines.payable_id y
+            // supplier_credit_movements.target_purchase_payable_id ya apuntan a esos Ids — sin este
+            // carry-forward, las FKs nuevas más abajo fallarían en cualquier entorno con datos
+            // reales, no solo en desarrollo). PurchasePayable nunca tuvo saldo vivo por cuota (todas
+            // sus PurchasePayableInstallment eran solo split de fecha de vencimiento — el saldo real
+            // vivía en la cabecera), así que los montos de cabecera se llevan íntegros a la PRIMERA
+            // cuota (menor installment_number) de cada payable; el resto de cuotas (si existieran)
+            // migra solo su Amount/DueDate, sin saldo aplicado — máxima fidelidad posible sin
+            // inventar un prorrateo histórico que nunca existió.
+            migrationBuilder.Sql(
+                """
+                INSERT INTO accounts_payables (
+                    id, tenant_id, company_id, branch_id, supplier_id, origin_type, origin_id,
+                    document_type, document_number, issue_date, accounting_date, status,
+                    created_at, updated_at, created_by, updated_by
+                )
+                SELECT
+                    pp.id, pp.tenant_id, pp.company_id, pi.branch_id, pp.supplier_id,
+                    0, pp.purchase_id,
+                    pi.doc_type_code, pi.invoice_number, pi.issue_date, pi.issue_date,
+                    CASE
+                        WHEN pp.status = 'cancelled' THEN 3
+                        WHEN (pp.total_amount - pp.paid_amount - pp.total_retained
+                              - pp.return_applied_amount - pp.supplier_credit_applied_amount
+                              - pp.credit_note_applied_amount) <= 0 THEN 2
+                        WHEN pp.paid_amount > 0 OR pp.total_retained > 0
+                              OR pp.return_applied_amount > 0
+                              OR pp.supplier_credit_applied_amount > 0
+                              OR pp.credit_note_applied_amount > 0 THEN 1
+                        ELSE 0
+                    END,
+                    pp.created_at, pp.updated_at, pp.created_by, pp.updated_by
+                FROM purchase_payables pp
+                JOIN purchase_invoices pi ON pi.id = pp.purchase_id;
+
+                WITH ranked AS (
+                    SELECT
+                        ppi.*,
+                        ROW_NUMBER() OVER (PARTITION BY ppi.payable_id ORDER BY ppi.installment_number) AS rn
+                    FROM purchase_payable_installments ppi
+                )
+                INSERT INTO accounts_payable_installments (
+                    id, tenant_id, accounts_payable_id, installment_number, due_date, amount,
+                    paid_amount, retained_amount, return_credit_amount, supplier_credit_amount,
+                    credit_note_amount, status
+                )
+                SELECT
+                    r.id, r.tenant_id, r.payable_id, r.installment_number, r.due_date, r.amount,
+                    CASE WHEN r.rn = 1 THEN pp.paid_amount ELSE 0 END,
+                    CASE WHEN r.rn = 1 THEN pp.total_retained ELSE 0 END,
+                    CASE WHEN r.rn = 1 THEN pp.return_applied_amount ELSE 0 END,
+                    CASE WHEN r.rn = 1 THEN pp.supplier_credit_applied_amount ELSE 0 END,
+                    CASE WHEN r.rn = 1 THEN pp.credit_note_applied_amount ELSE 0 END,
+                    CASE
+                        WHEN pp.status = 'cancelled' THEN 3
+                        WHEN r.rn != 1 THEN 0
+                        WHEN (r.amount - pp.paid_amount - pp.total_retained - pp.return_applied_amount
+                              - pp.supplier_credit_applied_amount - pp.credit_note_applied_amount) <= 0 THEN 2
+                        WHEN pp.paid_amount > 0 OR pp.total_retained > 0
+                              OR pp.return_applied_amount > 0
+                              OR pp.supplier_credit_applied_amount > 0
+                              OR pp.credit_note_applied_amount > 0 THEN 1
+                        ELSE 0
+                    END
+                FROM ranked r
+                JOIN purchase_payables pp ON pp.id = r.payable_id;
+                """
+            );
+
+            migrationBuilder.DropTable(
+                name: "purchase_payable_installments");
+
+            migrationBuilder.DropTable(
+                name: "purchase_payables");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_payment_application_lines_accounts_payables_payable_id",

@@ -138,7 +138,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         Math.Round(
             // FLOW-READY-02F.2 — IRBPNR forma parte del valor real del XML y de la cuenta por
             // pagar al proveedor: se incluye aquí, propagando automáticamente a GrandTotal/
-            // ConfirmedGrandTotal/PurchasePayable sin tocar esos call sites.
+            // ConfirmedGrandTotal/AccountsPayable sin tocar esos call sites.
             TaxableBase + IceAmount + VatAmount + IrbpnrAmount,
             FiscalPrecision.TaxAmount,
             MidpointRounding.AwayFromZero

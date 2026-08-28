@@ -8,7 +8,7 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 /// Cabecera fiscal única de toda nota de crédito de compra/proveedor — diseño
 /// FLOW-READY-02C-R1.1. Cubre los dos tipos de aplicación (<see cref="PurchaseCreditNoteApplicationType"/>):
 /// <c>Discount</c> (descuento/promoción, flujo original FLOW-READY-02C, autoriza/cancela aquí mismo
-/// contra <c>PurchasePayable.CreditNoteAppliedAmount</c>, sin inventario ni efecto contable) y
+/// contra <c>AccountsPayable.CreditNoteAmount</c>, sin inventario ni efecto contable) y
 /// <c>Return</c> (devolución física, donde esta entidad es solo captura/referencia del documento
 /// fiscal — el movimiento de inventario/CxP/<c>SupplierCredit</c> sigue siendo responsabilidad
 /// exclusiva de <see cref="PurchaseReturn"/>, vinculada vía <see cref="LinkPurchaseReturn"/>; nunca
