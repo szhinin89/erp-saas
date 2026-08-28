@@ -66,4 +66,16 @@ public static class ProductsModule
         Id = "a1000000-0000-4000-9000-000000000036"
     )]
     public const string AttributeDefinitions = "/catalog/attribute-definitions";
+
+    // NAVIGATION-OPERATING-CYCLES-03: movido desde MasterDataModule — aplica por igual a precios
+    // de venta a clientes y costos de proveedor, pero el catálogo de precios en sí es un dato de
+    // producto. Mismo Id/ruta/permiso.
+    [NavItem(
+        "Listas de Precios",
+        Permission = PricingPermissions.View,
+        LabelKey = "app.nav.item.pricing.priceLists",
+        SortOrder = 70,
+        Id = "b1000000-0000-4000-9000-000000000001"
+    )]
+    public const string PriceLists = "/pricing";
 }

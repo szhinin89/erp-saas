@@ -13,11 +13,12 @@ public sealed class KernelRegistryTests
 {
     // "sales", "purchases", "finance" y "cash" son vocabulario de negocio vigente y sancionado
     // en ERP_CORE_FREEZE.md (Nivel 1) — Sales/Accounting como módulos ERP, Purchases y Finance
-    // (Condiciones de Crédito) ya implementados y activos, y CajaModule usa rutas reales
-    // "/cash", "/cash/registers". No son fragmentos legacy: solo se bloquean aquí los nombres
-    // realmente retirados y sin ningún uso actual en el Kernel ("purchasing" → sucedido por
-    // "purchases", "products."/"inventory.products" → sucedido por "items."). "expenses"
-    // vuelve como vocabulario vigente del módulo independiente de Gastos.
+    // (Condiciones de Crédito) ya implementados y activos, y rutas reales "/cash",
+    // "/cash/registers" (Caja, fusionada en SalesModule desde NAVIGATION-OPERATING-CYCLES-03).
+    // No son fragmentos legacy: solo se bloquean aquí los nombres realmente retirados y sin
+    // ningún uso actual en el Kernel ("purchasing" → sucedido por "purchases",
+    // "products."/"inventory.products" → sucedido por "items."). "expenses" sigue siendo
+    // vocabulario vigente de las pantallas de Gastos (ahora dentro del grupo "suppliers").
     private static readonly string[] LegacyFragments =
     [
         "purchasing",
@@ -138,33 +139,45 @@ public sealed class KernelRegistryTests
         // Ventas/Compras/Inventario (ver Navigation_contains_finance_receivables_payables_and_
         // supplier_credits_moved_into_sales_and_purchases y
         // Navigation_contains_sales_stock_and_purchases_reports_moved_into_their_modules).
+        // NAVIGATION-OPERATING-CYCLES-03: "masterdata" ("Clientes y proveedores"), "purchases",
+        // "expenses", "payables" y "caja" también se disolvieron — sus ítems se redistribuyeron
+        // en los nuevos módulos "customers"/"suppliers" (ciclo cliente/proveedor) y "sales"
+        // (Caja fusionada). Ningún módulo debe volver a producir estos grupos.
         var modules = KernelRegistry.Modules;
 
         modules.Should().NotContain(m => m.Code == "finance");
         modules.Should().NotContain(m => m.Code == "reports");
+        modules.Should().NotContain(m => m.Code == "masterdata");
+        modules.Should().NotContain(m => m.Code == "purchases");
+        modules.Should().NotContain(m => m.Code == "expenses");
+        modules.Should().NotContain(m => m.Code == "payables");
+        modules.Should().NotContain(m => m.Code == "caja");
+        modules.Should().Contain(m => m.Code == "customers");
+        modules.Should().Contain(m => m.Code == "suppliers");
     }
 
     [Fact]
-    public void Navigation_contains_finance_receivables_and_supplier_credits_moved_into_sales_and_purchases()
+    public void Navigation_contains_finance_receivables_and_supplier_credits_moved_into_customers_and_suppliers()
     {
         var navigation = KernelRegistry.Navigation;
         var financePermission = ERP.Domain.Kernel.Permissions.FinancePermissions.View;
 
-        // MENU-MODULE-REORG-01: movidas a Ventas → Operación / Compras → Operación (mismos
-        // Ids/rutas). Permission alineado con el permiso real que exige la API que consume cada
-        // pantalla (SalesReceivablesController), no FinancePermissions.View.
+        // NAVIGATION-OPERATING-CYCLES-03: cuentas por cobrar es ciclo cliente, no ciclo venta —
+        // se movió de Ventas → Operación a Clientes, como ítem plano (sin contenedor padre).
         var receivables = navigation.SingleOrDefault(n => n.RoutePath == "/finance/receivables");
         receivables.Should().NotBeNull("cuentas por cobrar debe estar en el menú");
         receivables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
-        receivables.GroupCode.Should().Be("sales");
-        receivables.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000010"));
+        receivables.GroupCode.Should().Be("customers");
+        receivables.ParentItemId.Should().BeNull();
 
+        // Créditos de proveedor es ciclo proveedor — se movió con todo PurchasesModule al nuevo
+        // grupo "suppliers", mismo contenedor "Compras" (Id sin cambios).
         var supplierCredits = navigation.SingleOrDefault(n =>
             n.RoutePath == "/finance/supplier-credits"
         );
         supplierCredits.Should().NotBeNull("créditos de proveedor debe estar en el menú");
         supplierCredits!.PermissionKey.Should().Be(financePermission);
-        supplierCredits.GroupCode.Should().Be("purchases");
+        supplierCredits.GroupCode.Should().Be("suppliers");
         supplierCredits.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
 
         navigation.Should().NotContain(n => n.RoutePath == "/finance/supplier-credits/:id");
@@ -172,11 +185,16 @@ public sealed class KernelRegistryTests
             .Should()
             .NotContain(n => n.RoutePath.StartsWith("/finance/supplier-credits/", StringComparison.Ordinal));
 
-        // MENU-MODULE-REORG-01: "Clientes y proveedores" se aplanó — credit-terms ya no cuelga
-        // de un contenedor "Clientes" (retirado), es un ítem directo del módulo.
+        // NAVIGATION-OPERATING-CYCLES-03: condiciones de pago/crédito no son exclusivas de
+        // Clientes ni de Proveedores — se movieron a Configuración (catálogos/parámetros
+        // transversales), no a ninguno de los dos ciclos.
         var creditTerms = navigation.Single(n => n.RoutePath == "/finance/credit-terms");
-        creditTerms.GroupCode.Should().Be("masterdata", "credit-terms no debe moverse a otro módulo");
+        creditTerms.GroupCode.Should().Be("settings", "credit-terms es un catálogo transversal, vive en Configuración");
         creditTerms.ParentItemId.Should().BeNull();
+
+        var paymentTerms = navigation.Single(n => n.RoutePath == "/master/payment-terms");
+        paymentTerms.GroupCode.Should().Be("settings", "payment-terms es un catálogo transversal, vive en Configuración");
+        paymentTerms.ParentItemId.Should().BeNull();
     }
 
     [Fact]
@@ -193,16 +211,16 @@ public sealed class KernelRegistryTests
         var payables = navigation.Where(n => n.RoutePath == "/payables").ToList();
         payables.Should().ContainSingle("debe existir exactamente una pantalla de CxP genérica");
         payables[0].PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PayablesPermissions.View);
-        payables[0].GroupCode.Should().Be("payables");
+        payables[0].GroupCode.Should().Be("suppliers", "NAVIGATION-OPERATING-CYCLES-03: CxP vive en el ciclo proveedor");
     }
 
     [Fact]
-    public void Navigation_supplier_payments_lives_next_to_payables_not_under_expenses_or_purchases()
+    public void Navigation_supplier_payments_lives_next_to_payables_in_the_suppliers_group()
     {
         // NAVIGATION-MENU-CLEANUP-PAYABLES-EXPENSES-01 — "Pagos a proveedores" consume
         // AccountsPayable igual que la pantalla genérica de Cuentas por Pagar: debe compartir su
-        // grupo ("payables"), nunca colgar de "expenses" (Gastos solo expone sus propias
-        // pantallas) ni de "purchases" (CxP no es exclusiva de Compras).
+        // grupo. NAVIGATION-OPERATING-CYCLES-03: ese grupo es ahora "suppliers" (ciclo
+        // proveedor completo), no el antiguo "payables" aislado.
         var navigation = KernelRegistry.Navigation;
 
         navigation.Should().NotContain(n => n.RoutePath == "/finance/payables");
@@ -213,7 +231,7 @@ public sealed class KernelRegistryTests
         supplierPayments[0].PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.SupplierPaymentsPermissions.View);
         supplierPayments[0].GroupCode.Should()
-            .Be("payables", "Pagos a proveedores debe vivir junto a Cuentas por pagar, no bajo Gastos/Compras");
+            .Be("suppliers", "Pagos a proveedores debe vivir en el ciclo proveedor, junto a Cuentas por pagar");
 
         var payables = navigation.Single(n => n.RoutePath == "/payables");
         payables.GroupCode.Should().Be(
@@ -225,23 +243,49 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_expenses_group_contains_only_its_own_document_and_catalog_screens()
+    public void Navigation_suppliers_group_contains_exactly_the_supplier_cycle_screens()
     {
-        // NAVIGATION-MENU-CLEANUP-PAYABLES-EXPENSES-01 — Gastos no debe volver a arrastrar
-        // Cuentas por Pagar ni Pagos a Proveedores (ambos cross-cutting, viven en "payables").
+        // NAVIGATION-OPERATING-CYCLES-03 — el grupo "suppliers" concentra todo el ciclo
+        // proveedor (Proveedores + Compras + Gastos + Cuentas por Pagar + Pagos a proveedores);
+        // no debe faltar ni sobrar ninguna pantalla real.
         var navigation = KernelRegistry.Navigation;
 
-        var expensesItems = navigation.Where(n => n.GroupCode == "expenses").ToList();
+        var suppliersRoutes = navigation.Where(n => n.GroupCode == "suppliers")
+            .Select(n => n.RoutePath)
+            .ToList();
 
-        expensesItems.Should().NotBeEmpty();
-        expensesItems.Should()
-            .OnlyContain(
-                n => n.RoutePath.StartsWith("/expenses/", StringComparison.Ordinal),
-                "el grupo 'expenses' solo debe exponer rutas propias de Gastos"
-            );
-        expensesItems.Select(n => n.RoutePath)
-            .Should()
-            .BeEquivalentTo(new[] { "/expenses/documents", "/expenses/categories" });
+        suppliersRoutes.Should().BeEquivalentTo(new[]
+        {
+            "/masterdata/suppliers",
+            "/purchases/operation-group",
+            "/purchases",
+            "/purchases/reception",
+            "/purchases/returns",
+            "/finance/supplier-credits",
+            "/expenses/documents",
+            "/expenses/categories",
+            "/payables",
+            "/supplier-payments",
+            "/purchases/configuration-group",
+            "/settings/operations?tab=purchases",
+            "/purchases/reports-group",
+            "/reportes/compras",
+        });
+    }
+
+    [Fact]
+    public void Navigation_customers_group_contains_exactly_the_customer_cycle_screens()
+    {
+        // NAVIGATION-OPERATING-CYCLES-03 — el grupo "customers" concentra el ciclo cliente
+        // (Clientes + Cuentas por cobrar). No existe pantalla real de "Cobros de clientes"
+        // distinta de Cuentas por cobrar — no se inventa.
+        var navigation = KernelRegistry.Navigation;
+
+        var customersRoutes = navigation.Where(n => n.GroupCode == "customers")
+            .Select(n => n.RoutePath)
+            .ToList();
+
+        customersRoutes.Should().BeEquivalentTo(new[] { "/masterdata/customers", "/finance/receivables" });
     }
 
     [Fact]
@@ -268,7 +312,7 @@ public sealed class KernelRegistryTests
         purchasesReport.Should().NotBeNull("el reporte de compras debe estar en el menú");
         purchasesReport!.PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
-        purchasesReport.GroupCode.Should().Be("purchases");
+        purchasesReport.GroupCode.Should().Be("suppliers");
         purchasesReport.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000030"));
 
         navigation.Should().NotContain(n => n.RoutePath.StartsWith("/reportes/", StringComparison.Ordinal)
@@ -306,18 +350,20 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_sales_purchases_inventory_and_caja_expose_operation_configuration_and_reports_containers()
+    public void Navigation_sales_and_inventory_expose_their_top_level_containers()
     {
         // MENU-MODULE-REORG-01: cada módulo agrupa sus pantallas bajo Operación/Configuración/
-        // Reportes (Caja no tiene Reportes: no existe pantalla de "Reporte de Caja").
+        // Reportes. NAVIGATION-OPERATING-CYCLES-03: Ventas ganó un 4º contenedor "Caja"
+        // (fusionado desde CajaModule) — Operación/Caja/Configuración/Reportes. "purchases" y
+        // "caja" ya no son GroupCode válidos (ver Navigation_suppliers_group_contains_exactly_
+        // the_supplier_cycle_screens, que mezcla contenedores con ítems planos y por eso no
+        // encaja en este conteo de "solo contenedores").
         var navigation = KernelRegistry.Navigation;
 
         foreach (var (groupCode, expectedCount) in new[]
         {
-            ("sales", 3),
-            ("purchases", 3),
+            ("sales", 4),
             ("inventory", 3),
-            ("caja", 2),
         })
         {
             var containers = navigation
@@ -329,6 +375,42 @@ public sealed class KernelRegistryTests
                 $"'{groupCode}' debe exponer exactamente {expectedCount} contenedores de primer nivel"
             );
         }
+    }
+
+    [Fact]
+    public void Navigation_sales_group_follows_operacion_caja_configuracion_reportes_order()
+    {
+        // NAVIGATION-OPERATING-CYCLES-03: Caja se inserta entre Ventas(Operación) y
+        // Configuración — Turno de Caja es operación diaria de piso de venta, no configuración.
+        var expectedContainerOrder = new[]
+        {
+            "/sales/operation-group",
+            "/cash/operation-group",
+            "/sales/configuration-group",
+            "/sales/reports-group",
+        };
+
+        var actualContainerOrder = KernelRegistry
+            .Navigation.Where(n => n.GroupCode == "sales" && n.ParentItemId is null)
+            .OrderBy(n => n.SortOrder)
+            .Select(n => n.RoutePath)
+            .ToArray();
+
+        actualContainerOrder.Should().Equal(expectedContainerOrder);
+
+        var cajaSessions = KernelRegistry.Navigation.Single(n => n.RoutePath == "/cash");
+        cajaSessions.GroupCode.Should().Be("sales");
+        cajaSessions.ParentItemId.Should().Be(Guid.Parse("f5000000-0000-4000-9000-000000000010"));
+
+        var cajaRegisters = KernelRegistry.Navigation.Single(n => n.RoutePath == "/cash/registers");
+        cajaRegisters.GroupCode.Should().Be("sales");
+        cajaRegisters.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000020"));
+
+        var cajaPreferences = KernelRegistry.Navigation.Single(n =>
+            n.RoutePath == "/settings/operations?tab=cash"
+        );
+        cajaPreferences.GroupCode.Should().Be("sales");
+        cajaPreferences.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000020"));
     }
 
     [Fact]

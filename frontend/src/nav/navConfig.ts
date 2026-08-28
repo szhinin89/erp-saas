@@ -101,14 +101,12 @@ export function isPlanBuilderSessionMenu(
  */
 const MAIN_NAV_GROUP_ORDER = [
   "home",
-  "masterdata",
+  "customers",
+  "suppliers",
   "products",
   "inventory",
-  "purchases",
-  "expenses",
-  "payables",
   "sales",
-  "caja",
+  "accounting",
   "settings",
   "admin",
   "inventario",

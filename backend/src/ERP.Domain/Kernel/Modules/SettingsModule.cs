@@ -127,6 +127,26 @@ public static class SettingsModule
     )]
     public const string Geography = "/settings/geography";
 
+    // NAVIGATION-OPERATING-CYCLES-03: movidos desde MasterDataModule — son catálogos/parámetros
+    // transversales (no exclusivos de Clientes ni de Proveedores). Mismos Ids/rutas/permisos.
+    [NavItem(
+        "Condiciones de Pago",
+        Permission = MasterDataPermissions.PaymentTermsView,
+        LabelKey = "app.nav.item.masterdata.paymentTerms",
+        SortOrder = 92,
+        Id = "a1000000-0000-4000-9000-000000000103"
+    )]
+    public const string PaymentTermsCustomer = "/master/payment-terms";
+
+    [NavItem(
+        "Condiciones de Crédito",
+        Permission = FinancePermissions.View,
+        LabelKey = "app.nav.item.finance.creditTerms",
+        SortOrder = 94,
+        Id = "b2000000-0000-4000-9000-000000000001"
+    )]
+    public const string CreditTerms = "/finance/credit-terms";
+
     // INITIAL-LOAD-ARCH-01: registro de navegación separado del [AppFeature] del controller —
     // el AppFeatureDiscoveryService sincroniza app_features (catálogo de permisos), pero la
     // barra lateral (GET /api/v1/me/menu) se arma desde este KernelRegistry ([Module]/[NavItem]),
