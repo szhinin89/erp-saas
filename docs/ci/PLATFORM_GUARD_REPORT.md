@@ -1,6 +1,6 @@
 # Platform Control Plane — CI Guard Report
 
-**Generated:** 2026-08-28T14:55:21.294Z
+**Generated:** 2026-08-28T15:13:34.754Z
 **Status:** PASS
 **Violations:** 0
 
