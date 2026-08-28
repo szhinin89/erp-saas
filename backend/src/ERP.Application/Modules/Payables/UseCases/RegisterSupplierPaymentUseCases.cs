@@ -97,6 +97,7 @@ public sealed record SupplierPaymentDto(
     IReadOnlyList<SupplierPaymentAllocationLineDto> Allocations,
     DateTime CreatedAt,
     DateTime? ReversedAtUtc = null,
+    Guid? ReversedBy = null,
     string? ReverseReason = null
 );
 
@@ -520,6 +521,7 @@ internal static class SupplierPaymentDtoMapper
                 .ToList(),
             p.CreatedAt,
             p.ReversedAtUtc,
+            p.ReversedBy,
             p.ReverseReason
         );
 }

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-28T15:13:34.616Z",
+  "generatedAt": "2026-08-28T16:10:48.859Z",
   "summary": {
-    "total": 108,
-    "allowed": 108,
+    "total": 110,
+    "allowed": 110,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -940,7 +940,24 @@
     {
       "endpoint": "/api/v1/supplier-payments",
       "files": [
+        "frontend/src/modules/supplier-payments/api/supplierPaymentService.test.ts",
         "frontend/src/modules/supplier-payments/api/supplierPaymentService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/supplier-payments/sp-1",
+      "files": [
+        "frontend/src/modules/supplier-payments/api/supplierPaymentService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/supplier-payments/sp-1/reverse",
+      "files": [
+        "frontend/src/modules/supplier-payments/api/supplierPaymentService.test.ts"
       ],
       "legacy": false,
       "allowed": true

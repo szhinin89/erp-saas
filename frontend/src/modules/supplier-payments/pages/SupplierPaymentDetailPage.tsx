@@ -7,7 +7,8 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
-import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
+import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import {
   paymentMethodLookupFacade,
@@ -19,15 +20,20 @@ import {
 } from "../../finance/api/financialDestinationService";
 import { supplierPaymentService, type SupplierPaymentDto } from "../api/supplierPaymentService";
 import { SupplierPaymentStatusBadge } from "../components/SupplierPaymentStatusBadge";
+import { SupplierPaymentReverseModal } from "../components/SupplierPaymentReverseModal";
 import "../styles/supplier-payments.css";
 
-const PERMISSIONS = { view: "supplier-payments.view" } as const;
+const PERMISSIONS = {
+  view: "supplier-payments.view",
+  reverse: "supplier-payments.reverse",
+} as const;
 
 export function SupplierPaymentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
+  const canReverse = has(PERMISSIONS.reverse);
   const decimals = getDecimalConfig().totalAmount;
 
   const [payment, setPayment] = useState<SupplierPaymentDto | null>(null);
@@ -36,6 +42,10 @@ export function SupplierPaymentDetailPage() {
   const [destinations, setDestinations] = useState<CompanyFinancialDestinationDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [reverseModalOpen, setReverseModalOpen] = useState(false);
+  const [reversing, setReversing] = useState(false);
+  const [reverseError, setReverseError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -69,10 +79,30 @@ export function SupplierPaymentDetailPage() {
     if (canView) void load();
   }, [canView, load]);
 
+  const handleReverseConfirm = async (reason: string) => {
+    if (!id || reversing) return;
+    setReversing(true);
+    setReverseError(null);
+    try {
+      await supplierPaymentService.reverse(id, reason);
+      message.success("Pago reversado correctamente.");
+      setReverseModalOpen(false);
+      await load();
+    } catch (err) {
+      const fromApi = readApiErrorMessage(err);
+      setReverseError(
+        fromApi || formatApiRequestError(err, { generic: "No se pudo reversar el pago." }),
+      );
+    } finally {
+      setReversing(false);
+    }
+  };
+
   if (!canView) return <NoAccessPage title="Pago a proveedor" />;
 
   const methodsById = new Map(methods.map((m) => [m.id, m]));
   const destinationsById = new Map(destinations.map((d) => [d.id, d]));
+  const canShowReverseButton = payment?.status === "Confirmed" && canReverse;
 
   return (
     <PageShell
@@ -82,6 +112,11 @@ export function SupplierPaymentDetailPage() {
       action={
         <div className="sp-detail-actions">
           {payment && <SupplierPaymentStatusBadge status={payment.status} />}
+          {canShowReverseButton && (
+            <ZHBtn type="button" variant="destructive" onClick={() => setReverseModalOpen(true)}>
+              Reversar pago
+            </ZHBtn>
+          )}
           <ZHBtn type="button" variant="ghost" onClick={() => navigate("/supplier-payments")}>
             <span className="material-symbols-outlined" aria-hidden="true">
               arrow_back
@@ -175,8 +210,38 @@ export function SupplierPaymentDetailPage() {
               </table>
             </div>
           </ZHCard>
+
+          {payment.status === "Reversed" && (
+            <ZHCard title="Reversa">
+              <div className="sp-detail-summary">
+                <ZHField label="Reversado el" readOnly>
+                  {payment.reversedAtUtc ? formatDateTime(payment.reversedAtUtc) : "—"}
+                </ZHField>
+                <ZHField label="Reversado por" readOnly>
+                  {payment.reversedBy || "—"}
+                </ZHField>
+                <ZHField label="Motivo" readOnly>
+                  {payment.reverseReason || "—"}
+                </ZHField>
+              </div>
+            </ZHCard>
+          )}
         </>
       )}
+
+      <SupplierPaymentReverseModal
+        open={reverseModalOpen}
+        payment={payment}
+        supplierName={supplierName}
+        methods={methods}
+        saving={reversing}
+        submitError={reverseError}
+        onCancel={() => {
+          if (reversing) return;
+          setReverseModalOpen(false);
+        }}
+        onConfirm={(reason) => void handleReverseConfirm(reason)}
+      />
     </PageShell>
   );
 }

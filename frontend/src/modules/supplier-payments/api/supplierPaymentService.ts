@@ -86,6 +86,15 @@ export interface SupplierPaymentDto {
   applicationLines: SupplierPaymentApplicationLineDto[];
   allocations: SupplierPaymentAllocationLineDto[];
   createdAt: string;
+  /** Solo presentes cuando status === "Reversed". */
+  reversedAtUtc?: string | null;
+  reversedBy?: string | null;
+  reverseReason?: string | null;
+}
+
+/** Espejo exacto de ReverseSupplierPaymentRequest — backend (POST /{id}/reverse). */
+export interface ReverseSupplierPaymentRequest {
+  reason: string;
 }
 
 /** Espejo exacto de SupplierPaymentListItemDto — backend. */
@@ -128,4 +137,7 @@ export const supplierPaymentService = {
   },
 
   getById: (id: string) => apiGet<SupplierPaymentDto>(`${BASE}/${id}`),
+
+  reverse: (id: string, reason: string) =>
+    apiPost<SupplierPaymentDto>(`${BASE}/${id}/reverse`, { reason } satisfies ReverseSupplierPaymentRequest),
 };
