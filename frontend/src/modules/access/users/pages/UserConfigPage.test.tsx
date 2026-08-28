@@ -402,6 +402,7 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
     );
 
     await waitFor(() => {
+      expect(message.confirm).toHaveBeenCalled();
       expect(membershipService.createSystemUser).toHaveBeenCalledWith(
         expect.objectContaining({
           username: "nuevo",
@@ -416,6 +417,42 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
       expect(message.success).toHaveBeenCalled();
       expect(navigateMock).toHaveBeenCalledWith("/access/users");
     });
+  });
+
+  it("si se cancela la confirmación de creación, no llama createSystemUser", async () => {
+    vi.mocked(membershipService.lookupUserByUsername).mockResolvedValue({
+      identityUserExists: false,
+      fullName: null,
+      membership: null,
+    });
+    vi.mocked(message.confirm).mockResolvedValue(false);
+
+    renderAt("/access/users/new");
+    await waitFor(() => expect(screen.getByLabelText("Username")).toBeTruthy());
+
+    fireEvent.change(screen.getByLabelText("Username"), {
+      target: { value: "nuevo" },
+    });
+    fireEvent.blur(screen.getByLabelText("Username"));
+
+    await waitFor(() => expect(screen.getByLabelText("Nombre")).toBeTruthy());
+    fireEvent.change(screen.getByLabelText("Nombre"), {
+      target: { value: "Nuevo" },
+    });
+    fireEvent.change(screen.getByLabelText("Apellido"), {
+      target: { value: "Usuario" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), {
+      target: { value: "Passw0rd" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar configuración" }),
+    );
+
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+    expect(membershipService.createSystemUser).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalledWith("/access/users");
   });
 
   it("username que ya es miembro activo muestra un mensaje claro y un link, no un formulario", async () => {

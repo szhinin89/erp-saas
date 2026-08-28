@@ -243,6 +243,18 @@ export function UsersPage() {
   };
 
   const handleReactivate = async (row: CompanyUserMembershipAdminDto) => {
+    const confirmed = await message.confirm({
+      title: t("users.reactivate.confirmTitle", "Reactivar usuario"),
+      message: t(
+        "users.reactivate.confirmMessage",
+        `Vas a reactivar el acceso de "${row.fullName}" a esta empresa.`,
+      ),
+      variant: "warning",
+      confirmLabel: t("users.actions.reactivate", "Reactivar"),
+      cancelLabel: t("common.cancel"),
+    });
+    if (!confirmed) return;
+
     setActionPendingId(row.companyUserId);
     try {
       await membershipService.upsertMembership({

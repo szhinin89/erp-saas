@@ -251,6 +251,45 @@ describe("UsersPage — revocación", () => {
   });
 });
 
+describe("UsersPage — reactivación", () => {
+  it("pide confirmación antes de reactivar y llama upsertMembership al confirmar", async () => {
+    vi.mocked(membershipService.list).mockResolvedValue([
+      { ...membershipRow, isActive: false },
+    ]);
+    vi.mocked(membershipService.upsertMembership).mockResolvedValue({});
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Reactivar" }));
+
+    await waitFor(() => {
+      expect(message.confirm).toHaveBeenCalled();
+      expect(membershipService.upsertMembership).toHaveBeenCalledWith({
+        username: "ana",
+        role: "User",
+        profileId: "profile-1",
+      });
+    });
+    expect(message.success).toHaveBeenCalled();
+  });
+
+  it("no llama upsertMembership si el usuario cancela la confirmación", async () => {
+    vi.mocked(membershipService.list).mockResolvedValue([
+      { ...membershipRow, isActive: false },
+    ]);
+    vi.mocked(message.confirm).mockResolvedValue(false);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Reactivar" }));
+
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+    expect(membershipService.upsertMembership).not.toHaveBeenCalled();
+  });
+});
+
 describe("UsersPage — permisos", () => {
   it("usuario sin permiso no ve acciones de la tabla", async () => {
     vi.mocked(usePermissionsUi).mockReturnValue({

@@ -25,6 +25,7 @@ import {
 } from "../../../schemas/access/profileSchema";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
+import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
@@ -53,6 +54,7 @@ export function ProfilesPage() {
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   /* form */
   const {
@@ -139,6 +141,11 @@ export function ProfilesPage() {
         await profileService.create(values.name, values.description || null);
       }
       await loadProfiles();
+      message.success(
+        editTarget
+          ? t("profiles.updateSuccess", "Perfil actualizado correctamente.")
+          : t("profiles.createSuccess", "Perfil creado correctamente."),
+      );
       closeModal();
     } catch (err) {
       const applied = applyServerErrors(err, setFieldError, (msg) =>
@@ -155,12 +162,44 @@ export function ProfilesPage() {
 
   /* ── Quick toggle active/inactive ──────────────────────────── */
   const toggleActive = async (p: Profile) => {
+    if (togglingId) return;
+
+    const confirmed = await message.confirm({
+      title: p.isActive
+        ? `Desactivar perfil "${p.name}"`
+        : `Activar perfil "${p.name}"`,
+      message: (
+        <p className="zh-confirm-message">
+          {p.isActive
+            ? `Vas a desactivar el perfil "${p.name}". `
+            : `Vas a activar el perfil "${p.name}". `}
+          Esto puede afectar el acceso de los usuarios que ya tienen este perfil asignado.
+        </p>
+      ),
+      variant: p.isActive ? "danger" : "warning",
+      confirmLabel: p.isActive
+        ? t("profiles.actions.disable")
+        : t("profiles.actions.enable"),
+      cancelLabel: t("common.cancel"),
+    });
+    if (!confirmed) return;
+
+    setTogglingId(p.id);
     setListError("");
     try {
       await profileService.update({ ...p, isActive: !p.isActive });
       await loadProfiles();
-    } catch {
-      setListError(t("profiles.error.update"));
+      message.success(
+        p.isActive
+          ? t("profiles.disableSuccess", "Perfil desactivado correctamente.")
+          : t("profiles.enableSuccess", "Perfil activado correctamente."),
+      );
+    } catch (err) {
+      setListError(
+        formatApiRequestError(err, { generic: t("profiles.error.update") }),
+      );
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -255,6 +294,7 @@ export function ProfilesPage() {
                         variant="ghost"
                         size="md"
                         type="button"
+                        disabled={togglingId === p.id}
                         onClick={() => void toggleActive(p)}
                       >
                         {p.isActive

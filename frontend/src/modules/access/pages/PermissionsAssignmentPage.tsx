@@ -13,6 +13,7 @@ import { NoAccessPage, Badge } from "../../../components/PageShell";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
@@ -211,7 +212,33 @@ export function PermissionsAssignmentPage() {
 
   /* ── Save ────────────────────────────────────────────────────── */
   const onSave = async () => {
-    if (!selectedProfileId) return;
+    if (!selectedProfileId || !selectedProfile || saving) return;
+
+    const activeCount = allItems.reduce(
+      (sum, item) => sum + item.actions.filter((action) => permState[action.code]).length,
+      0,
+    );
+
+    const confirmed = await message.confirm({
+      title: `Guardar permisos de "${selectedProfile.name}"`,
+      message: (
+        <>
+          <p className="zh-confirm-message">
+            Vas a actualizar los permisos del perfil <strong>{selectedProfile.name}</strong>. Todos
+            los usuarios con este perfil pueden ver sus accesos y acciones disponibles cambiar de
+            inmediato.
+          </p>
+          <p className="zh-confirm-message">
+            Permisos que quedarán activos: <strong>{activeCount}</strong> de {totalActionsCount}.
+          </p>
+        </>
+      ),
+      variant: "warning",
+      confirmLabel: t("permissionsAssignment.saveAction"),
+      cancelLabel: t("common.cancel"),
+    });
+    if (!confirmed) return;
+
     setSaving(true);
     setSaveError("");
     try {
@@ -225,6 +252,9 @@ export function PermissionsAssignmentPage() {
         (r) => r.rejectionCode === "blocked_by_plan",
       );
       setRejectedPerms(planRejections);
+      message.success(
+        t("permissionsAssignment.saveSuccess", "Permisos guardados correctamente."),
+      );
     } catch (err) {
       setSaveError(formatApiRequestError(err, { generic: t("profiles.perms.error.save") }));
     } finally {

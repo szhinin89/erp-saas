@@ -14,7 +14,8 @@ import {
   type SecurityUser,
 } from "../api/securityService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
-import { formatApiError } from "../../lib/formatApiError";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
 import "./SecuritySettingsPage.css";
 
@@ -75,7 +76,11 @@ export function SecuritySettingsPage() {
         setMatrix(data);
       } catch (e) {
         if (cancelled) return;
-        setError(formatApiError(e));
+        setError(
+          formatApiRequestError(e, {
+            generic: t("security.loadError", "No se pudo cargar la matriz de delegación."),
+          }),
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -84,6 +89,9 @@ export function SecuritySettingsPage() {
     return () => {
       cancelled = true;
     };
+    // t() se usa dentro del efecto pero no debe disparar un refetch — su identidad cambia en
+    // cada render y duplicaría las llamadas HTTP (mismo criterio ya aplicado en UserConfigPage).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canView]);
 
   const rows = useMemo(() => {
@@ -100,11 +108,35 @@ export function SecuritySettingsPage() {
     return map;
   }, [matrix]);
 
-  const toggleScope = async (targetUserId: string, scope: number) => {
-    if (!matrix) return;
+  const toggleScope = async (
+    targetUserId: string,
+    targetUserName: string,
+    scope: number,
+    scopeLabel: string,
+  ) => {
+    if (!matrix || savingKey) return;
     const current = new Set(scopeStateByUserId.get(targetUserId) ?? []);
-    if (current.has(scope)) current.delete(scope);
-    else current.add(scope);
+    const granting = !current.has(scope);
+    if (granting) current.add(scope);
+    else current.delete(scope);
+
+    const confirmed = await message.confirm({
+      title: granting
+        ? `Otorgar "${scopeLabel}"`
+        : `Revocar "${scopeLabel}"`,
+      message: (
+        <p className="zh-confirm-message">
+          Vas a {granting ? "otorgar" : "revocar"} la capacidad{" "}
+          <strong>{scopeLabel}</strong> a <strong>{targetUserName}</strong>. Esto modifica una
+          capacidad administrativa sensible: quien la tenga podrá administrar roles, módulos,
+          pantallas o procesos según el permiso otorgado.
+        </p>
+      ),
+      variant: granting ? "warning" : "danger",
+      confirmLabel: granting ? "Otorgar" : "Revocar",
+      cancelLabel: t("common.cancel"),
+    });
+    if (!confirmed) return;
 
     setSavingKey(targetUserId);
     setError("");
@@ -115,7 +147,7 @@ export function SecuritySettingsPage() {
         allowedScopes: [...current.values()],
       });
 
-      // Refresh local matrix assignments for this user (optimistic merge).
+      // El estado local solo se actualiza tras confirmar éxito real del backend — nunca antes.
       const nextAssignments = matrix.assignments
         .filter(
           (a) => !(a.subjectType === "User" && a.subjectKey === targetUserId),
@@ -130,8 +162,15 @@ export function SecuritySettingsPage() {
         );
 
       setMatrix({ ...matrix, assignments: nextAssignments });
+      message.success(
+        t("security.scopeUpdateSuccess", "Capacidad actualizada correctamente."),
+      );
     } catch (e) {
-      setError(formatApiError(e));
+      setError(
+        formatApiRequestError(e, {
+          generic: t("security.scopeUpdateError", "No se pudo actualizar la capacidad."),
+        }),
+      );
     } finally {
       setSavingKey(null);
     }
@@ -208,7 +247,9 @@ export function SecuritySettingsPage() {
                               label={t(c.labelKey)}
                               description={u.fullName}
                               value={checked}
-                              onChange={() => toggleScope(u.id, scope)}
+                              onChange={() =>
+                                void toggleScope(u.id, u.fullName, scope, t(c.labelKey))
+                              }
                               disabled={disabled}
                             />
                           </td>

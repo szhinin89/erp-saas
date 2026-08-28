@@ -7,6 +7,7 @@ import { useAuthStore } from "../../../store/authStore";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { ProfilesPage } from "./ProfilesPage";
 import { profileService } from "../api/profileService";
+import { message } from "../../../lib/messages";
 
 /**
  * ADMINISTRATION-CLEAN-ACCESS-01: ProfilesPage debe ser CRUD de perfiles puro (nombre/descripción/
@@ -34,6 +35,14 @@ vi.mock("../api/profileService", () => ({
 
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
+}));
+
+vi.mock("../../../lib/messages", () => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    confirm: vi.fn(),
+  },
 }));
 
 const PROFILE = {
@@ -83,6 +92,8 @@ beforeEach(() => {
   vi.mocked(profileService.update).mockReset();
   vi.mocked(profileService.getPermissions).mockReset();
   vi.mocked(profileService.upsertPermissions).mockReset();
+  vi.mocked(message.confirm).mockReset().mockResolvedValue(true);
+  vi.mocked(message.success).mockReset();
   setAuth("Admin");
 });
 
@@ -174,5 +185,104 @@ describe("ProfilesPage — lista y CRUD sin permisos embebidos", () => {
       expect(profileService.create).toHaveBeenCalledWith("Nuevo", null);
     });
     expect(profileService.upsertPermissions).not.toHaveBeenCalled();
+  });
+
+  it("crear perfil muestra message.success al guardar", async () => {
+    vi.mocked(profileService.create).mockResolvedValue({
+      id: "new-profile",
+      name: "Nuevo",
+      description: null,
+      isActive: true,
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ventas Jr.")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Nuevo perfil/i }));
+    await waitFor(() => screen.getByLabelText(/Nombre del perfil/i));
+
+    fireEvent.change(screen.getByLabelText(/Nombre del perfil/i), {
+      target: { value: "Nuevo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Guardar perfil/i }));
+
+    await waitFor(() => expect(message.success).toHaveBeenCalled());
+  });
+
+  it("si el backend falla al crear, no cierra el modal ni llama message.success", async () => {
+    vi.mocked(profileService.create).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 500, data: {} },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ventas Jr.")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Nuevo perfil/i }));
+    await waitFor(() => screen.getByLabelText(/Nombre del perfil/i));
+
+    fireEvent.change(screen.getByLabelText(/Nombre del perfil/i), {
+      target: { value: "Nuevo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Guardar perfil/i }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/Nombre del perfil/i)).toBeTruthy(),
+    );
+    expect(message.success).not.toHaveBeenCalled();
+  });
+});
+
+describe("ProfilesPage — activar/desactivar con confirmación", () => {
+  it("pide confirmación antes de desactivar y llama a update al confirmar", async () => {
+    vi.mocked(profileService.update).mockResolvedValue({
+      ...PROFILE,
+      isActive: false,
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ventas Jr.")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+
+    await waitFor(() => {
+      expect(message.confirm).toHaveBeenCalled();
+      expect(profileService.update).toHaveBeenCalledWith(
+        expect.objectContaining({ isActive: false }),
+      );
+    });
+    expect(message.success).toHaveBeenCalled();
+  });
+
+  it("si se cancela la confirmación, no llama a update", async () => {
+    vi.mocked(message.confirm).mockResolvedValue(false);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ventas Jr.")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+    expect(profileService.update).not.toHaveBeenCalled();
+  });
+
+  it("si el backend falla al desactivar, muestra el error real y no llama success", async () => {
+    vi.mocked(profileService.update).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: { message: { user: "El perfil tiene usuarios activos." } },
+      },
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ventas Jr.")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("El perfil tiene usuarios activos.")).toBeTruthy(),
+    );
+    expect(message.success).not.toHaveBeenCalled();
   });
 });

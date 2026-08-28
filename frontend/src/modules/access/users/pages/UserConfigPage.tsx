@@ -226,6 +226,38 @@ export function UserConfigPage() {
   };
 
   const onSubmit = handleSubmit(async (values) => {
+    if (saving) return;
+
+    if (mode === "new") {
+      const profileName =
+        profiles.find((p) => p.id === values.profileId)?.name ?? null;
+      const confirmed = await message.confirm({
+        title: t("users.config.confirmCreateTitle", "Crear usuario"),
+        message: (
+          <>
+            <p className="zh-confirm-message">
+              Vas a crear el acceso de <strong>{values.username}</strong> a esta empresa con rol{" "}
+              <strong>{values.role}</strong>
+              {profileName ? (
+                <>
+                  {" "}
+                  y perfil <strong>{profileName}</strong>
+                </>
+              ) : null}
+              .
+            </p>
+            <p className="zh-confirm-message">
+              Sucursales autorizadas: <strong>{values.authorizedBranchIds.length}</strong>.
+            </p>
+          </>
+        ),
+        variant: "warning",
+        confirmLabel: t("users.config.confirmCreateAction", "Crear usuario"),
+        cancelLabel: t("common.cancel"),
+      });
+      if (!confirmed) return;
+    }
+
     setSaving(true);
     setBlockErrors(NO_BLOCK_ERRORS);
 

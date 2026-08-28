@@ -8,6 +8,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { PermissionsAssignmentPage } from "./PermissionsAssignmentPage";
 import { profileService } from "../api/profileService";
 import { adminPermissionsService } from "../api/adminPermissionsService";
+import { message } from "../../../lib/messages";
 
 /**
  * ADMIN-PERMISSIONS-SSOT-KERNEL-02: el árbol de grupos/pantallas/acciones ahora se carga desde
@@ -33,6 +34,14 @@ vi.mock("../api/adminPermissionsService", () => ({
 
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
+}));
+
+vi.mock("../../../lib/messages", () => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    confirm: vi.fn(),
+  },
 }));
 
 const PROFILE = {
@@ -131,6 +140,8 @@ beforeEach(() => {
   vi.mocked(profileService.create).mockReset();
   vi.mocked(profileService.update).mockReset();
   vi.mocked(adminPermissionsService.getCatalog).mockResolvedValue(CATALOG);
+  vi.mocked(message.confirm).mockReset().mockResolvedValue(true);
+  vi.mocked(message.success).mockReset();
   setAuth("Admin");
 });
 
@@ -204,7 +215,7 @@ describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", (
     expect(screen.queryByText("Facturación Electrónica")).toBeNull();
   });
 
-  it("togglear una acción y guardar llama a upsertPermissions solo con códigos del catálogo", async () => {
+  it("togglear una acción y guardar pide confirmación y llama a upsertPermissions solo con códigos del catálogo", async () => {
     renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
 
     await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
@@ -215,6 +226,7 @@ describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", (
     fireEvent.click(screen.getByRole("button", { name: /Guardar permisos/i }));
 
     await waitFor(() => {
+      expect(message.confirm).toHaveBeenCalled();
       expect(profileService.upsertPermissions).toHaveBeenCalled();
     });
     const [, sentItems] = vi.mocked(profileService.upsertPermissions).mock.calls[0];
@@ -224,6 +236,48 @@ describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", (
       "supplier-payments.reverse",
     ]);
     for (const item of sentItems) expect(catalogCodes.has(item.permissionKey)).toBe(true);
+  });
+
+  it("si se cancela la confirmación, no llama a upsertPermissions", async () => {
+    vi.mocked(message.confirm).mockResolvedValue(false);
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Guardar permisos/i }));
+
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+    expect(profileService.upsertPermissions).not.toHaveBeenCalled();
+  });
+
+  it("al guardar exitosamente muestra message.success", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Guardar permisos/i }));
+
+    await waitFor(() => expect(message.success).toHaveBeenCalled());
+  });
+
+  it("si el backend falla, muestra el mensaje de error real y no llama message.success", async () => {
+    vi.mocked(profileService.upsertPermissions).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: { data: { errors: ["El permiso ya no existe en el catálogo."] } },
+      },
+    });
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+
+    await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Guardar permisos/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText("El permiso ya no existe en el catálogo.")).toBeTruthy(),
+    );
+    expect(message.success).not.toHaveBeenCalled();
   });
 
   it("el filtro de texto oculta pantallas que no coinciden", async () => {

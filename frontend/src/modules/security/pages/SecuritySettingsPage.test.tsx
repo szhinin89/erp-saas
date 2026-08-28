@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { SecuritySettingsPage } from "./SecuritySettingsPage";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { securityService } from "../api/securityService";
+import { message } from "../../../lib/messages";
 
 vi.mock("../api/securityService", () => ({
   securityService: {
-    getAdminMatrix: vi.fn().mockResolvedValue({ users: [], assignments: [] }),
+    getAdminMatrix: vi.fn(),
     upsertAdminScopes: vi.fn(),
   },
 }));
@@ -15,6 +17,39 @@ vi.mock("../api/securityService", () => ({
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
 }));
+
+vi.mock("../../../lib/messages", () => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    confirm: vi.fn(),
+  },
+}));
+
+const MATRIX_WITH_USER = {
+  users: [
+    {
+      id: "user-1",
+      companyUserMembershipId: "membership-1",
+      fullName: "Ana Perez",
+      username: "ana",
+      email: "ana@test.com",
+      role: "User",
+      isActive: true,
+    },
+  ],
+  assignments: [],
+};
+
+beforeEach(() => {
+  vi.mocked(securityService.getAdminMatrix).mockResolvedValue({
+    users: [],
+    assignments: [],
+  });
+  vi.mocked(securityService.upsertAdminScopes).mockReset();
+  vi.mocked(message.confirm).mockReset().mockResolvedValue(true);
+  vi.mocked(message.success).mockReset();
+});
 
 afterEach(() => {
   cleanup();
@@ -64,6 +99,104 @@ describe("SecuritySettingsPage — access gate", () => {
 
     expect(screen.getAllByText(NO_ACCESS_MESSAGE).length).toBeGreaterThan(0);
     expect(screen.queryByText(EMPTY_USERS_MESSAGE)).toBeNull();
+  });
+});
+
+describe("SecuritySettingsPage — confirmación y feedback por toggle", () => {
+  function mockCanView(canView: boolean, canConfigure = canView) {
+    vi.mocked(usePermissionsUi).mockReturnValue({
+      canShow: (perm: string) =>
+        perm === "admin.delegation.configure" ? canConfigure : canView,
+      has: () => canView,
+      isAdminRole: false,
+    });
+  }
+
+  it("pide confirmación antes de otorgar una capacidad y llama a upsertAdminScopes al confirmar", async () => {
+    mockCanView(true);
+    vi.mocked(securityService.getAdminMatrix).mockResolvedValue(
+      MATRIX_WITH_USER,
+    );
+    vi.mocked(securityService.upsertAdminScopes).mockResolvedValue({});
+
+    render(
+      <I18nProvider>
+        <SecuritySettingsPage />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getAllByText("Ana Perez").length).toBeGreaterThan(0));
+
+    const toggles = screen.getAllByRole("switch");
+    fireEvent.click(toggles[0]);
+
+    await waitFor(() => {
+      expect(message.confirm).toHaveBeenCalled();
+      expect(securityService.upsertAdminScopes).toHaveBeenCalledWith({
+        subjectType: "User",
+        subjectKey: "user-1",
+        allowedScopes: [1],
+      });
+    });
+    expect(message.success).toHaveBeenCalled();
+  });
+
+  it("si se cancela la confirmación, no llama a upsertAdminScopes", async () => {
+    mockCanView(true);
+    vi.mocked(securityService.getAdminMatrix).mockResolvedValue(
+      MATRIX_WITH_USER,
+    );
+    vi.mocked(message.confirm).mockResolvedValue(false);
+
+    render(
+      <I18nProvider>
+        <SecuritySettingsPage />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getAllByText("Ana Perez").length).toBeGreaterThan(0));
+
+    const toggles = screen.getAllByRole("switch");
+    fireEvent.click(toggles[0]);
+
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+    expect(securityService.upsertAdminScopes).not.toHaveBeenCalled();
+    // El toggle nunca se movió — sin estado optimista falso.
+    expect(toggles[0].getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("si falla el backend, muestra el error real y conserva el estado anterior del toggle", async () => {
+    mockCanView(true);
+    vi.mocked(securityService.getAdminMatrix).mockResolvedValue(
+      MATRIX_WITH_USER,
+    );
+    vi.mocked(securityService.upsertAdminScopes).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 500,
+        data: { message: { user: "No se pudo actualizar la capacidad." } },
+      },
+    });
+
+    render(
+      <I18nProvider>
+        <SecuritySettingsPage />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getAllByText("Ana Perez").length).toBeGreaterThan(0));
+
+    const toggles = screen.getAllByRole("switch");
+    fireEvent.click(toggles[0]);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("No se pudo actualizar la capacidad."),
+      ).toBeTruthy(),
+    );
+    expect(message.success).not.toHaveBeenCalled();
+    const togglesAfter = screen.getAllByRole("switch");
+    expect(togglesAfter[0].getAttribute("aria-checked")).toBe("false");
   });
 });
 
