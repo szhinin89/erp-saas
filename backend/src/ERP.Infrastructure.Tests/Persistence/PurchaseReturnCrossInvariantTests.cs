@@ -439,18 +439,6 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new FixedCurrentUser(_userId)
         );
 
-    private RegisterPaymentCommandHandler BuildRegisterPaymentHandler(ErpDbContext db) =>
-        new(
-            new PaymentRepository(db),
-            new AccountsPayableRepository(db),
-            new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new UnitOfWork(db),
-            new FixedCurrentTenant(() => _tenantId),
-            new FixedCurrentCompany(() => _companyId),
-            new FixedCurrentUser(_userId)
-        );
-
     // ── Caso 1 — PI-CANC-01 ───────────────────────────────────────────────
 
     [Fact]
@@ -510,39 +498,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         result.Error.Should().Contain("crédito");
     }
 
-    // ── Caso 3 — pagar CxP cancelled bloqueado (guard ya existente, ahora bajo lock) ──
-
-    [Fact]
-    public async Task Caso3_Pagar_CxP_cancelled_bloqueado()
-    {
-        var target = await SeedPlainInvoiceAsync(80m);
-
-        await using (var db = CreateContext())
-        {
-            var cancelHandler = BuildCancelPurchaseHandler(db);
-            var cancelResult = await cancelHandler.Handle(
-                new CancelPurchaseCommand(target.InvoiceId, "Anulación previa"),
-                CancellationToken.None
-            );
-            cancelResult.IsSuccess.Should().BeTrue(cancelResult.Error);
-        }
-
-        await using var db2 = CreateContext();
-        var paymentHandler = BuildRegisterPaymentHandler(db2);
-        var result = await paymentHandler.Handle(
-            new RegisterPaymentCommand(
-                _supplierId,
-                80m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                null,
-                new[] { new PaymentApplicationLineInput(target.PayableId, null, 80m) }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-    }
+    // ── Caso 3 — pagar CxP cancelled bloqueado ─────────────────────────────
+    // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — eliminado junto con RegisterPaymentCommand (sin UI ni
+    // endpoint activo). La regla de dominio que este caso cubría ("no se puede aplicar un ajuste
+    // sobre una cuenta por pagar anulada") sigue probada directamente sobre AccountsPayable.Apply
+    // en ERP.Application.Tests/Purchases/PurchasePayableTests.cs.
 
     // ── Caso 4 — SC-002 ───────────────────────────────────────────────────
 

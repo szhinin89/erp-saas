@@ -16,11 +16,23 @@ namespace ERP.API.Tests.Finance;
 /// <summary>
 /// P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — contrato de FinancePaymentsController con
 /// StubMediator, mismo alcance que CompanyUserBranchesControllerTests: mapeo de Command a HTTP y
-/// verificación por reflexión de la policy declarada. Antes de este controller, ni
-/// RegisterCollectionCommand ni RegisterPaymentCommand tenían ningún endpoint que los invocara.
+/// verificación por reflexión de la policy declarada.
+/// PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — el endpoint <c>POST /payments</c> (RegisterPaymentCommand,
+/// AP contra AccountsPayable) se eliminó junto con su única UI; este controller expone solo
+/// RegisterCollection (AR) desde entonces.
 /// </summary>
 public sealed class FinancePaymentsControllerTests
 {
+    [Fact]
+    public void No_existe_endpoint_activo_legacy_de_registrar_pago_a_proveedor()
+    {
+        // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — guard de regresión: sin PagoCabecera/PagoDetalle
+        // ni pantalla propia, no debe reaparecer un endpoint de registro de pago a proveedor.
+        var method = typeof(FinancePaymentsController).GetMethod("RegisterPayment");
+
+        method.Should().BeNull();
+    }
+
     private static FinancePaymentsController BuildController(Func<object, object> handler)
     {
         var controller = new FinancePaymentsController(new StubMediator(handler));
@@ -73,20 +85,6 @@ public sealed class FinancePaymentsControllerTests
     {
         var method = typeof(FinancePaymentsController).GetMethod(
             nameof(FinancePaymentsController.RegisterCollection)
-        )!;
-        var attr = method
-            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
-            .Cast<AuthorizeAttribute>()
-            .Single();
-
-        attr.Policy.Should().Be($"perm:{FinancePermissions.Create}");
-    }
-
-    [Fact]
-    public void RegisterPayment_exige_perm_finance_create()
-    {
-        var method = typeof(FinancePaymentsController).GetMethod(
-            nameof(FinancePaymentsController.RegisterPayment)
         )!;
         var attr = method
             .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
@@ -161,75 +159,6 @@ public sealed class FinancePaymentsControllerTests
         );
 
         var response = await controller.RegisterCollection(command, CancellationToken.None);
-
-        response.Should().BeOfType<NotFoundObjectResult>();
-    }
-
-    // ── POST /payments ───────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task RegisterPayment_exitoso_retorna_201_y_envia_el_command_recibido()
-    {
-        var documentId = Guid.NewGuid();
-        object? sentRequest = null;
-        var controller = BuildController(req =>
-        {
-            sentRequest = req;
-            return Result<PaymentDto>.Success(SamplePaymentDto(documentId));
-        });
-        var command = new RegisterPaymentCommand(
-            Guid.NewGuid(),
-            100m,
-            new DateOnly(2026, 7, 30),
-            null,
-            null,
-            new[] { new PaymentApplicationLineInput(documentId, null, 100m) }
-        );
-
-        var response = await controller.RegisterPayment(command, CancellationToken.None);
-
-        response.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
-        sentRequest.Should().Be(command);
-    }
-
-    [Fact]
-    public async Task RegisterPayment_con_monto_que_excede_el_saldo_retorna_422()
-    {
-        var controller = BuildController(_ =>
-            Result<PaymentDto>.ValidationFailure(
-                "El monto del pago excede el saldo pendiente de la cuenta por pagar."
-            )
-        );
-        var command = new RegisterPaymentCommand(
-            Guid.NewGuid(),
-            999m,
-            new DateOnly(2026, 7, 30),
-            null,
-            null,
-            new[] { new PaymentApplicationLineInput(Guid.NewGuid(), null, 999m) }
-        );
-
-        var response = await controller.RegisterPayment(command, CancellationToken.None);
-
-        response.Should().BeOfType<UnprocessableEntityObjectResult>();
-    }
-
-    [Fact]
-    public async Task RegisterPayment_sobre_CxP_inexistente_retorna_404()
-    {
-        var controller = BuildController(_ =>
-            Result<PaymentDto>.NotFound("Cuenta por pagar no encontrada.")
-        );
-        var command = new RegisterPaymentCommand(
-            Guid.NewGuid(),
-            50m,
-            new DateOnly(2026, 7, 30),
-            null,
-            null,
-            new[] { new PaymentApplicationLineInput(Guid.NewGuid(), null, 50m) }
-        );
-
-        var response = await controller.RegisterPayment(command, CancellationToken.None);
 
         response.Should().BeOfType<NotFoundObjectResult>();
     }

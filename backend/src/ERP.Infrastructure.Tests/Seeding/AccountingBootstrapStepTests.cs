@@ -256,7 +256,7 @@ public sealed class AccountingBootstrapStepTests
             .Where(r => r.CompanyId == _companyId)
             .ToListAsync();
 
-        rules.Should().HaveCount(7);
+        rules.Should().HaveCount(6);
         rules.Should().OnlyContain(r => r.IsActive);
         rules.Should().OnlyContain(r => r.Lines.Count >= 2);
         rules
@@ -271,9 +271,11 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "InvoiceReceived"),
                     ("Purchases", "PurchaseCreditNoteAuthorized"),
                     ("Finance", "CollectionApplied"),
-                    ("Finance", "SupplierPaymentApplied"),
                 }
             );
+        // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" ya no se siembra
+        // (sin RegisterPaymentCommand/traductor que lo dispare, sería configuración muerta).
+        rules.Should().NotContain(r => r.SourceModule == "Finance" && r.FactType == "SupplierPaymentApplied");
         rules.Should()
             .NotContain(r => r.SourceModule == "Purchases" && r.FactType == "PurchaseCreditNoteCancelled");
     }
@@ -352,7 +354,7 @@ public sealed class AccountingBootstrapStepTests
         }
 
         await using var verifyDb = NewDbContext(dbName);
-        (await verifyDb.PostingRules.CountAsync(r => r.CompanyId == _companyId)).Should().Be(7);
+        (await verifyDb.PostingRules.CountAsync(r => r.CompanyId == _companyId)).Should().Be(6);
     }
 
     [Fact]

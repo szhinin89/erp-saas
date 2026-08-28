@@ -243,14 +243,10 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("1.1.03.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
-        new(
-            "Finance",
-            "SupplierPaymentApplied",
-            [
-                new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
-                new("1.1.02.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
-            ]
-        ),
+        // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" (pago a
+        // proveedor) se eliminó junto con RegisterPaymentCommand/SupplierPaymentAppliedPostingTranslator:
+        // sin nada que dispare ese FactType, sembrar la PostingRule por empresa nueva sería
+        // configuración muerta desde el día uno.
     ];
 
     public async Task ExecuteAsync(

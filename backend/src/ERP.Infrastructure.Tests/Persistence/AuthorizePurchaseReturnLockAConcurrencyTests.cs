@@ -415,51 +415,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
 
     private async Task<(
         bool Success,
-        PaymentDto? Value,
-        string? Error
-    )> ExecuteRegisterPaymentAsync(Guid payableId, decimal amount)
-    {
-        await using var db = CreateContext();
-        var payments = new PaymentRepository(db);
-        var payables = new AccountsPayableRepository(db);
-        var purchaseReturnRepo = new PurchaseReturnRepository(
-            db,
-            new FixedCurrentCompany(() => _companyId)
-        );
-        var uow = new UnitOfWork(db);
-
-        var handler = new RegisterPaymentCommandHandler(
-            payments,
-            payables,
-            purchaseReturnRepo,
-            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
-            uow,
-            new FixedCurrentTenant(() => _tenantId),
-            new FixedCurrentCompany(() => _companyId),
-            new FixedCurrentUser(_userId)
-        );
-
-        var result = await handler.Handle(
-            new RegisterPaymentCommand(
-                _supplierId,
-                amount,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                "Pago de prueba",
-                new[] { new PaymentApplicationLineInput(payableId, null, amount) }
-            ),
-            CancellationToken.None
-        );
-
-        return (
-            result.IsSuccess,
-            result.IsSuccess ? result.Value : null,
-            result.IsSuccess ? null : result.Error
-        );
-    }
-
-    private async Task<(
-        bool Success,
         IssuedWithholdingDto? Value,
         string? Error
     )> ExecuteIssueWithholdingAsync(Guid invoiceId)
@@ -554,56 +509,10 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     }
 
     // ── Punto 5: devolución y pago simultáneos ────────────────────────────
-
-    [Fact]
-    public async Task Punto5_Devolucion_y_pago_simultaneos_sobre_la_misma_factura_quedan_serializados_por_LockA()
-    {
-        // Factura de 385 (350 subtotal + 35 IVA con quantity=10/unitPrice=35 y vatCode 10%).
-        var (invoiceId, lineId, payableId) = await SeedConfirmedInvoiceAsync(
-            quantity: 10,
-            unitPrice: 35m
-        );
-        var returnId = await CreateDraftReturnAsync(invoiceId, lineId, quantity: 2);
-
-        // Pago parcial de 100 — ambas operaciones compiten por Lock A sobre la MISMA factura.
-        var tReturn = ExecuteAuthorizeAsync(returnId, Guid.NewGuid());
-        var tPayment = ExecuteRegisterPaymentAsync(payableId, 100m);
-        await Task.WhenAll(tReturn, tPayment);
-
-        var returnResult = await tReturn;
-        var paymentResult = await tPayment;
-
-        // Ambas operaciones son independientes en sus reglas de negocio (no se bloquean
-        // mutuamente por regla de dominio, solo se serializan en el tiempo) — ambas deben
-        // completar exitosamente, sin importar el orden real de ejecución.
-        returnResult.Success.Should().BeTrue(returnResult.Error);
-        paymentResult.Success.Should().BeTrue(paymentResult.Error);
-
-        await using var verify = CreateContext();
-        var payable = await verify
-            .Set<AccountsPayable>()
-            .Include(p => p.Installments)
-            .AsNoTracking()
-            .FirstAsync(p => p.Id == payableId);
-
-        // Consistencia final: sin lost update — el efecto de AMBAS operaciones está reflejado.
-        // GrandTotal=385; devolución de 2/10 unidades = 77 (70 subtotal + 7 IVA) aplicado a CxP
-        // (factura impaga, remanente >= 77); pago adicional de 100. BalanceDue final =
-        // 385 - 77 (devolución) - 100 (pago) = 208.
-        payable.ReturnCreditAmount.Should().Be(77m);
-        payable.PaidAmount.Should().Be(100m);
-        payable.OutstandingAmount.Should().Be(208m);
-
-        var paymentCount = await verify
-            .Set<Domain.Modules.Finance.Entities.Payment>()
-            .CountAsync(p => p.TenantId == _tenantId);
-        paymentCount.Should().Be(1, "no debe haber doble aplicación de pago");
-
-        var creditCount = await verify
-            .Set<SupplierCredit>()
-            .CountAsync(c => c.TenantId == _tenantId);
-        creditCount.Should().Be(0, "sin excedente, no debe crearse SupplierCredit indebido");
-    }
+    // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — eliminado junto con RegisterPaymentCommand (sin UI ni
+    // endpoint activo desde PAYABLES-LEGACY-CLEANUP-13). La garantía de Lock A que este punto
+    // cubría sigue demostrada por los Puntos 4/6 (devolución+devolución, devolución+retención)
+    // sobre el mismo mecanismo de lock.
 
     // ── Punto 6: devolución y emisión de retención simultáneas ───────────
 

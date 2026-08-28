@@ -15,14 +15,17 @@ using Moq;
 namespace ERP.Application.Tests.Accounting;
 
 /// <summary>
-/// ACCOUNTING-CASH-POSTING-06 — cobro de cliente y pago a proveedor a través del pipeline REAL
-/// (CollectionAppliedEvent/SupplierPaymentAppliedEvent → Translator → PostingEngine real, con
-/// repositorios mockeados) — mismo patrón que <see cref="SalesReturnPostingPipelineTests"/>.
-/// Confirma que las reglas ya endurecidas en ACCOUNTING-POSTING-RULES-AUDIT-03
-/// (PostingAccountGuard/idempotencia) aplican igual para el módulo Finance, sin necesitar código
-/// nuevo en el Posting Engine — el pipeline es genérico por diseño.
+/// ACCOUNTING-CASH-POSTING-06 — cobro de cliente a través del pipeline REAL (CollectionAppliedEvent
+/// → Translator → PostingEngine real, con repositorios mockeados) — mismo patrón que
+/// <see cref="SalesReturnPostingPipelineTests"/>. Confirma que las reglas ya endurecidas en
+/// ACCOUNTING-POSTING-RULES-AUDIT-03 (PostingAccountGuard/idempotencia) aplican igual para el
+/// módulo Finance, sin necesitar código nuevo en el Posting Engine — el pipeline es genérico por
+/// diseño.
+/// PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — el lado "pago a proveedor" (SupplierPaymentAppliedEvent/
+/// SupplierPaymentAppliedPostingTranslator) se eliminó junto con RegisterPaymentCommand/
+/// FinancePaymentsController (sin UI ni endpoint activo); este archivo ahora cubre solo Collection.
 /// </summary>
-public sealed class CollectionAndSupplierPaymentPostingPipelineTests
+public sealed class CollectionPostingPipelineTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
@@ -30,21 +33,6 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
     private static readonly Guid PartnerId = Guid.NewGuid();
 
     private static CollectionAppliedEvent CollectionEvent(
-        Guid paymentId,
-        decimal amount = 300m,
-        Guid? financialDestinationId = null
-    ) =>
-        new(
-            TenantId,
-            paymentId,
-            CompanyId,
-            PartnerId,
-            amount,
-            new DateOnly(2026, 8, 10),
-            financialDestinationId
-        );
-
-    private static SupplierPaymentAppliedEvent SupplierPaymentEvent(
         Guid paymentId,
         decimal amount = 300m,
         Guid? financialDestinationId = null
@@ -211,37 +199,6 @@ public sealed class CollectionAndSupplierPaymentPostingPipelineTests
         entry.SourceModule.Should().Be("Finance");
         entry.SourceEventType.Should().Be("CollectionApplied");
         entry.SourceEventId.Should().Be(paymentId);
-    }
-
-    [Fact]
-    public async Task Pago_a_proveedor_genera_asiento_balanceado_Debe_CxP_Haber_Caja()
-    {
-        var m = new Mocks();
-        var payable = PostableAccount("2.1.01", "Cuentas por Pagar");
-        var cash = PostableAccount("1.1.01", "Caja");
-        m.RegisterAccount(payable);
-        m.RegisterAccount(cash);
-        // Debe: CxP (se cancela la deuda) — Haber: Caja (sale el efectivo).
-        var rule = Rule("Finance", "SupplierPaymentApplied", payable.Id, cash.Id);
-        m.PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "SupplierPaymentApplied", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(rule);
-        m.JournalEntries
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "SupplierPaymentApplied", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((JournalEntry?)null);
-
-        var engine = m.BuildEngine();
-        var translator = new SupplierPaymentAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<SupplierPaymentAppliedPostingTranslator>.Instance);
-
-        var paymentId = Guid.NewGuid();
-        await translator.Handle(SupplierPaymentEvent(paymentId, 300m), CancellationToken.None);
-
-        m.Captured.Should().NotBeNull();
-        var entry = m.Captured!;
-        entry.Lines.Should().HaveCount(2);
-        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
-        entry.Lines.Should().Contain(l => l.AccountId == payable.Id && l.Debit == 300m && l.Credit == 0m);
-        entry.Lines.Should().Contain(l => l.AccountId == cash.Id && l.Credit == 300m && l.Debit == 0m);
     }
 
     [Fact]

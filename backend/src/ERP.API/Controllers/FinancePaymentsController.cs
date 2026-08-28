@@ -8,13 +8,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — expone la liquidación de AR/AP (<c>Payment</c>,
-/// Fase 5.5.5.3) que hasta ahora existía completa en Application/Domain sin ningún endpoint que
-/// la invocara. Controller delgado: solo recibe el command, lo envía vía MediatR y traduce el
+/// P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — expone la liquidación de AR (<c>Payment</c>,
+/// Fase 5.5.5.3). Controller delgado: solo recibe el command, lo envía vía MediatR y traduce el
 /// <c>Result</c> — toda la lógica de negocio (balance, límites de saldo, transiciones de estado)
-/// vive en <c>Payment</c>/<c>SalesReceivable</c>/<c>PurchasePayable</c>
-/// (<see cref="RegisterCollectionCommandHandler"/>/<see cref="RegisterPaymentCommandHandler"/>),
+/// vive en <c>Payment</c>/<c>SalesReceivable</c> (<see cref="RegisterCollectionCommandHandler"/>),
 /// reutilizada sin cambios.
+/// PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — el endpoint AP (<c>POST /payments</c>,
+/// <c>RegisterPaymentCommand</c> contra <c>AccountsPayable</c>) fue eliminado junto con su única
+/// UI (<c>AccountsPayablePage</c>/<c>RegisterPaymentModal</c>, ya eliminadas): no debe quedar un
+/// endpoint activo de registro de pago a proveedor sin pantalla ni diseño — cuando exista el
+/// módulo PagoCabecera/PagoDetalle, se implementará ahí desde cero, no reviviendo este endpoint.
 /// </summary>
 [ApiController]
 [Route("api/v1/finance")]
@@ -31,14 +34,6 @@ public sealed class FinancePaymentsController : ControllerBase
     [Authorize(Policy = $"perm:{FinancePermissions.Create}")]
     public async Task<IActionResult> RegisterCollection(
         [FromBody] RegisterCollectionCommand command,
-        CancellationToken ct
-    ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
-
-    /// <summary>Registra un pago (AP) aplicado contra una o más CxP del proveedor indicado.</summary>
-    [HttpPost("payments")]
-    [Authorize(Policy = $"perm:{FinancePermissions.Create}")]
-    public async Task<IActionResult> RegisterPayment(
-        [FromBody] RegisterPaymentCommand command,
         CancellationToken ct
     ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 }

@@ -479,18 +479,6 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new FixedCurrentUser(_userId)
         );
 
-    private RegisterPaymentCommandHandler BuildRegisterPaymentHandler(ErpDbContext db) =>
-        new(
-            new PaymentRepository(db),
-            new AccountsPayableRepository(db),
-            new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new UnitOfWork(db),
-            new FixedCurrentTenant(() => _tenantId),
-            new FixedCurrentCompany(() => _companyId),
-            new FixedCurrentUser(_userId)
-        );
-
     private RegisterSupplierCreditRefundHandler BuildRegisterRefundHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -1043,77 +1031,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     }
 
     // ── Escenario 11 — Devolución y pago simultáneos ─────────────────────
-
-    [Fact]
-    public async Task Escenario11_Devolucion_y_pago_simultaneos_sin_lost_update()
-    {
-        // BalanceDue=1120. Pago de 500 y devolución de 3 unidades (≈336) compiten por Lock A.
-        var inv = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 0m);
-
-        var paymentTask = Task.Run(async () =>
-        {
-            await using var db = CreateContext();
-            var handler = BuildRegisterPaymentHandler(db);
-            return await handler.Handle(
-                new RegisterPaymentCommand(
-                    _supplierId,
-                    500m,
-                    DateOnly.FromDateTime(DateTime.UtcNow),
-                    null,
-                    null,
-                    new[] { new PaymentApplicationLineInput(inv.PayableId, null, 500m) }
-                ),
-                CancellationToken.None
-            );
-        });
-
-        var returnTask = Task.Run(async () =>
-        {
-            await using var dbDraft = CreateContext();
-            var draftHandler = new CreatePurchaseReturnDraftHandler(
-                new PurchaseReturnRepository(dbDraft, new FixedCurrentCompany(() => _companyId)),
-                new PurchaseInvoiceRepository(dbDraft, new FixedCurrentCompany(() => _companyId)),
-                new RealDatabaseExceptionTranslator(),
-                new FixedCurrentTenant(() => _tenantId),
-                new FixedCurrentCompany(() => _companyId),
-                new FixedCurrentBranch(() => _branchId),
-                new FixedCurrentUser(_userId)
-            );
-            var draft = await draftHandler.Handle(
-                new CreatePurchaseReturnDraftCommand(
-                    Guid.NewGuid(),
-                    inv.InvoiceId,
-                    "Motivo",
-                    new[] { new PurchaseReturnDraftLineInput(inv.LineId, 3m) }
-                ),
-                CancellationToken.None
-            );
-            draft.IsSuccess.Should().BeTrue(draft.Error);
-
-            await using var dbAuth = CreateContext();
-            var authHandler = BuildAuthorizeHandler(dbAuth);
-            return await authHandler.Handle(
-                new AuthorizePurchaseReturnCommand(draft.Value!.Id, Guid.NewGuid()),
-                CancellationToken.None
-            );
-        });
-
-        await Task.WhenAll(paymentTask, returnTask);
-        (await paymentTask).IsSuccess.Should().BeTrue((await paymentTask).Error);
-        (await returnTask).IsSuccess.Should().BeTrue((await returnTask).Error);
-
-        await using var verify = CreateContext();
-        var payable = await verify
-            .Set<AccountsPayable>()
-            .Include(p => p.Installments)
-            .AsNoTracking()
-            .FirstAsync(p => p.Id == inv.PayableId);
-        // Sin lost update: ambos efectos (pago 500 + devolución ~336) deben reflejarse juntos.
-        var returnDto = await returnTask;
-        payable.PaidAmount.Should().Be(500m);
-        payable.ReturnCreditAmount.Should().Be(returnDto.Value!.AuthorizedGrandTotal!.Value);
-        payable.OutstandingAmount.Should().Be(1120m - 500m - returnDto.Value.AuthorizedGrandTotal!.Value);
-    }
+    // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — eliminado junto con RegisterPaymentCommand (sin UI ni
+    // endpoint activo desde PAYABLES-LEGACY-CLEANUP-13). La garantía de Lock A que este escenario
+    // cubría sigue demostrada por los Escenarios 10/13 (devolución+devolución, crédito+crédito)
+    // sobre el mismo mecanismo de lock.
 
     // ── Escenario 12 — Devolución y retención simultáneas (ver comentario de clase) ──
     // Verificado por inspección de código + reutilización de la garantía de Lock A ya demostrada

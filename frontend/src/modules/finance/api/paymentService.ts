@@ -46,29 +46,17 @@ export interface RegisterCollectionPayload {
   financialDestinationId?: string | null;
 }
 
-export interface RegisterPaymentPayload {
-  supplierId: string;
-  amount: number;
-  paymentDate: string;
-  paymentMethodId?: string | null;
-  reference?: string | null;
-  lines: PaymentApplicationLineInput[];
-  /** ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) opcional. */
-  financialDestinationId?: string | null;
-}
-
 const BASE = "/api/v1/finance";
 
 /**
- * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — liquidación de CxC/CxP. Consume
- * FinancePaymentsController, que delega íntegramente en RegisterCollectionCommand/
- * RegisterPaymentCommand (Application) ya existentes — este servicio no calcula ni valida
- * ninguna regla de negocio, solo transporta el payload.
+ * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — liquidación de CxC. Consume
+ * FinancePaymentsController, que delega íntegramente en RegisterCollectionCommand (Application) —
+ * este servicio no calcula ni valida ninguna regla de negocio, solo transporta el payload.
+ * PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — registerPayment (CxP contra AccountsPayable) se eliminó
+ * junto con RegisterPaymentCommand/FinancePaymentsController's POST /payments (sin UI ni endpoint
+ * activo desde PAYABLES-LEGACY-CLEANUP-13).
  */
 export const paymentService = {
   registerCollection: (payload: RegisterCollectionPayload) =>
     apiPost<PaymentDto>(`${BASE}/collections`, payload),
-
-  registerPayment: (payload: RegisterPaymentPayload) =>
-    apiPost<PaymentDto>(`${BASE}/payments`, payload),
 };
