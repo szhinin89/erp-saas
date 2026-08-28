@@ -418,6 +418,18 @@ if (!app.Environment.IsProduction())
         .EnsureAsync();
 }
 
+// EXPENSES-CATALOG-BOOTSTRAP-09-FIX: backfilla el catálogo de gastos (o corrige el mapeo contable
+// de subcategorías ya sembradas con la cuenta incorrecta) para companies activas — nunca en
+// Production. Debe correr después del backfill de Accounting porque depende de que las cuentas de
+// gasto ya existan.
+if (!app.Environment.IsProduction())
+{
+    using var expensesCatalogBackfillScope = app.Services.CreateScope();
+    await expensesCatalogBackfillScope
+        .ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.ExpensesCatalogBackfillService>()
+        .EnsureAsync();
+}
+
 if (
     app.Environment.IsDevelopment()
     && app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false)

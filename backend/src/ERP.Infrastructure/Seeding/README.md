@@ -14,7 +14,7 @@ vs. de empresa: [`docs/DATABASE.md`](../../../../docs/DATABASE.md).
 | Interfaz de step | `Seeding/Global/IGlobalBootstrapStep` | `ERP.Application/Common/Interfaces/ICompanyBootstrapStep` |
 | Constantes de orden | `Seeding/Global/GlobalBootstrapStepOrder` | `ERP.Application/Common/Interfaces/CompanyBootstrapStepOrder` |
 | Único invocador | `Program.cs` (composition root) | `ERP.Infrastructure/Services/CompanyProvisioningService` |
-| Steps actuales | `NavigationBootstrapStep` (10), `InstallDataBootstrapStep` (20) | `OrganizationBootstrapStep` (10), `ElectronicDocumentsBootstrapStep` (20), `InventoryBootstrapStep` (30), `SalesBootstrapStep` (40), `CajaBootstrapStep` (45), `AccessBootstrapStep` (50) |
+| Steps actuales | `NavigationBootstrapStep` (10), `InstallDataBootstrapStep` (20) | `OrganizationBootstrapStep` (10), `ElectronicDocumentsBootstrapStep` (20), `InventoryBootstrapStep` (30), `MasterDataClassificationBootstrapStep` (35), `SalesBootstrapStep` (40), `CajaBootstrapStep` (45), `AccountingBootstrapStep` (47), `ExpensesCatalogBootstrapStep` (48), `AccessBootstrapStep` (50) |
 
 ## Flujo oficial (único, no hay atajos)
 

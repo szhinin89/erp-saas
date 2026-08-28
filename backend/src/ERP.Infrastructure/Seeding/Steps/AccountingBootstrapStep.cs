@@ -59,7 +59,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         bool AllowsPosting
     );
 
-    public const int RetailChartAccountCount = 90;
+    public const int RetailChartAccountCount = 92;
 
     private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
@@ -138,6 +138,12 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         new("6.1.01.004", "Arriendos", "6.1", AccountType.Expense, AccountNature.Debit, true),
         new("6.1.01.005", "Honorarios profesionales", "6.1", AccountType.Expense, AccountNature.Debit, true),
         new("6.1.01.006", "Mantenimiento y reparaciones", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        // EXPENSES-CATALOG-BOOTSTRAP-09-FIX — faltaban cuentas propias para 2 de las 7 categorías
+        // que ExpensesCatalogBootstrapStep necesita bajo "Gastos administrativos" (el plan solo
+        // tenía 6 cuentas hoja para 7 categorías del catálogo de gastos, forzando un mapeo
+        // desplazado/incorrecto). Aditivo: no reemplaza ni renombra ninguna cuenta existente.
+        new("6.1.01.007", "Tecnologia y sistemas", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.008", "Movilizacion y transporte", "6.1", AccountType.Expense, AccountNature.Debit, true),
         new("6.2", "Gastos de venta", "6", AccountType.Expense, AccountNature.Debit, false),
         new("6.2.01.001", "Publicidad y marketing", "6.2", AccountType.Expense, AccountNature.Debit, true),
         new("6.2.01.002", "Comisiones de venta", "6.2", AccountType.Expense, AccountNature.Debit, true),

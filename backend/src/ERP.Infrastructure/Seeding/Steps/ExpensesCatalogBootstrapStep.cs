@@ -53,34 +53,44 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
 
     private static readonly IReadOnlyList<ExpenseCatalogItem> Template =
     [
-        new("Gastos administrativos", "Servicios basicos", "Energia electrica", "6.1.01.002", true, true, true, "Servicio basico deducible con comprobante autorizado"),
-        new("Gastos administrativos", "Servicios basicos", "Agua potable", "6.1.01.002", true, true, true, "Servicio basico deducible con comprobante autorizado"),
-        new("Gastos administrativos", "Servicios basicos", "Internet fijo", "6.1.01.002", true, true, true, "Servicio de conectividad para oficina o local"),
-        new("Gastos administrativos", "Servicios basicos", "Telefonia fija", "6.1.01.002", true, true, true, "Servicio de comunicacion administrativa"),
-        new("Gastos administrativos", "Servicios basicos", "Telefonia movil corporativa", "6.1.01.002", true, true, true, "Lineas moviles de uso empresarial"),
-        new("Gastos administrativos", "Servicios basicos", "Servicios de seguridad y alarmas", "6.1.01.002", true, true, true, "Servicio recurrente de seguridad"),
-        new("Gastos administrativos", "Arriendos", "Arriendo de oficina", "6.1.01.003", true, true, true, "Arriendo administrativo"),
-        new("Gastos administrativos", "Arriendos", "Arriendo de local comercial", "6.1.01.003", true, true, true, "Arriendo de punto de venta"),
-        new("Gastos administrativos", "Arriendos", "Arriendo de bodega", "6.1.01.003", true, true, true, "Bodega para operacion o inventario"),
-        new("Gastos administrativos", "Arriendos", "Expensas y alicuotas", "6.1.01.003", true, true, true, "Cuotas de mantenimiento del inmueble"),
-        new("Gastos administrativos", "Suministros de oficina", "Papeleria y utiles", "6.1.01.001", true, true, true, "Insumos administrativos de oficina"),
-        new("Gastos administrativos", "Suministros de oficina", "Toner, tintas e insumos de impresion", "6.1.01.001", true, true, true, "Insumos para impresoras"),
-        new("Gastos administrativos", "Suministros de oficina", "Material de limpieza", "6.1.01.001", true, true, true, "Suministros de limpieza del local u oficina"),
-        new("Gastos administrativos", "Suministros de oficina", "Cafeteria y agua para personal", "6.1.01.001", true, true, true, "Consumo interno razonable"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Licencias de software", "6.1.01.004", true, true, true, "Suscripciones o licencias administrativas"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Hosting y dominio", "6.1.01.004", true, true, true, "Servicios web de la empresa"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Soporte tecnico externo", "6.1.01.004", true, true, true, "Servicios profesionales de soporte"),
-        new("Gastos administrativos", "Tecnologia y sistemas", "Servicios en la nube", "6.1.01.004", true, true, true, "Cloud, almacenamiento y herramientas SaaS"),
-        new("Gastos administrativos", "Honorarios profesionales", "Servicios contables", "6.1.01.004", true, true, true, "Honorarios de contabilidad"),
-        new("Gastos administrativos", "Honorarios profesionales", "Servicios legales", "6.1.01.004", true, true, true, "Asesoria legal externa"),
-        new("Gastos administrativos", "Honorarios profesionales", "Consultoria administrativa", "6.1.01.004", true, true, true, "Consultoria de gestion"),
-        new("Gastos administrativos", "Honorarios profesionales", "Servicios notariales", "6.1.01.004", true, true, true, "Tramites notariales relacionados al negocio"),
-        new("Gastos administrativos", "Mantenimiento y reparaciones", "Mantenimiento de oficina", "6.1.01.005", true, true, true, "Mantenimiento menor de instalaciones"),
-        new("Gastos administrativos", "Mantenimiento y reparaciones", "Mantenimiento de equipos de computacion", "6.1.01.005", true, true, true, "Mantenimiento preventivo o correctivo"),
-        new("Gastos administrativos", "Mantenimiento y reparaciones", "Reparaciones menores", "6.1.01.005", true, true, true, "Reparaciones operativas que no se capitalizan"),
-        new("Gastos administrativos", "Movilizacion y transporte", "Taxis y movilizacion local", "6.1.01.006", true, true, true, "Movilizacion administrativa sustentada"),
-        new("Gastos administrativos", "Movilizacion y transporte", "Combustible administrativo", "6.1.01.006", true, true, true, "Combustible para gestiones administrativas"),
-        new("Gastos administrativos", "Movilizacion y transporte", "Parqueaderos y peajes", "6.1.01.006", true, true, true, "Movilizacion relacionada con operaciones"),
+        // EXPENSES-CATALOG-BOOTSTRAP-09-FIX — AccountCode corregido para las 7 categorías de
+        // "Gastos administrativos": el plan de cuentas real (AccountingBootstrapStep.RetailChart)
+        // asigna 6.1.01.001="Gastos administrativos generales" (sin categoría propia en este
+        // catálogo, deliberadamente sin usar), 6.1.01.002="Suministros de oficina",
+        // 6.1.01.003="Servicios basicos", 6.1.01.004="Arriendos", 6.1.01.005="Honorarios
+        // profesionales", 6.1.01.006="Mantenimiento y reparaciones", 6.1.01.007="Tecnologia y
+        // sistemas", 6.1.01.008="Movilizacion y transporte" — los códigos de abajo ahora
+        // coinciden exactamente por nombre con esas cuentas (antes estaban desplazados: existían,
+        // eran postables y de tipo Expense, por lo que nunca generaban warning, pero el asiento
+        // contable quedaba contra la cuenta equivocada).
+        new("Gastos administrativos", "Servicios basicos", "Energia electrica", "6.1.01.003", true, true, true, "Servicio basico deducible con comprobante autorizado"),
+        new("Gastos administrativos", "Servicios basicos", "Agua potable", "6.1.01.003", true, true, true, "Servicio basico deducible con comprobante autorizado"),
+        new("Gastos administrativos", "Servicios basicos", "Internet fijo", "6.1.01.003", true, true, true, "Servicio de conectividad para oficina o local"),
+        new("Gastos administrativos", "Servicios basicos", "Telefonia fija", "6.1.01.003", true, true, true, "Servicio de comunicacion administrativa"),
+        new("Gastos administrativos", "Servicios basicos", "Telefonia movil corporativa", "6.1.01.003", true, true, true, "Lineas moviles de uso empresarial"),
+        new("Gastos administrativos", "Servicios basicos", "Servicios de seguridad y alarmas", "6.1.01.003", true, true, true, "Servicio recurrente de seguridad"),
+        new("Gastos administrativos", "Arriendos", "Arriendo de oficina", "6.1.01.004", true, true, true, "Arriendo administrativo"),
+        new("Gastos administrativos", "Arriendos", "Arriendo de local comercial", "6.1.01.004", true, true, true, "Arriendo de punto de venta"),
+        new("Gastos administrativos", "Arriendos", "Arriendo de bodega", "6.1.01.004", true, true, true, "Bodega para operacion o inventario"),
+        new("Gastos administrativos", "Arriendos", "Expensas y alicuotas", "6.1.01.004", true, true, true, "Cuotas de mantenimiento del inmueble"),
+        new("Gastos administrativos", "Suministros de oficina", "Papeleria y utiles", "6.1.01.002", true, true, true, "Insumos administrativos de oficina"),
+        new("Gastos administrativos", "Suministros de oficina", "Toner, tintas e insumos de impresion", "6.1.01.002", true, true, true, "Insumos para impresoras"),
+        new("Gastos administrativos", "Suministros de oficina", "Material de limpieza", "6.1.01.002", true, true, true, "Suministros de limpieza del local u oficina"),
+        new("Gastos administrativos", "Suministros de oficina", "Cafeteria y agua para personal", "6.1.01.002", true, true, true, "Consumo interno razonable"),
+        new("Gastos administrativos", "Tecnologia y sistemas", "Licencias de software", "6.1.01.007", true, true, true, "Suscripciones o licencias administrativas"),
+        new("Gastos administrativos", "Tecnologia y sistemas", "Hosting y dominio", "6.1.01.007", true, true, true, "Servicios web de la empresa"),
+        new("Gastos administrativos", "Tecnologia y sistemas", "Soporte tecnico externo", "6.1.01.007", true, true, true, "Servicios profesionales de soporte"),
+        new("Gastos administrativos", "Tecnologia y sistemas", "Servicios en la nube", "6.1.01.007", true, true, true, "Cloud, almacenamiento y herramientas SaaS"),
+        new("Gastos administrativos", "Honorarios profesionales", "Servicios contables", "6.1.01.005", true, true, true, "Honorarios de contabilidad"),
+        new("Gastos administrativos", "Honorarios profesionales", "Servicios legales", "6.1.01.005", true, true, true, "Asesoria legal externa"),
+        new("Gastos administrativos", "Honorarios profesionales", "Consultoria administrativa", "6.1.01.005", true, true, true, "Consultoria de gestion"),
+        new("Gastos administrativos", "Honorarios profesionales", "Servicios notariales", "6.1.01.005", true, true, true, "Tramites notariales relacionados al negocio"),
+        new("Gastos administrativos", "Mantenimiento y reparaciones", "Mantenimiento de oficina", "6.1.01.006", true, true, true, "Mantenimiento menor de instalaciones"),
+        new("Gastos administrativos", "Mantenimiento y reparaciones", "Mantenimiento de equipos de computacion", "6.1.01.006", true, true, true, "Mantenimiento preventivo o correctivo"),
+        new("Gastos administrativos", "Mantenimiento y reparaciones", "Reparaciones menores", "6.1.01.006", true, true, true, "Reparaciones operativas que no se capitalizan"),
+        new("Gastos administrativos", "Movilizacion y transporte", "Taxis y movilizacion local", "6.1.01.008", true, true, true, "Movilizacion administrativa sustentada"),
+        new("Gastos administrativos", "Movilizacion y transporte", "Combustible administrativo", "6.1.01.008", true, true, true, "Combustible para gestiones administrativas"),
+        new("Gastos administrativos", "Movilizacion y transporte", "Parqueaderos y peajes", "6.1.01.008", true, true, true, "Movilizacion relacionada con operaciones"),
         new("Gastos de venta", "Publicidad y marketing", "Publicidad digital", "6.2.01.001", true, true, true, "Campanas en redes, buscadores o medios digitales"),
         new("Gastos de venta", "Publicidad y marketing", "Material POP", "6.2.01.001", true, true, true, "Material promocional para puntos de venta"),
         new("Gastos de venta", "Publicidad y marketing", "Diseno grafico y contenido", "6.2.01.001", true, true, true, "Produccion de piezas comerciales"),
@@ -274,6 +284,80 @@ public sealed partial class ExpensesCatalogBootstrapStep : ICompanyBootstrapStep
         {
             LogExpenseCatalogSkipped(skippedSubcategoryCount, companyId);
         }
+    }
+
+    /// <summary>
+    /// EXPENSES-CATALOG-BOOTSTRAP-09-FIX: corrige la cuenta contable de subcategorías YA
+    /// sembradas que corresponden exactamente (por Tipo/Categoría/Subcategoría) a una entrada del
+    /// <see cref="Template"/>, cuando su <see cref="ExpenseCategoryNode.AccountingAccountId"/>
+    /// actual no coincide con la cuenta que el Template corregido indica. Usado únicamente por
+    /// <see cref="ExpensesCatalogBackfillService"/> para reparar companies que ya recibieron el
+    /// mapeo incorrecto anterior. Nunca toca subcategorías que no pertenecen al Template (nombres
+    /// personalizados), nunca crea ni elimina ni desactiva nodos.
+    /// </summary>
+    internal async Task<int> CorrectAccountMappingsAsync(
+        CompanyBootstrapContext context,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var (tenantId, companyId, actorId) = context;
+
+        var accountByCode = await _db
+            .Accounts.IgnoreQueryFilters()
+            .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
+            .Select(a => new
+            {
+                Code = a.Code.Value,
+                a.Id,
+                a.IsActive,
+                a.AllowsPosting,
+                a.AccountType,
+            })
+            .ToDictionaryAsync(
+                a => a.Code,
+                a => new AccountLookup(a.Id, a.IsActive, a.AllowsPosting, a.AccountType),
+                StringComparer.Ordinal,
+                cancellationToken
+            );
+
+        var allNodes = await _db
+            .ExpenseCategoryNodes.IgnoreQueryFilters()
+            .Where(n => n.TenantId == tenantId && n.CompanyId == companyId)
+            .ToListAsync(cancellationToken);
+        var nodeById = allNodes.ToDictionary(n => n.Id);
+        var subcategoryNodes = allNodes.Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory);
+
+        var correctedCount = 0;
+        foreach (var item in Template)
+        {
+            var node = subcategoryNodes.FirstOrDefault(n =>
+            {
+                if (n.ParentId is null || !nodeById.TryGetValue(n.ParentId.Value, out var category))
+                    return false;
+                if (category.ParentId is null || !nodeById.TryGetValue(category.ParentId.Value, out var type))
+                    return false;
+
+                return NormalizeName(type.Name) == NormalizeName(item.TypeName)
+                    && NormalizeName(category.Name) == NormalizeName(item.CategoryName)
+                    && NormalizeName(n.Name) == NormalizeName(item.SubcategoryName);
+            });
+            if (node is null)
+                continue;
+
+            if (!TryResolveUsableExpenseAccount(companyId, item, accountByCode, out var accountId))
+                continue;
+
+            if (node.AccountingAccountId == accountId)
+                continue;
+
+            node.ChangeSubcategoryAccount(accountId, actorId);
+            correctedCount++;
+        }
+
+        if (correctedCount > 0)
+            await _db.SaveChangesAsync(cancellationToken);
+
+        return correctedCount;
     }
 
     private bool TryResolveUsableExpenseAccount(
