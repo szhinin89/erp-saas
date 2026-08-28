@@ -2,6 +2,8 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
@@ -36,6 +38,7 @@ public sealed class CancelPurchaseHandler
     : IRequestHandler<CancelPurchaseCommand, Result<PurchaseInvoiceDto>>
 {
     private readonly IPurchaseInvoiceRepository _repo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IStockRepository _stockRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IUnitOfWork _uow;
@@ -46,6 +49,7 @@ public sealed class CancelPurchaseHandler
 
     public CancelPurchaseHandler(
         IPurchaseInvoiceRepository repo,
+        IAccountsPayableRepository payableRepo,
         IStockRepository stockRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
         IUnitOfWork uow,
@@ -56,6 +60,7 @@ public sealed class CancelPurchaseHandler
     )
     {
         _repo = repo;
+        _payableRepo = payableRepo;
         _stockRepo = stockRepo;
         _purchaseReturnRepo = purchaseReturnRepo;
         _uow = uow;
@@ -107,7 +112,13 @@ public sealed class CancelPurchaseHandler
             );
 
             // ── 1b. Cargar cuenta por pagar (recargada bajo lock) y bloquear si hay pagos ──
-            var payable = await _repo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
+            var payable = await _payableRepo.GetByOriginAsync(
+                tid,
+                cid,
+                AccountsPayableOriginType.PurchaseInvoice,
+                inv.Id,
+                ct
+            );
             if (payable is not null && payable.PaidAmount > 0)
             {
                 await _uow.RollbackAsync(ct);
@@ -136,7 +147,7 @@ public sealed class CancelPurchaseHandler
 
             // ── PI-CANC-02 (§FASE 3): no se puede anular con crédito de proveedor
             // (SupplierCredit vía P0-02) ya aplicado contra esta CxP.
-            if (payable is not null && payable.SupplierCreditAppliedAmount > 0)
+            if (payable is not null && payable.SupplierCreditAmount > 0)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<PurchaseInvoiceDto>.ValidationFailure(
@@ -154,13 +165,13 @@ public sealed class CancelPurchaseHandler
                 wh.Cancel("Anulación automática por anulación de compra.", uid);
 
                 if (payable is not null)
-                    payable.ReverseRetention(inv.PaymentSchedules);
+                    payable.ReverseRetention(uid);
             }
             if (payable is not null)
             {
                 try
                 {
-                    payable.CancelPayable();
+                    payable.Cancel(uid);
                 }
                 catch (InvalidOperationException ex)
                 {

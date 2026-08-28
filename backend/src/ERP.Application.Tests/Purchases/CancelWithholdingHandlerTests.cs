@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -56,32 +57,39 @@ public sealed class CancelWithholdingHandlerTests
 
     private static (
         Mock<IPurchaseInvoiceRepository> repo,
+        Mock<IAccountsPayableRepository> payableRepo,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow
     ) BuildMocks()
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
+        var payableRepo = new Mock<IAccountsPayableRepository>();
         var purchaseReturnRepo = new Mock<IPurchaseReturnRepository>();
         var uow = new Mock<IUnitOfWork>();
-        return (repo, purchaseReturnRepo, uow);
+        return (repo, payableRepo, purchaseReturnRepo, uow);
     }
 
     private static CancelWithholdingHandler BuildHandler(
         Mock<IPurchaseInvoiceRepository> repo,
+        Mock<IAccountsPayableRepository> payableRepo,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow
     )
     {
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
         return new CancelWithholdingHandler(
             repo.Object,
+            payableRepo.Object,
             purchaseReturnRepo.Object,
             uow.Object,
             tenant.Object,
+            company.Object,
             user.Object
         );
     }
@@ -107,13 +115,13 @@ public sealed class CancelWithholdingHandlerTests
     [Fact]
     public async Task Anulacion_valida_cancela_la_retencion()
     {
-        var (repo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, purchaseReturnRepo, uow) = BuildMocks();
         var wh = CreateIssuedWithholding();
         SetupWithholding(repo, wh);
         repo.Setup(r => r.GetByIdAsync(TenantId, PurchaseInvoiceId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseInvoice?)null);
 
-        var handler = BuildHandler(repo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelWithholdingCommand(wh.Id, "Emitida por error"),
             CancellationToken.None
@@ -127,13 +135,13 @@ public sealed class CancelWithholdingHandlerTests
     [Fact]
     public async Task Anulacion_valida_adquiere_Lock_A_por_el_PurchaseInvoiceId_de_la_retencion()
     {
-        var (repo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, purchaseReturnRepo, uow) = BuildMocks();
         var wh = CreateIssuedWithholding();
         SetupWithholding(repo, wh);
         repo.Setup(r => r.GetByIdAsync(TenantId, PurchaseInvoiceId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseInvoice?)null);
 
-        var handler = BuildHandler(repo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, purchaseReturnRepo, uow);
         await handler.Handle(
             new CancelWithholdingCommand(wh.Id, "Emitida por error"),
             CancellationToken.None
@@ -161,7 +169,7 @@ public sealed class CancelWithholdingHandlerTests
     [Fact]
     public async Task Anulacion_sobre_retencion_inexistente_retorna_NotFound_y_revierte_la_transaccion_abierta()
     {
-        var (repo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, purchaseReturnRepo, uow) = BuildMocks();
         var missingId = Guid.NewGuid();
         repo.Setup(r =>
                 r.GetWithholdingPurchaseInvoiceIdAsync(
@@ -172,7 +180,7 @@ public sealed class CancelWithholdingHandlerTests
             )
             .ReturnsAsync((Guid?)null);
 
-        var handler = BuildHandler(repo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelWithholdingCommand(missingId, "Motivo"),
             CancellationToken.None
@@ -197,12 +205,12 @@ public sealed class CancelWithholdingHandlerTests
     [Fact]
     public async Task Anulacion_de_retencion_ya_cancelada_retorna_ValidationFailure_y_hace_rollback()
     {
-        var (repo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, purchaseReturnRepo, uow) = BuildMocks();
         var wh = CreateIssuedWithholding();
         wh.Cancel("Primera anulación", UserId);
         SetupWithholding(repo, wh);
 
-        var handler = BuildHandler(repo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelWithholdingCommand(wh.Id, "Segunda anulación"),
             CancellationToken.None
@@ -222,7 +230,7 @@ public sealed class CancelWithholdingHandlerTests
     [Fact]
     public async Task Orden_transaccional_BeginTx_descubrimiento_LockA_recarga_Cancel_SaveChanges_Commit()
     {
-        var (repo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, purchaseReturnRepo, uow) = BuildMocks();
         var wh = CreateIssuedWithholding();
 
         var sequence = new MockSequence();
@@ -260,7 +268,7 @@ public sealed class CancelWithholdingHandlerTests
             .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(repo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelWithholdingCommand(wh.Id, "Motivo"),
             CancellationToken.None
@@ -279,7 +287,7 @@ public sealed class CancelWithholdingHandlerTests
     [Fact]
     public async Task Estado_ya_cancelado_detectado_solo_en_la_recarga_post_lock_rechaza_y_hace_rollback()
     {
-        var (repo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, purchaseReturnRepo, uow) = BuildMocks();
         var wh = CreateIssuedWithholding();
 
         repo.Setup(r =>
@@ -296,7 +304,7 @@ public sealed class CancelWithholdingHandlerTests
         repo.Setup(r => r.GetWithholdingByIdAsync(TenantId, wh.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(wh);
 
-        var handler = BuildHandler(repo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelWithholdingCommand(wh.Id, "Segunda anulación concurrente"),
             CancellationToken.None

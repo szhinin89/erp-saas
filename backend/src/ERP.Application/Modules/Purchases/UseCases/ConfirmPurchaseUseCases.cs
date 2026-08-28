@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
@@ -8,6 +9,7 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
@@ -42,6 +44,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly ISriTaxResolver _tax;
     private readonly IPostingEngine _postingEngine;
     private readonly IPricingResolver _pricingResolver;
+    private readonly IAccountsPayableService _payables;
     private readonly ILogger<ConfirmPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -56,6 +59,7 @@ public sealed class ConfirmPurchaseHandler
         ISriTaxResolver tax,
         IPostingEngine postingEngine,
         IPricingResolver pricingResolver,
+        IAccountsPayableService payables,
         ILogger<ConfirmPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -70,6 +74,7 @@ public sealed class ConfirmPurchaseHandler
         _tax = tax;
         _postingEngine = postingEngine;
         _pricingResolver = pricingResolver;
+        _payables = payables;
         _logger = logger;
         _t = t;
         _c = c;
@@ -344,19 +349,52 @@ public sealed class ConfirmPurchaseHandler
             );
         }
 
-        // ── STEP 4: Cuenta por pagar ────────────────────────────────────
+        // ── STEP 4: Cuenta por pagar (PAYABLES-PURCHASE-MIGRATION-10) ────
+        // AccountsPayable reemplaza a PurchasePayable — única fuente de saldo/CxP, ver
+        // AccountsPayable.cs. StageFromOriginAsync solo deja la CxP en staging (nunca comitea por
+        // su cuenta): se persiste atómicamente junto con el resto de la confirmación en el
+        // SaveChangesWithSequenceRetryAsync de STEP 7 (mismo criterio transaccional que el
+        // PurchasePayable original, que tampoco comiteaba por separado — _repo.TrackPayable solo
+        // agregaba al ChangeTracker). Un fallo aquí (p. ej. cronograma inválido) aborta la
+        // confirmación completa — "hardening": nunca un warning silencioso para CxP obligatoria.
         if (inv.GrandTotal > 0)
         {
-            var payable = PurchasePayable.Create(
-                tid,
-                cid,
-                inv.Id,
-                inv.SupplierId,
-                inv.GrandTotal,
-                uid
-            );
-            payable.GenerateInstallments(inv.PaymentSchedules);
-            _repo.TrackPayable(payable);
+            try
+            {
+                await _payables.StageFromOriginAsync(
+                    new CreateAccountsPayableFromOriginRequest(
+                        tid,
+                        cid,
+                        inv.BranchId,
+                        inv.SupplierId,
+                        AccountsPayableOriginType.PurchaseInvoice,
+                        inv.Id,
+                        inv.DocTypeCode,
+                        inv.InvoiceNumber,
+                        inv.IssueDate,
+                        inv.IssueDate,
+                        inv.PaymentSchedules
+                            .Select(s => new AccountsPayableInstallmentInput(
+                                s.InstallmentNumber,
+                                s.DueDate,
+                                s.Amount
+                            ))
+                            .ToList()
+                    ),
+                    uid,
+                    ct
+                );
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "No se pudo generar la cuenta por pagar para la compra {InvoiceId}: {Reason}",
+                    inv.Id,
+                    ex.Message
+                );
+                return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+            }
         }
 
         // ── STEP 5: Actualizar precio base del ítem (SSOT, Motor de Pricing) ──

@@ -7,12 +7,15 @@ using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
+using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -232,17 +235,23 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         inv.ReplaceLines(new[] { line }, _userId);
         inv.Confirm(_userId);
 
-        var payable = PurchasePayable.Create(
+        var payable = AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            inv.Id,
+            _branchId,
             _supplierId,
-            inv.ConfirmedGrandTotal ?? amount,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
             _userId
         );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), inv.ConfirmedGrandTotal ?? amount);
 
         db.PurchaseInvoices.Add(inv);
-        db.Set<PurchasePayable>().Add(payable);
+        db.Set<AccountsPayable>().Add(payable);
         await db.SaveChangesAsync();
         return new SeededInvoice(inv.Id, payable.Id);
     }
@@ -290,14 +299,20 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         inv.Confirm(_userId);
         var confirmedLine = inv.Lines.Single();
 
-        var payable = PurchasePayable.Create(
+        var payable = AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            inv.Id,
+            _branchId,
             _supplierId,
-            grandTotal,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
             _userId
         );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), grandTotal);
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, _userId);
 
@@ -334,7 +349,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         var credit = ret.Authorize(
             Random.Shared.Next(1, 99999999).ToString("D8"),
             snapshot,
-            balanceDueBeforeApplication: payable.BalanceDue,
+            balanceDueBeforeApplication: payable.OutstandingAmount,
             inv.CurrencyCode,
             hasIssuedWithholding: false,
             _userId,
@@ -345,7 +360,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             payable.ApplyReturnCredit(ret.AppliedToPayableAmount.Value, _userId);
 
         db.PurchaseInvoices.Add(inv);
-        db.Set<PurchasePayable>().Add(payable);
+        db.Set<AccountsPayable>().Add(payable);
         db.PurchaseReturns.Add(ret);
         if (credit is not null)
             db.Set<SupplierCredit>().Add(credit);
@@ -359,6 +374,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     private CancelPurchaseHandler BuildCancelPurchaseHandler(ErpDbContext db) =>
         new(
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new StockRepository(
                 db,
                 new FixedCurrentCompany(() => _companyId),
@@ -376,6 +392,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         new(
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
             new StockRepository(
                 db,
@@ -391,7 +408,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     private ApplySupplierCreditHandler BuildApplyHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
@@ -403,7 +420,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     private ReverseSupplierCreditApplicationHandler BuildReverseApplyHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
@@ -425,7 +442,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     private RegisterPaymentCommandHandler BuildRegisterPaymentHandler(ErpDbContext db) =>
         new(
             new PaymentRepository(db),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
@@ -592,8 +609,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         // SC-014 (§5.1 caso 5, diseño: "callejón sin salida documentado").
         await using (var db = CreateContext())
         {
-            var payable = await db.Set<PurchasePayable>().FirstAsync(x => x.Id == target.PayableId);
-            payable.CancelPayable();
+            var payable = await db
+                .Set<AccountsPayable>()
+                .Include(x => x.Installments)
+                .FirstAsync(x => x.Id == target.PayableId);
+            payable.Cancel(_userId);
             await db.SaveChangesAsync();
         }
 

@@ -20,6 +20,32 @@ public interface IAccountsPayableRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// PAYABLES-PURCHASE-MIGRATION-10 — descubrimiento mínimo, sin tracking, del
+    /// <see cref="AccountsPayable.OriginId"/> de una CxP (reemplaza
+    /// <c>IPurchasePayableRepository.GetPurchaseInvoiceIdAsync</c>), usado únicamente para
+    /// determinar qué Lock A adquirir ANTES de la recarga autoritativa. Deliberadamente no rastrea
+    /// la entidad — así la posterior llamada a <see cref="GetByIdAsync"/> (ya tracking) ejecutada
+    /// después del lock garantiza una lectura fresca real desde PostgreSQL.
+    /// </summary>
+    Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Listado paginado filtrado por origen (p. ej. solo <c>PurchaseInvoice</c>, para
+    /// <c>PurchasePayablesController</c>) — necesario para que el usuario consulte/seleccione qué
+    /// cuenta por pagar liquidar antes de registrar un pago.
+    /// </summary>
+    Task<(IReadOnlyList<AccountsPayable> Items, int Total)> GetPagedAsync(
+        Guid tenantId,
+        Guid companyId,
+        AccountsPayableOriginType originType,
+        AccountsPayableStatus? status,
+        Guid? supplierId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(AccountsPayable payable, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

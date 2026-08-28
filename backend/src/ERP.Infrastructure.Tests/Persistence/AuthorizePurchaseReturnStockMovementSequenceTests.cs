@@ -6,10 +6,13 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
+using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -216,15 +219,21 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         inv.Confirm(_userId);
         db.PurchaseInvoices.Add(inv);
 
-        var payable = Domain.Modules.Purchases.Entities.PurchasePayable.Create(
+        var payable = AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            inv.Id,
+            _branchId,
             _supplierId,
-            inv.GrandTotal,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
             _userId
         );
-        db.Set<Domain.Modules.Purchases.Entities.PurchasePayable>().Add(payable);
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), inv.GrandTotal);
+        db.Set<AccountsPayable>().Add(payable);
         await db.SaveChangesAsync();
 
         var stockRepo = new StockRepository(
@@ -315,6 +324,7 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         var handler = new AuthorizePurchaseReturnHandler(
             returnRepo,
             invoiceRepo,
+            new AccountsPayableRepository(db),
             sequenceRepo,
             stockRepo,
             creditRepo,

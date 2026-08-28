@@ -309,9 +309,6 @@ public class ErpDbContext : DbContext
         Set<PurchasePaymentSchedule>();
     public DbSet<PurchaseInvoiceTaxSummary> PurchaseInvoiceTaxSummaries =>
         Set<PurchaseInvoiceTaxSummary>();
-    public DbSet<PurchasePayable> PurchasePayables => Set<PurchasePayable>();
-    public DbSet<PurchasePayableInstallment> PurchasePayableInstallments =>
-        Set<PurchasePayableInstallment>();
     public DbSet<PurchaseCommunication> PurchaseCommunications => Set<PurchaseCommunication>();
     public DbSet<PurchaseInvoiceAudit> PurchaseInvoiceAudits => Set<PurchaseInvoiceAudit>();
     public DbSet<PurchaseLinePvpAudit> PurchaseLinePvpAudits => Set<PurchaseLinePvpAudit>();

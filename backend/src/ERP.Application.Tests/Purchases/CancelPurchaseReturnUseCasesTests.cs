@@ -4,6 +4,9 @@ using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -33,7 +36,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
     private sealed record Fixture(
         PurchaseInvoice Invoice,
         PurchaseInvoiceDetail Line,
-        PurchasePayable Payable,
+        AccountsPayable Payable,
         PurchaseReturn Return
     );
 
@@ -72,13 +75,16 @@ public sealed class CancelPurchaseReturnUseCasesTests
         invoice.Confirm(UserId);
         var confirmedLine = invoice.Lines.Single();
 
-        var payable = PurchasePayable.Create(
-            TenantId,
-            CompanyId,
-            invoice.Id,
-            SupplierId,
-            invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal,
-            UserId
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000001",
+            invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(
+            1,
+            invoice.IssueDate.AddDays(30),
+            invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal
         );
 
         var purchaseReturn = PurchaseReturn.CreateDraft(
@@ -132,7 +138,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
         var credit = f.Return.Authorize(
             "00000001",
             snapshot,
-            balanceDueBeforeApplication: f.Payable.BalanceDue,
+            balanceDueBeforeApplication: f.Payable.OutstandingAmount,
             f.Invoice.CurrencyCode,
             hasIssuedWithholding: false,
             UserId,
@@ -149,6 +155,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
     {
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
         public Mock<IStockRepository> StockRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
@@ -173,10 +180,12 @@ public sealed class CancelPurchaseReturnUseCasesTests
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
-            InvoiceRepo
+            PayableRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(
+                    r.GetByOriginAsync(
                         TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.PurchaseInvoice,
                         f.Invoice.Id,
                         It.IsAny<CancellationToken>()
                     )
@@ -281,6 +290,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
             return new CancelPurchaseReturnHandler(
                 ReturnRepo.Object,
                 InvoiceRepo.Object,
+                PayableRepo.Object,
                 CreditRepo.Object,
                 StockRepo.Object,
                 Uow.Object,
@@ -328,7 +338,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
                 ),
             Times.Never
         );
-        f.Payable.ReturnAppliedAmount.Should().Be(0m);
+        f.Payable.ReturnCreditAmount.Should().Be(0m);
     }
 
     [Fact]
@@ -336,7 +346,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
     {
         var (f, credit) = BuildAuthorizedFixture(paidAmount: 0m);
         credit.Should().BeNull("factura impaga no genera excedente de crédito");
-        var appliedBefore = f.Payable.ReturnAppliedAmount;
+        var appliedBefore = f.Payable.ReturnCreditAmount;
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
@@ -351,7 +361,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         f.Return.Status.Should().Be(PurchaseReturnStatus.Cancelled);
-        f.Payable.ReturnAppliedAmount.Should()
+        f.Payable.ReturnCreditAmount.Should()
             .Be(0m, "la reversa debe deshacer exactamente lo aplicado");
         appliedBefore.Should().BeGreaterThan(0m);
         m.AppendedQuantities.Should().ContainSingle().Which.Should().Be(10m);

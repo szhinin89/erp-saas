@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -25,6 +26,13 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
     {
         var m = new Mock<ICurrentTenant>();
         m.SetupGet(x => x.TenantId).Returns(tenantId);
+        return m.Object;
+    }
+
+    private static ICurrentCompany FixedCompany()
+    {
+        var m = new Mock<ICurrentCompany>();
+        m.SetupGet(x => x.CompanyId).Returns(CompanyId);
         return m.Object;
     }
 
@@ -63,8 +71,10 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
         var handler = new GetPurchaseCreditNoteByIdHandler(
             repo.Object,
             invoiceRepo.Object,
+            Mock.Of<IAccountsPayableRepository>(),
             receptionRepo.Object,
-            FixedTenant(TenantId)
+            FixedTenant(TenantId),
+            FixedCompany()
         );
 
         var result = await handler.Handle(
@@ -95,8 +105,10 @@ public sealed class PurchaseCreditNoteQueryUseCasesTests
         var handler = new GetPurchaseCreditNoteByIdHandler(
             repo.Object,
             invoiceRepo.Object,
+            Mock.Of<IAccountsPayableRepository>(),
             receptionRepo.Object,
-            FixedTenant(otroTenantId)
+            FixedTenant(otroTenantId),
+            FixedCompany()
         );
 
         var result = await handler.Handle(

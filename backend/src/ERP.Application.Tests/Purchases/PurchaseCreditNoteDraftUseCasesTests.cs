@@ -1,6 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -27,7 +30,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     private static readonly Guid PaymentTermId = Guid.NewGuid();
     private static readonly Guid WarehouseId = Guid.NewGuid();
 
-    private sealed record Fixture(PurchaseInvoice Invoice, PurchasePayable Payable);
+    private sealed record Fixture(PurchaseInvoice Invoice, AccountsPayable Payable);
 
     private static Fixture BuildFixture(decimal totalAmount = 1000m, decimal paidAmount = 0m)
     {
@@ -62,7 +65,13 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         invoice.ReplaceLines(new[] { line }, UserId);
         invoice.Confirm(UserId);
 
-        var payable = PurchasePayable.Create(TenantId, CompanyId, invoice.Id, SupplierId, totalAmount, UserId);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000001",
+            invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount);
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, UserId);
 
@@ -99,6 +108,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     {
         public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
@@ -107,9 +117,15 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
-            InvoiceRepo
+            PayableRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>())
+                    r.GetByOriginAsync(
+                        TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.PurchaseInvoice,
+                        f.Invoice.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Payable);
             CreditNoteRepo
@@ -152,6 +168,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             new(
                 CreditNoteRepo.Object,
                 InvoiceRepo.Object,
+                PayableRepo.Object,
                 ReceptionRepo.Object,
                 DbEx.Object,
                 FixedTenant(),
@@ -161,7 +178,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             );
 
         public UpdatePurchaseCreditNoteDraftHandler BuildUpdateHandler() =>
-            new(CreditNoteRepo.Object, InvoiceRepo.Object, DbEx.Object, FixedTenant(), FixedCompany(), FixedUser());
+            new(CreditNoteRepo.Object, InvoiceRepo.Object, PayableRepo.Object, DbEx.Object, FixedTenant(), FixedCompany(), FixedUser());
     }
 
     private static ICurrentTenant FixedTenant()
@@ -284,7 +301,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         result.Value.Status.Should().Be("Draft");
         result.Value.AppliedToPayableAmount.Should().BeNull();
         result.Value.LinkedPurchaseReturnId.Should().BeNull();
-        f.Payable.BalanceDue.Should().Be(f.Payable.TotalAmount); // CxP intacta
+        f.Payable.OutstandingAmount.Should().Be(f.Payable.TotalAmount); // CxP intacta
     }
 
     // ── 2. CreateDraft con ReceptionDocumentId válido ───────────────────

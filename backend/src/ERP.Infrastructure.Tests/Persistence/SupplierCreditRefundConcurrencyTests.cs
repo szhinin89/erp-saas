@@ -10,6 +10,8 @@ using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Tenants.Entities;
@@ -337,14 +339,20 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         sourceInv.ReplaceLines(new[] { line }, _userId);
         sourceInv.Confirm(_userId);
 
-        var payable = PurchasePayable.Create(
+        var payable = AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            sourceInv.Id,
+            _branchId,
             _supplierId,
-            sourceInv.GrandTotal,
+            AccountsPayableOriginType.PurchaseInvoice,
+            sourceInv.Id,
+            "01",
+            sourceInv.InvoiceNumber,
+            sourceInv.IssueDate,
+            sourceInv.IssueDate,
             _userId
         );
+        payable.AddInstallment(1, sourceInv.IssueDate.AddDays(30), sourceInv.GrandTotal);
         payable.RegisterPayment(payable.TotalAmount, _userId);
 
         var ret = PurchaseReturn.CreateDraft(
@@ -390,7 +398,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         );
 
         db.PurchaseInvoices.Add(sourceInv);
-        db.Set<PurchasePayable>().Add(payable);
+        db.Set<AccountsPayable>().Add(payable);
         db.PurchaseReturns.Add(ret);
         db.Set<SupplierCredit>().Add(credit!);
         await db.SaveChangesAsync();

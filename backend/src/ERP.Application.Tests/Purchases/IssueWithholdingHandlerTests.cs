@@ -4,6 +4,7 @@ using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -103,6 +104,7 @@ public sealed class IssueWithholdingHandlerTests
 
         var handler = new IssueWithholdingHandler(
             repo.Object,
+            Mock.Of<IAccountsPayableRepository>(),
             roleRepo.Object,
             Mock.Of<IRetentionCodeResolver>(),
             Mock.Of<IEmissionPointRepository>(),

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
@@ -12,6 +13,8 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.ValueObjects;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -222,7 +225,8 @@ public sealed class ConfirmPurchaseHandlerTests
     private (
         ConfirmPurchaseHandler handler,
         Mock<IPurchaseInvoiceRepository> repo,
-        Mock<IStockRepository> stockRepo
+        Mock<IStockRepository> stockRepo,
+        Mock<IAccountsPayableService> payables
     ) BuildHandler(
         PurchaseInvoice inv,
         bool irbpnrConfigured = false,
@@ -441,6 +445,29 @@ public sealed class ConfirmPurchaseHandlerTests
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultOperationalPreferences(allowConfirmWithoutReceptionXml));
 
+        var payables = new Mock<IAccountsPayableService>();
+        payables
+            .Setup(p =>
+                p.StageFromOriginAsync(
+                    It.IsAny<CreateAccountsPayableFromOriginRequest>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                (CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) =>
+                {
+                    var payable = AccountsPayable.CreateFromOrigin(
+                        req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                        req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                        req.IssueDate, req.AccountingDate, createdBy
+                    );
+                    foreach (var installment in req.Installments)
+                        payable.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+                    return payable;
+                }
+            );
+
         var handler = new ConfirmPurchaseHandler(
             repo.Object,
             stockRepo.Object,
@@ -449,6 +476,7 @@ public sealed class ConfirmPurchaseHandlerTests
             tax.Object,
             postingEngine.Object,
             pricingResolver.Object,
+            payables.Object,
             logger.Object,
             tenant.Object,
             company.Object,
@@ -456,7 +484,7 @@ public sealed class ConfirmPurchaseHandlerTests
             preferences.Object
         );
 
-        return (handler, repo, stockRepo);
+        return (handler, repo, stockRepo, payables);
     }
 
     /// <summary>Defaults que preservan el comportamiento vigente antes de CONFIG-DYNAMIC-OPERATIONS-02 (AllowConfirmWithoutReceptionXml=true → sin bloqueo, igual que siempre).</summary>
@@ -496,7 +524,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_single_line_succeeds_and_creates_stock_movement()
     {
         var inv = CreateDraftInvoice(1);
-        var (handler, repo, stockRepo) = BuildHandler(inv);
+        var (handler, repo, stockRepo, payables) = BuildHandler(inv);
         var total = ExpectedGrandTotal(inv);
 
         var schedule = new List<ConfirmScheduleInput>
@@ -549,7 +577,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_rechaza_sin_recepcion_xml_si_la_preferencia_no_lo_permite()
     {
         var inv = CreateDraftInvoice(1);
-        var (handler, repo, stockRepo) = BuildHandler(
+        var (handler, repo, stockRepo, payables) = BuildHandler(
             inv,
             allowConfirmWithoutReceptionXml: false
         );
@@ -588,7 +616,7 @@ public sealed class ConfirmPurchaseHandlerTests
             conversionFactor: 12m,
             uomCode: "PACA"
         );
-        var (handler, _, stockRepo) = BuildHandler(
+        var (handler, _, stockRepo, _) = BuildHandler(
             inv,
             itemForXmlLines: item,
             allowConfirmWithoutReceptionXml: false
@@ -607,7 +635,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_con_presentacion_de_compra_mueve_inventario_en_unidad_base()
     {
         var inv = CreateDraftInvoiceWithPackagedLine();
-        var (handler, _, stockRepo) = BuildHandler(inv);
+        var (handler, _, stockRepo, _) = BuildHandler(inv);
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
 
@@ -641,7 +669,7 @@ public sealed class ConfirmPurchaseHandlerTests
     {
         var item = CreateItem(tracksStock: true);
         var inv = CreateXmlDraftInvoice(item.Id);
-        var (handler, _, stockRepo) = BuildHandler(inv, itemForXmlLines: item);
+        var (handler, _, stockRepo, _) = BuildHandler(inv, itemForXmlLines: item);
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
 
@@ -682,7 +710,7 @@ public sealed class ConfirmPurchaseHandlerTests
             conversionFactor: 12m,
             uomCode: "PACA"
         );
-        var (handler, _, stockRepo) = BuildHandler(inv, itemForXmlLines: item);
+        var (handler, _, stockRepo, _) = BuildHandler(inv, itemForXmlLines: item);
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
 
@@ -716,7 +744,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_two_lines_same_item_creates_two_stock_movements()
     {
         var inv = CreateDraftInvoice(2, sameItem: true);
-        var (handler, _, stockRepo) = BuildHandler(inv);
+        var (handler, _, stockRepo, _) = BuildHandler(inv);
         var total = ExpectedGrandTotal(inv);
 
         var schedule = new List<ConfirmScheduleInput>
@@ -757,7 +785,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_two_lines_different_items_creates_stock_per_item()
     {
         var inv = CreateDraftInvoice(2, sameItem: false);
-        var (handler, _, stockRepo) = BuildHandler(inv);
+        var (handler, _, stockRepo, _) = BuildHandler(inv);
         var total = ExpectedGrandTotal(inv);
 
         var schedule = new List<ConfirmScheduleInput>
@@ -820,7 +848,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_populates_tax_summaries_from_lines()
     {
         var inv = CreateDraftInvoice(1);
-        var (handler, _, _) = BuildHandler(inv);
+        var (handler, _, _, _) = BuildHandler(inv);
         var total = ExpectedGrandTotal(inv);
 
         var schedule = new List<ConfirmScheduleInput>
@@ -867,7 +895,7 @@ public sealed class ConfirmPurchaseHandlerTests
         // configurado", vía irbpnrConfigured: false por defecto en BuildHandler).
         var inv = CreateDraftInvoice(1);
         AttachIrbpnr(inv.Lines[0], 0.48m);
-        var (handler, _, stockRepo) = BuildHandler(inv);
+        var (handler, _, stockRepo, _) = BuildHandler(inv);
 
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),
@@ -911,7 +939,7 @@ public sealed class ConfirmPurchaseHandlerTests
         var inv = CreateDraftInvoice(1);
         var line = inv.Lines[0];
         AttachIrbpnr(line, 0.48m);
-        var (handler, repo, _) = BuildHandler(inv, irbpnrConfigured: true);
+        var (handler, _, _, payables) = BuildHandler(inv, irbpnrConfigured: true);
 
         var expectedGrandTotal = ExpectedGrandTotal(inv) + 0.48m;
         var schedule = new List<ConfirmScheduleInput>
@@ -928,8 +956,15 @@ public sealed class ConfirmPurchaseHandlerTests
         inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
         result.Value!.GrandTotal.Should().Be(expectedGrandTotal);
         line.IrbpnrAmount.Should().Be(0.48m);
-        repo.Verify(
-            r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount == expectedGrandTotal)),
+        payables.Verify(
+            p =>
+                p.StageFromOriginAsync(
+                    It.Is<CreateAccountsPayableFromOriginRequest>(req =>
+                        req.Installments.Sum(i => i.Amount) == expectedGrandTotal
+                    ),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -939,7 +974,7 @@ public sealed class ConfirmPurchaseHandlerTests
     {
         // Regresión — el guard nuevo no debe afectar compras sin IRBPNR (mayoría de los casos).
         var inv = CreateDraftInvoice(1);
-        var (handler, _, _) = BuildHandler(inv);
+        var (handler, _, _, _) = BuildHandler(inv);
 
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),
@@ -958,7 +993,7 @@ public sealed class ConfirmPurchaseHandlerTests
             .ReturnsAsync((PurchaseInvoice?)null);
 
         var inv = CreateDraftInvoice(1);
-        var (handler, _, _) = BuildHandler(inv);
+        var (handler, _, _, _) = BuildHandler(inv);
 
         var fakeId = Guid.NewGuid();
         var repoOverride = new Mock<IPurchaseInvoiceRepository>();
@@ -986,6 +1021,7 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<ISriTaxResolver>().Object,
             new Mock<IPostingEngine>().Object,
             new Mock<IPricingResolver>().Object,
+            new Mock<IAccountsPayableService>().Object,
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
             tenant.Object,
             company.Object,
@@ -1003,7 +1039,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_clears_schedule_tracking_before_generating()
     {
         var inv = CreateDraftInvoice(1);
-        var (handler, repo, _) = BuildHandler(inv);
+        var (handler, repo, _, _) = BuildHandler(inv);
         var total = ExpectedGrandTotal(inv);
 
         var schedule = new List<ConfirmScheduleInput>
@@ -1022,7 +1058,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_creates_payable_with_correct_total()
     {
         var inv = CreateDraftInvoice(1);
-        var (handler, repo, _) = BuildHandler(inv);
+        var (handler, _, _, payables) = BuildHandler(inv);
         var total = ExpectedGrandTotal(inv);
 
         var schedule = new List<ConfirmScheduleInput>
@@ -1031,8 +1067,15 @@ public sealed class ConfirmPurchaseHandlerTests
         };
         await handler.Handle(new ConfirmPurchaseCommand(inv.Id, schedule), CancellationToken.None);
 
-        repo.Verify(
-            r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount > 0)),
+        payables.Verify(
+            p =>
+                p.StageFromOriginAsync(
+                    It.Is<CreateAccountsPayableFromOriginRequest>(req =>
+                        req.Installments.Sum(i => i.Amount) > 0
+                    ),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -1041,7 +1084,7 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_generates_schedule_automatically_when_no_schedule_sent()
     {
         var inv = CreateDraftInvoice(1);
-        var (handler, _, _) = BuildHandler(inv);
+        var (handler, _, _, _) = BuildHandler(inv);
 
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),
@@ -1127,7 +1170,7 @@ public sealed class ConfirmPurchaseHandlerTests
         inv.Lines.Should().HaveCount(3);
 
         // 2. Confirmar (sin schedule explícito → auto-genera)
-        var (handler, repo, stockRepo) = BuildHandler(inv);
+        var (handler, repo, stockRepo, payables) = BuildHandler(inv);
 
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),
@@ -1216,8 +1259,15 @@ public sealed class ConfirmPurchaseHandlerTests
         );
 
         // 5. Payable creado
-        repo.Verify(
-            r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount > 0)),
+        payables.Verify(
+            p =>
+                p.StageFromOriginAsync(
+                    It.Is<CreateAccountsPayableFromOriginRequest>(req =>
+                        req.Installments.Sum(i => i.Amount) > 0
+                    ),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
 
@@ -1249,7 +1299,7 @@ public sealed class ConfirmPurchaseHandlerTests
         // en vez de SIXPACK X6 -> LandedUnitCost muy por encima del PVP (margen ≈ -373.05%).
         var item = CreateItem(tracksStock: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
-        var (handler, _, stockRepo) = BuildHandler(
+        var (handler, _, stockRepo, _) = BuildHandler(
             inv,
             itemForMarginGuard: item,
             marginGuardSalePrice: 1.08m
@@ -1294,7 +1344,7 @@ public sealed class ConfirmPurchaseHandlerTests
         // Mismo producto cargado como SIXPACK X6 -> margen ≈ 21.16%, no bloquea.
         var item = CreateItem(tracksStock: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 0.8515m);
-        var (handler, _, stockRepo) = BuildHandler(
+        var (handler, _, stockRepo, _) = BuildHandler(
             inv,
             itemForMarginGuard: item,
             marginGuardSalePrice: 1.08m
@@ -1338,7 +1388,7 @@ public sealed class ConfirmPurchaseHandlerTests
         // el guard no puede evaluar margen -> no bloquea.
         var item = CreateItem(tracksStock: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
-        var (handler, _, _) = BuildHandler(inv, itemForMarginGuard: item, marginGuardSalePrice: null);
+        var (handler, _, _, _) = BuildHandler(inv, itemForMarginGuard: item, marginGuardSalePrice: null);
 
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),
@@ -1353,7 +1403,7 @@ public sealed class ConfirmPurchaseHandlerTests
     {
         var item = CreateItem(tracksStock: false);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 5.1090m);
-        var (handler, _, _) = BuildHandler(
+        var (handler, _, _, _) = BuildHandler(
             inv,
             itemForMarginGuard: item,
             marginGuardSalePrice: 1.08m
@@ -1373,7 +1423,7 @@ public sealed class ConfirmPurchaseHandlerTests
         // marginPct = -10% (costo 1.10 vs venta 1.00) — leve, no cruza el umbral de -50%.
         var item = CreateItem(tracksStock: true);
         var inv = CreateDraftInvoiceWithCustomLine(item.Id, quantity: 1m, unitPrice: 1.10m);
-        var (handler, _, _) = BuildHandler(
+        var (handler, _, _, _) = BuildHandler(
             inv,
             itemForMarginGuard: item,
             marginGuardSalePrice: 1.00m
@@ -1419,7 +1469,7 @@ public sealed class ConfirmPurchaseHandlerTests
             warehouseId: null
         );
         inv.ReplaceLines([line], UserId);
-        var (handler, _, _) = BuildHandler(inv);
+        var (handler, _, _, _) = BuildHandler(inv);
 
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),

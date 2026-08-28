@@ -1,6 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Finance.UseCases;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -26,7 +29,7 @@ public sealed class ApplySupplierCreditUseCasesTests
 
     private sealed record Fixture(
         SupplierCredit Credit,
-        PurchasePayable Payable,
+        AccountsPayable Payable,
         PurchaseInvoice Invoice
     );
 
@@ -50,16 +53,22 @@ public sealed class ApplySupplierCreditUseCasesTests
             UserId
         );
 
-        var payable = PurchasePayable.Create(
+        var payable = AccountsPayable.CreateFromOrigin(
             TenantId,
             CompanyId,
-            PurchaseInvoiceId,
+            BranchId,
             supplierIdOverride ?? SupplierId,
-            payableTotal,
+            AccountsPayableOriginType.PurchaseInvoice,
+            PurchaseInvoiceId,
+            "01",
+            "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             UserId
         );
+        payable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), payableTotal);
         if (payableCancelled)
-            payable.CancelPayable();
+            payable.Cancel(UserId);
 
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -85,7 +94,7 @@ public sealed class ApplySupplierCreditUseCasesTests
     private sealed class Mocks
     {
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
-        public Mock<IPurchasePayableRepository> PayableRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
@@ -95,7 +104,7 @@ public sealed class ApplySupplierCreditUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+                    r.GetOriginIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(PurchaseInvoiceId);
             PayableRepo
@@ -140,8 +149,8 @@ public sealed class ApplySupplierCreditUseCasesTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.AvailableAmount.Should().Be(40m);
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(60m);
-        f.Payable.BalanceDue.Should().Be(440m);
+        f.Payable.SupplierCreditAmount.Should().Be(60m);
+        f.Payable.OutstandingAmount.Should().Be(440m);
     }
 
     [Fact]
@@ -158,7 +167,7 @@ public sealed class ApplySupplierCreditUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         f.Credit.AvailableAmount.Should().Be(50m);
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(0m);
+        f.Payable.SupplierCreditAmount.Should().Be(0m);
     }
 
     [Fact]
@@ -228,7 +237,7 @@ public sealed class ApplySupplierCreditUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Payable.SupplierCreditAppliedAmount.Should()
+        f.Payable.SupplierCreditAmount.Should()
             .Be(0m, "no debe mutar el destino cuando el crédito no existe");
         m.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -257,7 +266,7 @@ public sealed class ApplySupplierCreditUseCasesTests
         retry.Value!.AvailableAmount.Should().Be(40m);
         f.Credit.Movements.Should()
             .HaveCount(1, "no debe duplicar el movimiento en un reintento idempotente");
-        f.Payable.SupplierCreditAppliedAmount.Should()
+        f.Payable.SupplierCreditAmount.Should()
             .Be(60m, "no debe duplicar el efecto sobre el destino");
     }
 

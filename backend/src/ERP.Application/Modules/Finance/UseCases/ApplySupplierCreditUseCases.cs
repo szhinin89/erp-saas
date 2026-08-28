@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
@@ -67,7 +69,7 @@ public sealed class ApplySupplierCreditHandler
     : IRequestHandler<ApplySupplierCreditCommand, Result<SupplierCreditDto>>
 {
     private readonly ISupplierCreditRepository _creditRepo;
-    private readonly IPurchasePayableRepository _payableRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IUnitOfWork _uow;
@@ -77,7 +79,7 @@ public sealed class ApplySupplierCreditHandler
 
     public ApplySupplierCreditHandler(
         ISupplierCreditRepository creditRepo,
-        IPurchasePayableRepository payableRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseInvoiceRepository invoiceRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
         IUnitOfWork uow,
@@ -112,7 +114,7 @@ public sealed class ApplySupplierCreditHandler
         await _uow.BeginTransactionAsync(ct);
         try
         {
-            var purchaseInvoiceId = await _payableRepo.GetPurchaseInvoiceIdAsync(
+            var purchaseInvoiceId = await _payableRepo.GetOriginIdAsync(
                 tid,
                 cmd.TargetPurchasePayableId,
                 ct
@@ -173,7 +175,7 @@ public sealed class ApplySupplierCreditHandler
             }
 
             // ── Revalidación bajo lock (§9.3, §12.2) ──
-            if (payable.Status == "cancelled")
+            if (payable.Status == AccountsPayableStatus.Cancelled)
             {
                 await _uow.RollbackAsync(ct);
                 // SC-002
@@ -190,7 +192,7 @@ public sealed class ApplySupplierCreditHandler
                 );
             }
 
-            var invoice = await _invoiceRepo.GetByIdAsync(tid, payable.PurchaseId, ct);
+            var invoice = await _invoiceRepo.GetByIdAsync(tid, payable.OriginId, ct);
             if (invoice is null)
             {
                 await _uow.RollbackAsync(ct);

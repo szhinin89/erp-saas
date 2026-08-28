@@ -49,9 +49,15 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
             .IsConcurrencyToken();
 
         // Derivadas de las cuotas — nunca columnas propias (mismo criterio que
-        // ExpenseDocument.Subtotal/GrandTotal).
+        // ExpenseDocument.Subtotal/GrandTotal). PAYABLES-PURCHASE-MIGRATION-10: los 6 acumuladores
+        // que antes vivían en PurchasePayable (columnas propias) ahora se derivan sumando
+        // AccountsPayableInstallment — decisión funcional: la cuota es la única fuente de saldo.
         builder.Ignore(x => x.TotalAmount);
         builder.Ignore(x => x.PaidAmount);
+        builder.Ignore(x => x.RetainedAmount);
+        builder.Ignore(x => x.ReturnCreditAmount);
+        builder.Ignore(x => x.SupplierCreditAmount);
+        builder.Ignore(x => x.CreditNoteAmount);
         builder.Ignore(x => x.OutstandingAmount);
 
         builder

@@ -5,7 +5,9 @@ using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
 using ERP.Domain.Modules.Finance.Interfaces;
-using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
@@ -18,35 +20,42 @@ namespace ERP.Application.Tests.Finance;
 /// <c>RegisterCollectionCommandHandlerTests</c> (AR). Las reglas de negocio puras (balance,
 /// límites, retención) ya viven en <c>PurchasePayableTests</c>/<c>PaymentTests</c> (Domain).
 ///
-/// P0-02 Fase 3 (Remediación transaccional 02): el handler descubre el <c>PurchaseInvoiceId</c> de
-/// cada <c>PurchasePayable</c> ANTES del lock mediante <c>IPurchasePayableRepository.GetPurchaseInvoiceIdAsync</c>
-/// — una proyección SIN TRACKING (nunca rastrea la entidad) — y solo recarga cada
-/// <c>PurchasePayable</c> completo (vía <c>GetByIdAsync</c>, tracking) DESPUÉS de adquirir todos los
-/// Lock A. Por eso las pruebas de esta clase configuran ambos métodos por separado y, cuando
-/// corresponde, verifican que las mutaciones y guards solo puedan provenir de la instancia
-/// devuelta por <c>GetByIdAsync</c> (la única llamada posterior al lock).
+/// PAYABLES-PURCHASE-MIGRATION-10: migrado de <c>PurchasePayable</c> (eliminado) a
+/// <see cref="AccountsPayable"/> genérico — mismo mecanismo transaccional (descubrimiento sin
+/// tracking del <c>OriginId</c> vía <c>IAccountsPayableRepository.GetOriginIdAsync</c> ANTES del
+/// lock, recarga tracking vía <c>GetByIdAsync</c> DESPUÉS del lock).
 /// </summary>
 public sealed class RegisterPaymentCommandHandlerTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid PurchaseId = Guid.NewGuid();
 
-    private static PurchasePayable CreatePayable(decimal amount = 100m, Guid? purchaseId = null) =>
-        PurchasePayable.Create(
+    private static AccountsPayable CreatePayable(decimal amount = 100m, Guid? purchaseId = null)
+    {
+        var payable = AccountsPayable.CreateFromOrigin(
             TenantId,
             CompanyId,
-            purchaseId ?? PurchaseId,
+            BranchId,
             SupplierId,
-            amount,
+            AccountsPayableOriginType.PurchaseInvoice,
+            purchaseId ?? PurchaseId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 1),
             UserId
         );
+        payable.AddInstallment(1, new DateOnly(2026, 7, 31), amount);
+        return payable;
+    }
 
     private static (
         Mock<IPaymentRepository> payments,
-        Mock<IPurchasePayableRepository> payables,
+        Mock<IAccountsPayableRepository> payables,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<ICompanyFinancialDestinationRepository> financialDestinations,
         Mock<IUnitOfWork> uow,
@@ -56,7 +65,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     ) BuildMocks()
     {
         var payments = new Mock<IPaymentRepository>();
-        var payables = new Mock<IPurchasePayableRepository>();
+        var payables = new Mock<IAccountsPayableRepository>();
         var purchaseReturnRepo = new Mock<IPurchaseReturnRepository>();
         var financialDestinations = new Mock<ICompanyFinancialDestinationRepository>();
         var uow = new Mock<IUnitOfWork>();
@@ -73,7 +82,7 @@ public sealed class RegisterPaymentCommandHandlerTests
 
     private static RegisterPaymentCommandHandler BuildHandler(
         Mock<IPaymentRepository> payments,
-        Mock<IPurchasePayableRepository> payables,
+        Mock<IAccountsPayableRepository> payables,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<ICompanyFinancialDestinationRepository> financialDestinations,
         Mock<IUnitOfWork> uow,
@@ -94,15 +103,15 @@ public sealed class RegisterPaymentCommandHandlerTests
 
     /// <summary>Configura el par completo de mocks (descubrimiento sin tracking + recarga bajo lock) para un único payable.</summary>
     private static void SetupPayable(
-        Mock<IPurchasePayableRepository> payables,
-        PurchasePayable payable
+        Mock<IAccountsPayableRepository> payables,
+        AccountsPayable payable
     )
     {
         payables
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(payable.PurchaseId);
+            .ReturnsAsync(payable.OriginId);
         payables
             .Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(payable);
@@ -138,7 +147,7 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         payable.PaidAmount.Should().Be(60m);
-        payable.BalanceDue.Should().Be(40m);
+        payable.OutstandingAmount.Should().Be(40m);
         payments.Verify(
             p =>
                 p.AddAsync(
@@ -200,25 +209,14 @@ public sealed class RegisterPaymentCommandHandlerTests
     public async Task Pago_con_InstallmentId_lo_propaga_a_la_linea_de_aplicacion_del_pago()
     {
         var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
-        var payable = CreatePayable(300m);
-        var schedule = new List<Domain.Modules.Purchases.Entities.PurchasePaymentSchedule>
-        {
-            Domain.Modules.Purchases.Entities.PurchasePaymentSchedule.Create(
-                PurchaseId,
-                TenantId,
-                1,
-                new DateOnly(2026, 8, 30),
-                150m
-            ),
-            Domain.Modules.Purchases.Entities.PurchasePaymentSchedule.Create(
-                PurchaseId,
-                TenantId,
-                2,
-                new DateOnly(2026, 9, 30),
-                150m
-            ),
-        };
-        payable.GenerateInstallments(schedule);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, PurchaseId,
+            "01", "001-001-000000001",
+            new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 1), UserId
+        );
+        payable.AddInstallment(1, new DateOnly(2026, 8, 30), 150m);
+        payable.AddInstallment(2, new DateOnly(2026, 9, 30), 150m);
         var installmentId = payable.Installments[0].Id;
         SetupPayable(payables, payable);
 
@@ -305,7 +303,7 @@ public sealed class RegisterPaymentCommandHandlerTests
         var missingId = Guid.NewGuid();
         payables
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((Guid?)null);
 
@@ -350,7 +348,7 @@ public sealed class RegisterPaymentCommandHandlerTests
     {
         var (payments, payables, purchaseReturnRepo, financialDestinations, uow, tenant, company, user) = BuildMocks();
         var payable = CreatePayable(100m);
-        payable.CancelPayable();
+        payable.Cancel(UserId);
         SetupPayable(payables, payable);
 
         var handler = BuildHandler(
@@ -400,15 +398,15 @@ public sealed class RegisterPaymentCommandHandlerTests
         payables
             .InSequence(sequence)
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(payable.PurchaseId);
+            .ReturnsAsync(payable.OriginId);
         purchaseReturnRepo
             .InSequence(sequence)
             .Setup(r =>
                 r.AcquireFinancialLockAsync(
                     TenantId,
-                    payable.PurchaseId,
+                    payable.OriginId,
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -502,7 +500,7 @@ public sealed class RegisterPaymentCommandHandlerTests
                     var match = new[] { payableA, payableB, payableC1, payableC2 }.First(p =>
                         p.Id == id
                     );
-                    return Task.FromResult<PurchasePayable?>(match);
+                    return Task.FromResult<AccountsPayable?>(match);
                 }
             );
 
@@ -555,11 +553,11 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         payables
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(payable.PurchaseId);
+            .ReturnsAsync(payable.OriginId);
         // La recarga posterior al lock refleja que, mientras tanto, otra transacción canceló la CxP.
-        payable.CancelPayable();
+        payable.Cancel(UserId);
         payables
             .Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(payable);

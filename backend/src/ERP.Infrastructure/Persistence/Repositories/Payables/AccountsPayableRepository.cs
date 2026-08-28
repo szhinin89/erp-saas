@@ -13,7 +13,7 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
 
     public Task<AccountsPayable?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
         _db.AccountsPayables
-            .Include(x => x.Installments)
+            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .Where(x => x.TenantId == tenantId)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
@@ -25,7 +25,7 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
         CancellationToken ct = default
     ) =>
         _db.AccountsPayables
-            .Include(x => x.Installments)
+            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .FirstOrDefaultAsync(
                 x =>
                     x.TenantId == tenantId
@@ -34,6 +34,44 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
                     && x.OriginId == originId,
                 ct
             );
+
+    public Task<Guid?> GetOriginIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
+        _db.AccountsPayables
+            .AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.Id == id)
+            .Select(x => (Guid?)x.OriginId)
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<(IReadOnlyList<AccountsPayable> Items, int Total)> GetPagedAsync(
+        Guid tenantId,
+        Guid companyId,
+        AccountsPayableOriginType originType,
+        AccountsPayableStatus? status,
+        Guid? supplierId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    )
+    {
+        var q = _db.AccountsPayables.Where(x =>
+            x.TenantId == tenantId && x.CompanyId == companyId && x.OriginType == originType
+        );
+
+        if (status.HasValue)
+            q = q.Where(x => x.Status == status.Value);
+        if (supplierId is not null)
+            q = q.Where(x => x.SupplierId == supplierId.Value);
+
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
 
     public Task AddAsync(AccountsPayable payable, CancellationToken ct = default) =>
         _db.AccountsPayables.AddAsync(payable, ct).AsTask();

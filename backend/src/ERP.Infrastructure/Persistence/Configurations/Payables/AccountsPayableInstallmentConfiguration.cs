@@ -27,6 +27,26 @@ public sealed class AccountsPayableInstallmentConfiguration
             .HasColumnName("paid_amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
+        builder
+            .Property(x => x.RetainedAmount)
+            .HasColumnName("retained_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.ReturnCreditAmount)
+            .HasColumnName("return_credit_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.SupplierCreditAmount)
+            .HasColumnName("supplier_credit_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.CreditNoteAmount)
+            .HasColumnName("credit_note_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
         builder.Ignore(x => x.OutstandingAmount);

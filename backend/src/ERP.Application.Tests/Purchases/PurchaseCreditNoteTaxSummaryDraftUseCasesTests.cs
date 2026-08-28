@@ -1,6 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -28,7 +31,7 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
     private static readonly Guid WarehouseId = Guid.NewGuid();
     private static readonly Guid ItemId = Guid.NewGuid();
 
-    private sealed record Fixture(PurchaseInvoice Invoice, PurchasePayable Payable);
+    private sealed record Fixture(PurchaseInvoice Invoice, AccountsPayable Payable);
 
     private static Fixture BuildFixture(
         decimal unitPrice = 1000m,
@@ -68,14 +71,13 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
         line.ApplyTaxes(vatCode, vatRate, "IVA 15%", null, 0m, null);
         invoice.Confirm(UserId);
 
-        var payable = PurchasePayable.Create(
-            TenantId,
-            CompanyId,
-            invoice.Id,
-            SupplierId,
-            invoice.GrandTotal,
-            UserId
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000001",
+            invoice.IssueDate, invoice.IssueDate, UserId
         );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.GrandTotal);
 
         return new Fixture(invoice, payable);
     }
@@ -84,6 +86,7 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
     {
         public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
@@ -92,9 +95,15 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
-            InvoiceRepo
+            PayableRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>())
+                    r.GetByOriginAsync(
+                        TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.PurchaseInvoice,
+                        f.Invoice.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Payable);
             CreditNoteRepo
@@ -147,6 +156,7 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
             new(
                 CreditNoteRepo.Object,
                 InvoiceRepo.Object,
+                PayableRepo.Object,
                 ReceptionRepo.Object,
                 DbEx.Object,
                 FixedTenant(),

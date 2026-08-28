@@ -14,6 +14,7 @@ using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Sales.Entities;
@@ -23,6 +24,7 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Caja;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
+using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
@@ -374,19 +376,25 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         inv.Confirm(_userId);
         var confirmedLine = inv.Lines.Single();
 
-        var payable = PurchasePayable.Create(
+        var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            inv.Id,
+            _branchId,
             _supplierId,
-            inv.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal,
+            ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
             _userId
         );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), inv.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal);
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, _userId);
 
         db.PurchaseInvoices.Add(inv);
-        db.Set<PurchasePayable>().Add(payable);
+        db.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Add(payable);
         await db.SaveChangesAsync();
 
         // Confirmar la factura no mueve inventario real en este wiring de prueba (a diferencia del
@@ -417,6 +425,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         new(
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnSequenceRepository(db),
             new StockRepository(
                 db,
@@ -434,6 +443,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         new(
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
             new StockRepository(
                 db,
@@ -449,7 +459,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     private ApplySupplierCreditHandler BuildApplyHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
@@ -472,7 +482,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     private RegisterPaymentCommandHandler BuildRegisterPaymentHandler(ErpDbContext db) =>
         new(
             new PaymentRepository(db),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
@@ -566,11 +576,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().BeGreaterThan(0m);
-        payable.SupplierCreditAppliedAmount.Should().Be(0m);
+        payable.ReturnCreditAmount.Should().BeGreaterThan(0m);
+        payable.SupplierCreditAmount.Should().Be(0m);
         var creditExists = await verify
             .Set<SupplierCredit>()
             .AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
@@ -589,10 +600,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
+        payable.ReturnCreditAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
         var creditExists = await verify
             .Set<SupplierCredit>()
             .AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
@@ -609,10 +621,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await using (var check = CreateContext())
         {
             var p = await check
-                .Set<PurchasePayable>()
+                .Set<AccountsPayable>()
+                .Include(x => x.Installments)
                 .AsNoTracking()
                 .FirstAsync(x => x.Id == inv.PayableId);
-            p.BalanceDue.Should().Be(400m);
+            p.OutstandingAmount.Should().Be(400m);
         }
 
         // 2 unidades ≈ 224 (200+24 IVA) — menor al saldo de 400.
@@ -620,11 +633,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
-        payable.BalanceDue.Should().Be(400m - dto.AuthorizedGrandTotal!.Value);
+        payable.ReturnCreditAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
+        payable.OutstandingAmount.Should().Be(400m - dto.AuthorizedGrandTotal!.Value);
         var creditExists = await verify
             .Set<SupplierCredit>()
             .AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
@@ -642,11 +656,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().Be(400m);
-        payable.BalanceDue.Should().Be(0m);
+        payable.ReturnCreditAmount.Should().Be(400m);
+        payable.OutstandingAmount.Should().Be(0m);
 
         var credit = await verify
             .Set<SupplierCredit>()
@@ -670,20 +685,22 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await using (var check = CreateContext())
         {
             var p = await check
-                .Set<PurchasePayable>()
+                .Set<AccountsPayable>()
+                .Include(x => x.Installments)
                 .AsNoTracking()
                 .FirstAsync(x => x.Id == inv.PayableId);
-            p.BalanceDue.Should().Be(0m);
+            p.OutstandingAmount.Should().Be(0m);
         }
 
         var dto = await AuthorizeDraftAsync(inv.InvoiceId, inv.LineId, 10m);
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().Be(0m);
+        payable.ReturnCreditAmount.Should().Be(0m);
 
         var credit = await verify
             .Set<SupplierCredit>()
@@ -729,10 +746,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var targetPayable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == target.PayableId);
-        targetPayable.SupplierCreditAppliedAmount.Should().Be(applied.Value.OriginalAmount);
+        targetPayable.SupplierCreditAmount.Should().Be(applied.Value.OriginalAmount);
     }
 
     // ── Escenario 7 — Crédito cerrado por reembolso bancario ─────────────
@@ -887,11 +905,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
         payable
-            .ReturnAppliedAmount.Should()
+            .ReturnCreditAmount.Should()
             .Be(
                 dto.AuthorizedGrandTotal!.Value,
                 "vincular la NC no debe cambiar ningún efecto financiero ya aplicado"
@@ -1085,14 +1104,15 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
         // Sin lost update: ambos efectos (pago 500 + devolución ~336) deben reflejarse juntos.
         var returnDto = await returnTask;
         payable.PaidAmount.Should().Be(500m);
-        payable.ReturnAppliedAmount.Should().Be(returnDto.Value!.AuthorizedGrandTotal!.Value);
-        payable.BalanceDue.Should().Be(1120m - 500m - returnDto.Value.AuthorizedGrandTotal!.Value);
+        payable.ReturnCreditAmount.Should().Be(returnDto.Value!.AuthorizedGrandTotal!.Value);
+        payable.OutstandingAmount.Should().Be(1120m - 500m - returnDto.Value.AuthorizedGrandTotal!.Value);
     }
 
     // ── Escenario 12 — Devolución y retención simultáneas (ver comentario de clase) ──
@@ -1177,11 +1197,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using var verify = CreateContext();
         var payable = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == inv.PayableId);
         payable
-            .ReturnAppliedAmount.Should()
+            .ReturnCreditAmount.Should()
             .Be(0m, "la cancelación debe revertir exactamente lo aplicado");
     }
 

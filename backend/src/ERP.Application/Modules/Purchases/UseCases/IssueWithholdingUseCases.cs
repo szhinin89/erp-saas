@@ -3,6 +3,8 @@ using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.Services;
@@ -79,6 +81,7 @@ public sealed class IssueWithholdingHandler
     private const string WithholdingDocTypeCode = SriDocumentTypeCodes.Withholding;
 
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
     private readonly IRetentionCodeResolver _retResolver;
     private readonly IEmissionPointRepository _epRepo;
@@ -93,6 +96,7 @@ public sealed class IssueWithholdingHandler
 
     public IssueWithholdingHandler(
         IPurchaseInvoiceRepository purchaseRepo,
+        IAccountsPayableRepository payableRepo,
         IBusinessPartnerRoleRepository roleRepo,
         IRetentionCodeResolver retResolver,
         IEmissionPointRepository epRepo,
@@ -107,6 +111,7 @@ public sealed class IssueWithholdingHandler
     )
     {
         _purchaseRepo = purchaseRepo;
+        _payableRepo = payableRepo;
         _roleRepo = roleRepo;
         _retResolver = retResolver;
         _epRepo = epRepo;
@@ -311,10 +316,17 @@ public sealed class IssueWithholdingHandler
             wh.Issue(number, uid);
 
             // ── Actualizar cuenta por pagar ───────────────────────────────
-            var payable = await _purchaseRepo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
+            var payable = await _payableRepo.GetByOriginAsync(
+                tid,
+                _c.CompanyId,
+                AccountsPayableOriginType.PurchaseInvoice,
+                inv.Id,
+                ct
+            );
             if (payable is not null)
             {
-                payable.ApplyRetention(wh.TotalRetained, inv.PaymentSchedules);
+                if (wh.TotalRetained > 0)
+                    payable.ApplyRetention(wh.TotalRetained, uid);
             }
             else if (wh.TotalRetained > 0)
             {

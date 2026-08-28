@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -70,7 +71,7 @@ public sealed class SupplierCreditMovementConfiguration
 
         // ── Relationships ────────────────────────────────────────────────────
         builder
-            .HasOne<PurchasePayable>()
+            .HasOne<AccountsPayable>()
             .WithMany()
             .HasForeignKey(x => x.TargetPurchasePayableId)
             .IsRequired(false)

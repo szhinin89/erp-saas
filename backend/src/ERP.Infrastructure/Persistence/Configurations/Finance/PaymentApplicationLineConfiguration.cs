@@ -1,5 +1,5 @@
 using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -37,7 +37,7 @@ public sealed class PaymentApplicationLineConfiguration
         builder.Property(x => x.PayableId).HasColumnName("payable_id");
 
         // Sin FK real — InstallmentId puede apuntar a SalesReceivableInstallment.Id o a
-        // PurchasePayableInstallment.Id según la dirección del pago propietario; una FK física
+        // AccountsPayableInstallment.Id según la dirección del pago propietario; una FK física
         // requeriría dos columnas separadas o una tabla polimórfica, fuera de alcance de esta
         // fase (el propio Domain lo documenta como referencia suelta opcional).
         builder.Property(x => x.InstallmentId).HasColumnName("installment_id");
@@ -58,7 +58,7 @@ public sealed class PaymentApplicationLineConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne<PurchasePayable>()
+            .HasOne<AccountsPayable>()
             .WithMany()
             .HasForeignKey(x => x.PayableId)
             .OnDelete(DeleteBehavior.Restrict);

@@ -1,6 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Finance.UseCases;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -27,7 +30,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
 
     private sealed record Fixture(
         SupplierCredit Credit,
-        PurchasePayable Payable,
+        AccountsPayable Payable,
         Guid ApplicationMovementId
     );
 
@@ -45,14 +48,13 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
             UserId
         );
 
-        var payable = PurchasePayable.Create(
-            TenantId,
-            CompanyId,
-            PurchaseInvoiceId,
-            SupplierId,
-            500m,
-            UserId
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, PurchaseInvoiceId,
+            "01", "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow), UserId
         );
+        payable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), 500m);
 
         var applyHash = ApplySupplierCreditHandler.ComputeApplyPayloadHash(
             credit.Id,
@@ -74,7 +76,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
     private sealed class Mocks
     {
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
-        public Mock<IPurchasePayableRepository> PayableRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
@@ -83,7 +85,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+                    r.GetOriginIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(PurchaseInvoiceId);
             PayableRepo
@@ -97,11 +99,11 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         }
 
         /// <summary>Registra un segundo PurchasePayable real (distinto del destino verdadero del movimiento) — usado únicamente por el test que envía un TargetPurchasePayableId que no coincide.</summary>
-        public void RegisterOtherPayable(PurchasePayable otherPayable)
+        public void RegisterOtherPayable(AccountsPayable otherPayable)
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(
+                    r.GetOriginIdAsync(
                         TenantId,
                         OtherPayableId,
                         It.IsAny<CancellationToken>()
@@ -126,7 +128,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
     }
 
     [Fact]
-    public async Task Reversa_feliz_restituye_AvailableAmount_y_reduce_SupplierCreditAppliedAmount()
+    public async Task Reversa_feliz_restituye_AvailableAmount_y_reduce_SupplierCreditAmount()
     {
         var f = BuildFixture(creditAmount: 100m, appliedAmount: 60m);
         var m = new Mocks(f);
@@ -144,7 +146,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.AvailableAmount.Should().Be(100m);
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(0m);
+        f.Payable.SupplierCreditAmount.Should().Be(0m);
     }
 
     [Fact]
@@ -171,7 +173,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Payable.SupplierCreditAppliedAmount.Should()
+        f.Payable.SupplierCreditAmount.Should()
             .Be(60m, "no debe mutar el destino cuando el crédito no existe");
         m.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -182,14 +184,13 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
     {
         var f = BuildFixture(creditAmount: 100m, appliedAmount: 60m);
         var m = new Mocks(f);
-        var otherPayable = PurchasePayable.Create(
-            TenantId,
-            CompanyId,
-            OtherPurchaseInvoiceId,
-            SupplierId,
-            300m,
-            UserId
+        var otherPayable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, OtherPurchaseInvoiceId,
+            "01", "001-001-000000002",
+            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow), UserId
         );
+        otherPayable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), 300m);
         m.RegisterOtherPayable(otherPayable);
         var handler = m.BuildHandler();
 
@@ -210,10 +211,10 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         // Ni el crédito ni ninguno de los dos PurchasePayable deben mutar.
         f.Credit.AvailableAmount.Should().Be(40m);
         f.Credit.Movements.Should().HaveCount(1, "no debe crearse un movimiento de reversa");
-        f.Payable.SupplierCreditAppliedAmount.Should()
+        f.Payable.SupplierCreditAmount.Should()
             .Be(60m, "el destino real del movimiento original no debe mutar");
         otherPayable
-            .SupplierCreditAppliedAmount.Should()
+            .SupplierCreditAmount.Should()
             .Be(0m, "el destino incorrecto enviado por el comando tampoco debe mutar");
         m.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -255,7 +256,7 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
     public async Task Revertir_con_destino_cancelado_despues_de_la_aplicacion_rechaza_SC_014()
     {
         var f = BuildFixture();
-        f.Payable.CancelPayable();
+        f.Payable.Cancel(UserId);
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 

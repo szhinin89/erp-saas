@@ -60,7 +60,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                         req.OriginType == AccountsPayableOriginType.ExpenseDocument
                         && req.OriginId == document.Id
                         && req.SupplierId == SupplierId
-                        && req.TotalAmount == 115m
+                        && req.Installments.Single().Amount == 115m
                     ),
                     UserId,
                     It.IsAny<CancellationToken>()
@@ -304,7 +304,8 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                             req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
                             req.IssueDate, req.AccountingDate, createdBy
                         );
-                        payable.AddInstallment(1, req.DueDate, req.TotalAmount);
+                        foreach (var installment in req.Installments)
+                            payable.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
                         return payable;
                     }
                 );

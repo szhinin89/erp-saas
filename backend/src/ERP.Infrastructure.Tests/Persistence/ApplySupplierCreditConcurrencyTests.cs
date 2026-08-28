@@ -10,10 +10,13 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -252,14 +255,20 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             creditAmount,
             $"001-001-{Random.Shared.Next(100000, 999999)}"
         );
-        var sourcePayable = PurchasePayable.Create(
+        var sourcePayable = AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            sourceInv.Id,
+            _branchId,
             _supplierId,
-            sourceInv.GrandTotal,
+            AccountsPayableOriginType.PurchaseInvoice,
+            sourceInv.Id,
+            "01",
+            sourceInv.InvoiceNumber,
+            sourceInv.IssueDate,
+            sourceInv.IssueDate,
             _userId
         );
+        sourcePayable.AddInstallment(1, sourceInv.IssueDate.AddDays(30), sourceInv.GrandTotal);
         sourcePayable.RegisterPayment(sourcePayable.TotalAmount, _userId);
 
         var ret = PurchaseReturn.CreateDraft(
@@ -307,7 +316,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
 
         db.PurchaseInvoices.Add(sourceInv);
-        db.Set<PurchasePayable>().Add(sourcePayable);
+        db.Set<AccountsPayable>().Add(sourcePayable);
         db.PurchaseReturns.Add(ret);
         db.Set<SupplierCredit>().Add(credit!);
         await db.SaveChangesAsync();
@@ -323,18 +332,24 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             totalAmount,
             $"001-001-{Random.Shared.Next(100000, 999999)}"
         );
-        var payable = PurchasePayable.Create(
+        var payable = AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            inv.Id,
+            _branchId,
             _supplierId,
-            totalAmount,
+            AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
             _userId
         );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), totalAmount);
         if (cancelled)
-            payable.CancelPayable();
+            payable.Cancel(_userId);
         db.PurchaseInvoices.Add(inv);
-        db.Set<PurchasePayable>().Add(payable);
+        db.Set<AccountsPayable>().Add(payable);
         await db.SaveChangesAsync();
         return payable.Id;
     }
@@ -507,9 +522,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
 
         await using (var cancelDb = CreateContext())
         {
-            var payable = await cancelDb.Set<PurchasePayable>().FirstAsync(p => p.Id == payableId);
+            var payable = await cancelDb
+                .Set<AccountsPayable>()
+                .Include(p => p.Installments)
+                .FirstAsync(p => p.Id == payableId);
             // §5.1 caso 5 exige PaidAmount==0 para poder cancelar (CancelPayable lo garantiza).
-            payable.CancelPayable();
+            payable.Cancel(_userId);
             await cancelDb.SaveChangesAsync();
         }
 
@@ -527,7 +545,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await using var db = CreateContext();
         var reverseHandler = new ReverseSupplierCreditApplicationHandler(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
@@ -628,10 +646,11 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         creditFinal.AvailableAmount.Should().Be(100m);
 
         var payableFinal = await verify
-            .Set<PurchasePayable>()
+            .Set<AccountsPayable>()
+            .Include(p => p.Installments)
             .AsNoTracking()
             .FirstAsync(p => p.Id == payableId);
-        payableFinal.SupplierCreditAppliedAmount.Should().Be(0m);
+        payableFinal.SupplierCreditAmount.Should().Be(0m);
     }
 
     private async Task<(bool Success, string? Error)> ExecuteReverseRealAsync(
@@ -644,7 +663,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await using var db = CreateContext();
         var handler = new ReverseSupplierCreditApplicationHandler(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
@@ -719,7 +738,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
 
         var reverseHandler = new ReverseSupplierCreditApplicationHandler(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
@@ -829,7 +848,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
     private ApplySupplierCreditHandler BuildWiredApplyHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
@@ -916,7 +935,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await using var db = CreateContext();
         var handler = new ApplySupplierCreditHandler(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),

@@ -429,19 +429,25 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         await stockRepo.SaveChangesWithSequenceRetryAsync();
     }
 
-    private (PurchaseReturn ret, PurchasePayable payable) BuildAuthorizedReturn(
+    private (PurchaseReturn ret, ERP.Domain.Modules.Payables.Entities.AccountsPayable payable) BuildAuthorizedReturn(
         PurchaseInvoice inv,
         decimal returnQuantity
     )
     {
-        var payable = PurchasePayable.Create(
+        var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
             _tenantId,
             _companyId,
-            inv.Id,
+            _branchId,
             _supplierId,
-            inv.GrandTotal,
+            ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
+            inv.Id,
+            "01",
+            inv.InvoiceNumber,
+            inv.IssueDate,
+            inv.IssueDate,
             _createdBy
         );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), inv.GrandTotal);
 
         var ret = PurchaseReturn.CreateDraft(
             _tenantId,
@@ -484,7 +490,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         ret.Authorize(
             "00000001",
             originalLinesByDetailId,
-            payable.BalanceDue,
+            payable.OutstandingAmount,
             inv.CurrencyCode,
             hasIssuedWithholding: false,
             _createdBy,

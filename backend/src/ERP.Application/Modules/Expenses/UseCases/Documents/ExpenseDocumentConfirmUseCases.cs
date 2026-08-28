@@ -156,8 +156,14 @@ public sealed class ConfirmExpenseDocumentHandler
                     document.DocumentNumber,
                     document.IssueDate,
                     document.AccountingDate,
-                    document.DueDate ?? document.AccountingDate,
-                    document.GrandTotal
+                    new[]
+                    {
+                        new AccountsPayableInstallmentInput(
+                            1,
+                            document.DueDate ?? document.AccountingDate,
+                            document.GrandTotal
+                        ),
+                    }
                 ),
                 _user.UserId,
                 ct

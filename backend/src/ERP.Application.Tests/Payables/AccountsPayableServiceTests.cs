@@ -31,8 +31,7 @@ public sealed class AccountsPayableServiceTests
             "001-001-000000001",
             new DateOnly(2026, 8, 27),
             new DateOnly(2026, 8, 27),
-            new DateOnly(2026, 9, 26),
-            totalAmount
+            new[] { new AccountsPayableInstallmentInput(1, new DateOnly(2026, 9, 26), totalAmount) }
         );
 
     private sealed class Mocks

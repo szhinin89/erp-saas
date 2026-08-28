@@ -3,6 +3,7 @@ using ERP.Application.Modules.Finance.DTOs;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
@@ -245,7 +246,7 @@ public sealed class RegisterPaymentCommandHandler
     : IRequestHandler<RegisterPaymentCommand, Result<PaymentDto>>
 {
     private readonly IPaymentRepository _payments;
-    private readonly IPurchasePayableRepository _payables;
+    private readonly IAccountsPayableRepository _payables;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly ICompanyFinancialDestinationRepository _financialDestinations;
     private readonly IUnitOfWork _uow;
@@ -255,7 +256,7 @@ public sealed class RegisterPaymentCommandHandler
 
     public RegisterPaymentCommandHandler(
         IPaymentRepository payments,
-        IPurchasePayableRepository payables,
+        IAccountsPayableRepository payables,
         IPurchaseReturnRepository purchaseReturnRepo,
         ICompanyFinancialDestinationRepository financialDestinations,
         IUnitOfWork uow,
@@ -332,7 +333,7 @@ public sealed class RegisterPaymentCommandHandler
                 if (purchaseInvoiceIdByDocId.ContainsKey(line.DocumentId))
                     continue;
 
-                var purchaseInvoiceId = await _payables.GetPurchaseInvoiceIdAsync(
+                var purchaseInvoiceId = await _payables.GetOriginIdAsync(
                     tenantId,
                     line.DocumentId,
                     ct
@@ -360,10 +361,10 @@ public sealed class RegisterPaymentCommandHandler
                 );
             }
 
-            // ── Recarga autoritativa — primera vez que se rastrea cada PurchasePayable,
+            // ── Recarga autoritativa — primera vez que se rastrea cada AccountsPayable,
             // ya dentro del lock: garantizadamente fresca. ──────────────────
             var payablesByDocId =
-                new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
+                new Dictionary<Guid, Domain.Modules.Payables.Entities.AccountsPayable>();
             foreach (var line in cmd.Lines)
             {
                 if (payablesByDocId.ContainsKey(line.DocumentId))
@@ -502,7 +503,7 @@ public sealed class ReversePaymentCommandHandler
     : IRequestHandler<ReversePaymentCommand, Result<PaymentDto>>
 {
     private readonly IPaymentRepository _payments;
-    private readonly IPurchasePayableRepository _payables;
+    private readonly IAccountsPayableRepository _payables;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
@@ -511,7 +512,7 @@ public sealed class ReversePaymentCommandHandler
 
     public ReversePaymentCommandHandler(
         IPaymentRepository payments,
-        IPurchasePayableRepository payables,
+        IAccountsPayableRepository payables,
         IPurchaseReturnRepository purchaseReturnRepo,
         IUnitOfWork uow,
         ICurrentTenant t,
@@ -560,7 +561,7 @@ public sealed class ReversePaymentCommandHandler
                 if (purchaseInvoiceIdByPayableId.ContainsKey(payableId))
                     continue;
 
-                var purchaseInvoiceId = await _payables.GetPurchaseInvoiceIdAsync(
+                var purchaseInvoiceId = await _payables.GetOriginIdAsync(
                     tenantId,
                     payableId,
                     ct
@@ -588,10 +589,10 @@ public sealed class ReversePaymentCommandHandler
                 );
             }
 
-            // ── Recarga autoritativa — primera vez que se rastrea cada PurchasePayable,
+            // ── Recarga autoritativa — primera vez que se rastrea cada AccountsPayable,
             // ya dentro del lock: garantizadamente fresca. ──────────────────
             var payablesByDocId =
-                new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
+                new Dictionary<Guid, Domain.Modules.Payables.Entities.AccountsPayable>();
             foreach (var line in payment.Lines)
             {
                 var payableId = line.PayableId!.Value;

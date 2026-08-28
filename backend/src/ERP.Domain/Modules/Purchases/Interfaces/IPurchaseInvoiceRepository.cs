@@ -100,11 +100,6 @@ public interface IPurchaseInvoiceRepository
     );
     Task ClearScheduleTrackingAsync(Guid invoiceId, CancellationToken ct = default);
     void ReattachSchedulesAsAdded(PurchaseInvoice invoice);
-    Task<PurchasePayable?> GetPayableByPurchaseIdAsync(
-        Guid tenantId,
-        Guid purchaseId,
-        CancellationToken ct = default
-    );
     Task<IssuedWithholding?> GetWithholdingByIdAsync(
         Guid tenantId,
         Guid id,
@@ -129,7 +124,6 @@ public interface IPurchaseInvoiceRepository
         Guid withholdingId,
         CancellationToken ct = default
     );
-    void TrackPayable(PurchasePayable payable);
     void TrackCommunication(PurchaseCommunication communication);
     void TrackWithholding(IssuedWithholding withholding);
     Task SaveChangesAsync(CancellationToken ct = default);

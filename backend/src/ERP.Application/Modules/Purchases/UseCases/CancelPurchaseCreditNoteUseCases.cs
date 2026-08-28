@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
@@ -65,6 +67,7 @@ public sealed class CancelPurchaseCreditNoteHandler
 {
     private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReturnRepository _lockRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
@@ -74,6 +77,7 @@ public sealed class CancelPurchaseCreditNoteHandler
     public CancelPurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReturnRepository lockRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
@@ -83,6 +87,7 @@ public sealed class CancelPurchaseCreditNoteHandler
     {
         _creditNoteRepo = creditNoteRepo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _lockRepo = lockRepo;
         _uow = uow;
         _dbEx = dbEx;
@@ -160,7 +165,13 @@ public sealed class CancelPurchaseCreditNoteHandler
                     );
                 }
 
-                var payable = await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+                var payable = await _payableRepo.GetByOriginAsync(
+                    tid,
+                    invoice.CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    invoice.Id,
+                    ct
+                );
                 if (payable is null)
                 {
                     await _uow.RollbackAsync(ct);

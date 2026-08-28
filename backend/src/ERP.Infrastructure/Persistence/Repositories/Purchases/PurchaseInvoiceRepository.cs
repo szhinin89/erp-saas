@@ -230,15 +230,6 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             _db.Set<PurchasePaymentSchedule>().Add(schedule);
     }
 
-    public Task<PurchasePayable?> GetPayableByPurchaseIdAsync(
-        Guid tenantId,
-        Guid purchaseId,
-        CancellationToken ct = default
-    ) =>
-        _db
-            .PurchasePayables.Include(p => p.Installments)
-            .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.PurchaseId == purchaseId, ct);
-
     public Task<IssuedWithholding?> GetWithholdingByIdAsync(
         Guid tenantId,
         Guid id,
@@ -271,8 +262,6 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             .Where(w => w.TenantId == tenantId && w.Id == withholdingId)
             .Select(w => (Guid?)w.PurchaseInvoiceId)
             .FirstOrDefaultAsync(ct);
-
-    public void TrackPayable(PurchasePayable payable) => _db.PurchasePayables.Add(payable);
 
     public void TrackCommunication(PurchaseCommunication communication) =>
         _db.PurchaseCommunications.Add(communication);

@@ -17,6 +17,7 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
+using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
 using MediatR;
@@ -77,17 +78,55 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         db.BusinessPartners.Add(supplier);
         await db.SaveChangesAsync();
 
-        // PurchasePayable no tiene FK real a PurchaseInvoice/BusinessPartner (a diferencia de
-        // SalesReceivable) — PurchaseId es un Guid suelto, solo la empresa/tenant son reales.
-        var payable = PurchasePayable.Create(
+        var branch = ERP.Domain.Branches.Entities.Branch.Create(
+            tenantId: tenant.Id,
+            name: "Matriz",
+            address: "Av. Principal 123",
+            code: "B01",
+            description: null,
+            reference: null,
+            postalCode: null,
+            phone: null,
+            secondaryPhone: null,
+            email: null,
+            website: null,
+            managerName: null,
+            managerPosition: null,
+            managerEmail: null,
+            managerPhone: null,
+            countryId: null,
+            provinceId: null,
+            cantonId: null,
+            parishId: null,
+            latitude: null,
+            longitude: null,
+            openingDate: null,
+            internalNotes: null,
+            isMainBranch: true,
+            createdBy: _createdBy,
+            companyId: company.Id
+        );
+        db.Branches.Add(branch);
+        await db.SaveChangesAsync();
+
+        // AccountsPayable SÍ tiene FK real a Branch/BusinessPartner (PAYABLES-PURCHASE-MIGRATION-10,
+        // a diferencia del PurchasePayable original que este test seguía antes) — OriginId (antes
+        // PurchaseId) sigue siendo un Guid suelto, sin FK a PurchaseInvoice.
+        var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
             tenant.Id,
             company.Id,
-            Guid.NewGuid(),
+            branch.Id,
             supplier.Id,
-            300m,
+            ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
+            Guid.NewGuid(),
+            "01",
+            "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime(DateTime.UtcNow),
             _createdBy
         );
-        db.PurchasePayables.Add(payable);
+        payable.AddInstallment(1, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), 300m);
+        db.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Add(payable);
         await db.SaveChangesAsync();
 
         _tenantId = tenant.Id;
@@ -223,7 +262,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
     ) =>
         new(
             new PaymentRepository(db),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(companyId)),
             new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(companyId)),
             new UnitOfWork(db),
@@ -240,7 +279,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
     ) =>
         new(
             new PaymentRepository(db),
-            new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
+            new AccountsPayableRepository(db),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
@@ -341,7 +380,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RegisterPaymentCommand_persiste_Payment_lineas_y_actualiza_PurchasePayable()
+    public async Task RegisterPaymentCommand_persiste_Payment_lineas_y_actualiza_AccountsPayable()
     {
         var paymentDate = new DateOnly(2026, 7, 15);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -358,7 +397,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         var payment = await verifyDb
             .Payments.Include(x => x.Lines)
             .FirstAsync(x => x.Id == result.Value!.Id);
-        var payable = await verifyDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
+        var payable = await verifyDb.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Include(x => x.Installments).FirstAsync(x => x.Id == _payableId);
 
         payment.Direction.Should().Be(PaymentDirection.Payment);
         payment.Status.Should().Be(PaymentStatus.Applied);
@@ -369,7 +408,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         payment.Lines.Single().AppliedAmount.Should().Be(300m);
 
         payable.PaidAmount.Should().Be(300m);
-        payable.BalanceDue.Should().Be(0m);
+        payable.OutstandingAmount.Should().Be(0m);
     }
 
     [Fact]
@@ -387,9 +426,9 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
         await using (var midDb = CreateContext())
         {
-            var midPayable = await midDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
+            var midPayable = await midDb.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Include(x => x.Installments).FirstAsync(x => x.Id == _payableId);
             midPayable.PaidAmount.Should().Be(120m);
-            midPayable.BalanceDue.Should().Be(180m);
+            midPayable.OutstandingAmount.Should().Be(180m);
         }
 
         var (dbB, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -401,11 +440,11 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         secondResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var payable = await verifyDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
+        var payable = await verifyDb.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Include(x => x.Installments).FirstAsync(x => x.Id == _payableId);
         var paymentCount = await verifyDb.Payments.CountAsync(x => x.PartnerId == _supplierId);
 
         payable.PaidAmount.Should().Be(300m);
-        payable.BalanceDue.Should().Be(0m);
+        payable.OutstandingAmount.Should().Be(0m);
         paymentCount
             .Should()
             .Be(2, because: "dos pagos independientes, cada uno con su propio Payment");
@@ -458,7 +497,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
             .BeTrue(because: "el fallo del Posting Engine no debe revertir el registro del pago");
 
         await using var verifyDb = CreateContext();
-        var payable = await verifyDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
+        var payable = await verifyDb.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Include(x => x.Installments).FirstAsync(x => x.Id == _payableId);
         payable.PaidAmount.Should().Be(300m);
 
         var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
@@ -521,7 +560,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
     // ══════════════════════════════════════════════════════════════════════
 
     [Fact]
-    public async Task ReversePaymentCommand_restaura_PaidAmount_y_BalanceDue_de_PurchasePayable()
+    public async Task ReversePaymentCommand_restaura_PaidAmount_y_BalanceDue_de_AccountsPayable()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -545,11 +584,11 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         reverseResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var payable = await verifyDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
+        var payable = await verifyDb.Set<ERP.Domain.Modules.Payables.Entities.AccountsPayable>().Include(x => x.Installments).FirstAsync(x => x.Id == _payableId);
         var payment = await verifyDb.Payments.FirstAsync(x => x.Id == paymentId);
 
         payable.PaidAmount.Should().Be(0m);
-        payable.BalanceDue.Should().Be(300m);
+        payable.OutstandingAmount.Should().Be(300m);
         payment.Status.Should().Be(PaymentStatus.Reversed);
         payment.ReverseReason.Should().Be("Error de digitación");
     }

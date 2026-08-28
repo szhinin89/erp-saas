@@ -3,6 +3,8 @@ using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -50,6 +52,7 @@ public sealed class CancelPurchaseReturnHandler
 {
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly ISupplierCreditRepository _creditRepo;
     private readonly IStockRepository _stockRepo;
     private readonly IUnitOfWork _uow;
@@ -60,6 +63,7 @@ public sealed class CancelPurchaseReturnHandler
     public CancelPurchaseReturnHandler(
         IPurchaseReturnRepository returnRepo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         ISupplierCreditRepository creditRepo,
         IStockRepository stockRepo,
         IUnitOfWork uow,
@@ -70,6 +74,7 @@ public sealed class CancelPurchaseReturnHandler
     {
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _creditRepo = creditRepo;
         _stockRepo = stockRepo;
         _uow = uow;
@@ -178,7 +183,13 @@ public sealed class CancelPurchaseReturnHandler
                     );
                 }
 
-                var payable = await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+                var payable = await _payableRepo.GetByOriginAsync(
+                    tid,
+                    invoice.CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    invoice.Id,
+                    ct
+                );
                 if (payable is null)
                 {
                     await _uow.RollbackAsync(ct);

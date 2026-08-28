@@ -4,11 +4,13 @@ using ERP.Domain.Modules.Payables.Enums;
 namespace ERP.Domain.Modules.Payables.Entities;
 
 /// <summary>
-/// PAYABLES-GENERIC-FOUNDATION-09 — cuota/vencimiento de una <see cref="AccountsPayable"/>. Entidad
-/// hija del mismo aggregate, sin repositorio propio (mismo patrón cabecera+líneas usado en todo el
-/// ERP: <c>ExpenseDocument</c>+<c>ExpenseLine</c>, <c>PurchasePayable</c>+<c>PurchasePayableInstallment</c>).
-/// Pago/abono aún no existen en esta fase — <see cref="PaidAmount"/> nace y permanece en 0 hasta que
-/// la fase de Pagos agregue el método que lo mute (nunca lo hace este archivo).
+/// PAYABLES-PURCHASE-MIGRATION-10 — cuota/vencimiento de una <see cref="AccountsPayable"/>, y única
+/// fuente viva de saldo (decisión funcional del ticket: "AccountsPayableInstallment es la
+/// cuota/saldo vivo"). Todo pago/abono/ajuste (pago, retención, devolución, crédito de proveedor,
+/// nota de crédito) muta esta entidad — nunca un acumulador de cabecera — y
+/// <see cref="AccountsPayable"/> deriva sus totales sumando sus cuotas. Reemplaza a
+/// <c>PurchasePayableInstallment</c> (eliminado, nunca tuvo saldo vivo propio: era solo un split de
+/// fechas de vencimiento recalculado desde la cabecera).
 /// </summary>
 public sealed class AccountsPayableInstallment : IMustHaveTenant
 {
@@ -19,10 +21,18 @@ public sealed class AccountsPayableInstallment : IMustHaveTenant
     public DateOnly DueDate { get; private set; }
     public decimal Amount { get; private set; }
     public decimal PaidAmount { get; private set; }
+    public decimal RetainedAmount { get; private set; }
+    public decimal ReturnCreditAmount { get; private set; }
+    public decimal SupplierCreditAmount { get; private set; }
+    public decimal CreditNoteAmount { get; private set; }
     public AccountsPayableStatus Status { get; private set; } = AccountsPayableStatus.Pending;
 
     public decimal OutstandingAmount =>
-        Math.Round(Amount - PaidAmount, 2, MidpointRounding.AwayFromZero);
+        Math.Round(
+            Amount - PaidAmount - RetainedAmount - ReturnCreditAmount - SupplierCreditAmount - CreditNoteAmount,
+            2,
+            MidpointRounding.AwayFromZero
+        );
 
     private AccountsPayableInstallment() { }
 
@@ -62,8 +72,91 @@ public sealed class AccountsPayableInstallment : IMustHaveTenant
             InstallmentNumber = installmentNumber,
             DueDate = dueDate,
             Amount = amount,
-            PaidAmount = 0m,
             Status = AccountsPayableStatus.Pending,
         };
     }
+
+    internal decimal GetApplied(AccountsPayableAdjustmentType type) =>
+        type switch
+        {
+            AccountsPayableAdjustmentType.Payment => PaidAmount,
+            AccountsPayableAdjustmentType.Retention => RetainedAmount,
+            AccountsPayableAdjustmentType.ReturnCredit => ReturnCreditAmount,
+            AccountsPayableAdjustmentType.SupplierCredit => SupplierCreditAmount,
+            AccountsPayableAdjustmentType.CreditNote => CreditNoteAmount,
+            _ => throw new ArgumentOutOfRangeException(nameof(type)),
+        };
+
+    /// <summary>Interno — solo invocado por el motor de asignación FIFO de <see cref="AccountsPayable"/>.</summary>
+    internal void Apply(AccountsPayableAdjustmentType type, decimal amount)
+    {
+        switch (type)
+        {
+            case AccountsPayableAdjustmentType.Payment:
+                PaidAmount += amount;
+                break;
+            case AccountsPayableAdjustmentType.Retention:
+                RetainedAmount += amount;
+                break;
+            case AccountsPayableAdjustmentType.ReturnCredit:
+                ReturnCreditAmount += amount;
+                break;
+            case AccountsPayableAdjustmentType.SupplierCredit:
+                SupplierCreditAmount += amount;
+                break;
+            case AccountsPayableAdjustmentType.CreditNote:
+                CreditNoteAmount += amount;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type));
+        }
+        RecalculateStatus();
+    }
+
+    /// <summary>Interno — inverso de <see cref="Apply"/>, mismo motor FIFO (en orden inverso).</summary>
+    internal void Reverse(AccountsPayableAdjustmentType type, decimal amount)
+    {
+        switch (type)
+        {
+            case AccountsPayableAdjustmentType.Payment:
+                PaidAmount -= amount;
+                break;
+            case AccountsPayableAdjustmentType.Retention:
+                RetainedAmount -= amount;
+                break;
+            case AccountsPayableAdjustmentType.ReturnCredit:
+                ReturnCreditAmount -= amount;
+                break;
+            case AccountsPayableAdjustmentType.SupplierCredit:
+                SupplierCreditAmount -= amount;
+                break;
+            case AccountsPayableAdjustmentType.CreditNote:
+                CreditNoteAmount -= amount;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type));
+        }
+        RecalculateStatus();
+    }
+
+    private void RecalculateStatus()
+    {
+        if (Status == AccountsPayableStatus.Cancelled)
+            return;
+
+        if (OutstandingAmount <= 0)
+            Status = AccountsPayableStatus.Paid;
+        else if (
+            PaidAmount > 0
+            || RetainedAmount > 0
+            || ReturnCreditAmount > 0
+            || SupplierCreditAmount > 0
+            || CreditNoteAmount > 0
+        )
+            Status = AccountsPayableStatus.PartiallyPaid;
+        else
+            Status = AccountsPayableStatus.Pending;
+    }
+
+    internal void MarkCancelled() => Status = AccountsPayableStatus.Cancelled;
 }

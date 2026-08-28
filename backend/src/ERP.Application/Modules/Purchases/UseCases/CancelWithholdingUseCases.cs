@@ -1,4 +1,6 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
@@ -32,23 +34,29 @@ public sealed class CancelWithholdingHandler
     : IRequestHandler<CancelWithholdingCommand, Result<IssuedWithholdingDto>>
 {
     private readonly IPurchaseInvoiceRepository _repo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public CancelWithholdingHandler(
         IPurchaseInvoiceRepository repo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
         IUnitOfWork uow,
         ICurrentTenant t,
+        ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _payableRepo = payableRepo;
         _purchaseReturnRepo = purchaseReturnRepo;
         _uow = uow;
         _t = t;
+        _c = c;
         _u = u;
     }
 
@@ -98,11 +106,14 @@ public sealed class CancelWithholdingHandler
             var inv = await _repo.GetByIdAsync(tid, wh.PurchaseInvoiceId, ct);
             if (inv is not null)
             {
-                var payable = await _repo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
-                if (payable is not null)
-                {
-                    payable.ReverseRetention(inv.PaymentSchedules);
-                }
+                var payable = await _payableRepo.GetByOriginAsync(
+                    tid,
+                    _c.CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    ct
+                );
+                payable?.ReverseRetention(uid);
             }
 
             // ── Persistir (auditoría de "withholding.cancelled" vía IssuedWithholdingAuditHandler,

@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Configuration.Interfaces;
@@ -315,6 +316,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<PurchaseTaxResolver>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<IPricingResolver>(),
+            Mock.Of<IAccountsPayableService>(),
             Mock.Of<ILogger<ConfirmPurchaseHandler>>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),

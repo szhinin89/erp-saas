@@ -3,7 +3,9 @@ using ERP.Application.Modules.Finance.UseCases.Payments;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
-using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
 using Moq;
@@ -20,7 +22,7 @@ namespace ERP.Application.Tests.Finance;
 /// directamente por el comando) antes de la transacción — mismo criterio aceptado que la carga
 /// inicial del agregado propio en <c>AuthorizeSalesReturnUseCases</c>, no señalado como defecto en
 /// la auditoría. Lo que sí cambia: el <c>PurchaseInvoiceId</c> de cada <c>PurchasePayable</c>
-/// afectado se descubre ANTES del lock mediante <c>IPurchasePayableRepository.GetPurchaseInvoiceIdAsync</c>
+/// afectado se descubre ANTES del lock mediante <c>IPurchasePayableRepository.GetOriginIdAsync</c>
 /// (proyección SIN TRACKING), y cada <c>PurchasePayable</c> completo solo se recarga (vía
 /// <c>GetByIdAsync</c>, tracking) DESPUÉS de adquirir todos los Lock A.
 /// </summary>
@@ -32,17 +34,26 @@ public sealed class ReversePaymentCommandHandlerTests
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid PurchaseId = Guid.NewGuid();
 
-    private static PurchasePayable CreatePayable(decimal amount = 100m, Guid? purchaseId = null) =>
-        PurchasePayable.Create(
+    private static AccountsPayable CreatePayable(decimal amount = 100m, Guid? purchaseId = null)
+    {
+        var payable = AccountsPayable.CreateFromOrigin(
             TenantId,
             CompanyId,
-            purchaseId ?? PurchaseId,
+            Guid.NewGuid(),
             SupplierId,
-            amount,
+            AccountsPayableOriginType.PurchaseInvoice,
+            purchaseId ?? PurchaseId,
+            "01",
+            "001-001-000000001",
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 1),
             UserId
         );
+        payable.AddInstallment(1, new DateOnly(2026, 7, 31), amount);
+        return payable;
+    }
 
-    private static Payment CreateAppliedPayment(PurchasePayable payable, decimal amount)
+    private static Payment CreateAppliedPayment(AccountsPayable payable, decimal amount)
     {
         var payment = Payment.Create(
             TenantId,
@@ -63,13 +74,13 @@ public sealed class ReversePaymentCommandHandlerTests
 
     private static (
         Mock<IPaymentRepository> payments,
-        Mock<IPurchasePayableRepository> payables,
+        Mock<IAccountsPayableRepository> payables,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow
     ) BuildMocks()
     {
         var payments = new Mock<IPaymentRepository>();
-        var payables = new Mock<IPurchasePayableRepository>();
+        var payables = new Mock<IAccountsPayableRepository>();
         var purchaseReturnRepo = new Mock<IPurchaseReturnRepository>();
         var uow = new Mock<IUnitOfWork>();
         return (payments, payables, purchaseReturnRepo, uow);
@@ -77,7 +88,7 @@ public sealed class ReversePaymentCommandHandlerTests
 
     private static ReversePaymentCommandHandler BuildHandler(
         Mock<IPaymentRepository> payments,
-        Mock<IPurchasePayableRepository> payables,
+        Mock<IAccountsPayableRepository> payables,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow
     )
@@ -101,15 +112,15 @@ public sealed class ReversePaymentCommandHandlerTests
     }
 
     private static void SetupPayable(
-        Mock<IPurchasePayableRepository> payables,
-        PurchasePayable payable
+        Mock<IAccountsPayableRepository> payables,
+        AccountsPayable payable
     )
     {
         payables
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(payable.PurchaseId);
+            .ReturnsAsync(payable.OriginId);
         payables
             .Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(payable);
@@ -274,15 +285,15 @@ public sealed class ReversePaymentCommandHandlerTests
         payables
             .InSequence(sequence)
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(payable.PurchaseId);
+            .ReturnsAsync(payable.OriginId);
         purchaseReturnRepo
             .InSequence(sequence)
             .Setup(r =>
                 r.AcquireFinancialLockAsync(
                     TenantId,
-                    payable.PurchaseId,
+                    payable.OriginId,
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -371,7 +382,7 @@ public sealed class ReversePaymentCommandHandlerTests
                     if (lockedOrder.Count < 2)
                         mutatedBeforeAllLocksAcquired = true;
                     var match = new[] { payableA, payableB }.First(p => p.Id == id);
-                    return Task.FromResult<PurchasePayable?>(match);
+                    return Task.FromResult<AccountsPayable?>(match);
                 }
             );
 
@@ -408,9 +419,9 @@ public sealed class ReversePaymentCommandHandlerTests
             .ReturnsAsync(payment);
         payables
             .Setup(r =>
-                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+                r.GetOriginIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(payable.PurchaseId);
+            .ReturnsAsync(payable.OriginId);
         // La recarga posterior al lock refleja que, mientras tanto, otra transacción ya reversó
         // el monto aplicado — PaidAmount ya está en 0 antes de que este handler mute nada.
         payable.ReversePayment(60m, UserId);

@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -185,6 +187,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
 {
     private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
@@ -195,6 +198,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
     public CreateDraftPurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReceptionDocumentRepository receptionRepo,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
@@ -205,6 +209,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
     {
         _creditNoteRepo = creditNoteRepo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _receptionRepo = receptionRepo;
         _dbEx = dbEx;
         _t = t;
@@ -243,12 +248,18 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
                 "Solo se pueden registrar notas de crédito sobre facturas de compra confirmadas."
             );
 
-        var payable = await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+        var payable = await _payableRepo.GetByOriginAsync(
+            tid,
+            _c.CompanyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            ct
+        );
         if (payable is null)
             return Result<PurchaseCreditNoteDto>.NotFound(
                 "Cuenta por pagar de la factura de compra no encontrada."
             );
-        if (payable.BalanceDue <= 0)
+        if (payable.OutstandingAmount <= 0)
             return Result<PurchaseCreditNoteDto>.ValidationFailure(
                 "La factura afectada no tiene saldo pendiente."
             );
@@ -380,7 +391,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
                 creditNote,
                 invoice.InvoiceNumber,
                 invoice.SupplierName,
-                payable.BalanceDue,
+                payable.OutstandingAmount,
                 receptionDoc?.AccessKey
             )
         );
@@ -585,6 +596,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
 {
     private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -593,6 +605,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
     public UpdatePurchaseCreditNoteDraftHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -601,6 +614,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
     {
         _creditNoteRepo = creditNoteRepo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _dbEx = dbEx;
         _t = t;
         _c = c;
@@ -707,14 +721,20 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
             );
         }
 
-        var payable = await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+        var payable = await _payableRepo.GetByOriginAsync(
+            tid,
+            _c.CompanyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            ct
+        );
 
         return Result<PurchaseCreditNoteDto>.Success(
             CreditNoteMap.ToDto(
                 creditNote,
                 invoice?.InvoiceNumber,
                 invoice?.SupplierName,
-                payable?.BalanceDue
+                payable?.OutstandingAmount
             )
         );
     }

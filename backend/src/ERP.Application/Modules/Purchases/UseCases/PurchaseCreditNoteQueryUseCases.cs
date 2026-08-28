@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using MediatR;
@@ -34,20 +36,26 @@ public sealed class GetPurchaseCreditNoteByIdHandler
 {
     private readonly IPurchaseCreditNoteRepository _repo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
 
     public GetPurchaseCreditNoteByIdHandler(
         IPurchaseCreditNoteRepository repo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReceptionDocumentRepository receptionRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c
     )
     {
         _repo = repo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _receptionRepo = receptionRepo;
         _t = t;
+        _c = c;
     }
 
     public async Task<Result<PurchaseCreditNoteDto>> Handle(
@@ -64,7 +72,13 @@ public sealed class GetPurchaseCreditNoteByIdHandler
         var payable =
             invoice is null
                 ? null
-                : await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+                : await _payableRepo.GetByOriginAsync(
+                    tid,
+                    _c.CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    invoice.Id,
+                    ct
+                );
         var receptionDoc =
             creditNote.ReceptionDocumentId is { } receptionDocumentId
                 ? await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct)
@@ -75,7 +89,7 @@ public sealed class GetPurchaseCreditNoteByIdHandler
                 creditNote,
                 invoice?.InvoiceNumber,
                 invoice?.SupplierName,
-                payable?.BalanceDue,
+                payable?.OutstandingAmount,
                 receptionDoc?.AccessKey
             )
         );

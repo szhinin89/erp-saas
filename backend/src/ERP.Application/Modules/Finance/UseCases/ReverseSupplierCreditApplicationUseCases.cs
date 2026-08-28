@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
@@ -48,7 +50,7 @@ public sealed class ReverseSupplierCreditApplicationHandler
     : IRequestHandler<ReverseSupplierCreditApplicationCommand, Result<SupplierCreditDto>>
 {
     private readonly ISupplierCreditRepository _creditRepo;
-    private readonly IPurchasePayableRepository _payableRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
@@ -57,7 +59,7 @@ public sealed class ReverseSupplierCreditApplicationHandler
 
     public ReverseSupplierCreditApplicationHandler(
         ISupplierCreditRepository creditRepo,
-        IPurchasePayableRepository payableRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
@@ -85,7 +87,7 @@ public sealed class ReverseSupplierCreditApplicationHandler
         await _uow.BeginTransactionAsync(ct);
         try
         {
-            var purchaseInvoiceId = await _payableRepo.GetPurchaseInvoiceIdAsync(
+            var purchaseInvoiceId = await _payableRepo.GetOriginIdAsync(
                 tid,
                 cmd.TargetPurchasePayableId,
                 ct
@@ -157,7 +159,7 @@ public sealed class ReverseSupplierCreditApplicationHandler
             // (nunca hay reversa posible mientras el destino permanezca cancelled). Este guard no
             // existe dentro de PurchasePayable.ReverseSupplierCredit (solo valida montos) —
             // responsabilidad explícita de Application, según diseño. ──
-            if (payable.Status == "cancelled")
+            if (payable.Status == AccountsPayableStatus.Cancelled)
             {
                 await _uow.RollbackAsync(ct);
                 // SC-014

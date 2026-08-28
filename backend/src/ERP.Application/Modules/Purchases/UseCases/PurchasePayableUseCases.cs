@@ -1,4 +1,7 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
 
@@ -7,10 +10,12 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 // ── DTOs ────────────────────────────────────────────────────────────────
 
 /// <summary>
-/// P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — expone <c>PurchasePayable</c> para que el usuario
-/// pueda consultar/seleccionar qué cuenta por pagar liquidar. Mismo shape que
-/// <c>SalesReceivableDto</c> (Sales), adaptado a los campos propios de CxP (incluye
-/// <c>TotalRetained</c>, sin equivalente en CxC).
+/// P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — expone la CxP de Compras para que el usuario pueda
+/// consultar/seleccionar qué cuenta por pagar liquidar. PAYABLES-PURCHASE-MIGRATION-10: el nombre
+/// del tipo y sus campos se conservan tal cual (contrato de API estable, consumido por
+/// frontend/finance) aunque el origen real ahora es <see cref="AccountsPayable"/> genérico filtrado
+/// por <see cref="AccountsPayableOriginType.PurchaseInvoice"/> — nunca <c>PurchasePayable</c>
+/// (eliminado).
 /// </summary>
 public sealed record PurchasePayableDto(
     Guid Id,
@@ -62,19 +67,22 @@ public sealed record PayablesListResponse(
 public sealed class GetPayableByIdHandler
     : IRequestHandler<GetPayableByIdQuery, Result<PurchasePayableDto>>
 {
-    private readonly IPurchasePayableRepository _repo;
+    private readonly IAccountsPayableRepository _repo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
 
     public GetPayableByIdHandler(
-        IPurchasePayableRepository repo,
+        IAccountsPayableRepository repo,
         IPurchaseInvoiceRepository invoiceRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c
     )
     {
         _repo = repo;
         _invoiceRepo = invoiceRepo;
         _t = t;
+        _c = c;
     }
 
     public async Task<Result<PurchasePayableDto>> Handle(
@@ -83,29 +91,26 @@ public sealed class GetPayableByIdHandler
     )
     {
         var p = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        if (p is null)
+        if (p is null || p.OriginType != AccountsPayableOriginType.PurchaseInvoice)
             return Result<PurchasePayableDto>.NotFound("Cuenta por pagar no encontrada.");
 
-        var names = await _invoiceRepo.GetSupplierNamesByIdsAsync(_t.TenantId, [p.PurchaseId], ct);
+        var names = await _invoiceRepo.GetSupplierNamesByIdsAsync(_t.TenantId, [p.OriginId], ct);
         return Result<PurchasePayableDto>.Success(
-            MapDto(p, names.GetValueOrDefault(p.PurchaseId, string.Empty))
+            MapDto(p, names.GetValueOrDefault(p.OriginId, string.Empty))
         );
     }
 
-    internal static PurchasePayableDto MapDto(
-        Domain.Modules.Purchases.Entities.PurchasePayable p,
-        string supplierName
-    ) =>
+    internal static PurchasePayableDto MapDto(AccountsPayable p, string supplierName) =>
         new(
             p.Id,
-            p.PurchaseId,
+            p.OriginId,
             p.SupplierId,
             supplierName,
             p.TotalAmount,
             p.PaidAmount,
-            p.TotalRetained,
-            p.BalanceDue,
-            p.Status,
+            p.RetainedAmount,
+            p.OutstandingAmount,
+            p.Status.ToString().ToLowerInvariant(),
             p.Installments.Count,
             p.Installments.Select(i => new PurchasePayableInstallmentDto(
                     i.Id,
@@ -113,7 +118,7 @@ public sealed class GetPayableByIdHandler
                     i.DueDate,
                     i.Amount,
                     i.PaidAmount,
-                    i.Status
+                    i.Status.ToString().ToLowerInvariant()
                 ))
                 .ToList(),
             p.CreatedAt,
@@ -124,19 +129,22 @@ public sealed class GetPayableByIdHandler
 public sealed class GetPayablesListHandler
     : IRequestHandler<GetPayablesListQuery, Result<PayablesListResponse>>
 {
-    private readonly IPurchasePayableRepository _repo;
+    private readonly IAccountsPayableRepository _repo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
 
     public GetPayablesListHandler(
-        IPurchasePayableRepository repo,
+        IAccountsPayableRepository repo,
         IPurchaseInvoiceRepository invoiceRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c
     )
     {
         _repo = repo;
         _invoiceRepo = invoiceRepo;
         _t = t;
+        _c = c;
     }
 
     public async Task<Result<PayablesListResponse>> Handle(
@@ -144,9 +152,16 @@ public sealed class GetPayablesListHandler
         CancellationToken ct
     )
     {
+        AccountsPayableStatus? status = null;
+        if (!string.IsNullOrWhiteSpace(q.Status)
+            && Enum.TryParse<AccountsPayableStatus>(q.Status.Trim(), ignoreCase: true, out var parsed))
+            status = parsed;
+
         var (items, total) = await _repo.GetPagedAsync(
             _t.TenantId,
-            q.Status,
+            _c.CompanyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            status,
             q.SupplierId,
             q.PageNumber,
             q.PageSize,
@@ -154,11 +169,11 @@ public sealed class GetPayablesListHandler
         );
         var names = await _invoiceRepo.GetSupplierNamesByIdsAsync(
             _t.TenantId,
-            items.Select(x => x.PurchaseId).Distinct().ToList(),
+            items.Select(x => x.OriginId).Distinct().ToList(),
             ct
         );
         var dtos = items
-            .Select(p => GetPayableByIdHandler.MapDto(p, names.GetValueOrDefault(p.PurchaseId, string.Empty)))
+            .Select(p => GetPayableByIdHandler.MapDto(p, names.GetValueOrDefault(p.OriginId, string.Empty)))
             .ToList();
         return Result<PayablesListResponse>.Success(
             new PayablesListResponse(dtos, total, q.PageNumber, q.PageSize)

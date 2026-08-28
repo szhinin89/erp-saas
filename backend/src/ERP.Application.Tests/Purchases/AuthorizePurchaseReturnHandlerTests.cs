@@ -4,6 +4,9 @@ using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -31,7 +34,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     private sealed record Fixture(
         PurchaseInvoice Invoice,
         PurchaseInvoiceDetail Line,
-        PurchasePayable Payable,
+        AccountsPayable Payable,
         PurchaseReturn Return
     );
 
@@ -82,13 +85,16 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         // (LandedUnitCost=115 > UnitPrice=100), el caller ajusta manualmente si lo necesita.
         _ = landedUnitCost;
 
-        var payable = PurchasePayable.Create(
-            TenantId,
-            CompanyId,
-            invoice.Id,
-            SupplierId,
-            invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal,
-            UserId
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000001",
+            invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(
+            1,
+            invoice.IssueDate.AddDays(30),
+            invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal
         );
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, UserId);
@@ -121,6 +127,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     {
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReturnSequenceRepository> SequenceRepo { get; } = new();
         public Mock<IStockRepository> StockRepo { get; } = new();
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
@@ -155,10 +162,12 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
-            InvoiceRepo
+            PayableRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(
+                    r.GetByOriginAsync(
                         TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.PurchaseInvoice,
                         f.Invoice.Id,
                         It.IsAny<CancellationToken>()
                     )
@@ -276,6 +285,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             return new AuthorizePurchaseReturnHandler(
                 ReturnRepo.Object,
                 InvoiceRepo.Object,
+                PayableRepo.Object,
                 SequenceRepo.Object,
                 StockRepo.Object,
                 CreditRepo.Object,
@@ -332,7 +342,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         f.Return.SupplierCreditAmount.Should().Be(0m);
-        f.Payable.BalanceDue.Should().BeGreaterThanOrEqualTo(0m);
+        f.Payable.OutstandingAmount.Should().BeGreaterThanOrEqualTo(0m);
     }
 
     [Fact]

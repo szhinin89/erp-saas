@@ -1,6 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -13,7 +16,7 @@ using Moq;
 namespace ERP.Application.Tests.Purchases;
 
 /// <summary>
-/// FLOW-READY-02C.2 — <c>AuthorizePurchaseCreditNoteHandler</c>: aplica <c>CreditNoteAppliedAmount</c>,
+/// FLOW-READY-02C.2 — <c>AuthorizePurchaseCreditNoteHandler</c>: aplica <c>CreditNoteAmount</c>,
 /// bloquea por excedente (ajuste obligatorio §4.2, nunca trunca), congela snapshot financiero, marca
 /// procesado el documento de recepción vinculado, nunca toca inventario/contabilidad, e idempotencia.
 /// </summary>
@@ -29,7 +32,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
 
     private sealed record Fixture(
         PurchaseInvoice Invoice,
-        PurchasePayable Payable,
+        AccountsPayable Payable,
         PurchaseCreditNote CreditNote
     );
 
@@ -73,7 +76,13 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         invoice.ReplaceLines(new[] { line }, UserId);
         invoice.Confirm(UserId);
 
-        var payable = PurchasePayable.Create(TenantId, CompanyId, invoice.Id, SupplierId, totalAmount, UserId);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000001",
+            invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount);
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, UserId);
 
@@ -114,6 +123,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
     {
         public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReturnRepository> LockRepo { get; } = new();
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
@@ -132,9 +142,15 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
-            InvoiceRepo
+            PayableRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>())
+                    r.GetByOriginAsync(
+                        TenantId,
+                        CompanyId,
+                        AccountsPayableOriginType.PurchaseInvoice,
+                        f.Invoice.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Payable);
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
@@ -144,6 +160,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
             new(
                 CreditNoteRepo.Object,
                 InvoiceRepo.Object,
+                PayableRepo.Object,
                 LockRepo.Object,
                 ReceptionRepo.Object,
                 Uow.Object,
@@ -167,10 +184,10 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         return m.Object;
     }
 
-    // ── 6. Authorize válido aplica CreditNoteAppliedAmount ──────────────
+    // ── 6. Authorize válido aplica CreditNoteAmount ──────────────
 
     [Fact]
-    public async Task Authorize_valido_aplica_CreditNoteAppliedAmount_en_PurchasePayable()
+    public async Task Authorize_valido_aplica_CreditNoteAmount_en_PurchasePayable()
     {
         var f = BuildFixture(totalAmount: 1000m, creditNoteSubtotal: 100m, creditNoteVat: 15m);
         var m = new Mocks(f);
@@ -183,8 +200,8 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Authorized);
-        f.Payable.CreditNoteAppliedAmount.Should().Be(115m);
-        f.Payable.BalanceDue.Should().Be(885m);
+        f.Payable.CreditNoteAmount.Should().Be(115m);
+        f.Payable.OutstandingAmount.Should().Be(885m);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -204,7 +221,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
-        f.Payable.CreditNoteAppliedAmount.Should().Be(0m);
+        f.Payable.CreditNoteAmount.Should().Be(0m);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -226,7 +243,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("excede");
         f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
-        f.Payable.CreditNoteAppliedAmount.Should().Be(0m);
+        f.Payable.CreditNoteAmount.Should().Be(0m);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -374,7 +391,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
 
         retry.IsSuccess.Should().BeTrue();
         retry.Value!.Id.Should().Be(first.Value!.Id);
-        f.Payable.CreditNoteAppliedAmount.Should().Be(115m); // no se aplicó dos veces
+        f.Payable.CreditNoteAmount.Should().Be(115m); // no se aplicó dos veces
     }
 
     [Fact]

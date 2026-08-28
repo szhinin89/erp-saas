@@ -667,10 +667,6 @@ public static class DependencyInjection
             ERP.Domain.Modules.Purchases.Interfaces.IPurchaseInvoiceRepository,
             ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseInvoiceRepository
         >();
-        services.AddScoped<
-            ERP.Domain.Modules.Purchases.Interfaces.IPurchasePayableRepository,
-            ERP.Infrastructure.Persistence.Repositories.Purchases.PurchasePayableRepository
-        >();
         services.AddScoped<ERP.Infrastructure.Persistence.Services.SriTaxResolver>();
         services.AddScoped<ERP.Application.Common.Services.ISriTaxResolver>(sp =>
             sp.GetRequiredService<ERP.Infrastructure.Persistence.Services.SriTaxResolver>()

@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -49,6 +51,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
 {
     private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReturnRepository _lockRepo;
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly IUnitOfWork _uow;
@@ -59,6 +62,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
     public AuthorizePurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReturnRepository lockRepo,
         IPurchaseReceptionDocumentRepository receptionRepo,
         IUnitOfWork uow,
@@ -69,6 +73,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
     {
         _creditNoteRepo = creditNoteRepo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _lockRepo = lockRepo;
         _receptionRepo = receptionRepo;
         _uow = uow;
@@ -139,7 +144,13 @@ public sealed class AuthorizePurchaseCreditNoteHandler
                 return Result<PurchaseCreditNoteDto>.NotFound("Factura de compra no encontrada.");
             }
 
-            var payable = await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+            var payable = await _payableRepo.GetByOriginAsync(
+                tid,
+                invoice.CompanyId,
+                AccountsPayableOriginType.PurchaseInvoice,
+                invoice.Id,
+                ct
+            );
             if (payable is null)
             {
                 await _uow.RollbackAsync(ct);
@@ -148,7 +159,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
                 );
             }
 
-            var balanceDueBeforeApplication = payable.BalanceDue;
+            var balanceDueBeforeApplication = payable.OutstandingAmount;
             var authorizeHash = ComputeAuthorizePayloadHash(
                 creditNote.Id,
                 cmd.ClientRequestId
@@ -243,7 +254,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
             await _uow.CommitAsync(ct);
 
             return Result<PurchaseCreditNoteDto>.Success(
-                CreditNoteMap.ToDto(creditNote, invoice.InvoiceNumber, invoice.SupplierName, payable.BalanceDue)
+                CreditNoteMap.ToDto(creditNote, invoice.InvoiceNumber, invoice.SupplierName, payable.OutstandingAmount)
             );
         }
         catch (InvalidOperationException ex)

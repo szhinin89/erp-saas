@@ -3,6 +3,8 @@ using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -45,6 +47,7 @@ public sealed class AuthorizePurchaseReturnHandler
 {
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReturnSequenceRepository _sequenceRepo;
     private readonly IStockRepository _stockRepo;
     private readonly ISupplierCreditRepository _creditRepo;
@@ -56,6 +59,7 @@ public sealed class AuthorizePurchaseReturnHandler
     public AuthorizePurchaseReturnHandler(
         IPurchaseReturnRepository returnRepo,
         IPurchaseInvoiceRepository invoiceRepo,
+        IAccountsPayableRepository payableRepo,
         IPurchaseReturnSequenceRepository sequenceRepo,
         IStockRepository stockRepo,
         ISupplierCreditRepository creditRepo,
@@ -67,6 +71,7 @@ public sealed class AuthorizePurchaseReturnHandler
     {
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
+        _payableRepo = payableRepo;
         _sequenceRepo = sequenceRepo;
         _stockRepo = stockRepo;
         _creditRepo = creditRepo;
@@ -150,7 +155,13 @@ public sealed class AuthorizePurchaseReturnHandler
                 return Result<PurchaseReturnDto>.NotFound("Factura de compra no encontrada.");
             }
 
-            var payable = await _invoiceRepo.GetPayableByPurchaseIdAsync(tid, invoice.Id, ct);
+            var payable = await _payableRepo.GetByOriginAsync(
+                tid,
+                invoice.CompanyId,
+                AccountsPayableOriginType.PurchaseInvoice,
+                invoice.Id,
+                ct
+            );
             if (payable is null)
             {
                 await _uow.RollbackAsync(ct);
@@ -243,7 +254,7 @@ public sealed class AuthorizePurchaseReturnHandler
                 ct
             );
             var authorizeHash = ComputeAuthorizePayloadHash(purchaseReturn.Id, cmd.ClientRequestId);
-            var balanceDueBeforeApplication = payable.BalanceDue;
+            var balanceDueBeforeApplication = payable.OutstandingAmount;
 
             SupplierCredit? credit;
             try

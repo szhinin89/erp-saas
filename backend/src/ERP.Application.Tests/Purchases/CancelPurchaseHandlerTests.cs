@@ -2,6 +2,9 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -101,20 +104,23 @@ public sealed class CancelPurchaseHandlerTests
 
     private static (
         Mock<IPurchaseInvoiceRepository> repo,
+        Mock<IAccountsPayableRepository> payableRepo,
         Mock<IStockRepository> stockRepo,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow
     ) BuildMocks()
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
+        var payableRepo = new Mock<IAccountsPayableRepository>();
         var stockRepo = new Mock<IStockRepository>();
         var purchaseReturnRepo = new Mock<IPurchaseReturnRepository>();
         var uow = new Mock<IUnitOfWork>();
-        return (repo, stockRepo, purchaseReturnRepo, uow);
+        return (repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
     }
 
     private static CancelPurchaseHandler BuildHandler(
         Mock<IPurchaseInvoiceRepository> repo,
+        Mock<IAccountsPayableRepository> payableRepo,
         Mock<IStockRepository> stockRepo,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow
@@ -129,6 +135,7 @@ public sealed class CancelPurchaseHandlerTests
 
         return new CancelPurchaseHandler(
             repo.Object,
+            payableRepo.Object,
             stockRepo.Object,
             purchaseReturnRepo.Object,
             uow.Object,
@@ -142,20 +149,20 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_valida_cancela_la_compra()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((PurchasePayable?)null);
+            .ReturnsAsync((AccountsPayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((IssuedWithholding?)null);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
             CancellationToken.None
@@ -172,20 +179,20 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_con_presentacion_de_compra_revierte_inventario_en_unidad_base()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoiceWithPackagedLine();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((PurchasePayable?)null);
+            .ReturnsAsync((AccountsPayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((IssuedWithholding?)null);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
             CancellationToken.None
@@ -219,20 +226,20 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_valida_adquiere_Lock_A_por_el_PurchaseInvoiceId()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((PurchasePayable?)null);
+            .ReturnsAsync((AccountsPayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((IssuedWithholding?)null);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
             CancellationToken.None
@@ -255,12 +262,12 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_sobre_compra_inexistente_retorna_NotFound_y_revierte_la_transaccion_y_lock_ya_adquiridos()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var missingId = Guid.NewGuid();
         repo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseInvoice?)null);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(missingId, "Motivo"),
             CancellationToken.None
@@ -280,18 +287,23 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_de_compra_con_pagos_aplicados_retorna_ValidationFailure_y_hace_rollback()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
-        var payable = PurchasePayable.Create(TenantId, CompanyId, inv.Id, SupplierId, 100m, UserId);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
+            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+        );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         payable.RegisterPayment(30m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(payable);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None
@@ -310,18 +322,23 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_de_compra_con_credito_de_proveedor_aplicado_retorna_ValidationFailure_PI_CANC_02()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
-        var payable = PurchasePayable.Create(TenantId, CompanyId, inv.Id, SupplierId, 100m, UserId);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
+            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+        );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         payable.ApplySupplierCredit(40m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(payable);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None
@@ -343,13 +360,13 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_de_compra_ya_anulada_por_otra_transaccion_concurrente_retorna_ValidationFailure_y_hace_rollback()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         inv.Cancel("Anulada por otra transacción concurrente", UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Segunda anulación concurrente"),
             CancellationToken.None
@@ -377,13 +394,18 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_con_PurchaseReturn_Authorized_asociada_retorna_ValidationFailure_PI_CANC_01()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
-        var payable = PurchasePayable.Create(TenantId, CompanyId, inv.Id, SupplierId, 100m, UserId);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
+            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+        );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(payable);
         purchaseReturnRepo
@@ -397,7 +419,7 @@ public sealed class CancelPurchaseHandlerTests
             )
             .ReturnsAsync(true);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None
@@ -407,7 +429,7 @@ public sealed class CancelPurchaseHandlerTests
         result.Error.Should().Contain("devolución de compra autorizada");
         inv.Status.Should().NotBe(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
         payable
-            .SupplierCreditAppliedAmount.Should()
+            .SupplierCreditAmount.Should()
             .Be(0m, "PI-CANC-02 nunca debe evaluarse/mutar nada tras bloquear por PI-CANC-01");
         uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -422,13 +444,18 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Anulacion_sin_PurchaseReturn_Authorized_y_sin_credito_aplicado_completa_la_anulacion()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
-        var payable = PurchasePayable.Create(TenantId, CompanyId, inv.Id, SupplierId, 100m, UserId);
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
+            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+        );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(payable);
         repo.Setup(r =>
@@ -446,7 +473,7 @@ public sealed class CancelPurchaseHandlerTests
             )
             .ReturnsAsync(false);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None
@@ -472,21 +499,21 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task PI_CANC_01_recibe_exactamente_TenantId_CompanyId_PurchaseInvoiceId_y_el_CancellationToken()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((PurchasePayable?)null);
+            .ReturnsAsync((AccountsPayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((IssuedWithholding?)null);
 
         using var cts = new CancellationTokenSource();
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         await handler.Handle(new CancelPurchaseCommand(inv.Id, "Motivo"), cts.Token);
 
         purchaseReturnRepo.Verify(
@@ -501,7 +528,7 @@ public sealed class CancelPurchaseHandlerTests
     [Fact]
     public async Task Orden_transaccional_BeginTx_LockA_recarga_PI_CANC_01_mutacion_SaveChanges_Commit()
     {
-        var (repo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
@@ -520,11 +547,11 @@ public sealed class CancelPurchaseHandlerTests
                 r.AcquireFinancialLockAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
             )
             .Returns(Task.CompletedTask);
-        repo.InSequence(sequence)
+        payableRepo.InSequence(sequence)
             .Setup(r =>
-                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((PurchasePayable?)null);
+            .ReturnsAsync((AccountsPayable?)null);
         purchaseReturnRepo
             .InSequence(sequence)
             .Setup(r =>
@@ -544,7 +571,7 @@ public sealed class CancelPurchaseHandlerTests
             .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
             CancellationToken.None
