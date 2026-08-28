@@ -274,7 +274,7 @@ export function UsersPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t("app.nav.group.configuracion")}
+      kicker={t("app.nav.group.admin")}
       title={t("users.title", "Usuarios empresariales")}
       subtitle={t(
         "users.subtitle",

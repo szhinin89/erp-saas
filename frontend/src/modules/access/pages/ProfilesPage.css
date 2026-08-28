@@ -6,6 +6,15 @@
   gap: var(--space-2);
 }
 
+/* ── PermissionsAssignmentPage (ADMINISTRATION-CLEAN-ACCESS-01) ────────── */
+.pa-profile-select-wrap {
+  max-width: 420px;
+}
+
+.pa-status-row {
+  margin-top: var(--space-4);
+}
+
 /* ── Modal: cuerpo dos columnas ──────────────────────────────── */
 .prf-modal-body-grid {
   display: grid;

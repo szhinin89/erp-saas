@@ -467,7 +467,9 @@ public sealed class KernelRegistryTests
             .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.SessionsView);
         // ADMIN-SESSIONS-ACTIVITY-POLISH-01: reordenado antes de Actividad (SortOrder 45 → 40).
-        accessSessions.SortOrder.Should().Be(40);
+        // ADMINISTRATION-CLEAN-ACCESS-01: "Asignación de permisos" se insertó en SortOrder 30,
+        // corriendo Seguridad administrativa/Sesiones/Actividad un paso (40 → 50).
+        accessSessions.SortOrder.Should().Be(50);
 
         navigation.Should().NotContain(n => n.RoutePath == "/rrhh");
 
@@ -540,13 +542,45 @@ public sealed class KernelRegistryTests
         // usuario autenticado) mientras la pantalla/API solo estaban protegidas por
         // [Authorize(Roles = "Admin")]. Ahora exige admin.delegation.view, igual que el resto del
         // grupo Administración.
+        // ADMINISTRATION-CLEAN-ACCESS-01: renombrado a "Seguridad administrativa" (antes "Delegar
+        // Funciones" — nombre engañoso para una matriz permanente de capacidades, no delegación
+        // temporal); mismo Id/ruta/permiso. SortOrder corrido de 30 a 40 por la inserción de
+        // "Asignación de permisos" en 30.
         var navigation = KernelRegistry.Navigation;
 
         var delegation = navigation.Single(n => n.RoutePath == "/admin/security");
         delegation.GroupCode.Should().Be("admin");
         delegation.PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.AdminPermissions.DelegationView);
-        delegation.SortOrder.Should().Be(30);
+        delegation.SortOrder.Should().Be(40);
+    }
+
+    [Fact]
+    public void Navigation_admin_permissions_assignment_item_exists_with_profiles_permission()
+    {
+        // ADMINISTRATION-CLEAN-ACCESS-01: nueva pantalla, extraída de la sección de permisos que
+        // vivía embebida en el formulario de Perfiles. Reutiliza el mismo permiso que ya exigen
+        // GET/PUT .../profiles/{id}/permissions en AccessProfilesController — sin permiso nuevo.
+        var navigation = KernelRegistry.Navigation;
+
+        var permissionsAssignment = navigation.Single(n => n.RoutePath == "/admin/permissions");
+        permissionsAssignment.GroupCode.Should().Be("admin");
+        permissionsAssignment.PermissionKey.Should()
+            .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.ProfilesView);
+        permissionsAssignment.SortOrder.Should().Be(30);
+        permissionsAssignment.ParentItemId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Navigation_admin_group_has_exactly_six_items_all_with_a_permission()
+    {
+        // ADMINISTRATION-CLEAN-ACCESS-01: Usuarios, Perfiles, Asignación de permisos, Seguridad
+        // administrativa, Sesiones de usuario, Actividad — ni más ni menos, y ninguno visible sin
+        // permiso (guard contra rutas huérfanas o NavItems sin gate).
+        var adminItems = KernelRegistry.Navigation.Where(n => n.GroupCode == "admin").ToList();
+
+        adminItems.Should().HaveCount(6);
+        adminItems.Should().OnlyContain(n => n.PermissionKey != null);
     }
 
     [Fact]
@@ -572,12 +606,14 @@ public sealed class KernelRegistryTests
     [Fact]
     public void Navigation_admin_group_follows_the_requested_menu_order()
     {
-        // ADMIN-SESSIONS-ACTIVITY-POLISH-01: Acceso usuarios, Perfiles, Delegación de
-        // administración, Sesiones de usuario, Actividad — en ese orden.
+        // ADMIN-SESSIONS-ACTIVITY-POLISH-01 / ADMINISTRATION-CLEAN-ACCESS-01: Usuarios, Perfiles,
+        // Asignación de permisos, Seguridad administrativa, Sesiones de usuario, Actividad — en
+        // ese orden.
         var expectedRouteOrder = new[]
         {
             "/access/users",
             "/admin/roles",
+            "/admin/permissions",
             "/admin/security",
             "/admin/access/sessions",
             "/admin/activity",

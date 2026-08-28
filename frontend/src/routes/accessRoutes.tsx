@@ -9,6 +9,10 @@ const ProfilesPage = lazyNamedPage(
   () => import("../modules/access/pages/ProfilesPage"),
   "ProfilesPage",
 );
+const PermissionsAssignmentPage = lazyNamedPage(
+  () => import("../modules/access/pages/PermissionsAssignmentPage"),
+  "PermissionsAssignmentPage",
+);
 const UsersPage = lazyNamedPage(
   () => import("../modules/access/users/pages/UsersPage"),
   "UsersPage",
@@ -41,6 +45,11 @@ export const accessRoutes = [
     element={<Navigate to="/access/users" replace />}
   />,
   <Route key="admin-roles" path="/admin/roles" element={<ProfilesPage />} />,
+  <Route
+    key="admin-permissions"
+    path="/admin/permissions"
+    element={<PermissionsAssignmentPage />}
+  />,
   <Route
     key="security-legacy"
     path="/security"

@@ -350,7 +350,7 @@ export function UserConfigPage() {
   if (loading) {
     return (
       <ErpPageTemplate
-        kicker={t("app.nav.group.configuracion")}
+        kicker={t("app.nav.group.admin")}
         title={t("common.loading")}
       >
         <LoadingState />
@@ -361,7 +361,7 @@ export function UserConfigPage() {
   if (loadError) {
     return (
       <ErpPageTemplate
-        kicker={t("app.nav.group.configuracion")}
+        kicker={t("app.nav.group.admin")}
         title={t("users.config.title", "Configuración de usuario")}
       >
         <ZHPageNotice
