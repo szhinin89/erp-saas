@@ -44,4 +44,23 @@ public sealed class SupplierPaymentsController : ControllerBase
                 ct
             )
         );
+
+    [HttpGet("{id:guid}")]
+    [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.View}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetSupplierPaymentByIdQuery(id), ct));
+
+    [HttpGet]
+    [Authorize(Policy = $"perm:{SupplierPaymentsPermissions.View}")]
+    public async Task<IActionResult> GetList(
+        [FromQuery] Guid? supplierId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetSupplierPaymentsListQuery(supplierId, status, page, pageSize), ct),
+            "OK"
+        );
 }

@@ -59,6 +59,7 @@ const MENU_DESCRIPTION_BY_ROUTE_PREFIX: ReadonlyArray<readonly [string, string]>
   ["/inventory", "Stock, kardex y movimientos"],
   ["/purchases", "Facturas, recepción y proveedores"],
   ["/payables", "Cuentas por pagar de Compras y Gastos"],
+  ["/supplier-payments", "Pagos registrados a proveedores"],
   ["/expenses/documents", "Registro de gastos por proveedor"],
   ["/expenses/categories", "Catalogo jerarquico de gastos"],
   ["/expenses", "Documentos y catalogo de gastos"],

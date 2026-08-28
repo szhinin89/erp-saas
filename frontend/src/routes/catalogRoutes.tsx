@@ -89,6 +89,18 @@ const PayableDetailPage = lazyNamedPage(
   () => import("../modules/payables/pages/PayableDetailPage"),
   "PayableDetailPage",
 );
+const SupplierPaymentsPage = lazyNamedPage(
+  () => import("../modules/supplier-payments/pages/SupplierPaymentsPage"),
+  "SupplierPaymentsPage",
+);
+const SupplierPaymentFormPage = lazyNamedPage(
+  () => import("../modules/supplier-payments/pages/SupplierPaymentFormPage"),
+  "SupplierPaymentFormPage",
+);
+const SupplierPaymentDetailPage = lazyNamedPage(
+  () => import("../modules/supplier-payments/pages/SupplierPaymentDetailPage"),
+  "SupplierPaymentDetailPage",
+);
 const PurchasesPage = lazyNamedPage(
   () => import("../modules/purchases/pages/PurchasesPage"),
   "PurchasesPage",
@@ -364,6 +376,19 @@ export const catalogRoutes = [
   // -- Payables (generico: Compras + Gastos) -------------------------------
   <Route key="payables-list" path="/payables" element={<PayablesPage />} />,
   <Route key="payables-detail" path="/payables/:id" element={<PayableDetailPage />} />,
+
+  // -- Supplier Payments (modulo independiente de Pagos a Proveedores) ----
+  <Route key="supplier-payments-list" path="/supplier-payments" element={<SupplierPaymentsPage />} />,
+  <Route
+    key="supplier-payments-new"
+    path="/supplier-payments/new"
+    element={<SupplierPaymentFormPage />}
+  />,
+  <Route
+    key="supplier-payments-detail"
+    path="/supplier-payments/:id"
+    element={<SupplierPaymentDetailPage />}
+  />,
 
   // -- Expenses -----------------------------------------------------------
   <Route

@@ -453,7 +453,10 @@ public sealed class RegisterSupplierPaymentCommandHandler
             }
 
             await _uow.CommitAsync(ct);
-            return Result<SupplierPaymentDto>.Success(Map.ToDto(payment), ApiResponseCodes.Common.Created);
+            return Result<SupplierPaymentDto>.Success(
+                SupplierPaymentDtoMapper.ToDto(payment),
+                ApiResponseCodes.Common.Created
+            );
         }
         catch (InvalidOperationException ex)
         {
@@ -470,7 +473,10 @@ public sealed class RegisterSupplierPaymentCommandHandler
 
 // ── Mapping ─────────────────────────────────────────────────────────────
 
-file static class Map
+// SUPPLIER-PAYMENTS-FRONTEND-15E: internal (no longer file-scoped) para que
+// GetSupplierPaymentUseCases.cs (misma capa, mismo namespace) reutilice el mismo mapeo — sin
+// duplicar la fuente de verdad de "cómo se ve un SupplierPaymentDto".
+internal static class SupplierPaymentDtoMapper
 {
     public static SupplierPaymentDto ToDto(SupplierPayment p) =>
         new(

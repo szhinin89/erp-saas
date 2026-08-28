@@ -143,4 +143,108 @@ public sealed class SupplierPaymentsControllerTests
 
         response.Should().BeOfType<ConflictObjectResult>();
     }
+
+    // ── GET /{id} y GET / ────────────────────────────────────────────────────
+
+    [Fact]
+    public void GetById_exige_perm_supplier_payments_view()
+    {
+        var method = typeof(SupplierPaymentsController).GetMethod(
+            nameof(SupplierPaymentsController.GetById)
+        )!;
+        var attr = method
+            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+            .Cast<AuthorizeAttribute>()
+            .Single();
+
+        attr.Policy.Should().Be($"perm:{SupplierPaymentsPermissions.View}");
+    }
+
+    [Fact]
+    public void GetList_exige_perm_supplier_payments_view()
+    {
+        var method = typeof(SupplierPaymentsController).GetMethod(
+            nameof(SupplierPaymentsController.GetList)
+        )!;
+        var attr = method
+            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+            .Cast<AuthorizeAttribute>()
+            .Single();
+
+        attr.Policy.Should().Be($"perm:{SupplierPaymentsPermissions.View}");
+    }
+
+    [Fact]
+    public async Task GetById_retorna_200_y_envia_la_query_correcta()
+    {
+        var id = Guid.NewGuid();
+        object? sentRequest = null;
+        var controller = BuildController(req =>
+        {
+            sentRequest = req;
+            return Result<SupplierPaymentDto>.Success(SampleDto(id));
+        });
+
+        var response = await controller.GetById(id, CancellationToken.None);
+
+        response.Should().BeOfType<OkObjectResult>();
+        sentRequest.Should().Be(new GetSupplierPaymentByIdQuery(id));
+    }
+
+    [Fact]
+    public async Task GetById_inexistente_retorna_404()
+    {
+        var controller = BuildController(_ =>
+            Result<SupplierPaymentDto>.NotFound("Pago a proveedor no encontrado.")
+        );
+
+        var response = await controller.GetById(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetList_usa_valores_por_defecto_cuando_no_se_especifican()
+    {
+        object? sentRequest = null;
+        var controller = BuildController(req =>
+        {
+            sentRequest = req;
+            return Result<SupplierPaymentsListResponse>.Success(
+                new SupplierPaymentsListResponse(Array.Empty<SupplierPaymentListItemDto>(), 0, 1, 25)
+            );
+        });
+
+        await controller.GetList(ct: CancellationToken.None);
+
+        sentRequest.Should().Be(new GetSupplierPaymentsListQuery());
+    }
+
+    [Fact]
+    public async Task GetList_envia_filtros_de_supplierId_y_status()
+    {
+        object? sentRequest = null;
+        var controller = BuildController(req =>
+        {
+            sentRequest = req;
+            return Result<SupplierPaymentsListResponse>.Success(
+                new SupplierPaymentsListResponse(Array.Empty<SupplierPaymentListItemDto>(), 0, 2, 10)
+            );
+        });
+
+        var supplierId = Guid.NewGuid();
+
+        var response = await controller.GetList(
+            supplierId: supplierId,
+            status: "Confirmed",
+            page: 2,
+            pageSize: 10,
+            ct: CancellationToken.None
+        );
+
+        response.Should().BeOfType<OkObjectResult>();
+        sentRequest
+            .Should()
+            .Be(new GetSupplierPaymentsListQuery(supplierId, "Confirmed", 2, 10));
+    }
 }

@@ -58,12 +58,14 @@ public sealed class PayablesLegacyCleanupTests
     }
 
     /// <summary>
-    /// SUPPLIER-PAYMENTS-REGISTER-15C — <c>SupplierPaymentsController</c> expone exactamente el
-    /// endpoint de registro esperado, en la ruta genérica <c>/api/v1/supplier-payments</c> — nunca
-    /// anidado bajo <c>/finance/</c> ni bajo <c>/payables/</c> (que sigue siendo solo lectura).
+    /// SUPPLIER-PAYMENTS-REGISTER-15C / SUPPLIER-PAYMENTS-FRONTEND-15E — <c>SupplierPaymentsController</c>
+    /// expone exactamente los endpoints esperados (registro + lectura mínima para el frontend), en
+    /// la ruta genérica <c>/api/v1/supplier-payments</c> — nunca anidado bajo <c>/finance/</c> ni bajo
+    /// <c>/payables/</c> (que sigue siendo solo lectura de <c>AccountsPayable</c>). Ningún endpoint de
+    /// edición/reversa todavía — "sin Draft, sin edición posterior".
     /// </summary>
     [Fact]
-    public void SupplierPaymentsController_expone_unicamente_el_endpoint_de_registro()
+    public void SupplierPaymentsController_expone_unicamente_registro_y_lectura()
     {
         var apiAssembly = typeof(ERP.API.Controllers.PayablesController).Assembly;
         var controller = apiAssembly.GetTypes().Single(t => t.Name == "SupplierPaymentsController");
@@ -79,6 +81,6 @@ public sealed class PayablesLegacyCleanupTests
             .Where(m => !m.IsSpecialName)
             .Select(m => m.Name)
             .ToList();
-        publicMethods.Should().ContainSingle().Which.Should().Be("Register");
+        publicMethods.Should().BeEquivalentTo(new[] { "Register", "GetById", "GetList" });
     }
 }

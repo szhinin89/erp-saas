@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-28T12:47:14.797Z",
+  "generatedAt": "2026-08-28T14:55:21.062Z",
   "summary": {
-    "total": 107,
-    "allowed": 107,
+    "total": 108,
+    "allowed": 108,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -37,6 +37,7 @@
     "/api/saas",
     "/api/security",
     "/api/settings",
+    "/api/supplier-payments",
     "/api/taxrates",
     "/api/public",
     "/api/catalog",
@@ -674,6 +675,8 @@
       "endpoint": "/api/v1/payables",
       "files": [
         "frontend/src/modules/payables/api/payablesService.ts",
+        "frontend/src/modules/supplier-payments/api/pendingPayablesFacade.ts",
+        "frontend/src/modules/supplier-payments/components/SupplierPaymentApplicationsEditor.tsx",
         "frontend/src/routes/payablesRoutes.legacyCleanup.test.tsx"
       ],
       "legacy": false,
@@ -930,6 +933,14 @@
       "endpoint": "/api/v1/setup/status",
       "files": [
         "frontend/src/modules/auth/pages/SetupPage.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/supplier-payments",
+      "files": [
+        "frontend/src/modules/supplier-payments/api/supplierPaymentService.ts"
       ],
       "legacy": false,
       "allowed": true

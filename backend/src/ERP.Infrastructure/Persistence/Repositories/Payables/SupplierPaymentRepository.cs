@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,36 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
             .Include(x => x.AllocationLines)
             .Where(x => x.TenantId == tenantId)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public async Task<(IReadOnlyList<SupplierPayment> Items, int Total)> SearchAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid? supplierId,
+        SupplierPaymentStatus? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    )
+    {
+        var q = _db.SupplierPayments.Where(x => x.TenantId == tenantId && x.CompanyId == companyId);
+
+        if (supplierId is not null)
+            q = q.Where(x => x.SupplierId == supplierId.Value);
+        if (status.HasValue)
+            q = q.Where(x => x.Status == status.Value);
+
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(x => x.MethodLines)
+            .Include(x => x.ApplicationLines)
+            .Include(x => x.AllocationLines)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
 
     public Task<bool> ExistsByReceiptNumberAsync(
         Guid tenantId,
