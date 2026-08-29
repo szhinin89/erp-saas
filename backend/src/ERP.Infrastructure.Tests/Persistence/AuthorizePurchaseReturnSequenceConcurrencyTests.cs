@@ -171,6 +171,9 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
+            .AddInterceptors(
+                new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+            )
             .Options;
         return new ErpDbContext(
             options,

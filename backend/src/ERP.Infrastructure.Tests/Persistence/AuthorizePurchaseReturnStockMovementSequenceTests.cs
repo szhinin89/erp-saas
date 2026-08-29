@@ -173,6 +173,9 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
+            .AddInterceptors(
+                new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+            )
             .Options;
         return new ErpDbContext(
             options,
@@ -217,6 +220,7 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
             itemId: _itemId,
             warehouseId: _warehouseId
         );
+        line.ApplyTaxes("10", 10m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _userId);
         inv.Confirm(_userId);
         db.PurchaseInvoices.Add(inv);
