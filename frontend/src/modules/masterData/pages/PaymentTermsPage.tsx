@@ -11,6 +11,8 @@ import type {
   UpdatePaymentTermPayload,
 } from "../api/paymentTermService";
 import { paymentTermService } from "../api/paymentTermService";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 import "../../../styles/shared/items-catalog.css";
 
 type Tab = "listado" | "nuevo";
@@ -105,15 +107,30 @@ export function PaymentTermsPage() {
   };
 
   const handleToggle = async (pt: PaymentTermDto) => {
+    const confirmed = await message.confirm({
+      title: pt.isActive ? `Desactivar "${pt.name}"` : `Activar "${pt.name}"`,
+      message: pt.isActive
+        ? `"${pt.name}" dejará de estar disponible para nuevas operaciones a crédito. El histórico existente no se elimina.`
+        : `"${pt.name}" volverá a estar disponible para nuevas operaciones a crédito.`,
+      variant: pt.isActive ? "danger" : "warning",
+      confirmLabel: pt.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     try {
       if (pt.isActive) {
         await paymentTermService.disable(pt.id);
       } else {
         await paymentTermService.enable(pt.id);
       }
-      fetchItems();
-    } catch {
-      /* */
+      await fetchItems();
+      message.success(
+        pt.isActive ? "Plazo de pago desactivado correctamente." : "Plazo de pago activado correctamente.",
+      );
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, { generic: "No se pudo cambiar el estado del plazo de pago." }),
+      );
     }
   };
 

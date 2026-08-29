@@ -301,15 +301,25 @@ export function UserConfigPage() {
     // No existe membershipService.getById — se resuelve el companyUserId buscando por username
     // en la misma lista que ya consume UsersPage, igual que en Fase 1.
     let resolvedCompanyUserId = membership?.companyUserId ?? null;
+    let hadBlockError = false;
     try {
       const rows = await membershipService.list(false);
       const found = rows.find((r) => r.username === values.username);
       if (found) resolvedCompanyUserId = found.companyUserId;
-    } catch {
+    } catch (err) {
       // best-effort: si esto falla no podemos guardar sucursales/preferencias en esta pasada.
+      hadBlockError = true;
+      setBlockErrors((prev) => ({
+        ...prev,
+        general: formatApiRequestError(err, {
+          generic: t(
+            "users.membership.lookupError",
+            "No se pudo confirmar el usuario guardado; sucursales y preferencias no se actualizaron en esta pasada.",
+          ),
+        }),
+      }));
     }
 
-    let hadBlockError = false;
     if (resolvedCompanyUserId) {
       try {
         await branchAssignmentService.updateMembershipBranches(

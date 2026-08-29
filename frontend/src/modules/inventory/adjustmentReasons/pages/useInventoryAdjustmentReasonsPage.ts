@@ -174,7 +174,7 @@ export function useInventoryAdjustmentReasonsPage() {
       try {
         await inventoryAdjustmentReasonsService.toggle(row.id, !row.isActive);
         await fetchList();
-        message.info(
+        message.success(
           row.isActive
             ? t(
                 "inventory.adjustmentReasons.messages.disabled",
@@ -186,13 +186,14 @@ export function useInventoryAdjustmentReasonsPage() {
               ),
         );
       } catch (err) {
-        setError(
+        const msg =
           readApiErrorMessage(err) ??
-            t(
-              "inventory.adjustmentReasons.messages.toggleError",
-              "No se pudo cambiar el estado del motivo.",
-            ),
-        );
+          t(
+            "inventory.adjustmentReasons.messages.toggleError",
+            "No se pudo cambiar el estado del motivo.",
+          );
+        setError(msg);
+        message.error(msg);
       } finally {
         setToggling(false);
       }

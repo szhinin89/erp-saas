@@ -96,7 +96,14 @@ export function SupplierCreditDetailPage() {
 
   const handleReverseRefund = async (movement: SupplierCreditMovementDto) => {
     if (!credit) return;
-    const reason = window.prompt("Motivo de la reversa del reembolso:");
+    const reason = await message.prompt({
+      title: "Revertir reembolso",
+      label: "Motivo de la reversa del reembolso",
+      message: "Esta acción no se puede deshacer.",
+      variant: "danger",
+      confirmLabel: "Revertir reembolso",
+      required: true,
+    });
     if (!reason?.trim()) return;
     setReversing(movement.id);
     try {

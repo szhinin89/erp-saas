@@ -20,6 +20,8 @@ import {
   creditTermModeName,
   creditTermService,
 } from "../api/creditTermService";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 
 import "../../../styles/shared/items-catalog.css";
 
@@ -131,15 +133,30 @@ export function CreditTermsPage() {
   };
 
   const handleToggle = async (ct: CreditTermDto) => {
+    const confirmed = await message.confirm({
+      title: ct.isActive ? `Desactivar "${ct.name}"` : `Activar "${ct.name}"`,
+      message: ct.isActive
+        ? `"${ct.name}" dejará de estar disponible para nuevas operaciones a crédito. El histórico existente no se elimina.`
+        : `"${ct.name}" volverá a estar disponible para nuevas operaciones a crédito.`,
+      variant: ct.isActive ? "danger" : "warning",
+      confirmLabel: ct.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     try {
       if (ct.isActive) {
         await creditTermService.disable(ct.id);
       } else {
         await creditTermService.enable(ct.id);
       }
-      fetchItems();
-    } catch {
-      /* */
+      await fetchItems();
+      message.success(
+        ct.isActive ? "Plazo de crédito desactivado correctamente." : "Plazo de crédito activado correctamente.",
+      );
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, { generic: "No se pudo cambiar el estado del plazo de crédito." }),
+      );
     }
   };
 

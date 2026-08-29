@@ -419,6 +419,55 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
     });
   });
 
+  it("CRITICAL-CONFIRMATIONS-CLEANUP-07: si falla la búsqueda del usuario recién creado, no muestra falso éxito", async () => {
+    // Antes de la corrección: este catch estaba vacío y el flujo caía directo a
+    // message.success("Usuario configurado correctamente.") aunque sucursales/preferencias
+    // nunca se hubieran intentado guardar (resolvedCompanyUserId se quedaba en null).
+    vi.mocked(membershipService.lookupUserByUsername).mockResolvedValue({
+      identityUserExists: false,
+      fullName: null,
+      membership: null,
+    });
+    vi.mocked(membershipService.list).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 500, data: { message: { user: "Error interno." } } },
+    });
+
+    renderAt("/access/users/new");
+    await waitFor(() => expect(screen.getByLabelText("Username")).toBeTruthy());
+
+    fireEvent.change(screen.getByLabelText("Username"), {
+      target: { value: "nuevo" },
+    });
+    fireEvent.blur(screen.getByLabelText("Username"));
+
+    await waitFor(() => expect(screen.getByLabelText("Nombre")).toBeTruthy());
+    fireEvent.change(screen.getByLabelText("Nombre"), {
+      target: { value: "Nuevo" },
+    });
+    fireEvent.change(screen.getByLabelText("Apellido"), {
+      target: { value: "Usuario" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), {
+      target: { value: "Passw0rd" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar configuración" }),
+    );
+
+    await waitFor(() => {
+      expect(membershipService.createSystemUser).toHaveBeenCalled();
+      expect(message.error).toHaveBeenCalledWith(
+        "El usuario se guardó, pero algunas secciones no se pudieron actualizar. Revísalas antes de continuar.",
+      );
+    });
+    expect(message.success).not.toHaveBeenCalled();
+    // No navega con falso éxito: al no resolverse companyUserId, sucursales/preferencias no se
+    // intentaron guardar y el usuario se queda viendo el error, no la lista.
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
   it("si se cancela la confirmación de creación, no llama createSystemUser", async () => {
     vi.mocked(membershipService.lookupUserByUsername).mockResolvedValue({
       identityUserExists: false,

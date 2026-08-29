@@ -17,6 +17,7 @@ import { ZHModal } from "../../../../components/zh/ZHModal";
 import { useI18n } from "../../../../i18n/i18n";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { readApiErrorMessage } from "../../../lib/apiError";
+import { message } from "../../../../lib/messages";
 import {
   categoryNodeService,
   type CategoryNodeDto,
@@ -208,16 +209,33 @@ export function TreeEditorPage() {
     }
   });
 
-  const handleToggleStatus = async (id: string, isActive: boolean) => {
+  const handleToggleStatus = async (node: CategoryNodeDto) => {
+    const confirmed = await message.confirm({
+      title: node.isActive ? `Desactivar "${node.name}"` : `Activar "${node.name}"`,
+      message: node.isActive
+        ? `"${node.name}" dejará de estar disponible para nuevos ítems. El histórico existente no se elimina.`
+        : `"${node.name}" volverá a estar disponible para nuevos ítems.`,
+      variant: node.isActive ? "danger" : "warning",
+      confirmLabel: node.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     setError("");
     try {
-      if (isActive) await categoryNodeService.disable(id);
-      else await categoryNodeService.enable(id);
+      if (node.isActive) await categoryNodeService.disable(node.id);
+      else await categoryNodeService.enable(node.id);
       await loadTree();
-    } catch {
-      setError(
-        t("catalog.tree.toggleError", "Error al cambiar el estado."),
+      message.success(
+        node.isActive
+          ? t("catalog.tree.toggleDisabled", "Categoría desactivada correctamente.")
+          : t("catalog.tree.toggleEnabled", "Categoría activada correctamente."),
       );
+    } catch (err: unknown) {
+      const msg =
+        readApiErrorMessage(err) ??
+        t("catalog.tree.toggleError", "Error al cambiar el estado.");
+      setError(msg);
+      message.error(msg);
     }
   };
 
@@ -291,7 +309,7 @@ export function TreeEditorPage() {
                   ? t("common.deactivate", "Desactivar")
                   : t("common.activate", "Activar")
               }
-              onClick={() => void handleToggleStatus(node.id, node.isActive)}
+              onClick={() => void handleToggleStatus(node)}
             >
               <span className="material-symbols-outlined">
                 {node.isActive ? "block" : "check_circle"}

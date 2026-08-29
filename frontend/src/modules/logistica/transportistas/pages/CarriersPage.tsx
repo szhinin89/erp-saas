@@ -19,6 +19,7 @@ import {
   ZhSelect,
 } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
+import { message } from "../../../../lib/messages";
 import type { Carrier } from "../api/carrierService";
 import { useCarriers } from "../hooks/useCarriers";
 import {
@@ -136,7 +137,26 @@ export function CarriersPage() {
 
   const handleToggle = async (carrier: Carrier) => {
     if (!canEdit) return;
-    await toggleCarrierStatus(carrier.id, !carrier.isActive);
+    const confirmed = await message.confirm({
+      title: carrier.isActive
+        ? `Desactivar "${carrier.legalName}"`
+        : `Activar "${carrier.legalName}"`,
+      message: carrier.isActive
+        ? `"${carrier.legalName}" dejará de estar disponible para nuevos despachos. El histórico existente no se elimina.`
+        : `"${carrier.legalName}" volverá a estar disponible para nuevos despachos.`,
+      variant: carrier.isActive ? "danger" : "warning",
+      confirmLabel: carrier.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+    const updated = await toggleCarrierStatus(carrier.id, !carrier.isActive);
+    if (updated) {
+      message.success(
+        carrier.isActive
+          ? "Transportista desactivado correctamente."
+          : "Transportista activado correctamente.",
+      );
+    }
   };
 
   if (!canView) return <NoAccessPage title={t("carriers.title")} />;

@@ -9,6 +9,7 @@ import {  ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput"
 import {  formatMoney, parseDecimal } from "../../../lib/sanitizers";
 import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
 import {  formatApiError } from "../../lib/formatApiError";
+import {  message } from "../../../lib/messages";
 import {  itemLookupFacade } from "../../items/facades/itemLookupFacade";
 import type { ItemDto } from "../../../types/items";
 import { 
@@ -87,15 +88,19 @@ export function PriceListExceptionsTab({
   };
 
   const handleRemove = async (rule: PricingRuleDto) => {
-    if (
-      !window.confirm(
+    const confirmed = await message.confirm({
+      title: "Quitar excepción",
+      message:
         "¿Quitar esta excepción? El producto volverá a usar la regla general de la lista.",
-      )
-    )
-      return;
+      variant: "warning",
+      confirmLabel: "Quitar excepción",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     try {
       await pricingRuleService.remove(rule.id);
-      fetchAll();
+      await fetchAll();
+      message.success("Excepción eliminada correctamente.");
     } catch (e: unknown) {
       setError(formatApiError(e));
     }

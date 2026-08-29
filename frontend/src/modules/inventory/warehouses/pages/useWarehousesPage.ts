@@ -8,6 +8,7 @@ import {
 } from "../../../branches/api/branchService";
 import { warehouseService, type WarehouseDto } from "../api/warehouseService";
 import { applyServerErrors } from "../../../lib/validationErrors";
+import { formatApiRequestError } from "../../../lib/apiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { message } from "../../../../lib/messages";
 import {
@@ -190,18 +191,28 @@ export function useWarehousesPage() {
   });
 
   const toggleStatus = async (row: WarehouseDto) => {
+    if (row.isActive) {
+      if (!canDelete) return;
+    } else if (!canUpdate) {
+      return;
+    }
     setError("");
     try {
       if (row.isActive) {
-        if (!canDelete) return;
         await warehouseService.disable(row.id);
       } else {
-        if (!canUpdate) return;
         await warehouseService.enable(row.id);
       }
       await fetchList();
-    } catch {
-      setError(t("common.errorPrefix"));
+      message.success(
+        row.isActive
+          ? t("warehouses.toggle.success.disabled", "Bodega desactivada.")
+          : t("warehouses.toggle.success.activated", "Bodega activada."),
+      );
+    } catch (err: unknown) {
+      const msg = formatApiRequestError(err, { generic: t("common.errorPrefix") });
+      setError(msg);
+      message.error(msg);
     }
   };
 

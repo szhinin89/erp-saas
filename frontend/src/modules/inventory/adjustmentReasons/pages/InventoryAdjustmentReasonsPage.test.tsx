@@ -12,6 +12,7 @@ import { I18nProvider } from "../../../../i18n/i18n";
 import { InventoryAdjustmentReasonsPage } from "./InventoryAdjustmentReasonsPage";
 import { inventoryAdjustmentReasonsService } from "../api/inventoryAdjustmentReasonsService";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { message } from "../../../../lib/messages";
 import type { InventoryAdjustmentReasonDto } from "../types";
 
 vi.mock("../api/inventoryAdjustmentReasonsService", () => ({
@@ -200,6 +201,43 @@ describe("InventoryAdjustmentReasonsPage", () => {
         false,
       ),
     );
+  });
+
+  it("CRITICAL-CONFIRMATIONS-CLEANUP-07: al desactivar exitosamente usa message.success (antes: message.info)", async () => {
+    vi.mocked(inventoryAdjustmentReasonsService.toggle).mockResolvedValue({
+      ...MERMA,
+      isActive: false,
+    });
+    renderPage();
+    await screen.findByText("MERMA");
+
+    fireEvent.click(screen.getByLabelText("Deshabilitar Merma"));
+    fireEvent.click(await screen.findByText("Deshabilitar"));
+
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith("Motivo desactivado."),
+    );
+    expect(message.info).not.toHaveBeenCalled();
+  });
+
+  it("CRITICAL-CONFIRMATIONS-CLEANUP-07: si falla el toggle, muestra el mensaje real y no éxito", async () => {
+    vi.mocked(inventoryAdjustmentReasonsService.toggle).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: { message: { user: "El motivo está en uso en un ajuste activo." } },
+      },
+    });
+    renderPage();
+    await screen.findByText("MERMA");
+
+    fireEvent.click(screen.getByLabelText("Deshabilitar Merma"));
+    fireEvent.click(await screen.findByText("Deshabilitar"));
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith("El motivo está en uso en un ajuste activo."),
+    );
+    expect(message.success).not.toHaveBeenCalled();
   });
 
   it("muestra el error de validación del backend en el campo (código duplicado)", async () => {

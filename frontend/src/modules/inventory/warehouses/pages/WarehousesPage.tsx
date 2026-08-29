@@ -5,7 +5,6 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ConfigTabsLayout } from "../../../../components/shared/ConfigTabsLayout";
-import { message } from "../../../../lib/messages";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 
 import { useWarehousesPage } from "./useWarehousesPage";
@@ -88,11 +87,6 @@ export function BodegasPage() {
         }}
         onToggle={async (row) => {
           await page.toggleStatus(row);
-          message.info(
-            row.isActive
-              ? t("warehouses.toggle.success.disabled", "Bodega desactivada.")
-              : t("warehouses.toggle.success.activated", "Bodega activada."),
-          );
         }}
       />
     </>
