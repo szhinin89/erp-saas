@@ -7,7 +7,12 @@
 
 /* ── Nivel 0 — Favoritos ──────────────────────────────────── */
 .zh-launcher__favorites {
-  border-bottom: 1px solid var(--color-border-light);
+  margin: var(--space-2) var(--space-3) var(--space-3);
+  padding: var(--space-1) 0;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-container-low);
+  box-shadow: var(--shadow-xs);
 }
 
 /* El header completo es el toggle del acordeón */
@@ -19,14 +24,15 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  padding: 0 16px;
+  padding: 0 var(--space-3);
   font-family: var(--font-family);
   text-align: left;
   transition: background var(--transition);
-  min-height: 28px;
+  min-height: 32px;
+  border-radius: var(--radius-md);
 }
 .zh-launcher__favoritesHeader:hover {
-  background: var(--color-surface-container-high);
+  background: var(--color-surface-container);
 }
 .zh-launcher__favoritesIcon {
   width: 18px;
@@ -48,7 +54,7 @@
   font-size: var(--text-label-sm-size);
   font-weight: 600;
   color: var(--color-text-secondary);
-  background: var(--color-surface-container-high);
+  background: var(--color-surface);
   border-radius: 10px;
   padding: 0 6px;
   min-width: 18px;
@@ -76,11 +82,11 @@
   transition: max-height 200ms ease;
 }
 .zh-launcher__favoritesContent.is-expanded {
-  max-height: 260px;
+  max-height: 240px;
 }
 
 .zh-launcher__favoritesEmpty {
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  padding: var(--space-1) var(--space-3) var(--space-2);
 }
 .zh-launcher__favoritesEmptyTitle {
   margin: 0 0 4px;
@@ -96,6 +102,7 @@
 .zh-launcher__favoritesBody {
   display: flex;
   flex-direction: column;
+  gap: 1px;
   padding-top: 0;
 }
 
@@ -105,7 +112,7 @@
   background: none;
   cursor: pointer;
   text-align: center;
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  padding: var(--space-1) var(--space-4) var(--space-2);
   font-family: var(--font-family);
   font-size: var(--text-label-sm-size);
   font-weight: 600;
@@ -118,37 +125,51 @@
 
 /* ── Nivel 2 — Módulos del ERP ───────────────────────────── */
 .zh-launcher__modules {
-  padding: 0;
+  padding: 0 var(--space-2) var(--space-3);
   background: var(--color-surface);
 }
 
 .zh-launcher__module + .zh-launcher__module {
-  border-top: 0;
+  margin-top: 2px;
+}
+
+.zh-launcher__module {
+  border-radius: var(--radius-lg);
+  transition: background var(--transition);
+}
+
+.zh-launcher__module.is-open {
+  padding: 2px 0 var(--space-2);
+  background: var(--color-surface-container-low);
 }
 
 .zh-launcher__moduleToggle {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 20px;
+  grid-template-columns: 24px minmax(0, 1fr) 18px;
   align-items: center;
-  column-gap: 10px;
+  column-gap: var(--space-2);
   width: 100%;
   border: none;
   background: none;
   cursor: pointer;
-  padding: 0 16px;
+  padding: 0 var(--space-3);
   font-family: var(--font-family);
   text-align: left;
+  color: var(--color-text-primary);
   transition:
     background var(--transition),
-    color var(--transition);
-  min-height: 42px;
-  border-radius: 0;
+    color var(--transition),
+    box-shadow var(--transition);
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  box-shadow: inset 3px 0 0 transparent;
 }
 .zh-launcher__moduleToggle:hover {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-container);
 }
 .zh-launcher__moduleToggle.is-active {
   color: var(--color-brand-dark);
+  box-shadow: inset 3px 0 0 var(--color-brand-accent);
 }
 .zh-launcher__moduleToggle.is-active:not(:hover) {
   background: var(--color-primary-fixed);
@@ -157,18 +178,19 @@
 .zh-launcher__moduleIcon {
   width: 20px;
   height: 20px;
+  color: var(--color-primary);
 }
 .zh-launcher__moduleLabel {
   flex: 1;
   min-width: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.3;
 }
 /* Caret como Material Symbol — rotación vía aria-expanded del padre */
 .zh-launcher__moduleCaret {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   justify-self: end;
   font-size: 18px;
   color: var(--color-text-secondary);
@@ -180,7 +202,8 @@
 }
 
 .zh-launcher__moduleBody {
-  padding-bottom: 0;
+  position: relative;
+  padding: 0 0 2px;
 }
 .zh-launcher__module--single {
   padding: 0;
@@ -188,7 +211,7 @@
 
 /* ── Nivel 3 — Categorías funcionales ────────────────────── */
 .zh-launcher__category {
-  margin-top: 6px;
+  margin: var(--space-1) 0 0;
 }
 
 .zh-launcher__categoryToggle {
@@ -196,19 +219,30 @@
   grid-template-columns: minmax(0, 1fr) 16px;
   align-items: center;
   gap: 0;
-  width: 100%;
   border: none;
   background: none;
   cursor: pointer;
   min-height: 24px;
-  padding: 0 16px 0 30px;
+  width: calc(100% - var(--space-4));
+  margin: 0 var(--space-2);
+  padding: 2px var(--space-1) 2px 42px;
   font-family: var(--font-family);
   text-align: left;
-  transition: background var(--transition);
-  border-top: none;
+  transition:
+    background var(--transition),
+    color var(--transition);
+  border-top: 1px solid var(--color-border-light);
 }
+.zh-launcher__category--depth-1 > .zh-launcher__categoryToggle {
+  padding-left: 58px;
+}
+
+.zh-launcher__category--depth-2 > .zh-launcher__categoryToggle {
+  padding-left: 74px;
+}
+
 .zh-launcher__categoryToggle:hover {
-  background: var(--color-surface-bright);
+  color: var(--color-text-primary);
 }
 
 .zh-launcher__categoryLabel {
@@ -220,8 +254,8 @@
 }
 /* Caret de categoría — mismo patrón que módulo */
 .zh-launcher__categoryCaret {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   justify-self: end;
   font-size: 16px;
   flex-shrink: 0;
@@ -232,25 +266,74 @@
   transform: rotate(90deg);
 }
 .zh-launcher__categoryBody {
-  padding-top: 0;
+  position: relative;
+  padding: 1px 0 0;
+}
+.zh-launcher__categoryBody::before {
+  content: "";
+  position: absolute;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  left: 38px;
+  width: 1px;
+  background: var(--color-outline-variant);
+}
+
+.zh-launcher__category--depth-1 > .zh-launcher__categoryBody::before {
+  left: 54px;
+}
+
+.zh-launcher__category--depth-2 > .zh-launcher__categoryBody::before {
+  left: 70px;
 }
 
 /* ── Nivel 4 — Formularios finales ───────────────────────── */
 .zh-launcher__item {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 22px;
+  grid-template-columns: minmax(0, 1fr) 20px;
   align-items: center;
-  min-height: 34px;
+  min-height: 32px;
   margin: 0;
 }
 .zh-launcher__item--depth-0 {
   padding-left: 0;
 }
 .zh-launcher__item--depth-1 {
-  padding-left: 0;
+  padding-left: var(--space-4);
 }
 .zh-launcher__item--depth-2 {
-  padding-left: 0;
+  padding-left: var(--space-8);
+}
+
+.zh-launcher__categoryBody > .zh-launcher__item::before {
+  content: "";
+  position: absolute;
+  left: 35px;
+  top: 50%;
+  z-index: 1;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-container-low);
+  transform: translateY(-50%);
+}
+
+.zh-launcher__category--depth-1
+  > .zh-launcher__categoryBody
+  > .zh-launcher__item::before {
+  left: 51px;
+}
+
+.zh-launcher__category--depth-2
+  > .zh-launcher__categoryBody
+  > .zh-launcher__item::before {
+  left: 67px;
+}
+
+.zh-launcher__favorites .zh-launcher__item::before {
+  content: none;
 }
 
 .zh-launcher__itemLink {
@@ -258,18 +341,18 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   border: none;
   background: none;
   cursor: pointer;
-  min-height: 34px;
-  padding: 0 12px 0 52px;
+  min-height: 32px;
+  padding: 0 var(--space-2) 0 34px;
   font-family: var(--font-family);
   font-size: var(--text-body-md-size);
   color: var(--color-text-primary);
   text-decoration: none;
   text-align: left;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   /* Indicador activo sin alterar el ancho del ítem. */
   box-shadow: inset 3px 0 0 transparent;
   transition:
@@ -279,7 +362,7 @@
 }
 /* Phase 5: hover subtle */
 .zh-launcher__itemLink:hover {
-  background: var(--color-surface-container-low);
+  background: var(--color-surface-container);
   text-decoration: none;
 }
 .zh-launcher__itemLink:active,
@@ -298,14 +381,24 @@
   box-shadow: inset 3px 0 0 var(--color-brand-accent);
 }
 
+.zh-launcher__item.is-active::before {
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent);
+}
+
 .zh-launcher__itemIcon {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   text-align: center;
   flex-shrink: 0;
-  font-size: 18px;
+  font-size: 15px;
   line-height: 1;
-  opacity: 0.85;
+  color: var(--color-text-secondary);
+  opacity: 0.9;
+}
+
+.zh-launcher__item.is-active .zh-launcher__itemIcon {
+  color: var(--color-primary);
 }
 
 .zh-launcher__itemContent {
@@ -322,9 +415,13 @@
 
 .zh-launcher__itemLabel {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--text-label-sm-size);
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.zh-launcher__item.is-active .zh-launcher__itemLabel {
+  font-weight: 700;
 }
 
 .zh-launcher__itemDescription {
@@ -350,8 +447,8 @@
   min-height: 18px;
 }
 .zh-launcher__favIcon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   line-height: 1;
   color: var(--color-outline);
   /* fill variation — Material Symbols Outlined */
@@ -423,4 +520,3 @@
 .zh-launcher__skeletonRow:nth-child(even) {
   width: 50%;
 }
-

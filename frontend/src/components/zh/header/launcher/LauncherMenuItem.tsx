@@ -46,7 +46,10 @@ export function LauncherMenuItem({
           }
           onClick={() => onNavigate(item.to!)}
         >
-          {item.icon ? <LauncherIcon name={item.icon} className="zh-launcher__itemIcon" /> : null}
+          <LauncherIcon
+            name="document"
+            className="zh-launcher__itemIcon"
+          />
           <span className="zh-launcher__itemContent">
             <span className="zh-launcher__itemLabel">{item.label}</span>
           </span>
@@ -56,7 +59,10 @@ export function LauncherMenuItem({
           className="zh-launcher__itemLink zh-launcher__itemLink--disabled"
           title={t("app.layout.menuMissingRoute")}
         >
-          {item.icon ? <LauncherIcon name={item.icon} className="zh-launcher__itemIcon" /> : null}
+          <LauncherIcon
+            name="document"
+            className="zh-launcher__itemIcon"
+          />
           <span className="zh-launcher__itemContent">
             <span className="zh-launcher__itemLabel">{item.label}</span>
           </span>

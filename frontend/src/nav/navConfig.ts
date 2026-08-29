@@ -82,6 +82,159 @@ function menuItemDescription(path: string): string {
   return match?.[1] ?? "Gestión y consulta operativa";
 }
 
+type LauncherCategoryRule = {
+  categoryLabel: string;
+  match: (item: NavItem) => boolean;
+};
+
+/**
+ * Reagrupación puramente visual/presentacional del App Launcher: ningún formulario debe
+ * quedar suelto directamente bajo un módulo expandido (Nivel 1). No cambia rutas, ids,
+ * permisos ni el árbol que consume `RouteAccessGuard` — solo cómo se agrupan para pintar
+ * Nivel 2 (categoría) sobre ítems que el backend ya entrega planos bajo el módulo.
+ * Ver docs/ARCHITECTURE.md#app-launcher.
+ */
+const LAUNCHER_REGROUP_RULES: Readonly<Record<string, readonly LauncherCategoryRule[]>> = {
+  suppliers: [
+    { categoryLabel: "Gestión de proveedores", match: (it) => it.to.startsWith("/masterdata/suppliers") },
+    { categoryLabel: "Compras", match: (it) => it.to.startsWith("/purchases/operation-group") },
+    { categoryLabel: "Gastos", match: (it) => it.to.startsWith("/expenses") },
+    {
+      categoryLabel: "Cuentas por pagar",
+      match: (it) => it.to === "/payables" || it.to.startsWith("/supplier-payments"),
+    },
+    { categoryLabel: "Configuración", match: (it) => it.to.startsWith("/purchases/configuration-group") },
+    { categoryLabel: "Reportes", match: (it) => it.to.startsWith("/purchases/reports-group") },
+  ],
+  customers: [
+    { categoryLabel: "Gestión de clientes", match: (it) => it.to.startsWith("/masterdata/customers") },
+    { categoryLabel: "Cuentas por cobrar", match: (it) => it.to.startsWith("/finance/receivables") },
+  ],
+  products: [
+    {
+      categoryLabel: "Gestión de ítems",
+      match: (it) =>
+        it.to.startsWith("/inventory/items") ||
+        it.to.startsWith("/inventory/item-types") ||
+        it.to.startsWith("/catalog/tree") ||
+        it.to.startsWith("/catalog/brands") ||
+        it.to.startsWith("/catalog/attribute"),
+    },
+    { categoryLabel: "Precios", match: (it) => it.to.startsWith("/pricing") },
+  ],
+  accounting: [
+    { categoryLabel: "Asientos", match: (it) => it.to.startsWith("/accounting/journal-entries") },
+    {
+      categoryLabel: "Plan contable",
+      match: (it) =>
+        it.to.startsWith("/accounting/chart-of-accounts") || it.to.startsWith("/accounting/posting-rules"),
+    },
+    { categoryLabel: "Reportes", match: (it) => it.to.startsWith("/accounting/reports") },
+  ],
+  settings: [
+    {
+      categoryLabel: "Empresa",
+      match: (it) =>
+        it.to.startsWith("/settings/companies-group") ||
+        it.to.startsWith("/settings/branches") ||
+        it.to.startsWith("/settings/establishments") ||
+        it.to.startsWith("/settings/emission-points") ||
+        it.to.startsWith("/settings/financial-destinations") ||
+        it.to.startsWith("/settings/geography"),
+    },
+    { categoryLabel: "Facturación electrónica", match: (it) => it.to.startsWith("/settings/electronic-invoicing") },
+    { categoryLabel: "Comunicaciones", match: (it) => it.to.startsWith("/settings/communications") },
+    {
+      categoryLabel: "Condiciones comerciales",
+      match: (it) => it.to.startsWith("/master/payment-terms") || it.to.startsWith("/finance/credit-terms"),
+    },
+    {
+      categoryLabel: "Sistema",
+      match: (it) => it.to.startsWith("/settings/operations") || it.to.startsWith("/initial-load"),
+    },
+  ],
+  admin: [
+    {
+      categoryLabel: "Usuarios y roles",
+      match: (it) =>
+        it.to.startsWith("/access/users") || it.to.startsWith("/admin/roles") || it.to.startsWith("/admin/permissions"),
+    },
+    {
+      categoryLabel: "Seguridad",
+      match: (it) =>
+        it.to.startsWith("/admin/security") ||
+        it.to.startsWith("/admin/access/sessions") ||
+        it.to.startsWith("/admin/activity"),
+    },
+  ],
+};
+
+function slugifyForId(label: string): string {
+  return label
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
+/**
+ * Envuelve ítems planos de un módulo en categorías Nivel 2 sintéticas según
+ * `LAUNCHER_REGROUP_RULES`. Un ítem que ya viene como contenedor (con `children`) y es el
+ * único miembro de su categoría se usa tal cual (evita anidar "Compras" dentro de "Compras").
+ * Ítems sin regla conocida caen en una categoría de respaldo "Gestión de {módulo}" — nunca
+ * quedan sueltos bajo el módulo.
+ */
+function regroupModuleItems(moduleId: string, moduleLabel: string, items: NavItem[]): NavItem[] {
+  const rules = LAUNCHER_REGROUP_RULES[moduleId];
+  if (!rules || items.length === 0) return items;
+
+  const buckets = new Map<string, NavItem[]>();
+  const fallback: NavItem[] = [];
+
+  for (const item of items) {
+    const rule = rules.find((r) => r.match(item));
+    if (!rule) {
+      fallback.push(item);
+      continue;
+    }
+    const bucket = buckets.get(rule.categoryLabel);
+    if (bucket) bucket.push(item);
+    else buckets.set(rule.categoryLabel, [item]);
+  }
+
+  const result: NavItem[] = [];
+  const seenLabels = new Set<string>();
+  for (const rule of rules) {
+    if (seenLabels.has(rule.categoryLabel)) continue;
+    seenLabels.add(rule.categoryLabel);
+    const bucket = buckets.get(rule.categoryLabel);
+    if (!bucket?.length) continue;
+
+    if (bucket.length === 1 && bucket[0]!.children?.length) {
+      result.push(bucket[0]!);
+      continue;
+    }
+    result.push({
+      id: `synthetic-category-${moduleId}-${slugifyForId(rule.categoryLabel)}`,
+      to: "",
+      label: rule.categoryLabel,
+      children: bucket,
+    });
+  }
+
+  if (fallback.length > 0) {
+    result.push({
+      id: `synthetic-category-${moduleId}-fallback`,
+      to: "",
+      label: `Gestión de ${moduleLabel}`,
+      children: fallback,
+    });
+  }
+
+  return result;
+}
+
 /** Returns true when backend sends a plan-custom menu (no static groups injected). */
 export function isPlanBuilderSessionMenu(
   rows: NavMenuGroupDto[] | undefined,
@@ -179,12 +332,16 @@ export function mapSessionMenuToNavGroups(
   dto: NavMenuGroupDto[],
   t: TranslateFn,
 ): NavGroup[] {
-  const mapped = dto.map((g) => ({
-    id: g.code,
-    label: t(g.labelKey),
-    icon: g.icon,
-    items: g.items.map((it) => mapSessionMenuItem(it, t)),
-  }));
+  const mapped = dto.map((g) => {
+    const label = t(g.labelKey);
+    const items = g.items.map((it) => mapSessionMenuItem(it, t));
+    return {
+      id: g.code,
+      label,
+      icon: g.icon,
+      items: regroupModuleItems(g.code, label, items),
+    };
+  });
   return sortNavGroupsForMainBar(mapped);
 }
 

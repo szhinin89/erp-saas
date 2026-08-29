@@ -25,6 +25,8 @@ function iconPath(name: string) {
   if (key === "search") return <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>;
   if (key === "star")
     return <path d="m12 3 2.78 5.63 6.22.9-4.5 4.38 1.06 6.19L12 17.18 6.44 20.1 7.5 13.91 3 9.53l6.22-.9L12 3Z" />;
+  if (key.includes("document") || key.includes("file") || key.includes("form"))
+    return <path d="M7 3h7l4 4v14H7V3Zm7 0v5h5M10 13h6M10 17h4" />;
   if (key.includes("sale") || key.includes("receipt"))
     return <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6" />;
   if (key.includes("purchase") || key.includes("cart"))

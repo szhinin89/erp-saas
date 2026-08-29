@@ -57,7 +57,7 @@ export function LauncherModuleGroup({
   const contentId = `zh-launcher-module-${group.id}`;
 
   return (
-    <div className="zh-launcher__module">
+    <div className={`zh-launcher__module${open ? " is-open" : ""}`}>
       <button
         type="button"
         className={`zh-launcher__moduleToggle${group.isActive ? " is-active" : ""}`}

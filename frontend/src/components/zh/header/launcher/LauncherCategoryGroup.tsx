@@ -40,7 +40,9 @@ export function LauncherCategoryGroup({
   const contentId = `zh-launcher-category-${groupKey}`;
 
   return (
-    <div className="zh-launcher__category">
+    <div
+      className={`zh-launcher__category zh-launcher__category--depth-${Math.min(depth, 2)}${open ? " is-open" : ""}`}
+    >
       <button
         type="button"
         className="zh-launcher__categoryToggle"
