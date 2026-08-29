@@ -300,7 +300,8 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost
+                original.LandedUnitCost,
+                Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
 

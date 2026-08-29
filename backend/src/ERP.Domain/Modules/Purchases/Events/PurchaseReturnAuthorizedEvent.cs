@@ -26,6 +26,9 @@ public sealed class PurchaseReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
     public decimal AuthorizedDiscountTotal { get; }
     public decimal GrandTotal { get; }
 
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — suma de IRBPNR revertida, ya congelada en <c>PurchaseReturn.AuthorizedIrbpnrTotal</c>. Aditivo puro: agregado al final con default 0m, ningún call site existente se rompe.</summary>
+    public decimal AuthorizedIrbpnrTotal { get; }
+
     /// <summary>Costo histórico de inventario revertido — nunca el valor reconocido (§19.1bis).</summary>
     public decimal HistoricalCostTotal { get; }
 
@@ -63,7 +66,8 @@ public sealed class PurchaseReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
         decimal appliedToPayableAmount,
         decimal supplierCreditAmount,
         Guid? supplierCreditId,
-        string reason
+        string reason,
+        decimal authorizedIrbpnrTotal = 0m
     )
     {
         PurchaseReturnId = purchaseReturnId;
@@ -85,5 +89,6 @@ public sealed class PurchaseReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
         SupplierCreditAmount = supplierCreditAmount;
         SupplierCreditId = supplierCreditId;
         Reason = reason;
+        AuthorizedIrbpnrTotal = authorizedIrbpnrTotal;
     }
 }

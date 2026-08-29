@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Configuration.Interfaces;
@@ -10,6 +11,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.Policies;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -161,6 +163,29 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         SalesFiscalPolicyResult? fiscalPolicy = null,
         bool paymentMethodIsCreditAllowed = false,
         bool allowSellWithoutStock = false
+    ) =>
+        BuildHandler(
+            inv,
+            companyToday,
+            out _,
+            customerBp,
+            fiscalPolicy,
+            paymentMethodIsCreditAllowed,
+            allowSellWithoutStock
+        );
+
+    private static (
+        AuthorizeSalesInvoiceHandler handler,
+        Mock<ICompanyClock> companyClock,
+        Mock<ISalesReceivableRepository> receivableRepo
+    ) BuildHandler(
+        SalesInvoice inv,
+        DateOnly companyToday,
+        out Mock<IPostingEngine> postingEngine,
+        BusinessPartner? customerBp = null,
+        SalesFiscalPolicyResult? fiscalPolicy = null,
+        bool paymentMethodIsCreditAllowed = false,
+        bool allowSellWithoutStock = false
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -237,6 +262,20 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
 
+        postingEngine = new Mock<IPostingEngine>();
+        postingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<ERP.Domain.Modules.Accounting.Enums.PostingAmountKind>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
+
         var handler = new AuthorizeSalesInvoiceHandler(
             repo.Object,
             receivableRepo.Object,
@@ -251,6 +290,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
+            postingEngine.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -356,6 +396,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
+            Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -567,6 +608,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
+            Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -733,6 +775,56 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("demasiado antigua");
+    }
+
+    [Fact]
+    public async Task Factura_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — mismo criterio que el guard de Compras: si hay
+        // IRBPNR y no existe PostingRuleLine configurada, la autorización debe bloquear ANTES de
+        // capturar el secuencial SRI/persistir efectos.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today);
+        var line = inv.Lines.Single();
+        line.ReplaceTaxes(
+            [
+                SalesInvoiceDetailTax.Create(
+                    line.Id,
+                    TenantId,
+                    "5",
+                    "5001",
+                    "IRBPNR",
+                    0.1m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    2m,
+                    SalesTaxSource.Calculated
+                ),
+            ]
+        );
+
+        var (handler, _, _) = BuildHandler(inv, today, out var postingEngine);
+        postingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    ERP.Domain.Modules.Accounting.Enums.PostingAmountKind.TaxIrbpnr,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(false);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("IRBPNR");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
     }
 
     [Fact]

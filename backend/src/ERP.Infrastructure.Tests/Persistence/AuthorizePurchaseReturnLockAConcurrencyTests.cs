@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Application.Modules.Finance.UseCases.Payments;
 using ERP.Application.Modules.Purchases.UseCases;
@@ -23,6 +24,7 @@ using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Services;
 using FluentAssertions;
+using Moq;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
@@ -392,6 +394,7 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             creditRepo,
             uow,
             new RealDatabaseExceptionTranslator(),
+            Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );

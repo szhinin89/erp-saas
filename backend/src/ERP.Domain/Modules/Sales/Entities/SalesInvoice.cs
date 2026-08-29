@@ -80,6 +80,9 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public decimal TotalDiscount => AuthorizedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
     public decimal TotalIce => _lines.Sum(l => l.IceAmount);
     public decimal TotalVat => _lines.Sum(l => l.VatAmount);
+
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — suma de <c>SalesInvoiceDetail.IrbpnrAmount</c> (derivado de <c>*DetailTax</c>, nunca de un campo legacy). Mismo criterio que <see cref="TotalIce"/>/<see cref="TotalVat"/>: siempre calculado en vivo, sin snapshot propio.</summary>
+    public decimal TotalIrbpnr => _lines.Sum(l => l.IrbpnrAmount);
     public decimal TotalTax => AuthorizedTotalTax ?? (TotalIce + TotalVat);
     public decimal GrandTotal => AuthorizedGrandTotal ?? _lines.Sum(l => l.TaxInclusiveTotal);
     public int CreditTermDays => PaymentTerm.CreditTermDays;
@@ -294,7 +297,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 Subtotal,
                 TotalVat,
                 TotalIce,
-                TotalDiscount
+                TotalDiscount,
+                TotalIrbpnr
             )
         );
     }

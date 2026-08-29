@@ -220,7 +220,8 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
                 AuthorizedTotalVat!.Value,
                 AuthorizedTotalIce!.Value,
                 AuthorizedTotalDiscount!.Value,
-                Reason
+                Reason,
+                AuthorizedTotalIrbpnr!.Value
             )
         );
     }

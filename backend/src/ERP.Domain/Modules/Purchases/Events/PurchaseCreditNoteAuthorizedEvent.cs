@@ -36,6 +36,9 @@ public sealed class PurchaseCreditNoteAuthorizedEvent : BaseDomainEvent
     /// <summary>ACCOUNTING-PURCHASE-CREDIT-NOTE-ICE-08B — ya incluido en <see cref="TotalAmount"/>, expuesto aparte para que Accounting pueda contabilizarlo como línea propia.</summary>
     public decimal IceAmount { get; }
 
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — ya incluido en <see cref="TotalAmount"/> (<c>PurchaseCreditNote.IrbpnrAmount</c>), expuesto aparte para que Accounting pueda contabilizarlo como línea propia (mismo criterio que <see cref="IceAmount"/>).</summary>
+    public decimal IrbpnrAmount { get; }
+
     public PurchaseCreditNoteAuthorizedEvent(
         Guid purchaseCreditNoteId,
         Guid purchaseInvoiceId,
@@ -49,7 +52,8 @@ public sealed class PurchaseCreditNoteAuthorizedEvent : BaseDomainEvent
         decimal vatAmount,
         decimal totalAmount,
         decimal appliedToPayableAmount,
-        decimal iceAmount = 0m
+        decimal iceAmount = 0m,
+        decimal irbpnrAmount = 0m
     )
     {
         PurchaseCreditNoteId = purchaseCreditNoteId;
@@ -65,5 +69,6 @@ public sealed class PurchaseCreditNoteAuthorizedEvent : BaseDomainEvent
         TotalAmount = totalAmount;
         AppliedToPayableAmount = appliedToPayableAmount;
         IceAmount = iceAmount;
+        IrbpnrAmount = irbpnrAmount;
     }
 }

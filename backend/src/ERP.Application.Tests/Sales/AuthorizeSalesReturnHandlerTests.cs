@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -206,7 +207,19 @@ public sealed class AuthorizeSalesReturnHandlerTests
         AuthorizeSalesReturnHandler Handler,
         Mock<IStockRepository> StockRepo,
         Mock<ISalesReturnRepository> ReturnRepo
-    ) BuildHandler(SalesInvoice invoice, SalesReturn salesReturn, decimal alreadyReturned = 0m)
+    ) BuildHandler(SalesInvoice invoice, SalesReturn salesReturn, decimal alreadyReturned = 0m) =>
+        BuildHandler(invoice, salesReturn, out _, alreadyReturned);
+
+    private static (
+        AuthorizeSalesReturnHandler Handler,
+        Mock<IStockRepository> StockRepo,
+        Mock<ISalesReturnRepository> ReturnRepo
+    ) BuildHandler(
+        SalesInvoice invoice,
+        SalesReturn salesReturn,
+        out Mock<IPostingEngine> postingEngine,
+        decimal alreadyReturned = 0m
+    )
     {
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
         invoiceRepo
@@ -265,6 +278,20 @@ public sealed class AuthorizeSalesReturnHandlerTests
         uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(u => u.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
+        postingEngine = new Mock<IPostingEngine>();
+        postingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<ERP.Domain.Modules.Accounting.Enums.PostingAmountKind>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
+
         var handler = new AuthorizeSalesReturnHandler(
             returnRepo.Object,
             invoiceRepo.Object,
@@ -275,6 +302,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
             Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
             Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
             uow.Object,
+            postingEngine.Object,
             TenantCtx(),
             CompanyCtx(),
             UserCtx(),
@@ -318,6 +346,54 @@ public sealed class AuthorizeSalesReturnHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(SalesReturnStatus.Authorized.ToString());
         salesReturn.Status.Should().Be(SalesReturnStatus.Authorized);
+    }
+
+    [Fact]
+    public async Task Devolucion_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — mismo criterio que el guard de Compras: si hay
+        // IRBPNR y no existe PostingRuleLine configurada, la autorización debe bloquear ANTES de
+        // capturar el secuencial de NC/persistir efectos.
+        var (invoice, lines) = BuildAuthorizedInvoice(("Producto con IRBPNR", 10m, 5m, null, null));
+        var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 4m) });
+        var returnLine = salesReturn.Lines.Single();
+        returnLine.ReplaceTaxes(
+            [
+                SalesReturnDetailTax.Create(
+                    returnLine.Id,
+                    TenantId,
+                    "5",
+                    "5001",
+                    "IRBPNR",
+                    0.1m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    2m
+                ),
+            ]
+        );
+
+        var (handler, _, _) = BuildHandler(invoice, salesReturn, out var postingEngine);
+        postingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    ERP.Domain.Modules.Accounting.Enums.PostingAmountKind.TaxIrbpnr,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(false);
+
+        var result = await handler.Handle(
+            FullRefundCashCommand(salesReturn.Id, salesReturn.GrandTotal),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("IRBPNR");
+        salesReturn.Status.Should().Be(SalesReturnStatus.Draft);
     }
 
     [Fact]
@@ -614,6 +690,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
             Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
             Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
             Mock.Of<IUnitOfWork>(),
+            Mock.Of<IPostingEngine>(),
             TenantCtx(),
             CompanyCtx(),
             UserCtx(),
@@ -1013,6 +1090,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
                 Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
                 new UnitOfWork(db),
+                Mock.Of<IPostingEngine>(),
                 new FixedCurrentTenant(_tenantId),
                 new FixedCurrentCompany(_companyId),
                 new FixedCurrentUser(_createdBy),

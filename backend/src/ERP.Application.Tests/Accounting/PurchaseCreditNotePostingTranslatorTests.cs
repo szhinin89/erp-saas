@@ -34,7 +34,8 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         decimal subtotal = 100m,
         decimal vat = 15m,
         decimal appliedToPayable = 115m,
-        decimal iceAmount = 0m
+        decimal iceAmount = 0m,
+        decimal irbpnrAmount = 0m
     ) =>
         new(
             creditNoteId,
@@ -47,9 +48,10 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             CreatedBy,
             subtotal,
             vat,
-            subtotal + vat + iceAmount,
+            subtotal + vat + iceAmount + irbpnrAmount,
             appliedToPayable,
-            iceAmount
+            iceAmount,
+            irbpnrAmount
         );
 
     private static PurchaseCreditNoteCancelledEvent CancelledEvent(
@@ -118,6 +120,14 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
     {
         var rule = Rule(payableId, expenseId, vatId);
         rule.AddLine(iceId, AccountNature.Credit, PostingAmountKind.TaxIce);
+        return rule;
+    }
+
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — misma regla con una línea IRBPNR adicional, mismo criterio aditivo que <see cref="RuleWithIce"/>.</summary>
+    private static PostingRule RuleWithIrbpnr(Guid payableId, Guid expenseId, Guid vatId, Guid irbpnrId)
+    {
+        var rule = Rule(payableId, expenseId, vatId);
+        rule.AddLine(irbpnrId, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
         return rule;
     }
 
@@ -270,6 +280,85 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
         entry.Lines.Should().Contain(l => l.AccountId == expense.Id && l.Credit == 100m && l.Debit == 0m);
         entry.Lines.Should().Contain(l => l.AccountId == vat.Id && l.Credit == 16.5m && l.Debit == 0m);
         entry.Lines.Should().Contain(l => l.AccountId == ice.Id && l.Credit == 10m && l.Debit == 0m);
+    }
+
+    [Fact]
+    public async Task NC_de_compra_con_IRBPNR_incluye_linea_IRBPNR_y_el_asiento_sigue_balanceado()
+    {
+        var m = new EngineMocks();
+        var payable = PostableAccount("2.1.01", "Cuentas por Pagar");
+        var expense = PostableAccount("5.1.05", "Gasto/Inventario base");
+        var vat = PostableAccount("1.1.07", "IVA Crédito Tributario");
+        var irbpnr = PostableAccount("1.1.09", "IRBPNR Crédito Tributario");
+        m.RegisterAccount(payable);
+        m.RegisterAccount(expense);
+        m.RegisterAccount(vat);
+        m.RegisterAccount(irbpnr);
+        var rule = RuleWithIrbpnr(payable.Id, expense.Id, vat.Id, irbpnr.Id);
+        m.PostingRules
+            .Setup(r =>
+                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(rule);
+
+        var creditNoteId = Guid.NewGuid();
+        m.JournalEntries
+            .Setup(r =>
+                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((JournalEntry?)null);
+
+        var engine = m.BuildEngine();
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+
+        await translator.Handle(
+            AuthorizedEvent(creditNoteId, subtotal: 100m, vat: 15m, appliedToPayable: 121m, irbpnrAmount: 6m),
+            CancellationToken.None
+        );
+
+        m.Captured.Should().NotBeNull();
+        var entry = m.Captured!;
+        entry.Lines.Should().HaveCount(4);
+        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
+        entry.Lines.Should().Contain(l => l.AccountId == payable.Id && l.Debit == 121m && l.Credit == 0m);
+        entry.Lines.Should().Contain(l => l.AccountId == irbpnr.Id && l.Credit == 6m && l.Debit == 0m);
+    }
+
+    [Fact]
+    public async Task NC_sin_IRBPNR_no_genera_linea_IRBPNR_falsa()
+    {
+        var m = new EngineMocks();
+        var payable = PostableAccount("2.1.01", "Cuentas por Pagar");
+        var expense = PostableAccount("5.1.05", "Gasto/Inventario base");
+        var vat = PostableAccount("1.1.07", "IVA Crédito Tributario");
+        var irbpnr = PostableAccount("1.1.09", "IRBPNR Crédito Tributario");
+        m.RegisterAccount(payable);
+        m.RegisterAccount(expense);
+        m.RegisterAccount(vat);
+        m.RegisterAccount(irbpnr);
+        var rule = RuleWithIrbpnr(payable.Id, expense.Id, vat.Id, irbpnr.Id);
+        m.PostingRules
+            .Setup(r =>
+                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(rule);
+
+        var creditNoteId = Guid.NewGuid();
+        m.JournalEntries
+            .Setup(r =>
+                r.FindByKeyAsync(TenantId, CompanyId, "Purchases", "PurchaseCreditNoteAuthorized", creditNoteId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((JournalEntry?)null);
+
+        var engine = m.BuildEngine();
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+
+        await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m), CancellationToken.None);
+
+        m.Captured.Should().NotBeNull();
+        var entry = m.Captured!;
+        entry.Lines.Should().HaveCount(3, "la línea IRBPNR en monto cero nunca se contabiliza");
+        entry.Lines.Should().NotContain(l => l.AccountId == irbpnr.Id);
     }
 
     [Fact]

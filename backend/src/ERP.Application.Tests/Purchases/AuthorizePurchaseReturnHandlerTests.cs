@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -133,6 +135,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
+        public Mock<IPostingEngine> PostingEngine { get; } = new();
         public List<Guid> AppendedItemWarehouses { get; } = new();
 
         public Mocks(Fixture f, decimal availableStock = 1000m, string? returnNumber = "00000001")
@@ -273,6 +276,18 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 );
 
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
+            PostingEngine
+                .Setup(p =>
+                    p.IsAmountKindConfiguredAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<PostingAmountKind>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(true);
         }
 
         public AuthorizePurchaseReturnHandler BuildHandler(ICurrentUser? user = null)
@@ -291,6 +306,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 CreditRepo.Object,
                 Uow.Object,
                 DbEx.Object,
+                PostingEngine.Object,
                 t.Object,
                 user ?? u.Object
             );
@@ -382,6 +398,76 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         returnedLine.Taxes.Should().Contain(t => t.TaxCode == "5" && t.TaxAmount == 0.30m);
         f.Return.AuthorizedIrbpnrTotal.Should().Be(0.30m);
         f.Return.AuthorizedGrandTotal.Should().Be(f.Return.AuthorizedSubtotal + f.Return.AuthorizedVatTotal + 0.30m);
+    }
+
+    [Fact]
+    public async Task Autorizacion_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — mismo criterio que el guard IRBPNR de
+        // ConfirmPurchaseUseCases: si hay IRBPNR y no existe PostingRuleLine configurada, la
+        // autorización debe bloquear ANTES de consumir el secuencial/persistir efectos.
+        var invoice = PurchaseInvoice.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
+            "01", "001-001-000000004", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
+            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id, TenantId, "Producto con IRBPNR",
+            quantity: 10m, unitPrice: 100m, vatCode: "10", uomCode: "UNIT",
+            itemId: ItemId, warehouseId: WarehouseId
+        );
+        line.ReplaceTaxes(
+            [
+                PurchaseInvoiceDetailTax.Create(
+                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.1m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    line.TaxableBase, 1.00m, PurchaseTaxSource.Xml
+                ),
+            ]
+        );
+        line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
+        invoice.ReplaceLines(new[] { line }, UserId);
+        invoice.Confirm(UserId);
+        var confirmedLine = invoice.Lines.Single();
+
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000004", invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal);
+
+        var purchaseReturn = PurchaseReturn.CreateDraft(
+            TenantId, CompanyId, BranchId, invoice.Id, SupplierId, "Producto en mal estado",
+            new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, ItemId, 3m, WarehouseId) },
+            UserId, Guid.NewGuid(), "create-hash-irbpnr-blocked"
+        );
+
+        var f = new Fixture(invoice, confirmedLine, payable, purchaseReturn);
+        var m = new Mocks(f);
+        m.PostingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    ERP.Domain.Modules.Accounting.Enums.PostingAmountKind.TaxIrbpnr,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(false);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("IRBPNR");
+        f.Return.Status.Should().Be(PurchaseReturnStatus.Draft);
+        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Fact]

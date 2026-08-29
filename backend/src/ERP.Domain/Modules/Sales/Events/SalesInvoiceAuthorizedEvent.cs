@@ -27,6 +27,9 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
     public decimal TotalIce { get; }
     public decimal TotalDiscount { get; }
 
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — ya resuelto por el dominio de <c>SalesInvoice</c> (<c>SalesInvoice.TotalIrbpnr</c>), Accounting lo consume tal cual, nunca lo recalcula (mismo criterio que <see cref="TotalVat"/>/<see cref="TotalIce"/>).</summary>
+    public decimal TotalIrbpnr { get; }
+
     public SalesInvoiceAuthorizedEvent(
         Guid invoiceId,
         string invoiceNumber,
@@ -39,7 +42,8 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         decimal subtotal,
         decimal totalVat,
         decimal totalIce,
-        decimal totalDiscount
+        decimal totalDiscount,
+        decimal totalIrbpnr = 0m
     )
     {
         InvoiceId = invoiceId;
@@ -54,5 +58,6 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         TotalVat = totalVat;
         TotalIce = totalIce;
         TotalDiscount = totalDiscount;
+        TotalIrbpnr = totalIrbpnr;
     }
 }

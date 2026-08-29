@@ -46,7 +46,8 @@ public sealed class SalesReturnAuthorizedPostingTranslator
             e.TotalVat,
             e.TotalIce,
             e.TotalDiscount,
-            e.GrandTotal
+            e.GrandTotal,
+            TotalIrbpnr: e.TotalIrbpnr
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

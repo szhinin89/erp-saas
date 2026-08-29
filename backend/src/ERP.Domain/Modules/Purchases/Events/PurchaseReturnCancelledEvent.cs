@@ -29,6 +29,9 @@ public sealed class PurchaseReturnCancelledEvent : BaseDomainEvent, IAuditEvent
     public decimal? AuthorizedVatTotal { get; }
     public decimal? AuthorizedIceTotal { get; }
 
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — solo tiene valor si se cancela desde <c>Authorized</c>, mismo criterio que <see cref="AuthorizedVatTotal"/>/<see cref="AuthorizedIceTotal"/>.</summary>
+    public decimal? AuthorizedIrbpnrTotal { get; }
+
     Guid IAuditEvent.EntityId => PurchaseReturnId;
     string IAuditEvent.Action => "Cancelled";
     string? IAuditEvent.Reason => Reason;
@@ -48,7 +51,8 @@ public sealed class PurchaseReturnCancelledEvent : BaseDomainEvent, IAuditEvent
         decimal? historicalCostTotal,
         decimal? costVarianceTotal,
         decimal? authorizedVatTotal,
-        decimal? authorizedIceTotal
+        decimal? authorizedIceTotal,
+        decimal? authorizedIrbpnrTotal = null
     )
     {
         PurchaseReturnId = purchaseReturnId;
@@ -66,5 +70,6 @@ public sealed class PurchaseReturnCancelledEvent : BaseDomainEvent, IAuditEvent
         CostVarianceTotal = costVarianceTotal;
         AuthorizedVatTotal = authorizedVatTotal;
         AuthorizedIceTotal = authorizedIceTotal;
+        AuthorizedIrbpnrTotal = authorizedIrbpnrTotal;
     }
 }

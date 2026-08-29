@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
@@ -405,6 +406,7 @@ public sealed class SalesReturnRefundHandlerTests
             Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
             Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
             uow.Object,
+            Mock.Of<IPostingEngine>(),
             tenant,
             company,
             user,

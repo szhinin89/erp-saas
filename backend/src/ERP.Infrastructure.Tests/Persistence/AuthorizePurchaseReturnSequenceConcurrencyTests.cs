@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -15,6 +16,7 @@ using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
+using Moq;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
@@ -213,6 +215,7 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
             itemId: _itemId,
             warehouseId: _warehouseId
         );
+        line.ApplyTaxes("10", 10m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _userId);
         inv.Confirm(_userId);
         db.PurchaseInvoices.Add(inv);
@@ -326,6 +329,7 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
             creditRepo,
             uow,
             new RealDatabaseExceptionTranslator(),
+            Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
         );

@@ -503,9 +503,11 @@ public sealed class PurchaseCreditNoteTests
     }
 
     [Fact]
-    public void Authorize_no_agrega_IrbpnrAmount_al_PurchaseCreditNoteAuthorizedEvent()
+    public void Authorize_propaga_IrbpnrAmount_al_PurchaseCreditNoteAuthorizedEvent()
     {
-        // Deliberado: el evento alimenta el traductor contable (Subfase 5E, fuera de alcance aquí).
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — el evento ahora transporta IrbpnrAmount para que
+        // el traductor contable pueda contabilizarlo (mismo criterio que ACCOUNTING-PURCHASE-
+        // CREDIT-NOTE-ICE-08B ya hizo con IceAmount).
         var creditNote = CreateDraft(
             taxSummaryLines: new[]
             {
@@ -530,11 +532,7 @@ public sealed class PurchaseCreditNoteTests
             .BeOfType<PurchaseCreditNoteAuthorizedEvent>()
             .Which;
 
-        // El evento no tiene campo IrbpnrAmount — este test documenta la decisión, no un valor.
-        typeof(PurchaseCreditNoteAuthorizedEvent)
-            .GetProperty("IrbpnrAmount")
-            .Should()
-            .BeNull("IrbpnrAmount se agrega al evento en la Subfase 5E, no aquí");
+        evt.IrbpnrAmount.Should().Be(1.00m);
         evt.TotalAmount.Should().Be(creditNote.TotalAmount); // 100 + 0 (ICE) + 15 + 1.00 (IRBPNR)
         creditNote.TotalAmount.Should().Be(116.00m);
     }

@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
@@ -128,6 +130,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
+        public Mock<IPostingEngine> PostingEngine { get; } = new();
 
         public Mocks(Fixture f)
         {
@@ -154,6 +157,18 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
                 )
                 .ReturnsAsync(f.Payable);
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
+            PostingEngine
+                .Setup(p =>
+                    p.IsAmountKindConfiguredAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<PostingAmountKind>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(true);
         }
 
         public AuthorizePurchaseCreditNoteHandler BuildHandler() =>
@@ -165,6 +180,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
                 ReceptionRepo.Object,
                 Uow.Object,
                 DbEx.Object,
+                PostingEngine.Object,
                 FixedTenant(),
                 FixedUser()
             );
@@ -203,6 +219,82 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         f.Payable.CreditNoteAmount.Should().Be(115m);
         f.Payable.OutstandingAmount.Should().Be(885m);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ── TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E ──────────────────────────
+
+    [Fact]
+    public async Task Authorize_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
+            "01", "001-001-000000006", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
+            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id, TenantId, "Producto 1", quantity: 1, unitPrice: 1000m,
+            vatCode: "0", uomCode: "UNIT", itemId: Guid.NewGuid(), warehouseId: WarehouseId
+        );
+        invoice.ReplaceLines(new[] { line }, UserId);
+        invoice.Confirm(UserId);
+
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000006", invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), 1000m);
+
+        var creditNote = PurchaseCreditNote.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, invoice.Id, null,
+            PurchaseCreditNoteApplicationType.Discount, "001-001-000000007",
+            null, null, null, DateOnly.FromDateTime(DateTime.UtcNow), "Descuento con IRBPNR",
+            new[]
+            {
+                new PurchaseCreditNote.DraftLineInput("Descuento", 100m, "2", 15m, 15m),
+            },
+            new[]
+            {
+                new PurchaseCreditNote.TaxSummaryDraftLineInput(
+                    Guid.NewGuid(), "2", 15m, "IVA", null, 0m, null,
+                    TaxableBase: 100m,
+                    IrbpnrCode: "5001",
+                    IrbpnrRate: 0.1m,
+                    IrbpnrName: "IRBPNR",
+                    SourceTaxableBase: 100m,
+                    SourceIrbpnrAmount: 6m
+                ),
+            },
+            UserId, Guid.NewGuid(), "create-hash-irbpnr"
+        );
+
+        var f = new Fixture(invoice, payable, creditNote);
+        var m = new Mocks(f);
+        m.PostingEngine
+            .Setup(p =>
+                p.IsAmountKindConfiguredAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    PostingAmountKind.TaxIrbpnr,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(false);
+        var handler = m.BuildHandler();
+
+        creditNote.IrbpnrAmount.Should().Be(6m);
+
+        var result = await handler.Handle(
+            new AuthorizePurchaseCreditNoteCommand(f.CreditNote.Id, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("IRBPNR");
+        f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
+        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ── FLOW-READY-02C-R1.1: Authorize sobre tipo Return siempre falla ──
@@ -354,18 +446,21 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
-    // ── 10/11. No inventario, no contabilidad (estructural) ─────────────
+    // ── 10/11. No inventario, no genera asientos directamente (estructural) ─
 
     [Fact]
-    public void Handler_no_depende_de_IStockRepository_ni_de_ningun_repositorio_contable()
+    public void Handler_no_depende_de_IStockRepository_ni_de_repositorios_de_JournalEntry()
     {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — IPostingEngine es ahora una dependencia legítima
+        // y acotada (solo IsAmountKindConfiguredAsync, guard de solo lectura antes de Authorize()),
+        // mismo criterio que ConfirmPurchaseUseCases; el handler sigue sin crear JournalEntry ni
+        // tocar inventario — eso permanece exclusivo de los translators/PostingEngine.PostAsync.
         var ctor = typeof(AuthorizePurchaseCreditNoteHandler).GetConstructors().Single();
         var paramTypeNames = ctor.GetParameters().Select(p => p.ParameterType.Name).ToList();
 
         paramTypeNames.Should().NotContain("IStockRepository");
-        paramTypeNames.Should().NotContain(n => n.Contains("Posting", StringComparison.Ordinal));
-        paramTypeNames.Should().NotContain(n => n.Contains("Accounting", StringComparison.Ordinal));
         paramTypeNames.Should().NotContain(n => n.Contains("JournalEntry", StringComparison.Ordinal));
+        paramTypeNames.Should().Contain("IPostingEngine");
     }
 
     // ── Idempotencia ─────────────────────────────────────────────────────

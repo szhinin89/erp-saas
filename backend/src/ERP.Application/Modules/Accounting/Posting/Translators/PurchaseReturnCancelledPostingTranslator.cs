@@ -56,7 +56,8 @@ public sealed class PurchaseReturnCancelledPostingTranslator
             SupplierCreditAmount: e.SupplierCreditAmount,
             CostVarianceDebitAmount: costVarianceDebit,
             CostVarianceCreditAmount: costVarianceCredit,
-            HistoricalCostTotal: e.HistoricalCostTotal
+            HistoricalCostTotal: e.HistoricalCostTotal,
+            TotalIrbpnr: e.AuthorizedIrbpnrTotal
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

@@ -30,7 +30,8 @@ public sealed class PurchaseReturnAuthorizedPostingTranslatorTests
         decimal costVarianceTotal = 31m,
         decimal appliedToPayableAmount = 381m,
         decimal supplierCreditAmount = 0m,
-        Guid? supplierCreditId = null
+        Guid? supplierCreditId = null,
+        decimal authorizedIrbpnrTotal = 0m
     ) =>
         new(
             purchaseReturnId ?? Guid.NewGuid(),
@@ -51,7 +52,8 @@ public sealed class PurchaseReturnAuthorizedPostingTranslatorTests
             appliedToPayableAmount: appliedToPayableAmount,
             supplierCreditAmount: supplierCreditAmount,
             supplierCreditId: supplierCreditId,
-            reason: "Producto defectuoso"
+            reason: "Producto defectuoso",
+            authorizedIrbpnrTotal: authorizedIrbpnrTotal
         );
 
     private sealed class Mocks
@@ -111,6 +113,31 @@ public sealed class PurchaseReturnAuthorizedPostingTranslatorTests
         captured.CostVarianceDebitAmount.Should().Be(31m);
         captured.CostVarianceCreditAmount.Should().Be(0m);
         captured.HistoricalCostTotal.Should().Be(350m);
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — documento sin IRBPNR no debe generar un
+        // TotalIrbpnr falso.
+        captured.TotalIrbpnr.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Devolucion_con_IRBPNR_propaga_TotalIrbpnr_al_PostingFact()
+    {
+        var m = new Mocks();
+        PostingFact? captured = null;
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
+
+        var evt = Event(authorizedIrbpnrTotal: 6.30m);
+        var translator = m.BuildTranslator();
+        await translator.Handle(evt, CancellationToken.None);
+
+        captured!.TotalIrbpnr.Should().Be(6.30m);
     }
 
     [Fact]

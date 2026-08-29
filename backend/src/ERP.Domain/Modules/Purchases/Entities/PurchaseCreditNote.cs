@@ -464,7 +464,8 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
                 VatAmount,
                 TotalAmount,
                 AppliedToPayableAmount.Value,
-                IceAmount
+                IceAmount,
+                IrbpnrAmount
             )
         );
     }

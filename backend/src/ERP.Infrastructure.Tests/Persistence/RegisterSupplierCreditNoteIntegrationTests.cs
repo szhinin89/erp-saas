@@ -249,7 +249,8 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost
+                original.LandedUnitCost,
+                Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
         ret.Authorize(

@@ -1,9 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -45,6 +47,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISalesFiscalPolicyResolver _fiscalPolicyResolver;
     private readonly IPaymentMethodRepository _paymentMethodRepo;
+    private readonly IPostingEngine _postingEngine;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -65,6 +68,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         IBusinessPartnerRepository bpRepo,
         ISalesFiscalPolicyResolver fiscalPolicyResolver,
         IPaymentMethodRepository paymentMethodRepo,
+        IPostingEngine postingEngine,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -85,6 +89,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _bpRepo = bpRepo;
         _fiscalPolicyResolver = fiscalPolicyResolver;
         _paymentMethodRepo = paymentMethodRepo;
+        _postingEngine = postingEngine;
         _logger = logger;
         _t = t;
         _c = c;
@@ -261,6 +266,29 @@ public sealed class AuthorizeSalesInvoiceHandler
                             + "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir."
                     );
             }
+        }
+
+        // ── Guard IRBPNR (TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E) — mismo criterio que
+        // ConfirmPurchaseUseCases STEP 0: el posting nunca revierte una autorización ya
+        // persistida (un Result fallido de IPostingEngine.PostAsync solo se registra en log), así
+        // que la única forma confiable de exigir configuración contable es esta precondición,
+        // antes de consumir el secuencial/Authorize(). ──
+        if (inv.TotalIrbpnr > 0)
+        {
+            var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
+                tid,
+                cid,
+                "Sales",
+                "InvoiceIssued",
+                PostingAmountKind.TaxIrbpnr,
+                ct
+            );
+            if (!irbpnrConfigured)
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    "Esta factura contiene IRBPNR (impuesto código 5), pero no existe una regla de "
+                        + "contabilización (PostingRuleLine) configurada para IRBPNR en Ventas. "
+                        + "Configure la cuenta contable correspondiente antes de autorizar."
+                );
         }
 
         // ── Generar número secuencial SRI ───────────────────────────

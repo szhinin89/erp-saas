@@ -483,7 +483,8 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost
+                original.LandedUnitCost,
+                Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
 

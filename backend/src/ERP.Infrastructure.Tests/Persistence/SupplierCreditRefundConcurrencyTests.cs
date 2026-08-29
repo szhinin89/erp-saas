@@ -383,7 +383,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost
+                original.LandedUnitCost,
+                Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
         var credit = ret.Authorize(

@@ -343,7 +343,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
                 confirmedLine.VatRate,
                 confirmedLine.IceCode,
                 confirmedLine.IceRate,
-                confirmedLine.LandedUnitCost
+                confirmedLine.LandedUnitCost,
+                Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
         var credit = ret.Authorize(

@@ -27,6 +27,9 @@ public sealed class SalesReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
     public decimal TotalIce { get; }
     public decimal TotalDiscount { get; }
 
+    /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — ya resuelto por el dominio de <c>SalesReturn</c> (<c>SalesReturn.TotalIrbpnr</c>), Accounting lo consume tal cual, nunca lo recalcula (mismo criterio que <see cref="TotalVat"/>/<see cref="TotalIce"/>).</summary>
+    public decimal TotalIrbpnr { get; }
+
     public string Reason { get; }
 
     Guid IAuditEvent.EntityId => SalesReturnId;
@@ -45,7 +48,8 @@ public sealed class SalesReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
         decimal totalVat,
         decimal totalIce,
         decimal totalDiscount,
-        string reason
+        string reason,
+        decimal totalIrbpnr = 0m
     )
     {
         SalesReturnId = salesReturnId;
@@ -60,5 +64,6 @@ public sealed class SalesReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
         TotalIce = totalIce;
         TotalDiscount = totalDiscount;
         Reason = reason;
+        TotalIrbpnr = totalIrbpnr;
     }
 }

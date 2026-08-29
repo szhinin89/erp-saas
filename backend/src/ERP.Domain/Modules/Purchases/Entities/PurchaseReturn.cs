@@ -435,7 +435,8 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 AppliedToPayableAmount.Value,
                 SupplierCreditAmount.Value,
                 credit?.Id,
-                Reason
+                Reason,
+                AuthorizedIrbpnrTotal!.Value
             )
         );
 
@@ -559,7 +560,8 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 previousStatus == PurchaseReturnStatus.Authorized ? HistoricalCostTotal : null,
                 previousStatus == PurchaseReturnStatus.Authorized ? CostVarianceTotal : null,
                 previousStatus == PurchaseReturnStatus.Authorized ? AuthorizedVatTotal : null,
-                previousStatus == PurchaseReturnStatus.Authorized ? AuthorizedIceTotal : null
+                previousStatus == PurchaseReturnStatus.Authorized ? AuthorizedIceTotal : null,
+                previousStatus == PurchaseReturnStatus.Authorized ? AuthorizedIrbpnrTotal : null
             )
         );
     }

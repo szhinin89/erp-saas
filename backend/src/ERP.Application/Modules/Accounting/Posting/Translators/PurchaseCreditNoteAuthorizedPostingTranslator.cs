@@ -68,7 +68,8 @@ public sealed class PurchaseCreditNoteAuthorizedPostingTranslator
             TotalIce: e.IceAmount,
             TotalDiscount: 0m,
             GrandTotal: e.TotalAmount,
-            AppliedToPayableAmount: e.AppliedToPayableAmount
+            AppliedToPayableAmount: e.AppliedToPayableAmount,
+            TotalIrbpnr: e.IrbpnrAmount
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);
