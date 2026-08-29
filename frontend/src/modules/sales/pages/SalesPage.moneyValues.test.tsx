@@ -422,13 +422,16 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     const { container } = renderSalesPage();
 
     container.querySelectorAll("button").forEach((btn) => {
-      // Todos los botones deben venir de ZHBtn/ZHIconButton/ZHToggleTile (clases zh-*),
-      // no de un <button> local sin clase del Design System.
+      // Todos los botones deben venir de ZHBtn/ZHIconButton/ZHToggleTile/ZHHelpIcon (clases
+      // zh-*/prd-*), no de un <button> local sin clase del Design System. zh-help-icon es el
+      // trigger de ayuda contextual (ZHHelpIcon, components/zh/help/) que SalesPage ya usa vía
+      // ZHFieldHelp/ZHSectionHelp/ZHNoticeBadge — la lista simplemente no lo incluía todavía.
       const hasDsClass =
         btn.className.includes("zh-btn") ||
         btn.className.includes("prd-icon-btn") ||
         btn.className.includes("prd-tab-btn") ||
-        btn.className.includes("zh-toggle-tile");
+        btn.className.includes("zh-toggle-tile") ||
+        btn.className.includes("zh-help-icon");
       expect(hasDsClass, `unexpected native button className="${btn.className}"`).toBe(true);
     });
   });
