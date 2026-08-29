@@ -633,7 +633,8 @@ public sealed class PurchaseReturnDraftUseCasesTests
             line.VatRate,
             line.IceCode,
             line.IceRate,
-            line.LandedUnitCost
+            line.LandedUnitCost,
+            []
         );
         purchaseReturn.Authorize(
             "001-001-000000001",

@@ -109,6 +109,12 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
             .HasColumnName("ice_amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3)
+        builder
+            .Property(x => x.IceCalculationType)
+            .HasColumnName("ice_calculation_type")
+            .HasConversion<int>()
+            .IsRequired();
 
         builder.Property(x => x.IsFrozen).HasColumnName("is_frozen").IsRequired();
 
@@ -116,6 +122,9 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
         builder.Ignore(x => x.LineSubtotal);
         builder.Ignore(x => x.TaxableBase);
         builder.Ignore(x => x.TaxInclusiveTotal);
+        builder.Ignore(x => x.IrbpnrCode);
+        builder.Ignore(x => x.IrbpnrRate);
+        builder.Ignore(x => x.IrbpnrAmount);
 
         // ── Relationships ───────────────────────────────────────────
         builder
@@ -123,6 +132,13 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
             .WithMany()
             .HasForeignKey(x => x.OriginalInvoiceDetailId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3)
+        builder
+            .HasMany(x => x.Taxes)
+            .WithOne()
+            .HasForeignKey(x => x.SalesReturnDetailId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasOne<Warehouse>()

@@ -55,6 +55,11 @@ public sealed class SalesReturnConfiguration : IEntityTypeConfiguration<SalesRet
             .Property(x => x.AuthorizedTotalDiscount)
             .HasColumnName("authorized_total_discount")
             .HasColumnType("numeric(18,2)");
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-4)
+        builder
+            .Property(x => x.AuthorizedTotalIrbpnr)
+            .HasColumnName("authorized_total_irbpnr")
+            .HasColumnType("numeric(18,2)");
         builder
             .Property(x => x.AuthorizedGrandTotal)
             .HasColumnName("authorized_grand_total")
@@ -80,6 +85,7 @@ public sealed class SalesReturnConfiguration : IEntityTypeConfiguration<SalesRet
         builder.Ignore(x => x.TotalDiscount);
         builder.Ignore(x => x.TotalIce);
         builder.Ignore(x => x.TotalVat);
+        builder.Ignore(x => x.TotalIrbpnr);
         builder.Ignore(x => x.GrandTotal);
 
         // ── Relationships ───────────────────────────────────────────

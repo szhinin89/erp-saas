@@ -4197,6 +4197,55 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("company", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsResponsibleOnSales")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_responsible_on_sales");
+
+                    b.Property<string>("SriTaxCategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("sri_tax_category_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_company_special_tax_responsibilities_tenant");
+
+                    b.HasIndex("CompanyId", "SriTaxCategoryCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_company_special_tax_responsibility");
+
+                    b.ToTable("company_special_tax_responsibilities", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.DocumentSequence", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7821,6 +7870,65 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("item_packaging_levels", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("SriTaxCategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("sri_tax_category_code");
+
+                    b.Property<string>("TaxCatalogCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_catalog_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_item_special_tax_configurations_tenant");
+
+                    b.HasIndex("ItemId", "SriTaxCategoryCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_special_tax_configuration");
+
+                    b.ToTable("item_special_tax_configurations", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubstitute", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9884,6 +9992,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("ice_amount");
 
+                    b.Property<decimal>("IrbpnrAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("irbpnr_amount");
+
                     b.Property<DateOnly>("IssueDate")
                         .HasColumnType("date")
                         .HasColumnName("issue_date");
@@ -10074,24 +10186,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<decimal>("IceAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("ice_amount");
-
-                    b.Property<string>("IceCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("ice_code");
-
-                    b.Property<string>("IceName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("ice_name");
-
-                    b.Property<decimal>("IceRate")
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("ice_rate");
-
                     b.Property<Guid>("PurchaseCreditNoteId")
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_credit_note_id");
@@ -10115,25 +10209,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_amount");
-
-                    b.Property<decimal>("VatAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("vat_amount");
-
-                    b.Property<string>("VatCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("vat_code");
-
-                    b.Property<string>("VatName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("vat_name");
-
-                    b.Property<decimal>("VatRate")
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("vat_rate");
 
                     b.HasKey("Id");
 
@@ -10159,10 +10234,63 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "CompanyId", "BranchId")
                         .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_company_branch");
 
-                    b.HasIndex("TenantId", "PurchaseCreditNoteId", "VatCode", "IceCode")
-                        .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_credit_note_vat_ice");
-
                     b.ToTable("purchase_credit_note_tax_summaries", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummaryLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<Guid>("PurchaseCreditNoteTaxSummaryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_credit_note_tax_summary_id");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseCreditNoteTaxSummaryId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summary_lines_summary");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summary_lines_tenant");
+
+                    b.ToTable("purchase_credit_note_tax_summary_lines", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
@@ -11059,6 +11187,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("authorized_ice_total");
 
+                    b.Property<decimal?>("AuthorizedIrbpnrTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_irbpnr_total");
+
                     b.Property<decimal?>("AuthorizedSubtotal")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("authorized_subtotal");
@@ -11428,6 +11560,66 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_purchase_return_details_tenant_purchase_return");
 
                     b.ToTable("purchase_return_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<Guid>("PurchaseReturnDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_return_detail_id");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseReturnDetailId")
+                        .HasDatabaseName("ix_purchase_return_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_return_detail_taxes_tenant");
+
+                    b.ToTable("purchase_return_detail_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnSequence", b =>
@@ -12572,6 +12764,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("ice_amount");
 
+                    b.Property<int>("IceCalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("ice_calculation_type");
+
                     b.Property<string>("IceCode")
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
@@ -12676,6 +12872,70 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_sales_invoice_details_tenant_invoice");
 
                     b.ToTable("sales_invoice_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<Guid>("SalesInvoiceDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_invoice_detail_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesInvoiceDetailId")
+                        .HasDatabaseName("ix_sales_invoice_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_sales_invoice_detail_taxes_tenant");
+
+                    b.ToTable("sales_invoice_detail_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoicePayment", b =>
@@ -12879,6 +13139,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal?>("AuthorizedTotalIce")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("authorized_total_ice");
+
+                    b.Property<decimal?>("AuthorizedTotalIrbpnr")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_total_irbpnr");
 
                     b.Property<decimal?>("AuthorizedTotalVat")
                         .HasColumnType("numeric(18,2)")
@@ -13098,6 +13362,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("ice_amount");
 
+                    b.Property<int>("IceCalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("ice_calculation_type");
+
                     b.Property<string>("IceCode")
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
@@ -13192,6 +13460,62 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_sales_return_details_tenant_return");
 
                     b.ToTable("sales_return_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<Guid>("SalesReturnDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_return_detail_id");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesReturnDetailId")
+                        .HasDatabaseName("ix_sales_return_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_sales_return_detail_taxes_tenant");
+
+                    b.ToTable("sales_return_detail_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnRefundAllocation", b =>
@@ -16232,6 +16556,15 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("TaxRegime");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.DocumentSequence", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriDocType", null)
@@ -16762,6 +17095,15 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("SpecialTaxConfigurations")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubstitute", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
@@ -17075,6 +17417,15 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummaryLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseCreditNoteTaxSummaryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -17215,6 +17566,15 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseReturnDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -17445,6 +17805,15 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("SalesInvoiceDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoicePayment", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesInvoice", null)
@@ -17625,6 +17994,15 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesReturnDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("SalesReturnDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnRefundAllocation", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesReturn", null)
@@ -17742,6 +18120,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Navigation("PackagingLevels");
 
+                    b.Navigation("SpecialTaxConfigurations");
+
                     b.Navigation("Substitutes");
 
                     b.Navigation("SupplierCodes");
@@ -17784,6 +18164,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("TaxSummaries");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", b =>
+                {
+                    b.Navigation("Taxes");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
                     b.Navigation("Lines");
@@ -17801,6 +18186,11 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetail", b =>
+                {
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", b =>
@@ -17827,6 +18217,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Payments");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetail", b =>
+                {
+                    b.Navigation("Taxes");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReceivable", b =>
                 {
                     b.Navigation("Installments");
@@ -17837,6 +18232,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Lines");
 
                     b.Navigation("RefundAllocations");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnDetail", b =>
+                {
+                    b.Navigation("Taxes");
                 });
 #pragma warning restore 612, 618
         }

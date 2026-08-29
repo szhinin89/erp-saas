@@ -53,6 +53,16 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     public decimal? AuthorizedVatTotal { get; private set; }
     public decimal? AuthorizedIceTotal { get; private set; }
     public decimal? AuthorizedDiscountTotal { get; private set; }
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — suma de <c>PurchaseReturnDetail.IrbpnrAmount</c>
+    /// de todas las líneas. Deliberadamente NO se agrega a <see cref="PurchaseReturnAuthorizedEvent"/>/
+    /// <see cref="PurchaseReturnCancelledEvent"/> en esta subfase (esos eventos alimentan el
+    /// traductor contable — fuera de alcance de 5D, corresponde a la Subfase 5E). Sí se incluye en
+    /// <see cref="AuthorizedGrandTotal"/>: es el total financiero propio de la devolución (aplicado
+    /// a CxP + crédito de proveedor), no un asiento contable.
+    /// </summary>
+    public decimal? AuthorizedIrbpnrTotal { get; private set; }
     public decimal? AuthorizedGrandTotal { get; private set; }
 
     /// <summary>Costo histórico de inventario revertido — solo tras autorizar (§19.1bis, distinto del valor reconocido).</summary>
@@ -123,7 +133,24 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
         decimal VatRate,
         string? IceCode,
         decimal IceRate,
-        decimal LandedUnitCost
+        decimal LandedUnitCost,
+        IReadOnlyList<OriginalLineTaxSnapshot> Taxes
+    );
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — snapshot de UNA fila de
+    /// <c>PurchaseInvoiceDetailTax</c> de la línea original, resuelto por Application desde
+    /// <c>originalLine.Taxes</c> (nunca desde los campos escalares legacy VatAmount/IceAmount de la
+    /// factura). Base para prorratear IVA/ICE/IRBPNR en <see cref="Authorize"/>.
+    /// </summary>
+    public sealed record OriginalLineTaxSnapshot(
+        string TaxCode,
+        string TaxRateCode,
+        string TaxName,
+        decimal? Rate,
+        ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType CalculationType,
+        decimal TaxableBase,
+        decimal TaxAmount
     );
 
     // ── Factory ─────────────────────────────────────────────────────────
@@ -320,6 +347,20 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
             var returnedDiscount = Round2(fraction * original.DiscountAmount);
             var historicalCost = Round2(original.LandedUnitCost * line.Quantity);
 
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — prorratea CADA fila del
+            // snapshot fiscal original (IVA/ICE/IRBPNR) por la misma fracción que ya rige
+            // returnedVat/returnedIce — nunca recalculado desde la configuración tributaria actual
+            // del producto, siempre una proporción del snapshot ya congelado en la factura.
+            var returnedTaxes = original.Taxes.Select(t => new PurchaseReturnDetail.ProratedTaxLine(
+                t.TaxCode,
+                t.TaxRateCode,
+                t.TaxName,
+                t.Rate,
+                t.CalculationType,
+                Round2(fraction * t.TaxableBase),
+                Round2(fraction * t.TaxAmount)
+            ));
+
             line.Freeze(
                 original.LandedUnitCost,
                 original.VatCode,
@@ -330,7 +371,8 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 returnedDiscount,
                 returnedVat,
                 returnedIce,
-                historicalCost
+                historicalCost,
+                returnedTaxes
             );
         }
 
@@ -338,7 +380,9 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
         AuthorizedVatTotal = _lines.Sum(l => l.ReturnedVatAmount!.Value);
         AuthorizedIceTotal = _lines.Sum(l => l.ReturnedIceAmount!.Value);
         AuthorizedDiscountTotal = _lines.Sum(l => l.ReturnedDiscountAmount!.Value);
-        AuthorizedGrandTotal = AuthorizedSubtotal + AuthorizedVatTotal + AuthorizedIceTotal;
+        AuthorizedIrbpnrTotal = _lines.Sum(l => l.IrbpnrAmount);
+        AuthorizedGrandTotal =
+            AuthorizedSubtotal + AuthorizedVatTotal + AuthorizedIceTotal + AuthorizedIrbpnrTotal;
         HistoricalCostTotal = _lines.Sum(l => l.HistoricalCostAmount!.Value);
         CostVarianceTotal = HistoricalCostTotal - AuthorizedSubtotal;
 

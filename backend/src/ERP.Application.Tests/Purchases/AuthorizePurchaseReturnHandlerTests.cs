@@ -321,6 +321,117 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) ─────────────────
+
+    [Fact]
+    public async Task Autorizacion_propaga_IRBPNR_desde_originalLine_Taxes_prorrateado_por_fraccion()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
+            "01", "001-001-000000002", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
+            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id, TenantId, "Producto con IRBPNR",
+            quantity: 10m, unitPrice: 100m, vatCode: "10", uomCode: "UNIT",
+            itemId: ItemId, warehouseId: WarehouseId
+        );
+        // ReplaceTaxes (Compras) reemplaza TODA la colección — debe llamarse ANTES de ApplyTaxes,
+        // que re-sincroniza IVA/ICE sin tocar otras filas (mismo orden que ReceptionTaxHelper en
+        // producción). IRBPNR: monto original 1.00 sobre la línea completa (10 unidades).
+        line.ReplaceTaxes(
+            [
+                PurchaseInvoiceDetailTax.Create(
+                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.1m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    line.TaxableBase, 1.00m, PurchaseTaxSource.Xml
+                ),
+            ]
+        );
+        line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
+        invoice.ReplaceLines(new[] { line }, UserId);
+        invoice.Confirm(UserId);
+        var confirmedLine = invoice.Lines.Single();
+
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000002", invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), invoice.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal);
+
+        var purchaseReturn = PurchaseReturn.CreateDraft(
+            TenantId, CompanyId, BranchId, invoice.Id, SupplierId, "Producto en mal estado",
+            new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, ItemId, 3m, WarehouseId) },
+            UserId, Guid.NewGuid(), "create-hash-irbpnr"
+        );
+
+        var f = new Fixture(invoice, confirmedLine, payable, purchaseReturn);
+        var m = new Mocks(f);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var returnedLine = f.Return.Lines.Single();
+        // fraction = 3/10 = 0.3 → IRBPNR prorrateado = 0.30
+        returnedLine.IrbpnrAmount.Should().Be(0.30m);
+        returnedLine.Taxes.Should().Contain(t => t.TaxCode == "5" && t.TaxAmount == 0.30m);
+        f.Return.AuthorizedIrbpnrTotal.Should().Be(0.30m);
+        f.Return.AuthorizedGrandTotal.Should().Be(f.Return.AuthorizedSubtotal + f.Return.AuthorizedVatTotal + 0.30m);
+    }
+
+    [Fact]
+    public async Task Autorizacion_sin_impuesto_IVA_en_originalLine_Taxes_falla_con_mensaje_claro()
+    {
+        // Simula una línea de factura pre-existente al ADR-032 cuyo _taxes nunca se sincronizó
+        // (caso teórico — el backfill de Fase 4 ya cubre el caso real). El handler debe rechazar
+        // explícitamente en vez de autorizar con un IVA inventado o en cero silencioso.
+        var invoice = PurchaseInvoice.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
+            "01", "001-001-000000003", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
+            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id, TenantId, "Producto sin taxes",
+            quantity: 10m, unitPrice: 100m, vatCode: "10", uomCode: "UNIT",
+            itemId: ItemId, warehouseId: WarehouseId
+        );
+        // No se llama ApplyTaxes: _taxes queda vacío (escenario forzado, no alcanzable en el flujo
+        // real desde que existe el backfill de Fase 4).
+        invoice.ReplaceLines(new[] { line }, UserId);
+        invoice.Confirm(UserId);
+        var confirmedLine = invoice.Lines.Single();
+
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", "001-001-000000003", invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), 1000m);
+
+        var purchaseReturn = PurchaseReturn.CreateDraft(
+            TenantId, CompanyId, BranchId, invoice.Id, SupplierId, "Producto en mal estado",
+            new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, ItemId, 3m, WarehouseId) },
+            UserId, Guid.NewGuid(), "create-hash-sin-taxes"
+        );
+
+        var f = new Fixture(invoice, confirmedLine, payable, purchaseReturn);
+        var m = new Mocks(f);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("IVA");
+    }
+
     [Fact]
     public async Task Autorizacion_feliz_factura_parcialmente_pagada_aplica_contra_saldo_sin_excedente()
     {
@@ -531,7 +642,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             VatRate: 12m,
             IceCode: null,
             IceRate: 0m,
-            LandedUnitCost: 115m
+            LandedUnitCost: 115m,
+            Taxes: []
         );
         var purchaseReturn = PurchaseReturn.CreateDraft(
             TenantId,

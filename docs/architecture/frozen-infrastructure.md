@@ -156,6 +156,15 @@ Todos los códigos tributarios provienen exclusivamente de los catálogos oficia
 - Cualquier cambio en las reglas de obligatoriedad (`VatCode.NotEmpty()`) requiere análisis de compatibilidad hacia atrás.
 - El mensaje de validación Zod `'El producto no tiene código IVA de venta configurado. Verifique el maestro de productos.'` es parte de esta infraestructura y no se modifica sin justificación formal.
 
+### Excepción acotada — `CompanySpecialTaxResponsibility` (ADR-032)
+
+[ADR-032](../decisions/ADR-032-tax-line-ssot-ice-irbpnr.md) (2026-08-29) abre una excepción **estricta y acotada** a la prohibición "cualquier configuración tributaria a nivel empresa" de esta infraestructura, exclusivamente para la responsabilidad de aplicar ICE/IRBPNR en ventas:
+
+- La regla FROZEN de Configuración Tributaria **sigue vigente** en todo lo demás — sigue prohibido definir códigos, tarifas, porcentajes o catálogos tributarios a nivel empresa.
+- `CompanySpecialTaxResponsibility` **no es** un catálogo tributario por empresa: no tiene `TaxCatalogCode`, no tiene tarifa, no reemplaza ni duplica `SriIceRate`/`SriIrbpnrRate`. Es exclusivamente un booleano (`IsResponsibleOnSales`) por `(CompanyId, SriTaxCategoryCode)` que responde "¿esta empresa es sujeto pasivo de este impuesto especial al vender?" — una realidad fiscal real del SRI (fabricante/importador vs. revendedor), no un dato tributario del documento.
+- **No participa en Compras** — solo condiciona el cálculo en Ventas, siempre en conjunto (`AND`) con `ItemSpecialTaxConfiguration` del ítem, nunca como sustituto de la configuración del ítem ni como fallback de código/tarifa.
+- Detalle completo del diseño y las reglas de coherencia compra-venta: ADR-032 §3.4/§5.1.
+
 ---
 
 ## Tipos de Ítem (Item Types)

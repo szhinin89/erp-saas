@@ -217,6 +217,30 @@ public sealed class SalesReturnTests
     }
 
     [Fact]
+    public void Authorize_con_IRBPNR_en_la_linea_lo_incluye_en_AuthorizedTotalIrbpnr_y_GrandTotal()
+    {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-4)
+        var salesReturn = CreateDraft();
+        var line = CreateLine(quantity: 2m, unitPrice: 10m); // Subtotal=20, VAT=3
+        line.ReplaceTaxes(
+            [
+                SalesReturnDetailTax.Create(
+                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific, 0.24m
+                ),
+            ]
+        );
+        salesReturn.AddLine(line, UserId);
+        salesReturn.AddRefundAllocation(CreateAllocation(salesReturn, 23.24m), UserId);
+
+        salesReturn.Authorize(UserId);
+
+        salesReturn.AuthorizedTotalIrbpnr.Should().Be(0.24m);
+        salesReturn.TotalIrbpnr.Should().Be(0.24m);
+        salesReturn.AuthorizedGrandTotal.Should().Be(23.24m); // 20 + 3 (VAT) + 0.24 (IRBPNR)
+    }
+
+    [Fact]
     public void Authorize_sin_lineas_lanza()
     {
         var salesReturn = CreateDraft();

@@ -33,47 +33,8 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
             .IsRequired();
 
         builder
-            .Property(x => x.VatCode)
-            .HasColumnName("vat_code")
-            .HasMaxLength(PurchaseInvoiceTaxSummary.VatCodeMaxLen)
-            .IsRequired();
-        builder
-            .Property(x => x.VatRate)
-            .HasColumnName("vat_rate")
-            .HasColumnType("numeric(5,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.VatName)
-            .HasColumnName("vat_name")
-            .HasMaxLength(PurchaseInvoiceTaxSummary.VatNameMaxLen);
-
-        builder
-            .Property(x => x.IceCode)
-            .HasColumnName("ice_code")
-            .HasMaxLength(PurchaseInvoiceTaxSummary.IceCodeMaxLen);
-        builder
-            .Property(x => x.IceRate)
-            .HasColumnName("ice_rate")
-            .HasColumnType("numeric(5,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.IceName)
-            .HasColumnName("ice_name")
-            .HasMaxLength(PurchaseInvoiceTaxSummary.IceNameMaxLen);
-
-        builder
             .Property(x => x.TaxableBase)
             .HasColumnName("taxable_base")
-            .HasColumnType("numeric(18,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.IceAmount)
-            .HasColumnName("ice_amount")
-            .HasColumnType("numeric(18,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.VatAmount)
-            .HasColumnName("vat_amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
         builder
@@ -83,6 +44,23 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
             .IsRequired();
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+
+        // ── Computed properties (NOT persisted) ─────────────────────────────
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2 — corrección post-revisión):
+        // VatCode/.../IrbpnrAmount son legacy compatibility mirror derivado de Taxes — nunca
+        // columnas propias. Ver comentario de la entidad.
+        builder.Ignore(x => x.VatCode);
+        builder.Ignore(x => x.VatRate);
+        builder.Ignore(x => x.VatName);
+        builder.Ignore(x => x.VatAmount);
+        builder.Ignore(x => x.IceCode);
+        builder.Ignore(x => x.IceRate);
+        builder.Ignore(x => x.IceName);
+        builder.Ignore(x => x.IceAmount);
+        builder.Ignore(x => x.IrbpnrCode);
+        builder.Ignore(x => x.IrbpnrRate);
+        builder.Ignore(x => x.IrbpnrName);
+        builder.Ignore(x => x.IrbpnrAmount);
 
         // ── Relationships ────────────────────────────────────────────────
         // La relación con PurchaseCreditNote.TaxSummaries se configura desde
@@ -112,6 +90,13 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
             .HasForeignKey(x => x.BranchId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2)
+        builder
+            .HasMany(x => x.Taxes)
+            .WithOne()
+            .HasForeignKey(x => x.PurchaseCreditNoteTaxSummaryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // ── Indexes ──────────────────────────────────────────────────────
         builder
             .HasIndex(x => new
@@ -133,15 +118,5 @@ public sealed class PurchaseCreditNoteTaxSummaryConfiguration
         builder
             .HasIndex(x => new { x.TenantId, x.SourcePurchaseInvoiceTaxSummaryId })
             .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_source_summary");
-
-        builder
-            .HasIndex(x => new
-            {
-                x.TenantId,
-                x.PurchaseCreditNoteId,
-                x.VatCode,
-                x.IceCode,
-            })
-            .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_credit_note_vat_ice");
     }
 }

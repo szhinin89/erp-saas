@@ -126,6 +126,13 @@ public sealed class AuthorizeSalesInvoiceHandler
             );
 
         // ── Recalcular impuestos con nombres actualizados ───────────
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) — usa el catálogo completo (no el legacy
+        // GetIceRateWithNameAsync, que exige Percentage) para no resetear a Percentage/0 una línea
+        // con ICE "específico" ya fijado en el Draft. Paridad exacta con
+        // ConfirmPurchaseUseCases.cs (Compras): para Specific, iceExactAmount = line.IceAmount
+        // preserva el monto ya fijado — nunca lo recalcula desde una tarifa porcentual. IRBPNR no se
+        // toca aquí: ApplyTaxes solo sincroniza VAT/ICE en Taxes, la fila de IRBPNR fijada en el
+        // Draft (si aplica) sobrevive intacta.
         foreach (var line in inv.Lines)
         {
             var vatResult = await _tax.GetVatRateWithNameAsync(line.VatCode, ct);
@@ -136,15 +143,24 @@ public sealed class AuthorizeSalesInvoiceHandler
 
             decimal iceRate = 0;
             string? iceName = null;
+            var iceCalculationType = ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage;
+            decimal? iceExactAmount = null;
             if (!string.IsNullOrWhiteSpace(line.IceCode))
             {
-                var iceResult = await _tax.GetIceRateWithNameAsync(line.IceCode, ct);
-                if (iceResult is null)
+                var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
+                if (iceEntry is null)
                     return Result<SalesInvoiceDto>.ValidationFailure(
                         $"Código ICE '{line.IceCode}' no encontrado."
                     );
-                iceRate = iceResult.Rate;
-                iceName = iceResult.Name;
+                iceName = iceEntry.Name;
+                iceCalculationType = iceEntry.CalculationType;
+                if (
+                    iceEntry.CalculationType
+                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific
+                )
+                    iceExactAmount = line.IceAmount;
+                else
+                    iceRate = iceEntry.Percentage ?? 0m;
             }
             line.ApplyTaxes(
                 line.VatCode,
@@ -152,7 +168,9 @@ public sealed class AuthorizeSalesInvoiceHandler
                 vatResult.Name,
                 line.IceCode,
                 iceRate,
-                iceName
+                iceName,
+                iceCalculationType,
+                iceExactAmount
             );
         }
 

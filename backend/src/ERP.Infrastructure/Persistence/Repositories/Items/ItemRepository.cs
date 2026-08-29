@@ -32,6 +32,7 @@ public sealed class ItemRepository : IItemRepository
             .Include(x => x.Substitutes)
             .Include(x => x.PackagingLevels)
             .Include(x => x.SupplierCodes)
+            .Include(x => x.SpecialTaxConfigurations)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<Item?> GetByIdLightAsync(
@@ -66,6 +67,7 @@ public sealed class ItemRepository : IItemRepository
             .Include(x => x.Substitutes)
             .Include(x => x.PackagingLevels)
             .Include(x => x.SupplierCodes)
+            .Include(x => x.SpecialTaxConfigurations)
             .FirstOrDefaultAsync(x => x.Code.SKU == normalized, cancellationToken);
     }
 

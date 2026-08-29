@@ -8,9 +8,12 @@ using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentValidation;
 using MediatR;
 
@@ -196,6 +199,7 @@ public sealed class CreateSalesDraftHandler
     private readonly IEmissionPointRepository _epRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPricingResolver _pricing;
+    private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -213,6 +217,7 @@ public sealed class CreateSalesDraftHandler
         IEmissionPointRepository epRepo,
         ISriTaxResolver tax,
         IPricingResolver pricing,
+        ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -230,6 +235,7 @@ public sealed class CreateSalesDraftHandler
         _epRepo = epRepo;
         _tax = tax;
         _pricing = pricing;
+        _companyTaxRepo = companyTaxRepo;
         _t = t;
         _c = c;
         _b = b;
@@ -331,6 +337,14 @@ public sealed class CreateSalesDraftHandler
         // POS-DISCOUNT-RULES-01: preferencia resuelta UNA vez por request, no por línea.
         var preferences = await _preferences.ResolveAsync(ct);
 
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1) — resuelta UNA vez por request (misma
+        // empresa para todas las líneas), nunca por línea.
+        var companyResponsibleCodes = await _companyTaxRepo.GetResponsibleSriTaxCategoryCodesAsync(
+            _c.CompanyId,
+            tid,
+            ct
+        );
+
         var linesResult = await SalesLineBuilder.BuildAsync(
             cmd.Lines,
             inv.Id,
@@ -339,6 +353,7 @@ public sealed class CreateSalesDraftHandler
             _tax,
             _pricing,
             preferences.SalesPos,
+            companyResponsibleCodes,
             ct
         );
         if (linesResult.Error is not null)
@@ -377,7 +392,9 @@ public sealed class UpdateSalesDraftHandler
     private readonly IItemRepository _itemRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPricingResolver _pricing;
+    private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
 
@@ -390,7 +407,9 @@ public sealed class UpdateSalesDraftHandler
         IItemRepository itemRepo,
         ISriTaxResolver tax,
         IPricingResolver pricing,
+        ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
         ICurrentTenant t,
+        ICurrentCompany c,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences
     )
@@ -403,7 +422,9 @@ public sealed class UpdateSalesDraftHandler
         _itemRepo = itemRepo;
         _tax = tax;
         _pricing = pricing;
+        _companyTaxRepo = companyTaxRepo;
         _t = t;
+        _c = c;
         _u = u;
         _preferences = preferences;
     }
@@ -471,6 +492,14 @@ public sealed class UpdateSalesDraftHandler
             // POS-DISCOUNT-RULES-01: preferencia resuelta UNA vez por request, no por línea.
             var preferences = await _preferences.ResolveAsync(ct);
 
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1)
+            var companyResponsibleCodes =
+                await _companyTaxRepo.GetResponsibleSriTaxCategoryCodesAsync(
+                    _c.CompanyId,
+                    _t.TenantId,
+                    ct
+                );
+
             var linesResult = await SalesLineBuilder.BuildAsync(
                 cmd.Lines,
                 inv.Id,
@@ -479,6 +508,7 @@ public sealed class UpdateSalesDraftHandler
                 _tax,
                 _pricing,
                 preferences.SalesPos,
+                companyResponsibleCodes,
                 ct
             );
             if (linesResult.Error is not null)
@@ -658,6 +688,7 @@ file static class SalesLineBuilder
         ISriTaxResolver tax,
         IPricingResolver pricingResolver,
         SalesPosPreferences salesPosPreferences,
+        IReadOnlyCollection<string> companyResponsibleCodes,
         CancellationToken ct
     )
     {
@@ -695,6 +726,7 @@ file static class SalesLineBuilder
 
             var vatCode = l.VatCode;
             var iceCode = l.IceCode;
+            string? irbpnrCode = null;
             string? snapshotSku = null;
             string? snapshotItemName = null;
             string uomCode = "UNIT";
@@ -757,7 +789,28 @@ file static class SalesLineBuilder
                 // Configuración Tributaria CLOSED: el Item es la única fuente de verdad —
                 // el VatCode/IceCode enviado por el cliente nunca prevalece sobre el ítem.
                 vatCode = item.TaxConfig.SaleVatCode ?? vatCode;
-                iceCode = item.TaxConfig.ExciseTaxCode;
+
+                // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1) — ICE/IRBPNR se calculan SOLO si
+                // se cumplen ambas condiciones: (a) el ítem tiene ItemSpecialTaxConfiguration activa
+                // para ese impuesto, (b) la empresa está marcada responsable de aplicarlo en ventas.
+                // La compra nunca se consulta aquí — Ventas jamás copia impuestos desde Compras.
+                var iceConfig = item.SpecialTaxConfigurations.FirstOrDefault(c =>
+                    c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
+                );
+                iceCode =
+                    iceConfig is not null
+                    && companyResponsibleCodes.Contains(SriTaxCategoryCodes.Ice)
+                        ? iceConfig.TaxCatalogCode
+                        : null;
+
+                var irbpnrConfig = item.SpecialTaxConfigurations.FirstOrDefault(c =>
+                    c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Irbpnr
+                );
+                irbpnrCode =
+                    irbpnrConfig is not null
+                    && companyResponsibleCodes.Contains(SriTaxCategoryCodes.Irbpnr)
+                        ? irbpnrConfig.TaxCatalogCode
+                        : null;
 
                 // Pricing Engine v2 (SSOT del precio de venta) — resuelve el precio vigente
                 // para validar el piso de descuento configurado en el maestro del ítem. El precio
@@ -811,7 +864,7 @@ file static class SalesLineBuilder
                 packagingLevelId: packagingLevelId
             );
 
-            var taxResult = await SalesTaxHelper.ResolveTaxesAsync(line, tax, ct);
+            var taxResult = await SalesTaxHelper.ResolveTaxesAsync(line, tax, irbpnrCode, ct);
             if (taxResult is not null)
                 return new(null!, taxResult);
             lines.Add(line);
@@ -928,9 +981,16 @@ file static class SalesPaymentHelper
 
 file static class SalesTaxHelper
 {
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1) — <paramref name="irbpnrCatalogCode"/> ya
+    /// viene decidido por <see cref="SalesLineBuilder"/> (ItemSpecialTaxConfiguration del ítem AND
+    /// CompanySpecialTaxResponsibility de la empresa); este helper solo resuelve el catálogo SRI y
+    /// escribe el snapshot — nunca decide si aplica.
+    /// </summary>
     public static async Task<Result<SalesInvoiceDto>?> ResolveTaxesAsync(
         SalesInvoiceDetail line,
         ISriTaxResolver tax,
+        string? irbpnrCatalogCode,
         CancellationToken ct
     )
     {
@@ -942,15 +1002,28 @@ file static class SalesTaxHelper
 
         decimal iceRate = 0;
         string? iceName = null;
+        var iceCalculationType = SriTaxCalculationType.Percentage;
+        decimal? iceExactAmount = null;
         if (!string.IsNullOrWhiteSpace(line.IceCode))
         {
-            var iceResult = await tax.GetIceRateWithNameAsync(line.IceCode, ct);
-            if (iceResult is null)
+            // Paridad con Compras (PurchaseDraftUseCases.TaxHelper) — usa el catálogo completo (no
+            // el legacy GetIceRateWithNameAsync, que exige Percentage) para soportar también ICE
+            // "específico" en Ventas (ADR-032 §3.3, cierra el gap detectado en la auditoría previa).
+            var iceEntry = await tax.GetIceCatalogEntryAsync(line.IceCode, ct);
+            if (iceEntry is null)
                 return Result<SalesInvoiceDto>.ValidationFailure(
                     $"Código ICE '{line.IceCode}' no encontrado o inactivo."
                 );
-            iceRate = iceResult.Rate;
-            iceName = iceResult.Name;
+            iceName = iceEntry.Name;
+            iceCalculationType = iceEntry.CalculationType;
+            if (iceEntry.CalculationType == SriTaxCalculationType.Specific)
+                iceExactAmount = Math.Round(
+                    (iceEntry.UnitValue ?? 0m) * line.QuantityInBaseUom,
+                    ERP.Domain.Common.FiscalPrecision.TaxAmount,
+                    MidpointRounding.AwayFromZero
+                );
+            else
+                iceRate = iceEntry.Percentage ?? 0m;
         }
 
         line.ApplyTaxes(
@@ -959,8 +1032,52 @@ file static class SalesTaxHelper
             vatResult.Name,
             line.IceCode,
             iceRate,
-            iceName
+            iceName,
+            iceCalculationType,
+            iceExactAmount
         );
+
+        // IRBPNR no tiene campos escalares legacy — vive únicamente en Taxes, fijado vía
+        // ReplaceTaxes (nunca toca la fila de VAT/ICE que ApplyTaxes acaba de sincronizar).
+        if (!string.IsNullOrWhiteSpace(irbpnrCatalogCode))
+        {
+            var irbpnrEntry = await tax.GetIrbpnrCatalogEntryAsync(irbpnrCatalogCode, ct);
+            if (irbpnrEntry is null)
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    $"Código IRBPNR '{irbpnrCatalogCode}' no encontrado o inactivo."
+                );
+
+            var irbpnrAmount =
+                irbpnrEntry.CalculationType == SriTaxCalculationType.Specific
+                    ? Math.Round(
+                        (irbpnrEntry.UnitValue ?? 0m) * line.QuantityInBaseUom,
+                        ERP.Domain.Common.FiscalPrecision.TaxAmount,
+                        MidpointRounding.AwayFromZero
+                    )
+                    : Math.Round(
+                        line.TaxableBase * (irbpnrEntry.Percentage ?? 0m) / 100m,
+                        ERP.Domain.Common.FiscalPrecision.TaxAmount,
+                        MidpointRounding.AwayFromZero
+                    );
+
+            line.ReplaceTaxes(
+                [
+                    ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax.Create(
+                        line.Id,
+                        line.TenantId,
+                        SriTaxCategoryCodes.Irbpnr,
+                        irbpnrCatalogCode,
+                        irbpnrEntry.Name,
+                        irbpnrEntry.Percentage ?? irbpnrEntry.UnitValue,
+                        irbpnrEntry.CalculationType,
+                        line.TaxableBase,
+                        irbpnrAmount,
+                        SalesTaxSource.Calculated
+                    ),
+                ]
+            );
+        }
+
         return null;
     }
 }

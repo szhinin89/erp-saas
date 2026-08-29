@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentAssertions;
 
 namespace ERP.Domain.Tests.Sales;
@@ -134,6 +135,97 @@ public sealed class SalesReturnDetailTests
         line.ConversionFactor.Should().Be(1m);
         line.QuantityInBaseUom.Should().Be(3m);
         line.BaseUomCode.Should().Be("UNIT");
+    }
+
+    // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3) ────────────────
+
+    [Fact]
+    public void Create_solo_IVA_sincroniza_unicamente_la_fila_de_IVA_en_Taxes()
+    {
+        var line = Create(quantity: 2m, unitPrice: 10m);
+
+        line.Taxes.Should().ContainSingle(t => t.TaxCode == "2" && t.TaxAmount == 3m);
+        line.IrbpnrAmount.Should().Be(0m);
+        line.IrbpnrCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void Create_con_ICE_Percentage_sincroniza_IVA_e_ICE()
+    {
+        var line = SalesReturnDetail.Create(
+            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto con ICE",
+            quantity: 1m, unitPrice: 100m, discountPct: 0m,
+            vatCode: "2", vatRate: 15m, uomCode: "UNIT",
+            iceCode: "3010", iceRate: 10m
+        );
+
+        line.Taxes.Should().HaveCount(2);
+        line.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxAmount == 10m);
+        line.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 16.5m);
+    }
+
+    [Fact]
+    public void Create_con_ICE_Specific_conserva_el_monto_ya_prorrateado_sin_recalcularlo()
+    {
+        var line = SalesReturnDetail.Create(
+            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto con ICE específico",
+            quantity: 3m, unitPrice: 100m, discountPct: 0m,
+            vatCode: "2", vatRate: 15m, uomCode: "UNIT",
+            iceCode: "3053", iceRate: 0m,
+            iceCalculationType: SriTaxCalculationType.Specific,
+            iceExactAmount: 1.50m // ya prorrateado por Application
+        );
+
+        line.IceAmount.Should().Be(1.50m, "un ICE específico nunca se recalcula desde una tarifa porcentual");
+        line.VatAmount.Should().Be(45.23m); // (300 + 1.50) * 15% = 45.225, redondeado AwayFromZero
+        line.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxAmount == 1.50m);
+    }
+
+    [Fact]
+    public void ReplaceTaxes_con_IRBPNR_lo_agrega_sin_tocar_IVA_ni_ICE()
+    {
+        var line = SalesReturnDetail.Create(
+            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto con IRBPNR",
+            quantity: 12m, unitPrice: 0.5837m, discountPct: 0m,
+            vatCode: "2", vatRate: 15m, uomCode: "UNIT"
+        );
+
+        line.ReplaceTaxes(
+            [
+                SalesReturnDetailTax.Create(
+                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
+                    SriTaxCalculationType.Specific, 0.24m
+                ),
+            ]
+        );
+
+        line.IrbpnrCode.Should().Be("5001");
+        line.IrbpnrAmount.Should().Be(0.24m);
+        line.Taxes.Should().HaveCount(2); // IVA (sincronizado en Create) + IRBPNR
+        line.Taxes.Should().Contain(t => t.TaxCode == "2");
+    }
+
+    [Fact]
+    public void IVA_ICE_e_IRBPNR_combinados_se_reflejan_en_TaxInclusiveTotal()
+    {
+        var line = SalesReturnDetail.Create(
+            ReturnId, TenantId, OriginalInvoiceDetailId, "Producto completo",
+            quantity: 1m, unitPrice: 100m, discountPct: 0m,
+            vatCode: "2", vatRate: 15m, uomCode: "UNIT",
+            iceCode: "3010", iceRate: 10m
+        );
+        line.ReplaceTaxes(
+            [
+                SalesReturnDetailTax.Create(
+                    line.Id, TenantId, "5", "5001", "IRBPNR", 0.02m,
+                    SriTaxCalculationType.Specific, 0.02m
+                ),
+            ]
+        );
+
+        line.TaxInclusiveTotal.Should()
+            .Be(line.TaxableBase + line.IceAmount + line.VatAmount + line.IrbpnrAmount);
+        line.TaxInclusiveTotal.Should().Be(100m + 10m + 16.5m + 0.02m);
     }
 
     [Fact]

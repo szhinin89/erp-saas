@@ -5,6 +5,7 @@ using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -215,17 +216,44 @@ public sealed class AuthorizePurchaseReturnHandler
                     );
                 }
 
+                // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — fuente de verdad es
+                // originalLine.Taxes (PurchaseInvoiceDetailTax), nunca los campos escalares legacy
+                // (VatAmount/IceAmount son un legacy compatibility mirror). VAT/ICE se derivan de la
+                // misma colección para no duplicar la fuente.
+                var originalTaxes = originalLine
+                    .Taxes.Select(t => new PurchaseReturn.OriginalLineTaxSnapshot(
+                        t.TaxCode,
+                        t.TaxRateCode,
+                        t.TaxName,
+                        t.Rate,
+                        t.CalculationType,
+                        t.TaxableBase,
+                        t.TaxAmount
+                    ))
+                    .ToList();
+                var originalVat = originalTaxes.FirstOrDefault(t => t.TaxCode == SriTaxCategoryCodes.Vat);
+                if (originalVat is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<PurchaseReturnDto>.ValidationFailure(
+                        $"La línea '{originalLine.Description}' de la factura original no tiene "
+                            + "un impuesto IVA registrado — no se puede autorizar la devolución."
+                    );
+                }
+                var originalIce = originalTaxes.FirstOrDefault(t => t.TaxCode == SriTaxCategoryCodes.Ice);
+
                 originalLinesByDetailId[originalLine.Id] = new PurchaseReturn.OriginalLineSnapshot(
                     originalLine.Quantity,
                     originalLine.LineSubtotal,
                     originalLine.DiscountAmount,
-                    originalLine.VatAmount,
-                    originalLine.IceAmount,
-                    originalLine.VatCode,
-                    originalLine.VatRate,
-                    originalLine.IceCode,
-                    originalLine.IceRate,
-                    originalLine.LandedUnitCost
+                    originalVat.TaxAmount,
+                    originalIce?.TaxAmount ?? 0m,
+                    originalVat.TaxRateCode,
+                    originalVat.Rate ?? 0m,
+                    originalIce?.TaxRateCode,
+                    originalIce?.Rate ?? 0m,
+                    originalLine.LandedUnitCost,
+                    originalTaxes
                 );
                 uomCodeByDetailId[line.OriginalInvoiceDetailId] = originalLine.UomCode;
             }

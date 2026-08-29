@@ -5,6 +5,7 @@ using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Purchases;
 using MediatR;
 
 namespace ERP.Application.Modules.Purchases.UseCases.GetPurchaseItemContext;
@@ -90,8 +91,14 @@ public sealed class GetPurchaseItemContextQueryHandler
         var maxDiscount = item.SaleConfig?.MaxDiscountPercent ?? 0m;
 
         // 6. IMPUESTOS — desde catálogo SRI
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Subfase 5A) — ICE se resuelve desde
+        // ItemSpecialTaxConfiguration (colección 1:N por SriTaxCategoryCode), no desde
+        // TaxConfig.ExciseTaxCode (legacy compatibility mirror, ya no se lee para decisiones nuevas).
         var hasVat = !string.IsNullOrWhiteSpace(item.TaxConfig.PurchaseVatCode);
-        var hasIce = !string.IsNullOrWhiteSpace(item.TaxConfig.ExciseTaxCode);
+        var iceConfig = item.SpecialTaxConfigurations.FirstOrDefault(c =>
+            c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
+        );
+        var hasIce = iceConfig is not null;
         decimal vatPct = 0m;
         decimal icePct = 0m;
 
@@ -99,9 +106,9 @@ public sealed class GetPurchaseItemContextQueryHandler
         if (hasVat && !string.IsNullOrWhiteSpace(purchaseVatCode))
             vatPct = await _taxResolver.GetVatRateAsync(purchaseVatCode, ct) ?? 0m;
 
-        var exciseTaxCode = item.TaxConfig.ExciseTaxCode;
-        if (hasIce && !string.IsNullOrWhiteSpace(exciseTaxCode))
-            icePct = await _taxResolver.GetIceRateAsync(exciseTaxCode, ct) ?? 0m;
+        var exciseTaxCode = iceConfig?.TaxCatalogCode;
+        if (hasIce)
+            icePct = await _taxResolver.GetIceRateAsync(exciseTaxCode!, ct) ?? 0m;
 
         // 7. MARGEN — costo promedio vs PVP
         var costMargin = pvp - averageCost;
@@ -143,7 +150,7 @@ public sealed class GetPurchaseItemContextQueryHandler
 
                 PurchaseVatCode = item.TaxConfig.PurchaseVatCode,
                 VatPercent = vatPct,
-                ExciseTaxCode = item.TaxConfig.ExciseTaxCode,
+                ExciseTaxCode = exciseTaxCode,
                 IcePercent = icePct,
                 HasVat = hasVat,
                 HasIce = hasIce,

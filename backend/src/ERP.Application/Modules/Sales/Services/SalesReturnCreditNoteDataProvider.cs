@@ -6,6 +6,7 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -178,7 +179,8 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
             Totals: new ElectronicDocumentTotals(
                 Subtotal: salesReturn.Subtotal,
                 TotalDiscount: salesReturn.TotalDiscount,
-                TotalTax: salesReturn.TotalVat + salesReturn.TotalIce,
+                // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-4) — incluye IRBPNR.
+                TotalTax: salesReturn.TotalVat + salesReturn.TotalIce + salesReturn.TotalIrbpnr,
                 GrandTotal: salesReturn.GrandTotal,
                 CurrencyCode: invoice.CurrencyCode
             ),
@@ -201,22 +203,50 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
             ? "CONTRIBUYENTE RÉGIMEN RIMPE"
             : null;
 
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5D-4) — igual criterio que
+    /// <see cref="SalesInvoiceElectronicDocumentDataProvider"/> (Subfase 5C): etiqueta que
+    /// <see cref="ERP.Infrastructure.Services.ElectronicDocuments.SriTaxCategoryCodeResolver"/> ya
+    /// traduce a código SRI (hoy solo "VAT"/"ICE" — IRBPNR pendiente en
+    /// ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01, registrado en ADR-032).
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> ElectronicDocumentTaxLabelByCode =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [SriTaxCategoryCodes.Vat] = "VAT",
+            [SriTaxCategoryCodes.Ice] = "ICE",
+            [SriTaxCategoryCodes.Irbpnr] = "IRBPNR",
+        };
+
+    private static readonly IReadOnlyDictionary<string, int> ElectronicDocumentTaxSortOrder =
+        new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [SriTaxCategoryCodes.Vat] = 0,
+            [SriTaxCategoryCodes.Ice] = 1,
+            [SriTaxCategoryCodes.Irbpnr] = 2,
+        };
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5D-4) — construye la lista de impuestos
+    /// desde <see cref="SalesReturnDetail.Taxes"/> (fuente de verdad), nunca desde los campos
+    /// escalares legacy (IceCode/IceRate/IceAmount) — esos quedan como legacy compatibility mirror.
+    /// </summary>
     private static ElectronicDocumentDetailLine BuildDetailLine(SalesReturnDetail line)
     {
-        var taxes = new List<ElectronicDocumentDetailTax>
-        {
-            new("VAT", line.VatCode, line.TaxableBase, line.VatRate, line.VatAmount),
-        };
-        if (!string.IsNullOrWhiteSpace(line.IceCode))
-            taxes.Add(
-                new ElectronicDocumentDetailTax(
-                    "ICE",
-                    line.IceCode!,
-                    line.TaxableBase,
-                    line.IceRate,
-                    line.IceAmount
-                )
-            );
+        var taxes = line
+            .Taxes.OrderBy(t =>
+                ElectronicDocumentTaxSortOrder.TryGetValue(t.TaxCode, out var order) ? order : int.MaxValue
+            )
+            .Select(t => new ElectronicDocumentDetailTax(
+                ElectronicDocumentTaxLabelByCode.TryGetValue(t.TaxCode, out var label)
+                    ? label
+                    : t.TaxCode,
+                t.TaxRateCode,
+                line.TaxableBase,
+                t.Rate ?? 0m,
+                t.TaxAmount
+            ))
+            .ToList();
 
         return new ElectronicDocumentDetailLine(
             Code: line.SnapshotSku ?? string.Empty,

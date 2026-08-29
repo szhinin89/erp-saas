@@ -246,6 +246,8 @@ public class ErpDbContext : DbContext
     public DbSet<Establishment> Establishments => Set<Establishment>();
     public DbSet<EmissionPoint> EmissionPoints => Set<EmissionPoint>();
     public DbSet<DocumentSequence> DocumentSequences => Set<DocumentSequence>();
+    public DbSet<ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility> CompanySpecialTaxResponsibilities =>
+        Set<ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility>();
 
     // ── Carga Inicial (INITIAL-LOAD-ARCH-01) ────────────────────────────────
     public DbSet<ERP.Domain.Modules.InitialLoad.Entities.ImportBatch> ImportBatches =>
@@ -274,6 +276,8 @@ public class ErpDbContext : DbContext
     public DbSet<ItemMarginStatusDefinition> ItemMarginStatuses =>
         Set<ItemMarginStatusDefinition>();
     public DbSet<ItemAudit> ItemAudits => Set<ItemAudit>();
+    public DbSet<ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration> ItemSpecialTaxConfigurations =>
+        Set<ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration>();
 
     // ── Pricing BC ────────────────────────────────────────────────────────
     public DbSet<PriceList> PriceLists => Set<PriceList>();
@@ -368,6 +372,8 @@ public class ErpDbContext : DbContext
     // ── Sales BC ──────────────────────────────────────────────────────────
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
     public DbSet<SalesInvoiceDetail> SalesInvoiceDetails => Set<SalesInvoiceDetail>();
+    public DbSet<ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax> SalesInvoiceDetailTaxes =>
+        Set<ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax>();
     public DbSet<SalesInvoicePayment> SalesInvoicePayments => Set<SalesInvoicePayment>();
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
     public DbSet<SalesReceivable> SalesReceivables => Set<SalesReceivable>();

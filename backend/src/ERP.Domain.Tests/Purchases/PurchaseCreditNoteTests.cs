@@ -34,8 +34,28 @@ public sealed class PurchaseCreditNoteTests
         string? iceCode = null,
         decimal iceRate = 0m,
         string? iceName = null,
-        decimal taxableBase = 100m
-    ) => new(sourceId ?? Guid.NewGuid(), vatCode, vatRate, vatName, iceCode, iceRate, iceName, taxableBase);
+        decimal taxableBase = 100m,
+        string? irbpnrCode = null,
+        decimal irbpnrRate = 0m,
+        string? irbpnrName = null,
+        decimal? sourceTaxableBase = null,
+        decimal sourceIrbpnrAmount = 0m
+    ) =>
+        new(
+            sourceId ?? Guid.NewGuid(),
+            vatCode,
+            vatRate,
+            vatName,
+            iceCode,
+            iceRate,
+            iceName,
+            taxableBase,
+            irbpnrCode,
+            irbpnrRate,
+            irbpnrName,
+            sourceTaxableBase ?? taxableBase,
+            sourceIrbpnrAmount
+        );
 
     private static PurchaseCreditNote CreateDraft(
         Guid? branchId = null,
@@ -314,6 +334,209 @@ public sealed class PurchaseCreditNoteTests
         evt.IceAmount.Should().Be(creditNote.IceAmount);
         evt.IceAmount.Should().Be(10m); // 100 * 10% = 10, mismo cálculo que CreateDraft_con_TaxSummaryLines_calcula_IceAmount_con_SriTaxCalculator
         evt.TotalAmount.Should().Be(creditNote.Subtotal + creditNote.IceAmount + creditNote.VatAmount);
+    }
+
+    // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) ────────────────
+
+    [Fact]
+    public void TaxSummaryLine_solo_IVA_revierte_unicamente_IVA()
+    {
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[] { TaxSummaryLine(vatRate: 15m, taxableBase: 100m) }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.VatAmount.Should().Be(15m);
+        summary.IceAmount.Should().Be(0m);
+        summary.IrbpnrAmount.Should().Be(0m);
+        summary.IrbpnrCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void TaxSummaryLine_con_ICE_revierte_IVA_e_ICE_sin_generar_IRBPNR_falso()
+    {
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(vatRate: 15m, iceCode: "3023", iceRate: 10m, taxableBase: 100m),
+            }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.IceAmount.Should().Be(10m);
+        summary.VatAmount.Should().Be(16.5m); // (100+10)*15%
+        summary.IrbpnrAmount.Should().Be(0m);
+        summary.IrbpnrCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void TaxSummaryLine_con_IRBPNR_completo_prorratea_al_100_por_ciento()
+    {
+        // Fracción = TaxableBase de la NC / TaxableBase de la fuente = 100/100 = 1 → prorrateo íntegro.
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(
+                    vatRate: 15m,
+                    taxableBase: 100m,
+                    irbpnrCode: "5001",
+                    irbpnrRate: 0.02m,
+                    irbpnrName: "IRBPNR",
+                    sourceTaxableBase: 100m,
+                    sourceIrbpnrAmount: 1.00m
+                ),
+            }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.VatAmount.Should().Be(15m);
+        summary.IrbpnrCode.Should().Be("5001");
+        summary.IrbpnrAmount.Should().Be(1.00m);
+        summary.TotalAmount.Should().Be(100m + 15m + 1.00m);
+    }
+
+    [Fact]
+    public void TaxSummaryLine_con_IVA_ICE_e_IRBPNR_revierte_los_tres_impuestos()
+    {
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(
+                    vatRate: 15m,
+                    iceCode: "3023",
+                    iceRate: 10m,
+                    taxableBase: 100m,
+                    irbpnrCode: "5001",
+                    irbpnrRate: 0.02m,
+                    sourceTaxableBase: 100m,
+                    sourceIrbpnrAmount: 1.00m
+                ),
+            }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.IceAmount.Should().Be(10m);
+        summary.VatAmount.Should().Be(16.5m);
+        summary.IrbpnrAmount.Should().Be(1.00m);
+        creditNote.IceAmount.Should().Be(10m);
+        creditNote.VatAmount.Should().Be(16.5m);
+        creditNote.IrbpnrAmount.Should().Be(1.00m);
+        creditNote.TotalAmount.Should().Be(100m + 10m + 16.5m + 1.00m);
+    }
+
+    [Fact]
+    public void TaxSummaryLine_con_credito_parcial_prorratea_IRBPNR_por_la_fraccion_de_TaxableBase()
+    {
+        // La factura original tenía TaxableBase=1000 con IRBPNR=1.00 total. Esta NC solo acredita
+        // 300 de esos 1000 (fracción 0.3) — el IRBPNR revertido debe ser proporcional, igual que
+        // ya ocurre implícitamente con IVA/ICE en este flujo (tarifa constante × base reducida).
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(
+                    vatRate: 15m,
+                    taxableBase: 300m,
+                    irbpnrCode: "5001",
+                    irbpnrRate: 0.02m,
+                    sourceTaxableBase: 1000m,
+                    sourceIrbpnrAmount: 1.00m
+                ),
+            }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.IrbpnrAmount.Should().Be(0.30m); // 0.3 * 1.00
+    }
+
+    [Fact]
+    public void TaxSummaryLine_sin_IRBPNR_en_la_fuente_no_genera_IRBPNR_falso()
+    {
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(vatRate: 15m, taxableBase: 100m, sourceTaxableBase: 100m, sourceIrbpnrAmount: 0m),
+            }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.IrbpnrCode.Should().BeNull();
+        summary.IrbpnrAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public void TaxSummaryLine_con_IVA_ICE_e_IRBPNR_persiste_una_fila_por_impuesto_en_Taxes()
+    {
+        // Confirma la corrección post-revisión de 5D-2: la fuente de verdad es la colección Taxes
+        // (PurchaseCreditNoteTaxSummaryLine), no columnas fijas Vat*/Ice*/Irbpnr*.
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(
+                    vatRate: 15m,
+                    iceCode: "3023",
+                    iceRate: 10m,
+                    taxableBase: 100m,
+                    irbpnrCode: "5001",
+                    irbpnrRate: 0.02m,
+                    sourceTaxableBase: 100m,
+                    sourceIrbpnrAmount: 1.00m
+                ),
+            }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.Taxes.Should().HaveCount(3);
+        summary.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 16.5m);
+        summary.Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxAmount == 10m);
+        summary.Taxes.Should().Contain(t => t.TaxCode == "5" && t.TaxAmount == 1.00m);
+    }
+
+    [Fact]
+    public void TaxSummaryLine_sin_ICE_ni_IRBPNR_Taxes_solo_contiene_la_fila_de_IVA()
+    {
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[] { TaxSummaryLine(vatRate: 15m, taxableBase: 100m) }
+        );
+
+        var summary = creditNote.TaxSummaries.Single();
+        summary.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
+    }
+
+    [Fact]
+    public void Authorize_no_agrega_IrbpnrAmount_al_PurchaseCreditNoteAuthorizedEvent()
+    {
+        // Deliberado: el evento alimenta el traductor contable (Subfase 5E, fuera de alcance aquí).
+        var creditNote = CreateDraft(
+            taxSummaryLines: new[]
+            {
+                TaxSummaryLine(
+                    vatRate: 15m,
+                    taxableBase: 100m,
+                    irbpnrCode: "5001",
+                    irbpnrRate: 0.02m,
+                    sourceTaxableBase: 100m,
+                    sourceIrbpnrAmount: 1.00m
+                ),
+            }
+        );
+        var totalDue = creditNote.TotalAmount;
+
+        creditNote.Authorize(totalDue, UserId, Guid.NewGuid(), "hash-authorize-irbpnr-001");
+
+        var evt = creditNote
+            .DomainEvents.Should()
+            .ContainSingle(e => e is PurchaseCreditNoteAuthorizedEvent)
+            .Which.Should()
+            .BeOfType<PurchaseCreditNoteAuthorizedEvent>()
+            .Which;
+
+        // El evento no tiene campo IrbpnrAmount — este test documenta la decisión, no un valor.
+        typeof(PurchaseCreditNoteAuthorizedEvent)
+            .GetProperty("IrbpnrAmount")
+            .Should()
+            .BeNull("IrbpnrAmount se agrega al evento en la Subfase 5E, no aquí");
+        evt.TotalAmount.Should().Be(creditNote.TotalAmount); // 100 + 0 (ICE) + 15 + 1.00 (IRBPNR)
+        creditNote.TotalAmount.Should().Be(116.00m);
     }
 
     [Fact]

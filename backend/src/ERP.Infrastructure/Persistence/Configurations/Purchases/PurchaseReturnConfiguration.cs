@@ -71,6 +71,11 @@ public sealed class PurchaseReturnConfiguration : IEntityTypeConfiguration<Purch
             .Property(x => x.AuthorizedDiscountTotal)
             .HasColumnName("authorized_discount_total")
             .HasColumnType("numeric(18,2)");
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1)
+        builder
+            .Property(x => x.AuthorizedIrbpnrTotal)
+            .HasColumnName("authorized_irbpnr_total")
+            .HasColumnType("numeric(18,2)");
         builder
             .Property(x => x.AuthorizedGrandTotal)
             .HasColumnName("authorized_grand_total")

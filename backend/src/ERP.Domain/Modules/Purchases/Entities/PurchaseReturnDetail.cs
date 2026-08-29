@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
@@ -48,9 +49,26 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
 
     public bool IsFrozen { get; private set; }
 
+    // ── Impuestos por línea (TAX-LINE-SSOT-ICE-IRBPNR-01, ADR-032 §3.3, Subfase 5D-1) ──────────
+    // Snapshot proporcional de PurchaseInvoiceDetailTax de la línea original — fuente de verdad de
+    // IVA/ICE/IRBPNR de esta línea de devolución, congelada una única vez en Freeze() (igual que
+    // el resto del snapshot financiero). No reemplaza VatCode/VatRate/IceCode/IceRate/
+    // ReturnedVatAmount/ReturnedIceAmount de arriba (siguen siendo la fuente para consumidores
+    // existentes) — IRBPNR es la única excepción real: no tiene campos escalares propios.
+    private readonly List<PurchaseReturnDetailTax> _taxes = new();
+    public IReadOnlyList<PurchaseReturnDetailTax> Taxes => _taxes.AsReadOnly();
+
+    private const string IrbpnrSriTaxCode = ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Irbpnr;
+
+    /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
+    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+
     // ── Calculated (NOT persisted) ──────────────────────────────────────
     public decimal LineGrandTotal =>
-        (ReturnedSubtotal ?? 0m) + (ReturnedVatAmount ?? 0m) + (ReturnedIceAmount ?? 0m);
+        (ReturnedSubtotal ?? 0m)
+        + (ReturnedVatAmount ?? 0m)
+        + (ReturnedIceAmount ?? 0m)
+        + IrbpnrAmount;
 
     private PurchaseReturnDetail() { }
 
@@ -112,7 +130,8 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
         decimal returnedDiscountAmount,
         decimal returnedVatAmount,
         decimal returnedIceAmount,
-        decimal historicalCostAmount
+        decimal historicalCostAmount,
+        IEnumerable<ProratedTaxLine> returnedTaxes
     )
     {
         EnsureNotFrozen();
@@ -129,8 +148,40 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
         ReturnedVatAmount = returnedVatAmount;
         ReturnedIceAmount = returnedIceAmount;
         HistoricalCostAmount = historicalCostAmount;
+
+        _taxes.Clear();
+        foreach (var t in returnedTaxes)
+            _taxes.Add(
+                PurchaseReturnDetailTax.Create(
+                    Id,
+                    TenantId,
+                    t.TaxCode,
+                    t.TaxRateCode,
+                    t.TaxName,
+                    t.Rate,
+                    t.CalculationType,
+                    t.TaxableBase,
+                    t.TaxAmount
+                )
+            );
+
         IsFrozen = true;
     }
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — impuesto ya prorrateado por
+    /// Application/<c>PurchaseReturn.Authorize</c> (fracción sobre la fila original) — este tipo
+    /// solo transporta el resultado, nunca decide la proporción.
+    /// </summary>
+    public readonly record struct ProratedTaxLine(
+        string TaxCode,
+        string TaxRateCode,
+        string TaxName,
+        decimal? Rate,
+        SriTaxCalculationType CalculationType,
+        decimal TaxableBase,
+        decimal TaxAmount
+    );
 
     private void EnsureNotFrozen()
     {

@@ -42,6 +42,7 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPricingResolver> Pricing { get; } = new();
+        public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
@@ -109,6 +110,18 @@ public sealed class CreateSalesDraftHandlerTests
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4) — por defecto la empresa no es responsable
+            // de ningún impuesto especial en ventas (comportamiento por defecto: nunca ICE/IRBPNR
+            // falso). Los tests de 5B lo sobreescriben explícitamente cuando lo necesitan.
+            CompanyTaxRepo
+                .Setup(r =>
+                    r.GetResponsibleSriTaxCategoryCodesAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(Array.Empty<string>());
         }
 
         public CreateSalesDraftHandler BuildHandler() =>
@@ -122,6 +135,7 @@ public sealed class CreateSalesDraftHandlerTests
                 EpRepo.Object,
                 Tax.Object,
                 Pricing.Object,
+                CompanyTaxRepo.Object,
                 Tenant.Object,
                 Company.Object,
                 Branch.Object,

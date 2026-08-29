@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.DTOs;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -344,6 +345,15 @@ file static class SalesReturnLineBuilder
             if (remainingError is not null)
                 return new(null!, Result<SalesReturnDto>.ValidationFailure(remainingError));
 
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3) — fracción de cantidad sobre
+            // la línea original, misma base que ya usa PurchaseReturn (5D-1). Nunca se consulta la
+            // configuración tributaria actual del ítem ni la última compra — todo sale del snapshot
+            // fiscal ya congelado en originalLine (SalesInvoiceDetail.Taxes).
+            var fraction = input.Quantity / originalLine.Quantity;
+            decimal? iceExactAmount = null;
+            if (originalLine.IceCalculationType == Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific)
+                iceExactAmount = Round2(fraction * originalLine.IceAmount);
+
             // SALES-PRESENTATIONS-02: la devolución mantiene SIEMPRE la misma presentación de la
             // venta original (PackagingLevelId/ConversionFactor/BaseUomCode heredados tal cual) —
             // no se expone forma de devolver en una presentación distinta a la vendida.
@@ -366,8 +376,33 @@ file static class SalesReturnLineBuilder
                 originalLine.IceRate,
                 originalLine.PackagingLevelId,
                 originalLine.ConversionFactor,
-                originalLine.BaseUomCode
+                originalLine.BaseUomCode,
+                originalLine.IceCalculationType,
+                iceExactAmount
             );
+
+            // IRBPNR no tiene campo escalar legacy — vive únicamente en Taxes, prorrateado por la
+            // misma fracción de cantidad. Sin fila si la línea original no tenía IRBPNR (nunca se
+            // genera IRBPNR falso).
+            if (!string.IsNullOrWhiteSpace(originalLine.IrbpnrCode) && originalLine.IrbpnrAmount > 0)
+            {
+                var irbpnrTax = originalLine.Taxes.First(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr);
+                line.ReplaceTaxes(
+                    [
+                        ERP.Domain.Modules.Sales.Entities.SalesReturnDetailTax.Create(
+                            line.Id,
+                            tenantId,
+                            SriTaxCategoryCodes.Irbpnr,
+                            irbpnrTax.TaxRateCode,
+                            irbpnrTax.TaxName,
+                            irbpnrTax.Rate,
+                            irbpnrTax.CalculationType,
+                            Round2(fraction * originalLine.IrbpnrAmount)
+                        ),
+                    ]
+                );
+            }
+
             lines.Add(line);
         }
         return new(lines, null);
@@ -377,4 +412,7 @@ file static class SalesReturnLineBuilder
         List<SalesReturnDetail> Lines,
         Result<SalesReturnDto>? Error
     );
+
+    private static decimal Round2(decimal value) =>
+        Math.Round(value, Domain.Common.FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
 }

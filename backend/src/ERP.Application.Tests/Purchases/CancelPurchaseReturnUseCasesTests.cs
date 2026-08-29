@@ -132,7 +132,8 @@ public sealed class CancelPurchaseReturnUseCasesTests
                 f.Line.VatRate,
                 f.Line.IceCode,
                 f.Line.IceRate,
-                f.Line.LandedUnitCost
+                f.Line.LandedUnitCost,
+                []
             ),
         };
         var credit = f.Return.Authorize(

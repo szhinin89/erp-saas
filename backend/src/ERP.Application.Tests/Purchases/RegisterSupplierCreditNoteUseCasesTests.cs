@@ -88,7 +88,8 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost
+                original.LandedUnitCost,
+                []
             ),
         };
         ret.Authorize(

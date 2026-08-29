@@ -35,6 +35,7 @@
 | [ADR-029](./ADR-029-purchase-approval-workflow-future-evolution.md) | Purchase Approval Workflow — Guía de evolución futura (Direct/Approval/MultiApproval, no implementado) | Accepted — guía, no implementado |
 | [ADR-030](./ADR-030-purchase-line-warehouse-mass-apply.md) | Bodega por línea en Compras — selector general como aplicación masiva, no sincronización | Accepted |
 | [ADR-031](./ADR-031-credit-note-v1-activation.md) | Activación de Nota de Crédito V1.1.0 (extensión controlada de ADR-023) | Accepted |
+| [ADR-032](./ADR-032-tax-line-ssot-ice-irbpnr.md) | ICE e IRBPNR como impuestos de línea — SSOT en `*DetailTax` (propuesta técnica) | Approved (dirección) — pre-implementación |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

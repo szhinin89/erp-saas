@@ -4,6 +4,22 @@
 
 ---
 
+## TAX-LINE-SSOT-ICE-IRBPNR-01 — Fase 5D: propagación de impuestos de línea en devoluciones y notas de crédito (2026-08-29)
+
+**Estado: Fase 5D COMPLETADA (checkpoint).** Ver [ADR-032](docs/decisions/ADR-032-tax-line-ssot-ice-irbpnr.md) para el diseño completo y el detalle de cada subfase. Continúa el trabajo de las Fases 1-5C (SSOT de IVA/ICE/IRBPNR en `PurchaseInvoiceDetailTax`/`SalesInvoiceDetailTax`, `ItemSpecialTaxConfiguration`, `CompanySpecialTaxResponsibility`, migración de consumidores de resolución de impuestos y de los data providers de factura).
+
+- **5D-1 — Devolución de Compra**: `PurchaseReturnDetailTax` (nueva) — filas de impuesto prorrateadas desde `PurchaseInvoiceDetailTax` de la línea original por la fracción `Quantity/OriginalQuantity`. `PurchaseReturn.AuthorizedIrbpnrTotal`/`AuthorizedGrandTotal` ya incluyen IRBPNR (afecta correctamente `AppliedToPayableAmount`/`SupplierCreditAmount`).
+- **5D-2 — Nota de Crédito de Compra**: primera implementación agregó columnas fijas `Irbpnr*` a `PurchaseCreditNoteTaxSummary` — **corregido tras revisión** antes de continuar a 5D-3: reemplazado por `PurchaseCreditNoteTaxSummaryLine`, colección genérica (`TaxCode, TaxRateCode, TaxName, Rate, CalculationType, TaxAmount`) que modela IVA/ICE/IRBPNR de forma uniforme, sin columna por impuesto. `VatCode/.../IceAmount/Irbpnr*` quedan como propiedades derivadas de solo lectura (legacy compatibility mirror), sin romper `CreditNoteMap.ToDto`. Migración de la primera implementación revertida antes de aplicar la definitiva — sin rastro de columnas agregadas-y-eliminadas.
+- **5D-3 — Devolución de Venta**: `SalesReturnDetailTax` (nueva) + `IceCalculationType` (soporte ICE Specific, gap preexistente cerrado) + IRBPNR prorrateado por fracción de cantidad. `SalesReturnDraftUseCases` nunca consulta configuración tributaria actual del ítem.
+- **5D-4 — Nota de Crédito de Venta**: `SalesReturnCreditNoteDataProvider.BuildDetailLine` migrado a leer `SalesReturnDetail.Taxes` (mismo patrón que la Subfase 5C sobre la factura), `SalesReturn.TotalIrbpnr` nuevo, incluido en `Totals.TotalTax` del documento electrónico.
+- **Deliberadamente NO tocado en 5D** (queda para **Fase 5E**): `PurchaseReturnAuthorizedEvent`/`PurchaseReturnCancelledEvent`, `PurchaseCreditNoteAuthorizedEvent`, `SalesReturnAuthorizedEvent` — ninguno gana campo `Irbpnr*` todavía; alimentan los traductores contables (posting), que siguen sin cambios. Tampoco se tocó `InvoiceXmlBuilder`, RIDE, ElectronicDocuments core (fuera de los 2 data providers de NC ya explícitamente en alcance), Recepción XML, SaaS/Platform, permisos, menú ni catálogos SRI globales.
+- **Pendiente registrado** (`ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01`, ver ADR-032 §9): `SriTaxCategoryCodeResolver` aún no traduce IRBPNR→"5" para el XML SRI real — los data providers ya entregan la fila completa, falta la traducción final en infraestructura FROZEN de ElectronicDocuments (ticket propio).
+- **Migraciones** (todas aditivas, aplicadas en local): `AddTaxLineSsotIceIrbpnr`, `BackfillTaxLineSsotIceIrbpnr`, `BackfillItemSpecialTaxConfigurationFromExciseTaxCode`, `AddPurchaseReturnDetailTaxAndIrbpnrTotal`, `AddPurchaseCreditNoteTaxSummaryLines`, `AddSalesReturnDetailTaxAndIceSpecific`, `AddSalesReturnTotalIrbpnr`.
+- **Validaciones**: `dotnet build` (solución completa) sin errores. `ERP.Domain.Tests` 962/962, `ERP.Application.Tests` 1301/1301, `ERP.Infrastructure.Tests` (incluye gates CI-bloqueantes) en verde. `git diff --check` limpio en cada subfase.
+- **Siguiente bloque**: Fase 5E (posting/contabilidad — agregar IRBPNR a los traductores y eventos de auditoría), luego Fase 6 (marcar legacy) y Fase 7 (decisión de eliminación física, ticket futuro).
+
+---
+
 ## SECURITY-PERMISSION-SCOPE-01 — Anti-escalamiento en asignación de permisos + punto de extensión SaaS externo (2026-08-29)
 
 **Estado: COMPLETADO (alcance acotado).** Cierra la deuda de seguridad interna documentada en NAV-PERMISSION-HIERARCHY-SSOT-01 sin introducir ningún concepto de planes/billing/SuperAdmin — la futura plataforma SaaS será externa, conectada por API.

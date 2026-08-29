@@ -6,10 +6,17 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 /// FLOW-READY-02C-R1.2 — línea de descuento/crédito de una <see cref="PurchaseCreditNote"/> tipo
 /// <c>Discount</c>, aplicada contra un grupo de impuesto real de la compra original
 /// (<see cref="PurchaseInvoiceTaxSummary"/> vía <see cref="SourcePurchaseInvoiceTaxSummaryId"/>).
-/// VatCode/VatRate/VatName/IceCode/IceRate/IceName son siempre heredados del resumen fiscal de
-/// origen — nunca provistos por el cliente ni recalculados desde catálogos vivos.
-/// <see cref="IceAmount"/>/<see cref="VatAmount"/> se calculan con <see cref="SriTaxCalculator"/>
-/// sobre <see cref="TaxableBase"/> (la base de descuento aplicada, no la base total de la compra).
+///
+/// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2 — corrección post-revisión): la identidad
+/// y el monto de cada impuesto (IVA/ICE/IRBPNR/futuro) viven exclusivamente en
+/// <see cref="Taxes"/> (<see cref="PurchaseCreditNoteTaxSummaryLine"/>, una fila por impuesto real) —
+/// nunca como columna fija por impuesto. VatCode/VatRate/.../IrbpnrAmount de abajo son propiedades
+/// **derivadas** de esa colección (mismo patrón que <c>PurchaseInvoiceDetail.IrbpnrAmount</c>), no
+/// columnas persistidas independientes — se mantienen únicamente para no romper a los consumidores
+/// existentes (<c>CreditNoteMap.ToDto</c>) que ya leen estos nombres. Ningún código nuevo debe
+/// agregar más propiedades derivadas por impuesto: para IVA/ICE/IRBPNR el patrón de acceso correcto
+/// es <see cref="Taxes"/>.
+///
 /// Nunca editable de forma independiente — sin factory pública, sin métodos de mutación; la única
 /// vía es <c>PurchaseCreditNote.CreateDraft</c>/<c>UpdateDraft</c>.
 /// </summary>
@@ -28,23 +35,36 @@ public sealed class PurchaseCreditNoteTaxSummary : ICompanyOperationalEntity
     /// <summary>Resumen fiscal de la compra original del cual esta línea deriva su identidad de impuesto.</summary>
     public Guid SourcePurchaseInvoiceTaxSummaryId { get; private set; }
 
-    // ── Identidad de impuesto — heredada del resumen de origen, nunca del cliente ────
-    public string VatCode { get; private set; } = null!;
-    public decimal VatRate { get; private set; }
-    public string? VatName { get; private set; }
-
-    public string? IceCode { get; private set; }
-    public decimal IceRate { get; private set; }
-    public string? IceName { get; private set; }
-
-    // ── Montos ────────────────────────────────────────────────────────────
     /// <summary>Base de descuento/crédito aplicada por esta NC — nunca la base total de la compra.</summary>
     public decimal TaxableBase { get; private set; }
-    public decimal IceAmount { get; private set; }
-    public decimal VatAmount { get; private set; }
     public decimal TotalAmount { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
+
+    // ── Impuestos por línea (ADR-032 §3.3) — fuente de verdad ───────────────────────────────────
+    private readonly List<PurchaseCreditNoteTaxSummaryLine> _taxes = new();
+    public IReadOnlyList<PurchaseCreditNoteTaxSummaryLine> Taxes => _taxes.AsReadOnly();
+
+    private const string VatSriTaxCode = SriTaxCategoryCodes.Vat;
+    private const string IceSriTaxCode = SriTaxCategoryCodes.Ice;
+    private const string IrbpnrSriTaxCode = SriTaxCategoryCodes.Irbpnr;
+
+    // ── Propiedades derivadas — legacy compatibility mirror, no fuente de verdad ────────────────
+    public string VatCode => _taxes.First(t => t.TaxCode == VatSriTaxCode).TaxRateCode;
+    public decimal VatRate => _taxes.First(t => t.TaxCode == VatSriTaxCode).Rate ?? 0m;
+    public string? VatName => _taxes.First(t => t.TaxCode == VatSriTaxCode).TaxName;
+    public decimal VatAmount => _taxes.Where(t => t.TaxCode == VatSriTaxCode).Sum(t => t.TaxAmount);
+
+    public string? IceCode => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.TaxRateCode;
+    public decimal IceRate => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.Rate ?? 0m;
+    public string? IceName => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.TaxName;
+    public decimal IceAmount => _taxes.Where(t => t.TaxCode == IceSriTaxCode).Sum(t => t.TaxAmount);
+
+    /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
+    public string? IrbpnrCode => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxRateCode;
+    public decimal IrbpnrRate => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.Rate ?? 0m;
+    public string? IrbpnrName => _taxes.FirstOrDefault(t => t.TaxCode == IrbpnrSriTaxCode)?.TaxName;
+    public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
 
     private PurchaseCreditNoteTaxSummary() { }
 
@@ -59,15 +79,8 @@ public sealed class PurchaseCreditNoteTaxSummary : ICompanyOperationalEntity
         Guid purchaseCreditNoteId,
         Guid purchaseInvoiceId,
         Guid sourcePurchaseInvoiceTaxSummaryId,
-        string vatCode,
-        decimal vatRate,
-        string? vatName,
-        string? iceCode,
-        decimal iceRate,
-        string? iceName,
         decimal taxableBase,
-        decimal iceAmount,
-        decimal vatAmount
+        IEnumerable<PurchaseCreditNoteTaxLine> taxes
     )
     {
         if (purchaseCreditNoteId == Guid.Empty)
@@ -85,15 +98,20 @@ public sealed class PurchaseCreditNoteTaxSummary : ICompanyOperationalEntity
                 "El resumen fiscal de compra de origen es obligatorio.",
                 nameof(sourcePurchaseInvoiceTaxSummaryId)
             );
-        if (string.IsNullOrWhiteSpace(vatCode))
-            throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
         if (taxableBase <= 0)
             throw new ArgumentException(
                 "La base de descuento debe ser mayor a cero.",
                 nameof(taxableBase)
             );
 
-        return new PurchaseCreditNoteTaxSummary
+        var materializedTaxes = taxes.ToList();
+        if (!materializedTaxes.Any(t => t.TaxCode == VatSriTaxCode))
+            throw new ArgumentException(
+                "El impuesto IVA es obligatorio en el resumen fiscal.",
+                nameof(taxes)
+            );
+
+        var summary = new PurchaseCreditNoteTaxSummary
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
@@ -102,17 +120,39 @@ public sealed class PurchaseCreditNoteTaxSummary : ICompanyOperationalEntity
             PurchaseCreditNoteId = purchaseCreditNoteId,
             PurchaseInvoiceId = purchaseInvoiceId,
             SourcePurchaseInvoiceTaxSummaryId = sourcePurchaseInvoiceTaxSummaryId,
-            VatCode = vatCode.Trim(),
-            VatRate = vatRate,
-            VatName = string.IsNullOrWhiteSpace(vatName) ? null : vatName.Trim(),
-            IceCode = OptionalCode.Normalize(iceCode),
-            IceRate = iceRate,
-            IceName = string.IsNullOrWhiteSpace(iceName) ? null : iceName.Trim(),
             TaxableBase = taxableBase,
-            IceAmount = iceAmount,
-            VatAmount = vatAmount,
-            TotalAmount = taxableBase + iceAmount + vatAmount,
             CreatedAt = DateTime.UtcNow,
         };
+
+        foreach (var t in materializedTaxes)
+            summary._taxes.Add(
+                PurchaseCreditNoteTaxSummaryLine.Create(
+                    summary.Id,
+                    tenantId,
+                    t.TaxCode,
+                    t.TaxRateCode,
+                    t.TaxName,
+                    t.Rate,
+                    t.CalculationType,
+                    t.TaxAmount
+                )
+            );
+
+        summary.TotalAmount = taxableBase + materializedTaxes.Sum(t => t.TaxAmount);
+        return summary;
     }
 }
+
+/// <summary>
+/// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) — impuesto ya resuelto/prorrateado por
+/// <c>PurchaseCreditNote.ReplaceTaxSummaryLines</c>, listo para persistirse como
+/// <see cref="PurchaseCreditNoteTaxSummaryLine"/>. Tipo de transporte interno — nunca decide montos.
+/// </summary>
+public readonly record struct PurchaseCreditNoteTaxLine(
+    string TaxCode,
+    string TaxRateCode,
+    string TaxName,
+    decimal? Rate,
+    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType CalculationType,
+    decimal TaxAmount
+);

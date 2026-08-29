@@ -1,6 +1,7 @@
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentAssertions;
 
 namespace ERP.Domain.Tests.Purchases;
@@ -230,7 +231,8 @@ public sealed class PurchaseReturnTests
                 VatRate: 15m,
                 IceCode: null,
                 IceRate: 0m,
-                LandedUnitCost: 115m
+                LandedUnitCost: 115m,
+                Taxes: []
             ),
         };
 
@@ -262,6 +264,120 @@ public sealed class PurchaseReturnTests
         purchaseReturn.Lines.Single().IsFrozen.Should().BeTrue();
         purchaseReturn.AuthorizeClientRequestId.Should().Be(authorizeClientRequestId);
         purchaseReturn.AuthorizeRequestPayloadHash.Should().Be("hash-authorize-001");
+    }
+
+    [Fact]
+    public void Authorize_con_IRBPNR_en_Taxes_prorratea_por_fraccion_y_lo_suma_al_GrandTotal()
+    {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1)
+        var originalDetailId = Guid.NewGuid();
+        var purchaseReturn = CreateDraft(lines: new[] { Line(originalDetailId, quantity: 3m) });
+        var original = new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
+        {
+            [originalDetailId] = new(
+                OriginalQuantity: 10m,
+                LineSubtotal: 1000m,
+                DiscountAmount: 0m,
+                VatAmount: 120m,
+                IceAmount: 0m,
+                VatCode: "2",
+                VatRate: 15m,
+                IceCode: null,
+                IceRate: 0m,
+                LandedUnitCost: 115m,
+                Taxes:
+                [
+                    new PurchaseReturn.OriginalLineTaxSnapshot(
+                        "2",
+                        "2",
+                        "IVA 15%",
+                        15m,
+                        SriTaxCalculationType.Percentage,
+                        1000m,
+                        120m
+                    ),
+                    new PurchaseReturn.OriginalLineTaxSnapshot(
+                        "5",
+                        "5001",
+                        "IRBPNR",
+                        0.1m,
+                        SriTaxCalculationType.Specific,
+                        1000m,
+                        1.00m
+                    ),
+                ]
+            ),
+        };
+
+        purchaseReturn.Authorize(
+            "00000001",
+            original,
+            balanceDueBeforeApplication: 1120m,
+            currencyCode: "USD",
+            hasIssuedWithholding: false,
+            UserId,
+            Guid.NewGuid(),
+            "hash-authorize-irbpnr"
+        );
+
+        var line = purchaseReturn.Lines.Single();
+        // fraction = 3/10 = 0.3
+        line.IrbpnrAmount.Should().Be(0.30m);
+        line.Taxes.Should().Contain(t => t.TaxCode == "5" && t.TaxAmount == 0.30m);
+        line.Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 36.00m);
+        purchaseReturn.AuthorizedIrbpnrTotal.Should().Be(0.30m);
+        purchaseReturn.AuthorizedGrandTotal.Should().Be(336.30m); // 300 (subtotal) + 36 (VAT) + 0.30 (IRBPNR)
+    }
+
+    [Fact]
+    public void Authorize_sin_IRBPNR_en_Taxes_no_genera_IRBPNR_falso()
+    {
+        var originalDetailId = Guid.NewGuid();
+        var purchaseReturn = CreateDraft(lines: new[] { Line(originalDetailId, quantity: 3m) });
+        var original = new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
+        {
+            [originalDetailId] = new(
+                OriginalQuantity: 10m,
+                LineSubtotal: 1000m,
+                DiscountAmount: 0m,
+                VatAmount: 120m,
+                IceAmount: 0m,
+                VatCode: "2",
+                VatRate: 15m,
+                IceCode: null,
+                IceRate: 0m,
+                LandedUnitCost: 115m,
+                Taxes:
+                [
+                    new PurchaseReturn.OriginalLineTaxSnapshot(
+                        "2",
+                        "2",
+                        "IVA 15%",
+                        15m,
+                        SriTaxCalculationType.Percentage,
+                        1000m,
+                        120m
+                    ),
+                ]
+            ),
+        };
+
+        purchaseReturn.Authorize(
+            "00000001",
+            original,
+            balanceDueBeforeApplication: 1120m,
+            currencyCode: "USD",
+            hasIssuedWithholding: false,
+            UserId,
+            Guid.NewGuid(),
+            "hash-authorize-no-irbpnr"
+        );
+
+        var line = purchaseReturn.Lines.Single();
+        line.IrbpnrAmount.Should().Be(0m);
+        line.Taxes.Should().NotContain(t => t.TaxCode == "5");
+        purchaseReturn.AuthorizedIrbpnrTotal.Should().Be(0m);
+        purchaseReturn.AuthorizedGrandTotal.Should().Be(336.00m);
     }
 
     [Fact]
@@ -619,7 +735,8 @@ public sealed class PurchaseReturnTests
                 VatRate: 15m,
                 IceCode: null,
                 IceRate: 0m,
-                LandedUnitCost: 115m
+                LandedUnitCost: 115m,
+                Taxes: []
             ),
         };
 

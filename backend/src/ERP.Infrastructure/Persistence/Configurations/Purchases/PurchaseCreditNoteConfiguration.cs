@@ -89,6 +89,12 @@ public sealed class PurchaseCreditNoteConfiguration : IEntityTypeConfiguration<P
             .HasColumnName("vat_amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) — suma de PurchaseCreditNoteTaxSummary.IrbpnrAmount.
+        builder
+            .Property(x => x.IrbpnrAmount)
+            .HasColumnName("irbpnr_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
         builder
             .Property(x => x.TotalAmount)
             .HasColumnName("total_amount")

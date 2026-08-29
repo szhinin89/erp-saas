@@ -816,6 +816,11 @@ public static class DependencyInjection
             ERP.Application.Modules.Companies.UseCases.DecimalConfig.IDecimalConfigRepository,
             ERP.Infrastructure.Persistence.Repositories.CompanyConfig.DecimalConfigRepository
         >();
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4)
+        services.AddScoped<
+            ICompanySpecialTaxResponsibilityRepository,
+            ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanySpecialTaxResponsibilityRepository
+        >();
 
         // ── Finance BC ───────────────────────────────────────────────────────
         services.AddScoped<

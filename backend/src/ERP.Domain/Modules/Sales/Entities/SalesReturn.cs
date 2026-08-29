@@ -38,6 +38,15 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     public decimal? AuthorizedTotalVat { get; private set; }
     public decimal? AuthorizedTotalIce { get; private set; }
     public decimal? AuthorizedTotalDiscount { get; private set; }
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-4) — suma de
+    /// <c>SalesReturnDetail.IrbpnrAmount</c>. Deliberadamente NO se agrega a
+    /// <see cref="SalesReturnAuthorizedEvent"/> en esta subfase (alimenta el traductor contable,
+    /// Subfase 5E). <see cref="GrandTotal"/> YA incluye IRBPNR automáticamente desde 5D-3 (vía
+    /// <c>SalesReturnDetail.TaxInclusiveTotal</c>) — este campo es solo la apertura informativa.
+    /// </summary>
+    public decimal? AuthorizedTotalIrbpnr { get; private set; }
     public decimal? AuthorizedGrandTotal { get; private set; }
 
     private readonly List<SalesReturnDetail> _lines = new();
@@ -52,6 +61,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     public decimal TotalDiscount => AuthorizedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
     public decimal TotalIce => AuthorizedTotalIce ?? _lines.Sum(l => l.IceAmount);
     public decimal TotalVat => AuthorizedTotalVat ?? _lines.Sum(l => l.VatAmount);
+    public decimal TotalIrbpnr => AuthorizedTotalIrbpnr ?? _lines.Sum(l => l.IrbpnrAmount);
     public decimal GrandTotal => AuthorizedGrandTotal ?? _lines.Sum(l => l.TaxInclusiveTotal);
 
     private SalesReturn() { }
@@ -179,6 +189,7 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
         AuthorizedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
         AuthorizedTotalVat = _lines.Sum(l => l.VatAmount);
         AuthorizedTotalIce = _lines.Sum(l => l.IceAmount);
+        AuthorizedTotalIrbpnr = _lines.Sum(l => l.IrbpnrAmount);
         AuthorizedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal);
 
         if (AuthorizedGrandTotal <= 0)

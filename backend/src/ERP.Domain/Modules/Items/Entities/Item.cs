@@ -17,6 +17,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     private readonly List<ItemSubstitute> _substitutes = new();
     private readonly List<ItemPackagingLevel> _packagingLevels = new();
     private readonly List<ItemSupplierCode> _supplierCodes = new();
+    private readonly List<ItemSpecialTaxConfiguration> _specialTaxConfigurations = new();
 
     // ── Identidad ─────────────────────────────────────────────────────────
     public ItemCode Code { get; private set; } = null!;
@@ -48,6 +49,8 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     public IReadOnlyList<ItemSubstitute> Substitutes => _substitutes.AsReadOnly();
     public IReadOnlyList<ItemPackagingLevel> PackagingLevels => _packagingLevels.AsReadOnly();
     public IReadOnlyList<ItemSupplierCode> SupplierCodes => _supplierCodes.AsReadOnly();
+    public IReadOnlyList<ItemSpecialTaxConfiguration> SpecialTaxConfigurations =>
+        _specialTaxConfigurations.AsReadOnly();
 
     private Item() { }
 
@@ -339,6 +342,43 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
                     s.SubstituteItemId,
                     s.Priority,
                     s.Note,
+                    updatedBy
+                )
+            );
+        SetUpdated(updatedBy);
+    }
+
+    // ── Impuestos especiales (ICE/IRBPNR) — TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2) ────────────
+    /// <summary>
+    /// Reemplaza el conjunto completo de configuraciones de impuestos especiales del ítem (mismo
+    /// patrón "Replace" que <see cref="ReplaceSubstitutes"/>). A lo sumo una fila activa por
+    /// <c>SriTaxCategoryCode</c> — un ítem no puede tener dos configuraciones simultáneas para el
+    /// mismo impuesto. No actualiza automáticamente desde una discrepancia XML de Compras (ADR-032
+    /// §4.3) — el llamador siempre es una acción explícita del usuario sobre el maestro de ítems.
+    /// </summary>
+    public void ReplaceSpecialTaxConfigurations(
+        IEnumerable<(string SriTaxCategoryCode, string TaxCatalogCode)> configurations,
+        Guid updatedBy
+    )
+    {
+        var list = configurations.ToList();
+        var duplicated = list
+            .GroupBy(c => c.SriTaxCategoryCode.Trim())
+            .FirstOrDefault(g => g.Count() > 1);
+        if (duplicated is not null)
+            throw new ArgumentException(
+                $"El impuesto especial '{duplicated.Key}' está duplicado — solo se admite una configuración por impuesto.",
+                nameof(configurations)
+            );
+
+        _specialTaxConfigurations.Clear();
+        foreach (var c in list)
+            _specialTaxConfigurations.Add(
+                ItemSpecialTaxConfiguration.Create(
+                    Id,
+                    TenantId,
+                    c.SriTaxCategoryCode,
+                    c.TaxCatalogCode,
                     updatedBy
                 )
             );

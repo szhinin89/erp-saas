@@ -57,6 +57,16 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     public decimal Subtotal { get; private set; }
     public decimal IceAmount { get; private set; }
     public decimal VatAmount { get; private set; }
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) — suma de
+    /// <c>PurchaseCreditNoteTaxSummary.IrbpnrAmount</c>. Se incluye en <see cref="TotalAmount"/> (es
+    /// el total financiero propio de la NC, aplicado a CxP — igual criterio que
+    /// <c>PurchaseReturn.AuthorizedGrandTotal</c> en la Subfase 5D-1). Deliberadamente NO se agrega a
+    /// <see cref="PurchaseCreditNoteAuthorizedEvent"/> en esta subfase — ese evento alimenta
+    /// el traductor contable, fuera de alcance (Subfase 5E).
+    /// </summary>
+    public decimal IrbpnrAmount { get; private set; }
     public decimal TotalAmount { get; private set; }
 
     /// <summary>= TotalAmount, congelado en Authorize() — nunca truncado (§0.2 ajuste #1, §4.2).</summary>
@@ -109,6 +119,15 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     /// — el dominio nunca los acepta como "confía en el cliente", pero tampoco los vuelve a resolver:
     /// son responsabilidad de quien arma este input.
     /// </summary>
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) — <c>SourceTaxableBase</c>/
+    /// <c>SourceIrbpnrAmount</c> son el <c>TaxableBase</c>/<c>IrbpnrAmount</c> TOTAL del
+    /// <see cref="PurchaseInvoiceTaxSummary"/> de origen (nunca la porción de esta NC) — la base que
+    /// <see cref="ReplaceTaxSummaryLines"/> necesita para prorratear IRBPNR por la misma fracción que
+    /// ya rige IVA/ICE en este flujo. IrbpnrCode/IrbpnrRate/IrbpnrName, igual que Vat/Ice, deben venir
+    /// resueltos por Application desde el resumen fiscal real — el dominio nunca los acepta "confía
+    /// en el cliente".
+    /// </summary>
     public sealed record TaxSummaryDraftLineInput(
         Guid SourcePurchaseInvoiceTaxSummaryId,
         string VatCode,
@@ -117,7 +136,12 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         string? IceCode,
         decimal IceRate,
         string? IceName,
-        decimal TaxableBase
+        decimal TaxableBase,
+        string? IrbpnrCode = null,
+        decimal IrbpnrRate = 0m,
+        string? IrbpnrName = null,
+        decimal SourceTaxableBase = 0m,
+        decimal SourceIrbpnrAmount = 0m
     );
 
     // ── Factory ─────────────────────────────────────────────────────────
@@ -286,6 +310,55 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
                 !string.IsNullOrWhiteSpace(input.IceCode) ? input.IceRate : 0m
             );
 
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) — IRBPNR se prorratea por la
+            // misma fracción TaxableBase/fuente.TaxableBase que ya rige IVA/ICE en este flujo (para
+            // Percentage, SriTaxCalculator ya es matemáticamente equivalente a esa proporción —
+            // aplicar la misma fracción al monto agregado de IRBPNR es la única forma correcta
+            // cuando IRBPNR es de monto fijo por unidad (Specific), sin recalcular desde una tarifa.
+            var irbpnrAmount = 0m;
+            if (!string.IsNullOrWhiteSpace(input.IrbpnrCode) && input.SourceTaxableBase > 0)
+            {
+                var fraction = input.TaxableBase / input.SourceTaxableBase;
+                irbpnrAmount = Round2(fraction * input.SourceIrbpnrAmount);
+            }
+
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2 — corrección post-revisión):
+            // se construye una fila por impuesto real (nunca una columna fija por impuesto) — mismo
+            // patrón que PurchaseInvoiceDetail/PurchaseReturnDetail.
+            var taxes = new List<PurchaseCreditNoteTaxLine>
+            {
+                new(
+                    SriTaxCategoryCodes.Vat,
+                    input.VatCode,
+                    string.IsNullOrWhiteSpace(input.VatName) ? "IVA" : input.VatName,
+                    input.VatRate,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage,
+                    vatAmount
+                ),
+            };
+            if (!string.IsNullOrWhiteSpace(input.IceCode))
+                taxes.Add(
+                    new PurchaseCreditNoteTaxLine(
+                        SriTaxCategoryCodes.Ice,
+                        input.IceCode,
+                        string.IsNullOrWhiteSpace(input.IceName) ? "ICE" : input.IceName,
+                        input.IceRate,
+                        ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage,
+                        iceAmount
+                    )
+                );
+            if (!string.IsNullOrWhiteSpace(input.IrbpnrCode))
+                taxes.Add(
+                    new PurchaseCreditNoteTaxLine(
+                        SriTaxCategoryCodes.Irbpnr,
+                        input.IrbpnrCode,
+                        string.IsNullOrWhiteSpace(input.IrbpnrName) ? "IRBPNR" : input.IrbpnrName,
+                        input.IrbpnrRate,
+                        ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                        irbpnrAmount
+                    )
+                );
+
             _taxSummaries.Add(
                 PurchaseCreditNoteTaxSummary.Create(
                     TenantId,
@@ -294,19 +367,15 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
                     Id,
                     PurchaseInvoiceId,
                     input.SourcePurchaseInvoiceTaxSummaryId,
-                    input.VatCode,
-                    input.VatRate,
-                    input.VatName,
-                    input.IceCode,
-                    input.IceRate,
-                    input.IceName,
                     input.TaxableBase,
-                    iceAmount,
-                    vatAmount
+                    taxes
                 )
             );
         }
     }
+
+    private static decimal Round2(decimal value) =>
+        Math.Round(value, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
 
     private void EnsureHasContent()
     {
@@ -321,7 +390,8 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         Subtotal = _lines.Sum(l => l.Subtotal) + _taxSummaries.Sum(s => s.TaxableBase);
         IceAmount = _taxSummaries.Sum(s => s.IceAmount);
         VatAmount = _lines.Sum(l => l.VatAmount) + _taxSummaries.Sum(s => s.VatAmount);
-        TotalAmount = Subtotal + IceAmount + VatAmount;
+        IrbpnrAmount = _taxSummaries.Sum(s => s.IrbpnrAmount);
+        TotalAmount = Subtotal + IceAmount + VatAmount + IrbpnrAmount;
     }
 
     // ── Authorize ─────────────────────────────────────────────────────

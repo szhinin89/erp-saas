@@ -143,3 +143,41 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
             .HasFilter("barcode IS NOT NULL");
     }
 }
+
+/// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2).</summary>
+public sealed class ItemSpecialTaxConfigurationConfiguration
+    : IEntityTypeConfiguration<ItemSpecialTaxConfiguration>
+{
+    public void Configure(EntityTypeBuilder<ItemSpecialTaxConfiguration> builder)
+    {
+        builder.ToTable("item_special_tax_configurations");
+
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
+        builder
+            .Property(x => x.SriTaxCategoryCode)
+            .HasColumnName("sri_tax_category_code")
+            .HasMaxLength(ItemSpecialTaxConfiguration.SriTaxCategoryCodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.TaxCatalogCode)
+            .HasColumnName("tax_catalog_code")
+            .HasMaxLength(ItemSpecialTaxConfiguration.TaxCatalogCodeMaxLen)
+            .IsRequired();
+        builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+
+        builder
+            .HasIndex(x => new { x.ItemId, x.SriTaxCategoryCode })
+            .IsUnique()
+            .HasDatabaseName("uq_item_special_tax_configuration");
+        builder
+            .HasIndex(x => x.TenantId)
+            .HasDatabaseName("ix_item_special_tax_configurations_tenant");
+    }
+}

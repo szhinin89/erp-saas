@@ -170,6 +170,13 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
             .HasForeignKey(nameof(ItemSupplierCode.ItemId))
             .OnDelete(DeleteBehavior.Cascade);
 
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2)
+        builder
+            .HasMany(x => x.SpecialTaxConfigurations)
+            .WithOne()
+            .HasForeignKey(nameof(ItemSpecialTaxConfiguration.ItemId))
+            .OnDelete(DeleteBehavior.Cascade);
+
         // ── Indexes ───────────────────────────────────────────────────────
         builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_items_subscriber");
 

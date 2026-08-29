@@ -113,6 +113,11 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
             .Property(x => x.SnapshotIceName)
             .HasColumnName("snapshot_ice_name")
             .HasMaxLength(SalesInvoiceDetail.IceNameMaxLen);
+        builder
+            .Property(x => x.IceCalculationType)
+            .HasColumnName("ice_calculation_type")
+            .HasConversion<int>()
+            .IsRequired();
 
         builder
             .Property(x => x.Notes)
@@ -124,6 +129,10 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
         builder.Ignore(x => x.LineSubtotal);
         builder.Ignore(x => x.TaxableBase);
         builder.Ignore(x => x.TaxInclusiveTotal);
+        builder.Ignore(x => x.IrbpnrCode);
+        builder.Ignore(x => x.IrbpnrRate);
+        builder.Ignore(x => x.SnapshotIrbpnrName);
+        builder.Ignore(x => x.IrbpnrAmount);
 
         builder
             .HasIndex(x => new { x.TenantId, x.InvoiceId })
@@ -135,5 +144,12 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
             .HasForeignKey(x => x.WarehouseId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3)
+        builder
+            .HasMany(x => x.Taxes)
+            .WithOne()
+            .HasForeignKey(x => x.SalesInvoiceDetailId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

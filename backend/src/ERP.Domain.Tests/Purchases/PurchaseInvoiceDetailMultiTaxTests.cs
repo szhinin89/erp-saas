@@ -159,7 +159,10 @@ public sealed class PurchaseInvoiceDetailMultiTaxTests
 
         line.IrbpnrAmount.Should().Be(0m);
         line.IrbpnrCode.Should().BeNull();
-        line.Taxes.Should().BeEmpty();
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3): ApplyTaxes sincroniza siempre la fila de IVA
+        // hacia Taxes (antes solo ocurría en líneas de Recepción Electrónica) — sin ICE ni IRBPNR,
+        // Taxes contiene únicamente esa fila de IVA, nunca vacía.
+        line.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
     }
 
     [Fact]

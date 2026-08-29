@@ -288,6 +288,13 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             VatAmount = XmlVatAmount.Value;
         if (iceCalculationType == SriTaxCalculationType.Percentage && XmlIceAmount.HasValue)
             IceAmount = XmlIceAmount.Value;
+
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) — sincroniza IVA/ICE hacia _taxes para TODA
+        // línea (antes solo quedaban ahí las líneas de Recepción Electrónica). Los campos escalares
+        // de arriba pasan a ser un legacy compatibility mirror: siguen escribiéndose por
+        // compatibilidad hacia atrás, pero _taxes/Taxes es la colección completa y consultable para
+        // IVA+ICE+IRBPNR de cualquier línea — ningún consumidor nuevo debe leer los escalares.
+        SyncScalarTaxesIntoCollection();
     }
 
     /// <summary>
@@ -313,6 +320,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         DiscountPct = pct;
         RecalcDiscount();
         RecalcTaxes();
+        SyncScalarTaxesIntoCollection();
         RecalcCosts();
     }
 
@@ -409,6 +417,76 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             );
         }
     }
+
+    // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) ────────────────────────
+    /// <summary>
+    /// Sincroniza los campos escalares IVA/ICE (legacy compatibility mirror) hacia su fila
+    /// correspondiente en <see cref="_taxes"/> — upsert por <c>TaxCode</c>, nunca toca otras filas
+    /// (p. ej. IRBPNR, poblado aparte vía <see cref="ReplaceTaxes"/>). Preserva el <c>Source</c> ya
+    /// presente en la fila existente (Xml si la línea vino de Recepción Electrónica, Calculated si es
+    /// manual/catálogo) — nunca lo infiere de nuevo aquí.
+    /// </summary>
+    private void SyncScalarTaxesIntoCollection()
+    {
+        var vatSource = _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode)?.Source
+            ?? PurchaseTaxSource.Calculated;
+        UpsertTaxRow(
+            VatSriTaxCode,
+            VatCode,
+            string.IsNullOrWhiteSpace(SnapshotVatName) ? "IVA" : SnapshotVatName,
+            VatRate,
+            SriTaxCalculationType.Percentage,
+            VatAmount,
+            vatSource
+        );
+
+        if (!string.IsNullOrWhiteSpace(IceCode))
+        {
+            var existingIce = _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode);
+            UpsertTaxRow(
+                IceSriTaxCode,
+                IceCode,
+                string.IsNullOrWhiteSpace(SnapshotIceName) ? "ICE" : SnapshotIceName,
+                IceCalculationType == SriTaxCalculationType.Percentage ? IceRate : existingIce?.Rate,
+                IceCalculationType,
+                IceAmount,
+                existingIce?.Source ?? PurchaseTaxSource.Calculated
+            );
+        }
+        else
+        {
+            RemoveTaxRow(IceSriTaxCode);
+        }
+    }
+
+    private void UpsertTaxRow(
+        string taxCode,
+        string taxRateCode,
+        string taxName,
+        decimal? rate,
+        SriTaxCalculationType calculationType,
+        decimal taxAmount,
+        PurchaseTaxSource source
+    )
+    {
+        _taxes.RemoveAll(t => t.TaxCode == taxCode);
+        _taxes.Add(
+            PurchaseInvoiceDetailTax.Create(
+                Id,
+                TenantId,
+                taxCode,
+                taxRateCode,
+                taxName,
+                rate,
+                calculationType,
+                TaxableBase,
+                taxAmount,
+                source
+            )
+        );
+    }
+
+    private void RemoveTaxRow(string taxCode) => _taxes.RemoveAll(t => t.TaxCode == taxCode);
 
     private void RecalcCosts()
     {

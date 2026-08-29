@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -203,22 +204,65 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
             ? "CONTRIBUYENTE RÉGIMEN RIMPE"
             : null;
 
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) — etiqueta que
+    /// <see cref="ERP.Infrastructure.Services.ElectronicDocuments.SriTaxCategoryCodeResolver"/> ya
+    /// traduce a código SRI. Mapeo por <c>SriTaxCategoryCodes</c> (Domain), no un literal nuevo:
+    /// "IRBPNR" queda listado aquí para no perder la fila si algún día el resolver la reconoce, pero
+    /// hoy el resolver (infraestructura FROZEN de ElectronicDocuments, fuera de esta subfase) solo
+    /// traduce "VAT"/"ICE" — una línea con IRBPNR ya llega completa en la lista, lista para cuando
+    /// esa infraestructura se extienda en un ticket propio.
+    ///
+    /// PENDIENTE — ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01: SriTaxCategoryCodeResolver hoy solo
+    /// reconoce VAT→"2" e ICE→"3"; falta extenderlo para IRBPNR→"5". No se toca en esta subfase
+    /// (fuera de alcance de 5C — InvoiceXmlBuilder/SriTaxCategoryCodeResolver quedan intactos).
+    /// Registrado también en ADR-032 §9.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> ElectronicDocumentTaxLabelByCode =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [SriTaxCategoryCodes.Vat] = "VAT",
+            [SriTaxCategoryCodes.Ice] = "ICE",
+            [SriTaxCategoryCodes.Irbpnr] = "IRBPNR",
+        };
+
+    /// <summary>
+    /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) — construye la lista de impuestos de
+    /// línea desde <see cref="SalesInvoiceDetail.Taxes"/> (SalesInvoiceDetailTax, fuente de verdad),
+    /// nunca desde los campos escalares legacy (IceCode/IceRate/IceAmount) — esos quedan como
+    /// legacy compatibility mirror, no se leen aquí para ninguna decisión. Sin impuestos especiales,
+    /// Taxes contiene únicamente la fila de IVA — mismo resultado que antes, byte a byte.
+    /// </summary>
+    /// <summary>
+    /// Orden canónico del nodo &lt;impuesto&gt; por línea (IVA, ICE, IRBPNR, cualquier otro código).
+    /// No se confía en el orden de inserción de <see cref="SalesInvoiceDetail.Taxes"/> — Authorize
+    /// vuelve a sincronizar IVA/ICE (upsert = remove+add), lo que los movería al final de la
+    /// colección sin este orden explícito.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, int> ElectronicDocumentTaxSortOrder =
+        new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [SriTaxCategoryCodes.Vat] = 0,
+            [SriTaxCategoryCodes.Ice] = 1,
+            [SriTaxCategoryCodes.Irbpnr] = 2,
+        };
+
     private static ElectronicDocumentDetailLine BuildDetailLine(SalesInvoiceDetail line)
     {
-        var taxes = new List<ElectronicDocumentDetailTax>
-        {
-            new("VAT", line.VatCode, line.TaxableBase, line.VatRate, line.VatAmount),
-        };
-        if (!string.IsNullOrWhiteSpace(line.IceCode))
-            taxes.Add(
-                new ElectronicDocumentDetailTax(
-                    "ICE",
-                    line.IceCode!,
-                    line.TaxableBase,
-                    line.IceRate,
-                    line.IceAmount
-                )
-            );
+        var taxes = line
+            .Taxes.OrderBy(t =>
+                ElectronicDocumentTaxSortOrder.TryGetValue(t.TaxCode, out var order) ? order : int.MaxValue
+            )
+            .Select(t => new ElectronicDocumentDetailTax(
+                ElectronicDocumentTaxLabelByCode.TryGetValue(t.TaxCode, out var label)
+                    ? label
+                    : t.TaxCode,
+                t.TaxRateCode,
+                t.TaxableBase,
+                t.Rate ?? 0m,
+                t.TaxAmount
+            ))
+            .ToList();
 
         return new ElectronicDocumentDetailLine(
             Code: line.SnapshotSku!,

@@ -573,6 +573,10 @@ internal static class CreditNoteTaxSummaryResolver
                     $"La base de descuento para el impuesto {source.VatCode} excede la base disponible (disponible: {available:F2})."
                 );
 
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-2) — IrbpnrCode/IrbpnrRate/
+            // IrbpnrName y los totales de origen (SourceTaxableBase/SourceIrbpnrAmount) se heredan
+            // del PurchaseInvoiceTaxSummary real, igual que Vat/Ice — nunca de la configuración
+            // tributaria actual del producto.
             resolved.Add(
                 new PurchaseCreditNote.TaxSummaryDraftLineInput(
                     source.Id,
@@ -582,7 +586,12 @@ internal static class CreditNoteTaxSummaryResolver
                     source.IceCode,
                     source.IceRate,
                     source.IceName,
-                    line.TaxableBase
+                    line.TaxableBase,
+                    source.IrbpnrCode,
+                    source.IrbpnrRate,
+                    source.IrbpnrName,
+                    source.TaxableBase,
+                    source.IrbpnrAmount
                 )
             );
         }

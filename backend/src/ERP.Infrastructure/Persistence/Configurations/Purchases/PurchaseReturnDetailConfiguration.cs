@@ -59,6 +59,7 @@ public sealed class PurchaseReturnDetailConfiguration
 
         // ── Computed properties (NOT persisted) ─────────────────────
         builder.Ignore(x => x.LineGrandTotal);
+        builder.Ignore(x => x.IrbpnrAmount);
 
         // ── Relationships ────────────────────────────────────────────
         builder
@@ -66,6 +67,13 @@ public sealed class PurchaseReturnDetailConfiguration
             .WithMany()
             .HasForeignKey(x => x.OriginalInvoiceDetailId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1)
+        builder
+            .HasMany(x => x.Taxes)
+            .WithOne()
+            .HasForeignKey(x => x.PurchaseReturnDetailId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasOne<Warehouse>()
