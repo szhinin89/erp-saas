@@ -1,6 +1,22 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-08-26** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-08-29** · Kernel refactor: **2026-06-05**.
+
+---
+
+## NAV-PERMISSION-HIERARCHY-SSOT-01 — Fuente única backend para menú y catálogo de permisos (2026-08-29)
+
+**Estado: COMPLETADO.** El backend queda como fuente única de la jerarquía Módulo → Categoría → Pantalla → Permiso, consumida tal cual tanto por el launcher como por la pantalla de Asignación de permisos.
+
+- **Diagnóstico**: `GetPermissionCatalogHandler` ya leía `KernelRegistry.Navigation` 100% en memoria (mismo origen que el menú, sin catálogo paralelo) — no había dos sistemas que unificar, solo faltaba el nivel Categoría entre Módulo y Pantalla. Una sesión previa había parchado esto con `LAUNCHER_REGROUP_RULES`/`regroupModuleItems` puramente en frontend (`navConfig.ts`), duplicando conocimiento de categorización que le corresponde al backend.
+- **Diseño**: Categoría = mismo patrón "ítem contenedor" ya usado por "Compras"/"Configuración"/"Reportes" (`[NavItem]` sin `Permission` propio, con `PermissionsAnyCsv` y children vía `ParentId`) — sin atributo nuevo, sin columna nueva en `ui_nav_items`/`ui_nav_groups`, sin cambios en `NavigationSyncService`/`NavigationBuilder` (ya recursivo sin límite de profundidad).
+- **Backend**: 17 categorías nuevas agregadas en `SuppliersModule.cs`/`CustomersModule.cs`/`ProductsModule.cs`/`AccountingModule.cs`/`SettingsModule.cs`/`AdminModule.cs`, reparentando las pantallas que quedaban sueltas bajo el módulo. `sales`/`inventory` sin tocar (ya 100% categorizados). `PermissionCatalogDto`/`GetPermissionCatalogHandler` ganan el nivel `Categories`, derivado de los mismos `ParentItemId` que ya usa `NavigationBuilder` para el árbol del menú — una sola fuente, dos consumidores.
+- **Frontend**: `LAUNCHER_REGROUP_RULES`/`regroupModuleItems` eliminados por completo de `navConfig.ts` — el launcher renderiza el árbol que entrega el backend, sin categorización propia. `PermissionsAssignmentPage.tsx`/`adminPermissionsService.ts` extendidos con el nivel Categoría (selección masiva por categoría, búsqueda que matchea también categoría).
+- **No se cambiaron**: rutas existentes, permisos existentes, contratos públicos críticos (solo el shape interno de `PermissionCatalogDto`, endpoint SPA-only desplegado junto con su único consumidor), colores/Design System, ni enforcement de seguridad efectivo.
+- **SECURITY-PERMISSION-SCOPE-01** queda documentado como deuda separada (comentarios en `UpsertProfilePermissionsHandler.cs`/`GetProfilePermissionAuditHandler.cs`): validación real de alcance del asignador, límite Admin de empresa vs. SuperAdmin, y enforcement real de plan SaaS en guardado/auditoría — gaps preexistentes, no introducidos ni resueltos por este ticket.
+- **Tests**: Domain 936/936, Application 1261/1261, API 390/391 (1 preexistente no relacionado — `InventoryAdjustmentsEndToEndTests.Escenario3`, Kardex/costeo), Infrastructure 494/496 (2 preexistentes no relacionados — `DocumentSequenceExclusivityTests`/`SupplierPaymentSequence`). Frontend Vitest 1047/1047.
+- **Validaciones**: `dotnet build` limpio. Frontend `npx tsc --noEmit`/`npm run lint`/`npm run build`/`check-i18n-keys.mjs`/`git diff --check` limpios. `npm run architecture:check`: solo violaciones repo-wide preexistentes (module-boundaries/css-prefixes/design-system/backend-subscriber-rules), ninguna en archivo tocado por este ticket.
+- Verificado visualmente (harness Playwright aislado, sin backend) que launcher y pantalla de permisos muestran la misma ubicación funcional para cada pantalla.
 
 ---
 
