@@ -41,7 +41,11 @@ import {
   simulateCostDistribution,
 } from "../utils/purchaseCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
-import { readApiErrorMessage, readApiErrorMessages } from "../../lib/apiError";
+import {
+  readApiErrorMessage,
+  readApiErrorMessages,
+  formatApiRequestError,
+} from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
 import {
@@ -1683,7 +1687,7 @@ export function usePurchasesPage() {
   const handleIssueWithholding = useCallback(
     async (epId: string) => {
       setModalWhIssue(false);
-      if (!editing) return;
+      if (!editing || whLoading) return;
       // todayIso() usa hora local del dispositivo, no UTC — evita el desfase que
       // causaba fecha futura y rechazo SRI [65] FECHA EMISIÓN EXTEMPORÁNEA.
       const date = todayIso();
@@ -1700,16 +1704,15 @@ export function usePurchasesPage() {
           t("purchases.messages.withholdingIssued", "Retención emitida correctamente."),
         );
       } catch (err: unknown) {
-        const e = err as ApiErrorLike;
         showSaveError(
-            e?.response?.data?.message?.user ??
-            e?.response?.data?.data?.errors?.[0] ??
-            t("purchases.errors.withholdingIssueFailed", "Error al emitir retención."),
+          formatApiRequestError(err, {
+            generic: t("purchases.errors.withholdingIssueFailed", "Error al emitir retención."),
+          }),
         );
       }
       setWhLoading(false);
     },
-    [editing, showSaveError, t],
+    [editing, whLoading, showSaveError, t],
   );
 
   const handleCancelWithholding = useCallback(

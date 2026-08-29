@@ -144,7 +144,34 @@ export function PurchaseReturnDetailPage() {
   };
 
   const handleAuthorize = async () => {
-    if (!editing) return;
+    if (!editing || authorizing) return;
+
+    const confirmed = await message.confirm({
+      title: "Autorizar devolución de compra",
+      message: (
+        <>
+          <p className="zh-confirm-message">
+            Al autorizar, la devolución pasa a estado <strong>Autorizada</strong> y ya no podrá
+            editarse. Esta acción puede afectar el inventario/Kardex, la cuenta por pagar o el
+            crédito del proveedor, y puede generar un asiento contable.
+          </p>
+          <p className="zh-confirm-message">
+            N.º devolución: <strong>{editing.returnNumber ?? "(borrador)"}</strong>
+            <br />
+            Proveedor: <strong>{invoice?.supplierName ?? "—"}</strong>
+            <br />
+            Fecha: <strong>{formatDateTime(editing.createdAt)}</strong>
+            <br />
+            Estado actual: <strong>{getPurchaseReturnStatusLabel(editing.status, t)}</strong>
+          </p>
+        </>
+      ),
+      variant: "warning",
+      confirmLabel: "Autorizar devolución",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setAuthorizing(true);
     try {
       const dto = await purchaseReturnService.authorize(editing.id, crypto.randomUUID());

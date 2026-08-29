@@ -4,6 +4,7 @@ import {
   type PurchaseReceptionImportResult,
   type PurchaseReceptionXmlView,
 } from "../api/purchaseReceptionService";
+import { message } from "../../../lib/messages";
 
 const PAGE_SIZE = 20;
 
@@ -67,6 +68,11 @@ export function usePurchaseReceptionPage() {
         })),
       });
       setFileName(file.name);
+      message.success(
+        importResult.items.length > 0
+          ? `Archivo TXT importado correctamente. Se cargaron ${importResult.items.length} líneas.`
+          : "Archivo TXT importado correctamente.",
+      );
     } catch (err) {
       setError(
         extractErrorMessage(

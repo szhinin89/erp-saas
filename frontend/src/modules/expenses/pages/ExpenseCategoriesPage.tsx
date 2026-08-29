@@ -307,10 +307,24 @@ export function ExpenseCategoriesPage() {
   };
 
   const handleToggleActive = async (node: ExpenseCategoryTreeNodeDto) => {
+    if (saving) return;
     if (node.isActive && hasActiveDescendant(node)) {
       message.error("No se puede desactivar un nodo con hijos activos.");
       return;
     }
+
+    const confirmed = await message.confirm({
+      title: node.isActive
+        ? `Desactivar "${node.name}"`
+        : `Activar "${node.name}"`,
+      message: node.isActive
+        ? `"${node.name}" dejará de estar disponible para registrar nuevos gastos. Los documentos de gasto ya registrados con esta categoría no se modifican.`
+        : `"${node.name}" volverá a estar disponible para registrar nuevos gastos.`,
+      variant: node.isActive ? "danger" : "warning",
+      confirmLabel: node.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
 
     setSaving(true);
     try {

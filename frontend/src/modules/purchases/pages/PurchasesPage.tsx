@@ -48,6 +48,7 @@ import {
   buildCostDistributionInputFromPersistedLines,
   buildCostDistributionInputFromFormLines,
 } from "../utils/purchaseCalc";
+import { buildWithholdingIssueMessage } from "../utils/withholdingMessages";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
 import { useI18n } from "../../../i18n/i18n";
 import {
@@ -1186,7 +1187,16 @@ export function PurchasesPage() {
       <ZHPromptModal
         open={ctx.modalWhIssue}
         title={t("purchases.withholding.issueTitle", "Emitir retención")}
-        variant="default"
+        variant="warning"
+        message={
+          ctx.editing
+            ? buildWithholdingIssueMessage(
+                ctx.editing.invoiceNumber,
+                ctx.editing.supplierName,
+                ctx.whPreview?.totalRetained,
+              )
+            : undefined
+        }
         label={t("purchases.withholding.emissionPointId", "ID del punto de emisión")}
         placeholder={t("purchases.withholding.emissionPointPlaceholder", "ID del punto de emisión")}
         confirmLabel={t("purchases.withholding.issue", "Emitir")}
