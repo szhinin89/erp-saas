@@ -59,11 +59,15 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public decimal VatAmount { get; private set; }
     public string? SnapshotVatName { get; private set; }
 
-    // ── ICE (fiscal snapshot) ───────────────────────────────────────────
-    public string? IceCode { get; private set; }
-    public decimal IceRate { get; private set; }
-    public decimal IceAmount { get; private set; }
-    public string? SnapshotIceName { get; private set; }
+    // ── ICE — TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) ────────
+    // Legacy compatibility mirror: solo lectura, derivados de _taxes — mismo patrón exacto que
+    // IrbpnrCode/IrbpnrRate/IrbpnrAmount (abajo). Nunca se escriben directamente; ApplyTaxes()/
+    // RecalcTaxes() escriben únicamente a _taxes vía UpsertTaxRow/RemoveTaxRow.
+    public string? IceCode => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.TaxRateCode;
+    public decimal IceRate => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.Rate ?? 0m;
+    public decimal IceAmount => _taxes.Where(t => t.TaxCode == IceSriTaxCode).Sum(t => t.TaxAmount);
+    public string? SnapshotIceName =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.TaxName;
 
     /// <summary>
     /// FLOW-READY-02F.1 — cómo se obtuvo <see cref="IceAmount"/>: <c>Percentage</c> (default,
@@ -71,8 +75,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     /// <c>Specific</c> (p. ej. ICE código 3053, bebidas azucaradas) fija <see cref="IceAmount"/> al
     /// monto exacto del XML y nunca lo recalcula desde una tarifa porcentual.
     /// </summary>
-    public SriTaxCalculationType IceCalculationType { get; private set; } =
-        SriTaxCalculationType.Percentage;
+    public SriTaxCalculationType IceCalculationType =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.CalculationType
+            ?? SriTaxCalculationType.Percentage;
 
     // ── Impuestos por línea (FLOW-READY-02F.1) — snapshot fiel del XML, incluye IVA/ICE/IRBPNR ──
     private readonly List<PurchaseInvoiceDetailTax> _taxes = new();
@@ -233,7 +238,6 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             UnitPrice = unitPrice,
             DiscountPct = discountPct,
             VatCode = vatCode.Trim(),
-            IceCode = OptionalCode.Normalize(iceCode),
             WarehouseId = warehouseId,
             SnapshotWarehouseCode = snapshotWarehouseCode?.Trim(),
             PurchaseOrderDetailId = purchaseOrderDetailId,
@@ -244,6 +248,20 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         };
         line.RecalcDiscount();
         line.RecalcCosts();
+        // Mismo criterio que el objeto-initializer anterior: solo el código se conoce en Create()
+        // (tarifa/nombre/monto llegan después vía ApplyTaxes) — se registra igual como fila inicial
+        // para que IceCode ya sea consultable inmediatamente tras Create(), sin esperar ApplyTaxes.
+        var normalizedIceCode = OptionalCode.Normalize(iceCode);
+        if (!string.IsNullOrWhiteSpace(normalizedIceCode))
+            line.UpsertTaxRow(
+                IceSriTaxCode,
+                normalizedIceCode,
+                "ICE",
+                null,
+                SriTaxCalculationType.Percentage,
+                0m,
+                PurchaseTaxSource.Calculated
+            );
         return line;
     }
 
@@ -267,41 +285,72 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         if (iceRate < 0)
             throw new ArgumentException("La tasa ICE no puede ser negativa.", nameof(iceRate));
 
+        // FLOW-READY-02F.1 — capturados ANTES de tocar _taxes: si la línea ya tiene un monto exacto
+        // documental (Source=Xml) para IVA/ICE, ese monto prevalece sobre cualquier recálculo por
+        // tarifa hecho más abajo — evita que redondeos o diferencias de tarifa entre el XML y el
+        // catálogo SRI hagan que la compra deje de cuadrar contra el comprobante original. Aplica en
+        // Create/Update/Confirm/DistributeCost por igual, sin tocar esos call sites.
+        var xmlVatAmount = XmlVatAmount;
+        var xmlIceAmount = iceCalculationType == SriTaxCalculationType.Percentage ? XmlIceAmount : null;
+
         VatCode = vatCode.Trim();
         VatRate = vatRate;
         SnapshotVatName = vatName?.Trim();
-        IceCode = OptionalCode.Normalize(iceCode);
-        IceRate = iceRate;
-        SnapshotIceName = iceName?.Trim();
-        IceCalculationType = iceCalculationType;
-        // ICE "específico" (p. ej. código 3053) no se recalcula desde una tarifa porcentual — se fija
-        // aquí al monto exacto del XML; RecalcTaxes lo preserva y solo recalcula VatAmount sobre él.
-        if (iceCalculationType == SriTaxCalculationType.Specific)
-            IceAmount = iceExactAmount ?? 0m;
-        RecalcTaxes();
-        // FLOW-READY-02F.1 — si la línea viene del XML y ya tiene el monto exacto documental para
-        // este impuesto, ese monto prevalece sobre el recálculo por tarifa (evita que redondeos o
-        // diferencias de tarifa entre el XML y el catálogo SRI hagan que la compra deje de cuadrar
-        // contra el comprobante original). Aplica en Create/Update/Confirm/DistributeCost por igual,
-        // sin tocar esos call sites: esta propiedad lee directamente del snapshot _taxes ya persistido.
-        if (XmlVatAmount.HasValue)
-            VatAmount = XmlVatAmount.Value;
-        if (iceCalculationType == SriTaxCalculationType.Percentage && XmlIceAmount.HasValue)
-            IceAmount = XmlIceAmount.Value;
 
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) — sincroniza IVA/ICE hacia _taxes para TODA
-        // línea (antes solo quedaban ahí las líneas de Recepción Electrónica). Los campos escalares
-        // de arriba pasan a ser un legacy compatibility mirror: siguen escribiéndose por
-        // compatibilidad hacia atrás, pero _taxes/Taxes es la colección completa y consultable para
-        // IVA+ICE+IRBPNR de cualquier línea — ningún consumidor nuevo debe leer los escalares.
-        SyncScalarTaxesIntoCollection();
+        var normalizedIceCode = OptionalCode.Normalize(iceCode);
+        var iceSource =
+            _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.Source
+            ?? PurchaseTaxSource.Calculated;
+        if (!string.IsNullOrWhiteSpace(normalizedIceCode))
+        {
+            // ICE "específico" (p. ej. código 3053) no se recalcula desde una tarifa porcentual — se
+            // fija aquí al monto exacto del XML; RecalcTaxes lo preserva y solo recalcula VatAmount
+            // sobre él.
+            var initialIceAmount =
+                iceCalculationType == SriTaxCalculationType.Specific ? (iceExactAmount ?? 0m) : 0m;
+            UpsertTaxRow(
+                IceSriTaxCode,
+                normalizedIceCode,
+                string.IsNullOrWhiteSpace(iceName) ? "ICE" : iceName.Trim(),
+                iceRate,
+                iceCalculationType,
+                initialIceAmount,
+                iceSource
+            );
+        }
+        else
+        {
+            RemoveTaxRow(IceSriTaxCode);
+        }
+
+        RecalcTaxes();
+
+        if (xmlVatAmount.HasValue)
+            VatAmount = xmlVatAmount.Value;
+        if (xmlIceAmount.HasValue)
+        {
+            var iceRow = _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode);
+            if (iceRow is not null)
+                UpsertTaxRow(
+                    IceSriTaxCode,
+                    iceRow.TaxRateCode,
+                    iceRow.TaxName,
+                    iceRow.Rate,
+                    iceRow.CalculationType,
+                    xmlIceAmount.Value,
+                    iceRow.Source
+                );
+        }
+
+        SyncVatIntoCollection();
     }
 
     /// <summary>
     /// FLOW-READY-02F.1 — reemplaza el detalle fiel de impuestos de la línea (IVA/ICE/IRBPNR, tal
-    /// como vinieron en el XML). Aditivo: no toca los campos escalares legacy (VatCode/VatRate/
-    /// VatAmount, IceCode/IceRate/IceAmount) — esos siguen actualizándose únicamente vía
-    /// <see cref="ApplyTaxes"/>. Se llama junto con <see cref="ApplyTaxes"/> al crear/actualizar una
+    /// como vinieron en el XML). Aditivo respecto a VAT: no toca <c>VatCode/VatRate/VatAmount</c>
+    /// (siguen actualizándose únicamente vía <see cref="ApplyTaxes"/>) — pero SÍ reemplaza la fila
+    /// ICE, que desde ADR-032 §3.3/Fase 3 vive únicamente en <c>_taxes</c> (ya no hay escalar
+    /// paralelo que preservar). Se llama junto con <see cref="ApplyTaxes"/> al crear/actualizar una
     /// línea desde Recepción Electrónica.
     /// </summary>
     public void ReplaceTaxes(IEnumerable<PurchaseInvoiceDetailTax> taxes)
@@ -320,7 +369,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         DiscountPct = pct;
         RecalcDiscount();
         RecalcTaxes();
-        SyncScalarTaxesIntoCollection();
+        SyncVatIntoCollection();
         RecalcCosts();
     }
 
@@ -389,16 +438,28 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
                 : 0;
     }
 
+    /// <summary>
+    /// Recalcula <see cref="VatAmount"/> y la fila ICE en <see cref="_taxes"/> a partir del estado
+    /// actual (identidad ICE ya presente en <c>_taxes</c> — código/tarifa/nombre/tipo de cálculo —
+    /// más <see cref="TaxableBase"/> vigente). No conoce ni necesita conocer quién la invocó
+    /// (<see cref="ApplyTaxes"/> tras fijar una identidad nueva, o <see cref="ApplyDiscount"/> tras
+    /// cambiar la base imponible): siempre relee la fila ICE actual, nunca un escalar paralelo.
+    /// </summary>
     private void RecalcTaxes()
     {
-        if (IceCalculationType == SriTaxCalculationType.Specific)
+        var iceRow = _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode);
+        var iceCalculationType = iceRow?.CalculationType ?? SriTaxCalculationType.Percentage;
+        decimal iceAmount;
+
+        if (iceCalculationType == SriTaxCalculationType.Specific)
         {
-            // IceAmount ya quedó fijado en ApplyTaxes al monto exacto del XML — un impuesto
-            // específico (p. ej. ICE código 3053, USD por cada 100g de azúcar) no es proporcional a
-            // la base imponible ni al descuento, así que nunca se recalcula aquí. Solo se recalcula
-            // VatAmount, incluyendo ese ICE ya fijo en la base del IVA (regla SRI: IVA se calcula
-            // sobre base + ICE, sin importar cómo se determinó el ICE).
-            var vatBase = TaxableBase + IceAmount;
+            // El monto exacto ya quedó fijado (en ApplyTaxes, o en la fila ya existente) al valor
+            // del XML — un impuesto específico (p. ej. ICE código 3053, USD por cada 100g de azúcar)
+            // no es proporcional a la base imponible ni al descuento, así que nunca se recalcula
+            // aquí. Solo se recalcula VatAmount, incluyendo ese ICE ya fijo en la base del IVA
+            // (regla SRI: IVA se calcula sobre base + ICE, sin importar cómo se determinó el ICE).
+            iceAmount = iceRow?.TaxAmount ?? 0m;
+            var vatBase = TaxableBase + iceAmount;
             VatAmount =
                 VatRate > 0
                     ? Math.Round(
@@ -410,23 +471,33 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         }
         else
         {
-            (IceAmount, VatAmount, _) = SriTaxCalculator.Compute(
+            (iceAmount, VatAmount, _) = SriTaxCalculator.Compute(
                 TaxableBase,
                 VatRate,
-                !string.IsNullOrWhiteSpace(IceCode) ? IceRate : 0m
+                iceRow is not null ? (iceRow.Rate ?? 0m) : 0m
             );
         }
+
+        if (iceRow is not null)
+            UpsertTaxRow(
+                IceSriTaxCode,
+                iceRow.TaxRateCode,
+                iceRow.TaxName,
+                iceRow.Rate,
+                iceCalculationType,
+                iceAmount,
+                iceRow.Source
+            );
     }
 
     // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) ────────────────────────
     /// <summary>
-    /// Sincroniza los campos escalares IVA/ICE (legacy compatibility mirror) hacia su fila
-    /// correspondiente en <see cref="_taxes"/> — upsert por <c>TaxCode</c>, nunca toca otras filas
-    /// (p. ej. IRBPNR, poblado aparte vía <see cref="ReplaceTaxes"/>). Preserva el <c>Source</c> ya
-    /// presente en la fila existente (Xml si la línea vino de Recepción Electrónica, Calculated si es
-    /// manual/catálogo) — nunca lo infiere de nuevo aquí.
+    /// Sincroniza el campo escalar VAT hacia su fila correspondiente en <see cref="_taxes"/> —
+    /// upsert por <c>TaxCode</c>, nunca toca otras filas (ICE/IRBPNR, cada una con su propio
+    /// mecanismo). Preserva el <c>Source</c> ya presente en la fila existente (Xml si la línea vino
+    /// de Recepción Electrónica, Calculated si es manual/catálogo) — nunca lo infiere de nuevo aquí.
     /// </summary>
-    private void SyncScalarTaxesIntoCollection()
+    private void SyncVatIntoCollection()
     {
         var vatSource = _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode)?.Source
             ?? PurchaseTaxSource.Calculated;
@@ -439,24 +510,6 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             VatAmount,
             vatSource
         );
-
-        if (!string.IsNullOrWhiteSpace(IceCode))
-        {
-            var existingIce = _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode);
-            UpsertTaxRow(
-                IceSriTaxCode,
-                IceCode,
-                string.IsNullOrWhiteSpace(SnapshotIceName) ? "ICE" : SnapshotIceName,
-                IceCalculationType == SriTaxCalculationType.Percentage ? IceRate : existingIce?.Rate,
-                IceCalculationType,
-                IceAmount,
-                existingIce?.Source ?? PurchaseTaxSource.Calculated
-            );
-        }
-        else
-        {
-            RemoveTaxRow(IceSriTaxCode);
-        }
     }
 
     private void UpsertTaxRow(

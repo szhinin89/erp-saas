@@ -254,6 +254,20 @@ Como la tabla no tenía filas reales en ningún ambiente (`purchase_credit_note_
 
 `CompanySpecialTaxResponsibility` (§3.4) choca textualmente con la prohibición "Crear... cualquier configuración tributaria a nivel empresa" de la infraestructura FROZEN "Configuración Tributaria" (`docs/architecture/frozen-infrastructure.md`, congelada 2026-07-01). Resuelto explícitamente: **este ADR es la ADR formal** que abre una excepción acotada a esa prohibición, documentada en `frozen-infrastructure.md` § "Excepción acotada — `CompanySpecialTaxResponsibility`". La regla FROZEN sigue vigente para todo lo demás (códigos, tarifas, catálogos a nivel empresa siguen prohibidos); la excepción cubre únicamente el booleano de responsabilidad de aplicación en ventas de un impuesto especial, nunca un dato tributario en sí (código/tarifa/catálogo), y nunca participa en Compras.
 
+## Addendum 2026-08-29c — Fase 3 (ICE) nunca se completó; cerrada junto con Fase 6
+
+Al ejecutar Fase 6 (§7.6, "marcar campos legacy... comentario de dominio explícito") se descubrió que **Fase 3 nunca se había completado para ICE** en las 4 entidades de línea (`PurchaseInvoiceDetail`/`SalesInvoiceDetail`/`PurchaseReturnDetail`/`SalesReturnDetail`) — solo IRBPNR y `PurchaseCreditNoteTaxSummary` (Addendum b) habían recibido el tratamiento de "propiedad computada desde `_taxes`, nunca escalar escrito directamente" que §3.3 exige. `Ice*` seguía siendo `private set`, escrito por `ApplyTaxes()`/`RecalcTaxes()`/`Create()`/`Freeze()`, y `TaxInclusiveTotal`/`LineGrandTotal` leían el escalar directamente — doble fuente de verdad real, no solo nominal.
+
+**Decisión (confirmada explícitamente, alcance ajustado)**: no ejecutar Fase 6 como si Fase 3 ya estuviera cerrada. Se completó primero Fase 3 (ICE) — mismo patrón exacto que IRBPNR — y luego Fase 6 sobre el resultado real:
+
+- Las 4 entidades convierten `IceCode/IceRate/IceAmount/IceCalculationType/SnapshotIceName`/`ReturnedIceAmount` a getters de solo lectura sobre `_taxes`/`Taxes`. `PurchaseReturnDetail.Freeze()` (`internal`) pierde 3 parámetros redundantes con `returnedTaxes`.
+- EF: `Ice*` pasa a `builder.Ignore(...)` en las 4 configuraciones — **nunca `DROP COLUMN`** (EF lo scaffoldea por defecto al ignorar una propiedad antes mapeada; se corrigió a mano). Único DDL real: `ALTER COLUMN ... SET DEFAULT` en columnas `NOT NULL` que dependían de que EF las escribiera siempre — sin eso, un `INSERT` nuevo (que ya no las incluye) violaba la restricción. Las columnas físicas permanecen, huérfanas.
+- `ExciseTaxCode` (`Item.TaxConfig`) migrado en los 6 consumidores restantes que aún lo leían directo (`PurchaseDraftUseCases` ×2, `GetSalesItemPricingQueryHandler`, `ItemMappingService`/`GetItemFullReportQuery`/`GetItemByIdQuery`, `InvoiceItemSearchRepository`) — todos ahora resuelven contra `ItemSpecialTaxConfiguration` (y, en Ventas, también `CompanySpecialTaxResponsibility` por §3.4/§5.1).
+- Auditoría confirmó que los data providers de XML/RIDE de venta y `GetPurchaseItemContextQueryHandler` (hallazgos originales §2.3/§2.5/§2.9) **ya estaban migrados** por subfases anteriores (5C/5D-4/5A) — esos hallazgos del ADR quedan obsoletos, documentado aquí para no reabrirlos por error.
+- Fase 7 (eliminación física) sigue sin iniciar — no se tocó en este addendum, requiere confirmación explícita futura.
+
+Ver `STATUS.md` § "Fase 3 (ICE) completada + Fase 6" para el detalle de archivos, migraciones y validaciones.
+
 ## Referencias
 
 - Auditoría técnica previa a esta decisión: sesión 2026-08-29 (agente de exploración sobre `backend/src`).

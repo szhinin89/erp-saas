@@ -95,27 +95,6 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
             .HasColumnType("numeric(18,2)")
             .IsRequired();
 
-        builder
-            .Property(x => x.IceCode)
-            .HasColumnName("ice_code")
-            .HasMaxLength(SalesReturnDetail.IceCodeMaxLen);
-        builder
-            .Property(x => x.IceRate)
-            .HasColumnName("ice_rate")
-            .HasColumnType("numeric(5,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.IceAmount)
-            .HasColumnName("ice_amount")
-            .HasColumnType("numeric(18,2)")
-            .IsRequired();
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3)
-        builder
-            .Property(x => x.IceCalculationType)
-            .HasColumnName("ice_calculation_type")
-            .HasConversion<int>()
-            .IsRequired();
-
         builder.Property(x => x.IsFrozen).HasColumnName("is_frozen").IsRequired();
 
         // ── Computed properties (NOT persisted) ─────────────────────
@@ -125,6 +104,14 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
         builder.Ignore(x => x.IrbpnrCode);
         builder.Ignore(x => x.IrbpnrRate);
         builder.Ignore(x => x.IrbpnrAmount);
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) — Ice* pasan a legacy compatibility
+        // mirror computado desde _taxes (mismo tratamiento que Irbpnr* arriba). Las columnas
+        // físicas ice_code/ice_rate/ice_amount/ice_calculation_type NO se eliminan en esta fase
+        // (ADR-032 §7, Fase 7 pendiente) — quedan huérfanas, ya no mapeadas.
+        builder.Ignore(x => x.IceCode);
+        builder.Ignore(x => x.IceRate);
+        builder.Ignore(x => x.IceAmount);
+        builder.Ignore(x => x.IceCalculationType);
 
         // ── Relationships ───────────────────────────────────────────
         builder

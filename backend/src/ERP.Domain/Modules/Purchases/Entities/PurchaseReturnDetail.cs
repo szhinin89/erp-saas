@@ -39,29 +39,36 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
     public decimal? UnitCost { get; private set; }
     public string? VatCode { get; private set; }
     public decimal? VatRate { get; private set; }
-    public string? IceCode { get; private set; }
-    public decimal? IceRate { get; private set; }
     public decimal? ReturnedSubtotal { get; private set; }
     public decimal? ReturnedDiscountAmount { get; private set; }
     public decimal? ReturnedVatAmount { get; private set; }
-    public decimal? ReturnedIceAmount { get; private set; }
     public decimal? HistoricalCostAmount { get; private set; }
 
     public bool IsFrozen { get; private set; }
 
-    // ── Impuestos por línea (TAX-LINE-SSOT-ICE-IRBPNR-01, ADR-032 §3.3, Subfase 5D-1) ──────────
-    // Snapshot proporcional de PurchaseInvoiceDetailTax de la línea original — fuente de verdad de
-    // IVA/ICE/IRBPNR de esta línea de devolución, congelada una única vez en Freeze() (igual que
-    // el resto del snapshot financiero). No reemplaza VatCode/VatRate/IceCode/IceRate/
-    // ReturnedVatAmount/ReturnedIceAmount de arriba (siguen siendo la fuente para consumidores
-    // existentes) — IRBPNR es la única excepción real: no tiene campos escalares propios.
+    // ── Impuestos por línea (TAX-LINE-SSOT-ICE-IRBPNR-01, ADR-032 §3.3, Subfase 5D-1/Fase 3) ────
+    // Snapshot proporcional de PurchaseInvoiceDetailTax de la línea original — única fuente de
+    // verdad de IVA/ICE/IRBPNR de esta línea de devolución, congelada una única vez en Freeze()
+    // (igual que el resto del snapshot financiero).
     private readonly List<PurchaseReturnDetailTax> _taxes = new();
     public IReadOnlyList<PurchaseReturnDetailTax> Taxes => _taxes.AsReadOnly();
 
     private const string IrbpnrSriTaxCode = ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Irbpnr;
+    private const string IceSriTaxCode = ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice;
 
     /// <summary>IRBPNR nunca se trata como ICE — código, catálogo y resolución siempre separados.</summary>
     public decimal IrbpnrAmount => _taxes.Where(t => t.TaxCode == IrbpnrSriTaxCode).Sum(t => t.TaxAmount);
+
+    // ── ICE — TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) ────────
+    // Legacy compatibility mirror: solo lectura, derivados de _taxes — mismo patrón que
+    // IrbpnrAmount. Null antes de Freeze() (mismo criterio que el resto del snapshot financiero,
+    // arriba), 0m si Freeze() ya corrió pero la línea original no tenía ICE.
+    public string? IceCode =>
+        IsFrozen ? _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.TaxRateCode : null;
+    public decimal? IceRate =>
+        IsFrozen ? _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.Rate : null;
+    public decimal? ReturnedIceAmount =>
+        IsFrozen ? _taxes.Where(t => t.TaxCode == IceSriTaxCode).Sum(t => t.TaxAmount) : null;
 
     // ── Calculated (NOT persisted) ──────────────────────────────────────
     public decimal LineGrandTotal =>
@@ -124,12 +131,9 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
         decimal unitCost,
         string vatCode,
         decimal vatRate,
-        string? iceCode,
-        decimal iceRate,
         decimal returnedSubtotal,
         decimal returnedDiscountAmount,
         decimal returnedVatAmount,
-        decimal returnedIceAmount,
         decimal historicalCostAmount,
         IEnumerable<ProratedTaxLine> returnedTaxes
     )
@@ -141,12 +145,9 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
         UnitCost = unitCost;
         VatCode = vatCode.Trim();
         VatRate = vatRate;
-        IceCode = OptionalCode.Normalize(iceCode);
-        IceRate = iceRate;
         ReturnedSubtotal = returnedSubtotal;
         ReturnedDiscountAmount = returnedDiscountAmount;
         ReturnedVatAmount = returnedVatAmount;
-        ReturnedIceAmount = returnedIceAmount;
         HistoricalCostAmount = historicalCostAmount;
 
         _taxes.Clear();

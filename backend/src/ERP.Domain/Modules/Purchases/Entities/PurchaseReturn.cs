@@ -343,14 +343,15 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 fraction * (original.LineSubtotal - original.DiscountAmount)
             );
             var returnedVat = Round2(fraction * original.VatAmount);
-            var returnedIce = Round2(fraction * original.IceAmount);
             var returnedDiscount = Round2(fraction * original.DiscountAmount);
             var historicalCost = Round2(original.LandedUnitCost * line.Quantity);
 
-            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — prorratea CADA fila del
-            // snapshot fiscal original (IVA/ICE/IRBPNR) por la misma fracción que ya rige
-            // returnedVat/returnedIce — nunca recalculado desde la configuración tributaria actual
-            // del producto, siempre una proporción del snapshot ya congelado en la factura.
+            // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1/Fase 3) — prorratea CADA fila
+            // del snapshot fiscal original (IVA/ICE/IRBPNR) por la misma fracción que ya rige
+            // returnedVat — nunca recalculado desde la configuración tributaria actual del producto,
+            // siempre una proporción del snapshot ya congelado en la factura. ICE ya no se pasa como
+            // parámetro escalar aparte (redundante con esta colección) — PurchaseReturnDetail.IceCode/
+            // IceRate/ReturnedIceAmount se derivan de aquí (mismo criterio que IrbpnrAmount).
             var returnedTaxes = original.Taxes.Select(t => new PurchaseReturnDetail.ProratedTaxLine(
                 t.TaxCode,
                 t.TaxRateCode,
@@ -365,12 +366,9 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 original.LandedUnitCost,
                 original.VatCode,
                 original.VatRate,
-                original.IceCode,
-                original.IceRate,
                 returnedSubtotal,
                 returnedDiscount,
                 returnedVat,
-                returnedIce,
                 historicalCost,
                 returnedTaxes
             );

@@ -32,8 +32,6 @@ public sealed class PurchaseReturnDetailConfiguration
         builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(18,6)");
         builder.Property(x => x.VatCode).HasColumnName("vat_code").HasMaxLength(20);
         builder.Property(x => x.VatRate).HasColumnName("vat_rate").HasColumnType("numeric(5,2)");
-        builder.Property(x => x.IceCode).HasColumnName("ice_code").HasMaxLength(20);
-        builder.Property(x => x.IceRate).HasColumnName("ice_rate").HasColumnType("numeric(5,2)");
         builder
             .Property(x => x.ReturnedSubtotal)
             .HasColumnName("returned_subtotal")
@@ -47,10 +45,6 @@ public sealed class PurchaseReturnDetailConfiguration
             .HasColumnName("returned_vat_amount")
             .HasColumnType("numeric(18,2)");
         builder
-            .Property(x => x.ReturnedIceAmount)
-            .HasColumnName("returned_ice_amount")
-            .HasColumnType("numeric(18,2)");
-        builder
             .Property(x => x.HistoricalCostAmount)
             .HasColumnName("historical_cost_amount")
             .HasColumnType("numeric(18,2)");
@@ -60,6 +54,13 @@ public sealed class PurchaseReturnDetailConfiguration
         // ── Computed properties (NOT persisted) ─────────────────────
         builder.Ignore(x => x.LineGrandTotal);
         builder.Ignore(x => x.IrbpnrAmount);
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) — Ice*/ReturnedIceAmount pasan a
+        // legacy compatibility mirror computado desde _taxes (mismo tratamiento que IrbpnrAmount
+        // arriba). Las columnas físicas ice_code/ice_rate/returned_ice_amount NO se eliminan en
+        // esta fase (ADR-032 §7, Fase 7 pendiente) — quedan huérfanas, ya no mapeadas.
+        builder.Ignore(x => x.IceCode);
+        builder.Ignore(x => x.IceRate);
+        builder.Ignore(x => x.ReturnedIceAmount);
 
         // ── Relationships ────────────────────────────────────────────
         builder

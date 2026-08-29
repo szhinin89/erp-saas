@@ -68,9 +68,11 @@ internal static class ItemMappingService
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Cast<string>();
 
-        var iceCodes = !string.IsNullOrWhiteSpace(item.TaxConfig.ExciseTaxCode)
-            ? new[] { item.TaxConfig.ExciseTaxCode }
-            : [];
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+        // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy compatibility
+        // mirror, ya no se lee para decisiones nuevas).
+        var exciseTaxCode = ResolveExciseTaxCode(item);
+        var iceCodes = !string.IsNullOrWhiteSpace(exciseTaxCode) ? new[] { exciseTaxCode } : [];
 
         var uomMap = await sri.ResolveUomsAsync(uomCodes, ct);
         var vatMap = await sri.ResolveVatRatesAsync(vatCodes, ct);
@@ -134,8 +136,13 @@ internal static class ItemMappingService
         Item item,
         IReadOnlyDictionary<string, SriVatInfo> vatMap,
         IReadOnlyDictionary<string, SriIceInfo> iceMap
-    ) =>
-        new(
+    )
+    {
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+        // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy compatibility
+        // mirror, ya no se lee para decisiones nuevas).
+        var exciseTaxCode = ResolveExciseTaxCode(item);
+        return new(
             item.TaxConfig.SaleVatCode,
             !string.IsNullOrWhiteSpace(item.TaxConfig.SaleVatCode)
             && vatMap.TryGetValue(item.TaxConfig.SaleVatCode, out var sv)
@@ -146,12 +153,19 @@ internal static class ItemMappingService
             && vatMap.TryGetValue(item.TaxConfig.PurchaseVatCode, out var pv)
                 ? pv.Name
                 : null,
-            item.TaxConfig.ExciseTaxCode,
-            !string.IsNullOrWhiteSpace(item.TaxConfig.ExciseTaxCode)
-            && iceMap.TryGetValue(item.TaxConfig.ExciseTaxCode, out var ice)
+            exciseTaxCode,
+            !string.IsNullOrWhiteSpace(exciseTaxCode) && iceMap.TryGetValue(exciseTaxCode, out var ice)
                 ? ice.Name
                 : null
         );
+    }
+
+    private static string? ResolveExciseTaxCode(Item item) =>
+        item
+            .SpecialTaxConfigurations.FirstOrDefault(c =>
+                c.IsActive && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+            )
+            ?.TaxCatalogCode;
 
     private static ItemSaleConfigDto MapSaleConfig(Item item) =>
         new(

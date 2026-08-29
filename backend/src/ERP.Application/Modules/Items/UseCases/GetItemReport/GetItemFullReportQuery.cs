@@ -63,9 +63,15 @@ public sealed class GetItemFullReportQueryHandler
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Cast<string>();
 
-        var iceCodes = !string.IsNullOrWhiteSpace(item.TaxConfig.ExciseTaxCode)
-            ? new[] { item.TaxConfig.ExciseTaxCode }
-            : [];
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+        // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy compatibility
+        // mirror, ya no se lee para decisiones nuevas).
+        var exciseTaxCode = item
+            .SpecialTaxConfigurations.FirstOrDefault(c =>
+                c.IsActive && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+            )
+            ?.TaxCatalogCode;
+        var iceCodes = !string.IsNullOrWhiteSpace(exciseTaxCode) ? new[] { exciseTaxCode } : [];
 
         var brand = item.BrandId.HasValue
             ? await _catalog.GetBrandByIdAsync(item.BrandId.Value, cancellationToken)

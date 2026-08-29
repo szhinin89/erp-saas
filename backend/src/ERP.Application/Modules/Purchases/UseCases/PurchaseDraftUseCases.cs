@@ -683,8 +683,15 @@ public sealed class CreatePurchaseDraftHandler
 
                     if (string.IsNullOrWhiteSpace(vatCode))
                         vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
+                    // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+                    // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy
+                    // compatibility mirror, ya no se lee para decisiones nuevas).
                     if (string.IsNullOrWhiteSpace(iceCode))
-                        iceCode = item.TaxConfig.ExciseTaxCode;
+                        iceCode = item
+                            .SpecialTaxConfigurations.FirstOrDefault(c =>
+                                c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
+                            )
+                            ?.TaxCatalogCode;
                 }
             }
 
@@ -965,8 +972,15 @@ public sealed class UpdatePurchaseDraftHandler
 
                         if (string.IsNullOrWhiteSpace(vatCode))
                             vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
+                        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+                        // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy
+                        // compatibility mirror, ya no se lee para decisiones nuevas).
                         if (string.IsNullOrWhiteSpace(iceCode))
-                            iceCode = item.TaxConfig.ExciseTaxCode;
+                            iceCode = item
+                                .SpecialTaxConfigurations.FirstOrDefault(c =>
+                                    c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
+                                )
+                                ?.TaxCatalogCode;
                     }
                 }
 

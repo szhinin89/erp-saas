@@ -3,6 +3,7 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Purchases;
 using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
@@ -13,19 +14,25 @@ public sealed class GetSalesItemPricingQueryHandler
     private readonly IItemRepository _itemRepo;
     private readonly IPricingResolver _pricingResolver;
     private readonly ISriTaxResolver _taxResolver;
+    private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
     private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
 
     public GetSalesItemPricingQueryHandler(
         IItemRepository itemRepo,
         IPricingResolver pricingResolver,
         ISriTaxResolver taxResolver,
-        ICurrentTenant tenant
+        ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
+        ICurrentTenant tenant,
+        ICurrentCompany company
     )
     {
         _itemRepo = itemRepo;
         _pricingResolver = pricingResolver;
         _taxResolver = taxResolver;
+        _companyTaxRepo = companyTaxRepo;
         _tenant = tenant;
+        _company = company;
     }
 
     public async Task<Result<SalesItemPricingDto>> Handle(
@@ -33,7 +40,10 @@ public sealed class GetSalesItemPricingQueryHandler
         CancellationToken ct
     )
     {
-        var item = await _itemRepo.GetByIdLightAsync(request.ItemId, _tenant.TenantId, ct);
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — GetByIdAsync (no Light): se necesita
+        // SpecialTaxConfigurations para resolver ICE, ya no disponible vía TaxConfig.ExciseTaxCode
+        // (legacy compatibility mirror, ya no se lee para decisiones nuevas).
+        var item = await _itemRepo.GetByIdAsync(request.ItemId, _tenant.TenantId, ct);
         if (item is null)
             return Result<SalesItemPricingDto>.NotFound("Ítem no encontrado.");
 
@@ -54,7 +64,21 @@ public sealed class GetSalesItemPricingQueryHandler
             vatName = vatResult?.Name;
         }
 
-        var iceCode = item.TaxConfig.ExciseTaxCode;
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1) — ICE se calcula SOLO si el ítem tiene
+        // ItemSpecialTaxConfiguration activa Y la empresa está marcada responsable de aplicarlo en
+        // ventas — nunca desde TaxConfig.ExciseTaxCode.
+        var iceConfig = item.SpecialTaxConfigurations.FirstOrDefault(c =>
+            c.IsActive && c.SriTaxCategoryCode == SriTaxCategoryCodes.Ice
+        );
+        var companyResponsibleCodes = await _companyTaxRepo.GetResponsibleSriTaxCategoryCodesAsync(
+            _company.CompanyId,
+            _tenant.TenantId,
+            ct
+        );
+        var iceCode =
+            iceConfig is not null && companyResponsibleCodes.Contains(SriTaxCategoryCodes.Ice)
+                ? iceConfig.TaxCatalogCode
+                : null;
         string? iceName = null;
         if (!string.IsNullOrWhiteSpace(iceCode))
         {

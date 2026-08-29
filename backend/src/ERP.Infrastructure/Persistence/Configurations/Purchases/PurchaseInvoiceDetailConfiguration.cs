@@ -140,32 +140,6 @@ public sealed class PurchaseInvoiceDetailConfiguration
             .HasColumnName("snapshot_vat_name")
             .HasMaxLength(PurchaseInvoiceDetail.VatNameMaxLen);
 
-        // ── ICE (fiscal snapshot) ───────────────────────────────────────
-        builder
-            .Property(x => x.IceCode)
-            .HasColumnName("ice_code")
-            .HasMaxLength(PurchaseInvoiceDetail.IceCodeMaxLen);
-        builder
-            .Property(x => x.IceRate)
-            .HasColumnName("ice_rate")
-            .HasColumnType("numeric(5,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.IceAmount)
-            .HasColumnName("ice_amount")
-            .HasColumnType("numeric(18,2)")
-            .IsRequired();
-        builder
-            .Property(x => x.SnapshotIceName)
-            .HasColumnName("snapshot_ice_name")
-            .HasMaxLength(PurchaseInvoiceDetail.IceNameMaxLen);
-        builder
-            .Property(x => x.IceCalculationType)
-            .HasColumnName("ice_calculation_type")
-            .HasConversion<int>()
-            .HasDefaultValue(SriTaxCalculationType.Percentage)
-            .IsRequired();
-
         // ── Warehouse (logistic reference) ──────────────────────────────
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id");
         builder
@@ -207,6 +181,15 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder.Ignore(x => x.IrbpnrRate);
         builder.Ignore(x => x.SnapshotIrbpnrName);
         builder.Ignore(x => x.IrbpnrAmount);
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) — Ice* pasan a legacy compatibility
+        // mirror computado desde _taxes (mismo tratamiento que Irbpnr* arriba). Las columnas
+        // físicas ice_code/ice_rate/ice_amount/ice_calculation_type/snapshot_ice_name NO se
+        // eliminan en esta fase (ADR-032 §7, Fase 7 pendiente) — quedan huérfanas, ya no mapeadas.
+        builder.Ignore(x => x.IceCode);
+        builder.Ignore(x => x.IceRate);
+        builder.Ignore(x => x.IceAmount);
+        builder.Ignore(x => x.SnapshotIceName);
+        builder.Ignore(x => x.IceCalculationType);
 
         // ── Relationships ───────────────────────────────────────────────
         builder

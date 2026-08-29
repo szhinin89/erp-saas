@@ -51,18 +51,22 @@ public sealed class SalesReturnDetail : IMustHaveTenant
     public decimal VatRate { get; private set; }
     public decimal VatAmount { get; private set; }
 
-    // ── ICE (snapshot heredado de la factura original) ──────────────────
-    public string? IceCode { get; private set; }
-    public decimal IceRate { get; private set; }
-    public decimal IceAmount { get; private set; }
+    // ── ICE — TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Fase 3) ────────
+    // Legacy compatibility mirror: solo lectura, derivados de _taxes — mismo patrón exacto que
+    // IrbpnrCode/IrbpnrRate/IrbpnrAmount (abajo). Nunca se escriben directamente; Create() escribe
+    // únicamente a _taxes.
+    public string? IceCode => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.TaxRateCode;
+    public decimal IceRate => _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.Rate ?? 0m;
+    public decimal IceAmount => _taxes.Where(t => t.TaxCode == IceSriTaxCode).Sum(t => t.TaxAmount);
 
     /// <summary>
     /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3) — heredado de la línea de factura
     /// original. Para <c>Specific</c>, <see cref="IceAmount"/> se fija al monto ya prorrateado por
     /// Application (fracción de cantidad) — nunca recalculado desde una tarifa porcentual.
     /// </summary>
-    public SriTaxCalculationType IceCalculationType { get; private set; } =
-        SriTaxCalculationType.Percentage;
+    public SriTaxCalculationType IceCalculationType =>
+        _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode)?.CalculationType
+            ?? SriTaxCalculationType.Percentage;
 
     public bool IsFrozen { get; private set; }
 
@@ -195,9 +199,6 @@ public sealed class SalesReturnDetail : IMustHaveTenant
             DiscountPct = discountPct,
             VatCode = vatCode.Trim(),
             VatRate = vatRate,
-            IceCode = OptionalCode.Normalize(iceCode),
-            IceRate = iceRate,
-            IceCalculationType = iceCalculationType,
             IsFrozen = false,
         };
 
@@ -210,6 +211,8 @@ public sealed class SalesReturnDetail : IMustHaveTenant
                 )
                 : 0m;
 
+        var normalizedIceCode = OptionalCode.Normalize(iceCode);
+        decimal iceAmount;
         if (iceCalculationType == SriTaxCalculationType.Specific)
         {
             // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3) — un ICE específico (p. ej.
@@ -217,8 +220,8 @@ public sealed class SalesReturnDetail : IMustHaveTenant
             // prorrateado por Application (fracción de cantidad sobre el monto original) — mismo
             // criterio que PurchaseInvoiceDetail/SalesInvoiceDetail. Solo se recalcula VatAmount,
             // incluyendo ese ICE ya fijo en la base del IVA (regla SRI).
-            line.IceAmount = iceExactAmount ?? 0m;
-            var vatBase = line.TaxableBase + line.IceAmount;
+            iceAmount = iceExactAmount ?? 0m;
+            var vatBase = line.TaxableBase + iceAmount;
             line.VatAmount =
                 line.VatRate > 0
                     ? Math.Round(
@@ -230,17 +233,26 @@ public sealed class SalesReturnDetail : IMustHaveTenant
         }
         else
         {
-            (line.IceAmount, line.VatAmount, _) = SriTaxCalculator.Compute(
+            (iceAmount, line.VatAmount, _) = SriTaxCalculator.Compute(
                 line.TaxableBase,
                 line.VatRate,
-                !string.IsNullOrWhiteSpace(line.IceCode) ? line.IceRate : 0m
+                !string.IsNullOrWhiteSpace(normalizedIceCode) ? iceRate : 0m
             );
         }
 
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3) — sincroniza IVA/ICE hacia
-        // Taxes, igual que PurchaseInvoiceDetail/SalesInvoiceDetail. Los campos escalares de arriba
-        // quedan como legacy compatibility mirror — nunca fuente de una decisión nueva.
-        line.SyncScalarTaxesIntoCollection();
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-3/Fase 3) — escribe IVA/ICE
+        // directamente en Taxes, igual que PurchaseInvoiceDetail/SalesInvoiceDetail — nunca a un
+        // escalar paralelo.
+        line.SyncVatIntoCollection();
+        if (!string.IsNullOrWhiteSpace(normalizedIceCode))
+            line.UpsertTaxRow(
+                IceSriTaxCode,
+                normalizedIceCode,
+                "ICE",
+                iceCalculationType == SriTaxCalculationType.Percentage ? iceRate : null,
+                iceCalculationType,
+                iceAmount
+            );
 
         return line;
     }
@@ -259,7 +271,7 @@ public sealed class SalesReturnDetail : IMustHaveTenant
         _taxes.AddRange(taxes);
     }
 
-    private void SyncScalarTaxesIntoCollection()
+    private void SyncVatIntoCollection()
     {
         _taxes.RemoveAll(t => t.TaxCode == VatSriTaxCode);
         _taxes.Add(
@@ -274,21 +286,30 @@ public sealed class SalesReturnDetail : IMustHaveTenant
                 VatAmount
             )
         );
+    }
 
-        _taxes.RemoveAll(t => t.TaxCode == IceSriTaxCode);
-        if (!string.IsNullOrWhiteSpace(IceCode))
-            _taxes.Add(
-                SalesReturnDetailTax.Create(
-                    Id,
-                    TenantId,
-                    IceSriTaxCode,
-                    IceCode,
-                    "ICE",
-                    IceCalculationType == SriTaxCalculationType.Percentage ? IceRate : null,
-                    IceCalculationType,
-                    IceAmount
-                )
-            );
+    private void UpsertTaxRow(
+        string taxCode,
+        string taxRateCode,
+        string taxName,
+        decimal? rate,
+        SriTaxCalculationType calculationType,
+        decimal taxAmount
+    )
+    {
+        _taxes.RemoveAll(t => t.TaxCode == taxCode);
+        _taxes.Add(
+            SalesReturnDetailTax.Create(
+                Id,
+                TenantId,
+                taxCode,
+                taxRateCode,
+                taxName,
+                rate,
+                calculationType,
+                taxAmount
+            )
+        );
     }
 
     // ── Freeze (called once on SalesReturn.Authorize — irreversible) ────

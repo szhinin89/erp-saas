@@ -145,7 +145,15 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                 // guardado de la línea de venta (fuera de alcance de este read-model batch).
                 i.BaseSalePrice,
                 i.TaxConfig.SaleVatCode,
-                i.TaxConfig.ExciseTaxCode,
+                // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — ICE se resuelve desde
+                // ItemSpecialTaxConfiguration, no desde TaxConfig.ExciseTaxCode (legacy
+                // compatibility mirror, ya no se lee para decisiones nuevas).
+                i.SpecialTaxConfigurations.Where(c =>
+                        c.IsActive
+                        && c.SriTaxCategoryCode == ERP.Domain.Modules.Purchases.SriTaxCategoryCodes.Ice
+                    )
+                    .Select(c => c.TaxCatalogCode)
+                    .FirstOrDefault(),
                 i.DefaultUomCode,
                 i.PackagingLevels.Where(p => p.IsActive)
                     .OrderBy(p => p.Level)
