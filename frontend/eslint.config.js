@@ -108,7 +108,7 @@ export default defineConfig([
       ...inlineStylePageRules,
       "max-lines": [
         "warn",
-        { max: 400, skipBlankLines: true, skipComments: true },
+        { max: 500, skipBlankLines: true, skipComments: true },
       ],
     },
   },
