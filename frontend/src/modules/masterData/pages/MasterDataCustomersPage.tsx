@@ -13,6 +13,7 @@ import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResu
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
 import { useMasterDataCustomersUiStore } from "../store/masterDataPartnerUiStore";
 import { message } from "../../../lib/messages";
+import { formatApiRequestError } from "../../lib/apiError";
 import type {
   CreateBusinessPartnerBody,
   CustomerConfigBody,
@@ -310,13 +311,34 @@ export function MasterDataCustomersPage() {
     [page, addActivity, setActiveTab, t],
   );
 
+  // CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04: antes se mostraba éxito aunque
+  // page.disableCustomer/activateCustomer fallaran internamente (el hook no relanzaba el error).
+  // Ahora sí relanza, así que message.success solo corre si el await no lanzó — y se agrega
+  // confirmación previa explicando el impacto real.
   const handleDisable = useCallback(
     async (id: string) => {
-      await page.disableCustomer(id);
       const bp = page.customers.find((c) => c.id === id);
-      if (bp) {
-        addActivity(bp.legalName, "disabled");
-        message.info("Cliente desactivado.");
+      const confirmed = await message.confirm({
+        title: "Desactivar cliente",
+        message: bp
+          ? `"${bp.legalName}" dejará de estar disponible para operaciones futuras (nuevas ventas, nuevos documentos). El histórico existente no se elimina.`
+          : "El cliente dejará de estar disponible para operaciones futuras. El histórico existente no se elimina.",
+        variant: "danger",
+        confirmLabel: "Desactivar",
+        cancelLabel: "Cancelar",
+      });
+      if (!confirmed) return;
+
+      try {
+        await page.disableCustomer(id);
+        if (bp) addActivity(bp.legalName, "disabled");
+        message.success("Cliente desactivado correctamente.");
+      } catch (err) {
+        message.error(
+          formatApiRequestError(err, {
+            generic: "No se pudo desactivar el cliente.",
+          }),
+        );
       }
     },
     [page, addActivity],
@@ -324,11 +346,28 @@ export function MasterDataCustomersPage() {
 
   const handleActivate = useCallback(
     async (id: string) => {
-      await page.activateCustomer(id);
       const bp = page.customers.find((c) => c.id === id);
-      if (bp) {
-        addActivity(bp.legalName, "enabled");
-        message.info("Cliente activado.");
+      const confirmed = await message.confirm({
+        title: "Activar cliente",
+        message: bp
+          ? `"${bp.legalName}" volverá a estar disponible para operaciones futuras (nuevas ventas, nuevos documentos).`
+          : "El cliente volverá a estar disponible para operaciones futuras.",
+        variant: "warning",
+        confirmLabel: "Activar",
+        cancelLabel: "Cancelar",
+      });
+      if (!confirmed) return;
+
+      try {
+        await page.activateCustomer(id);
+        if (bp) addActivity(bp.legalName, "enabled");
+        message.success("Cliente activado correctamente.");
+      } catch (err) {
+        message.error(
+          formatApiRequestError(err, {
+            generic: "No se pudo activar el cliente.",
+          }),
+        );
       }
     },
     [page, addActivity],

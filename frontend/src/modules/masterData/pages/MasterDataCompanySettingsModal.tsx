@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 import {
   ZHBtn,
   ZHField,
@@ -99,12 +100,35 @@ export function MasterDataCompanySettingsModal({
     }
   });
 
-  const handleBlock = (e: React.FormEvent) => {
+  const handleBlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blockReason.trim()) return;
-    onBlock(blockReason.trim());
+    const reason = blockReason.trim();
+    if (!reason) return;
+
+    const confirmed = await message.confirm({
+      title: "Bloquear en esta empresa",
+      message: `"${partner.legalName}" quedará bloqueado en esta empresa: no podrá operar (nuevas ventas/compras, nuevos documentos) hasta que se desbloquee. Motivo: "${reason}".`,
+      variant: "danger",
+      confirmLabel: "Bloquear",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
+    onBlock(reason);
     setShowBlockForm(false);
     setBlockReason("");
+  };
+
+  const handleUnblock = async () => {
+    const confirmed = await message.confirm({
+      title: "Desbloquear",
+      message: `"${partner.legalName}" volverá a poder operar normalmente en esta empresa (nuevas ventas/compras, nuevos documentos).`,
+      variant: "warning",
+      confirmLabel: "Desbloquear",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+    onUnblock();
   };
 
   return (
@@ -225,7 +249,7 @@ export function MasterDataCompanySettingsModal({
                 variant="destructive"
                 size="sm"
                 type="button"
-                onClick={handleBlock}
+                onClick={(e) => void handleBlock(e)}
                 disabled={saving || !blockReason.trim()}
               >
                 Confirmar bloqueo
@@ -241,7 +265,7 @@ export function MasterDataCompanySettingsModal({
               size="sm"
               type="button"
               disabled={saving}
-              onClick={onUnblock}
+              onClick={() => void handleUnblock()}
             >
               {saving ? "Desbloqueando..." : "Desbloquear"}
             </ZHBtn>

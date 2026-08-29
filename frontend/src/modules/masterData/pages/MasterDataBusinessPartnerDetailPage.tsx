@@ -23,6 +23,7 @@ import {
 import { message } from "../../../lib/messages";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../lib/validationErrors";
+import { formatApiRequestError } from "../../lib/apiError";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { geographyService, type GeoOption } from "../api/geographyService";
@@ -328,15 +329,37 @@ export function MasterDataBusinessPartnerDetailPage() {
   });
 
   const toggleLoc = async (loc: BpLocationDto) => {
-    if (!id) return;
+    if (!id || saving) return;
+
+    const confirmed = await message.confirm({
+      title: loc.isActive ? `Desactivar "${loc.name}"` : `Activar "${loc.name}"`,
+      message: loc.isActive
+        ? `"${loc.name}" dejará de estar disponible para uso operativo (nuevos documentos, envíos). El histórico no se elimina.`
+        : `"${loc.name}" volverá a estar disponible para uso operativo.`,
+      variant: loc.isActive ? "danger" : "warning",
+      confirmLabel: loc.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setSaving(true);
+    setActionError(null);
     try {
       if (loc.isActive)
         await businessPartnerFacade.deactivateLocation(id, loc.id);
       else await businessPartnerFacade.activateLocation(id, loc.id);
       await reload();
-    } catch {
-      setActionError("Error al cambiar estado de la ubicación.");
+      message.success(
+        loc.isActive
+          ? "Ubicación desactivada correctamente."
+          : "Ubicación activada correctamente.",
+      );
+    } catch (err) {
+      const errorMessage = formatApiRequestError(err, {
+        generic: "Error al cambiar estado de la ubicación.",
+      });
+      setActionError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -345,11 +368,17 @@ export function MasterDataBusinessPartnerDetailPage() {
   const setPrimaryLoc = async (loc: BpLocationDto) => {
     if (!id) return;
     setSaving(true);
+    setActionError(null);
     try {
       await businessPartnerFacade.setLocationPrimary(id, loc.id);
       await reload();
-    } catch {
-      setActionError("Error al marcar como principal.");
+      message.success(`"${loc.name}" marcada como ubicación principal.`);
+    } catch (err) {
+      const errorMessage = formatApiRequestError(err, {
+        generic: "Error al marcar como principal.",
+      });
+      setActionError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -451,15 +480,39 @@ export function MasterDataBusinessPartnerDetailPage() {
   });
 
   const toggleCon = async (con: BpContactDto) => {
-    if (!id) return;
+    if (!id || saving) return;
+
+    const confirmed = await message.confirm({
+      title: con.isActive
+        ? `Desactivar "${con.fullName}"`
+        : `Activar "${con.fullName}"`,
+      message: con.isActive
+        ? `"${con.fullName}" dejará de estar disponible para uso operativo (notificaciones, contacto comercial). El histórico no se elimina.`
+        : `"${con.fullName}" volverá a estar disponible para uso operativo.`,
+      variant: con.isActive ? "danger" : "warning",
+      confirmLabel: con.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setSaving(true);
+    setActionError(null);
     try {
       if (con.isActive)
         await businessPartnerFacade.deactivateContact(id, con.id);
       else await businessPartnerFacade.activateContact(id, con.id);
       await reload();
-    } catch {
-      setActionError("Error al cambiar estado del contacto.");
+      message.success(
+        con.isActive
+          ? "Contacto desactivado correctamente."
+          : "Contacto activado correctamente.",
+      );
+    } catch (err) {
+      const errorMessage = formatApiRequestError(err, {
+        generic: "Error al cambiar estado del contacto.",
+      });
+      setActionError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -468,11 +521,17 @@ export function MasterDataBusinessPartnerDetailPage() {
   const setPrimaryCon = async (con: BpContactDto) => {
     if (!id) return;
     setSaving(true);
+    setActionError(null);
     try {
       await businessPartnerFacade.setContactPrimary(id, con.id);
       await reload();
-    } catch {
-      setActionError("Error al marcar como principal.");
+      message.success(`"${con.fullName}" marcado como contacto principal.`);
+    } catch (err) {
+      const errorMessage = formatApiRequestError(err, {
+        generic: "Error al marcar como principal.",
+      });
+      setActionError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -481,13 +540,29 @@ export function MasterDataBusinessPartnerDetailPage() {
   // ── Role revoke ────────────────────────────────────────────────────────────
 
   const revokeRole = async (role: BusinessPartnerRoleDto) => {
-    if (!id) return;
+    if (!id || saving) return;
+
+    const confirmed = await message.confirm({
+      title: `Revocar rol "${role.roleLabel}"`,
+      message: `El socio de negocio dejará de operar bajo el rol "${role.roleLabel}". El socio de negocio en sí no se elimina — solo deja de tener este rol activo.`,
+      variant: "danger",
+      confirmLabel: "Revocar rol",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     setSaving(true);
+    setActionError(null);
     try {
       await businessPartnerFacade.revokeRole(id, role.id);
       await reload();
-    } catch {
-      setActionError("Error al revocar el rol.");
+      message.success(`Rol "${role.roleLabel}" revocado correctamente.`);
+    } catch (err) {
+      const errorMessage = formatApiRequestError(err, {
+        generic: "Error al revocar el rol.",
+      });
+      setActionError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }

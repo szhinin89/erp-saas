@@ -14,6 +14,7 @@ import type {
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 
 function toIsActiveParam(status: BusinessPartnerStatusFilter): boolean | undefined {
   if (status === "active") return true;
@@ -245,6 +246,10 @@ export function useMasterDataSuppliersPage() {
 
   // ── Inline actions ─────────────────────────────────────────────────────────
 
+  // CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04: antes solo capturaba el error en
+  // `inlineError` sin relanzarlo — el `await` del caller (handleDisable/handleActivate en
+  // MasterDataSuppliersPage.tsx) nunca veía el fallo y mostraba éxito igual. Ahora relanza para
+  // que el caller decida el mensaje (message.success solo si esto no lanza).
   const disableSupplier = async (id: string) => {
     setSaving(true);
     setInlineError(null);
@@ -257,6 +262,7 @@ export function useMasterDataSuppliersPage() {
           generic: "Error al procesar la operación.",
         }),
       );
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -274,6 +280,7 @@ export function useMasterDataSuppliersPage() {
           generic: "Error al procesar la operación.",
         }),
       );
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -343,6 +350,7 @@ export function useMasterDataSuppliersPage() {
     try {
       await businessPartnerFacade.blockBusinessPartner(id, { reason });
       await openSettings({ ...settingsBp!, id });
+      message.success("Cliente/proveedor bloqueado correctamente.");
     } catch (err) {
       setModalError(
         formatApiRequestError(err, {
@@ -360,6 +368,7 @@ export function useMasterDataSuppliersPage() {
     try {
       await businessPartnerFacade.unblockBusinessPartner(id);
       await openSettings({ ...settingsBp!, id });
+      message.success("Cliente/proveedor desbloqueado correctamente.");
     } catch (err) {
       setModalError(
         formatApiRequestError(err, {

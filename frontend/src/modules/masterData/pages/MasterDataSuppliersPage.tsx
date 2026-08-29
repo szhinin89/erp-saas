@@ -36,6 +36,7 @@ import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { useSriPaymentMethods } from "../api/useSriPaymentMethods";
+import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
 
@@ -488,13 +489,34 @@ export function MasterDataSuppliersPage() {
     [page, addActivity, setActiveTab],
   );
 
+  // CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04: antes se mostraba éxito aunque
+  // page.disableSupplier/activateSupplier fallaran internamente (el hook no relanzaba el error).
+  // Ahora sí relanza, así que message.success solo corre si el await no lanzó — y se agrega
+  // confirmación previa explicando el impacto real.
   const handleDisable = useCallback(
     async (id: string) => {
-      await page.disableSupplier(id);
       const bp = page.suppliers.find((s) => s.id === id);
-      if (bp) {
-        addActivity(bp.legalName, "disabled");
-        message.info("Proveedor desactivado.");
+      const confirmed = await message.confirm({
+        title: "Desactivar proveedor",
+        message: bp
+          ? `"${bp.legalName}" dejará de estar disponible para operaciones futuras (nuevas compras, nuevos documentos). El histórico existente no se elimina.`
+          : "El proveedor dejará de estar disponible para operaciones futuras. El histórico existente no se elimina.",
+        variant: "danger",
+        confirmLabel: "Desactivar",
+        cancelLabel: "Cancelar",
+      });
+      if (!confirmed) return;
+
+      try {
+        await page.disableSupplier(id);
+        if (bp) addActivity(bp.legalName, "disabled");
+        message.success("Proveedor desactivado correctamente.");
+      } catch (err) {
+        message.error(
+          formatApiRequestError(err, {
+            generic: "No se pudo desactivar el proveedor.",
+          }),
+        );
       }
     },
     [page, addActivity],
@@ -502,11 +524,28 @@ export function MasterDataSuppliersPage() {
 
   const handleActivate = useCallback(
     async (id: string) => {
-      await page.activateSupplier(id);
       const bp = page.suppliers.find((s) => s.id === id);
-      if (bp) {
-        addActivity(bp.legalName, "enabled");
-        message.info("Proveedor activado.");
+      const confirmed = await message.confirm({
+        title: "Activar proveedor",
+        message: bp
+          ? `"${bp.legalName}" volverá a estar disponible para operaciones futuras (nuevas compras, nuevos documentos).`
+          : "El proveedor volverá a estar disponible para operaciones futuras.",
+        variant: "warning",
+        confirmLabel: "Activar",
+        cancelLabel: "Cancelar",
+      });
+      if (!confirmed) return;
+
+      try {
+        await page.activateSupplier(id);
+        if (bp) addActivity(bp.legalName, "enabled");
+        message.success("Proveedor activado correctamente.");
+      } catch (err) {
+        message.error(
+          formatApiRequestError(err, {
+            generic: "No se pudo activar el proveedor.",
+          }),
+        );
       }
     },
     [page, addActivity],
