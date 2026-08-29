@@ -4,19 +4,23 @@ using ERP.Application.Navigation;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Kernel;
+using ERP.Domain.Kernel.Security;
 using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
 /// <summary>
-/// SECURITY-PERMISSION-SCOPE-01 (pendiente, deuda documentada — no implementado aquí): hoy este
-/// handler solo rechaza permisos inexistentes en <see cref="KernelRegistry.AssignablePermissionKeys"/>.
-/// No valida el alcance del usuario que asigna (un Admin de empresa puede hoy asignar cualquier
-/// permiso del catálogo, incluidos los de alcance SuperAdmin/global — no hay jerarquía de roles
-/// aplicada aquí) ni restricción real por plan SaaS (<see cref="RejectedPermission"/>/
-/// <c>rejected</c> se declara pero nunca se puebla — línea 76, siempre queda vacío). Implementar
-/// ambos requiere: (1) un modelo de alcance de rol del asignador, (2) mapeo permiso↔feature de
-/// plan, y tests dedicados — ver también el mismo gap en
+/// SECURITY-PERMISSION-SCOPE-01: rechaza permisos inexistentes (no declarados en
+/// <see cref="KernelRegistry.Permissions"/>) y permisos no asignables (declarados pero fuera de
+/// <see cref="KernelRegistry.AssignablePermissionKeys"/>) en pasos separados, y aplica una regla
+/// anti-escalamiento — un asignador sin rol <see cref="SecurityRoles.Admin"/> nunca puede otorgar
+/// (<c>IsAllowed = true</c>) un permiso que él mismo no tiene efectivo en su contexto operativo
+/// actual (<see cref="ICompanyContextProvider"/> + <see cref="IEffectivePermissionKeysProvider"/>).
+/// Revocar (<c>IsAllowed = false</c>) no escala privilegios y no pasa por este chequeo.
+/// No implementa restricción por plan/entitlement SaaS externo: eso es deuda del futuro
+/// <c>IExternalEntitlementService</c> (SaaS es una plataforma externa conectada por API, fuera del
+/// alcance de este handler) — <see cref="RejectedPermission"/>/<c>rejected</c> se declara pero
+/// sigue sin poblarse aquí. Ver el mismo gap de plan en
 /// <see cref="GetProfilePermissionAuditHandler"/> (todo permiso se reporta como <c>Effective</c>).
 /// </summary>
 public class UpsertProfilePermissionsHandler
@@ -27,13 +31,17 @@ public class UpsertProfilePermissionsHandler
     private readonly ICurrentUser _currentUser;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
     private readonly INavigationBuilder _navigationBuilder;
+    private readonly ICompanyContextProvider _companyContext;
+    private readonly IEffectivePermissionKeysProvider _effectivePermissionKeys;
 
     public UpsertProfilePermissionsHandler(
         IAccessRepository repo,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IPermissionsCacheInvalidator permissionsCache,
-        INavigationBuilder navigationBuilder
+        INavigationBuilder navigationBuilder,
+        ICompanyContextProvider companyContext,
+        IEffectivePermissionKeysProvider effectivePermissionKeys
     )
     {
         _repo = repo;
@@ -41,6 +49,8 @@ public class UpsertProfilePermissionsHandler
         _currentUser = currentUser;
         _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
+        _companyContext = companyContext;
+        _effectivePermissionKeys = effectivePermissionKeys;
     }
 
     public Task<Result<PermissionUpsertResultDto>> HandleAsync(
@@ -59,19 +69,82 @@ public class UpsertProfilePermissionsHandler
         if (command.Items is null || command.Items.Count == 0)
             return Result<PermissionUpsertResultDto>.Failure("Debe enviar al menos 1 permiso.");
 
-        // ADMIN-PERMISSIONS-SSOT-KERNEL-02: rechazo atómico — si algún permiso no existe en el
-        // catálogo derivado del Kernel Registry, no se guarda nada (nunca un guardado parcial de
-        // los válidos). ValidationError mapea a 422 vía ApiResultExtensions.MapFailure.
-        var unknownKeys = command
+        // ADMIN-PERMISSIONS-SSOT-KERNEL-02 / SECURITY-PERMISSION-SCOPE-01: rechazo atómico — si
+        // algún permiso no existe o no es asignable, no se guarda nada (nunca un guardado parcial
+        // de los válidos). ValidationError mapea a 422 vía ApiResultExtensions.MapFailure.
+        var requestedKeys = command
             .Items.Select(i => i.PermissionKey?.Trim() ?? string.Empty)
-            .Where(k => k.Length > 0 && !KernelRegistry.AssignablePermissionKeys.Contains(k))
+            .Where(k => k.Length > 0)
             .Distinct()
             .ToList();
-        if (unknownKeys.Count > 0)
+
+        var nonExistentKeys = requestedKeys
+            .Where(k => !KernelRegistry.Permissions.Contains(k, StringComparer.Ordinal))
+            .ToList();
+        if (nonExistentKeys.Count > 0)
             return Result<PermissionUpsertResultDto>.Failure(
-                $"Permiso(s) desconocido(s): {string.Join(", ", unknownKeys)}.",
+                $"Permiso(s) inexistente(s): {string.Join(", ", nonExistentKeys)}.",
                 ApiResponseCodes.Common.ValidationError
             );
+
+        var nonAssignableKeys = requestedKeys
+            .Where(k => !KernelRegistry.AssignablePermissionKeys.Contains(k))
+            .ToList();
+        if (nonAssignableKeys.Count > 0)
+            return Result<PermissionUpsertResultDto>.Failure(
+                $"Permiso(s) no asignable(s): {string.Join(", ", nonAssignableKeys)}.",
+                ApiResponseCodes.Common.ValidationError
+            );
+
+        // SECURITY-PERMISSION-SCOPE-01: anti-escalamiento — un asignador sin rol Admin (bypass
+        // total dentro del tenant, igual que en RuntimePermissionAuthorizer) no puede otorgar un
+        // permiso que él mismo no tiene efectivo en su contexto operativo actual. Revocar
+        // (IsAllowed = false) nunca escala privilegios, así que no pasa por este chequeo.
+        if (!string.Equals(_currentUser.Role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            var grantingKeys = command
+                .Items.Where(i => i.IsAllowed && !string.IsNullOrWhiteSpace(i.PermissionKey))
+                .Select(i => i.PermissionKey.Trim())
+                .Distinct()
+                .ToList();
+
+            if (grantingKeys.Count > 0)
+            {
+                var assignerContext = await _companyContext.ResolveOperationalForCurrentUserAsync(
+                    cancellationToken
+                );
+                if (
+                    assignerContext is null
+                    || !assignerContext.IsActiveMembership
+                    || assignerContext.ProfileId is null
+                )
+                    return Result<PermissionUpsertResultDto>.Failure(
+                        "No se pudo resolver el contexto operativo del usuario que asigna.",
+                        ApiResponseCodes.Common.Forbidden
+                    );
+
+                var assignerAllowedKeys = await _effectivePermissionKeys.GetAllowedKeysAsync(
+                    _currentTenant.TenantId,
+                    assignerContext.CompanyId,
+                    _currentUser.UserId,
+                    assignerContext.ProfileId.Value,
+                    cancellationToken
+                );
+                var assignerAllowedSet = new HashSet<string>(
+                    assignerAllowedKeys,
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+                var outOfScopeKeys = grantingKeys
+                    .Where(k => !assignerAllowedSet.Contains(k))
+                    .ToList();
+                if (outOfScopeKeys.Count > 0)
+                    return Result<PermissionUpsertResultDto>.Failure(
+                        $"No puede asignar permiso(s) fuera de su propio alcance: {string.Join(", ", outOfScopeKeys)}.",
+                        ApiResponseCodes.Common.Forbidden
+                    );
+            }
+        }
 
         var profile = await _repo.GetProfileByIdAsync(
             _currentTenant.TenantId,

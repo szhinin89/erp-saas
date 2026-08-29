@@ -4,6 +4,18 @@
 
 ---
 
+## SECURITY-PERMISSION-SCOPE-01 — Anti-escalamiento en asignación de permisos + punto de extensión SaaS externo (2026-08-29)
+
+**Estado: COMPLETADO (alcance acotado).** Cierra la deuda de seguridad interna documentada en NAV-PERMISSION-HIERARCHY-SSOT-01 sin introducir ningún concepto de planes/billing/SuperAdmin — la futura plataforma SaaS será externa, conectada por API.
+
+- **Decisión de alcance**: no existe (ni existía) un rol "SuperAdmin"/scope "global" en el Kernel Registry (`SecurityRoles` solo define `Admin`/`User`, y `Admin` es por membresía empresa↔usuario, no tenant-wide) — el equipo confirmó no inventar esa jerarquía ahora y diferirla a cuando la plataforma SaaS externa defina sus propios scopes.
+- **`UpsertProfilePermissionsHandler`**: split del rechazo atómico en dos pasos distinguibles — inexistente (no está en `KernelRegistry.Permissions`) vs. no asignable (existe pero fuera de `KernelRegistry.AssignablePermissionKeys`). Nuevo chequeo anti-escalamiento: un asignador sin rol `SecurityRoles.Admin` nunca puede otorgar (`IsAllowed = true`) un permiso que él mismo no tenga efectivo en su propio contexto operativo (`ICompanyContextProvider` + `IEffectivePermissionKeysProvider`, mismo patrón que `GetMyPermissionsHandler`/`RuntimePermissionAuthorizer`); revocar no pasa por este chequeo (nunca escala privilegios). `Admin` sigue con bypass total, igual que en `RuntimePermissionAuthorizer`.
+- **Preparación SaaS externo (NoOp, sin acoplar)**: `IExternalEntitlementService`/`NoOpExternalEntitlementService` nuevos en `ERP.Application.Modules.Integration` (siempre permisivo, registrado en DI) — puerto/adaptador explícitamente documentado como NO modelo de planes internos, NO billing, NO suscripciones, NO bloqueo por plan; único seam para cuando exista la plataforma SaaS externa, sin tocar menú/permisos/handlers al reemplazar la implementación. `NavItemAttribute`/`NavigationItemDefinition`/`PermissionCatalogItemDto` ganan metadata opcional `FeatureKey`/`RequiresExternalEntitlement` (default `null`/`false`) — declarativa, no gatea nada todavía. Verificado por grep: no existen `RequiredPlan`/`PlanKey`/`SubscriptionId`/`BillingCycle`/`CommercialPlan`/`SaasBilling` en `backend/src` (ninguna lógica comercial SaaS dentro del ERP Core).
+- **No implementado a propósito** (fuera de alcance de este ticket, explícitamente diferido): jerarquía SuperAdmin/global, tablas de planes, billing, enforcement real de plan en `GetProfilePermissionAuditHandler` (`BlockedByPlan` sigue sin calcularse) — mismo gap documentado, ahora con el punto de extensión ya preparado para cuando se resuelva.
+- **Tests**: `UpsertProfilePermissionsHandlerTests` pasa de 2 a 8 casos (inexistente, no asignable, Admin bypass, escalamiento bloqueado/permitido, revocar sin restricción, contexto operativo no resoluble). Domain 936/936, Application 1266/1266, Architecture 101/101 (incluye `PlatformControlPlaneGuardTests` — sin fugas SaaS/billing en `ERP.Domain`), API 24/24 (subset filtrado por Permission/ProfilePermission — no se re-ejecutó el suite API completo en esta sesión), Infrastructure 494/496 (2 fallas preexistentes no relacionadas con este ticket — `DocumentSequenceExclusivityTests` × 2, `SupplierPaymentSequence`; no confundir con la falla preexistente de `InventoryAdjustmentsEndToEndTests.Escenario3` (Kardex/costeo), que es del suite API y no se tocó en esta sesión).
+
+---
+
 ## NAV-PERMISSION-HIERARCHY-SSOT-01 — Fuente única backend para menú y catálogo de permisos (2026-08-29)
 
 **Estado: COMPLETADO.** El backend queda como fuente única de la jerarquía Módulo → Categoría → Pantalla → Permiso, consumida tal cual tanto por el launcher como por la pantalla de Asignación de permisos.

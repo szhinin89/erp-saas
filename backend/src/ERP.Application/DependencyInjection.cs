@@ -5,6 +5,7 @@ using ERP.Application.Behaviors;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
+using ERP.Application.Modules.Integration;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using FluentValidation;
 using MediatR;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
         services.AddScoped<ICommunicationQueue, CommunicationQueue>();
         services.AddScoped<IRuntimePermissionAuthorizer, RuntimePermissionAuthorizer>();
+        services.AddScoped<IExternalEntitlementService, NoOpExternalEntitlementService>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));

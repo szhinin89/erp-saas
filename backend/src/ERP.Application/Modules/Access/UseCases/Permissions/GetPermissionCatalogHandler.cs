@@ -171,7 +171,9 @@ public sealed class GetPermissionCatalogHandler
             item.RoutePath,
             item.PermissionKey!,
             item.SortOrder,
-            actions
+            actions,
+            item.FeatureKey,
+            item.RequiresExternalEntitlement
         );
     }
 

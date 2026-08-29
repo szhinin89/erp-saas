@@ -19,6 +19,11 @@ namespace ERP.Domain.Kernel.Attributes;
 /// <see cref="Kernel.KernelRegistry.AssignablePermissionKeys"/>. Se deja vacío cuando la pantalla
 /// no tiene acciones granulares reales distintas de su permiso de acceso — no se inventa
 /// granularidad que la API no exige.
+/// <see cref="FeatureKey"/>/<see cref="RequiresExternalEntitlement"/> (SECURITY-PERMISSION-SCOPE-01)
+/// son metadata opcional puramente declarativa para una futura plataforma SaaS externa conectada
+/// por API — hoy no gatean nada (el consumidor de esta metadata,
+/// <c>IExternalEntitlementService</c> en <c>ERP.Application</c>, es NoOp/permisivo). Se deja
+/// vacío/false salvo que la pantalla ya tenga un feature de plan identificado.
 /// </summary>
 [AttributeUsage(AttributeTargets.Field)]
 public sealed class NavItemAttribute(string label) : Attribute
@@ -31,4 +36,6 @@ public sealed class NavItemAttribute(string label) : Attribute
     public string? ParentId { get; init; }
     public string? PermissionsAnyCsv { get; init; }
     public string? RelatedActionPermissionsCsv { get; init; }
+    public string? FeatureKey { get; init; }
+    public bool RequiresExternalEntitlement { get; init; }
 }

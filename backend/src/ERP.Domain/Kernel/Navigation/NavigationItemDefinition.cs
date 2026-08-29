@@ -21,5 +21,7 @@ public sealed record NavigationItemDefinition(
     int SortOrder,
     Guid? ParentItemId = null,
     string? PermissionKeysAnyJson = null,
-    IReadOnlyList<string>? RelatedActionPermissionKeys = null
+    IReadOnlyList<string>? RelatedActionPermissionKeys = null,
+    string? FeatureKey = null,
+    bool RequiresExternalEntitlement = false
 );

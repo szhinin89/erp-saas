@@ -125,7 +125,9 @@ public static class KernelRegistry
                                 )
                             )
                             : null,
-                        SplitCsv(navAttr.RelatedActionPermissionsCsv)
+                        SplitCsv(navAttr.RelatedActionPermissionsCsv),
+                        navAttr.FeatureKey,
+                        navAttr.RequiresExternalEntitlement
                     )
                 );
             }

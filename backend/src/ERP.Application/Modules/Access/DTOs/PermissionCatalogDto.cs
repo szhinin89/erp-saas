@@ -28,13 +28,21 @@ public sealed record PermissionCatalogCategoryDto(
     IReadOnlyList<PermissionCatalogItemDto> Items
 );
 
+/// <summary>
+/// <see cref="FeatureKey"/>/<see cref="RequiresExternalEntitlement"/> (SECURITY-PERMISSION-SCOPE-01)
+/// son metadata opcional para una futura plataforma SaaS externa conectada por API — hoy no
+/// restringen nada (el catálogo sigue siendo 100% asignable; ver
+/// <c>IExternalEntitlementService</c>, NoOp/permisivo).
+/// </summary>
 public sealed record PermissionCatalogItemDto(
     Guid Id,
     string LabelKey,
     string Route,
     string Permission,
     int SortOrder,
-    IReadOnlyList<PermissionCatalogActionDto> Actions
+    IReadOnlyList<PermissionCatalogActionDto> Actions,
+    string? FeatureKey = null,
+    bool RequiresExternalEntitlement = false
 );
 
 public sealed record PermissionCatalogActionDto(
