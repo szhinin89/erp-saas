@@ -55,6 +55,7 @@ export function FinancialDestinationsPage() {
   const [editing, setEditing] = useState<CompanyFinancialDestinationDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterOption[]>([]);
 
@@ -144,11 +145,36 @@ export function FinancialDestinationsPage() {
 
   const onEditValid = editForm.handleSubmit(async (values) => {
     if (!editing) return;
+    const accountChanged = values.accountingAccountId !== editing.accountingAccountId;
+    if (accountChanged) {
+      const previousAccount = accounts.find((a) => a.id === editing.accountingAccountId);
+      const nextAccount = accounts.find((a) => a.id === values.accountingAccountId);
+      const confirmed = await message.confirm({
+        title: "Cambiar cuenta contable del destino",
+        message: (
+          <>
+            <p className="zh-confirm-message">
+              Los cobros y pagos futuros que usen "{editing.name}" se postearán a la nueva cuenta
+              contable. Los asientos ya registrados no se modifican.
+            </p>
+            <p className="zh-confirm-message">
+              Cuenta anterior: <strong>{previousAccount ? `${previousAccount.code} — ${previousAccount.name}` : editing.accountingAccountId}</strong>
+              <br />
+              Cuenta nueva: <strong>{nextAccount ? `${nextAccount.code} — ${nextAccount.name}` : values.accountingAccountId}</strong>
+            </p>
+          </>
+        ),
+        variant: "warning",
+        confirmLabel: "Cambiar cuenta contable",
+        cancelLabel: "Cancelar",
+      });
+      if (!confirmed) return;
+    }
     setSaveError("");
     setSaving(true);
     try {
       if (values.name !== editing.name) await financialDestinationService.rename(editing.id, values.name);
-      if (values.accountingAccountId !== editing.accountingAccountId)
+      if (accountChanged)
         await financialDestinationService.changeAccountingAccount(
           editing.id,
           values.accountingAccountId,
@@ -170,12 +196,26 @@ export function FinancialDestinationsPage() {
   });
 
   const handleToggle = async (d: CompanyFinancialDestinationDto) => {
+    if (togglingId) return;
+    const confirmed = await message.confirm({
+      title: d.isActive ? `Desactivar "${d.name}"` : `Activar "${d.name}"`,
+      message: d.isActive
+        ? `"${d.name}" dejará de estar disponible para nuevos cobros/pagos. El histórico existente no se elimina.`
+        : `"${d.name}" volverá a estar disponible para nuevos cobros/pagos.`,
+      variant: d.isActive ? "danger" : "warning",
+      confirmLabel: d.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+    setTogglingId(d.id);
     try {
       await financialDestinationService.setActive(d.id, !d.isActive);
       message.success(d.isActive ? "Destino desactivado." : "Destino activado.");
       void fetchItems();
     } catch (err: unknown) {
       message.error(formatApiRequestError(err, { generic: "No se pudo cambiar el estado." }));
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -218,6 +258,7 @@ export function FinancialDestinationsPage() {
                       type="button"
                       variant="ghost"
                       size="sm"
+                      disabled={togglingId === d.id}
                       onClick={() => void handleToggle(d)}
                       title={d.isActive ? "Desactivar" : "Activar"}
                     >

@@ -14,6 +14,7 @@ import {
 } from "../schemas/branchSchema";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../lib/validationErrors";
+import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 
 export function emptyBranchForm(): BranchFormValues {
@@ -95,6 +96,7 @@ export function useBranchesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [countries, setCountries] = useState<GeographyItemDto[]>([]);
   const [provinces, setProvinces] = useState<GeographyItemDto[]>([]);
@@ -335,18 +337,38 @@ export function useBranchesPage() {
   });
 
   const toggleDisable = async (row: BranchListItemDto) => {
+    if (togglingId) return;
+    if (row.isActive) {
+      if (!canDelete) return;
+    } else if (!canUpdate) {
+      return;
+    }
+    const confirmed = await message.confirm({
+      title: row.isActive ? `Desactivar "${row.name}"` : `Activar "${row.name}"`,
+      message: row.isActive
+        ? `"${row.name}" dejará de estar disponible para nuevas operaciones. El histórico existente no se elimina.`
+        : `"${row.name}" volverá a estar disponible para nuevas operaciones.`,
+      variant: row.isActive ? "danger" : "warning",
+      confirmLabel: row.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     setError("");
+    setTogglingId(row.id);
     try {
       if (row.isActive) {
-        if (!canDelete) return;
         await branchService.disable(row.id);
       } else {
-        if (!canUpdate) return;
         await branchService.enable(row.id);
       }
       await fetchList();
-    } catch {
-      setError(t("branches.error.toggle"));
+      message.success(row.isActive ? "Sucursal desactivada correctamente." : "Sucursal activada correctamente.");
+    } catch (err: unknown) {
+      const msg = formatApiRequestError(err, { generic: t("branches.error.toggle") });
+      setError(msg);
+      message.error(msg);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -371,6 +393,7 @@ export function useBranchesPage() {
     selectedId,
     saving,
     saveError,
+    togglingId,
     countries,
     provinces,
     cantons,

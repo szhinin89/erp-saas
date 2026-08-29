@@ -24,6 +24,8 @@ import {
   formatRuleGeneral,
 } from "../api/pricingService";
 import { PriceListExceptionsTab } from "./PriceListExceptionsTab";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 
 import "../../../styles/shared/items-catalog.css";
 
@@ -37,6 +39,7 @@ export function PriceListsPage() {
   const [editing, setEditing] = useState<PriceListDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // ── Form state ──
   const [fCode, setFCode] = useState("");
@@ -52,8 +55,10 @@ export function PriceListsPage() {
     try {
       const res = await priceListService.list(undefined, search || undefined);
       setItems(res);
-    } catch {
-      /* ignore */
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, { generic: "No se pudieron cargar las listas de precios." }),
+      );
     }
     setLoading(false);
   }, [search]);
@@ -162,12 +167,31 @@ export function PriceListsPage() {
   };
 
   const handleToggle = async (pl: PriceListDto) => {
+    if (togglingId) return;
+    const confirmed = await message.confirm({
+      title: pl.isActive ? `Desactivar "${pl.name}"` : `Activar "${pl.name}"`,
+      message: pl.isActive
+        ? `"${pl.name}" dejará de estar disponible para nuevas ventas. El histórico existente no se elimina.`
+        : `"${pl.name}" volverá a estar disponible para nuevas ventas.`,
+      variant: pl.isActive ? "danger" : "warning",
+      confirmLabel: pl.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+    setTogglingId(pl.id);
     try {
       if (pl.isActive) await priceListService.disable(pl.id);
       else await priceListService.enable(pl.id);
-      fetchItems();
-    } catch {
-      /* ignore */
+      await fetchItems();
+      message.success(
+        pl.isActive ? "Lista de precios desactivada correctamente." : "Lista de precios activada correctamente.",
+      );
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, { generic: "No se pudo cambiar el estado de la lista de precios." }),
+      );
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -293,7 +317,8 @@ export function PriceListsPage() {
                         icon={pl.isActive ? "toggle_off" : "toggle_on"}
                         title={pl.isActive ? "Desactivar" : "Activar"}
                         variant={pl.isActive ? "danger" : "success"}
-                        onClick={() => handleToggle(pl)}
+                        disabled={togglingId === pl.id}
+                        onClick={() => void handleToggle(pl)}
                       />
                     </td>
                   </tr>

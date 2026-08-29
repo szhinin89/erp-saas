@@ -51,6 +51,7 @@ export function useEstablishmentsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const {
     register,
@@ -208,22 +209,44 @@ export function useEstablishmentsPage() {
 
   // ── Toggle activo/inactivo ────────────────────────────────────────────────
   const toggleDisable = async (item: EstablishmentListItemDto) => {
+    if (togglingId) return;
+    if (item.isActive) {
+      if (!canDisable) return;
+    } else if (!canUpdate) {
+      return;
+    }
+    const confirmed = await message.confirm({
+      title: item.isActive ? `Desactivar "${item.name}"` : `Activar "${item.name}"`,
+      message: item.isActive
+        ? `"${item.name}" dejará de estar disponible para nuevas operaciones y emisión documental. El histórico existente no se elimina.`
+        : `"${item.name}" volverá a estar disponible para nuevas operaciones.`,
+      variant: item.isActive ? "danger" : "warning",
+      confirmLabel: item.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     setError("");
+    setTogglingId(item.id);
     try {
       if (item.isActive) {
-        if (!canDisable) return;
         await establishmentService.disable(item.id);
       } else {
-        if (!canUpdate) return;
         await establishmentService.enable(item.id);
       }
       await fetchList();
-    } catch (err: unknown) {
-      setError(
-        formatApiRequestError(err, {
-          generic: "Error al cambiar el estado del establecimiento.",
-        }),
+      message.success(
+        item.isActive
+          ? "Establecimiento desactivado correctamente."
+          : "Establecimiento activado correctamente.",
       );
+    } catch (err: unknown) {
+      const msg = formatApiRequestError(err, {
+        generic: "Error al cambiar el estado del establecimiento.",
+      });
+      setError(msg);
+      message.error(msg);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -254,6 +277,7 @@ export function useEstablishmentsPage() {
     selectedId,
     saving,
     saveError,
+    togglingId,
     // Sucursales
     branches,
     loadingBranches,

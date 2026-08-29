@@ -13,6 +13,7 @@ import {
 } from "../schemas/emissionPointsPageSchema";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../lib/validationErrors";
+import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 
 type CatalogActiveStatus = "all" | "active" | "inactive";
@@ -46,6 +47,7 @@ export function useEmissionPointsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const {
     register,
@@ -195,18 +197,45 @@ export function useEmissionPointsPage() {
 
   // ── Toggle activo/inactivo ────────────────────────────────────────────────
   const toggleDisable = async (item: EmissionPointListItemDto) => {
+    if (togglingId) return;
+    if (item.isActive) {
+      if (!canDelete) return;
+    } else if (!canUpdate) {
+      return;
+    }
+    const label = item.name ?? item.code;
+    const confirmed = await message.confirm({
+      title: item.isActive ? `Desactivar "${label}"` : `Activar "${label}"`,
+      message: item.isActive
+        ? `"${label}" no estará disponible para emitir nuevos documentos. El histórico existente no se elimina.`
+        : `"${label}" volverá a estar disponible para emitir documentos.`,
+      variant: item.isActive ? "danger" : "warning",
+      confirmLabel: item.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
     setError("");
+    setTogglingId(item.id);
     try {
       if (item.isActive) {
-        if (!canDelete) return;
         await emissionPointsService.disable(item.id);
       } else {
-        if (!canUpdate) return;
         await emissionPointsService.enable(item.id);
       }
       await fetchList();
-    } catch {
-      setError("Error al cambiar el estado del punto de emisión.");
+      message.success(
+        item.isActive
+          ? "Punto de emisión desactivado correctamente."
+          : "Punto de emisión activado correctamente.",
+      );
+    } catch (err: unknown) {
+      const msg = formatApiRequestError(err, {
+        generic: "Error al cambiar el estado del punto de emisión.",
+      });
+      setError(msg);
+      message.error(msg);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -235,6 +264,7 @@ export function useEmissionPointsPage() {
     selectedId,
     saving,
     saveError,
+    togglingId,
     // Establecimientos
     establishments,
     loadingEstablishments,

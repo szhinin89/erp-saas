@@ -16,6 +16,8 @@ import type {
   UpdatePaymentMethodPayload,
 } from "../api/paymentMethodService";
 import { paymentMethodService } from "../api/paymentMethodService";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 import "../../../styles/shared/items-catalog.css";
 
 type Tab = "listado" | "nuevo";
@@ -36,6 +38,7 @@ export function PaymentMethodsPage() {
   const [editing, setEditing] = useState<PaymentMethodDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [fCode, setFCode] = useState("");
   const [fName, setFName] = useState("");
@@ -57,8 +60,10 @@ export function PaymentMethodsPage() {
           )
         : all;
       setItems(filtered);
-    } catch {
-      /* */
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, { generic: "No se pudieron cargar los métodos de pago." }),
+      );
     }
     setLoading(false);
   }, [search]);
@@ -137,11 +142,30 @@ export function PaymentMethodsPage() {
   };
 
   const handleToggle = async (pm: PaymentMethodDto) => {
+    if (togglingId) return;
+    const confirmed = await message.confirm({
+      title: pm.isActive ? `Desactivar "${pm.name}"` : `Activar "${pm.name}"`,
+      message: pm.isActive
+        ? `"${pm.name}" dejará de estar disponible para nuevas operaciones (POS, ventas, cobros). El histórico existente no se elimina.`
+        : `"${pm.name}" volverá a estar disponible para nuevas operaciones.`,
+      variant: pm.isActive ? "danger" : "warning",
+      confirmLabel: pm.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+    setTogglingId(pm.id);
     try {
       await paymentMethodService.toggle(pm.id);
-      fetchItems();
-    } catch {
-      /* */
+      await fetchItems();
+      message.success(
+        pm.isActive ? "Método de pago desactivado correctamente." : "Método de pago activado correctamente.",
+      );
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, { generic: "No se pudo cambiar el estado del método de pago." }),
+      );
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -238,7 +262,8 @@ export function PaymentMethodsPage() {
                         icon={pm.isActive ? "toggle_off" : "toggle_on"}
                         title={pm.isActive ? "Desactivar" : "Activar"}
                         variant={pm.isActive ? "danger" : "success"}
-                        onClick={() => handleToggle(pm)}
+                        disabled={togglingId === pm.id}
+                        onClick={() => void handleToggle(pm)}
                       />
                     </td>
                   </tr>

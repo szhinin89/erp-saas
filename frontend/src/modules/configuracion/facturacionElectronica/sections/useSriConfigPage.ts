@@ -10,6 +10,7 @@ import {
 } from "../api/electronicInvoicingService";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
+import { message } from "../../../../lib/messages";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { useElectronicInvoicingStatusStore } from "../../../../store/electronicInvoicingStatusStore";
 import {
@@ -172,6 +173,7 @@ export function useSriConfigPage() {
       if (result.inspection) setCertInspection(result.inspection);
       sriState.refetch();
       void useElectronicInvoicingStatusStore.getState().refresh();
+      message.success(t("settings.electronicInvoicing.sri.certUploaded", "Certificado cargado correctamente."));
     } catch (err) {
       setCertUploadError(
         formatApiRequestError(err, {
