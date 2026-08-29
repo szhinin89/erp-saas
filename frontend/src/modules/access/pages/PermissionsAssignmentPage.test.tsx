@@ -59,31 +59,38 @@ const CATALOG = {
       code: "suppliers",
       labelKey: "app.nav.group.suppliers",
       sortOrder: 12,
-      items: [
+      categories: [
         {
-          id: "item-supplier-payments",
-          labelKey: "app.nav.item.payables.supplierPayments",
-          route: "/supplier-payments",
-          permission: "supplier-payments.view",
-          sortOrder: 40,
-          actions: [
+          id: "category-payables",
+          labelKey: "app.nav.item.suppliers.payablesGroup",
+          sortOrder: 30,
+          items: [
             {
-              code: "supplier-payments.view",
-              label: "Ver / Acceder",
-              description: "Permite ver y acceder a esta pantalla.",
-              sortOrder: 0,
-            },
-            {
-              code: "supplier-payments.create",
-              label: "Crear",
-              description: "Permite crear nuevos registros.",
-              sortOrder: 1,
-            },
-            {
-              code: "supplier-payments.reverse",
-              label: "Reversar",
-              description: "Permite reversar la operación.",
-              sortOrder: 2,
+              id: "item-supplier-payments",
+              labelKey: "app.nav.item.payables.supplierPayments",
+              route: "/supplier-payments",
+              permission: "supplier-payments.view",
+              sortOrder: 40,
+              actions: [
+                {
+                  code: "supplier-payments.view",
+                  label: "Ver / Acceder",
+                  description: "Permite ver y acceder a esta pantalla.",
+                  sortOrder: 0,
+                },
+                {
+                  code: "supplier-payments.create",
+                  label: "Crear",
+                  description: "Permite crear nuevos registros.",
+                  sortOrder: 1,
+                },
+                {
+                  code: "supplier-payments.reverse",
+                  label: "Reversar",
+                  description: "Permite reversar la operación.",
+                  sortOrder: 2,
+                },
+              ],
             },
           ],
         },
@@ -285,7 +292,7 @@ describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", (
 
     await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
 
-    fireEvent.change(screen.getByPlaceholderText(/Buscar pantalla o grupo/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Buscar módulo, categoría, pantalla/i), {
       target: { value: "no-existe-esta-pantalla" },
     });
 

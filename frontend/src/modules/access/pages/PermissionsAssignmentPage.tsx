@@ -5,6 +5,7 @@ import { profileService, type Profile } from "../api/profileService";
 import {
   adminPermissionsService,
   type PermissionCatalog,
+  type PermissionCatalogCategory,
   type PermissionCatalogItem,
 } from "../api/adminPermissionsService";
 import { ZHField, ZHToggle, ZHFormActions, ZHBtn } from "../../../components/zh/ZHForm";
@@ -19,12 +20,14 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
 
 /**
- * ADMIN-PERMISSIONS-SSOT-KERNEL-02: el árbol de grupos/pantallas/acciones se carga desde
- * `GET /api/v1/admin/permissions/catalog` — derivado 100% de KernelRegistry en el backend
- * (mismo origen que el menú server-driven). No hay ningún catálogo de permisos hardcodeado en
- * este archivo: agregar un `[NavItem]` nuevo en el Kernel lo hace aparecer aquí automáticamente,
- * sin tocar este componente. No crea usuarios ni perfiles: reutiliza los mismos endpoints ya
- * existentes de AccessProfilesController (GET/PUT .../profiles/{id}/permissions).
+ * ADMIN-PERMISSIONS-SSOT-KERNEL-02 / NAV-HIERARCHY-UNIFY-01: el árbol de grupos/categorías/
+ * pantallas/acciones se carga desde `GET /api/v1/admin/permissions/catalog` — derivado 100% de
+ * KernelRegistry en el backend (mismo origen y misma jerarquía Módulo > Categoría > Pantalla que
+ * el menú lateral server-driven). No hay ningún catálogo de permisos ni regla de categorización
+ * hardcodeada en este archivo: agregar un `[NavItem]` nuevo en el Kernel lo hace aparecer aquí
+ * automáticamente, bajo la categoría que le corresponda, sin tocar este componente. No crea
+ * usuarios ni perfiles: reutiliza los mismos endpoints ya existentes de AccessProfilesController
+ * (GET/PUT .../profiles/{id}/permissions).
  *
  * PERMISSIONS-ASSIGNMENT-UI-COMPACT-03: refactor puramente visual — mismo estado/mismos
  * handlers de guardado/filtro/selección de perfil que antes, solo cambia cómo se presenta cada
@@ -83,7 +86,7 @@ export function PermissionsAssignmentPage() {
   }, [loadCatalog]);
 
   const allItems = useMemo<PermissionCatalogItem[]>(
-    () => catalog?.groups.flatMap((g) => g.items) ?? [],
+    () => catalog?.groups.flatMap((g) => g.categories.flatMap((c) => c.items)) ?? [],
     [catalog],
   );
 
@@ -201,6 +204,34 @@ export function PermissionsAssignmentPage() {
     });
   };
 
+  /* ── Selector masivo por categoría (Nivel 2): mismo mecanismo que markAll/unmarkAll, pero
+     acotado a los actionCodes de una sola categoría — permite marcar/desmarcar toda una
+     categoría del menú (p. ej. "Cuentas por pagar") de una sola vez. ── */
+  const categoryActionCodes = (category: PermissionCatalogCategory) => {
+    const codes = new Set<string>();
+    for (const item of category.items) for (const action of item.actions) codes.add(action.code);
+    return codes;
+  };
+
+  const categorySelectionState = (category: PermissionCatalogCategory): "all" | "none" | "partial" => {
+    const codes = [...categoryActionCodes(category)];
+    if (codes.length === 0) return "none";
+    const activeCount = codes.filter((code) => permState[code]).length;
+    if (activeCount === 0) return "none";
+    if (activeCount === codes.length) return "all";
+    return "partial";
+  };
+
+  const toggleCategoryAll = (category: PermissionCatalogCategory) => {
+    const codes = categoryActionCodes(category);
+    const nextValue = categorySelectionState(category) !== "all";
+    setPermState((state) => {
+      const next = { ...state };
+      for (const code of codes) next[code] = nextValue;
+      return next;
+    });
+  };
+
   const toggleCollapsed = (itemId: string) => {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
@@ -262,7 +293,7 @@ export function PermissionsAssignmentPage() {
     }
   };
 
-  /* ── Filtro por texto sobre grupo/pantalla ───────────────────── */
+  /* ── Filtro por texto sobre grupo/categoría/pantalla ───────────────────── */
   const normalizedFilter = filterText.trim().toLowerCase();
   const visibleGroups = useMemo(() => {
     if (!catalog) return [];
@@ -271,8 +302,15 @@ export function PermissionsAssignmentPage() {
       .map((g) => {
         const groupLabel = t(g.labelKey).toLowerCase();
         if (groupLabel.includes(normalizedFilter)) return g;
-        const items = g.items.filter((i) => t(i.labelKey).toLowerCase().includes(normalizedFilter));
-        return items.length > 0 ? { ...g, items } : null;
+        const categories = g.categories
+          .map((c) => {
+            const categoryLabel = t(c.labelKey).toLowerCase();
+            if (categoryLabel.includes(normalizedFilter)) return c;
+            const items = c.items.filter((i) => t(i.labelKey).toLowerCase().includes(normalizedFilter));
+            return items.length > 0 ? { ...c, items } : null;
+          })
+          .filter((c): c is NonNullable<typeof c> => c !== null);
+        return categories.length > 0 ? { ...g, categories } : null;
       })
       .filter((g): g is NonNullable<typeof g> => g !== null);
   }, [catalog, normalizedFilter, t]);
@@ -368,61 +406,84 @@ export function PermissionsAssignmentPage() {
             visibleGroups.map((group) => (
               <div key={group.code} className="pa-group">
                 <h4 className="pa-group-title">{t(group.labelKey)}</h4>
-                {group.items.map((item) => {
-                  const collapsed = collapsedIds.has(item.id);
-                  const itemLabel = t(item.labelKey);
+                {group.categories.map((category) => {
+                  const selectionState = categorySelectionState(category);
+                  const categoryLabel = t(category.labelKey);
                   return (
-                    <div key={item.id} className="pg-section pa-item-card">
-                      <button
-                        type="button"
-                        className="pg-section-header pa-item-header"
-                        onClick={() => toggleCollapsed(item.id)}
-                        aria-expanded={!collapsed}
-                        aria-label={t(
-                          collapsed
-                            ? "permissionsAssignment.expandItem"
-                            : "permissionsAssignment.collapseItem",
-                          { name: itemLabel },
-                        )}
-                      >
-                        <span className="pg-section-header-left pa-item-header-left">
-                          <span className="material-symbols-outlined pg-section-icon pa-item-chevron">
-                            {collapsed ? "chevron_right" : "expand_more"}
-                          </span>
-                          <span className="pa-item-title-wrap">
-                            <span className="pa-item-title">{itemLabel}</span>
-                            <Badge label={item.route} variant="neutral" code />
-                          </span>
-                        </span>
-                        <Badge
-                          label={t("permissionsAssignment.actionsCount", {
-                            count: item.actions.length,
-                          })}
-                          variant="neutral"
-                        />
-                      </button>
-                      {!collapsed && (
-                        <div className="pg-section-body pa-actions-grid">
-                          {item.actions.map((action, index) => (
-                            <div
-                              key={action.code}
-                              title={action.code}
-                              className={
-                                index === 0
-                                  ? "pa-action-tile pa-action-tile--access"
-                                  : "pa-action-tile pa-action-tile--action"
-                              }
+                    <div key={category.id} className="pa-category">
+                      <div className="pa-category-header">
+                        <span className="pa-category-title">{categoryLabel}</span>
+                        <ZHBtn
+                          variant="ghost"
+                          size="xs"
+                          type="button"
+                          onClick={() => toggleCategoryAll(category)}
+                        >
+                          {t(
+                            selectionState === "all"
+                              ? "permissionsAssignment.category.unmarkAll"
+                              : "permissionsAssignment.category.markAll",
+                          )}
+                        </ZHBtn>
+                      </div>
+                      {category.items.map((item) => {
+                        const collapsed = collapsedIds.has(item.id);
+                        const itemLabel = t(item.labelKey);
+                        return (
+                          <div key={item.id} className="pg-section pa-item-card">
+                            <button
+                              type="button"
+                              className="pg-section-header pa-item-header"
+                              onClick={() => toggleCollapsed(item.id)}
+                              aria-expanded={!collapsed}
+                              aria-label={t(
+                                collapsed
+                                  ? "permissionsAssignment.expandItem"
+                                  : "permissionsAssignment.collapseItem",
+                                { name: itemLabel },
+                              )}
                             >
-                              <ZHToggle
-                                label={action.label}
-                                description={action.description}
-                                value={!!permState[action.code]}
-                                onChange={(checked) => toggleAction(item, action.code, checked)}
+                              <span className="pg-section-header-left pa-item-header-left">
+                                <span className="material-symbols-outlined pg-section-icon pa-item-chevron">
+                                  {collapsed ? "chevron_right" : "expand_more"}
+                                </span>
+                                <span className="pa-item-title-wrap">
+                                  <span className="pa-item-title">{itemLabel}</span>
+                                  <Badge label={item.route} variant="neutral" code />
+                                </span>
+                              </span>
+                              <Badge
+                                label={t("permissionsAssignment.actionsCount", {
+                                  count: item.actions.length,
+                                })}
+                                variant="neutral"
                               />
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            </button>
+                            {!collapsed && (
+                              <div className="pg-section-body pa-actions-grid">
+                                {item.actions.map((action, index) => (
+                                  <div
+                                    key={action.code}
+                                    title={action.code}
+                                    className={
+                                      index === 0
+                                        ? "pa-action-tile pa-action-tile--access"
+                                        : "pa-action-tile pa-action-tile--action"
+                                    }
+                                  >
+                                    <ZHToggle
+                                      label={action.label}
+                                      description={action.description}
+                                      value={!!permState[action.code]}
+                                      onChange={(checked) => toggleAction(item, action.code, checked)}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}

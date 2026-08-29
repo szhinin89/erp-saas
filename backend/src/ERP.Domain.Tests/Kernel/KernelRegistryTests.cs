@@ -94,7 +94,10 @@ public sealed class KernelRegistryTests
 
         var empresasContainer = navigation.Single(n => n.RoutePath == "/settings/companies-group");
         empresasContainer.GroupCode.Should().Be("settings");
-        empresasContainer.ParentItemId.Should().BeNull();
+        // NAV-HIERARCHY-UNIFY-01: "Empresas" pasó a anidarse bajo la categoría "Empresa" (Nivel
+        // 2) junto con Sucursales/Establecimientos/Puntos de emisión/Destinos financieros/
+        // Geografía — ya no es un contenedor de primer nivel del módulo.
+        empresasContainer.ParentItemId.Should().Be(Guid.Parse("7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d"));
         empresasContainer.Id.Should().Be(empresasGroupId);
 
         var companies = navigation.Single(n => n.RoutePath == "/companies");
@@ -168,7 +171,9 @@ public sealed class KernelRegistryTests
         receivables.Should().NotBeNull("cuentas por cobrar debe estar en el menú");
         receivables!.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
         receivables.GroupCode.Should().Be("customers");
-        receivables.ParentItemId.Should().BeNull();
+        // NAV-HIERARCHY-UNIFY-01: ya no queda suelta bajo el módulo — se anida bajo la categoría
+        // contenedora "Cuentas por cobrar" (Nivel 2).
+        receivables.ParentItemId.Should().Be(Guid.Parse("aea32545-8fbc-4c99-9495-6d2873282dd9"));
 
         // Créditos de proveedor es ciclo proveedor — se movió con todo PurchasesModule al nuevo
         // grupo "suppliers", mismo contenedor "Compras" (Id sin cambios).
@@ -188,13 +193,16 @@ public sealed class KernelRegistryTests
         // NAVIGATION-OPERATING-CYCLES-03: condiciones de pago/crédito no son exclusivas de
         // Clientes ni de Proveedores — se movieron a Configuración (catálogos/parámetros
         // transversales), no a ninguno de los dos ciclos.
+        // NAV-HIERARCHY-UNIFY-01: ambas se anidan bajo la categoría "Condiciones comerciales".
+        var commercialTermsGroupId = Guid.Parse("3ac9c729-c29b-4e88-a1eb-b0d8073828c2");
+
         var creditTerms = navigation.Single(n => n.RoutePath == "/finance/credit-terms");
         creditTerms.GroupCode.Should().Be("settings", "credit-terms es un catálogo transversal, vive en Configuración");
-        creditTerms.ParentItemId.Should().BeNull();
+        creditTerms.ParentItemId.Should().Be(commercialTermsGroupId);
 
         var paymentTerms = navigation.Single(n => n.RoutePath == "/master/payment-terms");
         paymentTerms.GroupCode.Should().Be("settings", "payment-terms es un catálogo transversal, vive en Configuración");
-        paymentTerms.ParentItemId.Should().BeNull();
+        paymentTerms.ParentItemId.Should().Be(commercialTermsGroupId);
     }
 
     [Fact]
@@ -238,8 +246,11 @@ public sealed class KernelRegistryTests
             supplierPayments[0].GroupCode,
             "ambos ítems deben compartir el mismo grupo — 'junto a', no anidados entre sí"
         );
-        supplierPayments[0].ParentItemId.Should()
-            .BeNull("son ítems hermanos, no uno contenedor del otro");
+        // NAV-HIERARCHY-UNIFY-01: ambos se anidan bajo la misma categoría "Cuentas por pagar" —
+        // siguen siendo hermanos entre sí (ninguno es contenedor del otro), solo que ahora ese
+        // contenedor común es explícito en vez de ser el módulo directamente.
+        supplierPayments[0].ParentItemId.Should().Be(payables.ParentItemId, "son ítems hermanos bajo la misma categoría, no uno contenedor del otro");
+        payables.ParentItemId.Should().Be(Guid.Parse("40aa3390-e353-4cd4-92fb-3b4f01bee262"));
     }
 
     [Fact]
@@ -256,14 +267,20 @@ public sealed class KernelRegistryTests
 
         suppliersRoutes.Should().BeEquivalentTo(new[]
         {
+            // NAV-HIERARCHY-UNIFY-01: 3 categorías nuevas — Gestión de proveedores/Gastos/
+            // Cuentas por pagar — para que Proveedores/Documentos de Gastos/Catálogo de Gastos/
+            // Cuentas por pagar/Pagos a proveedores dejen de quedar sueltos bajo el módulo.
+            "/masterdata/suppliers/management-group",
             "/masterdata/suppliers",
             "/purchases/operation-group",
             "/purchases",
             "/purchases/reception",
             "/purchases/returns",
             "/finance/supplier-credits",
+            "/expenses/group",
             "/expenses/documents",
             "/expenses/categories",
+            "/payables/group",
             "/payables",
             "/supplier-payments",
             "/purchases/configuration-group",
@@ -285,7 +302,15 @@ public sealed class KernelRegistryTests
             .Select(n => n.RoutePath)
             .ToList();
 
-        customersRoutes.Should().BeEquivalentTo(new[] { "/masterdata/customers", "/finance/receivables" });
+        // NAV-HIERARCHY-UNIFY-01: 2 categorías nuevas — Gestión de clientes/Cuentas por cobrar —
+        // para que ambas pantallas dejen de quedar sueltas bajo el módulo.
+        customersRoutes.Should().BeEquivalentTo(new[]
+        {
+            "/masterdata/customers/management-group",
+            "/masterdata/customers",
+            "/finance/receivables/group",
+            "/finance/receivables",
+        });
     }
 
     [Fact]
@@ -338,11 +363,14 @@ public sealed class KernelRegistryTests
             "/catalog/attribute-definitions",
         };
 
+        // NAV-HIERARCHY-UNIFY-01: ahora se anidan bajo la categoría "Gestión de ítems" — ya no
+        // son ítems de primer nivel sueltos bajo el módulo.
+        var managementGroupId = Guid.Parse("911bc892-ff7a-43d0-b0ff-ff75a747adbe");
         foreach (var route in productsRoutes)
         {
             var item = navigation.Single(n => n.RoutePath == route);
             item.GroupCode.Should().Be("products", $"'{route}' debe pertenecer al módulo products");
-            item.ParentItemId.Should().BeNull($"'{route}' no debe tener contenedor padre");
+            item.ParentItemId.Should().Be(managementGroupId, $"'{route}' debe estar bajo la categoría Gestión de ítems");
         }
 
         var productsModule = KernelRegistry.Modules.Single(m => m.Code == "products");
@@ -568,19 +596,28 @@ public sealed class KernelRegistryTests
         permissionsAssignment.PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.ProfilesView);
         permissionsAssignment.SortOrder.Should().Be(30);
-        permissionsAssignment.ParentItemId.Should().BeNull();
+        // NAV-HIERARCHY-UNIFY-01: se anida bajo la categoría "Usuarios y roles".
+        permissionsAssignment.ParentItemId.Should()
+            .Be(Guid.Parse("bd7b2326-c77b-4534-ad6f-a7edb19827d6"));
     }
 
     [Fact]
-    public void Navigation_admin_group_has_exactly_six_items_all_with_a_permission()
+    public void Navigation_admin_group_has_exactly_six_screens_and_two_categories()
     {
         // ADMINISTRATION-CLEAN-ACCESS-01: Usuarios, Perfiles, Asignación de permisos, Seguridad
-        // administrativa, Sesiones de usuario, Actividad — ni más ni menos, y ninguno visible sin
-        // permiso (guard contra rutas huérfanas o NavItems sin gate).
+        // administrativa, Sesiones de usuario, Actividad — ni más ni menos, y ninguna pantalla
+        // visible sin permiso (guard contra rutas huérfanas o NavItems sin gate).
+        // NAV-HIERARCHY-UNIFY-01: ahora viven bajo 2 categorías contenedoras (Usuarios y roles /
+        // Seguridad) — ninguna queda como ítem plano de primer nivel.
         var adminItems = KernelRegistry.Navigation.Where(n => n.GroupCode == "admin").ToList();
 
-        adminItems.Should().HaveCount(6);
-        adminItems.Should().OnlyContain(n => n.PermissionKey != null);
+        var screens = adminItems.Where(n => n.PermissionKey != null).ToList();
+        var categories = adminItems.Where(n => n.PermissionKey is null).ToList();
+
+        screens.Should().HaveCount(6);
+        screens.Should().OnlyContain(n => n.ParentItemId != null, "ninguna pantalla debe quedar suelta bajo el módulo");
+        categories.Should().HaveCount(2);
+        categories.Should().OnlyContain(n => n.ParentItemId == null, "las categorías son el único nivel de primer orden");
     }
 
     [Fact]
@@ -608,24 +645,31 @@ public sealed class KernelRegistryTests
     {
         // ADMIN-SESSIONS-ACTIVITY-POLISH-01 / ADMINISTRATION-CLEAN-ACCESS-01: Usuarios, Perfiles,
         // Asignación de permisos, Seguridad administrativa, Sesiones de usuario, Actividad — en
-        // ese orden.
-        var expectedRouteOrder = new[]
-        {
-            "/access/users",
-            "/admin/roles",
-            "/admin/permissions",
-            "/admin/security",
-            "/admin/access/sessions",
-            "/admin/activity",
-        };
+        // ese orden. NAV-HIERARCHY-UNIFY-01: ahora agrupadas en 2 categorías (Usuarios y roles /
+        // Seguridad); se verifica el orden dentro de cada categoría por separado.
+        var usersRolesGroupId = Guid.Parse("bd7b2326-c77b-4534-ad6f-a7edb19827d6");
+        var securityGroupId = Guid.Parse("09671d4f-1687-44cd-8d26-c8f0c245957b");
 
-        var actualRouteOrder = KernelRegistry
-            .Navigation.Where(n => n.GroupCode == "admin")
+        var usersRolesOrder = KernelRegistry
+            .Navigation.Where(n => n.GroupCode == "admin" && n.ParentItemId == usersRolesGroupId)
             .OrderBy(n => n.SortOrder)
             .Select(n => n.RoutePath)
             .ToArray();
+        usersRolesOrder.Should().Equal("/access/users", "/admin/roles", "/admin/permissions");
 
-        actualRouteOrder.Should().Equal(expectedRouteOrder);
+        var securityOrder = KernelRegistry
+            .Navigation.Where(n => n.GroupCode == "admin" && n.ParentItemId == securityGroupId)
+            .OrderBy(n => n.SortOrder)
+            .Select(n => n.RoutePath)
+            .ToArray();
+        securityOrder.Should().Equal("/admin/security", "/admin/access/sessions", "/admin/activity");
+
+        var topLevelOrder = KernelRegistry
+            .Navigation.Where(n => n.GroupCode == "admin" && n.ParentItemId is null)
+            .OrderBy(n => n.SortOrder)
+            .Select(n => n.RoutePath)
+            .ToArray();
+        topLevelOrder.Should().Equal("/access/users-roles-group", "/admin/security-group");
     }
 
     [Fact]
@@ -742,6 +786,28 @@ public sealed class KernelRegistryTests
         // PermissionsAnyCsv (contenedor visual). Nunca ninguno de los dos.
         KernelRegistry.Navigation.Should().OnlyContain(
             n => n.PermissionKey != null || !string.IsNullOrEmpty(n.PermissionKeysAnyJson)
+        );
+    }
+
+    [Fact]
+    public void No_screen_with_a_real_permission_is_a_top_level_item_in_the_migrated_modules()
+    {
+        // NAV-HIERARCHY-UNIFY-01: en suppliers/customers/products/accounting/settings/admin,
+        // todo ítem de primer nivel del módulo (ParentItemId == null) debe ser una categoría
+        // contenedora (sin Permission propio) — ninguna pantalla real puede quedar suelta
+        // directamente bajo el módulo. sales/inventory ya cumplían esta regla antes de este
+        // ticket (ver Navigation_sales_and_inventory_expose_their_top_level_containers).
+        var migratedModules = new[] { "suppliers", "customers", "products", "accounting", "settings", "admin" };
+
+        var strayScreens = KernelRegistry
+            .Navigation.Where(n =>
+                migratedModules.Contains(n.GroupCode) && n.ParentItemId == null && n.PermissionKey != null
+            )
+            .Select(n => n.RoutePath)
+            .ToList();
+
+        strayScreens.Should().BeEmpty(
+            "ninguna pantalla real debe quedar suelta directamente bajo el módulo (debe vivir dentro de una categoría)"
         );
     }
 

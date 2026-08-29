@@ -13,6 +13,19 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("suppliers", Icon = "🛒", SortOrder = 12)]
 public static class SuppliersModule
 {
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Gestión de proveedores" — antes Proveedores quedaba
+    // suelto directamente bajo el módulo (Nivel 1). Todo ítem de primer nivel del módulo debe
+    // ser una categoría (Nivel 2); Proveedores pasa a ser su único hijo. Mismo patrón ya usado
+    // por "Compras"/"Configuración"/"Reportes" en este mismo archivo.
+    [NavItem(
+        "Gestión de proveedores",
+        LabelKey = "app.nav.item.suppliers.managementGroup",
+        SortOrder = 5,
+        Id = "6093d90b-221b-41e0-8d6d-25391ec5d4e6",
+        PermissionsAnyCsv = MasterDataPermissions.BusinessPartnersView
+    )]
+    public const string ManagementGroup = "/masterdata/suppliers/management-group";
+
     // Movido desde MasterDataModule — mismo Id/ruta/permiso.
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update/Disable/ConfigureCompany
     // (useMasterDataSuppliersPage.ts canCreate/canUpdate/canDisable/canConfigure,
@@ -24,6 +37,7 @@ public static class SuppliersModule
         LabelKey = "app.nav.item.masterdata.suppliers",
         SortOrder = 5,
         Id = "a1000000-0000-4000-9000-000000000102",
+        ParentId = "6093d90b-221b-41e0-8d6d-25391ec5d4e6",
         RelatedActionPermissionsCsv = MasterDataPermissions.BusinessPartnersCreate + ","
             + MasterDataPermissions.BusinessPartnersUpdate + ","
             + MasterDataPermissions.BusinessPartnersDisable + ","
@@ -87,12 +101,24 @@ public static class SuppliersModule
     public const string SupplierCredits = "/finance/supplier-credits";
 
     // ── Gastos (movido desde ExpensesModule, ítems planos sin cambios) ─────────────────
+    // NAV-HIERARCHY-UNIFY-01: Gastos NO pertenece a Compras — categoría propia, hermana de
+    // "Compras", no anidada dentro de ella.
+    [NavItem(
+        "Gastos",
+        LabelKey = "app.nav.item.suppliers.expensesGroup",
+        SortOrder = 20,
+        Id = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
+        PermissionsAnyCsv = ExpensePermissions.DocumentsView + "," + ExpensePermissions.CatalogView
+    )]
+    public const string ExpensesGroup = "/expenses/group";
+
     [NavItem(
         "Documentos de Gastos",
         Permission = ExpensePermissions.DocumentsView,
         LabelKey = "app.nav.item.expenses.documents",
         SortOrder = 20,
         Id = "e5000000-0000-4000-9000-000000000002",
+        ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
         RelatedActionPermissionsCsv = ExpensePermissions.DocumentsCreate + ","
             + ExpensePermissions.DocumentsUpdate + "," + ExpensePermissions.DocumentsConfirm
     )]
@@ -104,6 +130,7 @@ public static class SuppliersModule
         LabelKey = "app.nav.item.expenses.catalog",
         SortOrder = 21,
         Id = "e5000000-0000-4000-9000-000000000001",
+        ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
         RelatedActionPermissionsCsv = ExpensePermissions.CatalogCreate + ","
             + ExpensePermissions.CatalogUpdate + "," + ExpensePermissions.CatalogActivate + ","
             + ExpensePermissions.CatalogDeactivate
@@ -111,12 +138,24 @@ public static class SuppliersModule
     public const string ExpenseCatalog = "/expenses/categories";
 
     // ── Cuentas por pagar (movido desde PayablesModule) ────────────────────────────────
+    // NAV-HIERARCHY-UNIFY-01: Cuentas por pagar NO pertenece a Compras ni a Gastos — categoría
+    // propia, hermana de ambas.
+    [NavItem(
+        "Cuentas por pagar",
+        LabelKey = "app.nav.item.suppliers.payablesGroup",
+        SortOrder = 30,
+        Id = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
+        PermissionsAnyCsv = PayablesPermissions.View + "," + SupplierPaymentsPermissions.View
+    )]
+    public const string PayablesGroup = "/payables/group";
+
     [NavItem(
         "Cuentas por pagar",
         Permission = PayablesPermissions.View,
         LabelKey = "app.nav.item.payables.list",
         SortOrder = 30,
-        Id = "c9000000-0000-4000-9000-000000000001"
+        Id = "c9000000-0000-4000-9000-000000000001",
+        ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262"
     )]
     public const string Payables = "/payables";
 
@@ -128,6 +167,7 @@ public static class SuppliersModule
         LabelKey = "app.nav.item.payables.supplierPayments",
         SortOrder = 40,
         Id = "c9000000-0000-4000-9000-000000000002",
+        ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
         RelatedActionPermissionsCsv = SupplierPaymentsPermissions.Create + ","
             + SupplierPaymentsPermissions.Reverse
     )]

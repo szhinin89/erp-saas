@@ -18,11 +18,27 @@ public static class SettingsModule
     // perder funcionalidad o mezclar permisos. Se agrupan bajo un contenedor "Empresas" (mismo
     // patrón ya usado en Ventas/Compras/Inventario/Caja) para que el nivel superior de
     // Configuración muestre una sola línea "Empresas", sin borrar ninguna pantalla.
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Empresa" — agrupa todos los catálogos de identidad/
+    // ubicación de empresa (Empresas, Sucursales, Establecimientos, Puntos de emisión, Destinos
+    // financieros, Geografía) para que ninguno quede suelto bajo el módulo Configuración.
+    [NavItem(
+        "Empresa",
+        LabelKey = "app.nav.item.settings.enterpriseGroup",
+        SortOrder = 5,
+        Id = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
+        PermissionsAnyCsv = SettingsPermissions.CompaniesView + "," + SettingsPermissions.CompanyView
+            + "," + SettingsPermissions.BranchesView + "," + SettingsPermissions.EstablishmentsView
+            + "," + SettingsPermissions.EmissionPointsView + ","
+            + SettingsPermissions.FinancialDestinationsView + "," + SettingsPermissions.GeographyView
+    )]
+    public const string EnterpriseGroup = "/settings/enterprise-group";
+
     [NavItem(
         "Empresas",
         LabelKey = "app.nav.item.settings.companiesGroup",
         SortOrder = 5,
         Id = "00000000-0000-4000-8000-000000000105",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         PermissionsAnyCsv = SettingsPermissions.CompaniesView + "," + SettingsPermissions.CompanyView
     )]
     public const string CompaniesGroup = "/settings/companies-group";
@@ -57,6 +73,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.branches",
         SortOrder = 20,
         Id = "a1000000-0000-4000-9000-000000000005",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         RelatedActionPermissionsCsv = SettingsPermissions.BranchesCreate + ","
             + SettingsPermissions.BranchesUpdate + "," + SettingsPermissions.BranchesDelete
     )]
@@ -68,6 +85,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.establishments",
         SortOrder = 30,
         Id = "a1000000-0000-4000-9000-000000000010",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         RelatedActionPermissionsCsv = SettingsPermissions.EstablishmentsCreate + ","
             + SettingsPermissions.EstablishmentsUpdate + "," + SettingsPermissions.EstablishmentsDisable
     )]
@@ -79,6 +97,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.emissionPoints",
         SortOrder = 40,
         Id = "a1000000-0000-4000-9000-00000000000f",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         RelatedActionPermissionsCsv = SettingsPermissions.EmissionPointsCreate + ","
             + SettingsPermissions.EmissionPointsUpdate + "," + SettingsPermissions.EmissionPointsDelete
     )]
@@ -90,9 +109,20 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.financialDestinations",
         SortOrder = 50,
         Id = "a1000000-0000-4000-9000-000000000011",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         RelatedActionPermissionsCsv = SettingsPermissions.FinancialDestinationsManage
     )]
     public const string FinancialDestinations = "/settings/financial-destinations";
+
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Facturación electrónica" — categoría propia.
+    [NavItem(
+        "Facturación electrónica",
+        LabelKey = "app.nav.item.settings.electronicInvoicingGroup",
+        SortOrder = 60,
+        Id = "60530be0-ce1c-4a1c-b1e8-fa5b4256bde7",
+        PermissionsAnyCsv = ElectronicInvoicingPermissions.View
+    )]
+    public const string ElectronicInvoicingGroup = "/settings/electronic-invoicing/group";
 
     // MENU-MODULE-REORG-01: movido desde SalesModule — es configuración transversal (aplica al
     // documento electrónico en general), no exclusiva de Ventas. Mismo permiso; antes derivaba
@@ -104,9 +134,20 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.electronicInvoicing",
         SortOrder = 60,
         Id = "a1000000-0000-4000-9000-000000000014",
+        ParentId = "60530be0-ce1c-4a1c-b1e8-fa5b4256bde7",
         RelatedActionPermissionsCsv = ElectronicInvoicingPermissions.Configure
     )]
     public const string ElectronicInvoicing = "/settings/electronic-invoicing";
+
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Comunicaciones" — categoría propia.
+    [NavItem(
+        "Comunicaciones",
+        LabelKey = "app.nav.item.settings.communicationsGroup",
+        SortOrder = 70,
+        Id = "70727bc1-1744-4ec8-94bf-616fc87600ec",
+        PermissionsAnyCsv = CommunicationsPermissions.View
+    )]
+    public const string CommunicationsGroup = "/settings/communications/group";
 
     [NavItem(
         "Correo SMTP",
@@ -114,9 +155,20 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.communicationsEmail",
         SortOrder = 70,
         Id = "a1000000-0000-4000-9000-000000000012",
+        ParentId = "70727bc1-1744-4ec8-94bf-616fc87600ec",
         RelatedActionPermissionsCsv = CommunicationsPermissions.Configure
     )]
     public const string CommunicationsEmail = "/settings/communications/email";
+
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Sistema" — Parámetros Generales + Carga Inicial.
+    [NavItem(
+        "Sistema",
+        LabelKey = "app.nav.item.settings.systemGroup",
+        SortOrder = 80,
+        Id = "5ece43ac-3228-445b-9bd8-cf86baef2fa8",
+        PermissionsAnyCsv = OperationalPreferencesPermissions.View + "," + InitialLoadPermissions.View
+    )]
+    public const string SystemGroup = "/settings/system-group";
 
     // MENU-FINAL-STRUCTURE-01: renombrado de negocio "Parámetros Generales" (antes
     // "Preferencias operativas") — mismo Id/ruta/permiso, misma pantalla.
@@ -126,6 +178,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.operationalPreferences",
         SortOrder = 80,
         Id = "a1000000-0000-4000-9000-000000000013",
+        ParentId = "5ece43ac-3228-445b-9bd8-cf86baef2fa8",
         RelatedActionPermissionsCsv = OperationalPreferencesPermissions.Configure
     )]
     public const string OperationalPreferences = "/settings/operations";
@@ -135,9 +188,22 @@ public static class SettingsModule
         Permission = SettingsPermissions.GeographyView,
         LabelKey = "app.nav.item.settings.geography",
         SortOrder = 90,
-        Id = "a1000000-0000-4000-9000-000000000006"
+        Id = "a1000000-0000-4000-9000-000000000006",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d"
     )]
     public const string Geography = "/settings/geography";
+
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Condiciones comerciales" — Condiciones de Pago +
+    // Condiciones de Crédito, catálogos transversales (no exclusivos de Clientes ni de
+    // Proveedores) que antes quedaban sueltos bajo el módulo Configuración.
+    [NavItem(
+        "Condiciones comerciales",
+        LabelKey = "app.nav.item.settings.commercialTermsGroup",
+        SortOrder = 92,
+        Id = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
+        PermissionsAnyCsv = MasterDataPermissions.PaymentTermsView + "," + FinancePermissions.View
+    )]
+    public const string CommercialTermsGroup = "/master/commercial-terms-group";
 
     // NAVIGATION-OPERATING-CYCLES-03: movidos desde MasterDataModule — son catálogos/parámetros
     // transversales (no exclusivos de Clientes ni de Proveedores). Mismos Ids/rutas/permisos.
@@ -147,6 +213,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.masterdata.paymentTerms",
         SortOrder = 92,
         Id = "a1000000-0000-4000-9000-000000000103",
+        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
         RelatedActionPermissionsCsv = MasterDataPermissions.PaymentTermsManage
     )]
     public const string PaymentTermsCustomer = "/master/payment-terms";
@@ -160,6 +227,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.finance.creditTerms",
         SortOrder = 94,
         Id = "b2000000-0000-4000-9000-000000000001",
+        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
         RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.Update
     )]
     public const string CreditTerms = "/finance/credit-terms";
@@ -174,6 +242,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.initialLoad",
         SortOrder = 100,
         Id = "3679c0d4-3482-42cb-91dc-c3a270aa0e26",
+        ParentId = "5ece43ac-3228-445b-9bd8-cf86baef2fa8",
         RelatedActionPermissionsCsv = InitialLoadPermissions.Create + "," + InitialLoadPermissions.Confirm
     )]
     public const string InitialLoad = "/initial-load";

@@ -74,19 +74,27 @@ public sealed class AdminPermissionsControllerTests
                     60,
                     new[]
                     {
-                        new PermissionCatalogItemDto(
+                        new PermissionCatalogCategoryDto(
                             Guid.NewGuid(),
-                            "app.nav.item.admin.roles",
-                            "/admin/roles",
-                            "access.profiles.view",
-                            20,
+                            "app.nav.item.admin.usersRolesGroup",
+                            10,
                             new[]
                             {
-                                new PermissionCatalogActionDto(
+                                new PermissionCatalogItemDto(
+                                    Guid.NewGuid(),
+                                    "app.nav.item.admin.roles",
+                                    "/admin/roles",
                                     "access.profiles.view",
-                                    "Ver / Acceder",
-                                    "Permite ver y acceder a esta pantalla.",
-                                    0
+                                    20,
+                                    new[]
+                                    {
+                                        new PermissionCatalogActionDto(
+                                            "access.profiles.view",
+                                            "Ver / Acceder",
+                                            "Permite ver y acceder a esta pantalla.",
+                                            0
+                                        ),
+                                    }
                                 ),
                             }
                         ),

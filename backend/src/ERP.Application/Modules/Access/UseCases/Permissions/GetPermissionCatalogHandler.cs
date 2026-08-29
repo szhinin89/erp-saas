@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Kernel;
@@ -7,15 +9,20 @@ using MediatR;
 namespace ERP.Application.Access.UseCases.Permissions;
 
 /// <summary>
-/// ADMIN-PERMISSIONS-SSOT-KERNEL-02 — construye el catálogo puramente en memoria desde
-/// <see cref="KernelRegistry.Modules"/>/<see cref="KernelRegistry.Navigation"/>: sin acceso a BD,
-/// sin nombre de pantalla/permiso hardcodeado. Agregar un <c>[NavItem]</c> nuevo con
+/// ADMIN-PERMISSIONS-SSOT-KERNEL-02 / NAV-HIERARCHY-UNIFY-01 — construye el catálogo puramente en
+/// memoria desde <see cref="KernelRegistry.Modules"/>/<see cref="KernelRegistry.Navigation"/>: sin
+/// acceso a BD, sin nombre de pantalla/permiso hardcodeado. Agregar un <c>[NavItem]</c> nuevo con
 /// <c>Permission</c> lo hace aparecer aquí automáticamente, sin tocar este archivo.
 ///
-/// Solo se incluyen ítems con <see cref="ERP.Domain.Kernel.Navigation.NavigationItemDefinition.PermissionKey"/>
-/// no nulo — los contenedores puros de menú (que solo usan <c>PermissionsAnyCsv</c>, un OR de
-/// visibilidad) no son un permiso individual asignable. Esto da naturalmente la estructura
-/// Grupo → Pantalla → Acciones de 2 niveles pedida, sin los contenedores intermedios del menú.
+/// Jerarquía de 4 niveles — Grupo (módulo) → Categoría → Pantalla → Acciones — construida sobre
+/// la misma relación <see cref="NavigationItemDefinition.ParentItemId"/> que ya usa
+/// <c>NavigationBuilder</c> para el árbol del menú: una Categoría es cualquier ítem de primer
+/// nivel del módulo (<c>ParentItemId == null</c>) sin <see cref="NavigationItemDefinition.PermissionKey"/>
+/// propio (contenedor puro, visible solo vía <c>PermissionsAnyCsv</c>); sus Pantallas son los
+/// ítems hijos con <c>PermissionKey</c> real. Ningún permiso individual asignable vive fuera de
+/// una categoría: si algún <c>[NavItem]</c> nuevo se registrara sin contenedor padre (bug de
+/// convención, no debería ocurrir tras NAV-HIERARCHY-UNIFY-01), cae en una categoría de respaldo
+/// "Gestión" sintética en vez de perderse o quedar suelto en el catálogo.
 /// </summary>
 [AdminReadModel("Catálogo de permisos asignables derivado del Kernel Registry.")]
 public sealed class GetPermissionCatalogHandler
@@ -57,30 +64,90 @@ public sealed class GetPermissionCatalogHandler
         CancellationToken cancellationToken
     )
     {
-        var itemsByGroup = KernelRegistry
-            .Navigation.Where(n => n.PermissionKey is not null)
-            .GroupBy(n => n.GroupCode);
+        var navigationByModule = KernelRegistry.Navigation.ToLookup(n => n.GroupCode);
 
         var groups = KernelRegistry
-            .Modules.Join(
-                itemsByGroup,
-                m => m.Code,
-                g => g.Key,
-                (m, g) =>
-                    new PermissionCatalogGroupDto(
-                        m.Code,
-                        $"app.nav.group.{m.Code}",
-                        m.SortOrder,
-                        g.OrderBy(n => n.SortOrder)
-                            .Select(BuildItem)
-                            .ToList()
-                    )
-            )
-            .Where(g => g.Items.Count > 0)
+            .Modules.Select(m => new PermissionCatalogGroupDto(
+                m.Code,
+                $"app.nav.group.{m.Code}",
+                m.SortOrder,
+                BuildCategories(m.Code, navigationByModule[m.Code].ToList())
+            ))
+            .Where(g => g.Categories.Count > 0)
             .OrderBy(g => g.SortOrder)
             .ToList();
 
         return Task.FromResult(Result<PermissionCatalogDto>.Success(new PermissionCatalogDto(groups)));
+    }
+
+    private static IReadOnlyList<PermissionCatalogCategoryDto> BuildCategories(
+        string moduleCode,
+        IReadOnlyList<NavigationItemDefinition> moduleItems
+    )
+    {
+        var categories = new List<PermissionCatalogCategoryDto>();
+
+        var topLevelContainers = moduleItems
+            .Where(n => n.ParentItemId is null && n.PermissionKey is null)
+            .OrderBy(n => n.SortOrder);
+
+        foreach (var container in topLevelContainers)
+        {
+            // Recorre todos los descendientes del contenedor, no solo hijos directos — una
+            // categoría puede envolver un sub-contenedor propio (p. ej. "Empresa" envuelve al
+            // contenedor "Empresas", que a su vez agrupa "Mis empresas"/"Datos de la empresa").
+            var items = CollectDescendantScreens(moduleItems, container.Id)
+                .OrderBy(n => n.SortOrder)
+                .Select(BuildItem)
+                .ToList();
+
+            if (items.Count > 0)
+                categories.Add(
+                    new PermissionCatalogCategoryDto(container.Id, container.LabelKey, container.SortOrder, items)
+                );
+        }
+
+        // Respaldo defensivo: un ítem con permiso real que quedó sin categoría contenedora
+        // (no debería ocurrir tras NAV-HIERARCHY-UNIFY-01) no se pierde ni queda suelto — se
+        // agrupa en una categoría sintética "Gestión" propia del módulo.
+        var strayItems = moduleItems
+            .Where(n => n.ParentItemId is null && n.PermissionKey is not null)
+            .OrderBy(n => n.SortOrder)
+            .Select(BuildItem)
+            .ToList();
+
+        if (strayItems.Count > 0)
+            categories.Add(
+                new PermissionCatalogCategoryDto(
+                    DeterministicGuid($"permission-catalog-fallback-category:{moduleCode}"),
+                    "permissionsAssignment.fallbackCategory",
+                    int.MaxValue,
+                    strayItems
+                )
+            );
+
+        return categories;
+    }
+
+    private static IEnumerable<NavigationItemDefinition> CollectDescendantScreens(
+        IReadOnlyList<NavigationItemDefinition> moduleItems,
+        Guid parentId
+    )
+    {
+        foreach (var child in moduleItems.Where(n => n.ParentItemId == parentId))
+        {
+            if (child.PermissionKey is not null)
+                yield return child;
+            else
+                foreach (var descendant in CollectDescendantScreens(moduleItems, child.Id))
+                    yield return descendant;
+        }
+    }
+
+    private static Guid DeterministicGuid(string seed)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seed));
+        return new Guid(hash[..16]);
     }
 
     private static PermissionCatalogItemDto BuildItem(NavigationItemDefinition item)

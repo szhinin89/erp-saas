@@ -47,14 +47,34 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("accounting", Icon = "📒", SortOrder = 46)]
 public static class AccountingModule
 {
+    // NAV-HIERARCHY-UNIFY-01: contenedores de categoría — ningún ítem plano bajo el módulo.
+    [NavItem(
+        "Asientos",
+        LabelKey = "app.nav.item.accounting.journalGroup",
+        SortOrder = 10,
+        Id = "405b951f-84c9-4520-a7be-53d1e52b0cf4",
+        PermissionsAnyCsv = AccountingPermissions.View
+    )]
+    public const string JournalGroup = "/accounting/journal-entries/group";
+
     [NavItem(
         "Asientos contables",
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.journalEntries",
         SortOrder = 10,
-        Id = "ac000000-0000-4000-9000-000000000001"
+        Id = "ac000000-0000-4000-9000-000000000001",
+        ParentId = "405b951f-84c9-4520-a7be-53d1e52b0cf4"
     )]
     public const string JournalEntries = "/accounting/journal-entries";
+
+    [NavItem(
+        "Plan contable",
+        LabelKey = "app.nav.item.accounting.chartGroup",
+        SortOrder = 20,
+        Id = "72e69e8c-e34d-4ee4-b3ff-3568acc7d899",
+        PermissionsAnyCsv = AccountingPermissions.View
+    )]
+    public const string ChartGroup = "/accounting/chart-of-accounts/group";
 
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: a diferencia de Asientos contables/Reportes (solo
     // lectura) y Reglas contables (solo lectura por decisión de 12), Plan de cuentas SÍ tiene
@@ -67,6 +87,7 @@ public static class AccountingModule
         LabelKey = "app.nav.item.accounting.chartOfAccounts",
         SortOrder = 20,
         Id = "ac000000-0000-4000-9000-000000000002",
+        ParentId = "72e69e8c-e34d-4ee4-b3ff-3568acc7d899",
         RelatedActionPermissionsCsv = AccountingPermissions.Create + ","
             + AccountingPermissions.Update + "," + AccountingPermissions.Delete
     )]
@@ -77,16 +98,27 @@ public static class AccountingModule
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.postingRules",
         SortOrder = 25,
-        Id = "ac000000-0000-4000-9000-000000000004"
+        Id = "ac000000-0000-4000-9000-000000000004",
+        ParentId = "72e69e8c-e34d-4ee4-b3ff-3568acc7d899"
     )]
     public const string PostingRules = "/accounting/posting-rules";
+
+    [NavItem(
+        "Reportes",
+        LabelKey = "app.nav.item.accounting.reportsGroup",
+        SortOrder = 30,
+        Id = "5f363c9d-e97e-4a39-8bf7-1599915e26a1",
+        PermissionsAnyCsv = AccountingPermissions.View
+    )]
+    public const string ReportsGroup = "/accounting/reports/group";
 
     [NavItem(
         "Reportes",
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.reports",
         SortOrder = 30,
-        Id = "ac000000-0000-4000-9000-000000000003"
+        Id = "ac000000-0000-4000-9000-000000000003",
+        ParentId = "5f363c9d-e97e-4a39-8bf7-1599915e26a1"
     )]
     public const string Reports = "/accounting/reports";
 }

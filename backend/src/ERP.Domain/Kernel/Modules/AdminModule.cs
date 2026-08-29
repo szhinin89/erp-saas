@@ -6,6 +6,17 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("admin", Icon = "🛡️", SortOrder = 60)]
 public static class AdminModule
 {
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Usuarios y roles" — Usuarios + Roles + Asignación de
+    // permisos, ningún ítem plano bajo el módulo.
+    [NavItem(
+        "Usuarios y roles",
+        LabelKey = "app.nav.item.admin.usersRolesGroup",
+        SortOrder = 10,
+        Id = "bd7b2326-c77b-4534-ad6f-a7edb19827d6",
+        PermissionsAnyCsv = AccessPermissions.MembershipsView + "," + AccessPermissions.ProfilesView
+    )]
+    public const string UsersRolesGroup = "/access/users-roles-group";
+
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: IdentityUsersCreate ("Agregar usuario" cuando el
     // username no existe aún — IdentityUsersController) e IdentityUsersAssignTemporaryPassword
     // ("Restablecer contraseña" — UserSecuritySection.tsx) son acciones reales de esta pantalla que
@@ -17,6 +28,7 @@ public static class AdminModule
         LabelKey = "app.nav.item.admin.users",
         SortOrder = 10,
         Id = "a1000000-0000-4000-9000-000000000008",
+        ParentId = "bd7b2326-c77b-4534-ad6f-a7edb19827d6",
         RelatedActionPermissionsCsv = AccessPermissions.IdentityUsersCreate + ","
             + AccessPermissions.IdentityUsersAssignTemporaryPassword
     )]
@@ -27,7 +39,8 @@ public static class AdminModule
         Permission = AccessPermissions.ProfilesView,
         LabelKey = "app.nav.item.admin.roles",
         SortOrder = 20,
-        Id = "a1000000-0000-4000-9000-000000000007"
+        Id = "a1000000-0000-4000-9000-000000000007",
+        ParentId = "bd7b2326-c77b-4534-ad6f-a7edb19827d6"
     )]
     public const string Roles = "/admin/roles";
 
@@ -40,9 +53,22 @@ public static class AdminModule
         Permission = AccessPermissions.ProfilesView,
         LabelKey = "app.nav.item.admin.permissionsAssignment",
         SortOrder = 30,
-        Id = "a1000000-0000-4000-9000-00000000000c"
+        Id = "a1000000-0000-4000-9000-00000000000c",
+        ParentId = "bd7b2326-c77b-4534-ad6f-a7edb19827d6"
     )]
     public const string PermissionsAssignment = "/admin/permissions";
+
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Seguridad" — Seguridad administrativa + Sesiones de
+    // usuario + Actividad.
+    [NavItem(
+        "Seguridad",
+        LabelKey = "app.nav.item.admin.securityGroup",
+        SortOrder = 40,
+        Id = "09671d4f-1687-44cd-8d26-c8f0c245957b",
+        PermissionsAnyCsv = AdminPermissions.DelegationView + "," + AccessPermissions.SessionsView
+            + "," + AdminPermissions.ActivityView
+    )]
+    public const string SecurityGroup = "/admin/security-group";
 
     // ADMINISTRATION-CLEAN-ACCESS-01: renombrado de "Delegar Funciones" a "Seguridad
     // administrativa" — esta pantalla es una matriz permanente de capacidades administrativas
@@ -58,6 +84,7 @@ public static class AdminModule
         LabelKey = "app.nav.item.admin.security",
         SortOrder = 40,
         Id = "a1000000-0000-4000-9000-00000000000a",
+        ParentId = "09671d4f-1687-44cd-8d26-c8f0c245957b",
         RelatedActionPermissionsCsv = AdminPermissions.DelegationConfigure
     )]
     public const string Security = "/admin/security";
@@ -74,6 +101,7 @@ public static class AdminModule
         LabelKey = "app.nav.item.admin.accessSessions",
         SortOrder = 50,
         Id = "a1000000-0000-4000-9000-00000000000b",
+        ParentId = "09671d4f-1687-44cd-8d26-c8f0c245957b",
         RelatedActionPermissionsCsv = AccessPermissions.SessionsClose
     )]
     public const string AccessSessions = "/admin/access/sessions";
@@ -83,7 +111,8 @@ public static class AdminModule
         Permission = AdminPermissions.ActivityView,
         LabelKey = "app.nav.item.admin.activity",
         SortOrder = 60,
-        Id = "a1000000-0000-4000-9000-000000000009"
+        Id = "a1000000-0000-4000-9000-000000000009",
+        ParentId = "09671d4f-1687-44cd-8d26-c8f0c245957b"
     )]
     public const string Activity = "/admin/activity";
 

@@ -69,6 +69,12 @@ public sealed class GetProfilePermissionAuditHandler
             cancellationToken
         );
 
+        // SECURITY-PERMISSION-SCOPE-01 (pendiente, deuda documentada — no implementado aquí):
+        // todo permiso se reporta como Effective incondicionalmente. BlockedByPlan/UnknownPrefix
+        // existen en el enum pero nunca se calculan — no hay hoy enforcement real de plan SaaS
+        // sobre permisos ya guardados. Ver el mismo gap documentado en
+        // UpsertProfilePermissionsHandler (guardado) — misma deuda, dos puntos de la misma
+        // funcionalidad.
         var audited = dbPerms
             .Select(p => new AuditedPermission(
                 p.PermissionKey,

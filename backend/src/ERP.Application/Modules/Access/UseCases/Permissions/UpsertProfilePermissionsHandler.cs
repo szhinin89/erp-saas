@@ -8,6 +8,17 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
+/// <summary>
+/// SECURITY-PERMISSION-SCOPE-01 (pendiente, deuda documentada — no implementado aquí): hoy este
+/// handler solo rechaza permisos inexistentes en <see cref="KernelRegistry.AssignablePermissionKeys"/>.
+/// No valida el alcance del usuario que asigna (un Admin de empresa puede hoy asignar cualquier
+/// permiso del catálogo, incluidos los de alcance SuperAdmin/global — no hay jerarquía de roles
+/// aplicada aquí) ni restricción real por plan SaaS (<see cref="RejectedPermission"/>/
+/// <c>rejected</c> se declara pero nunca se puebla — línea 76, siempre queda vacío). Implementar
+/// ambos requiere: (1) un modelo de alcance de rol del asignador, (2) mapeo permiso↔feature de
+/// plan, y tests dedicados — ver también el mismo gap en
+/// <see cref="GetProfilePermissionAuditHandler"/> (todo permiso se reporta como <c>Effective</c>).
+/// </summary>
 public class UpsertProfilePermissionsHandler
     : IRequestHandler<UpsertProfilePermissionsCommand, Result<PermissionUpsertResultDto>>
 {

@@ -33,7 +33,7 @@ public sealed class GetPermissionCatalogHandlerTests
     public async Task Catalog_is_1to1_complete_with_every_navitem_that_has_a_real_permission()
     {
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
-        var catalogItemIds = result.Value!.Groups.SelectMany(g => g.Items).Select(i => i.Id).ToHashSet();
+        var catalogItemIds = result.Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items)).Select(i => i.Id).ToHashSet();
 
         var expectedIds = KernelRegistry
             .Navigation.Where(n => n.PermissionKey is not null)
@@ -49,7 +49,8 @@ public sealed class GetPermissionCatalogHandlerTests
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         foreach (var group in result.Value!.Groups)
-        foreach (var item in group.Items)
+        foreach (var category in group.Categories)
+        foreach (var item in category.Items)
         {
             item.Actions.Should().NotBeEmpty();
             item.Actions[0].Code.Should().Be(item.Permission);
@@ -63,7 +64,7 @@ public sealed class GetPermissionCatalogHandlerTests
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         var item = result
-            .Value!.Groups.SelectMany(g => g.Items)
+            .Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items))
             .Single(i => i.Route == "/supplier-payments");
 
         item.Actions.Select(a => a.Code).Should().BeEquivalentTo(new[]
@@ -78,7 +79,8 @@ public sealed class GetPermissionCatalogHandlerTests
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         foreach (var group in result.Value!.Groups)
-        foreach (var item in group.Items)
+        foreach (var category in group.Categories)
+        foreach (var item in category.Items)
             item.Actions.Select(a => a.Code).Should().OnlyHaveUniqueItems();
     }
 
@@ -87,7 +89,7 @@ public sealed class GetPermissionCatalogHandlerTests
     {
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
         var allCodes = result
-            .Value!.Groups.SelectMany(g => g.Items)
+            .Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items))
             .SelectMany(i => i.Actions)
             .Select(a => a.Code)
             .ToHashSet();
@@ -105,7 +107,7 @@ public sealed class GetPermissionCatalogHandlerTests
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         var allCodes = result
-            .Value!.Groups.SelectMany(g => g.Items)
+            .Value!.Groups.SelectMany(g => g.Categories.SelectMany(c => c.Items))
             .SelectMany(i => i.Actions)
             .Select(a => a.Code);
 
