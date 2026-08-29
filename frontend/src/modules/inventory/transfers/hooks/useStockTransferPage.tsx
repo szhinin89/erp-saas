@@ -10,14 +10,15 @@ import {
 } from "../api/stockTransferService";
 import type { TransferProductProfile } from "../components/TransferProductPicker";
 import { message } from "../../../../lib/messages";
-import { readApiErrorMessage } from "../../../lib/apiError";
+import { readApiErrorMessage, formatApiRequestError } from "../../../lib/apiError";
 import { useI18n } from "../../../../i18n/i18n";
 
 /**
  * El backend valida stock insuficiente en el dominio (`CurrentStock.ApplyMovement`, compartido
  * por ajustes y transferencias) con un mensaje técnico en inglés ("Insufficient stock") — se
  * traduce aquí al texto claro que pide la pantalla, sin tocar ese dominio compartido (fuera de
- * alcance de esta tarea). Cualquier otro error del backend se muestra tal cual llega.
+ * alcance de esta tarea). Cualquier otro error del backend se muestra vía formatApiRequestError
+ * (CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05).
  */
 function friendlyConfirmError(
   err: unknown,
@@ -29,13 +30,12 @@ function friendlyConfirmError(
       "inventory.transfers.messages.insufficientStock",
       "No hay stock suficiente en la bodega origen.",
     );
-  return (
-    raw ||
-    t(
+  return formatApiRequestError(err, {
+    generic: t(
       "inventory.transfers.messages.confirmError",
       "No se pudo confirmar la transferencia. Intente nuevamente.",
-    )
-  );
+    ),
+  });
 }
 
 export type TransferLine = {
@@ -214,22 +214,61 @@ export function useStockTransferPage() {
     }
   }, [validate, sourceWarehouseId, targetWarehouseId, reason, notes, lines, t]);
 
+  // CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05: mueve stock real entre bodegas y registra
+  // movimiento en Kardex — se confirma antes de ejecutar, con resumen de lo que se va a mover.
+  // No cambia el payload ni el endpoint existente (stockTransferService.confirm).
   const confirmTransfer = useCallback(async () => {
-    if (!transfer) return;
+    if (!transfer || confirming) return;
+
+    const confirmed = await message.confirm({
+      title: t("inventory.transfers.confirmModal.title", "Confirmar transferencia"),
+      message: (
+        <>
+          <p className="zh-confirm-message">
+            Se moverá stock real entre bodegas y se registrará el movimiento en el Kardex de
+            origen y destino — la disponibilidad de cada bodega se actualiza de inmediato. No
+            confirmes si los datos no son correctos: esta acción no se puede deshacer.
+          </p>
+          <p className="zh-confirm-message">
+            N.º transferencia: <strong>{transfer.transferNumber}</strong>
+            <br />
+            Origen: <strong>{sourceWarehouse?.name ?? "—"}</strong>
+            <br />
+            Destino: <strong>{targetWarehouse?.name ?? "—"}</strong>
+            <br />
+            Líneas: <strong>{lines.length}</strong>
+            <br />
+            Total unidades: <strong>{totalUnits}</strong>
+            <br />
+            Estado actual: <strong>{transfer.status}</strong>
+          </p>
+        </>
+      ),
+      variant: "warning",
+      confirmLabel: t("inventory.transfers.actions.confirm", "Confirmar transferencia"),
+      cancelLabel: t("common.cancel", "Cancelar"),
+    });
+    if (!confirmed) return;
+
     setError(null);
     setConfirming(true);
     try {
-      const confirmed = await stockTransferService.confirm(transfer.id);
-      setTransfer(confirmed);
-      setSuccessMessage(
-        t("inventory.transfers.messages.confirmed", "Transferencia confirmada correctamente."),
+      const confirmedTransfer = await stockTransferService.confirm(transfer.id);
+      setTransfer(confirmedTransfer);
+      const successText = t(
+        "inventory.transfers.messages.confirmed",
+        "Transferencia confirmada correctamente.",
       );
+      setSuccessMessage(successText);
+      message.success(successText);
     } catch (err) {
-      setError(friendlyConfirmError(err, t));
+      const errorText = friendlyConfirmError(err, t);
+      setError(errorText);
+      message.error(errorText);
     } finally {
       setConfirming(false);
     }
-  }, [transfer, t]);
+  }, [transfer, confirming, sourceWarehouse, targetWarehouse, lines.length, totalUnits, t]);
 
   const resetForm = useCallback(() => {
     setSourceWarehouseId("");

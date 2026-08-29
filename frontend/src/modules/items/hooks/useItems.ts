@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAsync } from "../../../hooks/useAsync";
 import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 import {
   itemService,
   type CreateItemRequest,
@@ -79,11 +80,11 @@ export function useItems(params: GetItemsParams = {}) {
       itemsState.refetch();
       return true;
     } catch (err) {
-      setToggleError(
-        formatApiRequestError(err, {
-          generic: "Error al actualizar el estado del ítem.",
-        }),
-      );
+      const errorMessage = formatApiRequestError(err, {
+        generic: "Error al actualizar el estado del ítem.",
+      });
+      setToggleError(errorMessage);
+      message.error(errorMessage);
       return false;
     } finally {
       setToggling(false);

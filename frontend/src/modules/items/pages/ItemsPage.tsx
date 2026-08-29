@@ -146,7 +146,25 @@ export function ItemsPage() {
     startView(item.id);
   };
 
+  // CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05: afecta disponibilidad del ítem en ventas,
+  // compras e inventario futuro — se confirma antes de ejecutar. toggleStatus ya bloquea doble
+  // submit (`toggling`, deshabilita el botón en ItemListTable) y ya usa formatApiRequestError.
   const handleToggle = async (item: ItemDto) => {
+    if (toggling) return;
+
+    const confirmed = await message.confirm({
+      title: item.isActive
+        ? `Deshabilitar "${item.shortName}"`
+        : `Habilitar "${item.shortName}"`,
+      message: item.isActive
+        ? `"${item.shortName}" dejará de estar disponible para nuevas operaciones (ventas, compras, inventario). El histórico y los movimientos existentes no se eliminan.`
+        : `"${item.shortName}" volverá a estar disponible para operaciones futuras.`,
+      variant: item.isActive ? "danger" : "warning",
+      confirmLabel: item.isActive ? "Deshabilitar" : "Habilitar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
     const ok = await toggleStatus(item.id, !item.isActive);
     if (ok) {
       message.success(

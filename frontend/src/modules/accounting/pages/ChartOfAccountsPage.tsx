@@ -54,6 +54,7 @@ export function ChartOfAccountsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [togglingAccountId, setTogglingAccountId] = useState<string | null>(null);
 
   const createForm = useForm<CreateAccountFormValues>({
     resolver: zodResolver(createAccountSchema),
@@ -168,14 +169,34 @@ export function ChartOfAccountsPage() {
     }
   });
 
+  // CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05: afecta si la cuenta puede usarse en nuevos
+  // asientos/reglas de posteo — se confirma antes de ejecutar. No cambia validaciones ni lógica
+  // contable del backend, solo agrega confirmación previa y bloqueo de doble submit.
   const handleToggleActive = async (a: AccountDto) => {
+    if (togglingAccountId) return;
+
+    const label = `${a.code} — ${a.name}`;
+    const confirmed = await message.confirm({
+      title: a.isActive ? `Desactivar cuenta "${label}"` : `Activar cuenta "${label}"`,
+      message: a.isActive
+        ? `La cuenta "${label}" no podrá usarse para nuevos asientos ni reglas de posteo. Los asientos ya registrados no se eliminan. Si hay reglas contables asociadas a esta cuenta, revísalas antes de continuar.`
+        : `La cuenta "${label}" volverá a estar disponible para uso contable (nuevos asientos y reglas de posteo).`,
+      variant: a.isActive ? "danger" : "warning",
+      confirmLabel: a.isActive ? "Desactivar" : "Activar",
+      cancelLabel: "Cancelar",
+    });
+    if (!confirmed) return;
+
+    setTogglingAccountId(a.id);
     try {
       if (a.isActive) await accountingApi.disableAccount(a.id);
       else await accountingApi.enableAccount(a.id);
-      message.success(a.isActive ? "Cuenta desactivada." : "Cuenta activada.");
+      message.success(a.isActive ? "Cuenta desactivada correctamente." : "Cuenta activada correctamente.");
       void fetchAccounts();
     } catch (err: unknown) {
       message.error(formatApiRequestError(err, { generic: "No se pudo cambiar el estado de la cuenta." }));
+    } finally {
+      setTogglingAccountId(null);
     }
   };
 
@@ -238,6 +259,7 @@ export function ChartOfAccountsPage() {
             icon={row.isActive ? "toggle_on" : "toggle_off"}
             title={row.isActive ? "Desactivar" : "Activar"}
             variant="ghost"
+            disabled={togglingAccountId === row.id}
             onClick={() => void handleToggleActive(row)}
           />
         </div>

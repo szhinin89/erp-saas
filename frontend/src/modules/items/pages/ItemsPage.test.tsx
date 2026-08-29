@@ -12,6 +12,8 @@ import { itemService } from "../api/itemService";
 import { itemTypeService } from "../api/itemTypeService";
 import { useItemUiStore } from "../store/itemUiStore";
 import { invalidateItemTypeOptionsCache } from "../hooks/useItemTypeOptions";
+import { message } from "../../../lib/messages";
+import type { ItemDto } from "../../../types/items";
 
 vi.mock("../../../i18n/i18n", () => ({
   useI18n: () => ({
@@ -61,6 +63,38 @@ vi.mock("../api/itemTypeService", () => ({
   },
 }));
 
+vi.mock("../../../lib/messages", () => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    confirm: vi.fn(),
+  },
+}));
+
+const ACTIVE_ITEM: ItemDto = {
+  id: "item-1",
+  sku: "SKU-001",
+  shortName: "Producto Uno",
+  description: "Descripción de Producto Uno",
+  itemTypeId: "type-physical",
+  itemTypeName: "Físico",
+  categoryNodeId: null,
+  brandId: null,
+  defaultUomCode: "UNI",
+  defaultUomAbbrev: "u",
+  isForSale: true,
+  isFavorite: false,
+  isEcommerceActive: false,
+  tracksStock: true,
+  tracksLot: false,
+  tracksSeries: false,
+  baseSalePrice: 10,
+  isActive: true,
+  createdAt: "2026-08-01T00:00:00Z",
+  updatedAt: null,
+};
+
 function openListTab() {
   useItemUiStore.setState({
     activeTab: "listado",
@@ -88,6 +122,7 @@ afterEach(() => {
 beforeEach(() => {
   invalidateItemTypeOptionsCache();
   openListTab();
+  vi.mocked(message.confirm).mockResolvedValue(true);
 });
 
 describe("ItemsPage listado", () => {
@@ -180,5 +215,117 @@ describe("ItemsPage listado", () => {
     });
 
     expect(container.querySelector("[style]")).toBeNull();
+  });
+});
+
+describe("ItemsPage — deshabilitar/habilitar ítem: confirmación y feedback (CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05)", () => {
+  beforeEach(() => {
+    vi.mocked(itemService.getAll).mockResolvedValue({
+      items: [ACTIVE_ITEM],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 50,
+    });
+  });
+
+  it("pide confirmación antes de deshabilitar, aclarando que no borra histórico", async () => {
+    vi.mocked(itemService.disable).mockResolvedValue(true);
+    await renderItemsPage();
+    await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+
+    await waitFor(() => {
+      expect(message.confirm).toHaveBeenCalledTimes(1);
+      expect(itemService.disable).toHaveBeenCalledWith("item-1");
+    });
+    const options = vi.mocked(message.confirm).mock.calls[0][0];
+    expect(String(options.message)).toMatch(/dejará de estar disponible/i);
+    expect(String(options.message)).toMatch(/no se eliminan/i);
+  });
+
+  it("si se cancela, no llama a itemService.disable", async () => {
+    vi.mocked(message.confirm).mockResolvedValue(false);
+    await renderItemsPage();
+    await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+    expect(itemService.disable).not.toHaveBeenCalled();
+  });
+
+  it("al deshabilitar exitosamente muestra message.success", async () => {
+    vi.mocked(itemService.disable).mockResolvedValue(true);
+    await renderItemsPage();
+    await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith("Ítem deshabilitado."),
+    );
+  });
+
+  it("si falla, muestra el mensaje real del backend y no muestra éxito", async () => {
+    vi.mocked(itemService.disable).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: { message: { user: "El ítem tiene movimientos pendientes." } },
+      },
+    });
+    await renderItemsPage();
+    await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith("El ítem tiene movimientos pendientes."),
+    );
+    expect(message.success).not.toHaveBeenCalled();
+  });
+
+  it("habilitar explica que vuelve a estar disponible", async () => {
+    vi.mocked(itemService.getAll).mockResolvedValue({
+      items: [{ ...ACTIVE_ITEM, isActive: false }],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 50,
+    });
+    vi.mocked(itemService.enable).mockResolvedValue(true);
+    await renderItemsPage();
+    await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Habilitar" }));
+
+    await waitFor(() => {
+      expect(itemService.enable).toHaveBeenCalledWith("item-1");
+    });
+    const options = vi.mocked(message.confirm).mock.calls[0][0];
+    expect(String(options.message)).toMatch(/volverá a estar disponible/i);
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith("Ítem habilitado."),
+    );
+  });
+
+  it("no usa window.confirm/window.prompt/alert", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("");
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    vi.mocked(itemService.disable).mockResolvedValue(true);
+
+    await renderItemsPage();
+    await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    await waitFor(() => expect(itemService.disable).toHaveBeenCalled());
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    confirmSpy.mockRestore();
+    promptSpy.mockRestore();
+    alertSpy.mockRestore();
   });
 });
