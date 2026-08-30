@@ -85,4 +85,11 @@ describe("StockReportPage — ZH-LISTING-COMPLIANCE-AUDIT-08", () => {
     expect(screen.getByText("Bodega Central")).toBeTruthy();
     expect(screen.getAllByText("Disponible").length).toBeGreaterThan(0);
   });
+
+  it("sincroniza document.title con el título del reporte (ZH-APP-PAGE-SHELL-STANDARD-01)", async () => {
+    renderPage();
+    await screen.findByText("SKU-001");
+
+    expect(document.title).toBe("Reporte de Stock");
+  });
 });

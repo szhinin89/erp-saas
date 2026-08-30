@@ -35,6 +35,18 @@ import { ZHIconButton } from "./zh/ZHIconButton";
 import { Badge, type BadgeVariant } from "./PageShell";
 import "./ReportPageTemplate.css";
 
+/**
+ * ZH-APP-PAGE-SHELL-STANDARD-01 — excepción documentada: `ReportPage` no anida
+ * `PageShell` porque su cabecera (breadcrumb multinivel + KPIs + acciones de
+ * reporte) es visualmente distinta y ya está probada en producción; envolverla
+ * en `PageShell` duplicaría el `<h1>`/kicker. La sincronización de
+ * `document.title` sí delega en el mismo mecanismo único que usa `PageShell`
+ * (`useDocumentTitle`, ver `hooks/useDocumentTitle.ts`) — no existe una
+ * segunda fuente de verdad para el título de pestaña. Ver
+ * docs/FRONTEND_ARCHITECTURE_BASELINE.md § Criterio ErpPageTemplate vs
+ * PageShell directo.
+ */
+
 /* ── Types ─────────────────────────────────────────────────── */
 
 export type RptKpiTone =

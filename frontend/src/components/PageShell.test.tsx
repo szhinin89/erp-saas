@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { PageShell } from "./PageShell";
 import { ReportPage } from "./ReportPageTemplate";
 import { ErpPageTemplate } from "../templates/ErpPageTemplate";
+import { ConfigTabsLayout } from "./shared/ConfigTabsLayout";
 import { DEFAULT_DOCUMENT_TITLE } from "../hooks/useDocumentTitle";
 
 beforeEach(() => {
@@ -55,5 +56,26 @@ describe("PageShell — título de pestaña", () => {
     );
 
     expect(document.title).toBe("Ajuste AJ-000001");
+  });
+
+  it("ConfigTabsLayout no duplica cabecera/título al usarse dentro de ErpPageTemplate", () => {
+    render(
+      <ErpPageTemplate title="Documentos y flujos">
+        <ConfigTabsLayout
+          activeTab="list"
+          onTabChange={() => {}}
+          editorLabel="Editar flujo documental"
+          listContent={<div>lista de flujos</div>}
+          editorContent={<div>editor de flujo</div>}
+        />
+      </ErpPageTemplate>,
+    );
+
+    // El título de pestaña sigue siendo responsabilidad única de PageShell.
+    expect(document.title).toBe("Documentos y flujos");
+    // ConfigTabsLayout solo aporta el tab-switcher + contenido, no un h1/kicker propio.
+    expect(screen.getAllByText("Documentos y flujos")).toHaveLength(1);
+    expect(screen.getByRole("tablist")).toBeTruthy();
+    expect(screen.getByText("lista de flujos")).toBeTruthy();
   });
 });
