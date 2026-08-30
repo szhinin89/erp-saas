@@ -6,6 +6,7 @@ import {
   waitFor,
   fireEvent,
   cleanup,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../../i18n/i18n";
@@ -215,7 +216,7 @@ describe("UsersPage — navegación a la pantalla única de configuración", () 
     renderPage();
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Configurar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Configurar/ }));
 
     expect(navigateMock).toHaveBeenCalledWith("/access/users/membership-1", {
       state: { from: "/access/users" },
@@ -230,7 +231,7 @@ describe("UsersPage — revocación", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Revocar/ }));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalled();
@@ -244,7 +245,7 @@ describe("UsersPage — revocación", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Revocar/ }));
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(membershipService.revokeMembership).not.toHaveBeenCalled();
@@ -261,7 +262,7 @@ describe("UsersPage — reactivación", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Reactivar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Reactivar/ }));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalled();
@@ -283,7 +284,7 @@ describe("UsersPage — reactivación", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Reactivar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Reactivar/ }));
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(membershipService.upsertMembership).not.toHaveBeenCalled();
@@ -301,10 +302,70 @@ describe("UsersPage — permisos", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
-    expect(screen.queryByRole("button", { name: "Configurar" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Revocar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Configurar/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Revocar/ })).toBeNull();
     expect(
       screen.queryByRole("button", { name: /Agregar usuario/ }),
     ).toBeNull();
+  });
+});
+
+describe("UsersPage — ZH-LISTING-USERS-REFACTOR-03, ZHDataTable + showRowNumber", () => {
+  it("muestra la columna N° como primera columna", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+  });
+
+  it("no queda tabla manual: la fila usa la estructura de ZHDataTable (celdas <td>)", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows.length).toBe(1);
+    expect(within(rows[0]).getAllByRole("cell").length).toBeGreaterThan(0);
+  });
+
+  it("carga y muestra sucursales autorizadas y modo de ingreso (extras por fila) sin llamar hooks en render(row)", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+
+    await waitFor(() => {
+      expect(branchAssignmentService.getMembershipBranches).toHaveBeenCalledWith(
+        "membership-1",
+      );
+      expect(companyUserPreferencesService.get).toHaveBeenCalledWith("membership-1");
+    });
+
+    await waitFor(() => expect(screen.getByText("1/2")).toBeTruthy());
+    expect(
+      screen.getByText("Preguntar sucursal al iniciar sesión"),
+    ).toBeTruthy();
+  });
+
+  it("no duplica llamadas de extras al filtrar/buscar (caché por companyUserId)", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("1/2")).toBeTruthy());
+
+    // El historial de mocks se acumula entre los `it` de este archivo (no hay
+    // vi.clearAllMocks() global) — se mide el delta de esta prueba, no el conteo absoluto.
+    const branchesCallsBefore = vi.mocked(branchAssignmentService.getMembershipBranches).mock
+      .calls.length;
+    const prefsCallsBefore = vi.mocked(companyUserPreferencesService.get).mock.calls.length;
+
+    fireEvent.change(screen.getByPlaceholderText("Código, nombre o texto…"), {
+      target: { value: "ana" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Código, nombre o texto…"), {
+      target: { value: "" },
+    });
+
+    expect(branchAssignmentService.getMembershipBranches).toHaveBeenCalledTimes(
+      branchesCallsBefore,
+    );
+    expect(companyUserPreferencesService.get).toHaveBeenCalledTimes(prefsCallsBefore);
   });
 });
