@@ -82,32 +82,25 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_companies_and_company_are_grouped_under_a_single_empresas_container_without_losing_permissions()
+    public void Navigation_companies_and_company_are_direct_children_of_enterprise_group_without_losing_permissions()
     {
-        // MENU-FINAL-STRUCTURE-01: "Mis empresas" (multiempresa, CompaniesView) y "Datos de la
+        // MENU-COMPANY-HIERARCHY-FLAT-01: "Mis empresas" (multiempresa, CompaniesView) y "Datos de la
         // empresa" (empresa activa, CompanyView) son pantallas reales distintas con permisos
-        // distintos — no se fusionaron en una sola entrada (se perdería funcionalidad o se
-        // mezclarían permisos). En su lugar se agruparon bajo un contenedor "Empresas" — este
-        // test prueba que ambas siguen existiendo, con su Id/ruta/permiso intactos.
+        // distintos — no se fusionan en una sola entrada. Quedan como hermanos directos bajo
+        // "Empresa", sin el nivel redundante Empresa > Empresas.
         var navigation = KernelRegistry.Navigation;
-        var empresasGroupId = Guid.Parse("00000000-0000-4000-8000-000000000105");
+        var enterpriseGroupId = Guid.Parse("7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d");
 
-        var empresasContainer = navigation.Single(n => n.RoutePath == "/settings/companies-group");
-        empresasContainer.GroupCode.Should().Be("settings");
-        // NAV-HIERARCHY-UNIFY-01: "Empresas" pasó a anidarse bajo la categoría "Empresa" (Nivel
-        // 2) junto con Sucursales/Establecimientos/Puntos de emisión/Destinos financieros/
-        // Geografía — ya no es un contenedor de primer nivel del módulo.
-        empresasContainer.ParentItemId.Should().Be(Guid.Parse("7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d"));
-        empresasContainer.Id.Should().Be(empresasGroupId);
+        navigation.Should().NotContain(n => n.RoutePath == "/settings/companies-group");
 
         var companies = navigation.Single(n => n.RoutePath == "/companies");
         companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
-        companies.ParentItemId.Should().Be(empresasGroupId);
+        companies.ParentItemId.Should().Be(enterpriseGroupId);
         companies.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
 
         var company = navigation.Single(n => n.RoutePath == "/settings/company");
         company.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
-        company.ParentItemId.Should().Be(empresasGroupId);
+        company.ParentItemId.Should().Be(enterpriseGroupId);
         company.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView);
     }
 

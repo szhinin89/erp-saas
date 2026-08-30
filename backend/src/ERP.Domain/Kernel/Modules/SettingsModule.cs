@@ -12,15 +12,13 @@ public static class SettingsModule
     /// conceptualmente es Configuración, no usuarios/perfiles/delegación/sesiones/actividad. Mismo
     /// Id/ruta/permiso que tenía en AdminModule — sin cambios de API ni de lógica de negocio.
     /// </summary>
-    // MENU-FINAL-STRUCTURE-01: "Mis empresas" (multiempresa del suscriptor, perm.
-    // CompaniesView) y "Datos de la empresa" (empresa activa, perm. CompanyView) son pantallas
-    // reales distintas con permisos distintos — no se pueden fusionar en una sola entrada sin
-    // perder funcionalidad o mezclar permisos. Se agrupan bajo un contenedor "Empresas" (mismo
-    // patrón ya usado en Ventas/Compras/Inventario/Caja) para que el nivel superior de
-    // Configuración muestre una sola línea "Empresas", sin borrar ninguna pantalla.
     // NAV-HIERARCHY-UNIFY-01: contenedor "Empresa" — agrupa todos los catálogos de identidad/
-    // ubicación de empresa (Empresas, Sucursales, Establecimientos, Puntos de emisión, Destinos
+    // ubicación de empresa (Mis empresas, datos de empresa, Sucursales, Establecimientos, Puntos de emisión, Destinos
     // financieros, Geografía) para que ninguno quede suelto bajo el módulo Configuración.
+    // MENU-COMPANY-HIERARCHY-FLAT-01: "Mis empresas" (multiempresa, CompaniesView) y
+    // "Datos de la empresa" (empresa activa, CompanyView) son pantallas reales distintas con
+    // permisos distintos; se dejan como hermanos directos bajo "Empresa" para evitar el nivel
+    // redundante Configuración > Empresa > Empresas.
     [NavItem(
         "Empresa",
         LabelKey = "app.nav.item.settings.enterpriseGroup",
@@ -34,22 +32,12 @@ public static class SettingsModule
     public const string EnterpriseGroup = "/settings/enterprise-group";
 
     [NavItem(
-        "Empresas",
-        LabelKey = "app.nav.item.settings.companiesGroup",
-        SortOrder = 5,
-        Id = "00000000-0000-4000-8000-000000000105",
-        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        PermissionsAnyCsv = SettingsPermissions.CompaniesView + "," + SettingsPermissions.CompanyView
-    )]
-    public const string CompaniesGroup = "/settings/companies-group";
-
-    [NavItem(
         "Mis empresas",
         Permission = SettingsPermissions.CompaniesView,
         LabelKey = "app.nav.item.erp.companies",
         SortOrder = 10,
         Id = "00000000-0000-4000-8000-000000000104",
-        ParentId = "00000000-0000-4000-8000-000000000105",
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         RelatedActionPermissionsCsv = SettingsPermissions.CompaniesCreate + ","
             + SettingsPermissions.CompaniesUpdate
     )]
@@ -63,7 +51,7 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.company",
         SortOrder = 20,
         Id = "00000000-0000-4000-8000-000000000101",
-        ParentId = "00000000-0000-4000-8000-000000000105"
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d"
     )]
     public const string Company = "/settings/company";
 
