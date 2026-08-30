@@ -60,10 +60,22 @@
   --space-10: 40px;
 
   /* ── App / platform shell content (LayoutFrame) ─────────── */
-  --shell-content-padding: var(--space-6);
+  --shell-content-padding: var(--space-4); /* antes var(--space-6): ZH-UI-DENSITY-COMPACT-01 */
   --shell-content-padding-compact: var(--space-4);
   --shell-content-max-width: 1440px;
-  --shell-content-gap: var(--space-6);
+  --shell-content-gap: var(--space-4); /* antes var(--space-6): ZH-UI-DENSITY-COMPACT-01 */
+
+  /* ── Densidad de UI (ZH-UI-DENSITY-COMPACT-01) ────────────
+     SSOT de altura de controles y padding de cards/tablas/modales.
+     Antes eran literales px repetidos en zh-ui.css/page-template.css;
+     centralizados aquí para permitir compactación global reversible. */
+  --density-control-height: 36px; /* antes 38px: input/select/textarea, .zh-btn base */
+  --density-control-height-md: 32px; /* antes 34px: .zh-btn--md */
+  --density-control-height-sm: 26px; /* antes 28px: .zh-btn--sm */
+  --density-control-height-xs: 24px; /* .zh-btn--xs (ya mínimo, solo tokenizado) */
+  --density-card-padding: var(--space-4); /* antes var(--space-5): card/section/kpi/modal */
+  --density-table-cell-padding-y: 8px; /* antes 11px/12px en .table th/td */
+  --density-table-cell-padding-x: var(--space-3); /* antes var(--space-4) en .table th/td */
 
   /* ── Typography ───────────────────────────────────────────── */
   /* Escala tipográfica única del ERP. --text-headline-lg-* está reservada

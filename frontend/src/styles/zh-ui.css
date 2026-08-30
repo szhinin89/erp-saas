@@ -113,7 +113,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 38px;
+  height: var(--density-control-height);
   padding: 0 16px;
   font-family: var(--font-family);
   font-size: var(--text-label-md-size);
@@ -142,17 +142,17 @@ a:hover {
 
 /* Sizes */
 .zh-btn--md {
-  height: 34px;
+  height: var(--density-control-height-md);
   padding: 0 14px;
   font-size: 13px;
 }
 .zh-btn--sm {
-  height: 28px;
+  height: var(--density-control-height-sm);
   padding: 0 10px;
   font-size: 12px;
 }
 .zh-btn--xs {
-  height: 24px;
+  height: var(--density-control-height-xs);
   padding: 0 8px;
   font-size: 11px;
 }
@@ -260,7 +260,7 @@ textarea {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0 12px;
-  height: 38px;
+  height: var(--density-control-height);
   width: 100%;
   outline: none;
   transition:
@@ -926,7 +926,7 @@ select.zh-input--compact {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: 18px 20px;
+  padding: var(--density-card-padding) var(--space-5);
   color: var(--color-on-primary);
   background: var(--gradient-brand);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -1019,7 +1019,7 @@ select.zh-input--compact {
 .zh-form-body {
   background: var(--color-surface);
   border: 0.5px solid var(--color-border);
-  padding: var(--space-5) var(--space-6) var(--space-6);
+  padding: var(--density-card-padding) var(--space-5) var(--space-5);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 .zh-form-body--standalone {
@@ -1027,7 +1027,7 @@ select.zh-input--compact {
 }
 
 .zh-form-section {
-  padding: var(--space-4) 0;
+  padding: var(--space-3) 0;
   border-bottom: 0.5px solid var(--color-border);
 }
 .zh-form-section:last-child {
@@ -1208,7 +1208,7 @@ select.zh-input--compact {
   transition: box-shadow var(--transition);
 }
 .card-header {
-  padding: var(--space-5);
+  padding: var(--density-card-padding);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
@@ -1217,7 +1217,7 @@ select.zh-input--compact {
   flex-wrap: wrap;
 }
 .card-body {
-  padding: var(--space-5);
+  padding: var(--density-card-padding);
 }
 
 /* Size variant — larger radius (dashboard, overview panels) */
@@ -1239,7 +1239,7 @@ select.zh-input--compact {
 }
 .table-card > form,
 .table-card .table-card-body > form {
-  padding: var(--space-5);
+  padding: var(--density-card-padding);
 }
 
 /* Table scroll wrapper (Bloque 12F-1) — SSOT del patrón "wrapper neutro de
@@ -1295,7 +1295,7 @@ select.zh-input--compact {
 }
 .table th {
   text-align: left;
-  padding: 11px var(--space-4);
+  padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
   font-size: var(--text-label-sm-size);
   font-weight: var(--text-label-sm-weight);
   letter-spacing: var(--text-label-sm-spacing);
@@ -1305,7 +1305,7 @@ select.zh-input--compact {
   border-bottom: 1px solid var(--color-border);
 }
 .table td {
-  padding: 12px var(--space-4);
+  padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
   vertical-align: middle;
@@ -1663,7 +1663,7 @@ select.zh-input--compact {
 }
 
 .zh-modal-body {
-  padding: var(--space-5) var(--space-6) var(--space-6);
+  padding: var(--density-card-padding) var(--space-5) var(--space-5);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -1672,7 +1672,7 @@ select.zh-input--compact {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--density-card-padding) var(--space-5);
   border-top: 1px solid var(--color-border);
   background: var(--color-surface-container-low);
   flex-shrink: 0;

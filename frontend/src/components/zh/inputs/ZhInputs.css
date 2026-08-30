@@ -10,7 +10,7 @@
   transition:
     border-color var(--transition),
     box-shadow var(--transition);
-  height: 38px;
+  height: var(--density-control-height);
 }
 
 .zh-prefixed-input:focus-within {
