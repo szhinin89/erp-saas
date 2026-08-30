@@ -150,3 +150,38 @@ describe("ZHDataTable — rowClassName (ZH-LISTING-MIGRATION-ALL-02)", () => {
     expect(rows[2].className).toBe("");
   });
 });
+
+describe("ZHDataTable — tableClassName (ZH-LISTING-GLOBAL-STANDARD-06)", () => {
+  it("sin tableClassName, la tabla solo tiene la clase base", () => {
+    renderTable(<ZHDataTable columns={COLUMNS} rows={ROWS} rowKey={(r) => r.id} />);
+    expect(screen.getByRole("table").className).toBe("table");
+  });
+
+  it("con tableClassName, agrega la(s) variante(s) sobre la clase base", () => {
+    renderTable(
+      <ZHDataTable
+        columns={COLUMNS}
+        rows={ROWS}
+        rowKey={(r) => r.id}
+        tableClassName="table--compact table--neutral"
+      />,
+    );
+    expect(screen.getByRole("table").className).toBe("table table--compact table--neutral");
+  });
+});
+
+describe("ZHDataTable — column.cellClassName (ZH-LISTING-GLOBAL-STANDARD-06)", () => {
+  it("aplica la clase de celda de la columna a th y td", () => {
+    const columns: ZHDataTableColumn<Row>[] = [
+      { key: "code", header: "Código", render: (row) => row.code },
+      { key: "name", header: "Nombre", align: "right", cellClassName: "zh-table-cell--num", render: (row) => row.name },
+    ];
+    renderTable(<ZHDataTable columns={columns} rows={ROWS} rowKey={(r) => r.id} />);
+
+    const headerCell = screen.getAllByRole("columnheader")[1];
+    expect(headerCell.className).toBe("zh-text-align-right zh-table-cell--num");
+
+    const firstDataCell = screen.getAllByRole("row")[1].querySelectorAll("td")[1];
+    expect(firstDataCell.className).toBe("zh-text-align-right zh-table-cell--num");
+  });
+});

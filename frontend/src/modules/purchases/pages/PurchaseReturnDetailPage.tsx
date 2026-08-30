@@ -8,6 +8,7 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhTextarea } from "../../../components/zh/inputs";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
@@ -240,6 +241,12 @@ export function PurchaseReturnDetailPage() {
   const isAuthorized = editing.status === "Authorized";
   const isCancelled = editing.status === "Cancelled";
 
+  const returnedLineColumns: ZHDataTableColumn<PurchaseReturnDto["lines"][number]>[] = [
+    { key: "product", header: "Producto", render: (line) => line.itemId },
+    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => line.quantity },
+    { key: "warehouse", header: "Bodega", render: (line) => line.warehouseId },
+  ];
+
   return (
     <PageShell
       title={`Devolución ${editing.returnNumber ?? "(borrador)"}`}
@@ -335,26 +342,12 @@ export function PurchaseReturnDetailPage() {
 
       {!isDraft && (
         <ZHCard title="Líneas devueltas">
-          <div className="table-scroll">
-            <table className="table table--compact table--neutral sr-lines-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th className="zh-text-align-right">Cantidad</th>
-                  <th>Bodega</th>
-                </tr>
-              </thead>
-              <tbody>
-                {editing.lines.map((line) => (
-                  <tr key={line.id}>
-                    <td>{line.itemId}</td>
-                    <td className="zh-table-cell--num">{line.quantity}</td>
-                    <td>{line.warehouseId}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={returnedLineColumns}
+            rows={editing.lines}
+            rowKey={(line) => line.id}
+            tableClassName="table--compact table--neutral"
+          />
         </ZHCard>
       )}
 

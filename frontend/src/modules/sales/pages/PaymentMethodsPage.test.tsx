@@ -1,9 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { PaymentMethodsPage } from "./PaymentMethodsPage";
 import { paymentMethodService, type PaymentMethodDto } from "../api/paymentMethodService";
 import { message } from "../../../lib/messages";
+
+function renderPage() {
+  return render(
+    <I18nProvider>
+      <PaymentMethodsPage />
+    </I18nProvider>,
+  );
+}
 
 /**
  * CRITICAL-CONFIRMATIONS-SENSITIVE-CONFIG-06 — "Activar/desactivar método de pago": el catch
@@ -52,10 +61,10 @@ beforeEach(() => {
 describe("PaymentMethodsPage — activar/desactivar: confirmación y feedback", () => {
   it("pide confirmación antes de desactivar", async () => {
     vi.mocked(paymentMethodService.toggle).mockResolvedValue({ ...ACTIVE_PM, isActive: false });
-    render(<PaymentMethodsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Efectivo")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -67,10 +76,10 @@ describe("PaymentMethodsPage — activar/desactivar: confirmación y feedback", 
 
   it("si se cancela, no llama a paymentMethodService.toggle", async () => {
     vi.mocked(message.confirm).mockResolvedValue(false);
-    render(<PaymentMethodsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Efectivo")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(paymentMethodService.toggle).not.toHaveBeenCalled();
@@ -78,10 +87,10 @@ describe("PaymentMethodsPage — activar/desactivar: confirmación y feedback", 
 
   it("al desactivar exitosamente muestra message.success", async () => {
     vi.mocked(paymentMethodService.toggle).mockResolvedValue({ ...ACTIVE_PM, isActive: false });
-    render(<PaymentMethodsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Efectivo")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith("Método de pago desactivado correctamente."),
@@ -96,10 +105,10 @@ describe("PaymentMethodsPage — activar/desactivar: confirmación y feedback", 
         data: { message: { user: "El método de pago está en uso en ventas activas." } },
       },
     });
-    render(<PaymentMethodsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Efectivo")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() =>
       expect(message.error).toHaveBeenCalledWith("El método de pago está en uso en ventas activas."),
@@ -113,9 +122,9 @@ describe("PaymentMethodsPage — activar/desactivar: confirmación y feedback", 
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     vi.mocked(paymentMethodService.toggle).mockResolvedValue({ ...ACTIVE_PM, isActive: false });
 
-    render(<PaymentMethodsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Efectivo")).toBeTruthy());
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
     await waitFor(() => expect(paymentMethodService.toggle).toHaveBeenCalled());
 
     expect(confirmSpy).not.toHaveBeenCalled();

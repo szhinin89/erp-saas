@@ -1,9 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { PaymentTermsPage } from "./PaymentTermsPage";
 import { paymentTermService, type PaymentTermDto } from "../api/paymentTermService";
 import { message } from "../../../lib/messages";
+
+function renderPage() {
+  return render(
+    <I18nProvider>
+      <PaymentTermsPage />
+    </I18nProvider>,
+  );
+}
 
 /**
  * CRITICAL-CONFIRMATIONS-CLEANUP-07 — residuo encontrado en el barrido: handleToggle tenía
@@ -52,10 +61,10 @@ beforeEach(() => {
 describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (antes: catch vacío)", () => {
   it("pide confirmación antes de desactivar", async () => {
     vi.mocked(paymentTermService.disable).mockResolvedValue(true);
-    render(<PaymentTermsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -65,10 +74,10 @@ describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (ant
 
   it("si se cancela, no llama a paymentTermService.disable", async () => {
     vi.mocked(message.confirm).mockResolvedValue(false);
-    render(<PaymentTermsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(paymentTermService.disable).not.toHaveBeenCalled();
@@ -76,10 +85,10 @@ describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (ant
 
   it("al desactivar exitosamente muestra message.success", async () => {
     vi.mocked(paymentTermService.disable).mockResolvedValue(true);
-    render(<PaymentTermsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith("Plazo de pago desactivado correctamente."),
@@ -94,10 +103,10 @@ describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (ant
         data: { message: { user: "El plazo de pago está en uso." } },
       },
     });
-    render(<PaymentTermsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() =>
       expect(message.error).toHaveBeenCalledWith("El plazo de pago está en uso."),
@@ -111,9 +120,9 @@ describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (ant
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     vi.mocked(paymentTermService.disable).mockResolvedValue(true);
 
-    render(<PaymentTermsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
     await waitFor(() => expect(paymentTermService.disable).toHaveBeenCalled());
 
     expect(confirmSpy).not.toHaveBeenCalled();

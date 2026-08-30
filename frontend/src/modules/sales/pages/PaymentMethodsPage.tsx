@@ -3,6 +3,7 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {
   ZhTextInput,
   ZhNumberInput,
@@ -178,6 +179,56 @@ export function PaymentMethodsPage() {
     },
   ];
 
+  const paymentMethodColumns: ZHDataTableColumn<PaymentMethodDto>[] = [
+    { key: "code", header: "Código", render: (pm) => <span className="prd-td-code">{pm.code}</span> },
+    { key: "name", header: "Nombre", render: (pm) => pm.name },
+    {
+      key: "requiresReference",
+      header: "Requiere Ref.",
+      render: (pm) => <Badge variant={pm.requiresReference ? "info" : "neutral"} label={pm.requiresReference ? "Sí" : "No"} />,
+    },
+    {
+      key: "isCreditAllowed",
+      header: "Crédito",
+      render: (pm) => <Badge variant={pm.isCreditAllowed ? "warning" : "neutral"} label={pm.isCreditAllowed ? "Sí" : "No"} />,
+    },
+    {
+      key: "detailType",
+      header: "Detalle",
+      render: (pm) => DETAIL_TYPE_OPTIONS.find((o) => o.value === pm.detailType)?.label ?? pm.detailType,
+    },
+    { key: "sortOrder", header: "Orden", render: (pm) => pm.sortOrder },
+    {
+      key: "status",
+      header: "Estado",
+      render: (pm) => <Badge variant={pm.isActive ? "success" : "error"} label={pm.isActive ? "Activo" : "Inactivo"} />,
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "right",
+      render: (pm) => (
+        <div className="prd-td-actions">
+          <ZHIconButton
+            icon="edit"
+            title={`Editar método de pago ${pm.code}`}
+            ariaLabel={`Editar método de pago ${pm.code}`}
+            variant="primary"
+            onClick={() => startEdit(pm)}
+          />
+          <ZHIconButton
+            icon={pm.isActive ? "toggle_off" : "toggle_on"}
+            title={pm.isActive ? `Desactivar método de pago ${pm.code}` : `Activar método de pago ${pm.code}`}
+            ariaLabel={pm.isActive ? `Desactivar método de pago ${pm.code}` : `Activar método de pago ${pm.code}`}
+            variant={pm.isActive ? "danger" : "success"}
+            disabled={togglingId === pm.id}
+            onClick={() => void handleToggle(pm)}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <ErpPageTemplate
       title="Métodos de Pago"
@@ -206,76 +257,14 @@ export function PaymentMethodsPage() {
               </span>
             </ZHBtn>
           </div>
-          {loading ? (
-            <p>Cargando...</p>
-          ) : (
-            <table className="prd-crud-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Requiere Ref.</th>
-                  <th>Crédito</th>
-                  <th>Detalle</th>
-                  <th>Orden</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((pm) => (
-                  <tr key={pm.id}>
-                    <td className="prd-td-code">{pm.code}</td>
-                    <td>{pm.name}</td>
-                    <td>
-                      <Badge
-                        variant={pm.requiresReference ? "info" : "neutral"}
-                        label={pm.requiresReference ? "Sí" : "No"}
-                      />
-                    </td>
-                    <td>
-                      <Badge
-                        variant={pm.isCreditAllowed ? "warning" : "neutral"}
-                        label={pm.isCreditAllowed ? "Sí" : "No"}
-                      />
-                    </td>
-                    <td>
-                      {DETAIL_TYPE_OPTIONS.find(
-                        (o) => o.value === pm.detailType,
-                      )?.label ?? pm.detailType}
-                    </td>
-                    <td>{pm.sortOrder}</td>
-                    <td>
-                      <Badge
-                        variant={pm.isActive ? "success" : "error"}
-                        label={pm.isActive ? "Activo" : "Inactivo"}
-                      />
-                    </td>
-                    <td className="prd-td-actions">
-                      <ZHIconButton
-                        icon="edit"
-                        title="Editar"
-                        variant="primary"
-                        onClick={() => startEdit(pm)}
-                      />
-                      <ZHIconButton
-                        icon={pm.isActive ? "toggle_off" : "toggle_on"}
-                        title={pm.isActive ? "Desactivar" : "Activar"}
-                        variant={pm.isActive ? "danger" : "success"}
-                        disabled={togglingId === pm.id}
-                        onClick={() => void handleToggle(pm)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr className="prd-empty-row">
-                    <td colSpan={8}>Sin métodos de pago registrados.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+          <ZHDataTable
+            columns={paymentMethodColumns}
+            rows={items}
+            rowKey={(pm) => pm.id}
+            loading={loading}
+            showRowNumber
+            emptyMessage="Sin métodos de pago registrados."
+          />
         </div>
       )}
 

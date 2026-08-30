@@ -7,6 +7,7 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhTextarea } from "../../../components/zh/inputs";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
@@ -231,6 +232,72 @@ export function PurchaseCreditNoteDetailPage() {
   const isDraft = editing.status === "Draft";
   const isAuthorized = editing.status === "Authorized";
   const isCancelled = editing.status === "Cancelled";
+
+  const taxSummaryColumns: ZHDataTableColumn<PurchaseCreditNoteDto["taxSummaries"][number]>[] = [
+    {
+      key: "tax",
+      header: t("purchases.creditNote.taxSummaryLines.tax", "Impuesto"),
+      render: (summary) => (
+        <>
+          {summary.vatName ?? summary.vatCode}
+          {summary.iceCode && ` + ${summary.iceName ?? summary.iceCode}`}
+        </>
+      ),
+    },
+    {
+      key: "discountBase",
+      header: t("purchases.creditNote.taxSummaryLines.discountBase", "Base descuento a aplicar"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (summary) => <ZHMoneyValue value={summary.taxableBase} currencySymbol="" />,
+    },
+    {
+      key: "iceCredit",
+      header: t("purchases.creditNote.taxSummaryLines.iceCredit", "ICE crédito"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (summary) => <ZHMoneyValue value={summary.iceAmount} currencySymbol="" />,
+    },
+    {
+      key: "vatCredit",
+      header: t("purchases.creditNote.taxSummaryLines.vatCredit", "IVA crédito"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (summary) => <ZHMoneyValue value={summary.vatAmount} currencySymbol="" />,
+    },
+    {
+      key: "totalCredit",
+      header: t("purchases.creditNote.taxSummaryLines.totalCredit", "Total NC"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (summary) => <ZHMoneyValue value={summary.totalAmount} currencySymbol="" />,
+    },
+  ];
+
+  const discountLineColumns: ZHDataTableColumn<PurchaseCreditNoteDto["lines"][number]>[] = [
+    { key: "description", header: t("purchases.creditNote.lines.description", "Concepto"), render: (line) => line.description },
+    {
+      key: "subtotal",
+      header: t("purchases.creditNote.lines.subtotal", "Subtotal"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.subtotal} currencySymbol="" />,
+    },
+    {
+      key: "vatAmount",
+      header: t("purchases.creditNote.lines.vatAmount", "IVA"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.vatAmount} currencySymbol="" />,
+    },
+    {
+      key: "total",
+      header: t("purchases.creditNote.lines.total", "Total crédito"),
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.totalAmount} currencySymbol="" />,
+    },
+  ];
   // FLOW-READY-02C-R1.1: las notas de crédito tipo Devolución nunca se autorizan aquí — se aplican
   // mediante el PurchaseReturn vinculado (backend rechaza Authorize() para este tipo).
   const isDiscountType = editing.applicationType === "Discount";
@@ -400,49 +467,12 @@ export function PurchaseCreditNoteDetailPage() {
             "Descuento por resumen fiscal de compra",
           )}
         >
-          <div className="table-scroll">
-            <table className="table table--compact table--neutral pcn-lines-table">
-              <thead>
-                <tr>
-                  <th>{t("purchases.creditNote.taxSummaryLines.tax", "Impuesto")}</th>
-                  <th className="zh-text-align-right">
-                    {t("purchases.creditNote.taxSummaryLines.discountBase", "Base descuento a aplicar")}
-                  </th>
-                  <th className="zh-text-align-right">
-                    {t("purchases.creditNote.taxSummaryLines.iceCredit", "ICE crédito")}
-                  </th>
-                  <th className="zh-text-align-right">
-                    {t("purchases.creditNote.taxSummaryLines.vatCredit", "IVA crédito")}
-                  </th>
-                  <th className="zh-text-align-right">
-                    {t("purchases.creditNote.taxSummaryLines.totalCredit", "Total NC")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {editing.taxSummaries.map((summary) => (
-                  <tr key={summary.id}>
-                    <td>
-                      {summary.vatName ?? summary.vatCode}
-                      {summary.iceCode && ` + ${summary.iceName ?? summary.iceCode}`}
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={summary.taxableBase} currencySymbol="" />
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={summary.iceAmount} currencySymbol="" />
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={summary.vatAmount} currencySymbol="" />
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={summary.totalAmount} currencySymbol="" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={taxSummaryColumns}
+            rows={editing.taxSummaries}
+            rowKey={(summary) => summary.id}
+            tableClassName="table--compact table--neutral pcn-lines-table"
+          />
         </ZHCard>
       )}
 
@@ -470,40 +500,12 @@ export function PurchaseCreditNoteDetailPage() {
               />
             </>
           ) : (
-            <div className="table-scroll">
-              <table className="table table--compact table--neutral pcn-lines-table">
-                <thead>
-                  <tr>
-                    <th>{t("purchases.creditNote.lines.description", "Concepto")}</th>
-                    <th className="zh-text-align-right">
-                      {t("purchases.creditNote.lines.subtotal", "Subtotal")}
-                    </th>
-                    <th className="zh-text-align-right">
-                      {t("purchases.creditNote.lines.vatAmount", "IVA")}
-                    </th>
-                    <th className="zh-text-align-right">
-                      {t("purchases.creditNote.lines.total", "Total crédito")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {editing.lines.map((line) => (
-                    <tr key={line.id}>
-                      <td>{line.description}</td>
-                      <td className="zh-table-cell--num">
-                        <ZHMoneyValue value={line.subtotal} currencySymbol="" />
-                      </td>
-                      <td className="zh-table-cell--num">
-                        <ZHMoneyValue value={line.vatAmount} currencySymbol="" />
-                      </td>
-                      <td className="zh-table-cell--num">
-                        <ZHMoneyValue value={line.totalAmount} currencySymbol="" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ZHDataTable
+              columns={discountLineColumns}
+              rows={editing.lines}
+              rowKey={(line) => line.id}
+              tableClassName="table--compact table--neutral pcn-lines-table"
+            />
           )}
         </ZHCard>
       )}

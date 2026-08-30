@@ -6,6 +6,12 @@ export interface ZHDataTableColumn<T> {
   header: ReactNode;
   render: (row: T) => ReactNode;
   align?: "left" | "center" | "right";
+  /**
+   * ZH-LISTING-GLOBAL-STANDARD-06: clase(s) CSS adicional(es) para la celda (`<th>`/`<td>`) de
+   * esta columna — p. ej. `zh-table-cell--num` (fuente monoespaciada de celdas numéricas, ya
+   * definida en zh-ui.css), que `align` por sí solo no replica. Opcional.
+   */
+  cellClassName?: string;
 }
 
 interface ZHDataTableProps<T> {
@@ -35,6 +41,13 @@ interface ZHDataTableProps<T> {
    * afecta a los consumidores existentes que no la pasan.
    */
   rowClassName?: (row: T) => string | undefined;
+  /**
+   * ZH-LISTING-GLOBAL-STANDARD-06: variante(s) CSS del Design System ya documentadas en
+   * zh-ui.css (`table--compact`, `table--neutral`, `table--align-top`, `table--matrix`,
+   * `table--sticky-column`), pensadas para combinarse con `.table` (nunca solas). Opcional —
+   * sin esta prop la tabla se ve exactamente igual que antes.
+   */
+  tableClassName?: string;
 }
 
 const ROW_NUMBER_COLUMN_KEY = "__zhRowNumber";
@@ -42,6 +55,7 @@ const ROW_NUMBER_COLUMN_KEY = "__zhRowNumber";
 function cellClassName<T>(col: ZHDataTableColumn<T>): string | undefined {
   const classes = [
     col.align ? `zh-text-align-${col.align}` : undefined,
+    col.cellClassName,
     col.key === ROW_NUMBER_COLUMN_KEY ? "zh-datatable-row-number-col" : undefined,
   ].filter(Boolean);
   return classes.length > 0 ? classes.join(" ") : undefined;
@@ -71,6 +85,7 @@ export function ZHDataTable<T>({
   showRowNumber,
   rowNumberOffset,
   rowClassName,
+  tableClassName,
 }: ZHDataTableProps<T>) {
   if (loading)
     return (
@@ -110,7 +125,7 @@ export function ZHDataTable<T>({
   return (
     <>
       <div className="table-scroll">
-        <table className="table">
+        <table className={tableClassName ? `table ${tableClassName}` : "table"}>
           <thead>
             <tr>
               {effectiveColumns.map((col) => (

@@ -5,6 +5,7 @@ import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
 import {
@@ -213,6 +214,53 @@ export function PriceListsPage() {
 
   const preservesEditing = (id: Tab) => id === "nuevo" || id === "excepciones";
 
+  const priceListColumns: ZHDataTableColumn<PriceListDto>[] = [
+    { key: "code", header: "Código", render: (pl) => <span className="prd-td-code">{pl.code}</span> },
+    { key: "name", header: "Nombre", render: (pl) => pl.name },
+    { key: "currency", header: "Moneda", render: (pl) => pl.currencyCode },
+    {
+      key: "generalRule",
+      header: "Regla General",
+      render: (pl) => formatRuleGeneral(pl.ruleType, pl.ruleValue, pl.currencyCode),
+    },
+    {
+      key: "default",
+      header: "Default",
+      render: (pl) => (pl.isDefault ? <Badge label="Predeterminada" variant="success" /> : null),
+    },
+    {
+      // ZH-LISTING-GLOBAL-STANDARD-06: antes mostraba el texto literal "Estado" en vez del
+      // estado real (mismo bug corregido en FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
+      key: "status",
+      header: "Estado",
+      render: (pl) => <Badge label={pl.isActive ? "Activo" : "Inactivo"} variant={pl.isActive ? "success" : "neutral"} />,
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "right",
+      render: (pl) => (
+        <div className="prd-td-actions">
+          <ZHIconButton
+            icon="edit"
+            title={`Editar lista de precios ${pl.code}`}
+            ariaLabel={`Editar lista de precios ${pl.code}`}
+            variant="primary"
+            onClick={() => startEdit(pl)}
+          />
+          <ZHIconButton
+            icon={pl.isActive ? "toggle_off" : "toggle_on"}
+            title={pl.isActive ? `Desactivar lista de precios ${pl.code}` : `Activar lista de precios ${pl.code}`}
+            ariaLabel={pl.isActive ? `Desactivar lista de precios ${pl.code}` : `Activar lista de precios ${pl.code}`}
+            variant={pl.isActive ? "danger" : "success"}
+            disabled={togglingId === pl.id}
+            onClick={() => void handleToggle(pl)}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <ErpPageTemplate
       title="Listas de Precios"
@@ -270,70 +318,14 @@ export function PriceListsPage() {
             </ZHBtn>
           </div>
 
-          {loading ? (
-            <p>Cargando...</p>
-          ) : (
-            <table className="prd-crud-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Moneda</th>
-                  <th>Regla General</th>
-                  <th>Default</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((pl) => (
-                  <tr key={pl.id}>
-                    <td className="prd-td-code">{pl.code}</td>
-                    <td>{pl.name}</td>
-                    <td>{pl.currencyCode}</td>
-                    <td>
-                      {formatRuleGeneral(
-                        pl.ruleType,
-                        pl.ruleValue,
-                        pl.currencyCode,
-                      )}
-                    </td>
-                    <td>
-                      {pl.isDefault ? (
-                        <Badge label="Predeterminada" variant="success" />
-                      ) : null}
-                    </td>
-                    <td>
-                      <Badge label={"Estado"} variant="neutral" />
-                    </td>
-                    <td className="prd-td-actions">
-                      <ZHIconButton
-                        icon="edit"
-                        title="Editar"
-                        variant="primary"
-                        onClick={() => startEdit(pl)}
-                      />
-                      <ZHIconButton
-                        icon={pl.isActive ? "toggle_off" : "toggle_on"}
-                        title={pl.isActive ? "Desactivar" : "Activar"}
-                        variant={pl.isActive ? "danger" : "success"}
-                        disabled={togglingId === pl.id}
-                        onClick={() => void handleToggle(pl)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr className="prd-empty-row">
-                    <td colSpan={7}>
-                      No hay listas de precios. Crea la primera en la pestaña
-                      "Nueva Lista".
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+          <ZHDataTable
+            columns={priceListColumns}
+            rows={items}
+            rowKey={(pl) => pl.id}
+            loading={loading}
+            showRowNumber
+            emptyMessage='No hay listas de precios. Crea la primera en la pestaña "Nueva Lista".'
+          />
         </div>
       )}
 

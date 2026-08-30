@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
@@ -27,6 +28,7 @@ import { EmitButton } from "../components/EmitButton";
 import { PaymentMethodsSection } from "../components/PaymentMethodsSection";
 import { remainingToCollect } from "../components/paymentRemaining";
 import { useSalesPage } from "../hooks/useSalesPage";
+import type { SalesListItemDto } from "../api/salesService";
 import { useRideActions } from "../hooks/useRideActions";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import "../styles/sales-invoice.css";
@@ -71,6 +73,63 @@ export function SalesPage() {
         : "error";
   const emissionType =
     ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
+
+  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Nro. Factura" ya es el número
+  // funcional del documento, un N° de referencia visual sería redundante.
+  const salesListColumns: ZHDataTableColumn<SalesListItemDto>[] = [
+    {
+      key: "invoiceNumber",
+      header: "Nro. Factura",
+      render: (inv) => <span className="sales-page-invoice-number zh-font-mono">{inv.invoiceNumber}</span>,
+    },
+    { key: "date", header: "Fecha", render: (inv) => inv.issueDate },
+    { key: "customer", header: "Cliente", render: (inv) => inv.customerName },
+    {
+      key: "total",
+      header: "Total",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (inv) => <ZHMoneyValue value={inv.grandTotal} decimals={getDecimalConfig().totalAmount} />,
+    },
+    { key: "lines", header: "Líneas", align: "center", render: (inv) => inv.lineCount },
+    {
+      key: "status",
+      header: "Estado",
+      render: (inv) => <Badge variant={statusBadgeVariant(inv.status)} label={statusLabel(inv.status)} />,
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "center",
+      render: (inv) => (
+        <>
+          <ZHIconButton
+            icon={inv.status === "Draft" ? "replay" : "edit"}
+            title={`${inv.status === "Draft" ? "Reintentar emisión de" : "Ver / Editar"} factura ${inv.invoiceNumber}`}
+            ariaLabel={`${inv.status === "Draft" ? "Reintentar emisión de" : "Ver / Editar"} factura ${inv.invoiceNumber}`}
+            onClick={() => void ctx.loadForEdit(inv.id)}
+          />
+          {inv.status === "Authorized" && (
+            <ZHIconButton
+              icon="history"
+              title="Ver Movimiento de Inventario"
+              ariaLabel={`Ver movimiento de inventario de factura ${inv.invoiceNumber}`}
+              onClick={() => navigate(`/inventory/kardex?docId=${inv.id}&docType=SalesInvoice`)}
+            />
+          )}
+          {inv.status === "Authorized" && (
+            <ZHIconButton
+              icon="picture_as_pdf"
+              title="Ver RIDE"
+              ariaLabel={`Ver RIDE de factura ${inv.invoiceNumber}`}
+              disabled={ride.ridePending}
+              onClick={() => void ride.handleViewRide(inv.id)}
+            />
+          )}
+        </>
+      ),
+    },
+  ];
 
   return (
     <div className="sales-page-root">
@@ -128,86 +187,14 @@ export function SalesPage() {
               </span>
             </ZHBtn>
           </div>
-          {ctx.listLoading ? (
-            <p>Cargando...</p>
-          ) : (
-            <div className="table-scroll">
-              <table className="table table--compact table--neutral">
-              <thead>
-                <tr>
-                  <th>Nro. Factura</th>
-                  <th>Fecha</th>
-                  <th>Cliente</th>
-                  <th className="zh-text-align-right">Total</th>
-                  <th className="zh-text-align-center">Líneas</th>
-                  <th>Estado</th>
-                  <th className="zh-text-align-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ctx.listItems.map((inv) => (
-                  <tr key={inv.id}>
-                    <td className="sales-page-invoice-number zh-font-mono">
-                      {inv.invoiceNumber}
-                    </td>
-                    <td>{inv.issueDate}</td>
-                    <td>{inv.customerName}</td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue
-                        value={inv.grandTotal}
-                        decimals={getDecimalConfig().totalAmount}
-                      />
-                    </td>
-                    <td className="zh-text-align-center">{inv.lineCount}</td>
-                    <td>
-                      <Badge
-                        variant={statusBadgeVariant(inv.status)}
-                        label={statusLabel(inv.status)}
-                      />
-                    </td>
-                    <td className="zh-text-align-center">
-                      <ZHIconButton
-                        icon={inv.status === "Draft" ? "replay" : "edit"}
-                        title={
-                          inv.status === "Draft"
-                            ? "Reintentar emisión"
-                            : "Ver / Editar"
-                        }
-                        onClick={() => void ctx.loadForEdit(inv.id)}
-                      />
-                      {inv.status === "Authorized" && (
-                        <ZHIconButton
-                          icon="history"
-                          title="Ver Movimiento de Inventario"
-                          onClick={() =>
-                            navigate(
-                              `/inventory/kardex?docId=${inv.id}&docType=SalesInvoice`,
-                            )
-                          }
-                        />
-                      )}
-                      {inv.status === "Authorized" && (
-                        <ZHIconButton
-                          icon="picture_as_pdf"
-                          title="Ver RIDE"
-                          disabled={ride.ridePending}
-                          onClick={() => void ride.handleViewRide(inv.id)}
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {ctx.listItems.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="zh-table-empty">
-                      Sin facturas registradas.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              </table>
-            </div>
-          )}
+          <ZHDataTable
+            columns={salesListColumns}
+            rows={ctx.listItems}
+            rowKey={(inv) => inv.id}
+            loading={ctx.listLoading}
+            tableClassName="table--compact table--neutral"
+            emptyMessage="Sin facturas registradas."
+          />
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHLineAction } from "../../../components/zh/ZHLineAction";
 import { ZHLineActionItem } from "../../../components/zh/ZHLineActionItem";
 import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
@@ -50,6 +51,7 @@ import {
 } from "../utils/purchaseCalc";
 import { buildWithholdingIssueMessage } from "../utils/withholdingMessages";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
+import type { PurchaseListItemDto } from "../api/purchaseService";
 import { useI18n } from "../../../i18n/i18n";
 import {
   ItemMatchStatusBadge,
@@ -119,6 +121,53 @@ export function PurchasesPage() {
     },
   ];
 
+  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Nro. factura" ya es el número
+  // funcional del documento, un N° de referencia visual sería redundante.
+  const purchaseListColumns: ZHDataTableColumn<PurchaseListItemDto>[] = [
+    {
+      key: "invoiceNumber",
+      header: t("purchases.list.invoiceNumber", "Nro. factura"),
+      render: (inv) => <span className="pf-invoice-number zh-code-value">{inv.invoiceNumber}</span>,
+    },
+    { key: "date", header: t("purchases.list.date", "Fecha"), render: (inv) => formatDate(inv.issueDate) },
+    { key: "lines", header: t("purchases.list.lines", "Líneas"), align: "center", render: (inv) => inv.lineCount },
+    {
+      key: "status",
+      header: t("purchases.list.status", "Estado"),
+      render: (inv) => (
+        <Badge
+          variant={inv.status === "Draft" ? "warning" : inv.status === "Confirmed" ? "success" : "error"}
+          label={statusLabel(inv.status)}
+        />
+      ),
+    },
+    {
+      key: "actions",
+      header: t("purchases.list.actions", "Acciones"),
+      align: "center",
+      render: (inv) => (
+        <>
+          <ZHIconButton
+            icon="edit"
+            variant="ghost"
+            title={`${t("common.edit", "Editar")} factura ${inv.invoiceNumber}`}
+            ariaLabel={`${t("common.edit", "Editar")} factura ${inv.invoiceNumber}`}
+            onClick={() => void ctx.loadForEdit(inv.id)}
+          />
+          {inv.status === "Confirmed" && (
+            <ZHIconButton
+              icon="history"
+              variant="ghost"
+              title={t("purchases.actions.viewInventoryMovement", "Ver movimiento de inventario")}
+              ariaLabel={`${t("purchases.actions.viewInventoryMovement", "Ver movimiento de inventario")} de factura ${inv.invoiceNumber}`}
+              onClick={() => navigate(`/inventory/kardex?docId=${inv.id}&docType=PurchaseInvoice`)}
+            />
+          )}
+        </>
+      ),
+    },
+  ];
+
   return (
     <ErpPageTemplate
       title={t("purchases.page.title", "Facturas de compra")}
@@ -166,74 +215,14 @@ export function PurchasesPage() {
               </span>
             </ZHBtn>
           </div>
-          {ctx.listLoading ? (
-            <p>{t("common.loading", "Cargando...")}</p>
-          ) : (
-            <table className="table table--compact table--neutral">
-              <thead>
-                <tr>
-                  <th>{t("purchases.list.invoiceNumber", "Nro. factura")}</th>
-                  <th>{t("purchases.list.date", "Fecha")}</th>
-                  <th className="zh-text-align-center">{t("purchases.list.lines", "Líneas")}</th>
-                  <th>{t("purchases.list.status", "Estado")}</th>
-                  <th className="zh-text-align-center">{t("purchases.list.actions", "Acciones")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ctx.listItems.map((inv) => (
-                  <tr key={inv.id}>
-                    <td className="pf-invoice-number zh-code-value">
-                      {inv.invoiceNumber}
-                    </td>
-                    <td>{formatDate(inv.issueDate)}</td>
-                    <td className="zh-text-align-center">{inv.lineCount}</td>
-                    <td>
-                      <Badge
-                        variant={
-                          inv.status === "Draft"
-                            ? "warning"
-                            : inv.status === "Confirmed"
-                              ? "success"
-                              : "error"
-                        }
-                        label={statusLabel(inv.status)}
-                      />
-                    </td>
-                    <td className="zh-text-align-center">
-                      <ZHIconButton
-                        icon="edit"
-                        variant="ghost"
-                        title={t("common.edit", "Editar")}
-                        onClick={() => void ctx.loadForEdit(inv.id)}
-                      />
-                      {inv.status === "Confirmed" && (
-                        <ZHIconButton
-                          icon="history"
-                          variant="ghost"
-                          title={t(
-                            "purchases.actions.viewInventoryMovement",
-                            "Ver movimiento de inventario",
-                          )}
-                          onClick={() =>
-                            navigate(
-                              `/inventory/kardex?docId=${inv.id}&docType=PurchaseInvoice`,
-                            )
-                          }
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {ctx.listItems.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="zh-table-empty">
-                      {t("purchases.list.empty", "Sin compras registradas.")}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+          <ZHDataTable
+            columns={purchaseListColumns}
+            rows={ctx.listItems}
+            rowKey={(inv) => inv.id}
+            loading={ctx.listLoading}
+            tableClassName="table--compact table--neutral"
+            emptyMessage={t("purchases.list.empty", "Sin compras registradas.")}
+          />
           {!ctx.listLoading && ctx.listTotal > ctx.listPageSize && (
             <div className="pf-pagination">
               <span className="pf-pagination__summary">

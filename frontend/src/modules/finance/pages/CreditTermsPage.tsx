@@ -9,6 +9,7 @@ import {
 } from "../../../components/zh/inputs";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import type {
   CreditTermDto,
   CreateCreditTermPayload,
@@ -184,6 +185,44 @@ export function CreditTermsPage() {
 
   const isFinancialStrict = fMode === 2;
 
+  const creditTermColumns: ZHDataTableColumn<CreditTermDto>[] = [
+    { key: "code", header: "Código", render: (ct) => <span className="prd-td-code">{ct.code}</span> },
+    { key: "name", header: "Nombre", render: (ct) => ct.name },
+    { key: "mode", header: "Modo", render: (ct) => creditTermModeName(ct.mode) },
+    { key: "totalDays", header: "Días", render: (ct) => ct.totalDays },
+    { key: "installments", header: "Cuotas", render: (ct) => ct.installments.length },
+    {
+      // ZH-LISTING-GLOBAL-STANDARD-06: antes mostraba el texto literal "Estado" en vez del
+      // estado real (mismo bug corregido en FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
+      key: "status",
+      header: "Estado",
+      render: (ct) => <Badge label={ct.isActive ? "Activo" : "Inactivo"} variant={ct.isActive ? "success" : "neutral"} />,
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "right",
+      render: (ct) => (
+        <div className="prd-td-actions">
+          <ZHIconButton
+            icon="edit"
+            title={`Editar condición de crédito ${ct.code}`}
+            ariaLabel={`Editar condición de crédito ${ct.code}`}
+            variant="primary"
+            onClick={() => startEdit(ct)}
+          />
+          <ZHIconButton
+            icon={ct.isActive ? "toggle_off" : "toggle_on"}
+            title={ct.isActive ? `Desactivar condición de crédito ${ct.code}` : `Activar condición de crédito ${ct.code}`}
+            ariaLabel={ct.isActive ? `Desactivar condición de crédito ${ct.code}` : `Activar condición de crédito ${ct.code}`}
+            variant={ct.isActive ? "danger" : "success"}
+            onClick={() => handleToggle(ct)}
+          />
+        </div>
+      ),
+    },
+  ];
+
   const tabs = [
     { id: "resumen" as Tab, label: "Resumen", icon: "bar_chart_4_bars" },
     { id: "listado" as Tab, label: "Listado", icon: "view_list" },
@@ -253,56 +292,14 @@ export function CreditTermsPage() {
               </span>
             </ZHBtn>
           </div>
-          {loading ? (
-            <p>Cargando...</p>
-          ) : (
-            <table className="prd-crud-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Modo</th>
-                  <th>Días</th>
-                  <th>Cuotas</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((ct) => (
-                  <tr key={ct.id}>
-                    <td className="prd-td-code">{ct.code}</td>
-                    <td>{ct.name}</td>
-                    <td>{creditTermModeName(ct.mode)}</td>
-                    <td>{ct.totalDays}</td>
-                    <td>{ct.installments.length}</td>
-                    <td>
-                      <Badge label={"Estado"} variant="neutral" />
-                    </td>
-                    <td className="prd-td-actions">
-                      <ZHIconButton
-                        icon="edit"
-                        title="Editar"
-                        variant="primary"
-                        onClick={() => startEdit(ct)}
-                      />
-                      <ZHIconButton
-                        icon={ct.isActive ? "toggle_off" : "toggle_on"}
-                        title={ct.isActive ? "Desactivar" : "Activar"}
-                        variant={ct.isActive ? "danger" : "success"}
-                        onClick={() => handleToggle(ct)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr className="prd-empty-row">
-                    <td colSpan={7}>Sin condiciones de crédito.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+          <ZHDataTable
+            columns={creditTermColumns}
+            rows={items}
+            rowKey={(ct) => ct.id}
+            loading={loading}
+            showRowNumber
+            emptyMessage="Sin condiciones de crédito."
+          />
         </div>
       )}
 

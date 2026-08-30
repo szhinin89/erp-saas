@@ -4,6 +4,7 @@ import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
@@ -145,6 +146,54 @@ export function SupplierCreditDetailPage() {
     );
   }
 
+  const movementColumns: ZHDataTableColumn<SupplierCreditMovementDto>[] = [
+    { key: "type", header: "Tipo", render: (m) => MOVEMENT_TYPE_LABEL[m.movementType] ?? m.movementType },
+    { key: "amount", header: "Monto", align: "right", cellClassName: "zh-table-cell--num", render: (m) => formatMoney(m.amount) },
+    { key: "date", header: "Fecha", render: (m) => formatDateTime(m.createdAtUtc) },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (m) => {
+        const alreadyReversed = reversedMovementIds.has(m.id);
+        const isReversal =
+          m.movementType === "ReversalOfApplication" ||
+          m.movementType === "ReversalOfRefund" ||
+          m.movementType === "SourceReturnCancelled";
+        if (m.movementType === "Application" && !alreadyReversed) {
+          return (
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={reversing === m.id}
+              onClick={() => void handleReverseApplication(m)}
+            >
+              Revertir
+            </ZHBtn>
+          );
+        }
+        if (m.movementType === "Refund" && !alreadyReversed) {
+          return (
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={reversing === m.id}
+              onClick={() => void handleReverseRefund(m)}
+            >
+              Revertir
+            </ZHBtn>
+          );
+        }
+        if (!isReversal && alreadyReversed) {
+          return <span className="zh-text-muted">Revertido</span>;
+        }
+        return null;
+      },
+    },
+  ];
+
   return (
     <PageShell
       title={`Crédito de proveedor — ${credit.supplierId}`}
@@ -189,66 +238,13 @@ export function SupplierCreditDetailPage() {
       )}
 
       <ZHCard title="Movimientos">
-        <div className="table-scroll">
-          <table className="table table--compact table--neutral sr-lines-table">
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th className="zh-text-align-right">Monto</th>
-                <th>Fecha</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {credit.movements.map((m) => {
-                const alreadyReversed = reversedMovementIds.has(m.id);
-                const isReversal =
-                  m.movementType === "ReversalOfApplication" ||
-                  m.movementType === "ReversalOfRefund" ||
-                  m.movementType === "SourceReturnCancelled";
-                return (
-                  <tr key={m.id}>
-                    <td>{MOVEMENT_TYPE_LABEL[m.movementType] ?? m.movementType}</td>
-                    <td className="zh-table-cell--num">{formatMoney(m.amount)}</td>
-                    <td>{formatDateTime(m.createdAtUtc)}</td>
-                    <td className="zh-text-align-right">
-                      {m.movementType === "Application" && !alreadyReversed && (
-                        <ZHBtn
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={reversing === m.id}
-                          onClick={() => void handleReverseApplication(m)}
-                        >
-                          Revertir
-                        </ZHBtn>
-                      )}
-                      {m.movementType === "Refund" && !alreadyReversed && (
-                        <ZHBtn
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={reversing === m.id}
-                          onClick={() => void handleReverseRefund(m)}
-                        >
-                          Revertir
-                        </ZHBtn>
-                      )}
-                      {!isReversal && alreadyReversed && (
-                        <span className="zh-text-muted">Revertido</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {credit.movements.length === 0 && (
-                <tr className="prd-empty-row">
-                  <td colSpan={4}>Sin movimientos registrados.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ZHDataTable
+          columns={movementColumns}
+          rows={credit.movements}
+          rowKey={(m) => m.id}
+          tableClassName="table--compact table--neutral"
+          emptyMessage="Sin movimientos registrados."
+        />
       </ZHCard>
 
       <ApplySupplierCreditModal

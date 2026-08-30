@@ -1,5 +1,6 @@
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import type { SalesReturnDto } from "../api/salesReturnService";
 import "../../../styles/shared/erp-form-core.css";
 
@@ -13,66 +14,74 @@ interface Props {
  * autorizada), resumen de impuestos/total y asignaciones de reembolso.
  * Nunca recalcula nada — todos los valores vienen tal cual del servidor.
  */
-export function SalesReturnSummary({ salesReturn, decimals }: Props) {
+export function SalesReturnSummary({ salesReturn, decimals }: Readonly<Props>) {
+  const lineColumns: ZHDataTableColumn<SalesReturnDto["lines"][number]>[] = [
+    {
+      key: "product",
+      header: "Producto",
+      render: (line) => (
+        <>
+          <div className="sr-lines-table__desc">{line.description}</div>
+          {line.snapshotSku && <div className="sr-lines-table__sku zh-code-value">{line.snapshotSku}</div>}
+        </>
+      ),
+    },
+    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => line.quantity },
+    {
+      key: "unitPrice",
+      header: "P. unitario",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.unitPrice} decimals={decimals} currencySymbol="" />,
+    },
+    {
+      key: "vat",
+      header: "IVA",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.vatAmount} decimals={decimals} currencySymbol="" />,
+    },
+    {
+      key: "ice",
+      header: "ICE",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.iceAmount} decimals={decimals} currencySymbol="" />,
+    },
+    {
+      key: "total",
+      header: "Total línea",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (line) => <ZHMoneyValue value={line.taxInclusiveTotal} decimals={decimals} currencySymbol="" />,
+    },
+  ];
+
+  const refundColumns: ZHDataTableColumn<SalesReturnDto["refundAllocations"][number]>[] = [
+    {
+      key: "method",
+      header: "Forma de reembolso",
+      render: (a) => (a.method === "Cash" ? "Efectivo (Caja)" : "Crédito a Cuenta por Cobrar"),
+    },
+    {
+      key: "amount",
+      header: "Monto",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (a) => <ZHMoneyValue value={a.amount} decimals={decimals} currencySymbol="" />,
+    },
+  ];
+
   return (
     <>
       {salesReturn.status !== "Draft" && (
         <ZHCard title="Líneas devueltas">
-          <div className="table-scroll">
-            <table className="table table--compact table--neutral sr-lines-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th className="zh-text-align-right">Cantidad</th>
-                  <th className="zh-text-align-right">P. unitario</th>
-                  <th className="zh-text-align-right">IVA</th>
-                  <th className="zh-text-align-right">ICE</th>
-                  <th className="zh-text-align-right">Total línea</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salesReturn.lines.map((line) => (
-                  <tr key={line.id}>
-                    <td>
-                      <div className="sr-lines-table__desc">{line.description}</div>
-                      {line.snapshotSku && (
-                        <div className="sr-lines-table__sku zh-code-value">{line.snapshotSku}</div>
-                      )}
-                    </td>
-                    <td className="zh-table-cell--num">{line.quantity}</td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue
-                        value={line.unitPrice}
-                        decimals={decimals}
-                        currencySymbol=""
-                      />
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue
-                        value={line.vatAmount}
-                        decimals={decimals}
-                        currencySymbol=""
-                      />
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue
-                        value={line.iceAmount}
-                        decimals={decimals}
-                        currencySymbol=""
-                      />
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue
-                        value={line.taxInclusiveTotal}
-                        decimals={decimals}
-                        currencySymbol=""
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={lineColumns}
+            rows={salesReturn.lines}
+            rowKey={(line) => line.id}
+            tableClassName="table--compact table--neutral sr-lines-table"
+          />
         </ZHCard>
       )}
 
@@ -134,34 +143,12 @@ export function SalesReturnSummary({ salesReturn, decimals }: Props) {
 
       {salesReturn.refundAllocations.length > 0 && (
         <ZHCard title="Asignación de reembolso">
-          <div className="table-scroll">
-            <table className="table table--compact table--neutral">
-              <thead>
-                <tr>
-                  <th>Forma de reembolso</th>
-                  <th className="zh-text-align-right">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salesReturn.refundAllocations.map((a) => (
-                  <tr key={a.id}>
-                    <td>
-                      {a.method === "Cash"
-                        ? "Efectivo (Caja)"
-                        : "Crédito a Cuenta por Cobrar"}
-                    </td>
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue
-                        value={a.amount}
-                        decimals={decimals}
-                        currencySymbol=""
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={refundColumns}
+            rows={salesReturn.refundAllocations}
+            rowKey={(a) => a.id}
+            tableClassName="table--compact table--neutral"
+          />
         </ZHCard>
       )}
     </>

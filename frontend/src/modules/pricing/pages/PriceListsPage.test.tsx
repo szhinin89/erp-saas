@@ -1,9 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { PriceListsPage } from "./PriceListsPage";
 import { priceListService, type PriceListDto } from "../api/pricingService";
 import { message } from "../../../lib/messages";
+
+function renderPage() {
+  return render(
+    <I18nProvider>
+      <PriceListsPage />
+    </I18nProvider>,
+  );
+}
 
 /**
  * CRITICAL-CONFIRMATIONS-SENSITIVE-CONFIG-06 — "Activar/desactivar lista de precios": el catch
@@ -65,10 +74,10 @@ beforeEach(() => {
 describe("PriceListsPage — activar/desactivar: confirmación y feedback", () => {
   it("pide confirmación antes de desactivar", async () => {
     vi.mocked(priceListService.disable).mockResolvedValue(true);
-    render(<PriceListsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Lista general")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -80,10 +89,10 @@ describe("PriceListsPage — activar/desactivar: confirmación y feedback", () =
 
   it("si se cancela, no llama a priceListService.disable", async () => {
     vi.mocked(message.confirm).mockResolvedValue(false);
-    render(<PriceListsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Lista general")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(priceListService.disable).not.toHaveBeenCalled();
@@ -91,10 +100,10 @@ describe("PriceListsPage — activar/desactivar: confirmación y feedback", () =
 
   it("al desactivar exitosamente muestra message.success", async () => {
     vi.mocked(priceListService.disable).mockResolvedValue(true);
-    render(<PriceListsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Lista general")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith("Lista de precios desactivada correctamente."),
@@ -109,10 +118,10 @@ describe("PriceListsPage — activar/desactivar: confirmación y feedback", () =
         data: { message: { user: "La lista de precios es la predeterminada de la empresa." } },
       },
     });
-    render(<PriceListsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Lista general")).toBeTruthy());
 
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
 
     await waitFor(() =>
       expect(message.error).toHaveBeenCalledWith(
@@ -128,9 +137,9 @@ describe("PriceListsPage — activar/desactivar: confirmación y feedback", () =
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     vi.mocked(priceListService.disable).mockResolvedValue(true);
 
-    render(<PriceListsPage />);
+    renderPage();
     await waitFor(() => expect(screen.getByText("Lista general")).toBeTruthy());
-    fireEvent.click(screen.getByTitle("Desactivar"));
+    fireEvent.click(screen.getByTitle(/Desactivar/));
     await waitFor(() => expect(priceListService.disable).toHaveBeenCalled());
 
     expect(confirmSpy).not.toHaveBeenCalled();

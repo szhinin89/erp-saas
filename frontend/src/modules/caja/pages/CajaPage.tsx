@@ -1,5 +1,6 @@
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {
   ZhDecimalInput,
   ZhNumberInput,
@@ -15,6 +16,11 @@ import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../i18n/i18n";
 import { useCajaPage } from "../hooks/useCajaPage";
+import type {
+  CashSessionListItemDto,
+  CashMovementDto,
+  CashClosingCountDto,
+} from "../api/cajaService";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
@@ -37,6 +43,54 @@ export function CajaPage() {
     };
     return map[t] ?? t;
   };
+
+  const sessionColumns: ZHDataTableColumn<CashSessionListItemDto>[] = [
+    { key: "openedAt", header: "Apertura", render: (s) => formatDateTime(s.openedAt) },
+    { key: "openingAmount", header: "Monto Apertura", align: "right", cellClassName: "zh-table-cell--num", render: (s) => formatMoneyWithSymbol(s.openingAmount) },
+    { key: "balance", header: "Saldo", align: "right", cellClassName: "zh-table-cell--num", render: (s) => formatMoneyWithSymbol(s.currentBalance) },
+    { key: "movements", header: "Movimientos", align: "center", render: (s) => s.movementCount },
+    {
+      key: "status",
+      header: "Estado",
+      render: (s) => <Badge variant={statusBadge(s.status)} label={statusLabel(s.status)} />,
+    },
+    { key: "closedAt", header: "Cierre", render: (s) => (s.closedAt ? formatDateTime(s.closedAt) : "—") },
+    {
+      key: "difference",
+      header: "Diferencia",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (s) => (s.difference != null ? formatMoneyWithSymbol(s.difference) : "—"),
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "center",
+      render: (s) => (
+        <ZHIconButton
+          icon="visibility"
+          variant="ghost"
+          title={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
+          ariaLabel={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
+          onClick={() => ctx.loadDetail(s.id)}
+        />
+      ),
+    },
+  ];
+
+  const sessionMovementColumns: ZHDataTableColumn<CashMovementDto>[] = [
+    { key: "date", header: "Fecha", render: (m) => formatDateTime(m.createdAt) },
+    { key: "type", header: "Tipo", render: (m) => movementTypeLabel(m.movementType) },
+    { key: "description", header: "Descripción", render: (m) => m.description },
+    { key: "amount", header: "Monto", align: "right", cellClassName: "zh-table-cell--num", render: (m) => formatMoneyWithSymbol(m.amount) },
+    { key: "reference", header: "Referencia", render: (m) => m.referenceNumber ?? "—" },
+  ];
+
+  const arqueoColumns: ZHDataTableColumn<CashClosingCountDto>[] = [
+    { key: "denomination", header: "Denominación", render: (c) => c.denominationLabel },
+    { key: "quantity", header: "Cantidad", align: "center", render: (c) => c.quantity },
+    { key: "total", header: "Total", align: "right", cellClassName: "zh-table-cell--num", render: (c) => formatMoneyWithSymbol(c.total) },
+  ];
 
   return (
     <PageShell
@@ -92,65 +146,15 @@ export function CajaPage() {
               </ZHBtn>
             </div>
 
-            {ctx.listLoading ? (
-              <p>Cargando...</p>
-            ) : (
-              <table className="table table--compact table--neutral">
-                <thead>
-                  <tr>
-                    <th>Apertura</th>
-                    <th className="zh-text-align-right">Monto Apertura</th>
-                    <th className="zh-text-align-right">Saldo</th>
-                    <th className="zh-text-align-center">Movimientos</th>
-                    <th>Estado</th>
-                    <th>Cierre</th>
-                    <th className="zh-text-align-right">Diferencia</th>
-                    <th className="zh-text-align-center">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ctx.listItems.map((s) => (
-                    <tr key={s.id}>
-                      <td>{formatDateTime(s.openedAt)}</td>
-                      <td className="zh-table-cell--num">
-                        {formatMoneyWithSymbol(s.openingAmount)}
-                      </td>
-                      <td className="zh-table-cell--num">
-                        {formatMoneyWithSymbol(s.currentBalance)}
-                      </td>
-                      <td className="zh-text-align-center">{s.movementCount}</td>
-                      <td>
-                        <Badge
-                          variant={statusBadge(s.status)}
-                          label={statusLabel(s.status)}
-                        />
-                      </td>
-                      <td>{s.closedAt ? formatDateTime(s.closedAt) : "—"}</td>
-                      <td className="zh-table-cell--num">
-                        {s.difference != null
-                          ? formatMoneyWithSymbol(s.difference)
-                          : "—"}
-                      </td>
-                      <td className="zh-text-align-center">
-                        <ZHIconButton
-                          icon="visibility"
-                          variant="ghost"
-                          title="Ver detalle"
-                          onClick={() => ctx.loadDetail(s.id)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                  {ctx.listItems.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="zh-table-empty">
-                        Sin sesiones de caja.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
+            <ZHDataTable
+              columns={sessionColumns}
+              rows={ctx.listItems}
+              rowKey={(s) => s.id}
+              loading={ctx.listLoading}
+              showRowNumber
+              tableClassName="table--compact table--neutral"
+              emptyMessage="Sin sesiones de caja."
+            />
           </div>
         )}
 
@@ -410,37 +414,13 @@ export function CajaPage() {
             )}
 
             <h4 className="cj-section-title">Movimientos</h4>
-            <table className="table table--compact table--neutral">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Tipo</th>
-                  <th>Descripción</th>
-                  <th className="zh-text-align-right">Monto</th>
-                  <th>Referencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ctx.viewing.movements.map((m) => (
-                  <tr key={m.id}>
-                    <td>{formatDateTime(m.createdAt)}</td>
-                    <td>{movementTypeLabel(m.movementType)}</td>
-                    <td>{m.description}</td>
-                    <td className="zh-table-cell--num">
-                      {formatMoneyWithSymbol(m.amount)}
-                    </td>
-                    <td>{m.referenceNumber ?? "—"}</td>
-                  </tr>
-                ))}
-                {ctx.viewing.movements.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="zh-table-empty">
-                      Sin movimientos.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <ZHDataTable
+              columns={sessionMovementColumns}
+              rows={ctx.viewing.movements}
+              rowKey={(m) => m.id}
+              tableClassName="table--compact table--neutral"
+              emptyMessage="Sin movimientos."
+            />
 
             {ctx.viewing.status === "Closed" &&
               ctx.viewing.closingCounts.length > 0 && (
@@ -448,26 +428,12 @@ export function CajaPage() {
                   <h4 className="cj-section-title cj-section-title--spaced">
                     Arqueo
                   </h4>
-                  <table className="table table--compact table--neutral cj-arqueo-table">
-                    <thead>
-                      <tr>
-                        <th>Denominación</th>
-                        <th className="zh-text-align-center">Cantidad</th>
-                        <th className="zh-text-align-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ctx.viewing.closingCounts.map((c) => (
-                        <tr key={c.id}>
-                          <td>{c.denominationLabel}</td>
-                          <td className="zh-text-align-center">{c.quantity}</td>
-                          <td className="zh-table-cell--num">
-                            {formatMoneyWithSymbol(c.total)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <ZHDataTable
+                    columns={arqueoColumns}
+                    rows={ctx.viewing.closingCounts}
+                    rowKey={(c) => c.id}
+                    tableClassName="table--compact table--neutral cj-arqueo-table"
+                  />
                   {ctx.viewing.closeNotes && (
                     <p className="cj-close-notes">
                       <strong>Notas:</strong> {ctx.viewing.closeNotes}

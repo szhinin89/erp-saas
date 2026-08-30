@@ -4,6 +4,7 @@ import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhTextInput } from "../../../components/zh/inputs";
 import type {
   PaymentTermDto,
@@ -153,6 +154,45 @@ export function PaymentTermsPage() {
     },
   ];
 
+  const paymentTermColumns: ZHDataTableColumn<PaymentTermDto>[] = [
+    { key: "code", header: "Código", render: (pt) => <span className="prd-td-code">{pt.code}</span> },
+    { key: "name", header: "Nombre", render: (pt) => pt.name },
+    { key: "installments", header: "Cuotas", render: (pt) => pt.installments },
+    { key: "days", header: "Días entre cuotas", render: (pt) => pt.daysBetweenInstallments },
+    { key: "totalDays", header: "Total días", render: (pt) => pt.totalDays },
+    { key: "summary", header: "Resumen", render: (pt) => <Badge variant="info" label={pt.summary} /> },
+    {
+      // ZH-LISTING-GLOBAL-STANDARD-06: antes mostraba el texto literal "Estado" en vez del
+      // estado real (mismo bug corregido en FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
+      key: "status",
+      header: "Estado",
+      render: (pt) => <Badge label={pt.isActive ? "Activo" : "Inactivo"} variant={pt.isActive ? "success" : "neutral"} />,
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "right",
+      render: (pt) => (
+        <div className="prd-td-actions">
+          <ZHIconButton
+            icon="edit"
+            title={`Editar plazo de pago ${pt.code}`}
+            ariaLabel={`Editar plazo de pago ${pt.code}`}
+            variant="primary"
+            onClick={() => startEdit(pt)}
+          />
+          <ZHIconButton
+            icon={pt.isActive ? "toggle_off" : "toggle_on"}
+            title={pt.isActive ? `Desactivar plazo de pago ${pt.code}` : `Activar plazo de pago ${pt.code}`}
+            ariaLabel={pt.isActive ? `Desactivar plazo de pago ${pt.code}` : `Activar plazo de pago ${pt.code}`}
+            variant={pt.isActive ? "danger" : "success"}
+            onClick={() => handleToggle(pt)}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <ErpPageTemplate
       title="Condiciones de Pago"
@@ -190,60 +230,14 @@ export function PaymentTermsPage() {
               </span>
             </ZHBtn>
           </div>
-          {loading ? (
-            <p>Cargando...</p>
-          ) : (
-            <table className="prd-crud-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Cuotas</th>
-                  <th>Días entre cuotas</th>
-                  <th>Total días</th>
-                  <th>Resumen</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((pt) => (
-                  <tr key={pt.id}>
-                    <td className="prd-td-code">{pt.code}</td>
-                    <td>{pt.name}</td>
-                    <td>{pt.installments}</td>
-                    <td>{pt.daysBetweenInstallments}</td>
-                    <td>{pt.totalDays}</td>
-                    <td>
-                      <Badge variant="info" label={pt.summary} />
-                    </td>
-                    <td>
-                      <Badge label={"Estado"} variant="neutral" />
-                    </td>
-                    <td className="prd-td-actions">
-                      <ZHIconButton
-                        icon="edit"
-                        title="Editar"
-                        variant="primary"
-                        onClick={() => startEdit(pt)}
-                      />
-                      <ZHIconButton
-                          icon={pt.isActive ? "toggle_off" : "toggle_on"}
-                          title={pt.isActive ? "Desactivar" : "Activar"}
-                          variant={pt.isActive ? "danger" : "success"}
-                          onClick={() => handleToggle(pt)}
-                        />
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr className="prd-empty-row">
-                    <td colSpan={8}>Sin condiciones de pago.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+          <ZHDataTable
+            columns={paymentTermColumns}
+            rows={items}
+            rowKey={(pt) => pt.id}
+            loading={loading}
+            showRowNumber
+            emptyMessage="Sin condiciones de pago."
+          />
         </div>
       )}
 

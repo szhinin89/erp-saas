@@ -5,6 +5,7 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {
   formatDate,
   formatDateTime,
@@ -66,6 +67,40 @@ export function AccountsReceivablePage() {
     fetchItems();
   }, [fetchItems]);
 
+  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Factura" ya es el número funcional
+  // del documento, un N° de referencia visual sería redundante.
+  const receivableColumns: ZHDataTableColumn<SalesReceivableDto>[] = [
+    { key: "invoice", header: "Factura", render: (r) => <span className="mono">{r.invoiceNumber}</span> },
+    { key: "customer", header: "Cliente", render: (r) => r.customerName },
+    { key: "identification", header: "Identificación", render: (r) => <span className="mono">{r.customerIdentification}</span> },
+    { key: "branch", header: "Sucursal", render: (r) => r.branchName || "Sucursal no disponible" },
+    { key: "createdBy", header: "Emitido por", render: (r) => r.createdByName || "Usuario no disponible" },
+    { key: "invoiceDate", header: "Fecha factura", render: (r) => formatDateTime(r.invoiceCreatedAt) },
+    { key: "dueDate", header: "Vence", render: (r) => (r.dueDate ? formatDate(r.dueDate) : "—") },
+    { key: "originalAmount", header: "Monto original", render: (r) => <ZHMoneyValue value={r.originalAmount} /> },
+    { key: "paidAmount", header: "Cobrado", render: (r) => <ZHMoneyValue value={r.paidAmount} /> },
+    { key: "balanceDue", header: "Saldo pendiente", render: (r) => <ZHMoneyValue value={r.balanceDue} emphasis="strong" /> },
+    {
+      key: "status",
+      header: "Estado",
+      render: (r) => {
+        const statusBadge = getReceivableStatusBadge(r);
+        return <Badge label={statusBadge.label} variant={statusBadge.variant} />;
+      },
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      render: (r) =>
+        r.balanceDue > 0 && r.status !== "cancelled" ? (
+          <ZHBtn onClick={() => setSelected(r)} aria-label={`Registrar cobro de factura ${r.invoiceNumber}`}>
+            <span className="material-symbols-outlined zh-icon-md">payments</span>
+            Registrar cobro
+          </ZHBtn>
+        ) : null,
+    },
+  ];
+
   return (
     <ErpPageTemplate
       title="Cuentas por Cobrar"
@@ -88,71 +123,13 @@ export function AccountsReceivablePage() {
           </ZHBtn>
         </div>
 
-        {loading ? (
-          <p>Cargando...</p>
-        ) : (
-          <table className="prd-crud-table">
-            <thead>
-              <tr>
-                <th>Factura</th>
-                <th>Cliente</th>
-                <th>Identificación</th>
-                <th>Sucursal</th>
-                <th>Emitido por</th>
-                <th>Fecha factura</th>
-                <th>Vence</th>
-                <th>Monto original</th>
-                <th>Cobrado</th>
-                <th>Saldo pendiente</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((r) => {
-                const statusBadge = getReceivableStatusBadge(r);
-                return (
-                  <tr key={r.id}>
-                    <td className="mono">{r.invoiceNumber}</td>
-                    <td>{r.customerName}</td>
-                    <td className="mono">{r.customerIdentification}</td>
-                    <td>{r.branchName || "Sucursal no disponible"}</td>
-                    <td>{r.createdByName || "Usuario no disponible"}</td>
-                    <td>{formatDateTime(r.invoiceCreatedAt)}</td>
-                    <td>{r.dueDate ? formatDate(r.dueDate) : "—"}</td>
-                    <td>
-                      <ZHMoneyValue value={r.originalAmount} />
-                    </td>
-                    <td>
-                      <ZHMoneyValue value={r.paidAmount} />
-                    </td>
-                    <td>
-                      <ZHMoneyValue value={r.balanceDue} emphasis="strong" />
-                    </td>
-                    <td>
-                      <Badge label={statusBadge.label} variant={statusBadge.variant} />
-                    </td>
-                    <td className="prd-td-actions">
-                      {r.balanceDue > 0 && r.status !== "cancelled" ? (
-                        <ZHBtn onClick={() => setSelected(r)}>
-                          <span className="material-symbols-outlined zh-icon-md">
-                            payments
-                          </span>
-                          Registrar cobro
-                        </ZHBtn>
-                      ) : null}
-                    </td>
-                  </tr>
-                );
-              })}
-              {items.length === 0 && (
-                <tr className="prd-empty-row">
-                  <td colSpan={12}>Sin cuentas por cobrar.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+        <ZHDataTable
+          columns={receivableColumns}
+          rows={items}
+          rowKey={(r) => r.id}
+          loading={loading}
+          emptyMessage="Sin cuentas por cobrar."
+        />
         {!loading && total > items.length && (
           <p className="zh-text-muted">
             Mostrando {items.length} de {total} — refina el filtro de estado para ver más.

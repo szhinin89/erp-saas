@@ -11,11 +11,13 @@ import { useI18n } from "../../../../i18n/i18n";
 import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol, formatMoney } from "../../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../../lib/config/decimal.config";
 import { useInventoryInvestigationPage } from "../hooks/useInventoryInvestigationPage";
 import type { InitialDocument } from "../hooks/useInventoryInvestigationPage";
+import type { StockMovementDto } from "../../stock/api/stockService";
 import { KardexMovementDetailModal } from "../components/KardexMovementDetailModal";
 import "../../../../styles/shared/items-catalog.css";
 import "../../../../styles/shared/erp-form-core.css";
@@ -120,6 +122,81 @@ export function KardexPage() {
   const qty = getDecimalConfig().quantity;
   const cost = getDecimalConfig().purchaseUnitPrice;
   const total = getDecimalConfig().totalAmount;
+
+  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Seq." (sequenceNumber) ya es el
+  // número de secuencia funcional del movimiento, un N° visual sería redundante.
+  const movementColumns: ZHDataTableColumn<StockMovementDto>[] = [
+    { key: "seq", header: "Seq.", render: (m) => <span className="kdx-mono kdx-mono--strong">#{m.sequenceNumber}</span> },
+    { key: "effectiveDate", header: "Fecha Efectiva", render: (m) => formatDate(m.effectiveDate) },
+    {
+      key: "type",
+      header: "Tipo",
+      render: (m) => (
+        <Badge
+          variant={movementBadgeVariant(m.movementTypeName)}
+          label={MOVEMENT_TYPE_LABELS[m.movementTypeName] ?? m.movementTypeName}
+        />
+      ),
+    },
+    { key: "document", header: "Documento", render: (m) => <span className="kdx-secondary-text">{m.reference ?? "—"}</span> },
+    {
+      key: "entrada",
+      header: "Entrada",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => <span className="kdx-positive">{m.quantity > 0 ? formatMoney(m.quantity, qty) : "—"}</span>,
+    },
+    {
+      key: "salida",
+      header: "Salida",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => <span className="kdx-negative">{m.quantity < 0 ? formatMoney(-m.quantity, qty) : "—"}</span>,
+    },
+    {
+      key: "saldo",
+      header: "Saldo",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => <span className="kdx-value-strong">{formatMoney(m.resultQuantity, qty)}</span>,
+    },
+    {
+      key: "unitCost",
+      header: "Costo Unit.",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => (m.unitCost != null ? formatMoneyWithSymbol(m.unitCost, cost) : "—"),
+    },
+    {
+      key: "avgCost",
+      header: "Costo Promedio",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => formatMoneyWithSymbol(m.runningAverageCost, cost),
+    },
+    {
+      key: "stockValue",
+      header: "Valor Inventario",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => formatMoneyWithSymbol(m.runningStockValue, total),
+    },
+    { key: "user", header: "Usuario", render: (m) => <span className="kdx-small-text">{m.createdByName ?? "—"}</span> },
+    {
+      key: "actions",
+      header: "Acciones",
+      align: "center",
+      render: (m) => (
+        <ZHIconButton
+          icon="folder_open"
+          variant="ghost"
+          title={`Ver expediente del movimiento #${m.sequenceNumber}`}
+          ariaLabel={`Ver expediente del movimiento #${m.sequenceNumber}`}
+          onClick={() => void ctx.openDetail(m.id)}
+        />
+      ),
+    },
+  ];
 
   return (
     <ErpPageTemplate
@@ -389,94 +466,18 @@ export function KardexPage() {
         )}
 
         {/* ── Tabla principal ──────────────────────────────────────────── */}
-        {ctx.movementsLoading ? (
-          <p>Cargando movimientos...</p>
-        ) : (
-          <table className="table table--compact table--neutral">
-            <thead>
-              <tr>
-                <th>Seq.</th>
-                <th>Fecha Efectiva</th>
-                <th>Tipo</th>
-                <th>Documento</th>
-                <th className="zh-text-align-right">Entrada</th>
-                <th className="zh-text-align-right">Salida</th>
-                <th className="zh-text-align-right">Saldo</th>
-                <th className="zh-text-align-right">Costo Unit.</th>
-                <th className="zh-text-align-right">Costo Promedio</th>
-                <th className="zh-text-align-right">Valor Inventario</th>
-                <th>Usuario</th>
-                <th className="zh-text-align-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ctx.movements.map((m) => (
-                <tr key={m.id}>
-                  <td className="kdx-mono kdx-mono--strong">
-                    #{m.sequenceNumber}
-                  </td>
-                  <td>{formatDate(m.effectiveDate)}</td>
-                  <td>
-                    <Badge
-                      variant={movementBadgeVariant(m.movementTypeName)}
-                      label={
-                        MOVEMENT_TYPE_LABELS[m.movementTypeName] ??
-                        m.movementTypeName
-                      }
-                    />
-                  </td>
-                  <td
-                    className="kdx-secondary-text"
-                  >
-                    {m.reference ?? "—"}
-                  </td>
-                  <td
-                    className="zh-table-cell--num kdx-positive"
-                  >
-                    {m.quantity > 0 ? formatMoney(m.quantity, qty) : "—"}
-                  </td>
-                  <td
-                    className="zh-table-cell--num kdx-negative"
-                  >
-                    {m.quantity < 0 ? formatMoney(-m.quantity, qty) : "—"}
-                  </td>
-                  <td className="zh-table-cell--num kdx-value-strong">
-                    {formatMoney(m.resultQuantity, qty)}
-                  </td>
-                  <td className="zh-table-cell--num">
-                    {m.unitCost != null
-                      ? formatMoneyWithSymbol(m.unitCost, cost)
-                      : "—"}
-                  </td>
-                  <td className="zh-table-cell--num">
-                    {formatMoneyWithSymbol(m.runningAverageCost, cost)}
-                  </td>
-                  <td className="zh-table-cell--num">
-                    {formatMoneyWithSymbol(m.runningStockValue, total)}
-                  </td>
-                  <td className="kdx-small-text">{m.createdByName ?? "—"}</td>
-                  <td className="zh-text-align-center">
-                    <ZHIconButton
-                      icon="folder_open"
-                      variant="ghost"
-                      title="Ver expediente"
-                      onClick={() => void ctx.openDetail(m.id)}
-                    />
-                  </td>
-                </tr>
-              ))}
-              {ctx.movements.length === 0 && (
-                <tr>
-                  <td colSpan={12} className="zh-table-empty">
-                    {ctx.searchMode === "product"
-                      ? "Busque un producto para ver su historial de Kardex."
-                      : "Resuelva un documento para ver los movimientos que generó."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+        <ZHDataTable
+          columns={movementColumns}
+          rows={ctx.movements}
+          rowKey={(m) => m.id}
+          loading={ctx.movementsLoading}
+          tableClassName="table--compact table--neutral"
+          emptyMessage={
+            ctx.searchMode === "product"
+              ? "Busque un producto para ver su historial de Kardex."
+              : "Resuelva un documento para ver los movimientos que generó."
+          }
+        />
       </div>
 
       <KardexMovementDetailModal
