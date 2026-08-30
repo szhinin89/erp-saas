@@ -1,0 +1,121 @@
+.coa-list-card > .card-header {
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+}
+
+.coa-list-card > .card-header > span {
+  flex: 0 0 auto;
+}
+
+.coa-list-card > .card-header > div {
+  flex: 1 1 620px;
+  min-width: 0;
+}
+
+.coa-list-filters {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 180px 180px auto;
+  align-items: center;
+  justify-content: end;
+  gap: var(--space-2);
+  max-width: 900px;
+  margin-left: auto;
+}
+
+.coa-list-filters input,
+.coa-list-filters select {
+  width: 100%;
+}
+
+.coa-list-filters button {
+  white-space: nowrap;
+}
+
+.coa-tree-name {
+  --account-tree-step: 14px;
+  --account-tree-elbow: 8px;
+  --account-tree-line-color: var(--color-outline-variant);
+
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.coa-tree-name--group {
+  font-weight: 600;
+}
+
+.coa-tree-name__guides {
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  min-height: var(--text-body-md-height);
+}
+
+.coa-tree-name__guide {
+  position: relative;
+  display: block;
+  flex: 0 0 var(--account-tree-step);
+  width: var(--account-tree-step);
+  min-height: var(--text-body-md-height);
+}
+
+.coa-tree-name__guide--branch {
+  flex-basis: calc(var(--account-tree-step) + var(--account-tree-elbow));
+  width: calc(var(--account-tree-step) + var(--account-tree-elbow));
+}
+
+.coa-tree-name__guide::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--space-1) * -1);
+  bottom: calc(var(--space-1) * -1);
+  left: 50%;
+  width: 1px;
+  background: var(--account-tree-line-color);
+  opacity: 0.55;
+  transform: translateX(-50%);
+}
+
+.coa-tree-name__guide--branch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--account-tree-elbow);
+  height: 1px;
+  background: var(--account-tree-line-color);
+  opacity: 0.55;
+  transform: translateY(-50%);
+}
+
+.coa-tree-name__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 920px) {
+  .coa-list-card > .card-header {
+    align-items: flex-start;
+  }
+
+  .coa-list-card > .card-header > div {
+    flex-basis: 100%;
+  }
+
+  .coa-list-filters {
+    grid-template-columns: 1fr;
+    max-width: none;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .coa-list-filters button {
+    justify-self: flex-start;
+  }
+}

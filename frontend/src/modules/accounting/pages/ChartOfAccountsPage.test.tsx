@@ -63,6 +63,104 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y feedback", () => {
+  it("ordena por código contable y renderiza nombres limpios con guías visuales por código", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue([
+      {
+        ...ACTIVE_ACCOUNT,
+        id: "acc-5",
+        code: "1.1.01.002",
+        name: "L Caja chica",
+        level: 1,
+      },
+      {
+        ...ACTIVE_ACCOUNT,
+        id: "acc-3",
+        code: "1.1.01",
+        name: "Efectivo y equivalentes",
+        level: 0,
+        allowsPosting: false,
+      },
+      {
+        ...ACTIVE_ACCOUNT,
+        id: "acc-1",
+        code: "1",
+        name: "Activo",
+        level: 0,
+        allowsPosting: false,
+      },
+      {
+        ...ACTIVE_ACCOUNT,
+        id: "acc-2",
+        code: "1.1",
+        name: "Activo corriente",
+        level: 0,
+        allowsPosting: false,
+      },
+      {
+        ...ACTIVE_ACCOUNT,
+        id: "acc-4",
+        code: "1.1.01.001",
+        name: "Caja General",
+        level: 1,
+      },
+      {
+        ...ACTIVE_ACCOUNT,
+        id: "acc-6",
+        code: "1.1.02",
+        name: "│ ├ Bancos",
+        level: 0,
+        allowsPosting: false,
+      },
+    ]);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja chica")).toBeTruthy());
+
+    const compactFilterBar = container.querySelector(".coa-list-filters");
+    expect(compactFilterBar).toBeTruthy();
+    expect(screen.getByPlaceholderText("Buscar por código o nombre...")).toBeTruthy();
+    expect(screen.getByText("Todos los tipos")).toBeTruthy();
+    expect(screen.getByText("Todos los estados")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Actualizar" })).toBeTruthy();
+
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    expect(rows.map((row) => row.children[0]?.textContent)).toEqual([
+      "1",
+      "1.1",
+      "1.1.01",
+      "1.1.01.001",
+      "1.1.01.002",
+      "1.1.02",
+    ]);
+    expect(screen.queryByText("L Caja chica")).toBeNull();
+    expect(screen.queryByText(/[\u2502\u2514\u251c]/)).toBeNull();
+
+    const nameCells = rows.map((row) => row.children[1]?.firstElementChild as HTMLElement);
+    expect(nameCells.map((cell) => cell.textContent)).toEqual([
+      "Activo",
+      "Activo corriente",
+      "Efectivo y equivalentes",
+      "Caja General",
+      "Caja chica",
+      "Bancos",
+    ]);
+    expect(nameCells.map((cell) => cell.dataset.depth)).toEqual(["0", "1", "2", "3", "3", "2"]);
+    expect(nameCells[0].querySelector(".coa-tree-name__guides")).toBeNull();
+
+    const depthOneGuides = nameCells[1].querySelector(".coa-tree-name__guides");
+    const depthThreeGuides = nameCells[3].querySelector(".coa-tree-name__guides");
+    expect(depthOneGuides?.getAttribute("aria-hidden")).toBe("true");
+    expect(depthOneGuides?.querySelectorAll(".coa-tree-name__guide")).toHaveLength(1);
+    expect(depthThreeGuides?.getAttribute("aria-hidden")).toBe("true");
+    expect(depthThreeGuides?.querySelectorAll(".coa-tree-name__guide")).toHaveLength(3);
+    expect(depthThreeGuides?.textContent).toBe("");
+
+    rows.forEach((row) => {
+      expect(row.querySelector('button[aria-label="Editar"]')).toBeTruthy();
+      expect(row.querySelector('button[aria-label="Desactivar"]')).toBeTruthy();
+    });
+  });
+
   it("pide confirmación antes de desactivar, explicando el impacto en asientos/reglas de posteo", async () => {
     vi.mocked(accountingApi.disableAccount).mockResolvedValue(ACTIVE_ACCOUNT);
 

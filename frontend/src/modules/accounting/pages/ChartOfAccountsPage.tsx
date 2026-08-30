@@ -23,6 +23,7 @@ import {
 } from "../schemas/accountSchema";
 
 import "../../../styles/shared/items-catalog.css";
+import "./ChartOfAccountsPage.css";
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = Object.fromEntries(
   ACCOUNT_TYPE_OPTIONS.map((o) => [o.value, o.label]),
@@ -32,6 +33,71 @@ const ACCOUNT_NATURE_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 type Mode = "list" | "create" | "edit";
+
+const accountCodeSegments = (code: string) => code.split(".").filter(Boolean);
+
+const compareAccountCode = (leftCode: string, rightCode: string) => {
+  const leftSegments = accountCodeSegments(leftCode);
+  const rightSegments = accountCodeSegments(rightCode);
+  const segmentCount = Math.min(leftSegments.length, rightSegments.length);
+
+  for (let index = 0; index < segmentCount; index += 1) {
+    const leftSegment = leftSegments[index];
+    const rightSegment = rightSegments[index];
+    const leftIsNumeric = /^\d+$/.test(leftSegment);
+    const rightIsNumeric = /^\d+$/.test(rightSegment);
+
+    if (leftIsNumeric && rightIsNumeric) {
+      const numericComparison = Number(leftSegment) - Number(rightSegment);
+      if (numericComparison !== 0) return numericComparison;
+    }
+
+    const textComparison = leftSegment.localeCompare(rightSegment, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+    if (textComparison !== 0) return textComparison;
+  }
+
+  return leftSegments.length - rightSegments.length || leftCode.localeCompare(rightCode);
+};
+
+const getAccountVisualDepth = (code: string) => Math.max(accountCodeSegments(code).length - 1, 0);
+
+const cleanAccountName = (name: string) =>
+  name.replace(/^\s*(?:(?:L|[\u2502\u2514\u251c])\s+)+/, "");
+
+interface AccountTreeNameCellProps {
+  code: string;
+  name: string;
+  allowsPosting: boolean;
+}
+
+function AccountTreeNameCell({ code, name, allowsPosting }: AccountTreeNameCellProps) {
+  const visualDepth = getAccountVisualDepth(code);
+  const guides = Array.from({ length: visualDepth }, (_, index) => index);
+
+  return (
+    <span
+      className={`coa-tree-name${allowsPosting ? "" : " coa-tree-name--group"}`}
+      data-depth={visualDepth}
+    >
+      {visualDepth > 0 && (
+        <span className="coa-tree-name__guides" aria-hidden="true">
+          {guides.map((index) => (
+            <span
+              key={index}
+              className={`coa-tree-name__guide${
+                index === visualDepth - 1 ? " coa-tree-name__guide--branch" : ""
+              }`}
+            />
+          ))}
+        </span>
+      )}
+      <span className="coa-tree-name__label">{cleanAccountName(name)}</span>
+    </span>
+  );
+}
 
 /**
  * Plan de Cuentas (ACCOUNTING-CHART-OF-ACCOUNTS-02). Auditoría de reutilización: revisadas
@@ -82,7 +148,7 @@ export function ChartOfAccountsPage() {
   }, [fetchAccounts]);
 
   const sortedAccounts = useMemo(
-    () => [...accounts].sort((a, b) => a.code.localeCompare(b.code)),
+    () => [...accounts].sort((a, b) => compareAccountCode(a.code, b.code)),
     [accounts],
   );
 
@@ -210,11 +276,7 @@ export function ChartOfAccountsPage() {
       key: "name",
       header: "Nombre",
       render: (row) => (
-        <span>
-          {"    ".repeat(row.level)}
-          {row.level > 0 ? "└ " : ""}
-          {row.name}
-        </span>
+        <AccountTreeNameCell code={row.code} name={row.name} allowsPosting={row.allowsPosting} />
       ),
     },
     {
@@ -287,9 +349,10 @@ export function ChartOfAccountsPage() {
     >
       {mode === "list" && (
         <ZHCard
+          className="coa-list-card"
           title="Listado"
           actions={
-            <div className="zh-form-actions-row">
+            <div className="coa-list-filters">
               <ZhTextInput
                 placeholder="Buscar por código o nombre..."
                 value={search}
