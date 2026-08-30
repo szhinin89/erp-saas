@@ -4,6 +4,7 @@ import { EmptyState, LoadingState, NoAccessPage, PageShell } from "../../../comp
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
@@ -104,6 +105,45 @@ export function SupplierPaymentDetailPage() {
   const destinationsById = new Map(destinations.map((d) => [d.id, d]));
   const canShowReverseButton = payment?.status === "Confirmed" && canReverse;
 
+  // ZH-LISTING-DETAIL-TABLES-AUDIT-04: líneas de un documento confirmado, sin acciones ni
+  // paginación — sin showRowNumber (regla ya establecida: no usar en líneas de documento).
+  const methodLineColumns: ZHDataTableColumn<SupplierPaymentDto["methodLines"][number]>[] = [
+    { key: "method", header: "Medio", render: (line) => methodsById.get(line.paymentMethodId)?.name ?? "—" },
+    {
+      key: "destination",
+      header: "Caja / cuenta bancaria",
+      render: (line) => destinationsById.get(line.financialDestinationId)?.name ?? "—",
+    },
+    {
+      key: "reference",
+      header: "Referencia",
+      render: (line) =>
+        line.checkNumber
+          ? `Cheque ${line.checkNumber}${line.checkDate ? ` — ${formatDate(line.checkDate)}` : ""}`
+          : line.referenceNumber || "—",
+    },
+    {
+      key: "amount",
+      header: "Monto",
+      align: "right",
+      render: (line) => <ZHMoneyValue value={line.amount} decimals={decimals} />,
+    },
+  ];
+
+  const applicationLineColumns: ZHDataTableColumn<SupplierPaymentDto["applicationLines"][number]>[] = [
+    {
+      key: "installment",
+      header: "Cuota",
+      render: (line) => <span className="sp-line-hint">{line.accountsPayableInstallmentId}</span>,
+    },
+    {
+      key: "amountApplied",
+      header: "Monto aplicado",
+      align: "right",
+      render: (line) => <ZHMoneyValue value={line.amountApplied} decimals={decimals} />,
+    },
+  ];
+
   return (
     <PageShell
       kicker="Finanzas"
@@ -156,59 +196,19 @@ export function SupplierPaymentDetailPage() {
           </ZHCard>
 
           <ZHCard title="Medios de pago">
-            <div className="table-scroll">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Medio</th>
-                    <th>Caja / cuenta bancaria</th>
-                    <th>Referencia</th>
-                    <th className="zh-text-align-right">Monto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payment.methodLines.map((line) => (
-                    <tr key={line.id}>
-                      <td>{methodsById.get(line.paymentMethodId)?.name ?? "—"}</td>
-                      <td>{destinationsById.get(line.financialDestinationId)?.name ?? "—"}</td>
-                      <td>
-                        {line.checkNumber
-                          ? `Cheque ${line.checkNumber}${line.checkDate ? ` — ${formatDate(line.checkDate)}` : ""}`
-                          : line.referenceNumber || "—"}
-                      </td>
-                      <td className="zh-text-align-right">
-                        <ZHMoneyValue value={line.amount} decimals={decimals} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ZHDataTable
+              columns={methodLineColumns}
+              rows={payment.methodLines}
+              rowKey={(line) => line.id}
+            />
           </ZHCard>
 
           <ZHCard title="Cuotas aplicadas">
-            <div className="table-scroll">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Cuota</th>
-                    <th className="zh-text-align-right">Monto aplicado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payment.applicationLines.map((line) => (
-                    <tr key={line.id}>
-                      <td>
-                        <span className="sp-line-hint">{line.accountsPayableInstallmentId}</span>
-                      </td>
-                      <td className="zh-text-align-right">
-                        <ZHMoneyValue value={line.amountApplied} decimals={decimals} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ZHDataTable
+              columns={applicationLineColumns}
+              rows={payment.applicationLines}
+              rowKey={(line) => line.id}
+            />
           </ZHCard>
 
           {payment.status === "Reversed" && (

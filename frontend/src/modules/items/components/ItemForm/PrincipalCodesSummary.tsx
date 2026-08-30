@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Badge, EmptyState } from "../../../../components/PageShell";
 import { ZHBtn, ZHFormSection } from "../../../../components/zh/ZHForm";
 import { ZhSelect, ZhTextInput } from "../../../../components/zh/inputs";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { itemService } from "../../api/itemService";
 import type {
   ItemDetailDto,
@@ -299,6 +300,72 @@ export function SupplierCodesPrincipalManager({
       : noPresentationLabel;
   };
 
+  const supplierCodeColumns: ZHDataTableColumn<ItemSupplierCodeDto>[] = [
+    {
+      key: "supplier",
+      header: t("items.supplierCodes.col.supplier", "Proveedor"),
+      render: (supplierCode) => supplierLabel(supplierCode, unnamedSupplierLabel),
+    },
+    {
+      key: "identification",
+      header: t("items.supplierCodes.col.identification", "RUC/Identificación"),
+      render: (supplierCode) =>
+        supplierCode.supplierIdentification ? (
+          <>
+            {identificationPrefix}: {supplierCode.supplierIdentification}
+          </>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "code",
+      header: t("items.supplierCodes.col.code", "Código proveedor"),
+      render: (supplierCode) => <code>{supplierCode.code}</code>,
+    },
+    {
+      key: "presentation",
+      header: t("items.supplierCodes.col.presentation", "Presentación"),
+      render: (supplierCode) => packagingLabel(supplierCode.packagingLevelId),
+    },
+    {
+      key: "primary",
+      header: t("items.supplierCodes.col.primary", "Principal"),
+      render: (supplierCode) => (supplierCode.isPrimary ? t("common.yes", "Sí") : t("common.no", "No")),
+    },
+    {
+      key: "actions",
+      header: t("common.actions", "Acciones"),
+      align: "right",
+      render: (supplierCode) => (
+        <ZhSelect
+          value={supplierCode.packagingLevelId ?? ""}
+          aria-label={t(
+            "items.supplierCodes.presentationSelect",
+            "Presentación del código proveedor",
+          )}
+          disabled={disabled || activePackaging.length === 0 || !supplierCode.supplierId}
+          onChange={(event) =>
+            void onUpdatePresentation(
+              supplierCode.supplierId ?? "",
+              supplierCode.code,
+              event.target.value || null,
+            )
+          }
+        >
+          <option value="">
+            {activePackaging.length === 0 ? pendingPresentationLabel : noPresentationLabel}
+          </option>
+          {activePackaging.map((packaging) => (
+            <option key={packaging.id} value={packaging.id}>
+              {packagingLabel(packaging.id)}
+            </option>
+          ))}
+        </ZhSelect>
+      ),
+    },
+  ];
+
   return (
     <ZHFormSection
       title={t(
@@ -311,87 +378,11 @@ export function SupplierCodesPrincipalManager({
       )}
     >
       {supplierCodes.length > 0 ? (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("items.supplierCodes.col.supplier", "Proveedor")}</th>
-                <th>
-                  {t(
-                    "items.supplierCodes.col.identification",
-                    "RUC/Identificación",
-                  )}
-                </th>
-                <th>{t("items.supplierCodes.col.code", "Código proveedor")}</th>
-                <th>
-                  {t("items.supplierCodes.col.presentation", "Presentación")}
-                </th>
-                <th>{t("items.supplierCodes.col.primary", "Principal")}</th>
-                <th className="pg-th-right">
-                  {t("common.actions", "Acciones")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {supplierCodes.map((supplierCode) => (
-                <tr key={supplierCode.id}>
-                  <td>{supplierLabel(supplierCode, unnamedSupplierLabel)}</td>
-                  <td>
-                    {supplierCode.supplierIdentification ? (
-                      <>
-                        {identificationPrefix}:{" "}
-                        {supplierCode.supplierIdentification}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td>
-                    <code>{supplierCode.code}</code>
-                  </td>
-                  <td>{packagingLabel(supplierCode.packagingLevelId)}</td>
-                  <td>
-                    {supplierCode.isPrimary
-                      ? t("common.yes", "Sí")
-                      : t("common.no", "No")}
-                  </td>
-                  <td className="pg-td-right">
-                    <ZhSelect
-                      value={supplierCode.packagingLevelId ?? ""}
-                      aria-label={t(
-                        "items.supplierCodes.presentationSelect",
-                        "Presentación del código proveedor",
-                      )}
-                      disabled={
-                        disabled ||
-                        activePackaging.length === 0 ||
-                        !supplierCode.supplierId
-                      }
-                      onChange={(event) =>
-                        void onUpdatePresentation(
-                          supplierCode.supplierId ?? "",
-                          supplierCode.code,
-                          event.target.value || null,
-                        )
-                      }
-                    >
-                      <option value="">
-                        {activePackaging.length === 0
-                          ? pendingPresentationLabel
-                          : noPresentationLabel}
-                      </option>
-                      {activePackaging.map((packaging) => (
-                        <option key={packaging.id} value={packaging.id}>
-                          {packagingLabel(packaging.id)}
-                        </option>
-                      ))}
-                    </ZhSelect>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ZHDataTable
+          columns={supplierCodeColumns}
+          rows={supplierCodes}
+          rowKey={(supplierCode) => supplierCode.id}
+        />
       ) : (
         <div className="pg-pad-40">
           <EmptyState

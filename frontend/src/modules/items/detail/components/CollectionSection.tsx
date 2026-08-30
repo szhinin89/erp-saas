@@ -4,6 +4,7 @@ import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import type {
   ItemImageDto,
   ItemUnitConversionDto,
@@ -78,6 +79,42 @@ export function ImagesSection({
   onDisable: (id: string) => Promise<void>;
 }) {
   const active = images.filter((i) => i.isActive);
+  const columns: ZHDataTableColumn<ItemImageDto>[] = [
+    {
+      key: "storageObjectId",
+      header: t("items.images.col.storageObjectId", "ID Objeto"),
+      render: (img) => <code>{img.storageObjectId.slice(0, 12)}…</code>,
+    },
+    { key: "altText", header: t("items.images.col.altText", "Alt Text"), render: (img) => img.altText || "—" },
+    {
+      key: "isMain",
+      header: t("items.images.col.isMain", "Principal"),
+      render: (img) => (img.isMain ? t("common.yes", "Sí") : t("common.no", "No")),
+    },
+    {
+      key: "isEcommerce",
+      header: t("items.images.col.isEcommerce", "eCommerce"),
+      render: (img) => (img.isEcommerce ? t("common.yes", "Sí") : t("common.no", "No")),
+    },
+    { key: "sortOrder", header: t("items.images.col.sortOrder", "Orden"), render: (img) => img.sortOrder },
+    {
+      key: "actions",
+      header: t("common.actions", "Acciones"),
+      align: "right",
+      render: (img) => (
+        <ZHBtn
+          type="button"
+          variant="ghost"
+          size="sm"
+          title={t("common.deactivate", "Desactivar")}
+          onClick={() => void onDisable(img.id)}
+          disabled={disabled}
+        >
+          <span className="material-symbols-outlined">block</span>
+        </ZHBtn>
+      ),
+    },
+  ];
   return (
     <SectionWrapper
       title={t("items.images.sectionTitle", "Imágenes")}
@@ -85,51 +122,7 @@ export function ImagesSection({
       emptyMessage={t("items.images.empty", "No hay imágenes.")}
       count={active.length}
     >
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t("items.images.col.storageObjectId", "ID Objeto")}</th>
-              <th>{t("items.images.col.altText", "Alt Text")}</th>
-              <th>{t("items.images.col.isMain", "Principal")}</th>
-              <th>{t("items.images.col.isEcommerce", "eCommerce")}</th>
-              <th>{t("items.images.col.sortOrder", "Orden")}</th>
-              <th className="pg-th-right">{t("common.actions", "Acciones")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {active.map((img) => (
-              <tr key={img.id}>
-                <td>
-                  <code>{img.storageObjectId.slice(0, 12)}…</code>
-                </td>
-                <td>{img.altText || "—"}</td>
-                <td>
-                  {img.isMain ? t("common.yes", "Sí") : t("common.no", "No")}
-                </td>
-                <td>
-                  {img.isEcommerce
-                    ? t("common.yes", "Sí")
-                    : t("common.no", "No")}
-                </td>
-                <td>{img.sortOrder}</td>
-                <td className="pg-td-right">
-                  <ZHBtn
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    title={t("common.deactivate", "Desactivar")}
-                    onClick={() => void onDisable(img.id)}
-                    disabled={disabled}
-                  >
-                    <span className="material-symbols-outlined">block</span>
-                  </ZHBtn>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ZHDataTable columns={columns} rows={active} rowKey={(img) => img.id} />
     </SectionWrapper>
   );
 }
@@ -142,6 +135,11 @@ export function UnitConversionsSection({
   conversions: ItemUnitConversionDto[];
 }) {
   const active = conversions.filter((c) => c.isActive);
+  const columns: ZHDataTableColumn<ItemUnitConversionDto>[] = [
+    { key: "from", header: t("items.conversions.col.from", "Desde"), render: (c) => <code title={c.fromUomCode}>{c.fromUomAbbrev}</code> },
+    { key: "to", header: t("items.conversions.col.to", "Hacia"), render: (c) => <code title={c.toUomCode}>{c.toUomAbbrev}</code> },
+    { key: "factor", header: t("items.conversions.col.factor", "Factor"), render: (c) => c.factor },
+  ];
   return (
     <SectionWrapper
       title={t("items.conversions.sectionTitle", "Conversiones de Unidad")}
@@ -152,30 +150,7 @@ export function UnitConversionsSection({
       )}
       count={active.length}
     >
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t("items.conversions.col.from", "Desde")}</th>
-              <th>{t("items.conversions.col.to", "Hacia")}</th>
-              <th>{t("items.conversions.col.factor", "Factor")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {active.map((c) => (
-              <tr key={c.id}>
-                <td>
-                  <code title={c.fromUomCode}>{c.fromUomAbbrev}</code>
-                </td>
-                <td>
-                  <code title={c.toUomCode}>{c.toUomAbbrev}</code>
-                </td>
-                <td>{c.factor}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ZHDataTable columns={columns} rows={active} rowKey={(c) => c.id} />
     </SectionWrapper>
   );
 }
@@ -188,6 +163,11 @@ export function SubstitutesSection({
   substitutes: ItemSubstituteDto[];
 }) {
   const active = substitutes.filter((s) => s.isActive);
+  const columns: ZHDataTableColumn<ItemSubstituteDto>[] = [
+    { key: "itemId", header: t("items.substitutes.col.itemId", "Item Sustituto ID"), render: (s) => <code>{s.substituteItemId.slice(0, 12)}…</code> },
+    { key: "priority", header: t("items.substitutes.col.priority", "Prioridad"), render: (s) => s.priority },
+    { key: "note", header: t("items.substitutes.col.note", "Nota"), render: (s) => s.note || "—" },
+  ];
   return (
     <SectionWrapper
       title={t("items.substitutes.sectionTitle", "Sustitutos")}
@@ -198,28 +178,7 @@ export function SubstitutesSection({
       )}
       count={active.length}
     >
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t("items.substitutes.col.itemId", "Item Sustituto ID")}</th>
-              <th>{t("items.substitutes.col.priority", "Prioridad")}</th>
-              <th>{t("items.substitutes.col.note", "Nota")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {active.map((s) => (
-              <tr key={s.id}>
-                <td>
-                  <code>{s.substituteItemId.slice(0, 12)}…</code>
-                </td>
-                <td>{s.priority}</td>
-                <td>{s.note || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ZHDataTable columns={columns} rows={active} rowKey={(s) => s.id} />
     </SectionWrapper>
   );
 }
