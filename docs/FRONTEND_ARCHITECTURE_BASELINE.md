@@ -16,7 +16,7 @@ No existe un design system paralelo: tokens (`design-tokens.css`), componentes g
 |-----------------|-------------|--------|
 | **ERP** | `/dashboard`, `/sales`, `/inventory`, … | `AppLayout` |
 | **Auth / onboarding** | `/login`, `/select-subscriber` | `zh-auth-*` (excepción, sin shell) |
-| **Reportes** | `/reports/*` | `AppLayout` + `ReportPageTemplate` |
+| **Reportes** | `/reportes/*` | `AppLayout` + `ReportPageTemplate` |
 
 ---
 
