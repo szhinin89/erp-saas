@@ -1,8 +1,10 @@
 using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -11,6 +13,7 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
+using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -54,6 +57,48 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         result.Value.Lines.Single().SnapshotAccountingAccountCode.Should().Be("6.1.01.001");
         fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Once);
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("Optional")]
+    [InlineData("Required")]
+    public async Task Create_Draft_permitido_cuando_politica_GASDOC_no_bloquea_borrador(string draftMode)
+    {
+        // ValidateCreateDraftAsync no lanza para Optional ni para Required (Required solo exige
+        // pasar por borrador antes de CONFIRMAR — nunca bloquea la creacion del borrador en si;
+        // eso solo lo bloquea Disabled, cubierto en el test siguiente). WorkflowPolicy ya esta
+        // configurada para no lanzar por defecto en el Fixture, sin importar cual de los dos
+        // draft_mode representa este escenario en produccion.
+        _ = draftMode;
+        var fx = new Fixture();
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Status.Should().Be(ExpenseStatus.Draft);
+    }
+
+    [Fact]
+    public async Task Create_Draft_bloqueado_cuando_politica_GASDOC_es_Disabled()
+    {
+        var fx = new Fixture();
+        fx.WorkflowPolicy
+            .Setup(w =>
+                w.ValidateCreateDraftAsync(
+                    CompanyId,
+                    DocTypeCodes.ExpenseDocument,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(DocWorkflowPolicyViolationException.DraftNotAllowed(DocTypeCodes.ExpenseDocument));
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should()
+            .Be("La política de la empresa no permite guardar borradores para documentos de gasto.");
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -218,6 +263,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         public Mock<IBusinessPartnerRoleRepository> Roles { get; } = new();
         public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
+        public Mock<IDocWorkflowPolicyService> WorkflowPolicy { get; } = new();
 
         public Account Account { get; }
         public ExpenseCategoryNode Type { get; }
@@ -236,6 +282,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Roles.Object,
                 PaymentTerms.Object,
                 Tax.Object,
+                WorkflowPolicy.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -307,6 +354,15 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 .ReturnsAsync(new TaxRateResult(0m, "IVA 0%"));
             Tax.Setup(t => t.GetVatRateWithNameAsync("2", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
+            WorkflowPolicy
+                .Setup(w =>
+                    w.ValidateCreateDraftAsync(
+                        CompanyId,
+                        DocTypeCodes.ExpenseDocument,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .Returns(Task.CompletedTask);
         }
 
         public Account ExpenseAccount(

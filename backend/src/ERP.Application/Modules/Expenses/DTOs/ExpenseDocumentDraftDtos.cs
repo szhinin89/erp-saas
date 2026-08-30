@@ -26,6 +26,8 @@ public sealed record CreateExpenseDraftRequest(
     string? Notes = null
 );
 
+public sealed record CancelExpenseDocumentRequest(string Reason);
+
 public sealed record UpdateExpenseDraftRequest(
     Guid SupplierId,
     DateOnly IssueDate,
@@ -90,5 +92,8 @@ public sealed record ExpenseDocumentDetailDto(
     decimal GrandTotal,
     string? Notes,
     ExpenseStatus Status,
-    IReadOnlyList<ExpenseLineDto> Lines
+    IReadOnlyList<ExpenseLineDto> Lines,
+    string? CancelReason,
+    DateTime? CancelledAt,
+    Guid? CancelledBy
 );

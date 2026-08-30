@@ -239,6 +239,25 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         document.Status.Should().Be(ExpenseStatus.Confirmed, "el rollback real de BD (no simulado aqui) es quien revierte el estado en persistencia");
     }
 
+    [Fact]
+    public async Task Confirmar_un_Draft_existente_funciona_aunque_la_politica_GASDOC_sea_Required()
+    {
+        // EXPENSES-WORKFLOW-INTEGRATION-01: ConfirmExpenseDocumentHandler nunca llama
+        // IDocWorkflowPolicyService.ValidateCreateConfirmedAsync — ese chequeo solo bloquea CREAR
+        // un gasto ya confirmado (CreateConfirmedExpenseCommand). DraftMode.Required exige que el
+        // gasto exista primero como borrador, pero una vez que ya es un Draft persistido,
+        // confirmarlo siempre debe funcionar sin importar la politica — no hay servicio de
+        // politica inyectado en este handler, asi que no hay forma de que la politica lo bloquee.
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
+    }
+
     private static void SetPrivateStatus(ExpenseDocument document, ExpenseStatus status)
     {
         var property = typeof(ExpenseDocument).GetProperty(nameof(ExpenseDocument.Status))!;

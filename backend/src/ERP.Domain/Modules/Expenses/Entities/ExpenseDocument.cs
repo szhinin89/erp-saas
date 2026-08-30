@@ -38,6 +38,12 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public decimal? ConfirmedTotalDiscount { get; private set; }
     public decimal? ConfirmedGrandTotal { get; private set; }
 
+    public const int CancelReasonMaxLen = 500;
+
+    public string? CancelReason { get; private set; }
+    public DateTime? CancelledAt { get; private set; }
+    public Guid? CancelledBy { get; private set; }
+
     private readonly List<ExpenseLine> _lines = new();
     public IReadOnlyList<ExpenseLine> Lines => _lines.AsReadOnly();
 
@@ -293,6 +299,38 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
                 TotalVat,
                 GrandTotal,
                 lineAllocations
+            )
+        );
+    }
+
+    /// <summary>
+    /// EXPENSES-CANCEL-01 — anula un gasto ya confirmado. Solo Confirmed puede anularse (Draft se
+    /// edita/elimina por su propio flujo; Cancelled es terminal). No reversa nada por su cuenta
+    /// (CxP, contabilidad) — esa orquestación es responsabilidad de Application
+    /// (<c>CancelExpenseDocumentHandler</c>) y del traductor de posting disparado por el evento que
+    /// este método levanta.
+    /// </summary>
+    public void Cancel(string reason, Guid cancelledBy)
+    {
+        if (Status != ExpenseStatus.Confirmed)
+            throw new InvalidOperationException("Solo se pueden anular gastos confirmados.");
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
+
+        Status = ExpenseStatus.Cancelled;
+        CancelReason = reason.Trim();
+        CancelledAt = DateTime.UtcNow;
+        CancelledBy = cancelledBy;
+        SetUpdated(cancelledBy);
+
+        RaiseDomainEvent(
+            new ExpenseDocumentCancelledEvent(
+                TenantId,
+                Id,
+                SupplierId,
+                DocumentNumber,
+                CompanyId,
+                CancelReason
             )
         );
     }

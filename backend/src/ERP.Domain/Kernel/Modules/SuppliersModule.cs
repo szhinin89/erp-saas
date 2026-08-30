@@ -121,6 +121,7 @@ public static class SuppliersModule
         ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
         RelatedActionPermissionsCsv = ExpensePermissions.DocumentsCreate + ","
             + ExpensePermissions.DocumentsUpdate + "," + ExpensePermissions.DocumentsConfirm
+            + "," + ExpensePermissions.DocumentsCancel
     )]
     public const string ExpenseDocuments = "/expenses/documents";
 

@@ -235,6 +235,10 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Services.SriDocTypeCatalogResolver
         >();
         services.AddScoped<
+            ERP.Application.Modules.DocTypes.Services.IDocWorkflowPolicyService,
+            ERP.Infrastructure.Persistence.Services.DocWorkflowPolicyService
+        >();
+        services.AddScoped<
             ERP.Domain.Modules.SriCatalogs.Interfaces.ISriCatalogLookupRepository,
             ERP.Infrastructure.Persistence.Repositories.SriCatalogs.SriCatalogLookupRepository
         >();
@@ -857,6 +861,10 @@ public static class DependencyInjection
         services.AddScoped<ICompanyBootstrapStep>(sp =>
             sp.GetRequiredService<ExpensesCatalogBootstrapStep>()
         );
+        services.AddScoped<DocWorkflowPolicyBootstrapStep>();
+        services.AddScoped<ICompanyBootstrapStep>(sp =>
+            sp.GetRequiredService<DocWorkflowPolicyBootstrapStep>()
+        );
         services.AddScoped<ICompanyBootstrapStep, AccessBootstrapStep>();
 
         // ── Global bootstrap (una sola vez por instalación, cada arranque) ─────
@@ -868,6 +876,7 @@ public static class DependencyInjection
         services.AddScoped<ERP.Infrastructure.Seeding.E2E.E2ESeedService>();
         services.AddScoped<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
         services.AddScoped<ERP.Infrastructure.Seeding.ExpensesCatalogBackfillService>();
+        services.AddScoped<ERP.Infrastructure.Seeding.DocWorkflowPolicyBackfillService>();
         services.AddScoped<
             ERP.Infrastructure.Seeding.Global.IGlobalBootstrapStep,
             ERP.Infrastructure.Seeding.Global.Steps.NavigationBootstrapStep

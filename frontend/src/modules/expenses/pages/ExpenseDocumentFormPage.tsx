@@ -9,8 +9,9 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { NoAccessPage, PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHBtn, ZHFormAlert, ZHFormActions } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHField, ZHFormAlert, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
+import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { todayIso, toDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
@@ -60,6 +61,7 @@ const PERMISSIONS = {
   create: "expenses.documents.create",
   update: "expenses.documents.update",
   confirm: "expenses.documents.confirm",
+  cancel: "expenses.documents.cancel",
   catalogView: "expenses.catalog.view",
 } as const;
 
@@ -85,6 +87,7 @@ export function ExpenseDocumentFormPage() {
   const canCreate = has(PERMISSIONS.create);
   const canUpdate = has(PERMISSIONS.update);
   const canConfirm = has(PERMISSIONS.confirm);
+  const canCancel = has(PERMISSIONS.cancel);
   const canReadCatalog = has(PERMISSIONS.catalogView);
 
   const [header, setHeader] = useState<ExpenseDocumentHeaderState>(EMPTY_HEADER);
@@ -101,6 +104,10 @@ export function ExpenseDocumentFormPage() {
   const [lineErrors, setLineErrors] = useState<ExpenseLineFieldErrors>({});
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonError, setCancelReasonError] = useState<string | undefined>();
 
   const accountsById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
@@ -111,6 +118,7 @@ export function ExpenseDocumentFormPage() {
   const isDraft = document?.status ? document.status === "Draft" : true;
   const disabled = saving || !isDraft || !canSave;
   const canShowConfirmButton = !isNew && canConfirm && document?.status === "Draft";
+  const canShowCancelButton = !isNew && canCancel && document?.status === "Confirmed";
   const catalogReady =
     canReadCatalog && hasConfiguredExpenseSubcategory(tree, accountsById);
 
@@ -273,6 +281,45 @@ export function ExpenseDocumentFormPage() {
     }
   };
 
+  const openCancelModal = () => {
+    setCancelReason("");
+    setCancelReasonError(undefined);
+    setCancelModalOpen(true);
+  };
+
+  const closeCancelModal = () => {
+    setCancelModalOpen(false);
+    setCancelReason("");
+    setCancelReasonError(undefined);
+  };
+
+  const handleCancel = async () => {
+    if (isNew || !id) return;
+    if (!cancelReason.trim()) {
+      setCancelReasonError("Indique el motivo de la anulación.");
+      return;
+    }
+
+    setCancelling(true);
+    setCancelReasonError(undefined);
+    try {
+      await expenseDocumentService.cancel(id, cancelReason.trim());
+      message.success("Gasto anulado correctamente.");
+      closeCancelModal();
+      // Mismo criterio que handleConfirm (EXPENSES-CONFIRM-FRONTEND-08): recargar desde API
+      // para reflejar exactamente lo que el backend persistio (reverso contable/CxP incluidos).
+      await load();
+    } catch (error) {
+      message.error(
+        formatApiRequestError(error, {
+          generic: "No se pudo anular el gasto.",
+        }),
+      );
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <PageShell
       kicker="Gastos"
@@ -292,6 +339,19 @@ export function ExpenseDocumentFormPage() {
                 task_alt
               </span>
               Confirmar gasto
+            </ZHBtn>
+          )}
+          {canShowCancelButton && (
+            <ZHBtn
+              type="button"
+              variant="destructive"
+              disabled={cancelling}
+              onClick={openCancelModal}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                cancel
+              </span>
+              Anular gasto
             </ZHBtn>
           )}
           <ZHBtn
@@ -395,6 +455,34 @@ export function ExpenseDocumentFormPage() {
         confirmLabel={confirming ? "Confirmando..." : "Confirmar gasto"}
         onCancel={() => setConfirmModalOpen(false)}
         onConfirm={handleConfirm}
+      />
+
+      <ZHConfirmModal
+        open={cancelModalOpen}
+        variant="danger"
+        title="Anular gasto"
+        message={
+          <>
+            <p className="zh-confirm-message">
+              Se reversará el asiento contable generado al confirmar y, si existe, se anulará la
+              cuenta por pagar asociada (no permitido si ya tiene pagos aplicados).
+            </p>
+            <ZHField label="Motivo de anulación" required error={cancelReasonError}>
+              <ZhTextarea
+                rows={3}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                maxLength={500}
+                aria-required="true"
+                aria-label="Motivo de anulación"
+              />
+            </ZHField>
+          </>
+        }
+        confirmLabel={cancelling ? "Anulando..." : "Sí, anular"}
+        cancelLabel="Cancelar"
+        onCancel={closeCancelModal}
+        onConfirm={handleCancel}
       />
     </PageShell>
   );

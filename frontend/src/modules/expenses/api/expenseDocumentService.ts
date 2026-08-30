@@ -73,6 +73,9 @@ export interface ExpenseDocumentDetailDto {
   notes: string | null;
   status: ExpenseStatus;
   lines: ExpenseLineDto[];
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
 }
 
 export interface ExpenseDraftLineRequest {
@@ -120,4 +123,8 @@ export const expenseDocumentService = {
     apiPut<ExpenseDocumentDetailDto>(`${BASE}/${id}`, payload),
 
   confirm: (id: string) => apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/confirm`, {}),
+
+  /** Confirmed → Cancelled. `reason` es obligatorio en el contrato del backend. */
+  cancel: (id: string, reason: string) =>
+    apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/cancel`, { reason }),
 };

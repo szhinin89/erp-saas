@@ -192,6 +192,87 @@ public sealed class ExpenseDocumentTests
     }
 
     [Fact]
+    public void Cancel_gasto_confirmado_pasa_a_Cancelled_y_guarda_motivo_fecha_y_autor()
+    {
+        var document = ConfirmedDocument();
+        var beforeCancel = DateTime.UtcNow;
+
+        document.Cancel("  Documento duplicado  ", UserId);
+
+        document.Status.Should().Be(ExpenseStatus.Cancelled);
+        document.CancelReason.Should().Be("Documento duplicado");
+        document.CancelledBy.Should().Be(UserId);
+        document.CancelledAt.Should().NotBeNull();
+        document.CancelledAt!.Value.Should().BeOnOrAfter(beforeCancel);
+        document.UpdatedBy.Should().Be(UserId);
+    }
+
+    [Fact]
+    public void Cancel_levanta_ExpenseDocumentCancelledEvent_con_motivo()
+    {
+        var document = ConfirmedDocument();
+
+        document.Cancel("Error de digitación", UserId);
+
+        var raised = document.DomainEvents.OfType<ExpenseDocumentCancelledEvent>().Single();
+        raised.ExpenseDocumentId.Should().Be(document.Id);
+        raised.SupplierId.Should().Be(SupplierId);
+        raised.CancelReason.Should().Be("Error de digitación");
+    }
+
+    [Fact]
+    public void Cancel_sobre_Draft_lanza_excepcion()
+    {
+        var document = CreateDraftDocument();
+
+        var act = () => document.Cancel("Motivo", UserId);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*confirmados*");
+    }
+
+    [Fact]
+    public void Cancel_sobre_documento_ya_Cancelled_lanza_excepcion()
+    {
+        var document = ConfirmedDocument();
+        document.Cancel("Primera anulación", UserId);
+
+        var act = () => document.Cancel("Segunda anulación", UserId);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*confirmados*");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Cancel_sin_motivo_lanza_excepcion(string? reason)
+    {
+        var document = ConfirmedDocument();
+
+        var act = () => document.Cancel(reason!, UserId);
+
+        act.Should().Throw<ArgumentException>().WithMessage("*motivo*");
+    }
+
+    private static ExpenseDocument ConfirmedDocument()
+    {
+        var document = CreateDraftDocument();
+        var line = ExpenseLine.Create(
+            document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
+            "Internet", 1m, 100m, "2", vatRate: 15m
+        );
+        document.ReplaceLines([line], UserId);
+        document.Confirm(
+            new Dictionary<Guid, (Guid, string?, string?)>
+            {
+                [line.Id] = (ExpenseAccountId, "6.1.01", "Internet"),
+            },
+            UserId
+        );
+        return document;
+    }
+
+    [Fact]
     public void ExpenseDocument_no_referencia_conceptos_de_inventario_kardex_o_compras()
     {
         var forbiddenPropertyNames = new[]

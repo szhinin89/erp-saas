@@ -1,12 +1,15 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
+using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -91,7 +94,10 @@ public sealed class UpdateExpenseDraftValidator : AbstractValidator<UpdateExpens
     }
 }
 
-file sealed class ExpenseDraftHeaderRules<T> : AbstractValidator<T>
+// EXPENSES-WORKFLOW-INTEGRATION-01: internal (no file-scoped) para que
+// ExpenseDocumentConfirmUseCases.cs reutilice las mismas reglas de encabezado/líneas en el
+// validator de CreateConfirmedExpenseCommand — mismo criterio que ExpenseDocumentMapper.
+internal sealed class ExpenseDraftHeaderRules<T> : AbstractValidator<T>
     where T : IExpenseDraftInput
 {
     public ExpenseDraftHeaderRules()
@@ -169,6 +175,7 @@ public sealed class CreateExpenseDraftHandler
     private readonly IBusinessPartnerRoleRepository _roles;
     private readonly IPaymentTermRepository _paymentTerms;
     private readonly ISriTaxResolver _tax;
+    private readonly IDocWorkflowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -182,6 +189,7 @@ public sealed class CreateExpenseDraftHandler
         IBusinessPartnerRoleRepository roles,
         IPaymentTermRepository paymentTerms,
         ISriTaxResolver tax,
+        IDocWorkflowPolicyService workflowPolicy,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -195,6 +203,7 @@ public sealed class CreateExpenseDraftHandler
         _roles = roles;
         _paymentTerms = paymentTerms;
         _tax = tax;
+        _workflowPolicy = workflowPolicy;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -206,6 +215,21 @@ public sealed class CreateExpenseDraftHandler
         CancellationToken ct
     )
     {
+        try
+        {
+            await _workflowPolicy.ValidateCreateDraftAsync(
+                _company.CompanyId,
+                DocTypeCodes.ExpenseDocument,
+                ct
+            );
+        }
+        catch (DocWorkflowPolicyViolationException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                ExpenseWorkflowPolicyMessages.Translate(ex)
+            );
+        }
+
         var supplier = await ExpenseDraftRules.ResolveSupplierAsync(
             _businessPartners,
             _roles,
@@ -525,7 +549,10 @@ public sealed class GetExpenseDocumentByIdHandler
     }
 }
 
-file sealed record ExpenseDraftError(string Message, string Code)
+// EXPENSES-WORKFLOW-INTEGRATION-01: internal (no file-scoped) para que
+// ExpenseDocumentConfirmUseCases.cs reutilice las mismas reglas de resolución al construir un
+// gasto ya confirmado (CreateConfirmedExpenseCommand) — mismo criterio que ExpenseDocumentMapper.
+internal sealed record ExpenseDraftError(string Message, string Code)
 {
     public Result<T> ToResult<T>() =>
         Code == ApiResponseCodes.Common.NotFound
@@ -535,19 +562,19 @@ file sealed record ExpenseDraftError(string Message, string Code)
                 : Result<T>.ValidationFailure(Message);
 }
 
-file sealed record SupplierResolution(
+internal sealed record SupplierResolution(
     BusinessPartner? BusinessPartner,
     BusinessPartnerRole? Role,
     ExpenseDraftError? Error
 );
 
-file sealed record PaymentTermResolution(PaymentTerm? PaymentTerm, ExpenseDraftError? Error);
+internal sealed record PaymentTermResolution(PaymentTerm? PaymentTerm, ExpenseDraftError? Error);
 
-file sealed record DueDateResolution(DateOnly? Value, ExpenseDraftError? Error);
+internal sealed record DueDateResolution(DateOnly? Value, ExpenseDraftError? Error);
 
-file sealed record LineResolution(IReadOnlyList<ExpenseLine>? Lines, ExpenseDraftError? Error);
+internal sealed record LineResolution(IReadOnlyList<ExpenseLine>? Lines, ExpenseDraftError? Error);
 
-file static class ExpenseDraftRules
+internal static class ExpenseDraftRules
 {
     public static async Task<SupplierResolution> ResolveSupplierAsync(
         IBusinessPartnerRepository businessPartners,
@@ -759,6 +786,26 @@ file static class ExpenseDraftRules
         new(message, ApiResponseCodes.Common.ValidationError);
 }
 
+/// <summary>
+/// EXPENSES-WORKFLOW-INTEGRATION-01: traduce <see cref="DocWorkflowPolicyViolationException"/> a
+/// mensajes específicos del módulo de Gastos — el mensaje genérico de la excepción (SSOT
+/// reutilizable por otros módulos) no es el texto que el usuario de Gastos debe ver. Sin
+/// traducción conocida para el código (p. ej. tipo deshabilitado, caso no cubierto por los
+/// mensajes fijos pedidos), cae al mensaje genérico de la excepción.
+/// </summary>
+internal static class ExpenseWorkflowPolicyMessages
+{
+    public static string Translate(DocWorkflowPolicyViolationException ex) =>
+        ex.Code switch
+        {
+            "doc_workflow.draft_not_allowed" =>
+                "La política de la empresa no permite guardar borradores para documentos de gasto.",
+            "doc_workflow.draft_required" =>
+                "La política de la empresa requiere guardar el gasto como borrador antes de confirmarlo.",
+            _ => ex.Message,
+        };
+}
+
 // EXPENSES-CONFIRM-07: internal (no file-scoped) para que ExpenseDocumentConfirmUseCases.cs
 // reutilice el mismo mapeo — una sola fuente de verdad para ExpenseDocumentDetailDto.
 internal static class ExpenseDocumentMapper
@@ -808,7 +855,10 @@ internal static class ExpenseDocumentMapper
             document.GrandTotal,
             document.Notes,
             document.Status,
-            document.Lines.OrderBy(x => x.SortOrder).Select(ToLine).ToList()
+            document.Lines.OrderBy(x => x.SortOrder).Select(ToLine).ToList(),
+            document.CancelReason,
+            document.CancelledAt,
+            document.CancelledBy
         );
 
     private static ExpenseLineDto ToLine(ExpenseLine line) =>

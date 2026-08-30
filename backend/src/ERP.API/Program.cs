@@ -462,6 +462,17 @@ if (!app.Environment.IsProduction())
         .EnsureAsync();
 }
 
+// DOC-TYPE-SSOT-01: backfilla DocWorkflowPolicy (una fila por DocType activo) para companies
+// activas creadas antes de que DocWorkflowPolicyBootstrapStep existiera — nunca en Production,
+// puramente aditivo/idempotente (ver doc comment del servicio).
+if (!app.Environment.IsProduction())
+{
+    using var docWorkflowPolicyBackfillScope = app.Services.CreateScope();
+    await docWorkflowPolicyBackfillScope
+        .ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.DocWorkflowPolicyBackfillService>()
+        .EnsureAsync();
+}
+
 if (
     app.Environment.IsDevelopment()
     && app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false)

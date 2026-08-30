@@ -106,4 +106,40 @@ public sealed class ExpensesController : ControllerBase
     [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsConfirm}")]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new ConfirmExpenseDocumentCommand(id), ct));
+
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsCancel}")]
+    public async Task<IActionResult> Cancel(
+        Guid id,
+        [FromBody] CancelExpenseDocumentRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new CancelExpenseDocumentCommand(id, request.Reason), ct)
+        );
+
+    [HttpPost("confirmed")]
+    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsConfirm}")]
+    public async Task<IActionResult> CreateConfirmed(
+        [FromBody] CreateExpenseDraftRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToCreatedOrBadRequest(
+            await _mediator.Send(
+                new CreateConfirmedExpenseCommand(
+                    request.SupplierId,
+                    request.IssueDate,
+                    request.AccountingDate,
+                    request.DocumentType,
+                    request.DocumentNumber,
+                    request.PaymentTermId,
+                    request.DueDate,
+                    request.Lines,
+                    request.AuthorizationNumber,
+                    request.AuthorizationDate,
+                    request.Notes
+                ),
+                ct
+            )
+        );
 }

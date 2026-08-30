@@ -11,6 +11,7 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Communications.Entities;
+using ERP.Domain.Modules.DocTypes.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Payables.Entities;
@@ -223,6 +224,11 @@ public class ErpDbContext : DbContext
     public DbSet<CommunicationOutbox> CommunicationOutbox => Set<CommunicationOutbox>();
     public DbSet<CommunicationOutboxAttachment> CommunicationOutboxAttachments => Set<CommunicationOutboxAttachment>();
     public DbSet<CommunicationTemplate> CommunicationTemplates => Set<CommunicationTemplate>();
+
+    // ── DocTypes (internal document/process SSOT + workflow policy) ──────
+    public DbSet<DocType> DocTypes => Set<DocType>();
+    public DbSet<DocTypeSriMap> DocTypeSriMaps => Set<DocTypeSriMap>();
+    public DbSet<DocWorkflowPolicy> DocWorkflowPolicies => Set<DocWorkflowPolicy>();
 
     // ── SRI Catalogs (global reference data) ─────────────────────────────
     public DbSet<SriEmissionType> SriEmissionTypes => Set<SriEmissionType>();

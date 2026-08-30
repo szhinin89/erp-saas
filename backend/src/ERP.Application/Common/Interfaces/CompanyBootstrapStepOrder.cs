@@ -39,6 +39,13 @@ public static class CompanyBootstrapStepOrder
     /// <summary>Catalogo generico de gastos. Depende de Accounting (cuentas de gasto postables).</summary>
     public const int ExpensesCatalog = 48;
 
+    /// <summary>
+    /// Políticas de flujo documental por tipo (DocWorkflowPolicy), una por DocType activo. No
+    /// depende de ningún otro step — solo necesita TenantId/CompanyId y el catálogo global
+    /// doc_type (sembrado por migración, no por otro step).
+    /// </summary>
+    public const int DocWorkflowPolicy = 49;
+
     /// <summary>Perfiles de acceso por defecto. Último — no depende de ningún otro step.</summary>
     public const int Access = 50;
 }

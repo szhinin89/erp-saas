@@ -84,6 +84,13 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .HasColumnName("confirmed_grand_total")
             .HasColumnType("numeric(18,2)");
 
+        builder
+            .Property(x => x.CancelReason)
+            .HasColumnName("cancel_reason")
+            .HasMaxLength(ExpenseDocument.CancelReasonMaxLen);
+        builder.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
+        builder.Property(x => x.CancelledBy).HasColumnName("cancelled_by");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
