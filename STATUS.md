@@ -4,6 +4,22 @@
 
 ---
 
+## ADR-032 / TAX-LINE-SSOT-ICE-IRBPNR-01 — CERRADO hasta Fase 6 (2026-08-29)
+
+**Estado: implementación principal completada.** Ver [ADR-032](docs/decisions/ADR-032-tax-line-ssot-ice-irbpnr.md) para el diseño completo y el detalle de cada fase/subfase (secciones abajo en este mismo archivo). Este bloque es el resumen de cierre — no repite el detalle ya documentado.
+
+- **Fases 1–6: COMPLETADAS.**
+  - Fase 1 (tests de comportamiento baseline), Fase 2 (`SalesInvoiceDetailTax` creada), Fase 4 (backfill idempotente) y Fase 5 (migración de consumidores XML/RIDE/devoluciones/NC/posteo, Subfases 5A–5E) — completadas en sesiones previas de este mismo ticket.
+  - Fase 3 (invertir autoridad de impuestos de línea a `*DetailTax`) — **cerrada en este checkpoint**: estaba completa para IRBPNR desde el inicio, pero **nunca se había completado para ICE** hasta el ajuste de plan de esta sesión (`Ice*` convertido a legacy compatibility mirror real, computado desde `_taxes`, en las 4 entidades de línea).
+  - Fase 6 (marcar campos legacy como no-fuente-de-verdad) — cerrada junto con Fase 3: `Ice*`/`ExciseTaxCode` son ahora legacy compatibility mirror real (documentado en código y en ADR-032), no solo declarado.
+- **`ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01` — RESUELTO**, commit `f43d915d`. IRBPNR ahora genera su nodo `<impuesto>` (código SRI "5") en el XML electrónico de venta.
+- **`PURCHASE-RETURN-CONCURRENCY-TESTCONTAINERS-01` — RESUELTO**, commit `243e08e6`. Causa raíz: `NewChildEntityTrackingInterceptor` no registrado en 4 archivos de test de concurrencia de `PurchaseReturn` — no relacionado con IRBPNR ni con producción.
+- **Fase 7 (eliminación física de columnas legacy) — NO iniciada.** Queda como ticket futuro, explícitamente fuera de esta sesión — requiere confirmación previa de que ningún consumidor externo (reportes/integraciones) depende de las columnas `Ice*`/`ExciseTaxCode` directamente antes de generar cualquier `DROP COLUMN`.
+- **`DocumentSequenceExclusivityTests` (`SEQ_GATE_01`/`SEQ_GATE_02`) sobre `SupplierPaymentSequenceRepository`/`SupplierPaymentSequence`** — deuda preexistente **separada**, ajena a ADR-032/IRBPNR/ICE (módulo Payables, nunca tocado por este ticket). Confirmada con `git stash` que ya fallaba antes de cualquier cambio de esta sesión. Sigue sin resolver, requiere su propio ticket.
+- **Smoke funcional**: 2 tests de integración contra Postgres real (compra + venta, IVA+ICE+IRBPNR juntos) confirmando asiento contable balanceado — ver bloque "Fase 3 (ICE) completada" abajo para el detalle.
+
+---
+
 ## ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01 — IRBPNR en XML electrónico (2026-08-29)
 
 **Estado: COMPLETADO.** Cierra el pendiente registrado en ADR-032 §9, ejecutado antes de Fase 7 tal como se pidió.
