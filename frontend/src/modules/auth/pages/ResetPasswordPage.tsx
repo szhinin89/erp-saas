@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../lib/api";
 import type { ApiResponse } from "../../../types/api";
 import { useI18n } from "../../../i18n/i18n";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   resetWithTokenFormSchema,
@@ -21,6 +22,7 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useI18n();
+  useDocumentTitle(t("resetWithToken.title"));
 
   const token = useMemo(
     () => (searchParams.get("token") ?? "").trim(),

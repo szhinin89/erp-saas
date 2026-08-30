@@ -6,6 +6,7 @@ import { authService } from "../api/authService";
 import { useAuthStore } from "../../../store/authStore";
 import { completeLoginNavigation } from "../completeLoginNavigation";
 import { useI18n } from "../../../i18n/i18n";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   completePasswordResetFormSchema,
@@ -27,6 +28,7 @@ export function CompletePasswordResetPage() {
   const location = useLocation();
   const login = useAuthStore((s) => s.login);
   const { t } = useI18n();
+  useDocumentTitle(t("completePasswordReset.title", "Establece tu contraseña"));
 
   const token = (
     (location.state as LocationState)?.passwordResetToken ?? ""

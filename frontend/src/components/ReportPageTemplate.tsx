@@ -29,6 +29,7 @@
  */
 
 import type { ReactNode } from "react";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ZHBtn } from "./zh/ZHForm";
 import { ZHIconButton } from "./zh/ZHIconButton";
 import { Badge, type BadgeVariant } from "./PageShell";
@@ -66,6 +67,8 @@ export function ReportPage({
   actions?: ReactNode;
   children?: ReactNode;
 }) {
+  useDocumentTitle(title);
+
   return (
     <div className="pg-page">
       <div className="pg-header-row">

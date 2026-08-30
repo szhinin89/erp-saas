@@ -7,6 +7,7 @@ import { useAuthStore } from "../../../store/authStore";
 import type { AuthResponse } from "../../../types/auth";
 import type { AccessibleCompany } from "../../../types/access";
 import { useI18n } from "../../../i18n/i18n";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import "./CompanySelectPage.css";
@@ -16,6 +17,7 @@ const AVATAR_VARIANTS = ["primary", "secondary", "tertiary"] as const;
 export function CompanySelectPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  useDocumentTitle(t("subscriberSelect.title", "Selecciona una empresa"));
   const login = useAuthStore((s) => s.login);
   const user = useAuthStore((s) => s.user);
 

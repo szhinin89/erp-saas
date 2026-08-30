@@ -37,7 +37,7 @@ export interface UseDocumentTitleOptions {
  * inmediato; un reset en cleanup solo produciría un parpadeo visible a
  * "ZH Technologies · ERP" en cada navegación. No existe en este código una ruta
  * que desmonte la última pantalla sin montar otra (logout redirige a la pantalla
- * de login, que también pasa por `PageShell`), así que no hay riesgo real de
+ * de login, que también usa este hook), así que no hay riesgo real de
  * título obsoleto persistente.
  */
 export function useDocumentTitle(

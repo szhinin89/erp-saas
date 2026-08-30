@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { PageShell } from "./PageShell";
+import { ReportPage } from "./ReportPageTemplate";
 import { ErpPageTemplate } from "../templates/ErpPageTemplate";
 import { DEFAULT_DOCUMENT_TITLE } from "../hooks/useDocumentTitle";
 
@@ -28,6 +29,16 @@ describe("PageShell — título de pestaña", () => {
     );
 
     expect(document.title).toBe("Ajustes de inventario");
+  });
+
+  it("ReportPage propaga el título a la pestaña", () => {
+    render(
+      <ReportPage title="Reporte de Stock">
+        <div>contenido</div>
+      </ReportPage>,
+    );
+
+    expect(document.title).toBe("Reporte de Stock");
   });
 
   it("un re-render con nuevo título actualiza la pestaña", () => {

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { apiPost, apiGet } from "../../lib/apiEnvelope";
 import { formatApiRequestError } from "../../lib/apiError";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import "./LoginPage.css";
 
 const setupSchema = z.object({
@@ -34,6 +35,7 @@ type SetupStatus = { isInitialized: boolean; adminEmail?: string | null };
 
 export function SetupPage() {
   const navigate = useNavigate();
+  useDocumentTitle("Configuración inicial");
   const [checking, setChecking] = useState(true);
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [error, setError] = useState("");

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import type { ApiResponse } from "../../../types/api";
 import { useI18n } from "../../../i18n/i18n";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   forgotPasswordEmailSchema,
@@ -17,6 +18,7 @@ import "./ForgotPasswordPage.css";
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  useDocumentTitle(t("forgot.title"));
 
   const {
     register,
