@@ -124,7 +124,8 @@ describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y fee
     expect(screen.getByRole("button", { name: "Actualizar" })).toBeTruthy();
 
     const rows = Array.from(container.querySelectorAll("tbody tr"));
-    expect(rows.map((row) => row.children[0]?.textContent)).toEqual([
+    expect(rows.map((row) => row.children[0]?.textContent)).toEqual(["1", "2", "3", "4", "5", "6"]);
+    expect(rows.map((row) => row.children[1]?.textContent)).toEqual([
       "1",
       "1.1",
       "1.1.01",
@@ -135,7 +136,7 @@ describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y fee
     expect(screen.queryByText("L Caja chica")).toBeNull();
     expect(screen.queryByText(/[\u2502\u2514\u251c]/)).toBeNull();
 
-    const nameCells = rows.map((row) => row.children[1]?.firstElementChild as HTMLElement);
+    const nameCells = rows.map((row) => row.children[2]?.firstElementChild as HTMLElement);
     expect(nameCells.map((cell) => cell.textContent)).toEqual([
       "Activo",
       "Activo corriente",
@@ -263,5 +264,200 @@ describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y fee
     confirmSpy.mockRestore();
     promptSpy.mockRestore();
     alertSpy.mockRestore();
+  });
+});
+
+/**
+ * ACCOUNTING-CHART-LIST-INTERACTIVITY-01 — columna N°, resumen compacto, texto "Mostrando X de Y",
+ * chips rápidos y filtro por nivel. 100% cálculo/estado en frontend sobre la lista ya cargada — sin
+ * tocar backend/DTOs/contratos API.
+ */
+const INTERACTIVITY_ACCOUNTS = [
+  {
+    ...ACTIVE_ACCOUNT,
+    id: "acc-root",
+    code: "1",
+    name: "Activo",
+    level: 0,
+    allowsPosting: false,
+    isActive: true,
+  },
+  {
+    ...ACTIVE_ACCOUNT,
+    id: "acc-mid",
+    code: "1.1",
+    name: "Activo corriente",
+    level: 1,
+    allowsPosting: false,
+    isActive: true,
+  },
+  {
+    ...ACTIVE_ACCOUNT,
+    id: "acc-leaf-1",
+    code: "1.1.01",
+    name: "Caja general",
+    level: 2,
+    allowsPosting: true,
+    isActive: true,
+  },
+  {
+    ...ACTIVE_ACCOUNT,
+    id: "acc-leaf-2",
+    code: "1.1.02",
+    name: "Bancos",
+    level: 2,
+    allowsPosting: true,
+    isActive: false,
+  },
+];
+
+describe("ChartOfAccountsPage — interactividad del listado (N°, resumen, chips, nivel)", () => {
+  it("renderiza columna N° con índice iniciando en 1 según el orden visible", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    expect(screen.getByText("N°")).toBeTruthy();
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    expect(rows.map((row) => row.children[0]?.textContent)).toEqual(["1", "2", "3", "4"]);
+    // El N° es un índice visual, no el Id — nunca coincide con acc-root/acc-mid/etc.
+    expect(rows[0]?.children[0]?.textContent).not.toContain("acc-");
+  });
+
+  it("renderiza el resumen compacto (Total/Agrupadoras/Movimiento/Activas/Inactivas/Nivel máximo)", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    // Scoped a .pg-kpis: "Activas"/"Inactivas" también existen como chips rápidos (botones),
+    // así que buscar en todo el documento sería ambiguo.
+    const kpis = container.querySelector(".pg-kpis") as HTMLElement;
+    const getKpiValue = (label: string) => {
+      const labelEl = Array.from(kpis.querySelectorAll(".pg-kpi-label")).find(
+        (el) => el.textContent === label,
+      );
+      return labelEl?.closest(".pg-kpi")?.querySelector(".pg-kpi-value")?.textContent?.trim();
+    };
+
+    // 4 cuentas totales, 2 agrupadoras (allowsPosting=false), 2 de movimiento,
+    // 3 activas, 1 inactiva, nivel máximo 2.
+    expect(getKpiValue("Total cuentas")).toBe("4");
+    expect(getKpiValue("Agrupadoras")).toBe("2");
+    expect(getKpiValue("Movimiento")).toBe("2");
+    expect(getKpiValue("Activas")).toBe("3");
+    expect(getKpiValue("Inactivas")).toBe("1");
+    expect(getKpiValue("Nivel máximo")).toBe("2");
+  });
+
+  it('renderiza "Mostrando X de Y cuentas" y X baja al filtrar', async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    expect(screen.getByText("Mostrando 4 de 4 cuentas")).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText("Buscar por código o nombre..."), {
+      target: { value: "Bancos" },
+    });
+
+    await waitFor(() => expect(screen.getByText("Mostrando 1 de 4 cuentas")).toBeTruthy());
+  });
+
+  it("el chip rápido Agrupadoras filtra a allowsPosting=false y es accesible vía aria-pressed", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    const groupChip = screen.getByRole("button", { name: "Agrupadoras" });
+    expect(groupChip.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(groupChip);
+
+    expect(groupChip.getAttribute("aria-pressed")).toBe("true");
+    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    expect(rows.map((row) => row.children[1]?.textContent)).toEqual(["1", "1.1"]);
+  });
+
+  it("el chip rápido Movimiento filtra a allowsPosting=true", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Movimiento" }));
+
+    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    expect(rows.map((row) => row.children[1]?.textContent)).toEqual(["1.1.01", "1.1.02"]);
+  });
+
+  it('el chip "Todas" limpia el filtro rápido', async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Movimiento" }));
+    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "Todas" }));
+    await waitFor(() => expect(screen.getByText("Mostrando 4 de 4 cuentas")).toBeTruthy());
+  });
+
+  it("el filtro por nivel usa row.level y se genera dinámicamente desde las cuentas cargadas", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    const levelSelect = screen.getByLabelText("Filtrar por nivel") as HTMLSelectElement;
+    expect(Array.from(levelSelect.options).map((o) => o.textContent)).toEqual([
+      "Todos los niveles",
+      "Nivel 0",
+      "Nivel 1",
+      "Nivel 2",
+    ]);
+
+    fireEvent.change(levelSelect, { target: { value: "2" } });
+
+    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    expect(rows.map((row) => row.children[1]?.textContent)).toEqual(["1.1.01", "1.1.02"]);
+  });
+
+  it("los filtros nuevos conviven con búsqueda/tipo/estado existentes sin romperlos", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    // Chip "Activas" (nuevo) + select "Todos los estados" (existente, sin filtrar) — deben convivir.
+    fireEvent.click(screen.getByRole("button", { name: "Activas" }));
+    await waitFor(() => expect(screen.getByText("Mostrando 3 de 4 cuentas")).toBeTruthy());
+
+    // Combinar con el select de estado existente ("Inactivas") — resultado vacío, sin romper.
+    fireEvent.change(screen.getByText("Todos los estados").closest("select") as HTMLSelectElement, {
+      target: { value: "inactive" },
+    });
+    await waitFor(() => expect(screen.getByText("Mostrando 0 de 4 cuentas")).toBeTruthy());
+  });
+
+  it("las acciones de fila y las guías jerárquicas siguen presentes tras los nuevos filtros", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    rows.forEach((row) => {
+      expect(row.querySelector('button[aria-label="Editar"]')).toBeTruthy();
+    });
+    expect(container.querySelectorAll(".coa-tree-name__guides").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/[│└├]/)).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageShell, Badge } from "../../../components/PageShell";
+import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
@@ -33,6 +34,18 @@ const ACCOUNT_NATURE_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 type Mode = "list" | "create" | "edit";
+
+// ACCOUNTING-CHART-LIST-INTERACTIVITY-01: filtro rápido adicional — convive con
+// búsqueda/tipo/estado existentes, nunca los reemplaza.
+type QuickFilter = "all" | "group" | "posting" | "active" | "inactive";
+
+const QUICK_FILTERS: { key: QuickFilter; label: string }[] = [
+  { key: "all", label: "Todas" },
+  { key: "group", label: "Agrupadoras" },
+  { key: "posting", label: "Movimiento" },
+  { key: "active", label: "Activas" },
+  { key: "inactive", label: "Inactivas" },
+];
 
 const accountCodeSegments = (code: string) => code.split(".").filter(Boolean);
 
@@ -120,6 +133,8 @@ export function ChartOfAccountsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
+  const [levelFilter, setLevelFilter] = useState("");
   const [togglingAccountId, setTogglingAccountId] = useState<string | null>(null);
 
   const createForm = useForm<CreateAccountFormValues>({
@@ -158,11 +173,42 @@ export function ChartOfAccountsPage() {
       if (typeFilter && a.accountType !== typeFilter) return false;
       if (statusFilter === "active" && !a.isActive) return false;
       if (statusFilter === "inactive" && a.isActive) return false;
+      if (quickFilter === "group" && a.allowsPosting) return false;
+      if (quickFilter === "posting" && !a.allowsPosting) return false;
+      if (quickFilter === "active" && !a.isActive) return false;
+      if (quickFilter === "inactive" && a.isActive) return false;
+      if (levelFilter !== "" && String(a.level) !== levelFilter) return false;
       if (term && !a.code.toLowerCase().includes(term) && !a.name.toLowerCase().includes(term))
         return false;
       return true;
     });
-  }, [sortedAccounts, typeFilter, statusFilter, search]);
+  }, [sortedAccounts, typeFilter, statusFilter, quickFilter, levelFilter, search]);
+
+  // ACCOUNTING-CHART-LIST-INTERACTIVITY-01: N° visual — no es el Id de base de datos, se
+  // recalcula según el orden/filtro visible (natural por código, ya aplicado en sortedAccounts).
+  const rowNumberByAccountId = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredAccounts.forEach((row, index) => map.set(row.id, index + 1));
+    return map;
+  }, [filteredAccounts]);
+
+  const summary = useMemo(() => {
+    const groupCount = accounts.filter((a) => !a.allowsPosting).length;
+    const activeCount = accounts.filter((a) => a.isActive).length;
+    return {
+      total: accounts.length,
+      group: groupCount,
+      posting: accounts.length - groupCount,
+      active: activeCount,
+      inactive: accounts.length - activeCount,
+      maxLevel: accounts.length > 0 ? Math.max(...accounts.map((a) => a.level)) : 0,
+    };
+  }, [accounts]);
+
+  const availableLevels = useMemo(
+    () => Array.from(new Set(accounts.map((a) => a.level))).sort((a, b) => a - b),
+    [accounts],
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -268,6 +314,12 @@ export function ChartOfAccountsPage() {
 
   const columns: ZHDataTableColumn<AccountDto>[] = [
     {
+      key: "rowNumber",
+      header: "N°",
+      align: "center",
+      render: (row) => rowNumberByAccountId.get(row.id) ?? "",
+    },
+    {
       key: "code",
       header: "Código",
       render: (row) => <code className="prd-sku">{row.code}</code>,
@@ -347,6 +399,53 @@ export function ChartOfAccountsPage() {
         ) : undefined
       }
     >
+      {mode === "list" && !loading && (
+        <div className="pg-kpis">
+          <ReportKpiCard
+            layout="horizontal"
+            icon="account_tree"
+            tone="primary"
+            label="Total cuentas"
+            value={String(summary.total)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="folder"
+            tone="secondary"
+            label="Agrupadoras"
+            value={String(summary.group)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="payments"
+            tone="info"
+            label="Movimiento"
+            value={String(summary.posting)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="check_circle"
+            tone="success"
+            label="Activas"
+            value={String(summary.active)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="block"
+            tone="error"
+            label="Inactivas"
+            value={String(summary.inactive)}
+          />
+          <ReportKpiCard
+            layout="horizontal"
+            icon="stairs"
+            tone="tertiary"
+            label="Nivel máximo"
+            value={String(summary.maxLevel)}
+          />
+        </div>
+      )}
+
       {mode === "list" && (
         <ZHCard
           className="coa-list-card"
@@ -377,6 +476,40 @@ export function ChartOfAccountsPage() {
             </div>
           }
         >
+          <div className="coa-list-secondary-row">
+            <div
+              className="coa-quick-filters"
+              role="group"
+              aria-label="Filtros rápidos de cuentas"
+            >
+              {QUICK_FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  className={`coa-chip${quickFilter === f.key ? " coa-chip--active" : ""}`}
+                  aria-pressed={quickFilter === f.key}
+                  onClick={() => setQuickFilter(f.key)}
+                >
+                  {f.label}
+                </button>
+              ))}
+              <ZhSelect
+                aria-label="Filtrar por nivel"
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value)}
+              >
+                <option value="">Todos los niveles</option>
+                {availableLevels.map((lvl) => (
+                  <option key={lvl} value={lvl}>
+                    Nivel {lvl}
+                  </option>
+                ))}
+              </ZhSelect>
+            </div>
+            <span className="coa-list-summary-text subtle">
+              Mostrando {filteredAccounts.length} de {accounts.length} cuentas
+            </span>
+          </div>
           <ZHDataTable
             columns={columns}
             rows={filteredAccounts}

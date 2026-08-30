@@ -32,6 +32,58 @@
   white-space: nowrap;
 }
 
+/* ACCOUNTING-CHART-LIST-INTERACTIVITY-01: fila secundaria (chips rápidos + nivel + "Mostrando
+   X de Y") entre el header de filtros existente y la tabla — no reemplaza los filtros de
+   búsqueda/tipo/estado, los complementa. */
+.coa-list-secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-3);
+}
+
+.coa-quick-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.coa-list-summary-text {
+  white-space: nowrap;
+}
+
+.coa-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-md-weight);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    color var(--transition);
+}
+
+.coa-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.coa-chip--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
 .coa-tree-name {
   --account-tree-step: 14px;
   --account-tree-elbow: 8px;
@@ -117,5 +169,10 @@
 
   .coa-list-filters button {
     justify-self: flex-start;
+  }
+
+  .coa-list-secondary-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
