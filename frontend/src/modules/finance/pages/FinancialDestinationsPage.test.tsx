@@ -207,3 +207,49 @@ describe("FinancialDestinationsPage — cambio de cuenta contable: confirmación
     alertSpy.mockRestore();
   });
 });
+
+describe("FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01, columna Estado", () => {
+  it('un destino activo muestra "Activo" en la columna Estado', async () => {
+    vi.mocked(financialDestinationService.list).mockResolvedValue([DESTINATION]);
+
+    render(
+      <I18nProvider>
+        <FinancialDestinationsPage />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Caja principal")).toBeTruthy());
+    expect(screen.getByText("Activo")).toBeTruthy();
+  });
+
+  it('un destino inactivo muestra "Inactivo" en la columna Estado', async () => {
+    vi.mocked(financialDestinationService.list).mockResolvedValue([
+      { ...DESTINATION, isActive: false },
+    ]);
+
+    render(
+      <I18nProvider>
+        <FinancialDestinationsPage />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Caja principal")).toBeTruthy());
+    expect(screen.getByText("Inactivo")).toBeTruthy();
+  });
+
+  it('no muestra el texto literal incorrecto "Estado" como valor de la fila', async () => {
+    vi.mocked(financialDestinationService.list).mockResolvedValue([DESTINATION]);
+
+    render(
+      <I18nProvider>
+        <FinancialDestinationsPage />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Caja principal")).toBeTruthy());
+    // "Estado" solo debe aparecer como encabezado de columna, nunca como valor de celda.
+    const headerCell = screen.getByRole("columnheader", { name: "Estado" });
+    expect(headerCell).toBeTruthy();
+    expect(screen.queryByRole("cell", { name: "Estado" })).toBeNull();
+  });
+});

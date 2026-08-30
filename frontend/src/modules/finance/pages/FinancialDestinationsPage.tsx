@@ -232,12 +232,14 @@ export function FinancialDestinationsPage() {
     },
     { key: "currency", header: "Moneda", render: (d) => d.currencyCode },
     {
-      // Preserva el comportamiento previo a esta migración: la etiqueta mostraba el texto
-      // literal "Estado" en vez del estado activo/inactivo del destino (defecto preexistente,
-      // no corregido aquí por estar fuera de alcance de ZH-LISTING-MIGRATION-ALL-02).
+      // FINANCIAL-DESTINATIONS-STATUS-FIX-01: antes mostraba el texto literal "Estado" en vez
+      // del estado real del destino (bug preexistente, arrastrado desde antes de
+      // ZH-LISTING-MIGRATION-ALL-02).
       key: "status",
       header: "Estado",
-      render: () => <Badge label={"Estado"} variant="neutral" />,
+      render: (d) => (
+        <Badge label={d.isActive ? "Activo" : "Inactivo"} variant={d.isActive ? "success" : "neutral"} />
+      ),
     },
     {
       key: "actions",
