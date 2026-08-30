@@ -11,6 +11,7 @@ import {
   type LoginFormValues,
 } from "../../../schemas/auth/loginSchema";
 import { formatApiRequestError } from "../../lib/apiError";
+import { brandConfig, getCopyrightText } from "../../../shared/branding/brandConfig";
 import "./LoginPage.css";
 
 export function LoginPage() {
@@ -30,6 +31,8 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const copyrightText = getCopyrightText();
 
   const onValid = async (form: LoginFormValues) => {
     setError("");
@@ -80,10 +83,14 @@ export function LoginPage() {
               <span className="material-symbols-outlined">dashboard</span>
             </div>
             <h1 className="lp-brand-name" data-testid="erp-brand-title">
-              ZH Technologies
+              {brandConfig.companyName}
             </h1>
           </div>
-          <p className="lp-brand-sub">Acceso al Portal ERP Corporativo</p>
+          <p className="lp-brand-sub">{brandConfig.productSubtitle}</p>
+          <p className="lp-brand-desc">
+            Administra ventas, compras, inventario, caja y facturación
+            electrónica en un solo lugar.
+          </p>
         </div>
 
         {/* ── Login card ── */}
@@ -123,7 +130,7 @@ export function LoginPage() {
                     className="zh-auth-input"
                     id="lp-username"
                     type="text"
-                    placeholder={t("login.username.placeholder", "jperez")}
+                    placeholder={t("login.username.placeholder", "ej. jperez")}
                     autoComplete="username"
                     disabled={loading}
                     {...register("username")}
@@ -140,18 +147,9 @@ export function LoginPage() {
               <div
                 className={`zh-auth-field${errors.password ? " zh-auth-field--error" : ""}`}
               >
-                <div className="zh-auth-field-header">
-                  <label className="zh-auth-label" htmlFor="lp-password">
-                    {t("login.password.label")}
-                  </label>
-                  <button
-                    type="button"
-                    className="zh-auth-link"
-                    onClick={() => navigate("/forgot-password")}
-                  >
-                    {t("login.forgotPassword")}
-                  </button>
-                </div>
+                <label className="zh-auth-label" htmlFor="lp-password">
+                  {t("login.password.label")}
+                </label>
                 <div className="zh-auth-input-wrap">
                   <span
                     className="zh-auth-input-icon material-symbols-outlined"
@@ -186,6 +184,13 @@ export function LoginPage() {
                     {errors.password.message}
                   </span>
                 )}
+                <button
+                  type="button"
+                  className="lp-forgot-link"
+                  onClick={() => navigate("/forgot-password")}
+                >
+                  {t("login.forgotPassword")}
+                </button>
               </div>
 
               {/* Remember me */}
@@ -224,32 +229,28 @@ export function LoginPage() {
 
           {/* Card footer */}
           <div className="lp-card-footer">
-            <span className="lp-footer-copy">© 2024 ZH Technologies</span>
-            <nav className="lp-footer-links" aria-label="Vínculos legales">
-              <a className="zh-auth-footer-link" href="#">
-                Soporte
-              </a>
-              <a className="zh-auth-footer-link" href="#">
-                Legal
-              </a>
-            </nav>
+            <span className="lp-footer-copy">{copyrightText}</span>
           </div>
         </div>
 
         {/* Security badges */}
-        <div className="lp-security" aria-label="Certificaciones de seguridad">
+        <div className="lp-security" aria-label="Seguridad de la conexión">
           <div className="lp-security-badge">
             <span className="material-symbols-outlined" aria-hidden="true">
               verified_user
             </span>
-            <span className="lp-security-text">AES-256 Encrypted</span>
+            <span className="lp-security-text">
+              {brandConfig.secureAccessText}
+            </span>
           </div>
           <span className="lp-security-dot" aria-hidden="true" />
           <div className="lp-security-badge">
             <span className="material-symbols-outlined" aria-hidden="true">
               shield
             </span>
-            <span className="lp-security-text">SOC2 Compliant</span>
+            <span className="lp-security-text">
+              {brandConfig.protectedAccessText}
+            </span>
           </div>
         </div>
       </div>

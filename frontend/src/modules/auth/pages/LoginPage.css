@@ -48,6 +48,13 @@
   margin: 0;
 }
 
+.lp-brand-desc {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  max-width: 360px;
+  margin: 0;
+}
+
 /* ── Card ────────────────────────────────────────────────────── */
 /* .lp-card/.lp-card-body ELIMINADOS (Bloque 5A) — consolidados en
    .zh-auth-card.zh-auth-card--flush + .zh-auth-card-body (zh-ui.css). */
@@ -106,6 +113,22 @@
   padding-right: 40px;
 }
 
+/* Secondary action below the password input, right-aligned */
+.lp-forgot-link {
+  align-self: flex-end;
+  width: fit-content;
+  margin-top: var(--space-1);
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--text-label-sm-size);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+.lp-forgot-link:hover {
+  text-decoration: underline;
+}
+
 /* Remember me */
 .lp-remember {
   display: flex;
@@ -129,7 +152,7 @@
   background: var(--color-surface-container-low);
   border-top: 1px solid var(--color-border);
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
 }
 
@@ -138,15 +161,8 @@
   color: var(--color-text-secondary);
 }
 
-/* Se mantiene: acoplado al layout horizontal (space-between) de .lp-card-footer.
-   .zh-auth-footer-links asume stack vertical + margin-bottom (contexto de
-   .zh-auth-footer standalone en Forgot/Reset) — no es equivalente aquí. */
-.lp-footer-links {
-  display: flex;
-  gap: var(--space-4);
-}
-
-/* .lp-footer-link ELIMINADO (Bloque 5A) — consolidado en .zh-auth-footer-link (zh-ui.css). */
+/* .lp-footer-links/.lp-footer-link ELIMINADOS — sin ruta real (href="#");
+   reincorporar solo cuando existan páginas de Soporte/Legal reales. */
 
 /* ── Security badges ─────────────────────────────────────────── */
 .lp-security {

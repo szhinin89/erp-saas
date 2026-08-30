@@ -169,8 +169,10 @@
 .dsh-quick-btn {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--space-3);
   width: 100%;
+  height: auto;
   padding: var(--space-3);
   background: var(--color-surface-container-low);
   border: none;

@@ -9,6 +9,7 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useDashboardKpis } from "../hooks/useDashboardData";
 import { formatLongDate } from "../../../lib/formatters/dateFormatters";
+import { brandConfig, getCopyrightText } from "../../../shared/branding/brandConfig";
 import "./DashboardPage.css";
 
 function fmt(n: number | undefined, decimals = 2) {
@@ -58,7 +59,7 @@ export function DashboardPage() {
           icon="payments"
           tone="primary"
           badge={periodLabel ? <Badge label={periodLabel} variant="info" /> : undefined}
-          label="Ventas MTD"
+          label="Ventas del mes"
           value={loading ? "…" : fmt(d?.salesMtd)}
           sub={
             <p className="subtle">
@@ -70,7 +71,7 @@ export function DashboardPage() {
         <ReportKpiCard
           icon="account_balance"
           tone="warning"
-          label="CxC Pendiente"
+          label="Cuentas por cobrar"
           value={loading ? "…" : fmt(d?.pendingArTotal)}
           trend={
             !loading && !!d?.overdueArTotal
@@ -98,7 +99,7 @@ export function DashboardPage() {
         <ReportKpiCard
           icon="shopping_cart"
           tone="primary"
-          label="CxP Pendiente"
+          label="Cuentas por pagar"
           value={loading ? "…" : fmt(d?.pendingApTotal)}
           trend={
             !loading && !!d?.overdueApTotal
@@ -115,18 +116,31 @@ export function DashboardPage() {
       {/* ── Aging charts + quick access ── */}
       <div className="dsh-body">
         <div className="dsh-charts-col">
-          {/* AR Aging */}
+          {/* Antigüedad de cuentas por cobrar */}
           <div className="card card--xl">
             <div className="dsh-activity-head">
-              <h2 className="dsh-section-title">Antigüedad CxC (AR)</h2>
+              <h2 className="dsh-section-title">
+                Antigüedad de cuentas por cobrar
+              </h2>
             </div>
-            <div className="dsh-chart-wrap"></div>
+            <div className="dsh-chart-wrap">
+              <p className="dsh-chart-placeholder">
+                No hay cuentas por cobrar pendientes.
+              </p>
+            </div>
           </div>
 
-          {/* AP Aging */}
+          {/* Antigüedad de cuentas por pagar */}
           <div className="card card--xl">
             <div className="dsh-activity-head">
-              <h2 className="dsh-section-title">Antigüedad CxP (AP)</h2>
+              <h2 className="dsh-section-title">
+                Antigüedad de cuentas por pagar
+              </h2>
+            </div>
+            <div className="dsh-chart-wrap">
+              <p className="dsh-chart-placeholder">
+                No hay cuentas por pagar pendientes.
+              </p>
             </div>
           </div>
         </div>
@@ -139,6 +153,44 @@ export function DashboardPage() {
               </h2>
             </div>
             <div className="dsh-card-body">
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                className="dsh-quick-btn"
+                onClick={() => navigate("/sales")}
+              >
+                <span className="material-symbols-outlined dsh-quick-icon">
+                  point_of_sale
+                </span>
+                <div>
+                  <p className="dsh-quick-label">
+                    {t("dashboard.quickAccess.newSale")}
+                  </p>
+                  <p className="dsh-quick-sub">
+                    {t("dashboard.quickAccess.newSale.sub")}
+                  </p>
+                </div>
+              </ZHBtn>
+
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                className="dsh-quick-btn"
+                onClick={() => navigate("/purchases")}
+              >
+                <span className="material-symbols-outlined dsh-quick-icon">
+                  shopping_cart
+                </span>
+                <div>
+                  <p className="dsh-quick-label">
+                    {t("dashboard.quickAccess.newPurchase")}
+                  </p>
+                  <p className="dsh-quick-sub">
+                    {t("dashboard.quickAccess.newPurchase.sub")}
+                  </p>
+                </div>
+              </ZHBtn>
+
               <ZHBtn
                 type="button"
                 variant="secondary"
@@ -157,10 +209,29 @@ export function DashboardPage() {
                   </p>
                 </div>
               </ZHBtn>
+
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                className="dsh-quick-btn"
+                onClick={() => navigate("/masterdata/customers")}
+              >
+                <span className="material-symbols-outlined dsh-quick-icon">
+                  person_add
+                </span>
+                <div>
+                  <p className="dsh-quick-label">
+                    {t("dashboard.quickAccess.newCustomer")}
+                  </p>
+                  <p className="dsh-quick-sub">
+                    {t("dashboard.quickAccess.newCustomer.sub")}
+                  </p>
+                </div>
+              </ZHBtn>
             </div>
           </div>
 
-          {/* YTD summary */}
+          {/* Resumen anual */}
           <div className="card card--xl">
             <div className="card-header">
               <h2 className="dsh-section-title">Resumen Anual</h2>
@@ -168,25 +239,29 @@ export function DashboardPage() {
             </div>
             <div className="dsh-card-body">
               <div className="dsh-summary-row">
-                <span className="dsh-summary-label">Ventas YTD</span>
+                <span className="dsh-summary-label">Ventas del año</span>
                 <span className="dsh-summary-value">
                   {loading ? "…" : fmt(d?.salesYtd)}
                 </span>
               </div>
               <div className="dsh-summary-row">
-                <span className="dsh-summary-label">Facturas MTD</span>
+                <span className="dsh-summary-label">Facturas del mes</span>
                 <span className="dsh-summary-value">
                   {loading ? "…" : fmtN(d?.invoicesMtd)}
                 </span>
               </div>
               <div className="dsh-summary-row">
-                <span className="dsh-summary-label">CxC vencida</span>
+                <span className="dsh-summary-label">
+                  Cuentas por cobrar vencidas
+                </span>
                 <span className="dsh-summary-value dsh-summary-value--warn">
                   {loading ? "…" : fmt(d?.overdueArTotal)}
                 </span>
               </div>
               <div className="dsh-summary-row">
-                <span className="dsh-summary-label">CxP vencida</span>
+                <span className="dsh-summary-label">
+                  Cuentas por pagar vencidas
+                </span>
                 <span className="dsh-summary-value dsh-summary-value--warn">
                   {loading ? "…" : fmt(d?.overdueApTotal)}
                 </span>
@@ -198,16 +273,11 @@ export function DashboardPage() {
 
       <footer className="dsh-footer">
         <div className="dsh-footer-left">
-          <span className="dsh-footer-brand">ZH Technologies</span>
+          <span className="dsh-footer-brand">{brandConfig.companyName}</span>
           <span className="dsh-footer-copy">
-            {t("dashboard.footer.rights")}
+            {getCopyrightText()}. Todos los derechos reservados.
           </span>
         </div>
-        <nav className="dsh-footer-links">
-          <a href="#">{t("dashboard.footer.support")}</a>
-          <a href="#">{t("dashboard.footer.docs")}</a>
-          <a href="#">{t("dashboard.footer.privacy")}</a>
-        </nav>
       </footer>
     </ErpPageTemplate>
   );

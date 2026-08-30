@@ -8,10 +8,10 @@ test.describe("Smoke", () => {
       "ZH Technologies",
     );
     await expect(
-      page.getByText("Acceso al Portal ERP Corporativo"),
+      page.getByText("Sistema de gestión empresarial"),
     ).toBeVisible();
     await expect(page.locator("#lp-username")).toBeVisible();
     await expect(page.locator("#lp-password")).toBeVisible();
-    await expect(page.locator("button.lp-submit")).toBeVisible();
+    await expect(page.locator("button.zh-auth-submit")).toBeVisible();
   });
 });

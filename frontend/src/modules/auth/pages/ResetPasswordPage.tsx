@@ -11,6 +11,7 @@ import {
   type ResetWithTokenFormValues,
 } from "../../../schemas/auth/resetWithTokenSchema";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
+import { brandConfig, getCopyrightText } from "../../../shared/branding/brandConfig";
 import "./ResetPasswordPage.css";
 
 const guidRegex =
@@ -94,7 +95,7 @@ export function ResetPasswordPage() {
           <div className="zh-auth-brand-icon" aria-hidden="true">
             <span className="material-symbols-outlined">lock_reset</span>
           </div>
-          <h1 className="rp-brand-name">ZH Technologies</h1>
+          <h1 className="rp-brand-name">{brandConfig.companyName}</h1>
           <p className="rp-brand-sub">Restablecer Contraseña</p>
         </header>
 
@@ -260,7 +261,7 @@ export function ResetPasswordPage() {
             </a>
           </div>
           <p className="zh-auth-footer-copy">
-            © 2024 ZH Technologies. Todos los derechos reservados.
+            {getCopyrightText()}. Todos los derechos reservados.
           </p>
         </footer>
       </div>

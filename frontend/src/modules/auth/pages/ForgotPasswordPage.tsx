@@ -11,6 +11,7 @@ import {
   type ForgotPasswordFormValues,
 } from "../../../schemas/auth/forgotPasswordSchema";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
+import { brandConfig, getCopyrightText } from "../../../shared/branding/brandConfig";
 import "./ForgotPasswordPage.css";
 
 export function ForgotPasswordPage() {
@@ -29,6 +30,8 @@ export function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const copyrightText = getCopyrightText();
 
   const onValid = async (form: ForgotPasswordFormValues) => {
     setError("");
@@ -66,10 +69,10 @@ export function ForgotPasswordPage() {
         {/* Marca */}
         <header className="zh-auth-brand">
           <div className="zh-auth-brand-icon" aria-hidden="true">
-            <span className="material-symbols-outlined">shield_lock</span>
+            <span className="material-symbols-outlined">dashboard</span>
           </div>
-          <h1 className="fp-brand-name">ZH Technologies</h1>
-          <p className="fp-brand-sub">Portal de Administración</p>
+          <h1 className="fp-brand-name">{brandConfig.companyName}</h1>
+          <p className="fp-brand-sub">Restablecimiento de acceso</p>
         </header>
 
         {/* Card */}
@@ -77,8 +80,8 @@ export function ForgotPasswordPage() {
           <div className="zh-auth-card-header">
             <h2 className="zh-auth-card-title">{t("forgot.title")}</h2>
             <p className="zh-auth-card-desc">
-              No te preocupes. Introduce tu dirección de correo electrónico y te
-              enviaremos las instrucciones para restablecerla.
+              Ingresa tu correo electrónico registrado y te enviaremos un
+              enlace para crear una nueva contraseña.
             </p>
           </div>
 
@@ -150,11 +153,10 @@ export function ForgotPasswordPage() {
               </span>
               <div>
                 <p className="zh-auth-info-title">¿Qué sucede después?</p>
-                <ul className="zh-auth-info-list">
-                  <li>Recibirás un enlace seguro en tu bandeja de entrada.</li>
-                  <li>El enlace caducará en 60 minutos por seguridad.</li>
-                  <li>Podrás elegir una nueva contraseña de acceso.</li>
-                </ul>
+                <p className="fp-info-text">
+                  Te enviaremos un enlace seguro a tu correo. El enlace
+                  caduca en 60 minutos y podrás crear una nueva contraseña.
+                </p>
               </div>
             </div>
           </div>
@@ -174,27 +176,25 @@ export function ForgotPasswordPage() {
           </button>
         </div>
 
-        <div className="zh-auth-banner" aria-hidden="true">
-          <span className="material-symbols-outlined zh-auth-banner-icon">
-            security
-          </span>
-          <div className="zh-auth-banner-overlay" />
+        <div className="fp-security" aria-label="Seguridad de la conexión">
+          <div className="fp-security-badge">
+            <span className="material-symbols-outlined" aria-hidden="true">
+              verified_user
+            </span>
+            <span>{brandConfig.secureAccessText}</span>
+          </div>
+          <span className="fp-security-dot" aria-hidden="true" />
+          <div className="fp-security-badge">
+            <span className="material-symbols-outlined" aria-hidden="true">
+              shield
+            </span>
+            <span>{brandConfig.protectedAccessText}</span>
+          </div>
         </div>
 
         <footer className="zh-auth-footer">
-          <div className="zh-auth-footer-links">
-            <a href="#" className="zh-auth-footer-link">
-              Centro de ayuda
-            </a>
-            <span className="zh-auth-footer-sep" aria-hidden="true">
-              |
-            </span>
-            <a href="#" className="zh-auth-footer-link">
-              Privacidad
-            </a>
-          </div>
           <p className="zh-auth-footer-copy">
-            © 2024 ZH Technologies. Todos los derechos reservados.
+            {copyrightText}. Todos los derechos reservados.
           </p>
         </footer>
       </div>
