@@ -94,6 +94,11 @@ const OperationalPreferencesPage = lazyNamedPage(
     import("../modules/configuracion/operaciones/pages/OperationalPreferencesPage"),
   "OperationalPreferencesPage",
 );
+const DocumentFlowPoliciesPage = lazyNamedPage(
+  () =>
+    import("../modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage"),
+  "DocumentFlowPoliciesPage",
+);
 const InitialLoadHubPage = lazyNamedPage(
   () => import("../modules/initialLoad/pages/InitialLoadHubPage"),
   "InitialLoadHubPage",
@@ -194,6 +199,11 @@ export const mainRoutes = [
     key="settings-operations"
     path="/settings/operations"
     element={<OperationalPreferencesPage />}
+  />,
+  <Route
+    key="settings-document-flows"
+    path="/settings/document-flows"
+    element={<DocumentFlowPoliciesPage />}
   />,
 
   // -- Carga Inicial (INITIAL-LOAD-ARCH-01) ------------------------------

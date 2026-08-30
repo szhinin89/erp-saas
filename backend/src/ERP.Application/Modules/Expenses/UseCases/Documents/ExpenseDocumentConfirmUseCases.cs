@@ -10,6 +10,7 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -36,6 +37,7 @@ public sealed class ConfirmExpenseDocumentHandler
     private readonly IExpenseCategoryRepository _categories;
     private readonly IAccountRepository _accounts;
     private readonly IAccountsPayableService _payables;
+    private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -47,6 +49,7 @@ public sealed class ConfirmExpenseDocumentHandler
         IExpenseCategoryRepository categories,
         IAccountRepository accounts,
         IAccountsPayableService payables,
+        IDocumentFlowPolicyService workflowPolicy,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -58,6 +61,7 @@ public sealed class ConfirmExpenseDocumentHandler
         _categories = categories;
         _accounts = accounts;
         _payables = payables;
+        _workflowPolicy = workflowPolicy;
         _tenant = tenant;
         _company = company;
         _logger = logger;
@@ -73,6 +77,25 @@ public sealed class ConfirmExpenseDocumentHandler
         var document = await _repo.GetByIdAsync(_tenant.TenantId, cmd.Id, ct);
         if (document is null || document.BranchId != _branch.BranchId)
             return Result<ExpenseDocumentDetailDto>.NotFound("Gasto no encontrado.");
+
+        DocumentFlowPolicyResult policy;
+        try
+        {
+            // DOCUMENT-FLOW-POLICY-01: valida CÓMO debe comportarse la confirmación (modo de
+            // confirmación/autorización) — el permiso expenses.documents.confirm (QUIÉN puede
+            // confirmar) ya se validó en el controller vía [Authorize(Policy = "perm:...")], antes
+            // de llegar aquí. Esta llamada nunca reemplaza esa validación de permiso.
+            policy = await _workflowPolicy.EnsureConfirmationFlowAsync(
+                _company.CompanyId,
+                DocTypeCodes.ExpenseDocument,
+                ct
+            );
+        }
+        catch (DocumentFlowPolicyViolationException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
+        }
+
         if (document.Status != ExpenseStatus.Draft)
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 "Solo se pueden confirmar gastos en estado borrador."
@@ -132,6 +155,11 @@ public sealed class ConfirmExpenseDocumentHandler
             // propaga desde el Publish() interno de ErpDbContext.SaveChangesAsync, que hace rollback
             // completo de la transacción ANTES de este catch — el documento queda en Draft en BD,
             // nada de lo mutado en memoria (Confirm() de arriba) llegó a persistirse.
+            // DOCUMENT-FLOW-POLICY-01: la política inicial obligatoria de GASDOC declara
+            // AccountingPostingMode.OnConfirmation, que coincide con este comportamiento existente
+            // (posting disparado por ExpenseDocumentConfirmedEvent al confirmar). Reestructurar el
+            // translator para leer el modo de la política queda fuera de alcance — no rompe nada
+            // hoy porque ambos coinciden.
             await _repo.SaveChangesAsync(ct);
         }
         catch (ExpensePostingFailedException ex)
@@ -139,48 +167,52 @@ public sealed class ConfirmExpenseDocumentHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
 
-        // PAYABLES-GENERIC-FOUNDATION-09: "al confirmar gasto, después de posting contable
-        // exitoso, crear AccountsPayable" — el posting ya se confirmó y persistió arriba (si
-        // hubiera fallado, ya habríamos retornado). A diferencia del posting, un fallo aquí NO
-        // debe revertir la confirmación ya persistida (el gasto ya tiene asiento contable real) —
-        // se registra para seguimiento manual, mismo criterio que Purchases usa para gaps de
+        // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01: "al confirmar gasto, después de
+        // posting contable exitoso, crear AccountsPayable" — solo si la política de flujo documental
+        // lo declara (PayableGenerationMode.OnConfirmation). El posting ya se confirmó y persistió
+        // arriba (si hubiera fallado, ya habríamos retornado). A diferencia del posting, un fallo
+        // aquí NO debe revertir la confirmación ya persistida (el gasto ya tiene asiento contable
+        // real) — se registra para seguimiento manual, mismo criterio que Purchases usa para gaps de
         // configuración que no bloquean el documento de origen. CreateFromOriginAsync es
         // idempotente, así que un reintento manual posterior es seguro.
-        try
+        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation)
         {
-            await _payables.CreateFromOriginAsync(
-                new CreateAccountsPayableFromOriginRequest(
-                    _tenant.TenantId,
-                    _company.CompanyId,
-                    document.BranchId,
-                    document.SupplierId,
-                    AccountsPayableOriginType.ExpenseDocument,
+            try
+            {
+                await _payables.CreateFromOriginAsync(
+                    new CreateAccountsPayableFromOriginRequest(
+                        _tenant.TenantId,
+                        _company.CompanyId,
+                        document.BranchId,
+                        document.SupplierId,
+                        AccountsPayableOriginType.ExpenseDocument,
+                        document.Id,
+                        document.DocumentType,
+                        document.DocumentNumber,
+                        document.IssueDate,
+                        document.AccountingDate,
+                        new[]
+                        {
+                            new AccountsPayableInstallmentInput(
+                                1,
+                                document.DueDate ?? document.AccountingDate,
+                                document.GrandTotal
+                            ),
+                        }
+                    ),
+                    _user.UserId,
+                    ct
+                );
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
                     document.Id,
-                    document.DocumentType,
-                    document.DocumentNumber,
-                    document.IssueDate,
-                    document.AccountingDate,
-                    new[]
-                    {
-                        new AccountsPayableInstallmentInput(
-                            1,
-                            document.DueDate ?? document.AccountingDate,
-                            document.GrandTotal
-                        ),
-                    }
-                ),
-                _user.UserId,
-                ct
-            );
-        }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        {
-            _logger.LogWarning(
-                ex,
-                "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
-                document.Id,
-                document.DocumentNumber
-            );
+                    document.DocumentNumber
+                );
+            }
         }
 
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));
@@ -193,7 +225,7 @@ public sealed class ConfirmExpenseDocumentHandler
 /// (comparte <see cref="ExpenseDraftHeaderRules{T}"/> vía <see cref="IExpenseDraftInput"/> y la
 /// resolución de proveedor/condición de pago/líneas de <see cref="ExpenseDraftRules"/>), pero
 /// además ejecuta la misma confirmación/posting/AP que <see cref="ConfirmExpenseDocumentCommand"/>
-/// en la misma operación. Bloqueado por <c>IDocWorkflowPolicyService.ValidateCreateConfirmedAsync</c>
+/// en la misma operación. Bloqueado por <c>IDocumentFlowPolicyService.EnsureDirectCreationAllowedAsync</c>
 /// cuando la política de la empresa exige borrador (<see cref="DraftMode.Required"/>) para GASDOC.
 /// </summary>
 public sealed record CreateConfirmedExpenseCommand(
@@ -227,7 +259,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly IPaymentTermRepository _paymentTerms;
     private readonly ISriTaxResolver _tax;
     private readonly IAccountsPayableService _payables;
-    private readonly IDocWorkflowPolicyService _workflowPolicy;
+    private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -243,7 +275,7 @@ public sealed class CreateConfirmedExpenseHandler
         IPaymentTermRepository paymentTerms,
         ISriTaxResolver tax,
         IAccountsPayableService payables,
-        IDocWorkflowPolicyService workflowPolicy,
+        IDocumentFlowPolicyService workflowPolicy,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -272,15 +304,17 @@ public sealed class CreateConfirmedExpenseHandler
         CancellationToken ct
     )
     {
+        DocumentFlowPolicyResult policy;
         try
         {
-            await _workflowPolicy.ValidateCreateConfirmedAsync(
+            await _workflowPolicy.EnsureDirectCreationAllowedAsync(
                 _company.CompanyId,
                 DocTypeCodes.ExpenseDocument,
                 ct
             );
+            policy = await _workflowPolicy.GetRequiredAsync(_company.CompanyId, DocTypeCodes.ExpenseDocument, ct);
         }
-        catch (DocWorkflowPolicyViolationException ex)
+        catch (DocumentFlowPolicyViolationException ex)
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 ExpenseWorkflowPolicyMessages.Translate(ex)
@@ -405,44 +439,48 @@ public sealed class CreateConfirmedExpenseHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
 
-        // PAYABLES-GENERIC-FOUNDATION-09, mismo criterio que ConfirmExpenseDocumentHandler: el
-        // posting ya se confirmó y persistió arriba; un fallo aquí no revierte la confirmación ya
-        // persistida — se registra para seguimiento manual. CreateFromOriginAsync es idempotente.
-        try
+        // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01, mismo criterio que
+        // ConfirmExpenseDocumentHandler: solo si PayableGenerationMode.OnConfirmation. El posting ya
+        // se confirmó y persistió arriba; un fallo aquí no revierte la confirmación ya persistida —
+        // se registra para seguimiento manual. CreateFromOriginAsync es idempotente.
+        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation)
         {
-            await _payables.CreateFromOriginAsync(
-                new CreateAccountsPayableFromOriginRequest(
-                    _tenant.TenantId,
-                    _company.CompanyId,
-                    document.BranchId,
-                    document.SupplierId,
-                    AccountsPayableOriginType.ExpenseDocument,
+            try
+            {
+                await _payables.CreateFromOriginAsync(
+                    new CreateAccountsPayableFromOriginRequest(
+                        _tenant.TenantId,
+                        _company.CompanyId,
+                        document.BranchId,
+                        document.SupplierId,
+                        AccountsPayableOriginType.ExpenseDocument,
+                        document.Id,
+                        document.DocumentType,
+                        document.DocumentNumber,
+                        document.IssueDate,
+                        document.AccountingDate,
+                        new[]
+                        {
+                            new AccountsPayableInstallmentInput(
+                                1,
+                                document.DueDate ?? document.AccountingDate,
+                                document.GrandTotal
+                            ),
+                        }
+                    ),
+                    _user.UserId,
+                    ct
+                );
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
                     document.Id,
-                    document.DocumentType,
-                    document.DocumentNumber,
-                    document.IssueDate,
-                    document.AccountingDate,
-                    new[]
-                    {
-                        new AccountsPayableInstallmentInput(
-                            1,
-                            document.DueDate ?? document.AccountingDate,
-                            document.GrandTotal
-                        ),
-                    }
-                ),
-                _user.UserId,
-                ct
-            );
-        }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        {
-            _logger.LogWarning(
-                ex,
-                "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
-                document.Id,
-                document.DocumentNumber
-            );
+                    document.DocumentNumber
+                );
+            }
         }
 
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));

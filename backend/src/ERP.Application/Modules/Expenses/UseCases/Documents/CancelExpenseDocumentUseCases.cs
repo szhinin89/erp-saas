@@ -1,7 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.Exceptions;
+using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -48,6 +52,7 @@ public sealed class CancelExpenseDocumentHandler
     private readonly IExpenseDocumentRepository _repo;
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IUnitOfWork _uow;
+    private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -58,6 +63,7 @@ public sealed class CancelExpenseDocumentHandler
         IExpenseDocumentRepository repo,
         IAccountsPayableRepository payableRepo,
         IUnitOfWork uow,
+        IDocumentFlowPolicyService workflowPolicy,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -68,6 +74,7 @@ public sealed class CancelExpenseDocumentHandler
         _repo = repo;
         _payableRepo = payableRepo;
         _uow = uow;
+        _workflowPolicy = workflowPolicy;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -94,6 +101,26 @@ public sealed class CancelExpenseDocumentHandler
                 return Result<ExpenseDocumentDetailDto>.NotFound("Gasto no encontrado.");
             }
 
+            DocumentFlowPolicyResult policy;
+            try
+            {
+                // DOCUMENT-FLOW-POLICY-01: valida CÓMO debe comportarse la anulación (modo de
+                // anulación, motivo obligatorio) — el permiso expenses.documents.cancel (QUIÉN
+                // puede anular) ya se validó en el controller vía [Authorize(Policy = "perm:...")],
+                // antes de llegar aquí. Esta llamada nunca reemplaza esa validación de permiso.
+                policy = await _workflowPolicy.EnsureCancellationFlowAsync(
+                    cid,
+                    DocTypeCodes.ExpenseDocument,
+                    cmd.Reason,
+                    ct
+                );
+            }
+            catch (DocumentFlowPolicyViolationException ex)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
+            }
+
             if (document.Status != ExpenseStatus.Confirmed)
             {
                 await _uow.RollbackAsync(ct);
@@ -102,13 +129,16 @@ public sealed class CancelExpenseDocumentHandler
                 );
             }
 
-            var payable = await _payableRepo.GetByOriginAsync(
-                tid,
-                cid,
-                AccountsPayableOriginType.ExpenseDocument,
-                document.Id,
-                ct
-            );
+            var payable =
+                policy.CancellationMode == CancellationMode.AllowedAfterConfirmationWithReversal
+                    ? await _payableRepo.GetByOriginAsync(
+                        tid,
+                        cid,
+                        AccountsPayableOriginType.ExpenseDocument,
+                        document.Id,
+                        ct
+                    )
+                    : null;
 
             if (payable is not null)
             {

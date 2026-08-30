@@ -58,6 +58,7 @@ public sealed class ExpensesControllerTests
     [InlineData(nameof(ExpensesController.CreateDraft), ExpensePermissions.DocumentsCreate)]
     [InlineData(nameof(ExpensesController.UpdateDraft), ExpensePermissions.DocumentsUpdate)]
     [InlineData(nameof(ExpensesController.Confirm), ExpensePermissions.DocumentsConfirm)]
+    [InlineData(nameof(ExpensesController.Cancel), ExpensePermissions.DocumentsCancel)]
     public void Cada_endpoint_expone_su_permiso_propio(string methodName, string permission)
     {
         var method = typeof(ExpensesController).GetMethod(methodName)!;
@@ -286,6 +287,9 @@ public sealed class ExpensesControllerTests
             100m,
             null,
             ExpenseStatus.Draft,
-            Array.Empty<ExpenseLineDto>()
+            Array.Empty<ExpenseLineDto>(),
+            null,
+            null,
+            null
         );
 }

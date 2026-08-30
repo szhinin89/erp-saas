@@ -14,6 +14,7 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -59,17 +60,13 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Theory]
-    [InlineData("Optional")]
-    [InlineData("Required")]
-    public async Task Create_Draft_permitido_cuando_politica_GASDOC_no_bloquea_borrador(string draftMode)
+    [Fact]
+    public async Task Create_Draft_permitido_cuando_politica_GASDOC_no_bloquea_borrador()
     {
-        // ValidateCreateDraftAsync no lanza para Optional ni para Required (Required solo exige
-        // pasar por borrador antes de CONFIRMAR — nunca bloquea la creacion del borrador en si;
-        // eso solo lo bloquea Disabled, cubierto en el test siguiente). WorkflowPolicy ya esta
-        // configurada para no lanzar por defecto en el Fixture, sin importar cual de los dos
-        // draft_mode representa este escenario en produccion.
-        _ = draftMode;
+        // EnsureDraftCreationAllowedAsync no lanza para CreationMode.DraftRequired (que es la
+        // política inicial obligatoria de GASDOC) — solo CreationMode.DirectCreation bloquea la
+        // creación de un borrador, cubierto en el test siguiente. WorkflowPolicy ya esta
+        // configurada para no lanzar por defecto en el Fixture.
         var fx = new Fixture();
 
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
@@ -79,18 +76,18 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     }
 
     [Fact]
-    public async Task Create_Draft_bloqueado_cuando_politica_GASDOC_es_Disabled()
+    public async Task Create_Draft_bloqueado_cuando_politica_GASDOC_es_DirectCreation()
     {
         var fx = new Fixture();
         fx.WorkflowPolicy
             .Setup(w =>
-                w.ValidateCreateDraftAsync(
+                w.EnsureDraftCreationAllowedAsync(
                     CompanyId,
                     DocTypeCodes.ExpenseDocument,
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ThrowsAsync(DocWorkflowPolicyViolationException.DraftNotAllowed(DocTypeCodes.ExpenseDocument));
+            .ThrowsAsync(DocumentFlowPolicyViolationException.DraftNotAllowed(DocTypeCodes.ExpenseDocument));
 
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
 
@@ -263,7 +260,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         public Mock<IBusinessPartnerRoleRepository> Roles { get; } = new();
         public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
-        public Mock<IDocWorkflowPolicyService> WorkflowPolicy { get; } = new();
+        public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
 
         public Account Account { get; }
         public ExpenseCategoryNode Type { get; }
@@ -356,7 +353,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
             WorkflowPolicy
                 .Setup(w =>
-                    w.ValidateCreateDraftAsync(
+                    w.EnsureDraftCreationAllowedAsync(
                         CompanyId,
                         DocTypeCodes.ExpenseDocument,
                         It.IsAny<CancellationToken>()

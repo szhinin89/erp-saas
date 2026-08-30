@@ -235,8 +235,12 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Services.SriDocTypeCatalogResolver
         >();
         services.AddScoped<
-            ERP.Application.Modules.DocTypes.Services.IDocWorkflowPolicyService,
-            ERP.Infrastructure.Persistence.Services.DocWorkflowPolicyService
+            ERP.Application.Modules.DocTypes.Services.IDocumentFlowPolicyService,
+            ERP.Infrastructure.Persistence.Services.DocumentFlowPolicyService
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.DocTypes.Interfaces.IDocumentFlowPolicyRepository,
+            ERP.Infrastructure.Persistence.Repositories.DocTypes.DocumentFlowPolicyRepository
         >();
         services.AddScoped<
             ERP.Domain.Modules.SriCatalogs.Interfaces.ISriCatalogLookupRepository,
@@ -861,9 +865,9 @@ public static class DependencyInjection
         services.AddScoped<ICompanyBootstrapStep>(sp =>
             sp.GetRequiredService<ExpensesCatalogBootstrapStep>()
         );
-        services.AddScoped<DocWorkflowPolicyBootstrapStep>();
+        services.AddScoped<DocumentFlowPolicyBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep>(sp =>
-            sp.GetRequiredService<DocWorkflowPolicyBootstrapStep>()
+            sp.GetRequiredService<DocumentFlowPolicyBootstrapStep>()
         );
         services.AddScoped<ICompanyBootstrapStep, AccessBootstrapStep>();
 
@@ -876,7 +880,7 @@ public static class DependencyInjection
         services.AddScoped<ERP.Infrastructure.Seeding.E2E.E2ESeedService>();
         services.AddScoped<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
         services.AddScoped<ERP.Infrastructure.Seeding.ExpensesCatalogBackfillService>();
-        services.AddScoped<ERP.Infrastructure.Seeding.DocWorkflowPolicyBackfillService>();
+        services.AddScoped<ERP.Infrastructure.Seeding.DocumentFlowPolicyBackfillService>();
         services.AddScoped<
             ERP.Infrastructure.Seeding.Global.IGlobalBootstrapStep,
             ERP.Infrastructure.Seeding.Global.Steps.NavigationBootstrapStep

@@ -228,7 +228,7 @@ public class ErpDbContext : DbContext
     // ── DocTypes (internal document/process SSOT + workflow policy) ──────
     public DbSet<DocType> DocTypes => Set<DocType>();
     public DbSet<DocTypeSriMap> DocTypeSriMaps => Set<DocTypeSriMap>();
-    public DbSet<DocWorkflowPolicy> DocWorkflowPolicies => Set<DocWorkflowPolicy>();
+    public DbSet<DocumentFlowPolicy> DocumentFlowPolicies => Set<DocumentFlowPolicy>();
 
     // ── SRI Catalogs (global reference data) ─────────────────────────────
     public DbSet<SriEmissionType> SriEmissionTypes => Set<SriEmissionType>();

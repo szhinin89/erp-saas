@@ -1,8 +1,12 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
+using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -15,6 +19,23 @@ using Moq;
 
 namespace ERP.Application.Tests.Expenses;
 
+/// <summary>
+/// DOCUMENT-FLOW-POLICY-01 — separación permiso/política, cubierta en dos capas independientes:
+/// (1) el permiso <c>expenses.documents.cancel</c> se exige en <c>ExpensesController.Cancel</c> vía
+/// <c>[Authorize(Policy = "perm:...")]</c> — middleware de ASP.NET que corre ANTES de que el
+/// request llegue a <see cref="CancelExpenseDocumentHandler"/> (ver
+/// <c>ExpensesControllerTests.Cada_endpoint_expone_su_permiso_propio</c>, que verifica ese
+/// atributo existe para <c>Cancel</c>). Un usuario sin ese permiso nunca llega a este handler, sin
+/// importar lo que diga la política — "usuario sin permiso no puede anular aunque la política lo
+/// permita" se cumple por construcción de la tubería HTTP, no por lógica del handler.
+/// (2) <see cref="CancelExpenseDocumentHandler"/> en sí mismo no conoce permisos — no recibe ni
+/// consulta ningún concepto de autorización de acciones; solo consulta
+/// <c>IDocumentFlowPolicyService</c>. Los tests de este archivo que bloquean por
+/// <c>CancellationMode.NotAllowed</c> o motivo faltante demuestran que la política bloquea
+/// igual con un <c>ICurrentUser</c> mockeado arbitrario — "usuario con permiso no puede anular si
+/// la política no lo permite" se cumple porque el handler nunca deja pasar una política que lo
+/// prohíbe, sin importar el usuario.
+/// </summary>
 public sealed class CancelExpenseDocumentUseCasesTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
@@ -170,17 +191,118 @@ public sealed class CancelExpenseDocumentUseCasesTests
         fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task Cancelar_bloqueado_cuando_politica_CancellationMode_es_NotAllowed()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        fx.WorkflowPolicy
+            .Setup(w =>
+                w.EnsureCancellationFlowAsync(
+                    CompanyId,
+                    DocTypeCodes.ExpenseDocument,
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(DocumentFlowPolicyViolationException.CancellationNotAllowed());
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La política de flujo documental no permite anular este tipo de documento.");
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cancelar_exige_motivo_cuando_politica_RequiresCancellationReason_es_true()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        fx.WorkflowPolicy
+            .Setup(w =>
+                w.EnsureCancellationFlowAsync(
+                    CompanyId,
+                    DocTypeCodes.ExpenseDocument,
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(DocumentFlowPolicyViolationException.CancellationReasonRequired());
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("El motivo de anulación es obligatorio según la política de flujo documental.");
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cancelar_no_reversa_CxP_cuando_politica_CancellationMode_no_es_AllowedAfterConfirmationWithReversal()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        var payable = fx.SetupPayable(document.Id, document.GrandTotal);
+        fx.WorkflowPolicy
+            .Setup(w =>
+                w.EnsureCancellationFlowAsync(
+                    CompanyId,
+                    DocTypeCodes.ExpenseDocument,
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new DocumentFlowPolicyResult(
+                    DocTypeCodes.ExpenseDocument,
+                    IsActive: true,
+                    CreationMode.DraftRequired,
+                    ConfirmationMode.ManualConfirmation,
+                    AuthorizationMode.None,
+                    PendingDocumentMode.None,
+                    CancellationMode.AllowedBeforeConfirmation,
+                    RequiresCancellationReason: true,
+                    RequiresAttachment: false,
+                    RequiresSupplier: true,
+                    RequiresDueDate: true,
+                    PayableGenerationMode.OnConfirmation,
+                    AccountingPostingMode.OnConfirmation,
+                    InventoryImpactMode.None,
+                    NotificationMode.None
+                )
+            );
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        payable.Status.Should().NotBe(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
+    }
+
     private sealed class Fixture
     {
         public Mock<IExpenseDocumentRepository> Docs { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
+        public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
 
         public CancelExpenseDocumentHandler Handler =>
             new(
                 Docs.Object,
                 PayableRepo.Object,
                 Uow.Object,
+                WorkflowPolicy.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -191,6 +313,34 @@ public sealed class CancelExpenseDocumentUseCasesTests
         public Fixture()
         {
             Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            WorkflowPolicy
+                .Setup(w =>
+                    w.EnsureCancellationFlowAsync(
+                        CompanyId,
+                        DocTypeCodes.ExpenseDocument,
+                        It.IsAny<string?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    new DocumentFlowPolicyResult(
+                        DocTypeCodes.ExpenseDocument,
+                        IsActive: true,
+                        CreationMode.DraftRequired,
+                        ConfirmationMode.ManualConfirmation,
+                        AuthorizationMode.None,
+                        PendingDocumentMode.None,
+                        CancellationMode.AllowedAfterConfirmationWithReversal,
+                        RequiresCancellationReason: true,
+                        RequiresAttachment: false,
+                        RequiresSupplier: true,
+                        RequiresDueDate: true,
+                        PayableGenerationMode.OnConfirmation,
+                        AccountingPostingMode.OnConfirmation,
+                        InventoryImpactMode.None,
+                        NotificationMode.None
+                    )
+                );
         }
 
         public ExpenseDocument DraftDocument() =>

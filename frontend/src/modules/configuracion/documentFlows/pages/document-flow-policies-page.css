@@ -1,0 +1,5 @@
+/* DOCUMENT-FLOW-POLICY-UX-01 — layout específico de esta pantalla, prefijo propio (dfp-). */
+.dfp-effects {
+  flex-wrap: wrap;
+  row-gap: var(--space-1, 4px);
+}

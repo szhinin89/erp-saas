@@ -69,6 +69,21 @@ No confundir con perfiles de acceso asignables (ej. `"DataEntry"`), que son tena
 
 ---
 
+## Permisos vs. política de flujo documental (DOCUMENT-FLOW-POLICY-01)
+
+Distinción conceptual obligatoria, nunca debe mezclarse:
+
+- **Los permisos** (`ExpensePermissions`, `SettingsPermissions`, etc., `[Authorize(Policy = "perm:...")]`) definen **QUIÉN** puede ejecutar una acción. Fijos por rol/perfil de acceso, iguales para todas las companies del tenant.
+- **`DocumentFlowPolicy`** (tabla `document_flow_policy`, `IDocumentFlowPolicyService`) define **CÓMO** se comporta cada tipo de documento (`DocType`) por company: modo de creación/confirmación/autorización/anulación, y qué efectos dispara (CxP, asiento, inventario, notificaciones).
+- **Los estados del documento** (`ExpenseStatus`, etc.) definen **EN QUÉ ETAPA** está un documento concreto.
+- **Los eventos de dominio** (`ExpenseDocumentConfirmedEvent`, etc.) definen **QUÉ EFECTOS** genera un documento al avanzar de etapa.
+
+**Regla dura**: `DocumentFlowPolicy` nunca se usa como permiso — no tiene (ni debe tener) campos `Can*`/`Allow*`. Un handler que consulta `IDocumentFlowPolicyService` para decidir el comportamiento del flujo **no reemplaza** la validación de permiso de la acción (`[Authorize(Policy = "perm:...")]` en el controller) — ambos gates son independientes y ambos deben pasar. Ver `CancelExpenseDocumentHandler`/`ConfirmExpenseDocumentHandler` (Expenses) como referencia de integración: el permiso se valida en el controller, la política se valida dentro del handler.
+
+Pantalla de administración: Configuración → Documentos y flujos (`/settings/document-flows`, permisos `settings.documentFlows.view`/`.update`) — administra únicamente el acceso a esa pantalla de configuración, nunca los permisos de acción de cada módulo.
+
+---
+
 ## Security & Access Contract V1 — LOCKED
 
 Modelo de autorización UI vigente, congelado para esta pasada (Security & Access Governance V1). Cambios a la lista ❌ requieren discusión explícita + actualización de esta sección.

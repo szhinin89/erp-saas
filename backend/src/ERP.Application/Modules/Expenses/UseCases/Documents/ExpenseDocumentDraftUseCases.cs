@@ -175,7 +175,7 @@ public sealed class CreateExpenseDraftHandler
     private readonly IBusinessPartnerRoleRepository _roles;
     private readonly IPaymentTermRepository _paymentTerms;
     private readonly ISriTaxResolver _tax;
-    private readonly IDocWorkflowPolicyService _workflowPolicy;
+    private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -189,7 +189,7 @@ public sealed class CreateExpenseDraftHandler
         IBusinessPartnerRoleRepository roles,
         IPaymentTermRepository paymentTerms,
         ISriTaxResolver tax,
-        IDocWorkflowPolicyService workflowPolicy,
+        IDocumentFlowPolicyService workflowPolicy,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -217,13 +217,13 @@ public sealed class CreateExpenseDraftHandler
     {
         try
         {
-            await _workflowPolicy.ValidateCreateDraftAsync(
+            await _workflowPolicy.EnsureDraftCreationAllowedAsync(
                 _company.CompanyId,
                 DocTypeCodes.ExpenseDocument,
                 ct
             );
         }
-        catch (DocWorkflowPolicyViolationException ex)
+        catch (DocumentFlowPolicyViolationException ex)
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 ExpenseWorkflowPolicyMessages.Translate(ex)
@@ -787,7 +787,7 @@ internal static class ExpenseDraftRules
 }
 
 /// <summary>
-/// EXPENSES-WORKFLOW-INTEGRATION-01: traduce <see cref="DocWorkflowPolicyViolationException"/> a
+/// EXPENSES-WORKFLOW-INTEGRATION-01: traduce <see cref="DocumentFlowPolicyViolationException"/> a
 /// mensajes específicos del módulo de Gastos — el mensaje genérico de la excepción (SSOT
 /// reutilizable por otros módulos) no es el texto que el usuario de Gastos debe ver. Sin
 /// traducción conocida para el código (p. ej. tipo deshabilitado, caso no cubierto por los
@@ -795,12 +795,12 @@ internal static class ExpenseDraftRules
 /// </summary>
 internal static class ExpenseWorkflowPolicyMessages
 {
-    public static string Translate(DocWorkflowPolicyViolationException ex) =>
+    public static string Translate(DocumentFlowPolicyViolationException ex) =>
         ex.Code switch
         {
-            "doc_workflow.draft_not_allowed" =>
+            "document_flow_policy.draft_not_allowed" =>
                 "La política de la empresa no permite guardar borradores para documentos de gasto.",
-            "doc_workflow.draft_required" =>
+            "document_flow_policy.draft_required" =>
                 "La política de la empresa requiere guardar el gasto como borrador antes de confirmarlo.",
             _ => ex.Message,
         };

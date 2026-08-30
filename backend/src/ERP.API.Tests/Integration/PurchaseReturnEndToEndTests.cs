@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Application.Modules.Finance.UseCases;
 using ERP.Application.Modules.Finance.UseCases.Payments;
@@ -29,6 +30,7 @@ using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Testcontainers.PostgreSql;
 
 namespace ERP.API.Tests.Integration;
@@ -435,8 +437,19 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
+            BuildPostingEngine(db),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId)
+        );
+
+    private static PostingEngine BuildPostingEngine(ErpDbContext db) =>
+        new(
+            new JournalEntryRepository(db),
+            new PostingRuleRepository(db),
+            new AccountingPeriodRepository(db),
+            new JournalEntrySequenceRepository(db),
+            new AccountRepository(db),
+            NullLogger<PostingEngine>.Instance
         );
 
     private CancelPurchaseReturnHandler BuildCancelReturnHandler(ErpDbContext db) =>

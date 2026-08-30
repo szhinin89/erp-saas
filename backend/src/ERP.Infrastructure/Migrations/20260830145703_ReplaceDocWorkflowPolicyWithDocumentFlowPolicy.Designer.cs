@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260830145703_ReplaceDocWorkflowPolicyWithDocumentFlowPolicy")]
+    partial class ReplaceDocWorkflowPolicyWithDocumentFlowPolicy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4621,20 +4624,20 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("AccountingPostingMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("accounting_posting_mode");
 
                     b.Property<string>("AuthorizationMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("authorization_mode");
 
                     b.Property<string>("CancellationMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("cancellation_mode");
 
                     b.Property<Guid>("CompanyId")
@@ -4643,8 +4646,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("ConfirmationMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("confirmation_mode");
 
                     b.Property<DateTime>("CreatedAt")
@@ -4657,8 +4660,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("CreationMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("creation_mode");
 
                     b.Property<string>("DocumentTypeCode")
@@ -4669,8 +4672,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("InventoryImpactMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("inventory_impact_mode");
 
                     b.Property<bool>("IsActive")
@@ -4679,20 +4682,20 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("NotificationMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("notification_mode");
 
                     b.Property<string>("PayableGenerationMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("payable_generation_mode");
 
                     b.Property<string>("PendingDocumentMode")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("pending_document_mode");
 
                     b.Property<bool>("RequiresAttachment")

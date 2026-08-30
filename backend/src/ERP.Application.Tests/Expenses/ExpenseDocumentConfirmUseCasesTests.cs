@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
 using ERP.Application.Modules.Payables.UseCases;
@@ -7,6 +8,8 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
+using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Events;
@@ -240,14 +243,14 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
     }
 
     [Fact]
-    public async Task Confirmar_un_Draft_existente_funciona_aunque_la_politica_GASDOC_sea_Required()
+    public async Task Confirmar_un_Draft_existente_funciona_cuando_la_politica_GASDOC_es_DraftRequired()
     {
-        // EXPENSES-WORKFLOW-INTEGRATION-01: ConfirmExpenseDocumentHandler nunca llama
-        // IDocWorkflowPolicyService.ValidateCreateConfirmedAsync — ese chequeo solo bloquea CREAR
-        // un gasto ya confirmado (CreateConfirmedExpenseCommand). DraftMode.Required exige que el
-        // gasto exista primero como borrador, pero una vez que ya es un Draft persistido,
-        // confirmarlo siempre debe funcionar sin importar la politica — no hay servicio de
-        // politica inyectado en este handler, asi que no hay forma de que la politica lo bloquee.
+        // EXPENSES-WORKFLOW-INTEGRATION-01 + DOCUMENT-FLOW-POLICY-01: CreationMode.DraftRequired
+        // exige que el gasto exista primero como borrador, pero ConfirmExpenseDocumentHandler nunca
+        // valida CreationMode (eso solo bloquea CREAR un gasto ya confirmado vía
+        // CreateConfirmedExpenseCommand) — solo valida ConfirmationMode/AuthorizationMode vía
+        // EnsureConfirmationFlowAsync (mockeada en el Fixture para no bloquear). Una vez que el
+        // gasto ya es un Draft persistido, confirmarlo siempre debe funcionar.
         var fx = new Fixture();
         var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
         fx.SetupDocument(document);
@@ -256,6 +259,78 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
+    }
+
+    [Fact]
+    public async Task Confirmar_bloqueado_cuando_politica_exige_autorizacion()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+        fx.WorkflowPolicy
+            .Setup(w =>
+                w.EnsureConfirmationFlowAsync(
+                    CompanyId,
+                    DocTypeCodes.ExpenseDocument,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(ERP.Domain.Exceptions.DocumentFlowPolicyViolationException.AuthorizationRequired());
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should()
+            .Be("La política de flujo documental requiere autorización antes de confirmar este documento.");
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Confirmar_no_crea_CxP_cuando_PayableGenerationMode_es_None()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+        fx.WorkflowPolicy
+            .Setup(w =>
+                w.EnsureConfirmationFlowAsync(
+                    CompanyId,
+                    DocTypeCodes.ExpenseDocument,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new DocumentFlowPolicyResult(
+                    DocTypeCodes.ExpenseDocument,
+                    IsActive: true,
+                    CreationMode.DraftRequired,
+                    ConfirmationMode.ManualConfirmation,
+                    AuthorizationMode.None,
+                    PendingDocumentMode.None,
+                    CancellationMode.AllowedAfterConfirmationWithReversal,
+                    RequiresCancellationReason: true,
+                    RequiresAttachment: false,
+                    RequiresSupplier: true,
+                    RequiresDueDate: true,
+                    PayableGenerationMode.None,
+                    AccountingPostingMode.OnConfirmation,
+                    InventoryImpactMode.None,
+                    NotificationMode.None
+                )
+            );
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        fx.Payables.Verify(
+            p =>
+                p.CreateFromOriginAsync(
+                    It.IsAny<CreateAccountsPayableFromOriginRequest>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     private static void SetPrivateStatus(ExpenseDocument document, ExpenseStatus status)
@@ -270,6 +345,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         public Mock<IExpenseCategoryRepository> CategoryRepo { get; } = new();
         public Mock<IAccountRepository> Accounts { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
+        public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
 
         public ExpenseCategoryNode Type { get; }
         public ExpenseCategoryNode Category { get; }
@@ -282,6 +358,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                 CategoryRepo.Object,
                 Accounts.Object,
                 Payables.Object,
+                WorkflowPolicy.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -307,6 +384,33 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             Docs
                 .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
+            WorkflowPolicy
+                .Setup(w =>
+                    w.EnsureConfirmationFlowAsync(
+                        CompanyId,
+                        DocTypeCodes.ExpenseDocument,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    new DocumentFlowPolicyResult(
+                        DocTypeCodes.ExpenseDocument,
+                        IsActive: true,
+                        CreationMode.DraftRequired,
+                        ConfirmationMode.ManualConfirmation,
+                        AuthorizationMode.None,
+                        PendingDocumentMode.None,
+                        CancellationMode.AllowedAfterConfirmationWithReversal,
+                        RequiresCancellationReason: true,
+                        RequiresAttachment: false,
+                        RequiresSupplier: true,
+                        RequiresDueDate: true,
+                        PayableGenerationMode.OnConfirmation,
+                        AccountingPostingMode.OnConfirmation,
+                        InventoryImpactMode.None,
+                        NotificationMode.None
+                    )
+                );
             Payables
                 .Setup(p =>
                     p.CreateFromOriginAsync(

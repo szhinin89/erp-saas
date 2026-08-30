@@ -9,30 +9,30 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding;
 
 /// <summary>
-/// DOC-TYPE-SSOT-01: <see cref="DocWorkflowPolicyBootstrapStep"/> (registrado en
+/// DOCUMENT-FLOW-POLICY-01: <see cref="DocumentFlowPolicyBootstrapStep"/> (registrado en
 /// <c>CompanyBootstrapOrchestrator</c>) solo corre para empresas NUEVAS. Este servicio cierra esa
 /// brecha exclusivamente fuera de Production, siguiendo el mismo patrón de
 /// <see cref="ExpensesCatalogBackfillService"/>: en cada arranque de la API, para cada company
 /// activa aplica el mismo step (reutilizado, no duplicado — ya es idempotente por DocType). Solo
 /// crea filas de política faltantes; nunca modifica una política ya existente.
 /// </summary>
-public sealed partial class DocWorkflowPolicyBackfillService
+public sealed partial class DocumentFlowPolicyBackfillService
 {
     private readonly ErpDbContext _db;
     private readonly IHostEnvironment _environment;
-    private readonly DocWorkflowPolicyBootstrapStep _docWorkflowPolicyBootstrapStep;
-    private readonly ILogger<DocWorkflowPolicyBackfillService> _logger;
+    private readonly DocumentFlowPolicyBootstrapStep _documentFlowPolicyBootstrapStep;
+    private readonly ILogger<DocumentFlowPolicyBackfillService> _logger;
 
-    public DocWorkflowPolicyBackfillService(
+    public DocumentFlowPolicyBackfillService(
         ErpDbContext db,
         IHostEnvironment environment,
-        DocWorkflowPolicyBootstrapStep docWorkflowPolicyBootstrapStep,
-        ILogger<DocWorkflowPolicyBackfillService> logger
+        DocumentFlowPolicyBootstrapStep documentFlowPolicyBootstrapStep,
+        ILogger<DocumentFlowPolicyBackfillService> logger
     )
     {
         _db = db;
         _environment = environment;
-        _docWorkflowPolicyBootstrapStep = docWorkflowPolicyBootstrapStep;
+        _documentFlowPolicyBootstrapStep = documentFlowPolicyBootstrapStep;
         _logger = logger;
     }
 
@@ -54,7 +54,7 @@ public sealed partial class DocWorkflowPolicyBackfillService
         foreach (var company in activeCompanies)
         {
             using var _ = JobExecutionContext.Begin(company.TenantId, company.Id);
-            await _docWorkflowPolicyBootstrapStep.ExecuteAsync(
+            await _documentFlowPolicyBootstrapStep.ExecuteAsync(
                 new CompanyBootstrapContext(company.TenantId, company.Id, systemActorId),
                 cancellationToken
             );
@@ -65,7 +65,7 @@ public sealed partial class DocWorkflowPolicyBackfillService
 
     [LoggerMessage(
         Level = LogLevel.Debug,
-        Message = "DocWorkflowPolicy backfill checked for all active companies."
+        Message = "DocumentFlowPolicy backfill checked for all active companies."
     )]
     private partial void LogBackfillCompleted();
 }

@@ -114,6 +114,32 @@ public static class SettingsModule
     )]
     public const string FinancialDestinations = "/settings/financial-destinations";
 
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Documentos y flujos" — categoría propia, ninguna
+    // pantalla real puede quedar suelta directamente bajo el módulo settings.
+    [NavItem(
+        "Documentos y flujos",
+        LabelKey = "app.nav.item.settings.documentFlowsGroup",
+        SortOrder = 60,
+        Id = "8f0f7a10-0000-4000-8000-000000000001",
+        PermissionsAnyCsv = SettingsPermissions.DocumentFlowsView
+    )]
+    public const string DocumentFlowsGroup = "/settings/document-flows/group";
+
+    /// <summary>
+    /// DOCUMENT-FLOW-POLICY-01: CÓMO se comporta cada tipo de documento por empresa. No confundir
+    /// con Roles y Permisos (QUIÉN puede ejecutar cada acción).
+    /// </summary>
+    [NavItem(
+        "Documentos y flujos",
+        Permission = SettingsPermissions.DocumentFlowsView,
+        LabelKey = "app.nav.item.settings.documentFlows",
+        SortOrder = 10,
+        Id = "a1000000-0000-4000-9000-000000000015",
+        ParentId = "8f0f7a10-0000-4000-8000-000000000001",
+        RelatedActionPermissionsCsv = SettingsPermissions.DocumentFlowsUpdate
+    )]
+    public const string DocumentFlows = "/settings/document-flows";
+
     // NAV-HIERARCHY-UNIFY-01: contenedor "Facturación electrónica" — categoría propia.
     [NavItem(
         "Facturación electrónica",

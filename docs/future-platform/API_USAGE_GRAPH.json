@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-30T13:56:50.948Z",
+  "generatedAt": "2026-08-30T17:49:55.633Z",
   "summary": {
-    "total": 111,
-    "allowed": 111,
+    "total": 112,
+    "allowed": 112,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -878,6 +878,14 @@
       "endpoint": "/api/v1/settings/branches",
       "files": [
         "frontend/src/modules/branches/api/branchService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/document-flows",
+      "files": [
+        "frontend/src/modules/configuracion/documentFlows/api/documentFlowPolicyService.ts"
       ],
       "legacy": false,
       "allowed": true

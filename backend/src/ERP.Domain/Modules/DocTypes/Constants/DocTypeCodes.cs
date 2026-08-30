@@ -2,7 +2,7 @@ namespace ERP.Domain.Modules.DocTypes.Constants;
 
 /// <summary>
 /// Códigos fijos de <see cref="ERP.Domain.Modules.DocTypes.Entities.DocType"/> con un consumidor
-/// literal real en código (p. ej. reglas por tipo en <c>DocWorkflowPolicyBootstrapStep</c>). El
+/// literal real en código (p. ej. reglas por tipo en <c>DocumentFlowPolicyBootstrapStep</c>). El
 /// catálogo administrable completo vive en la tabla <c>doc_type</c>, expuesto vía
 /// <c>ERP.Application.Modules.Catalog</c>. Ningún módulo debe asumir que un código listado aquí
 /// sigue activo sin consultar el catálogo — mismo criterio que

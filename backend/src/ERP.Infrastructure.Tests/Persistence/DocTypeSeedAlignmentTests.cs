@@ -8,7 +8,7 @@ namespace ERP.Infrastructure.Tests.Persistence;
 
 /// <summary>
 /// DOC-TYPE-SSOT-01: <c>DocTypeCodes</c> es un alias técnico para literales usados en lógica
-/// interna (p. ej. reglas por tipo en <c>DocWorkflowPolicyBootstrapStep</c>) — nunca debe
+/// interna (p. ej. reglas por tipo en <c>DocumentFlowPolicyBootstrapStep</c>) — nunca debe
 /// convertirse en un catálogo paralelo que pueda divergir del SSOT real, <see cref="DocType"/>
 /// (seed EF en <see cref="DocTypeConfiguration"/>). Lee el seed directamente desde
 /// <c>DocTypeConfiguration.Configure</c> aplicado a un <see cref="ModelBuilder"/> aislado (sin

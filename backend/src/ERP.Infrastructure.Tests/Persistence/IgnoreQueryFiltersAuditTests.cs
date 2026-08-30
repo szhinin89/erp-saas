@@ -44,6 +44,8 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/MasterDataClassificationSeeder.cs", // CLASS-BP-CATALOGS-01: reutilizado por bootstrap step (request-scoped) y backfill (multi-tenant, sin contexto HTTP ambiente); filtro explícito TenantId+CompanyId, fail-closed
         "src/ERP.Infrastructure/Seeding/MasterDataClassificationBackfillService.cs", // CLASS-BP-CATALOGS-01: itera todas las (TenantId, CompanyId) existentes para el backfill de empresas ya creadas — mismo motivo que los *BootstrapStep
         "src/ERP.Infrastructure/Persistence/Repositories/MasterData/ClassificationCatalogRepositoryBase.cs", // CLASS-BP-CATALOGS-01: base compartida de los 12 repos de catálogo, consumida también desde el bootstrap step/backfill sin ICurrentTenant/ICurrentCompany ambiente; filtro explícito TenantId+CompanyId, fail-closed
+        "src/ERP.Infrastructure/Seeding/Steps/DocumentFlowPolicyBootstrapStep.cs", // DOCUMENT-FLOW-POLICY-01: bootstrap needs cross-tenant visibility, mismo motivo que ExpensesCatalogBootstrapStep; filtro explícito TenantId+CompanyId reaplicado en la query
+        "src/ERP.Infrastructure/Seeding/DocumentFlowPolicyBackfillService.cs", // DOCUMENT-FLOW-POLICY-01: backfill dev-only de companies ya existentes — mismo motivo que ExpensesCatalogBackfillService
     };
 
     [Fact]

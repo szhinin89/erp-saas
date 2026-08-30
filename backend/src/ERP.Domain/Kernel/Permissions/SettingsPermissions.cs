@@ -30,4 +30,12 @@ public static class SettingsPermissions
     /// <summary>P0-02 §20.2 — administración del catálogo <c>CompanyFinancialDestination</c> (mismo perfil de riesgo que administrar cuentas contables/métodos de pago).</summary>
     public const string FinancialDestinationsView = "settings.financial-destinations.view";
     public const string FinancialDestinationsManage = "settings.financial-destinations.manage";
+
+    /// <summary>
+    /// DOCUMENT-FLOW-POLICY-01 — administración de <c>DocumentFlowPolicy</c> (Configuración →
+    /// Documentos y flujos). Solo controla el acceso a esta pantalla de configuración — no
+    /// reemplaza los permisos de acción de cada módulo (p. ej. <c>expenses.documents.cancel</c>).
+    /// </summary>
+    public const string DocumentFlowsView = "settings.documentFlows.view";
+    public const string DocumentFlowsUpdate = "settings.documentFlows.update";
 }

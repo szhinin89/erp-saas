@@ -14,6 +14,7 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -27,9 +28,10 @@ namespace ERP.Application.Tests.Expenses;
 
 /// <summary>
 /// EXPENSES-WORKFLOW-INTEGRATION-01: <see cref="CreateConfirmedExpenseHandler"/> crea un gasto
-/// directamente en Confirmado (sin borrador previo). Cubre los tres escenarios de política que
-/// <see cref="IDocWorkflowPolicyService.ValidateCreateConfirmedAsync"/> puede resolver para GASDOC
-/// — Optional/Disabled lo permiten, Required lo bloquea (el gasto debe pasar por borrador primero).
+/// directamente en Confirmado (sin borrador previo). Cubre los escenarios de política que
+/// <see cref="IDocumentFlowPolicyService.EnsureDirectCreationAllowedAsync"/> puede resolver para
+/// GASDOC — CreationMode.DirectCreation lo permite, DraftRequired lo bloquea (el gasto debe pasar
+/// por borrador primero).
 /// </summary>
 public sealed class CreateConfirmedExpenseUseCasesTests
 {
@@ -38,17 +40,11 @@ public sealed class CreateConfirmedExpenseUseCasesTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    [Theory]
-    [InlineData("Optional")]
-    [InlineData("Disabled")]
-    public async Task Crear_confirmado_directo_permitido_cuando_politica_GASDOC_no_lo_bloquea(
-        string draftMode
-    )
+    [Fact]
+    public async Task Crear_confirmado_directo_permitido_cuando_politica_GASDOC_no_lo_bloquea()
     {
-        // Tanto Optional como Disabled permiten crear el gasto ya confirmado directamente — solo
-        // Required lo bloquea (cubierto en el test siguiente). WorkflowPolicy ya esta configurada
-        // para no lanzar por defecto en el Fixture.
-        _ = draftMode;
+        // WorkflowPolicy ya esta configurada en el Fixture para no bloquear por defecto
+        // (CreationMode.DirectCreation).
         var fx = new Fixture();
 
         var result = await fx.Handler.Handle(fx.ValidCommand(), CancellationToken.None);
@@ -60,18 +56,18 @@ public sealed class CreateConfirmedExpenseUseCasesTests
     }
 
     [Fact]
-    public async Task Crear_confirmado_directo_bloqueado_cuando_politica_GASDOC_es_Required()
+    public async Task Crear_confirmado_directo_bloqueado_cuando_politica_GASDOC_es_DraftRequired()
     {
         var fx = new Fixture();
         fx.WorkflowPolicy
             .Setup(w =>
-                w.ValidateCreateConfirmedAsync(
+                w.EnsureDirectCreationAllowedAsync(
                     CompanyId,
                     DocTypeCodes.ExpenseDocument,
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ThrowsAsync(DocWorkflowPolicyViolationException.DraftRequired(DocTypeCodes.ExpenseDocument));
+            .ThrowsAsync(DocumentFlowPolicyViolationException.DraftRequired(DocTypeCodes.ExpenseDocument));
 
         var result = await fx.Handler.Handle(fx.ValidCommand(), CancellationToken.None);
 
@@ -115,7 +111,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
-        public Mock<IDocWorkflowPolicyService> WorkflowPolicy { get; } = new();
+        public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
 
         public Account Account { get; }
         public ExpenseCategoryNode Type { get; }
@@ -234,13 +230,36 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 );
             WorkflowPolicy
                 .Setup(w =>
-                    w.ValidateCreateConfirmedAsync(
+                    w.EnsureDirectCreationAllowedAsync(
                         CompanyId,
                         DocTypeCodes.ExpenseDocument,
                         It.IsAny<CancellationToken>()
                     )
                 )
                 .Returns(Task.CompletedTask);
+            WorkflowPolicy
+                .Setup(w =>
+                    w.GetRequiredAsync(CompanyId, DocTypeCodes.ExpenseDocument, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(
+                    new DocumentFlowPolicyResult(
+                        DocTypeCodes.ExpenseDocument,
+                        IsActive: true,
+                        CreationMode.DirectCreation,
+                        ConfirmationMode.AutoConfirmOnCreate,
+                        AuthorizationMode.None,
+                        PendingDocumentMode.None,
+                        CancellationMode.AllowedAfterConfirmationWithReversal,
+                        RequiresCancellationReason: true,
+                        RequiresAttachment: false,
+                        RequiresSupplier: true,
+                        RequiresDueDate: true,
+                        PayableGenerationMode.OnConfirmation,
+                        AccountingPostingMode.OnConfirmation,
+                        InventoryImpactMode.None,
+                        NotificationMode.None
+                    )
+                );
         }
 
         public CreateConfirmedExpenseCommand ValidCommand() =>
