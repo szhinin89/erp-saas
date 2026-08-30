@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import { message } from "../../../lib/messages";
@@ -221,64 +222,58 @@ export function FinancialDestinationsPage() {
 
   const editorLabel = editing ? "Editar Destino Financiero" : "Nuevo Destino Financiero";
 
+  const destinationColumns: ZHDataTableColumn<CompanyFinancialDestinationDto>[] = [
+    { key: "code", header: "Código", render: (d) => <code className="prd-sku">{d.code}</code> },
+    { key: "name", header: "Nombre", render: (d) => d.name },
+    {
+      key: "type",
+      header: "Tipo",
+      render: (d) => (d.destinationTypeCode === "BankAccount" ? "Cuenta bancaria" : "Caja"),
+    },
+    { key: "currency", header: "Moneda", render: (d) => d.currencyCode },
+    {
+      // Preserva el comportamiento previo a esta migración: la etiqueta mostraba el texto
+      // literal "Estado" en vez del estado activo/inactivo del destino (defecto preexistente,
+      // no corregido aquí por estar fuera de alcance de ZH-LISTING-MIGRATION-ALL-02).
+      key: "status",
+      header: "Estado",
+      render: () => <Badge label={"Estado"} variant="neutral" />,
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      render: (d) => (
+        <div className="prd-row-actions">
+          <ZHBtn type="button" variant="ghost" size="sm" onClick={() => openEdit(d)}>
+            <span className="material-symbols-outlined zh-icon-lg">edit</span>
+          </ZHBtn>
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={togglingId === d.id}
+            onClick={() => void handleToggle(d)}
+            title={d.isActive ? "Desactivar" : "Activar"}
+          >
+            <span className="material-symbols-outlined zh-icon-lg">
+              {d.isActive ? "toggle_on" : "toggle_off"}
+            </span>
+          </ZHBtn>
+        </div>
+      ),
+    },
+  ];
+
   const listContent = (
-    <div className="table-scroll">
-      {loading ? (
-        <p>Cargando...</p>
-      ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Moneda</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((d) => (
-              <tr key={d.id} className={d.isActive ? undefined : "prd-row--inactive"}>
-                <td>
-                  <code className="prd-sku">{d.code}</code>
-                </td>
-                <td>{d.name}</td>
-                <td>{d.destinationTypeCode === "BankAccount" ? "Cuenta bancaria" : "Caja"}</td>
-                <td>{d.currencyCode}</td>
-                <td>
-                  <Badge label={"Estado"} variant="neutral" />
-                </td>
-                <td>
-                  <div className="prd-row-actions">
-                    <ZHBtn type="button" variant="ghost" size="sm" onClick={() => openEdit(d)}>
-                      <span className="material-symbols-outlined zh-icon-lg">edit</span>
-                    </ZHBtn>
-                    <ZHBtn
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={togglingId === d.id}
-                      onClick={() => void handleToggle(d)}
-                      title={d.isActive ? "Desactivar" : "Activar"}
-                    >
-                      <span className="material-symbols-outlined zh-icon-lg">
-                        {d.isActive ? "toggle_on" : "toggle_off"}
-                      </span>
-                    </ZHBtn>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr className="prd-empty-row">
-                <td colSpan={6}>Sin destinos financieros registrados.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      )}
-    </div>
+    <ZHDataTable
+      columns={destinationColumns}
+      rows={items}
+      rowKey={(d) => d.id}
+      loading={loading}
+      showRowNumber
+      rowClassName={(d) => (d.isActive ? undefined : "prd-row--inactive")}
+      emptyMessage="Sin destinos financieros registrados."
+    />
   );
 
   const editorContent = editing ? (

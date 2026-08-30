@@ -4,6 +4,7 @@ import { Badge, EmptyState, LoadingState } from "../../../../components/PageShel
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import type { InventoryAdjustmentReasonDto } from "../types";
 
 type Props = {
@@ -45,101 +46,85 @@ export function AdjustmentReasonListTab({
 
   const sorted = [...reasons].sort((a, b) => a.sortOrder - b.sortOrder);
 
+  const columns: ZHDataTableColumn<InventoryAdjustmentReasonDto>[] = [
+    {
+      key: "code",
+      header: t("inventory.adjustmentReasons.table.code", "Código"),
+      render: (row) => <Badge label={row.code} variant="neutral" size="md" code />,
+    },
+    { key: "name", header: t("inventory.adjustmentReasons.table.name", "Nombre"), render: (row) => row.name },
+    {
+      key: "allowedMovementType",
+      header: t("inventory.adjustmentReasons.table.allowedMovementType", "Movimiento permitido"),
+      render: (row) => row.allowedMovementType,
+    },
+    {
+      key: "requiresNotes",
+      header: t("inventory.adjustmentReasons.table.requiresNotes", "Exige observación"),
+      render: (row) => (row.requiresNotes ? t("common.yes", "Sí") : t("common.no", "No")),
+    },
+    {
+      key: "status",
+      header: t("inventory.adjustmentReasons.table.status", "Estado"),
+      render: (row) => (
+        <Badge
+          label={row.isActive ? t("common.active", "Activo") : t("common.inactive", "Inactivo")}
+          variant={row.isActive ? "green" : "gray"}
+          size="md"
+        />
+      ),
+    },
+    {
+      key: "sortOrder",
+      header: t("inventory.adjustmentReasons.table.sortOrder", "Orden"),
+      render: (row) => <span className="mono">{row.sortOrder}</span>,
+    },
+    ...(canManage
+      ? [
+          {
+            key: "actions",
+            header: t("inventory.adjustmentReasons.table.actions", "Acciones"),
+            align: "right" as const,
+            render: (row: InventoryAdjustmentReasonDto) => (
+              <div className="prd-actions-cell">
+                <ZHBtn
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  title={t("common.edit", "Editar")}
+                  aria-label={`${t("common.edit", "Editar")} ${row.name}`}
+                  disabled={toggling}
+                  onClick={() => onEdit(row)}
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </ZHBtn>
+                <ZHIconButton
+                  icon={row.isActive ? "block" : "check_circle"}
+                  variant={row.isActive ? "danger" : "success"}
+                  title={row.isActive ? t("common.disable", "Desactivar") : t("common.enable", "Activar")}
+                  ariaLabel={
+                    row.isActive
+                      ? `${t("common.disable", "Desactivar")} ${row.name}`
+                      : `${t("common.enable", "Activar")} ${row.name}`
+                  }
+                  disabled={toggling}
+                  onClick={() => setConfirmRow(row)}
+                />
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <div className="adjr-list prd-fadein">
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t("inventory.adjustmentReasons.table.code", "Código")}</th>
-              <th>{t("inventory.adjustmentReasons.table.name", "Nombre")}</th>
-              <th>
-                {t(
-                  "inventory.adjustmentReasons.table.allowedMovementType",
-                  "Movimiento permitido",
-                )}
-              </th>
-              <th>
-                {t(
-                  "inventory.adjustmentReasons.table.requiresNotes",
-                  "Exige observación",
-                )}
-              </th>
-              <th>{t("inventory.adjustmentReasons.table.status", "Estado")}</th>
-              <th>{t("inventory.adjustmentReasons.table.sortOrder", "Orden")}</th>
-              {canManage && (
-                <th className="pg-th-right">
-                  {t("inventory.adjustmentReasons.table.actions", "Acciones")}
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((row) => (
-              <tr
-                key={row.id}
-                className={row.isActive ? undefined : "prd-row--inactive"}
-              >
-                <td>
-                  <Badge label={row.code} variant="neutral" size="md" code />
-                </td>
-                <td>{row.name}</td>
-                <td>{row.allowedMovementType}</td>
-                <td>
-                  {row.requiresNotes
-                    ? t("common.yes", "Sí")
-                    : t("common.no", "No")}
-                </td>
-                <td>
-                  <Badge
-                    label={
-                      row.isActive
-                        ? t("common.active", "Activo")
-                        : t("common.inactive", "Inactivo")
-                    }
-                    variant={row.isActive ? "green" : "gray"}
-                    size="md"
-                  />
-                </td>
-                <td className="mono">{row.sortOrder}</td>
-                {canManage && (
-                  <td className="pg-th-right">
-                    <div className="prd-actions-cell">
-                      <ZHBtn
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        title={t("common.edit", "Editar")}
-                        aria-label={`${t("common.edit", "Editar")} ${row.name}`}
-                        disabled={toggling}
-                        onClick={() => onEdit(row)}
-                      >
-                        <span className="material-symbols-outlined">edit</span>
-                      </ZHBtn>
-                      <ZHIconButton
-                        icon={row.isActive ? "block" : "check_circle"}
-                        variant={row.isActive ? "danger" : "success"}
-                        title={
-                          row.isActive
-                            ? t("common.disable", "Desactivar")
-                            : t("common.enable", "Activar")
-                        }
-                        ariaLabel={
-                          row.isActive
-                            ? `${t("common.disable", "Desactivar")} ${row.name}`
-                            : `${t("common.enable", "Activar")} ${row.name}`
-                        }
-                        disabled={toggling}
-                        onClick={() => setConfirmRow(row)}
-                      />
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ZHDataTable
+        columns={columns}
+        rows={sorted}
+        rowKey={(row) => row.id}
+        rowClassName={(row) => (row.isActive ? undefined : "prd-row--inactive")}
+      />
 
       <ZHConfirmModal
         open={!!confirmRow}

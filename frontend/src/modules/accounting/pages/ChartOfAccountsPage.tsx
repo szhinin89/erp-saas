@@ -184,14 +184,6 @@ export function ChartOfAccountsPage() {
     });
   }, [sortedAccounts, typeFilter, statusFilter, quickFilter, levelFilter, search]);
 
-  // ACCOUNTING-CHART-LIST-INTERACTIVITY-01: N° visual — no es el Id de base de datos, se
-  // recalcula según el orden/filtro visible (natural por código, ya aplicado en sortedAccounts).
-  const rowNumberByAccountId = useMemo(() => {
-    const map = new Map<string, number>();
-    filteredAccounts.forEach((row, index) => map.set(row.id, index + 1));
-    return map;
-  }, [filteredAccounts]);
-
   const summary = useMemo(() => {
     const groupCount = accounts.filter((a) => !a.allowsPosting).length;
     const activeCount = accounts.filter((a) => a.isActive).length;
@@ -313,12 +305,6 @@ export function ChartOfAccountsPage() {
   };
 
   const columns: ZHDataTableColumn<AccountDto>[] = [
-    {
-      key: "rowNumber",
-      header: "N°",
-      align: "center",
-      render: (row) => rowNumberByAccountId.get(row.id) ?? "",
-    },
     {
       key: "code",
       header: "Código",
@@ -515,6 +501,7 @@ export function ChartOfAccountsPage() {
             rows={filteredAccounts}
             rowKey={(row) => row.id}
             loading={loading}
+            showRowNumber
             emptyMessage="No hay cuentas registradas."
           />
         </ZHCard>

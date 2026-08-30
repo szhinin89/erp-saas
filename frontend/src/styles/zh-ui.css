@@ -1769,6 +1769,11 @@ select.zh-input--compact {
   color: var(--color-text-secondary);
   font-size: 13px;
 }
+/* ZH-DATATABLE-ROW-NUMBER-01 — columna "N°" angosta, nunca más ancha que su contenido. */
+.zh-datatable-row-number-col {
+  width: 1%;
+  white-space: nowrap;
+}
 
 .zh-filterbar {
   display: flex;

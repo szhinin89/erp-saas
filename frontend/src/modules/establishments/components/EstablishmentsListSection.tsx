@@ -1,8 +1,11 @@
 ﻿import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
+
+type EstablishmentRow = EstablishmentsPageContext["filtered"][number];
 
 type Props = Pick<
   EstablishmentsPageContext,
@@ -42,6 +45,81 @@ export function EstablishmentsListSection({
   activeStatus,
   setActiveStatus,
 }: Props) {
+  const establishmentColumns: ZHDataTableColumn<EstablishmentRow>[] = [
+    {
+      key: "code",
+      header: "Código SRI",
+      render: (row) => (
+        <>
+          <Badge label={row.code} variant="neutral" size="md" className="mono" />
+          {row.isMain && <Badge label="Principal" variant="info" size="md" className="zh-ml-1" />}
+        </>
+      ),
+    },
+    {
+      key: "name",
+      header: "Nombre",
+      render: (row) => (
+        <>
+          <div className="br-list-name">{row.name}</div>
+          {row.phone && <div className="br-list-sub">{row.phone}</div>}
+        </>
+      ),
+    },
+    { key: "address", header: "Dirección fiscal", render: (row) => <div className="br-list-contact">{row.address}</div> },
+    {
+      key: "branch",
+      header: "Sucursal",
+      render: (row) =>
+        row.branchName ? <div className="br-list-name">{row.branchName}</div> : <span className="subtle">—</span>,
+    },
+    {
+      key: "emissionPointCount",
+      header: "P. Emisión",
+      render: (row) => <Badge label={row.emissionPointCount} variant="neutral" size="md" />,
+    },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => (
+        <span className={row.isActive ? "zh-status zh-status--active" : "zh-status zh-status--inactive"}>
+          {row.isActive ? "Activo" : "Inactivo"}
+        </span>
+      ),
+    },
+    ...(canUpdate || canDisable
+      ? [
+          {
+            key: "actions",
+            header: "Acciones",
+            align: "right" as const,
+            render: (row: EstablishmentRow) => (
+              <div className="br-actions-tight">
+                {row.isActive && canUpdate && (
+                  <ZHBtn type="button" variant="ghost" size="sm" title="Editar" onClick={() => void openEdit(row)}>
+                    <span className="material-symbols-outlined">edit</span>
+                  </ZHBtn>
+                )}
+                {(row.isActive ? canDisable : canUpdate) && (
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    title={row.isActive ? "Desactivar" : "Activar"}
+                    onClick={() => void toggleDisable(row)}
+                  >
+                    <span className="material-symbols-outlined">
+                      {row.isActive ? "block" : "check_circle"}
+                    </span>
+                  </ZHBtn>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <>
       {!loading && (
@@ -154,121 +232,20 @@ export function EstablishmentsListSection({
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Código SRI</th>
-                  <th>Nombre</th>
-                  <th>Dirección fiscal</th>
-                  <th>Sucursal</th>
-                  <th>P. Emisión</th>
-                  <th>Estado</th>
-                  {(canUpdate || canDisable) && (
-                    <th className="pg-th-right">Acciones</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={
-                      [
-                        row.isActive ? undefined : "pg-row-inactive",
-                        row.id === selectedId ? "cfg-row--selected" : undefined,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || undefined
-                    }
-                  >
-                    <td>
-                      <Badge
-                        label={row.code}
-                        variant="neutral"
-                        size="md"
-                        className="mono"
-                      />
-                      {row.isMain && (
-                        <Badge
-                          label="Principal"
-                          variant="info"
-                          size="md"
-                          className="zh-ml-1"
-                        />
-                      )}
-                    </td>
-                    <td>
-                      <div className="br-list-name">{row.name}</div>
-                      {row.phone && (
-                        <div className="br-list-sub">{row.phone}</div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="br-list-contact">{row.address}</div>
-                    </td>
-                    <td>
-                      {row.branchName ? (
-                        <div className="br-list-name">{row.branchName}</div>
-                      ) : (
-                        <span className="subtle">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <Badge
-                        label={row.emissionPointCount}
-                        variant="neutral"
-                        size="md"
-                      />
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          row.isActive
-                            ? "zh-status zh-status--active"
-                            : "zh-status zh-status--inactive"
-                        }
-                      >
-                        {row.isActive ? "Activo" : "Inactivo"}
-                      </span>
-                    </td>
-                    {(canUpdate || canDisable) && (
-                      <td className="pg-td-right">
-                        <div className="br-actions-tight">
-                          {row.isActive && canUpdate && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title="Editar"
-                              onClick={() => void openEdit(row)}
-                            >
-                              <span className="material-symbols-outlined">
-                                edit
-                              </span>
-                            </ZHBtn>
-                          )}
-                          {(row.isActive ? canDisable : canUpdate) && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title={row.isActive ? "Desactivar" : "Activar"}
-                              onClick={() => void toggleDisable(row)}
-                            >
-                              <span className="material-symbols-outlined">
-                                {row.isActive ? "block" : "check_circle"}
-                              </span>
-                            </ZHBtn>
-                          )}
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={establishmentColumns}
+            rows={filtered}
+            rowKey={(row) => row.id}
+            showRowNumber
+            rowClassName={(row) =>
+              [
+                row.isActive ? undefined : "pg-row-inactive",
+                row.id === selectedId ? "cfg-row--selected" : undefined,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          />
         )}
 
         <div className="pg-table-footer">

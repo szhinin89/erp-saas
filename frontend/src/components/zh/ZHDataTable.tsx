@@ -21,6 +21,30 @@ interface ZHDataTableProps<T> {
   onPageChange?: (page: number) => void;
   /** Total de filas conocido por el backend (habilita deshabilitar "siguiente" con precisión) — si se omite, se infiere por `rows.length < pageSize`. */
   total?: number;
+  /**
+   * ZH-DATATABLE-ROW-NUMBER-01: agrega una primera columna "N°" de referencia visual —
+   * nunca el Id del registro ni un identificador funcional. Por defecto (`undefined`/`false`)
+   * la tabla se ve exactamente igual que antes de esta prop.
+   */
+  showRowNumber?: boolean;
+  /** Desplazamiento sumado al número de fila (útil con paginación server-side). Default 0. */
+  rowNumberOffset?: number;
+  /**
+   * ZH-LISTING-MIGRATION-ALL-02: clase(s) CSS adicional(es) por fila (ej. resaltar inactivo/
+   * seleccionado) — mismo mecanismo que ya usaban las tablas manuales migradas. Opcional, no
+   * afecta a los consumidores existentes que no la pasan.
+   */
+  rowClassName?: (row: T) => string | undefined;
+}
+
+const ROW_NUMBER_COLUMN_KEY = "__zhRowNumber";
+
+function cellClassName<T>(col: ZHDataTableColumn<T>): string | undefined {
+  const classes = [
+    col.align ? `zh-text-align-${col.align}` : undefined,
+    col.key === ROW_NUMBER_COLUMN_KEY ? "zh-datatable-row-number-col" : undefined,
+  ].filter(Boolean);
+  return classes.length > 0 ? classes.join(" ") : undefined;
 }
 
 /**
@@ -28,6 +52,10 @@ interface ZHDataTableProps<T> {
  * estados de carga/vacío (reutiliza `LoadingState`/`EmptyState`), paginación opcional integrada.
  * Sin ordenamiento por columna — no lo requiere ningún consumidor todavía; se puede agregar
  * después sin romper la API pública.
+ *
+ * `showRowNumber` (ZH-DATATABLE-ROW-NUMBER-01) agrega una primera columna "N°" — referencia
+ * visual de fila únicamente, nunca el Id ni un identificador funcional. Opt-in: sin la prop,
+ * el render es idéntico al de antes de esta capacidad.
  */
 export function ZHDataTable<T>({
   columns,
@@ -40,6 +68,9 @@ export function ZHDataTable<T>({
   pageSize,
   onPageChange,
   total,
+  showRowNumber,
+  rowNumberOffset,
+  rowClassName,
 }: ZHDataTableProps<T>) {
   if (loading)
     return (
@@ -61,16 +92,31 @@ export function ZHDataTable<T>({
       ? page! * pageSize! < total
       : rows.length >= (pageSize ?? 0);
 
+  // ZH-DATATABLE-ROW-NUMBER-01: columna opcional, siempre primera, solo referencia visual —
+  // se resuelve el valor por índice de fila renderizada (no por `col.render`) para no forzar
+  // a `ZHDataTableColumn<T>.render` a recibir un índice que ningún otro consumidor necesita.
+  const effectiveColumns: ZHDataTableColumn<T>[] = showRowNumber
+    ? [
+        {
+          key: ROW_NUMBER_COLUMN_KEY,
+          header: "N°",
+          align: "center",
+          render: () => null,
+        },
+        ...columns,
+      ]
+    : columns;
+
   return (
     <>
       <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>
-              {columns.map((col) => (
+              {effectiveColumns.map((col) => (
                 <th
                   key={col.key}
-                  className={col.align ? `zh-text-align-${col.align}` : undefined}
+                  className={cellClassName(col)}
                 >
                   {col.header}
                 </th>
@@ -78,20 +124,31 @@ export function ZHDataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <tr
                 key={rowKey(row)}
                 className={
-                  onRowClick ? "zh-datatable-row--clickable" : undefined
+                  [
+                    onRowClick ? "zh-datatable-row--clickable" : undefined,
+                    rowClassName?.(row),
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || undefined
                 }
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
-                {columns.map((col) => (
+                {effectiveColumns.map((col) => (
                   <td
                     key={col.key}
-                    className={col.align ? `zh-text-align-${col.align}` : undefined}
+                    className={cellClassName(col)}
                   >
-                    {col.render(row)}
+                    {col.key === ROW_NUMBER_COLUMN_KEY ? (
+                      <span className="zh-text-muted zh-text-xs">
+                        {(rowNumberOffset ?? 0) + index + 1}
+                      </span>
+                    ) : (
+                      col.render(row)
+                    )}
                   </td>
                 ))}
               </tr>

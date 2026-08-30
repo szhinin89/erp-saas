@@ -4,6 +4,7 @@ import {  ZHBtn } from "../../../components/zh/ZHForm";
 import {  ZHIconButton } from "../../../components/zh/ZHIconButton";
 import {  ZHDrawer } from "../../../components/zh/ZHDrawer";
 import {  ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {  ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import {  ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
 import {  formatMoney, parseDecimal } from "../../../lib/sanitizers";
@@ -106,6 +107,64 @@ export function PriceListExceptionsTab({
     }
   };
 
+  const exceptionColumns: ZHDataTableColumn<ExceptionRow>[] = [
+    { key: "product", header: "Producto", render: (row) => row.itemName },
+    { key: "sku", header: "SKU", render: (row) => <span className="prd-td-code">{row.sku}</span> },
+    {
+      key: "basePrice",
+      header: "Precio Base",
+      render: (row) => (row.baseSalePrice != null ? formatMoney(row.baseSalePrice, 2) : "—"),
+    },
+    {
+      key: "generalRule",
+      header: "Regla General",
+      render: () => formatRuleGeneral(priceList.ruleType, priceList.ruleValue, priceList.currencyCode),
+    },
+    {
+      key: "exception",
+      header: "Excepción",
+      render: (row) =>
+        row.rule
+          ? formatRuleGeneral(row.rule.ruleType, row.rule.ruleValue, priceList.currencyCode)
+          : "Sin excepción",
+    },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => <Badge label={row.rule ? "Excepción" : "General"} variant={row.rule ? "success" : "neutral"} />,
+    },
+    {
+      key: "lastModified",
+      header: "Última modificación",
+      render: (row) =>
+        row.rule?.lastModifiedAt
+          ? `${formatDateTime(row.rule.lastModifiedAt)}${row.rule.lastModifiedByName ? ` — ${row.rule.lastModifiedByName}` : ""}`
+          : "—",
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      render: (row) => (
+        <div className="prd-td-actions">
+          <ZHIconButton
+            icon={row.rule ? "edit" : "add_circle"}
+            title={row.rule ? "Editar excepción" : "Crear excepción"}
+            variant="primary"
+            onClick={() => openForRow(row)}
+          />
+          {row.rule && (
+            <ZHIconButton
+              icon="delete"
+              title="Eliminar excepción"
+              variant="danger"
+              onClick={() => handleRemove(row.rule!)}
+            />
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="prd-section">
       {error && <div className="prd-error-banner">{error}</div>}
@@ -120,90 +179,14 @@ export function PriceListExceptionsTab({
         </ZHBtn>
       </div>
 
-      {loading ? (
-        <p>Cargando...</p>
-      ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>SKU</th>
-                <th>Precio Base</th>
-                <th>Regla General</th>
-                <th>Excepción</th>
-                <th>Estado</th>
-                <th>Última modificación</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.itemId}>
-                  <td>{row.itemName}</td>
-                  <td className="prd-td-code">{row.sku}</td>
-                  <td>
-                    {row.baseSalePrice != null
-                      ? formatMoney(row.baseSalePrice, 2)
-                      : "—"}
-                  </td>
-                  <td>
-                    {formatRuleGeneral(
-                      priceList.ruleType,
-                      priceList.ruleValue,
-                      priceList.currencyCode,
-                    )}
-                  </td>
-                  <td>
-                    {row.rule
-                      ? formatRuleGeneral(
-                          row.rule.ruleType,
-                          row.rule.ruleValue,
-                          priceList.currencyCode,
-                        )
-                      : "Sin excepción"}
-                  </td>
-                  <td>
-                    <Badge
-  label={row.rule ? "Excepción" : "General"}
-  variant={row.rule ? "success" : "neutral"}
-/>
-                  </td>
-                  <td>
-                    {row.rule?.lastModifiedAt
-                      ? `${formatDateTime(row.rule.lastModifiedAt)}${row.rule.lastModifiedByName ? ` — ${row.rule.lastModifiedByName}` : ""}`
-                      : "—"}
-                  </td>
-                  <td className="prd-td-actions">
-                    <ZHIconButton
-                      icon={row.rule ? "edit" : "add_circle"}
-                      title={row.rule ? "Editar excepción" : "Crear excepción"}
-                      variant="primary"
-                      onClick={() => openForRow(row)}
-                    />
-                    {row.rule && (
-                      <ZHIconButton
-                        icon="delete"
-                        title="Eliminar excepción"
-                        variant="danger"
-                        onClick={() => handleRemove(row.rule!)}
-                      />
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && (
-                <tr className="prd-empty-row">
-                  <td colSpan={8}>
-                    Esta lista todavía no tiene productos asignados. Asígnalos
-                    desde el formulario del Ítem.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ZHDataTable
+        columns={exceptionColumns}
+        rows={rows}
+        rowKey={(row) => row.itemId}
+        loading={loading}
+        showRowNumber
+        emptyMessage="Esta lista todavía no tiene productos asignados. Asígnalos desde el formulario del Ítem."
+      />
 
       <ExceptionDrawer
         open={drawerOpen}

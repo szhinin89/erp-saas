@@ -10,6 +10,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import {
   userSessionAdminService,
@@ -102,6 +103,26 @@ export function AdminUserSessionsPage() {
     return <NoAccessPage title={t("app.nav.item.admin.accessSessions")} />;
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const sessionColumns: ZHDataTableColumn<UserSessionAdminDto>[] = [
+    { key: "user", header: "Usuario", render: (row) => <span title={row.identityUserId}>{row.identityUserId.slice(0, 8)}…</span> },
+    { key: "company", header: "Empresa", render: (row) => <span title={row.companyId}>{row.companyId.slice(0, 8)}…</span> },
+    { key: "branch", header: "Sucursal", render: (row) => <span title={row.branchId}>{row.branchId.slice(0, 8)}…</span> },
+    { key: "terminal", header: "Terminal", render: (row) => row.terminalId },
+    { key: "status", header: "Estado", render: (row) => STATUS_LABEL[row.status] },
+    { key: "createdAt", header: "Creada", render: (row) => formatDateTime(row.createdAt) },
+    { key: "updatedAt", header: "Última actualización", render: (row) => (row.updatedAt ? formatDateTime(row.updatedAt) : "—") },
+    {
+      key: "action",
+      header: "Acción",
+      render: (row) =>
+        canClose && row.status === "Active" ? (
+          <ZHBtn variant="destructive" size="sm" type="button" onClick={() => setClosingId(row.sessionId)}>
+            Cerrar sesión
+          </ZHBtn>
+        ) : null,
+    },
+  ];
 
   function applyFilters() {
     setPageNumber(1);
@@ -250,51 +271,13 @@ export function AdminUserSessionsPage() {
             <EmptyState message="No se encontraron sesiones con los filtros indicados." />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Usuario</th>
-                  <th>Empresa</th>
-                  <th>Sucursal</th>
-                  <th>Terminal</th>
-                  <th>Estado</th>
-                  <th>Creada</th>
-                  <th>Última actualización</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.sessionId}>
-                    <td title={row.identityUserId}>
-                      {row.identityUserId.slice(0, 8)}…
-                    </td>
-                    <td title={row.companyId}>{row.companyId.slice(0, 8)}…</td>
-                    <td title={row.branchId}>{row.branchId.slice(0, 8)}…</td>
-                    <td>{row.terminalId}</td>
-                    <td>{STATUS_LABEL[row.status]}</td>
-                    <td>{formatDateTime(row.createdAt)}</td>
-                    <td>
-                      {row.updatedAt ? formatDateTime(row.updatedAt) : "—"}
-                    </td>
-                    <td>
-                      {canClose && row.status === "Active" && (
-                        <ZHBtn
-                          variant="destructive"
-                          size="sm"
-                          type="button"
-                          onClick={() => setClosingId(row.sessionId)}
-                        >
-                          Cerrar sesión
-                        </ZHBtn>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={sessionColumns}
+            rows={rows}
+            rowKey={(row) => row.sessionId}
+            showRowNumber
+            rowNumberOffset={(pageNumber - 1) * PAGE_SIZE}
+          />
         )}
 
         <div className="pg-table-footer">

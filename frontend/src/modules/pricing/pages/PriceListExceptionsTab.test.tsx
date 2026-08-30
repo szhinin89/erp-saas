@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { PriceListExceptionsTab } from "./PriceListExceptionsTab";
 import {
   pricingRuleService,
@@ -93,7 +94,11 @@ describe("PriceListExceptionsTab — eliminar excepción: sin window.confirm", (
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(pricingRuleService.remove).mockResolvedValue(true);
 
-    render(<PriceListExceptionsTab priceList={PRICE_LIST} />);
+    render(
+      <I18nProvider>
+        <PriceListExceptionsTab priceList={PRICE_LIST} />
+      </I18nProvider>,
+    );
     await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
 
     fireEvent.click(screen.getByTitle("Eliminar excepción"));
@@ -111,7 +116,11 @@ describe("PriceListExceptionsTab — eliminar excepción: sin window.confirm", (
   it("si se cancela, no llama a pricingRuleService.remove", async () => {
     vi.mocked(message.confirm).mockResolvedValue(false);
 
-    render(<PriceListExceptionsTab priceList={PRICE_LIST} />);
+    render(
+      <I18nProvider>
+        <PriceListExceptionsTab priceList={PRICE_LIST} />
+      </I18nProvider>,
+    );
     await waitFor(() => expect(screen.getByText("Producto Uno")).toBeTruthy());
 
     fireEvent.click(screen.getByTitle("Eliminar excepción"));

@@ -11,6 +11,7 @@ import type { WarehouseDto } from "../api/warehouseService";
 import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 
 interface Props {
   warehouses: WarehouseDto[];
@@ -91,6 +92,97 @@ export function WarehouseListadoTab({
     await onToggle(confirmRow);
     setConfirmRow(null);
   }, [confirmRow, onToggle]);
+
+  const warehouseColumns: ZHDataTableColumn<WarehouseDto>[] = [
+    {
+      key: "code",
+      header: t("warehouses.table.code", "Código"),
+      render: (row) => <Badge label={row.code ?? "—"} variant="neutral" size="md" className="mono" />,
+    },
+    {
+      key: "name",
+      header: t("warehouses.table.name", "Bodega"),
+      render: (row) => (
+        <>
+          <div className="bod-list-name">{highlight(row.name, query)}</div>
+          {row.storageType && <div className="bod-list-sub">{row.storageType}</div>}
+        </>
+      ),
+    },
+    {
+      key: "branch",
+      header: t("warehouses.table.branch", "Sucursal"),
+      render: (row) => <span className="bod-list-branch">{branchName(row.branchId)}</span>,
+    },
+    {
+      key: "manager",
+      header: t("warehouses.table.manager", "Encargado"),
+      render: (row) =>
+        row.manager ? highlight(row.manager, query) : <span className="subtle">—</span>,
+    },
+    {
+      key: "capacity",
+      header: t("warehouses.table.capacity", "Capacidad"),
+      render: (row) =>
+        row.capacity ? (
+          <span className="mono subtle">{row.capacity.toFixed(2)} m³</span>
+        ) : (
+          <span className="subtle">—</span>
+        ),
+    },
+    {
+      key: "status",
+      header: t("warehouses.table.status", "Estado"),
+      render: (row) => (
+        <span
+          className={`prd-status-dot ${row.isActive ? "prd-status-dot--active" : "prd-status-dot--inactive"}`}
+        >
+          <span className="prd-status-dot__bullet" aria-hidden />
+          {row.isActive ? t("common.active", "Activo") : t("common.inactive", "Inactivo")}
+        </span>
+      ),
+    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: t("warehouses.table.actions", "Acciones"),
+            align: "right" as const,
+            render: (row: WarehouseDto) => (
+              <div className="prd-actions-cell">
+                {canUpdate && (
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    title={t("common.edit", "Editar")}
+                    disabled={toggling || !row.isActive}
+                    onClick={() => void onEdit(row)}
+                    aria-label={`${t("common.edit", "Editar")} ${row.name}`}
+                  >
+                    <span className="material-symbols-outlined">edit</span>
+                  </ZHBtn>
+                )}
+                {(row.isActive ? canDelete : canUpdate) && (
+                  <ZHIconButton
+                    icon={row.isActive ? "block" : "check_circle"}
+                    variant={row.isActive ? "danger" : "success"}
+                    title={row.isActive ? t("common.disable", "Desactivar") : t("common.enable", "Activar")}
+                    ariaLabel={
+                      row.isActive
+                        ? `${t("common.disable", "Desactivar")} ${row.name}`
+                        : `${t("common.enable", "Activar")} ${row.name}`
+                    }
+                    disabled={toggling}
+                    onClick={() => handleToggleClick(row)}
+                  />
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="bod-listado prd-fadein">
@@ -185,118 +277,13 @@ export function WarehouseListadoTab({
         </div>
       ) : (
         <>
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t("warehouses.table.code", "Código")}</th>
-                  <th>{t("warehouses.table.name", "Bodega")}</th>
-                  <th>{t("warehouses.table.branch", "Sucursal")}</th>
-                  <th>{t("warehouses.table.manager", "Encargado")}</th>
-                  <th>{t("warehouses.table.capacity", "Capacidad")}</th>
-                  <th>{t("warehouses.table.status", "Estado")}</th>
-                  {(canUpdate || canDelete) && (
-                    <th className="pg-th-right">
-                      {t("warehouses.table.actions", "Acciones")}
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={row.isActive ? undefined : "prd-row--inactive"}
-                  >
-                    <td>
-                      <Badge
-                        label={row.code ?? "—"}
-                        variant="neutral"
-                        size="md"
-                        className="mono"
-                      />
-                    </td>
-                    <td>
-                      <div className="bod-list-name">
-                        {highlight(row.name, query)}
-                      </div>
-                      {row.storageType && (
-                        <div className="bod-list-sub">{row.storageType}</div>
-                      )}
-                    </td>
-                    <td className="bod-list-branch">
-                      {branchName(row.branchId)}
-                    </td>
-                    <td>
-                      {row.manager ? (
-                        highlight(row.manager, query)
-                      ) : (
-                        <span className="subtle">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {row.capacity ? (
-                        <span className="mono subtle">
-                          {row.capacity.toFixed(2)} m³
-                        </span>
-                      ) : (
-                        <span className="subtle">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`prd-status-dot ${row.isActive ? "prd-status-dot--active" : "prd-status-dot--inactive"}`}
-                      >
-                        <span className="prd-status-dot__bullet" aria-hidden />
-                        {row.isActive
-                          ? t("common.active", "Activo")
-                          : t("common.inactive", "Inactivo")}
-                      </span>
-                    </td>
-                    {(canUpdate || canDelete) && (
-                      <td className="pg-th-right">
-                        <div className="prd-actions-cell">
-                          {canUpdate && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title={t("common.edit", "Editar")}
-                              disabled={toggling || !row.isActive}
-                              onClick={() => void onEdit(row)}
-                              aria-label={`${t("common.edit", "Editar")} ${row.name}`}
-                            >
-                              <span className="material-symbols-outlined">
-                                edit
-                              </span>
-                            </ZHBtn>
-                          )}
-                          {(row.isActive ? canDelete : canUpdate) && (
-                            <ZHIconButton
-                              icon={row.isActive ? "block" : "check_circle"}
-                              variant={row.isActive ? "danger" : "success"}
-                              title={
-                                row.isActive
-                                  ? t("common.disable", "Desactivar")
-                                  : t("common.enable", "Activar")
-                              }
-                              ariaLabel={
-                                row.isActive
-                                  ? `${t("common.disable", "Desactivar")} ${row.name}`
-                                  : `${t("common.enable", "Activar")} ${row.name}`
-                              }
-                              disabled={toggling}
-                              onClick={() => handleToggleClick(row)}
-                            />
-                          )}
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={warehouseColumns}
+            rows={filtered}
+            rowKey={(row) => row.id}
+            showRowNumber
+            rowClassName={(row) => (row.isActive ? undefined : "prd-row--inactive")}
+          />
 
           <div className="pg-table-footer">
             <p className="subtle bod-list-footer-note">

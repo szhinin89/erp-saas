@@ -2,11 +2,14 @@
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../components/zh/inputs";
 import { Badge } from "../../../components/PageShell";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useI18n } from "../../../i18n/i18n";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { EMISSION_TYPE_ELECTRONIC } from "../api/emissionPointsService";
 import type { EmissionPointsPageContext } from "../hooks/useEmissionPointsPage";
+
+type EmissionPointRow = EmissionPointsPageContext["filtered"][number];
 
 type Props = Pick<
   EmissionPointsPageContext,
@@ -43,6 +46,86 @@ export function EmissionPointsListSection({
   fetchList,
 }: Props) {
   const { t } = useI18n();
+
+  const emissionPointColumns: ZHDataTableColumn<EmissionPointRow>[] = [
+    { key: "code", header: "Código", render: (row) => <Badge label={row.code} variant="neutral" size="md" className="mono" /> },
+    {
+      key: "name",
+      header: "Nombre",
+      render: (row) => (
+        <>
+          <div className="br-list-name">{row.name ?? <span className="subtle">—</span>}</div>
+          {row.isDefault && (
+            <div className="br-list-sub">
+              <Badge label="Por defecto" variant="info" size="md" />
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "establishment",
+      header: "Sucursal",
+      render: (row) => (
+        <>
+          <div className="br-list-name">{row.establishmentName}</div>
+          <div className="br-list-sub mono">{row.establishmentCode}</div>
+        </>
+      ),
+    },
+    {
+      key: "emissionType",
+      header: "Tipo de emisión",
+      render: (row) => (
+        <Badge
+          variant={row.emissionType === EMISSION_TYPE_ELECTRONIC ? "blue" : "gray"}
+          size="md"
+          label={row.emissionType === EMISSION_TYPE_ELECTRONIC ? "Electrónico" : "Físico"}
+        />
+      ),
+    },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => (
+        <span className={row.isActive ? "zh-status zh-status--active" : "zh-status zh-status--inactive"}>
+          {row.isActive ? t("common.active") : t("common.inactive")}
+        </span>
+      ),
+    },
+    { key: "createdAt", header: "Fecha", render: (row) => <span className="br-list-contact">{formatDate(row.createdAt)}</span> },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: "Acciones",
+            align: "right" as const,
+            render: (row: EmissionPointRow) => (
+              <div className="br-actions-tight">
+                {row.isActive && canUpdate && (
+                  <ZHBtn type="button" variant="ghost" size="sm" title="Editar" onClick={() => void openEdit(row)}>
+                    <span className="material-symbols-outlined">edit</span>
+                  </ZHBtn>
+                )}
+                {(row.isActive ? canDelete : canUpdate) && (
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    title={row.isActive ? "Desactivar" : "Activar"}
+                    onClick={() => void toggleDisable(row)}
+                  >
+                    <span className="material-symbols-outlined">
+                      {row.isActive ? "block" : "check_circle"}
+                    </span>
+                  </ZHBtn>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -146,130 +229,20 @@ export function EmissionPointsListSection({
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Sucursal</th>
-                  <th>Tipo de emisión</th>
-                  <th>Estado</th>
-                  <th>Fecha</th>
-                  {canUpdate || canDelete ? (
-                    <th className="pg-th-right">Acciones</th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={
-                      [
-                        row.isActive ? undefined : "pg-row-inactive",
-                        row.id === selectedId ? "cfg-row--selected" : undefined,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || undefined
-                    }
-                  >
-                    <td>
-                      <Badge
-                        label={row.code}
-                        variant="neutral"
-                        size="md"
-                        className="mono"
-                      />
-                    </td>
-                    <td>
-                      <div className="br-list-name">
-                        {row.name ?? <span className="subtle">—</span>}
-                      </div>
-                      {row.isDefault && (
-                        <div className="br-list-sub">
-                          <Badge label="Por defecto" variant="info" size="md" />
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="br-list-name">
-                        {row.establishmentName}
-                      </div>
-                      <div className="br-list-sub mono">
-                        {row.establishmentCode}
-                      </div>
-                    </td>
-                    <td>
-                      <Badge
-                        variant={
-                          row.emissionType === EMISSION_TYPE_ELECTRONIC
-                            ? "blue"
-                            : "gray"
-                        }
-                        size="md"
-                        label={
-                          row.emissionType === EMISSION_TYPE_ELECTRONIC
-                            ? "Electrónico"
-                            : "Físico"
-                        }
-                      />
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          row.isActive
-                            ? "zh-status zh-status--active"
-                            : "zh-status zh-status--inactive"
-                        }
-                      >
-                        {row.isActive
-                          ? t("common.active")
-                          : t("common.inactive")}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="br-list-contact">
-                        {formatDate(row.createdAt)}
-                      </span>
-                    </td>
-                    {canUpdate || canDelete ? (
-                      <td className="pg-td-right">
-                        <div className="br-actions-tight">
-                          {row.isActive && canUpdate && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title="Editar"
-                              onClick={() => void openEdit(row)}
-                            >
-                              <span className="material-symbols-outlined">
-                                edit
-                              </span>
-                            </ZHBtn>
-                          )}
-                          {(row.isActive ? canDelete : canUpdate) && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title={row.isActive ? "Desactivar" : "Activar"}
-                              onClick={() => void toggleDisable(row)}
-                            >
-                              <span className="material-symbols-outlined">
-                                {row.isActive ? "block" : "check_circle"}
-                              </span>
-                            </ZHBtn>
-                          )}
-                        </div>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={emissionPointColumns}
+            rows={filtered}
+            rowKey={(row) => row.id}
+            showRowNumber
+            rowClassName={(row) =>
+              [
+                row.isActive ? undefined : "pg-row-inactive",
+                row.id === selectedId ? "cfg-row--selected" : undefined,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          />
         )}
 
         <div className="pg-table-footer">

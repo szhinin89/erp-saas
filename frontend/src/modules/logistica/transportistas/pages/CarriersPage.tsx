@@ -1,17 +1,13 @@
 ﻿import { useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  EmptyState,
-  LoadingState,
-  NoAccessPage,
-  Badge,
-} from "../../../../components/PageShell";
+import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ZHModal } from "../../../../components/zh/ZHModal";
 import {
   ZhPhoneInput,
@@ -161,6 +157,75 @@ export function CarriersPage() {
 
   if (!canView) return <NoAccessPage title={t("carriers.title")} />;
 
+  const carrierColumns: ZHDataTableColumn<Carrier>[] = [
+    {
+      key: "idType",
+      header: t("carriers.table.idType"),
+      render: (c) => (
+        <Badge label={t(`carriers.idType.${c.identificationType}`)} variant="neutral" upper />
+      ),
+    },
+    {
+      key: "identification",
+      header: t("carriers.table.identification"),
+      render: (c) => <span className="mono">{c.identificationNumber}</span>,
+    },
+    {
+      key: "legalName",
+      header: t("carriers.table.legalName"),
+      render: (c) => <span className="crt-col-name">{c.legalName}</span>,
+    },
+    {
+      key: "licensePlate",
+      header: t("carriers.table.licensePlate"),
+      render: (c) => <Badge label={c.licensePlate} variant="info" className="mono" />,
+    },
+    {
+      key: "phone",
+      header: t("carriers.table.phone"),
+      render: (c) => <span className="subtle">{c.phone ?? "—"}</span>,
+    },
+    {
+      key: "email",
+      header: t("carriers.table.email"),
+      render: (c) => <span className="subtle">{c.email ?? "—"}</span>,
+    },
+    {
+      key: "status",
+      header: t("carriers.table.status"),
+      render: (c) => (
+        <span className={c.isActive ? "zh-status zh-status--active" : "zh-status zh-status--inactive"}>
+          {c.isActive ? t("carriers.status.active") : t("carriers.status.inactive")}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: t("carriers.table.actions"),
+      render: (carrier) => (
+        <div className="crt-actions-cell">
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => openEdit(carrier)}
+            disabled={!canEdit}
+            aria-label="Edit"
+          >
+            <span className="material-symbols-outlined">edit</span>
+          </ZHBtn>
+          <ZHIconButton
+            icon={carrier.isActive ? "block" : "check_circle"}
+            variant={carrier.isActive ? "danger" : "success"}
+            title={carrier.isActive ? "Disable" : "Enable"}
+            onClick={() => void handleToggle(carrier)}
+            disabled={!canEdit || saving}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <ErpPageTemplate
       kicker={t("carriers.kicker")}
@@ -257,90 +322,14 @@ export function CarriersPage() {
         </div>
 
         {/* Table */}
-        {loading ? (
-          <LoadingState />
-        ) : filtered.length === 0 ? (
-          <EmptyState message={t("common.noData")} />
-        ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t("carriers.table.idType")}</th>
-                  <th>{t("carriers.table.identification")}</th>
-                  <th>{t("carriers.table.legalName")}</th>
-                  <th>{t("carriers.table.licensePlate")}</th>
-                  <th>{t("carriers.table.phone")}</th>
-                  <th>{t("carriers.table.email")}</th>
-                  <th>{t("carriers.table.status")}</th>
-                  <th>{t("carriers.table.actions")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((carrier) => (
-                  <tr key={carrier.id}>
-                    <td>
-                      <Badge
-                        label={t(
-                          `carriers.idType.${carrier.identificationType}`,
-                        )}
-                        variant="neutral"
-                        upper
-                      />
-                    </td>
-                    <td className="mono">{carrier.identificationNumber}</td>
-                    <td className="crt-col-name">{carrier.legalName}</td>
-                    <td>
-                      <Badge
-                        label={carrier.licensePlate}
-                        variant="info"
-                        className="mono"
-                      />
-                    </td>
-                    <td className="subtle">{carrier.phone ?? "—"}</td>
-                    <td className="subtle">{carrier.email ?? "—"}</td>
-                    <td>
-                      <span
-                        className={
-                          carrier.isActive
-                            ? "zh-status zh-status--active"
-                            : "zh-status zh-status--inactive"
-                        }
-                      >
-                        {carrier.isActive
-                          ? t("carriers.status.active")
-                          : t("carriers.status.inactive")}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="crt-actions-cell">
-                        <ZHBtn
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEdit(carrier)}
-                          disabled={!canEdit}
-                          aria-label="Edit"
-                        >
-                          <span className="material-symbols-outlined">
-                            edit
-                          </span>
-                        </ZHBtn>
-                        <ZHIconButton
-                          icon={carrier.isActive ? "block" : "check_circle"}
-                          variant={carrier.isActive ? "danger" : "success"}
-                          title={carrier.isActive ? "Disable" : "Enable"}
-                          onClick={() => void handleToggle(carrier)}
-                          disabled={!canEdit || saving}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <ZHDataTable
+          columns={carrierColumns}
+          rows={filtered}
+          rowKey={(c) => c.id}
+          loading={loading}
+          showRowNumber
+          emptyMessage={t("common.noData")}
+        />
       </div>
 
       <ZHModal

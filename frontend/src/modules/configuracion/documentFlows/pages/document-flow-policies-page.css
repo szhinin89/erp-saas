@@ -3,3 +3,10 @@
   flex-wrap: wrap;
   row-gap: var(--space-1, 4px);
 }
+
+/* ZH-LISTING-STANDARD-01 — celda "Documento" de ZHDataTable: categoría + nombre + resumen. */
+.cfg-document-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 2px);
+}

@@ -13,6 +13,7 @@ import {
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { NoAccessPage } from "../../../components/PageShell";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {
   ZhTextInput,
   ZhSelect,
@@ -207,6 +208,67 @@ export function ProfilesPage() {
     return <NoAccessPage title={t("profiles.title")} />;
   }
 
+  const profileColumns: ZHDataTableColumn<Profile>[] = [
+    {
+      key: "name",
+      header: t("profiles.table.name"),
+      render: (p) => (
+        <>
+          <strong>{p.name}</strong>
+          {p.description ? (
+            <p className="subtle pg-desc-subtle">{p.description}</p>
+          ) : null}
+        </>
+      ),
+    },
+    {
+      key: "active",
+      header: t("profiles.table.active"),
+      render: (p) => (
+        <span
+          className={`zh-status zh-status--${p.isActive ? "active" : "inactive"}`}
+        >
+          {p.isActive ? t("common.active") : t("common.inactive")}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: t("common.actions"),
+      render: (p) => (
+        <div className="prf-row-actions">
+          <ZHBtn
+            variant="ghost"
+            size="md"
+            type="button"
+            onClick={() => openEdit(p)}
+          >
+            {t("common.edit")}
+          </ZHBtn>
+          <ZHBtn
+            variant="ghost"
+            size="md"
+            type="button"
+            onClick={() => managePermissions(p)}
+          >
+            {t("profiles.actions.permissions")}
+          </ZHBtn>
+          <ZHBtn
+            variant="ghost"
+            size="md"
+            type="button"
+            disabled={togglingId === p.id}
+            onClick={() => void toggleActive(p)}
+          >
+            {p.isActive
+              ? t("profiles.actions.disable")
+              : t("profiles.actions.enable")}
+          </ZHBtn>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <ErpPageTemplate
       kicker={t("app.nav.group.admin")}
@@ -243,71 +305,14 @@ export function ProfilesPage() {
           </span>
         </div>
 
-        {listLoading ? (
-          <p className="subtle pg-state-pad">{t("common.loading")}</p>
-        ) : filteredProfiles.length === 0 ? (
-          <p className="subtle pg-state-pad">{t("common.noData")}</p>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("profiles.table.name")}</th>
-                <th>{t("profiles.table.active")}</th>
-                <th className="pg-th-actions">{t("common.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProfiles.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <strong>{p.name}</strong>
-                    {p.description ? (
-                      <p className="subtle pg-desc-subtle">{p.description}</p>
-                    ) : null}
-                  </td>
-                  <td>
-                    <span
-                      className={`zh-status zh-status--${p.isActive ? "active" : "inactive"}`}
-                    >
-                      {p.isActive ? t("common.active") : t("common.inactive")}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="prf-row-actions">
-                      <ZHBtn
-                        variant="ghost"
-                        size="md"
-                        type="button"
-                        onClick={() => openEdit(p)}
-                      >
-                        {t("common.edit")}
-                      </ZHBtn>
-                      <ZHBtn
-                        variant="ghost"
-                        size="md"
-                        type="button"
-                        onClick={() => managePermissions(p)}
-                      >
-                        {t("profiles.actions.permissions")}
-                      </ZHBtn>
-                      <ZHBtn
-                        variant="ghost"
-                        size="md"
-                        type="button"
-                        disabled={togglingId === p.id}
-                        onClick={() => void toggleActive(p)}
-                      >
-                        {p.isActive
-                          ? t("profiles.actions.disable")
-                          : t("profiles.actions.enable")}
-                      </ZHBtn>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <ZHDataTable
+          columns={profileColumns}
+          rows={filteredProfiles}
+          rowKey={(p) => p.id}
+          loading={listLoading}
+          showRowNumber
+          emptyMessage={t("common.noData")}
+        />
       </div>
 
       <ZHModal

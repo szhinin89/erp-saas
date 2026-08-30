@@ -2,8 +2,11 @@
 import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../components/zh/inputs";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { BranchesPageContext } from "../hooks/useBranchesPage";
+
+type BranchRow = BranchesPageContext["filtered"][number];
 
 type Props = Pick<
   BranchesPageContext,
@@ -41,6 +44,83 @@ export function BranchesListSection({
   openCreate,
   fetchList,
 }: Props) {
+  const branchColumns: ZHDataTableColumn<BranchRow>[] = [
+    { key: "code", header: "Código", render: (row) => <Badge label={row.code ?? "—"} variant="neutral" size="md" className="mono" /> },
+    {
+      key: "name",
+      header: "Nombre",
+      render: (row) => (
+        <>
+          <div className="br-list-name">{row.name}</div>
+          {row.isMainBranch && (
+            <div className="br-list-sub">
+              <Badge label="Principal" variant="info" size="md" />
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "address",
+      header: "Dirección",
+      render: (row) => <div className="br-list-contact">{row.address || <span className="subtle">—</span>}</div>,
+    },
+    { key: "manager", header: "Responsable", render: (row) => row.managerName ?? <span className="subtle">—</span> },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => (
+        <span className={row.isActive ? "zh-status zh-status--active" : "zh-status zh-status--inactive"}>
+          {row.isActive ? t("common.active") : t("common.inactive")}
+        </span>
+      ),
+    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: "Acciones",
+            align: "right" as const,
+            render: (row: BranchRow) => (
+              <div className="br-actions-tight">
+                <Link
+                  to={`/settings/branches/${row.id}`}
+                  className="zh-btn zh-btn--ghost zh-btn--sm"
+                  title="Ver detalle completo"
+                >
+                  <span className="material-symbols-outlined">open_in_new</span>
+                </Link>
+                {canUpdate && (
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    title="Editar"
+                    onClick={() => void openEdit(row.id)}
+                  >
+                    <span className="material-symbols-outlined">edit</span>
+                  </ZHBtn>
+                )}
+                {(row.isActive ? canDelete : canUpdate) && (
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    title={row.isActive ? "Desactivar" : "Activar"}
+                    onClick={() => void toggleDisable(row)}
+                  >
+                    <span className="material-symbols-outlined">
+                      {row.isActive ? "block" : "check_circle"}
+                    </span>
+                  </ZHBtn>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <>
       {!loading && (
@@ -141,116 +221,20 @@ export function BranchesListSection({
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Dirección</th>
-                  <th>Responsable</th>
-                  <th>Estado</th>
-                  {canUpdate || canDelete ? (
-                    <th className="pg-th-right">Acciones</th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={
-                      [
-                        row.isActive ? undefined : "pg-row-inactive",
-                        row.id === selectedId ? "cfg-row--selected" : undefined,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || undefined
-                    }
-                  >
-                    <td>
-                      <Badge
-                        label={row.code ?? "—"}
-                        variant="neutral"
-                        size="md"
-                        className="mono"
-                      />
-                    </td>
-                    <td>
-                      <div className="br-list-name">{row.name}</div>
-                      {row.isMainBranch && (
-                        <div className="br-list-sub">
-                          <Badge label="Principal" variant="info" size="md" />
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="br-list-contact">
-                        {row.address || <span className="subtle">—</span>}
-                      </div>
-                    </td>
-                    <td>
-                      {row.managerName ?? <span className="subtle">—</span>}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          row.isActive
-                            ? "zh-status zh-status--active"
-                            : "zh-status zh-status--inactive"
-                        }
-                      >
-                        {row.isActive
-                          ? t("common.active")
-                          : t("common.inactive")}
-                      </span>
-                    </td>
-                    {canUpdate || canDelete ? (
-                      <td className="pg-td-right">
-                        <div className="br-actions-tight">
-                          <Link
-                            to={`/settings/branches/${row.id}`}
-                            className="zh-btn zh-btn--ghost zh-btn--sm"
-                            title="Ver detalle completo"
-                          >
-                            <span className="material-symbols-outlined">
-                              open_in_new
-                            </span>
-                          </Link>
-                          {canUpdate && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title="Editar"
-                              onClick={() => void openEdit(row.id)}
-                            >
-                              <span className="material-symbols-outlined">
-                                edit
-                              </span>
-                            </ZHBtn>
-                          )}
-                          {(row.isActive ? canDelete : canUpdate) && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title={row.isActive ? "Desactivar" : "Activar"}
-                              onClick={() => void toggleDisable(row)}
-                            >
-                              <span className="material-symbols-outlined">
-                                {row.isActive ? "block" : "check_circle"}
-                              </span>
-                            </ZHBtn>
-                          )}
-                        </div>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={branchColumns}
+            rows={filtered}
+            rowKey={(row) => row.id}
+            showRowNumber
+            rowClassName={(row) =>
+              [
+                row.isActive ? undefined : "pg-row-inactive",
+                row.id === selectedId ? "cfg-row--selected" : undefined,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          />
         )}
 
         <div className="pg-table-footer">

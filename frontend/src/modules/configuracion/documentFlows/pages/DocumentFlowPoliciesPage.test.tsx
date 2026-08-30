@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../../i18n/i18n";
 import { DocumentFlowPoliciesPage } from "./DocumentFlowPoliciesPage";
@@ -108,6 +108,46 @@ beforeEach(() => {
   vi.clearAllMocks();
   grant("all");
   vi.mocked(documentFlowPolicyService.list).mockResolvedValue([GASDOC_POLICY, SALES_POLICY]);
+});
+
+describe("DocumentFlowPoliciesPage — ZH-LISTING-STANDARD-01, usa ZHDataTable", () => {
+  it("renderiza el listado con ZHDataTable, no con tabla HTML manual", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Documento de Gasto")).toBeTruthy());
+
+    const table = document.querySelector("table.table");
+    expect(table).toBeTruthy();
+    // ZHDataTable no genera filas de encabezado agrupadoras (colSpan) — la categoría
+    // se muestra dentro de la celda "Documento".
+    expect(document.querySelector("td.zh-section-title")).toBeFalsy();
+  });
+
+  it("muestra la categoría del documento dentro de la celda Documento", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Documento de Gasto")).toBeTruthy());
+    expect(screen.getByText("Gastos")).toBeTruthy();
+    expect(screen.getByText("Ventas")).toBeTruthy();
+  });
+});
+
+describe("DocumentFlowPoliciesPage — ZH-LISTING-PILOT-ROW-NUMBER-01, columna N°", () => {
+  it("la columna N° aparece como primera columna, antes de Documento", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Documento de Gasto")).toBeTruthy());
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+    expect(headers.indexOf("N°")).toBeLessThan(headers.indexOf("Documento"));
+  });
+
+  it("la numeración inicia en 1 en la primera fila", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Documento de Gasto")).toBeTruthy());
+
+    const rows = screen.getAllByRole("row").slice(1); // sin la fila de encabezado
+    const firstRowNumberCell = within(rows[0]).getAllByRole("cell")[0];
+    expect(firstRowNumberCell.textContent).toBe("1");
+  });
 });
 
 describe("DocumentFlowPoliciesPage — textos funcionales, nunca enums técnicos", () => {

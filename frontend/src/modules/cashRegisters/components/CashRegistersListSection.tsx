@@ -2,10 +2,13 @@
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../components/zh/inputs";
 import { Badge } from "../../../components/PageShell";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useI18n } from "../../../i18n/i18n";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import type { CashRegistersPageContext } from "../hooks/useCashRegistersPage";
+
+type CashRegisterRow = CashRegistersPageContext["filtered"][number];
 
 type Props = Pick<
   CashRegistersPageContext,
@@ -38,6 +41,88 @@ export function CashRegistersListSection({
   fetchList,
 }: Props) {
   const { t } = useI18n();
+
+  const cashRegisterColumns: ZHDataTableColumn<CashRegisterRow>[] = [
+    { key: "code", header: "Código", render: (row) => <Badge label={row.code} variant="neutral" size="md" className="mono" /> },
+    {
+      key: "name",
+      header: "Nombre",
+      render: (row) => (
+        <>
+          <div className="br-list-name">{row.name}</div>
+          {row.hasHistory && (
+            <div className="br-list-sub">
+              <Badge label="Con historial" variant="info" size="md" />
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "branch",
+      header: "Sucursal",
+      render: (row) => (
+        <>
+          <div className="br-list-name">{row.branchName}</div>
+          {row.branchCode && <div className="br-list-sub mono">{row.branchCode}</div>}
+        </>
+      ),
+    },
+    {
+      key: "emissionPoint",
+      header: "Establecimiento / Pto. Emisión",
+      render: (row) =>
+        row.emissionPointCode ? (
+          <>
+            <div className="br-list-name mono">
+              {row.establishmentCode}-{row.emissionPointCode}
+            </div>
+            <div className="br-list-sub">{row.emissionPointName ?? "—"}</div>
+          </>
+        ) : (
+          <span className="subtle">Sin configurar</span>
+        ),
+    },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => (
+        <span className={row.isActive ? "zh-status zh-status--active" : "zh-status zh-status--inactive"}>
+          {row.isActive ? t("common.active") : t("common.inactive")}
+        </span>
+      ),
+    },
+    { key: "createdAt", header: "Fecha", render: (row) => <span className="br-list-contact">{formatDate(row.createdAt)}</span> },
+    ...(canManage
+      ? [
+          {
+            key: "actions",
+            header: "Acciones",
+            align: "right" as const,
+            render: (row: CashRegisterRow) => (
+              <div className="br-actions-tight">
+                {row.isActive && (
+                  <ZHBtn type="button" variant="ghost" size="sm" title="Editar" onClick={() => void openEdit(row)}>
+                    <span className="material-symbols-outlined">edit</span>
+                  </ZHBtn>
+                )}
+                <ZHBtn
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  title={row.isActive ? "Desactivar" : "Activar"}
+                  onClick={() => void toggleDisable(row)}
+                >
+                  <span className="material-symbols-outlined">
+                    {row.isActive ? "block" : "check_circle"}
+                  </span>
+                </ZHBtn>
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -132,125 +217,20 @@ export function CashRegistersListSection({
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Sucursal</th>
-                  <th>Establecimiento / Pto. Emisión</th>
-                  <th>Estado</th>
-                  <th>Fecha</th>
-                  {canManage ? <th className="pg-th-right">Acciones</th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={
-                      [
-                        row.isActive ? undefined : "pg-row-inactive",
-                        row.id === selectedId ? "cfg-row--selected" : undefined,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || undefined
-                    }
-                  >
-                    <td>
-                      <Badge
-                        label={row.code}
-                        variant="neutral"
-                        size="md"
-                        className="mono"
-                      />
-                    </td>
-                    <td>
-                      <div className="br-list-name">{row.name}</div>
-                      {row.hasHistory && (
-                        <div className="br-list-sub">
-                          <Badge
-                            label="Con historial"
-                            variant="info"
-                            size="md"
-                          />
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="br-list-name">{row.branchName}</div>
-                      {row.branchCode && (
-                        <div className="br-list-sub mono">{row.branchCode}</div>
-                      )}
-                    </td>
-                    <td>
-                      {row.emissionPointCode ? (
-                        <>
-                          <div className="br-list-name mono">
-                            {row.establishmentCode}-{row.emissionPointCode}
-                          </div>
-                          <div className="br-list-sub">
-                            {row.emissionPointName ?? "—"}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="subtle">Sin configurar</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          row.isActive
-                            ? "zh-status zh-status--active"
-                            : "zh-status zh-status--inactive"
-                        }
-                      >
-                        {row.isActive
-                          ? t("common.active")
-                          : t("common.inactive")}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="br-list-contact">
-                        {formatDate(row.createdAt)}
-                      </span>
-                    </td>
-                    {canManage ? (
-                      <td className="pg-td-right">
-                        <div className="br-actions-tight">
-                          {row.isActive && (
-                            <ZHBtn
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              title="Editar"
-                              onClick={() => void openEdit(row)}
-                            >
-                              <span className="material-symbols-outlined">
-                                edit
-                              </span>
-                            </ZHBtn>
-                          )}
-                          <ZHBtn
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            title={row.isActive ? "Desactivar" : "Activar"}
-                            onClick={() => void toggleDisable(row)}
-                          >
-                            <span className="material-symbols-outlined">
-                              {row.isActive ? "block" : "check_circle"}
-                            </span>
-                          </ZHBtn>
-                        </div>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={cashRegisterColumns}
+            rows={filtered}
+            rowKey={(row) => row.id}
+            showRowNumber
+            rowClassName={(row) =>
+              [
+                row.isActive ? undefined : "pg-row-inactive",
+                row.id === selectedId ? "cfg-row--selected" : undefined,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          />
         )}
 
         <div className="pg-table-footer">

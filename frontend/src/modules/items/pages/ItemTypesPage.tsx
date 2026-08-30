@@ -7,6 +7,7 @@ import {  ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import {  ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import {  ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
 import {  ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {  ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import {  message } from "../../../lib/messages";
 import {  itemTypeService, type ItemTypeDto } from "../api/itemTypeService";
@@ -157,6 +158,54 @@ export function ItemTypesPage() {
     ? t("itemTypes.editTitle", "Editar Tipo de Ítem")
     : t("itemTypes.newTitle", "Nuevo Tipo de Ítem");
 
+  const itemTypeColumns: ZHDataTableColumn<ItemTypeDto>[] = [
+    { key: "code", header: t("itemTypes.col.code", "Código"), render: (it) => <code className="prd-sku">{it.code}</code> },
+    { key: "name", header: t("itemTypes.col.name", "Nombre"), render: (it) => it.name },
+    { key: "sortOrder", header: t("itemTypes.col.sortOrder", "Orden"), render: (it) => it.sortOrder },
+    {
+      key: "status",
+      header: t("common.status", "Estado"),
+      render: (it) => (
+        <Badge
+          label={it.isActive ? t("common.active", "Activo") : t("common.inactive", "Inactivo")}
+          variant={it.isActive ? "success" : "neutral"}
+        />
+      ),
+    },
+    {
+      key: "actions",
+      header: t("common.actions", "Acciones"),
+      render: (it) => (
+        <div className="prd-row-actions">
+          {canEdit && (
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => openEdit(it)}
+              title={t("common.edit", "Editar")}
+            >
+              <span className="material-symbols-outlined zh-icon-lg">edit</span>
+            </ZHBtn>
+          )}
+          {canEdit && (
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => void handleToggle(it)}
+              title={it.isActive ? t("common.deactivate", "Desactivar") : t("common.activate", "Activar")}
+            >
+              <span className="material-symbols-outlined zh-icon-lg">
+                {it.isActive ? "toggle_on" : "toggle_off"}
+              </span>
+            </ZHBtn>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   const listContent = (
     <>
       <div className="prd-filters-bar">
@@ -167,88 +216,15 @@ export function ItemTypesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      {loading ? (
-        <p>{t("common.loading", "Cargando...")}</p>
-      ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("itemTypes.col.code", "Código")}</th>
-                <th>{t("itemTypes.col.name", "Nombre")}</th>
-                <th>{t("itemTypes.col.sortOrder", "Orden")}</th>
-                <th>{t("common.status", "Estado")}</th>
-                <th>{t("common.actions", "Acciones")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((it) => (
-                <tr
-                  key={it.id}
-                  className={it.isActive ? undefined : "prd-row--inactive"}
-                >
-                  <td>
-                    <code className="prd-sku">{it.code}</code>
-                  </td>
-                  <td>{it.name}</td>
-                  <td>{it.sortOrder}</td>
-                  <td>
-                    <Badge
-  label={
-    it.isActive
-      ? t("common.active", "Activo")
-      : t("common.inactive", "Inactivo")
-  }
-  variant={it.isActive ? "success" : "neutral"}
-/>
-                  </td>
-                  <td>
-                    <div className="prd-row-actions">
-                      {canEdit && (
-                        <ZHBtn
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEdit(it)}
-                          title={t("common.edit", "Editar")}
-                        >
-                          <span className="material-symbols-outlined zh-icon-lg">
-                            edit
-                          </span>
-                        </ZHBtn>
-                      )}
-                      {canEdit && (
-                        <ZHBtn
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void handleToggle(it)}
-                          title={
-                            it.isActive
-                              ? t("common.deactivate", "Desactivar")
-                              : t("common.activate", "Activar")
-                          }
-                        >
-                          <span className="material-symbols-outlined zh-icon-lg">
-                            {it.isActive ? "toggle_on" : "toggle_off"}
-                          </span>
-                        </ZHBtn>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr className="prd-empty-row">
-                  <td colSpan={5}>
-                    {t("itemTypes.empty", "Sin tipos de ítem registrados.")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ZHDataTable
+        columns={itemTypeColumns}
+        rows={filtered}
+        rowKey={(it) => it.id}
+        loading={loading}
+        showRowNumber
+        rowClassName={(it) => (it.isActive ? undefined : "prd-row--inactive")}
+        emptyMessage={t("itemTypes.empty", "Sin tipos de ítem registrados.")}
+      />
     </>
   );
 

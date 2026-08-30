@@ -6,6 +6,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField, ZHGrid, ZHToggle } from "../../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ConfigTabsLayout } from "../../../../components/shared/ConfigTabsLayout";
 import { message } from "../../../../lib/messages";
 import {
@@ -58,15 +59,25 @@ import "./document-flow-policies-page.css";
  * DOCUMENT-FLOW-POLICY-UX-01).
  *
  * Auditoría de reutilización previa a escribir esta UI:
- * - Plantillas revisadas: ItemTypesPage (lista→editor con ConfigTabsLayout), la versión previa
- *   de esta misma pantalla (base sobre la que se construye esta mejora de UX).
- * - Componentes reutilizados: ErpPageTemplate, ConfigTabsLayout, ZHBtn, ZHField (con `hint`, ya
- *   soporta ayuda corta por campo — no se creó markup nuevo para eso), ZHGrid, ZhSelect,
- *   ZHToggle, Badge, ZHPageNotice, NoAccessPage, usePermissionsUi, message — ninguno nuevo.
- * - Filas de categoría agrupadora reutilizan `.zh-section-title` (real, ya definida en
- *   zh-ui.css) — sin CSS nuevo.
+ * - Plantillas revisadas: ItemTypesPage (lista→editor con ConfigTabsLayout), ChartOfAccountsPage
+ *   (uso canónico de ZHDataTable), la versión previa de esta misma pantalla.
+ * - Componentes reutilizados: ErpPageTemplate, ConfigTabsLayout, ZHDataTable, ZHBtn, ZHField
+ *   (con `hint`, ya soporta ayuda corta por campo — no se creó markup nuevo para eso), ZHGrid,
+ *   ZhSelect, ZHToggle, Badge, ZHPageNotice, NoAccessPage, usePermissionsUi, message — ninguno
+ *   nuevo.
  * - Único archivo nuevo: `labels/documentFlowPolicyLabels.ts` (no es un componente de UI, es
  *   el mapa de textos funcionales — no hay componente ZH equivalente para eso).
+ *
+ * ZH-LISTING-STANDARD-01: el listado principal usa `ZHDataTable` (antes tabla HTML manual),
+ * alineado con el estándar del Design System (ver ChartOfAccountsPage). `ZHDataTable` no
+ * soporta filas de encabezado agrupadoras — la categoría del documento (Ventas/Compras/
+ * Gastos/Inventario/Contabilidad/Tesorería) se muestra como etiqueta dentro de la celda
+ * "Documento" en lugar de una fila separadora, para no hackear el tipado ni la accesibilidad
+ * de la tabla. Ver reporte de migración para el detalle de esta decisión.
+ *
+ * ZH-LISTING-PILOT-ROW-NUMBER-01: usa `showRowNumber` de `ZHDataTable` para la numeración
+ * visual "N°" — sin columna manual, sin reemplazar ningún dato funcional (código/nombre de
+ * documento siguen siendo la identidad real de la fila).
  */
 export function DocumentFlowPoliciesPage() {
   const { t } = useI18n();
@@ -96,24 +107,20 @@ export function DocumentFlowPoliciesPage() {
     void fetchPolicies();
   }, [fetchPolicies]);
 
-  const groupedPolicies = useMemo(() => {
-    const groups = new Map<string, DocumentFlowPolicyDto[]>();
-    for (const p of policies) {
-      const category = documentCategory(p.documentTypeCode);
-      const list = groups.get(category) ?? [];
-      list.push(p);
-      groups.set(category, list);
-    }
-    return [...groups.entries()]
-      .sort(([a], [b]) => compareDocumentCategory(a as never, b as never))
-      .map(([category, items]) => ({
-        category,
-        items: [...items].sort((a, b) =>
-          documentTypeDisplayName(a.documentTypeCode, a.documentTypeName).localeCompare(
-            documentTypeDisplayName(b.documentTypeCode, b.documentTypeName),
-          ),
-        ),
-      }));
+  // ZH-LISTING-STANDARD-01: se mantiene el agrupamiento visual por categoría (Ventas/Compras/
+  // Gastos/Inventario/Contabilidad/Tesorería) como criterio de orden — ZHDataTable no soporta
+  // filas de encabezado agrupadoras, así que la categoría se muestra dentro de la celda
+  // "Documento" (ver `renderDocumentCell`) sobre una lista plana ordenada por categoría y nombre.
+  const sortedPolicies = useMemo(() => {
+    return [...policies].sort((a, b) => {
+      const categoryA = documentCategory(a.documentTypeCode);
+      const categoryB = documentCategory(b.documentTypeCode);
+      const categoryOrder = compareDocumentCategory(categoryA, categoryB);
+      if (categoryOrder !== 0) return categoryOrder;
+      return documentTypeDisplayName(a.documentTypeCode, a.documentTypeName).localeCompare(
+        documentTypeDisplayName(b.documentTypeCode, b.documentTypeName),
+      );
+    });
   }, [policies]);
 
   const openEdit = (policy: DocumentFlowPolicyDto) => {
@@ -224,103 +231,108 @@ export function DocumentFlowPoliciesPage() {
     );
   };
 
+  const renderDocumentCell = (p: DocumentFlowPolicyDto) => {
+    const displayName = documentTypeDisplayName(p.documentTypeCode, p.documentTypeName);
+    const category = documentCategory(p.documentTypeCode);
+    const creation = creationModeOption(p.creationMode);
+    const confirmation = confirmationModeOption(p.confirmationMode);
+    const cancellation = cancellationModeOption(p.cancellationMode);
+    return (
+      <div className="cfg-document-cell">
+        <div className="zh-text-muted zh-text-sm">{category}</div>
+        <div>{displayName}</div>
+        <div className="zh-text-muted zh-text-sm">
+          {creation.summary} · {confirmation.summary} · {cancellation.summary}
+        </div>
+      </div>
+    );
+  };
+
+  const columns: ZHDataTableColumn<DocumentFlowPolicyDto>[] = [
+    {
+      key: "document",
+      header: t("documentFlows.col.document", "Documento"),
+      render: renderDocumentCell,
+    },
+    {
+      key: "mainFlow",
+      header: t("documentFlows.col.mainFlow", "Flujo principal"),
+      render: (p) => {
+        const creation = creationModeOption(p.creationMode);
+        return <Badge label={creation.label} variant={creation.badgeVariant} />;
+      },
+    },
+    {
+      key: "confirmation",
+      header: t("documentFlows.col.confirmation", "Confirmación"),
+      render: (p) => {
+        const confirmation = confirmationModeOption(p.confirmationMode);
+        return <Badge label={confirmation.label} variant={confirmation.badgeVariant} />;
+      },
+    },
+    {
+      key: "cancellation",
+      header: t("documentFlows.col.cancellation", "Anulación"),
+      render: (p) => {
+        const cancellation = cancellationModeOption(p.cancellationMode);
+        return <Badge label={cancellation.label} variant={cancellation.badgeVariant} />;
+      },
+    },
+    {
+      key: "effects",
+      header: t("documentFlows.col.effects", "Efectos"),
+      render: effectBadges,
+    },
+    {
+      key: "status",
+      header: t("common.status", "Estado"),
+      render: (p) => (
+        <Badge
+          label={p.isActive ? IS_ACTIVE_FLAG.onLabel : IS_ACTIVE_FLAG.offLabel}
+          variant={p.isActive ? "success" : "neutral"}
+        />
+      ),
+    },
+    {
+      key: "actions",
+      header: t("common.actions", "Acciones"),
+      align: "right",
+      render: (p) => {
+        const displayName = documentTypeDisplayName(p.documentTypeCode, p.documentTypeName);
+        return (
+          <div className="prd-row-actions">
+            {canUpdate && (
+              <ZHBtn
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => openEdit(p)}
+                title={editButtonLabel(displayName)}
+                aria-label={editButtonLabel(displayName)}
+              >
+                <span className="material-symbols-outlined zh-icon-lg">edit</span>
+              </ZHBtn>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   const listContent = (
     <>
       {separationNotice}
-      {loading ? (
-        <p>{t("common.loading", "Cargando...")}</p>
-      ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("documentFlows.col.document", "Documento")}</th>
-                <th>{t("documentFlows.col.mainFlow", "Flujo principal")}</th>
-                <th>{t("documentFlows.col.confirmation", "Confirmación")}</th>
-                <th>{t("documentFlows.col.cancellation", "Anulación")}</th>
-                <th>{t("documentFlows.col.effects", "Efectos")}</th>
-                <th>{t("common.status", "Estado")}</th>
-                <th>{t("common.actions", "Acciones")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupedPolicies.map(({ category, items }) => (
-                <>
-                  {groupedPolicies.length > 1 && (
-                    <tr key={`group-${category}`}>
-                      <td colSpan={7} className="zh-section-title">
-                        {category}
-                      </td>
-                    </tr>
-                  )}
-                  {items.map((p) => {
-                    const displayName = documentTypeDisplayName(
-                      p.documentTypeCode,
-                      p.documentTypeName,
-                    );
-                    const creation = creationModeOption(p.creationMode);
-                    const confirmation = confirmationModeOption(p.confirmationMode);
-                    const cancellation = cancellationModeOption(p.cancellationMode);
-                    return (
-                      <tr key={p.id} className={p.isActive ? undefined : "prd-row--inactive"}>
-                        <td>
-                          <div>{displayName}</div>
-                          <div className="zh-text-muted zh-text-sm">
-                            {creation.summary} · {confirmation.summary} · {cancellation.summary}
-                          </div>
-                        </td>
-                        <td>
-                          <Badge label={creation.label} variant={creation.badgeVariant} />
-                        </td>
-                        <td>
-                          <Badge label={confirmation.label} variant={confirmation.badgeVariant} />
-                        </td>
-                        <td>
-                          <Badge label={cancellation.label} variant={cancellation.badgeVariant} />
-                        </td>
-                        <td>{effectBadges(p)}</td>
-                        <td>
-                          <Badge
-                            label={
-                              p.isActive
-                                ? IS_ACTIVE_FLAG.onLabel
-                                : IS_ACTIVE_FLAG.offLabel
-                            }
-                            variant={p.isActive ? "success" : "neutral"}
-                          />
-                        </td>
-                        <td>
-                          <div className="prd-row-actions">
-                            {canUpdate && (
-                              <ZHBtn
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEdit(p)}
-                                title={editButtonLabel(displayName)}
-                                aria-label={editButtonLabel(displayName)}
-                              >
-                                <span className="material-symbols-outlined zh-icon-lg">edit</span>
-                              </ZHBtn>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </>
-              ))}
-              {policies.length === 0 && (
-                <tr className="prd-empty-row">
-                  <td colSpan={7}>
-                    {t("documentFlows.empty", "Sin políticas de flujo documental registradas.")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ZHDataTable
+        columns={columns}
+        rows={sortedPolicies}
+        rowKey={(p) => p.id}
+        loading={loading}
+        showRowNumber
+        emptyMessage={t(
+          "documentFlows.empty",
+          "Sin políticas de flujo documental registradas.",
+        )}
+      />
     </>
   );
 

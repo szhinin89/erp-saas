@@ -8,6 +8,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../../components/zh/inputs";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatDateTimeSeconds } from "../../../../lib/formatters/dateFormatters";
 import {
@@ -71,6 +72,14 @@ export function ActivityPage() {
   if (!canView)
     return <NoAccessPage title={t("app.nav.item.admin.activity")} />;
 
+  const activityColumns: ZHDataTableColumn<UserActivityDto>[] = [
+    { key: "when", header: t("audit.column.when"), render: (row) => formatDateTimeSeconds(row.createdAt) },
+    { key: "who", header: t("audit.column.who"), render: (row) => row.userFullName || row.userEmail || "—" },
+    { key: "module", header: "Módulo", render: (row) => row.module },
+    { key: "what", header: t("audit.column.what"), render: (row) => t(actionVerbI18nKey(row.action)) },
+    { key: "detail", header: t("audit.column.detail"), render: (row) => row.description || row.entityType || "—" },
+  ];
+
   return (
     <ErpPageTemplate
       kicker={t("app.nav.group.admin")}
@@ -123,30 +132,13 @@ export function ActivityPage() {
             <EmptyState message={t("audit.empty")} />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t("audit.column.when")}</th>
-                  <th>{t("audit.column.who")}</th>
-                  <th>Módulo</th>
-                  <th>{t("audit.column.what")}</th>
-                  <th>{t("audit.column.detail")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{formatDateTimeSeconds(row.createdAt)}</td>
-                    <td>{row.userFullName || row.userEmail || "—"}</td>
-                    <td>{row.module}</td>
-                    <td>{t(actionVerbI18nKey(row.action))}</td>
-                    <td>{row.description || row.entityType || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={activityColumns}
+            rows={rows}
+            rowKey={(row) => row.id}
+            showRowNumber
+            rowNumberOffset={(page - 1) * pageSize}
+          />
         )}
 
         <div className="pg-table-footer">

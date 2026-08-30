@@ -6,6 +6,7 @@ import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhDateInput } from "../../../../components/zh/inputs/ZhDateInput";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import {
   Badge,
   EmptyState,
@@ -50,6 +51,106 @@ export function StockAdjustmentsPage() {
 
   const totalCost = (row: StockAdjustmentDto) =>
     row.lines.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
+
+  // ZH-LISTING-MIGRATION-ALL-02: sin showRowNumber — "N.º" (adjustmentNumber) ya es el número
+  // funcional del documento; agregar un N° de referencia visual sería redundante/confuso.
+  const adjustmentColumns: ZHDataTableColumn<StockAdjustmentDto>[] = [
+    {
+      key: "number",
+      header: t("inventory.adjustments.table.number", "N.º"),
+      render: (row) => <Badge label={row.adjustmentNumber} variant="neutral" size="md" code />,
+    },
+    { key: "date", header: t("inventory.adjustments.table.date", "Fecha"), render: (row) => formatDate(row.adjustmentDate) },
+    {
+      key: "movementType",
+      header: t("inventory.adjustments.table.movementType", "Tipo"),
+      render: (row) => {
+        const movement = movementTypeBadge(row.movementType, t);
+        return <Badge label={movement.label} variant={movement.variant} size="md" />;
+      },
+    },
+    { key: "warehouse", header: t("inventory.adjustments.table.warehouse", "Bodega"), render: (row) => row.warehouseName },
+    { key: "reason", header: t("inventory.adjustments.table.reason", "Motivo"), render: (row) => row.reasonName ?? "—" },
+    {
+      key: "status",
+      header: t("inventory.adjustments.table.status", "Estado"),
+      render: (row) => {
+        const status = adjustmentStatusBadge(row.status, t);
+        return <Badge label={status.label} variant={status.variant} size="md" />;
+      },
+    },
+    {
+      key: "lines",
+      header: t("inventory.adjustments.table.lines", "Total líneas"),
+      render: (row) => <span className="mono">{row.lines.length}</span>,
+    },
+    {
+      key: "totalCost",
+      header: t("inventory.adjustments.table.totalCost", "Costo total"),
+      render: (row) => (
+        <span className="mono">
+          {row.status === "Executed" ? formatMoney(totalCost(row), 2) : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: t("inventory.adjustments.table.actions", "Acciones"),
+      align: "right",
+      render: (row) => {
+        const isDraft = row.status === "Draft";
+        const isExecuted = row.status === "Executed";
+        return (
+          <div className="adj-row-actions">
+            <ZHBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => navigate(`/inventory/adjustments/${row.id}`)}
+            >
+              {t("common.view", "Ver")}
+            </ZHBtn>
+            {isDraft && ctx.canUpdate && (
+              <ZHBtn
+                variant="ghost"
+                size="sm"
+                type="button"
+                onClick={() => navigate(`/inventory/adjustments/${row.id}`)}
+              >
+                {t("common.edit", "Editar")}
+              </ZHBtn>
+            )}
+            {isDraft && ctx.canExecute && (
+              <ZHBtn
+                variant="primary"
+                size="sm"
+                type="button"
+                disabled={ctx.lifecycle.busy}
+                onClick={() =>
+                  ctx.lifecycle.setExecuteTarget({ id: row.id, adjustmentNumber: row.adjustmentNumber })
+                }
+              >
+                {t("inventory.adjustments.actions.execute", "Ejecutar")}
+              </ZHBtn>
+            )}
+            {isExecuted && ctx.canCancel && (
+              <ZHBtn
+                variant="ghost"
+                size="sm"
+                type="button"
+                disabled={ctx.lifecycle.busy}
+                onClick={() =>
+                  ctx.lifecycle.setCancelTarget({ id: row.id, adjustmentNumber: row.adjustmentNumber })
+                }
+              >
+                {t("inventory.adjustments.actions.cancel", "Anular")}
+              </ZHBtn>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <ErpPageTemplate
@@ -196,124 +297,7 @@ export function StockAdjustmentsPage() {
           />
         ) : (
           <>
-            <div className="table-scroll">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>{t("inventory.adjustments.table.number", "N.º")}</th>
-                    <th>{t("inventory.adjustments.table.date", "Fecha")}</th>
-                    <th>{t("inventory.adjustments.table.movementType", "Tipo")}</th>
-                    <th>{t("inventory.adjustments.table.warehouse", "Bodega")}</th>
-                    <th>{t("inventory.adjustments.table.reason", "Motivo")}</th>
-                    <th>{t("inventory.adjustments.table.status", "Estado")}</th>
-                    <th>{t("inventory.adjustments.table.lines", "Total líneas")}</th>
-                    <th>{t("inventory.adjustments.table.totalCost", "Costo total")}</th>
-                    <th className="pg-th-right">
-                      {t("inventory.adjustments.table.actions", "Acciones")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ctx.rows.map((row) => {
-                    const status = adjustmentStatusBadge(row.status, t);
-                    const movement = movementTypeBadge(row.movementType, t);
-                    const isDraft = row.status === "Draft";
-                    const isExecuted = row.status === "Executed";
-                    return (
-                      <tr key={row.id}>
-                        <td>
-                          <Badge
-                            label={row.adjustmentNumber}
-                            variant="neutral"
-                            size="md"
-                            code
-                          />
-                        </td>
-                        <td>{formatDate(row.adjustmentDate)}</td>
-                        <td>
-                          <Badge
-                            label={movement.label}
-                            variant={movement.variant}
-                            size="md"
-                          />
-                        </td>
-                        <td>{row.warehouseName}</td>
-                        <td>{row.reasonName ?? "—"}</td>
-                        <td>
-                          <Badge
-                            label={status.label}
-                            variant={status.variant}
-                            size="md"
-                          />
-                        </td>
-                        <td className="mono">{row.lines.length}</td>
-                        <td className="mono">
-                          {isExecuted ? formatMoney(totalCost(row), 2) : "—"}
-                        </td>
-                        <td className="pg-th-right">
-                          <div className="adj-row-actions">
-                            <ZHBtn
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              onClick={() =>
-                                navigate(`/inventory/adjustments/${row.id}`)
-                              }
-                            >
-                              {t("common.view", "Ver")}
-                            </ZHBtn>
-                            {isDraft && ctx.canUpdate && (
-                              <ZHBtn
-                                variant="ghost"
-                                size="sm"
-                                type="button"
-                                onClick={() =>
-                                  navigate(`/inventory/adjustments/${row.id}`)
-                                }
-                              >
-                                {t("common.edit", "Editar")}
-                              </ZHBtn>
-                            )}
-                            {isDraft && ctx.canExecute && (
-                              <ZHBtn
-                                variant="primary"
-                                size="sm"
-                                type="button"
-                                disabled={ctx.lifecycle.busy}
-                                onClick={() =>
-                                  ctx.lifecycle.setExecuteTarget({
-                                    id: row.id,
-                                    adjustmentNumber: row.adjustmentNumber,
-                                  })
-                                }
-                              >
-                                {t("inventory.adjustments.actions.execute", "Ejecutar")}
-                              </ZHBtn>
-                            )}
-                            {isExecuted && ctx.canCancel && (
-                              <ZHBtn
-                                variant="ghost"
-                                size="sm"
-                                type="button"
-                                disabled={ctx.lifecycle.busy}
-                                onClick={() =>
-                                  ctx.lifecycle.setCancelTarget({
-                                    id: row.id,
-                                    adjustmentNumber: row.adjustmentNumber,
-                                  })
-                                }
-                              >
-                                {t("inventory.adjustments.actions.cancel", "Anular")}
-                              </ZHBtn>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <ZHDataTable columns={adjustmentColumns} rows={ctx.rows} rowKey={(row) => row.id} />
 
             <div className="adj-pager">
               <span className="subtle">

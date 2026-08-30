@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../i18n/i18n";
 import type {
   BusinessPartnerStatusFilter,
@@ -79,6 +80,106 @@ export function MasterDataPartnerListTab({
     setSearch("");
     searchInputRef?.current?.focus();
   };
+
+  const partnerColumns: ZHDataTableColumn<BusinessPartnerSummaryDto>[] = [
+    { key: "identification", header: t(`${prefix}.col.identification`, "Identificación"), render: (bp) => <span className="mono">{bp.identificationNumber}</span> },
+    {
+      key: "legalName",
+      header: t(`${prefix}.col.legalName`, "Razón social"),
+      render: (bp) => (
+        <>
+          <span>{bp.tradeName?.trim() || bp.legalName}</span>
+          {bp.tradeName?.trim() && <span className="prd-sub-text">{bp.legalName}</span>}
+        </>
+      ),
+    },
+    {
+      key: "status",
+      header: t("common.status", "Estado"),
+      render: (bp) => (
+        <span className={`prd-status-dot ${bp.isActive ? "prd-status-dot--active" : "prd-status-dot--inactive"}`}>
+          <span className="prd-status-dot__bullet" />
+          {bp.isActive ? t("common.active", "Activo") : t("common.inactive", "Inactivo")}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (bp) => (
+        <div className="md-actions prd-actions-cell">
+          <ZHBtn
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}
+          >
+            {t("common.view", "Ver")}
+          </ZHBtn>
+          {canUpdate && (
+            <ZHBtn variant="ghost" size="sm" onClick={() => startEdit(bp)}>
+              {t("common.edit", "Editar")}
+            </ZHBtn>
+          )}
+          {canConfigure && onSettings && (
+            <ZHBtn variant="ghost" size="sm" onClick={() => void onSettings(bp)}>
+              {t(`${prefix}.action.company`, "Condiciones")}
+            </ZHBtn>
+          )}
+          {role === "supplier" && canUpdate && onSupplierProfile && (
+            <ZHBtn variant="ghost" size="sm" onClick={() => onSupplierProfile(bp)}>
+              {t(`${prefix}.action.sri`, "Config SRI")}
+            </ZHBtn>
+          )}
+          {role === "customer" && canUpdate && onCustomerConfig && (
+            <ZHBtn variant="ghost" size="sm" onClick={() => onCustomerConfig(bp)}>
+              {t(`${prefix}.action.classification`, "Clasificación")}
+            </ZHBtn>
+          )}
+          {role === "supplier" && canUpdate && onSupplierClassification && (
+            <ZHBtn variant="ghost" size="sm" onClick={() => onSupplierClassification(bp)}>
+              {t(`${prefix}.action.classification`, "Clasificación")}
+            </ZHBtn>
+          )}
+          {canUpdate && !bp.isActive && (
+            <ZHBtn variant="ghost" size="sm" disabled={saving} onClick={() => void onActivate(bp.id)}>
+              {role === "supplier"
+                ? t("masterdata.suppliers.action.activate", "Activar proveedor")
+                : t("common.enable", "Activar")}
+            </ZHBtn>
+          )}
+          {role === "customer" && canUpdate && onAddAsSupplier && (
+            <ZHBtn
+              variant="ghost"
+              size="sm"
+              disabled={saving}
+              onClick={() => void onAddAsSupplier(bp.id)}
+              title={t(`${prefix}.action.addSupplier`, "Agregar como proveedor")}
+            >
+              +{t(`${prefix}.action.addSupplierShort`, "Prov.")}
+            </ZHBtn>
+          )}
+          {role === "supplier" && canUpdate && onAddAsCustomer && (
+            <ZHBtn
+              variant="ghost"
+              size="sm"
+              disabled={saving}
+              onClick={() => void onAddAsCustomer(bp.id)}
+              title={t(`${prefix}.action.addCustomer`, "Agregar como cliente")}
+            >
+              +{t(`${prefix}.action.addCustomerShort`, "Cli.")}
+            </ZHBtn>
+          )}
+          {canDisable && bp.isActive && (
+            <ZHBtn variant="ghost" size="sm" disabled={saving} onClick={() => void onDisable(bp.id)}>
+              {role === "supplier"
+                ? t("masterdata.suppliers.action.deactivate", "Desactivar proveedor")
+                : t("common.disable", "Desactivar")}
+            </ZHBtn>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="prd-listado prd-fadein">
@@ -173,164 +274,12 @@ export function MasterDataPartnerListTab({
         </div>
       ) : (
         <>
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t(`${prefix}.col.identification`, "Identificación")}</th>
-                  <th>{t(`${prefix}.col.legalName`, "Razón social")}</th>
-                  <th>{t("common.status", "Estado")}</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {partners.map((bp) => (
-                  <tr
-                    key={bp.id}
-                    className={!bp.isActive ? "prd-row--inactive" : ""}
-                  >
-                    <td className="mono">{bp.identificationNumber}</td>
-                    <td>
-                      <span>{bp.tradeName?.trim() || bp.legalName}</span>
-                      {bp.tradeName?.trim() && (
-                        <span className="prd-sub-text">{bp.legalName}</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`prd-status-dot ${bp.isActive ? "prd-status-dot--active" : "prd-status-dot--inactive"}`}
-                      >
-                        <span className="prd-status-dot__bullet" />
-                        {bp.isActive
-                          ? t("common.active", "Activo")
-                          : t("common.inactive", "Inactivo")}
-                      </span>
-                    </td>
-                    <td className="md-actions prd-actions-cell">
-                      <ZHBtn
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          navigate(`/masterdata/business-partners/${bp.id}`)
-                        }
-                      >
-                        {t("common.view", "Ver")}
-                      </ZHBtn>
-                      {canUpdate && (
-                        <ZHBtn
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEdit(bp)}
-                        >
-                          {t("common.edit", "Editar")}
-                        </ZHBtn>
-                      )}
-                      {canConfigure && onSettings && (
-                        <ZHBtn
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void onSettings(bp)}
-                        >
-                          {t(`${prefix}.action.company`, "Condiciones")}
-                        </ZHBtn>
-                      )}
-                      {role === "supplier" &&
-                        canUpdate &&
-                        onSupplierProfile && (
-                          <ZHBtn
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onSupplierProfile(bp)}
-                          >
-                            {t(`${prefix}.action.sri`, "Config SRI")}
-                          </ZHBtn>
-                        )}
-                      {role === "customer" &&
-                        canUpdate &&
-                        onCustomerConfig && (
-                          <ZHBtn
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onCustomerConfig(bp)}
-                          >
-                            {t(`${prefix}.action.classification`, "Clasificación")}
-                          </ZHBtn>
-                        )}
-                      {role === "supplier" &&
-                        canUpdate &&
-                        onSupplierClassification && (
-                          <ZHBtn
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onSupplierClassification(bp)}
-                          >
-                            {t(`${prefix}.action.classification`, "Clasificación")}
-                          </ZHBtn>
-                        )}
-                      {canUpdate && !bp.isActive && (
-                        <ZHBtn
-                          variant="ghost"
-                          size="sm"
-                          disabled={saving}
-                          onClick={() => void onActivate(bp.id)}
-                        >
-                          {role === "supplier"
-                            ? t(
-                                "masterdata.suppliers.action.activate",
-                                "Activar proveedor",
-                              )
-                            : t("common.enable", "Activar")}
-                        </ZHBtn>
-                      )}
-                      {role === "customer" && canUpdate && onAddAsSupplier && (
-                        <ZHBtn
-                          variant="ghost"
-                          size="sm"
-                          disabled={saving}
-                          onClick={() => void onAddAsSupplier(bp.id)}
-                          title={t(
-                            `${prefix}.action.addSupplier`,
-                            "Agregar como proveedor",
-                          )}
-                        >
-                          +{t(`${prefix}.action.addSupplierShort`, "Prov.")}
-                        </ZHBtn>
-                      )}
-                      {role === "supplier" && canUpdate && onAddAsCustomer && (
-                        <ZHBtn
-                          variant="ghost"
-                          size="sm"
-                          disabled={saving}
-                          onClick={() => void onAddAsCustomer(bp.id)}
-                          title={t(
-                            `${prefix}.action.addCustomer`,
-                            "Agregar como cliente",
-                          )}
-                        >
-                          +{t(`${prefix}.action.addCustomerShort`, "Cli.")}
-                        </ZHBtn>
-                      )}
-                      {canDisable && bp.isActive && (
-                        <ZHBtn
-                          variant="ghost"
-                          size="sm"
-                          disabled={saving}
-                          onClick={() => void onDisable(bp.id)}
-                        >
-                          {role === "supplier"
-                            ? t(
-                                "masterdata.suppliers.action.deactivate",
-                                "Desactivar proveedor",
-                              )
-                            : t("common.disable", "Desactivar")}
-                        </ZHBtn>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={partnerColumns}
+            rows={partners}
+            rowKey={(bp) => bp.id}
+            rowClassName={(bp) => (!bp.isActive ? "prd-row--inactive" : undefined)}
+          />
 
           {totalPages > 1 && (
             <div className="md-pagination">

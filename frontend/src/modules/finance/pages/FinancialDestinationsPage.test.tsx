@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { FinancialDestinationsPage } from "./FinancialDestinationsPage";
 import {
   financialDestinationService,
@@ -77,7 +78,11 @@ function renderLastConfirmMessage() {
 }
 
 async function openEditor() {
-  render(<FinancialDestinationsPage />);
+  render(
+    <I18nProvider>
+      <FinancialDestinationsPage />
+    </I18nProvider>,
+  );
   await waitFor(() => expect(screen.getByText("Caja principal")).toBeTruthy());
   const editBtn = screen
     .getAllByRole("button")

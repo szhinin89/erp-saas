@@ -2,6 +2,7 @@ import type { FieldValues } from "react-hook-form";
 import { EmptyState, LoadingState } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZhTextInput } from "../../../../components/zh/inputs";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../../i18n/i18n";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import type { CatalogCrudContext } from "../hooks/useCatalogCrud";
@@ -49,6 +50,62 @@ export function CatalogListSection<
     toggleDisable,
     fetchList,
   } = ctx;
+
+  const tableColumns: ZHDataTableColumn<Record<string, unknown>>[] = [
+    ...columns.map((col) => ({ key: col.key, header: col.label, render: col.render })),
+    {
+      key: "status",
+      header: t("common.status", "Estado"),
+      render: (row) => {
+        const isActive = row.isActive as boolean;
+        return (
+          <span className={isActive ? "zh-status zh-status--active" : "zh-status zh-status--inactive"}>
+            {isActive ? t("common.active", "Activo") : t("common.inactive", "Inactivo")}
+          </span>
+        );
+      },
+    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: t("common.actions", "Acciones"),
+            align: "right" as const,
+            render: (row: Record<string, unknown>) => {
+              const isActive = row.isActive as boolean;
+              return (
+                <div className="br-actions-tight">
+                  {isActive && canUpdate && (
+                    <ZHBtn
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      title={t("common.edit", "Editar")}
+                      onClick={() => openEditModal(row as never)}
+                    >
+                      <span className="material-symbols-outlined">edit</span>
+                    </ZHBtn>
+                  )}
+                  {(isActive ? canDelete : canUpdate) && (
+                    <ZHBtn
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      title={isActive ? t("common.deactivate", "Desactivar") : t("common.activate", "Activar")}
+                      onClick={() => void toggleDisable(row as never)}
+                    >
+                      <span className="material-symbols-outlined">
+                        {isActive ? "block" : "check_circle"}
+                      </span>
+                    </ZHBtn>
+                  )}
+                </div>
+              );
+            },
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -151,87 +208,13 @@ export function CatalogListSection<
             />
           </div>
         ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  {columns.map((col) => (
-                    <th key={col.key}>{col.label}</th>
-                  ))}
-                  <th>{t("common.status", "Estado")}</th>
-                  {(canUpdate || canDelete) && (
-                    <th className="pg-th-right">
-                      {t("common.actions", "Acciones")}
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row: Record<string, unknown>) => {
-                  const isActive = row.isActive as boolean;
-                  return (
-                    <tr
-                      key={row.id as string}
-                      className={isActive ? undefined : "pg-row-inactive"}
-                    >
-                      {columns.map((col) => (
-                        <td key={col.key}>{col.render(row)}</td>
-                      ))}
-                      <td>
-                        <span
-                          className={
-                            isActive
-                              ? "zh-status zh-status--active"
-                              : "zh-status zh-status--inactive"
-                          }
-                        >
-                          {isActive
-                            ? t("common.active", "Activo")
-                            : t("common.inactive", "Inactivo")}
-                        </span>
-                      </td>
-                      {(canUpdate || canDelete) && (
-                        <td className="pg-td-right">
-                          <div className="br-actions-tight">
-                            {isActive && canUpdate && (
-                              <ZHBtn
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                title={t("common.edit", "Editar")}
-                                onClick={() => openEditModal(row as never)}
-                              >
-                                <span className="material-symbols-outlined">
-                                  edit
-                                </span>
-                              </ZHBtn>
-                            )}
-                            {(isActive ? canDelete : canUpdate) && (
-                              <ZHBtn
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                title={
-                                  isActive
-                                    ? t("common.deactivate", "Desactivar")
-                                    : t("common.activate", "Activar")
-                                }
-                                onClick={() => void toggleDisable(row as never)}
-                              >
-                                <span className="material-symbols-outlined">
-                                  {isActive ? "block" : "check_circle"}
-                                </span>
-                              </ZHBtn>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ZHDataTable
+            columns={tableColumns}
+            rows={filtered as unknown as Record<string, unknown>[]}
+            rowKey={(row) => row.id as string}
+            showRowNumber
+            rowClassName={(row) => ((row.isActive as boolean) ? undefined : "pg-row-inactive")}
+          />
         )}
 
         <div className="pg-table-footer">

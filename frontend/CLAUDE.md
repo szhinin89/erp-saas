@@ -15,6 +15,9 @@ Usar componentes oficiales:
 - `ZhTextInput`, `ZhNumberInput`, `ZhDecimalInput`, `ZhDateInput`, `ZhPhoneInput`, `ZhSelect`, `ZhTextarea`
 - `ZHBtn`, `ZHIconButton`, `Badge`, `ReportKpiCard`
 - `ZHField` / `ZHForm` cuando aplique
+- `ZHDataTable` (`components/zh/ZHDataTable.tsx`) es el componente estándar del Design System para listados tabulares administrativos (ver [ChartOfAccountsPage](../frontend/src/modules/accounting/pages/ChartOfAccountsPage.tsx), [DocumentFlowPoliciesPage](../frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx)). Las tablas HTML manuales (`<table className="table">`) solo se permiten como excepción justificada cuando `ZHDataTable` no cubre el caso (documentar el motivo en el código).
+- `ZHDataTable` soporta `showRowNumber` para mostrar una columna auxiliar "N°". Debe usarse en listados administrativos donde ayude a ubicar registros. No representa el Id del registro y debe mantenerse visualmente secundario.
+- Las tablas manuales existentes deben migrarse gradualmente a `ZHDataTable`. En migraciones nuevas, usar `showRowNumber` para listados administrativos principales salvo excepción justificada.
 
 Tabla completa de estándares únicos (incluye modal, tabs, tabla, grid, toggle, íconos) y sus equivalentes deprecados: [`../docs/architecture/frontend.md § Design System`](../docs/architecture/frontend.md#design-system--estándares-únicos-obligatorios).
 

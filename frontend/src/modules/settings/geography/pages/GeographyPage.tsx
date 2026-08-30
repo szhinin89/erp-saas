@@ -7,6 +7,7 @@ import {
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { branchService } from "../../../branches/api/branchService";
@@ -88,6 +89,13 @@ export function GeographyPage() {
   const selectedCountry = countries.find((c) => c.id === countryId);
   const selectedProvince = provinces.find((p) => p.id === provinceId);
   const selectedCanton = cantons.find((c) => c.id === cantonId);
+
+  const levelLabel = cantonId ? "Parroquia" : provinceId ? "Cantón" : countryId ? "Provincia" : "País";
+  const geoColumns: ZHDataTableColumn<GeoItem>[] = [
+    { key: "level", header: "Nivel", render: () => levelLabel },
+    { key: "code", header: "Código", render: (item) => <span className="mono">{item.id}</span> },
+    { key: "name", header: "Nombre", render: (item) => item.name },
+  ];
 
   return (
     <ErpPageTemplate
@@ -189,41 +197,15 @@ export function GeographyPage() {
             {cantonId && parishes.length === 0 ? (
               <EmptyState message="No hay parroquias para el cantón seleccionado." />
             ) : (
-              <div className="table-scroll">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Nivel</th>
-                      <th>Código</th>
-                      <th>Nombre</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(cantonId
-                      ? parishes
-                      : provinceId
-                        ? cantons
-                        : countryId
-                          ? provinces
-                          : countries
-                    ).map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          {cantonId
-                            ? "Parroquia"
-                            : provinceId
-                              ? "Cantón"
-                              : countryId
-                                ? "Provincia"
-                                : "País"}
-                        </td>
-                        <td className="mono">{item.id}</td>
-                        <td>{item.name}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ZHDataTable
+                columns={geoColumns}
+                rows={
+                  cantonId ? parishes : provinceId ? cantons : countryId ? provinces : countries
+                }
+                rowKey={(item) => item.id}
+                showRowNumber
+                emptyMessage="No hay datos geográficos disponibles."
+              />
             )}
           </>
         )}
