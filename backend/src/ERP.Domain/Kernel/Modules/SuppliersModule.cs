@@ -55,8 +55,11 @@ public static class SuppliersModule
     )]
     public const string PurchasesGroup = "/purchases/operation-group";
 
+    // ZH-MENU-TAXONOMY-STANDARD-01: renombrado de "Compras" a "Facturas de compra" — evita
+    // repetir el nombre del grupo contenedor ("Compras") en su pantalla principal, ambigüedad
+    // señalada explícitamente por el ticket (mismo Id/ruta/permiso, solo cambia el label i18n).
     [NavItem(
-        "Compras",
+        "Facturas de compra",
         Permission = PurchasePermissions.View,
         LabelKey = "app.nav.item.purchases.invoices",
         SortOrder = 10,

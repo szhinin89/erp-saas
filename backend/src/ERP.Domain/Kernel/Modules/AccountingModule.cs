@@ -112,8 +112,11 @@ public static class AccountingModule
     )]
     public const string ReportsGroup = "/accounting/reports/group";
 
+    // ZH-MENU-TAXONOMY-STANDARD-01: renombrado de "Reportes" a "Reportes contables" — evita
+    // repetir el nombre del grupo contenedor ("Reportes") en su pantalla, y alinea con el patrón
+    // "Reporte de X" ya usado por Sales/Inventory/Suppliers. Mismo Id/ruta/permiso.
     [NavItem(
-        "Reportes",
+        "Reportes contables",
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.reports",
         SortOrder = 30,
