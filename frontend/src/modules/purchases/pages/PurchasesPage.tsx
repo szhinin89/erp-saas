@@ -121,8 +121,9 @@ export function PurchasesPage() {
     },
   ];
 
-  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Nro. factura" ya es el número
-  // funcional del documento, un N° de referencia visual sería redundante.
+  // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Nro. factura" sigue siendo el
+  // identificador funcional del documento; "N°" es solo el índice visual de fila (primera
+  // columna), ambos coexisten en el listado principal.
   const purchaseListColumns: ZHDataTableColumn<PurchaseListItemDto>[] = [
     {
       key: "invoiceNumber",
@@ -220,6 +221,8 @@ export function PurchasesPage() {
             rows={ctx.listItems}
             rowKey={(inv) => inv.id}
             loading={ctx.listLoading}
+            showRowNumber
+            rowNumberOffset={(ctx.listPage - 1) * ctx.listPageSize}
             tableClassName="table--compact table--neutral"
             emptyMessage={t("purchases.list.empty", "Sin compras registradas.")}
           />

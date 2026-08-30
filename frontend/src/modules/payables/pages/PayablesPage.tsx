@@ -147,6 +147,8 @@ export function PayablesPage() {
             columns={columns}
             rowKey={(row) => row.id}
             loading={loading}
+            showRowNumber
+            rowNumberOffset={(page - 1) * 25}
             emptyMessage="No hay cuentas por pagar registradas para estos filtros."
             page={page}
             pageSize={25}

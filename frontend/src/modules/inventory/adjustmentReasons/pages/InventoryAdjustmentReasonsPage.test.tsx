@@ -265,3 +265,14 @@ describe("InventoryAdjustmentReasonsPage", () => {
     ).toBeTruthy();
   });
 });
+
+describe("InventoryAdjustmentReasonsPage — ZH-LISTING-COMPLIANCE-AUDIT-08, showRowNumber", () => {
+  it('muestra "N°" como primera columna, antes de "Orden" (sortOrder funcional)', async () => {
+    renderPage();
+    await screen.findByText("MERMA");
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+    expect(headers.indexOf("N°")).toBeLessThan(headers.indexOf("Orden"));
+  });
+});

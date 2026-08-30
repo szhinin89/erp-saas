@@ -256,6 +256,8 @@ export function ImportWizardPage({
                 rows={previewRows}
                 rowKey={(r) => r.id}
                 loading={previewLoading}
+                showRowNumber
+                rowNumberOffset={(previewPage - 1) * 25}
                 emptyMessage="No hay filas para este filtro."
                 page={previewPage}
                 pageSize={25}

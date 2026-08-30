@@ -331,6 +331,8 @@ export function PurchaseReceptionPage() {
             rows={ctx.items}
             rowKey={(row) => row.documentId}
             loading={ctx.uploading}
+            showRowNumber
+            rowNumberOffset={(ctx.page - 1) * ctx.pageSize}
             emptyMessage="El archivo no contiene facturas para comparar."
             page={ctx.page}
             pageSize={ctx.pageSize}

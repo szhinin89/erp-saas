@@ -5,14 +5,11 @@ import {
   ReportKpiCard,
   ReportFiltersBar,
   ReportFilterField,
-  ReportTablePanel,
-  ReportTable,
-  ReportTableHead,
-  ReportTh,
-  ReportTd,
   ReportStatusBadge,
   type RptStatusTone,
 } from "../../../components/ReportPageTemplate";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { formatMoney } from "../../../lib/sanitizers";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -85,6 +82,21 @@ export function StockReportPage() {
   const totalValue = rows.reduce((sum, r) => sum + r.stockValue, 0);
   const totalQuantity = rows.reduce((sum, r) => sum + r.quantity, 0);
 
+  const stockColumns: ZHDataTableColumn<StockReportRowDto>[] = [
+    { key: "sku", header: "SKU", cellClassName: "subtle", render: (row) => row.sku },
+    { key: "product", header: "Producto", render: (row) => row.productName },
+    { key: "warehouse", header: "Bodega", cellClassName: "subtle", render: (row) => row.warehouseName },
+    { key: "quantity", header: "Stock Actual", align: "right", render: (row) => formatMoney(row.quantity, 4) },
+    { key: "available", header: "Disponible", align: "right", render: (row) => formatMoney(row.availableQuantity, 4) },
+    { key: "avgCost", header: "Costo Promedio", align: "right", render: (row) => formatMoney(row.averageCost, 6) },
+    { key: "stockValue", header: "Valor Inventario", align: "right", render: (row) => formatMoney(row.stockValue) },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => <ReportStatusBadge label={STATUS_LABEL[row.status]} tone={STATUS_TONE[row.status]} />,
+    },
+  ];
+
   return (
     <ReportPage
       key={`stock-report-${companySessionVersion}`}
@@ -146,51 +158,18 @@ export function StockReportPage() {
         </ReportFilterField>
       </ReportFiltersBar>
 
-      <ReportTablePanel total={rows.length} showing={rows.length > 0 ? `1-${rows.length}` : "0"} hasNext={false}>
-        {loading ? (
-          <p className="rpt-footer-note">Cargando…</p>
-        ) : error ? (
-          <p className="rpt-footer-note">{error}</p>
-        ) : rows.length === 0 ? (
-          <p className="rpt-footer-note">
-            No hay stock registrado para los filtros seleccionados.
-          </p>
-        ) : (
-          <ReportTable>
-            <ReportTableHead>
-              <ReportTh>SKU</ReportTh>
-              <ReportTh>Producto</ReportTh>
-              <ReportTh>Bodega</ReportTh>
-              <ReportTh align="right">Stock Actual</ReportTh>
-              <ReportTh align="right">Disponible</ReportTh>
-              <ReportTh align="right">Costo Promedio</ReportTh>
-              <ReportTh align="right">Valor Inventario</ReportTh>
-              <ReportTh>Estado</ReportTh>
-            </ReportTableHead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={`${row.productId}-${row.warehouseId}`}>
-                  <ReportTd className="subtle">{row.sku}</ReportTd>
-                  <ReportTd>{row.productName}</ReportTd>
-                  <ReportTd className="subtle">{row.warehouseName}</ReportTd>
-                  <ReportTd align="right">{formatMoney(row.quantity, 4)}</ReportTd>
-                  <ReportTd align="right">
-                    {formatMoney(row.availableQuantity, 4)}
-                  </ReportTd>
-                  <ReportTd align="right">{formatMoney(row.averageCost, 6)}</ReportTd>
-                  <ReportTd align="right">{formatMoney(row.stockValue)}</ReportTd>
-                  <ReportTd>
-                    <ReportStatusBadge
-                      label={STATUS_LABEL[row.status]}
-                      tone={STATUS_TONE[row.status]}
-                    />
-                  </ReportTd>
-                </tr>
-              ))}
-            </tbody>
-          </ReportTable>
-        )}
-      </ReportTablePanel>
+      {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
+
+      <div className="pg-section">
+        <ZHDataTable
+          columns={stockColumns}
+          rows={rows}
+          rowKey={(row) => `${row.productId}-${row.warehouseId}`}
+          loading={loading}
+          showRowNumber
+          emptyMessage="No hay stock registrado para los filtros seleccionados."
+        />
+      </div>
     </ReportPage>
   );
 }

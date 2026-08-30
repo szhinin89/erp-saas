@@ -392,6 +392,7 @@ export function useMasterDataSuppliersPage() {
     setStatusFilter: setStatusFilterReset,
     page,
     setPage,
+    pageSize: PAGE_SIZE,
     totalCount,
     totalPages,
     suppliers,

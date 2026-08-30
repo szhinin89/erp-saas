@@ -338,6 +338,7 @@ export function useMasterDataCustomersPage() {
     setStatusFilter: setStatusFilterReset,
     page,
     setPage,
+    pageSize: PAGE_SIZE,
     totalCount,
     totalPages,
     customers,

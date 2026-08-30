@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { PurchaseReturnDto } from "../api/purchaseReturnService";
 import { I18nProvider } from "../../../i18n/i18n";
@@ -120,5 +120,27 @@ describe("PurchaseReturnListPage — columna Total migrada a ZHMoneyValue (PURCH
     container.querySelectorAll(".zh-money-value").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
+  });
+});
+
+describe("PurchaseReturnListPage — ZH-LISTING-COMPLIANCE-AUDIT-08, showRowNumber", () => {
+  it('muestra "N°" como primera columna, conservando "Nro." de devolución', async () => {
+    listMock.mockResolvedValue({
+      items: [buildItem()],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
+
+    renderPage();
+    await screen.findByText("DEVC-001");
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+    expect(screen.getByText("DEVC-001")).toBeTruthy();
+
+    const rows = screen.getAllByRole("row").slice(1);
+    const firstCell = within(rows[0]).getAllByRole("cell")[0];
+    expect(firstCell.textContent).toBe("1");
   });
 });

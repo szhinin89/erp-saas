@@ -123,8 +123,9 @@ export function KardexPage() {
   const cost = getDecimalConfig().purchaseUnitPrice;
   const total = getDecimalConfig().totalAmount;
 
-  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Seq." (sequenceNumber) ya es el
-  // número de secuencia funcional del movimiento, un N° visual sería redundante.
+  // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Seq." (sequenceNumber) sigue
+  // siendo la secuencia funcional del movimiento; "N°" es solo el índice visual de fila
+  // (primera columna), ambos coexisten en el listado principal.
   const movementColumns: ZHDataTableColumn<StockMovementDto>[] = [
     { key: "seq", header: "Seq.", render: (m) => <span className="kdx-mono kdx-mono--strong">#{m.sequenceNumber}</span> },
     { key: "effectiveDate", header: "Fecha Efectiva", render: (m) => formatDate(m.effectiveDate) },
@@ -471,6 +472,7 @@ export function KardexPage() {
           rows={ctx.movements}
           rowKey={(m) => m.id}
           loading={ctx.movementsLoading}
+          showRowNumber
           tableClassName="table--compact table--neutral"
           emptyMessage={
             ctx.searchMode === "product"

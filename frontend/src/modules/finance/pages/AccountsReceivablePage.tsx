@@ -67,8 +67,9 @@ export function AccountsReceivablePage() {
     fetchItems();
   }, [fetchItems]);
 
-  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Factura" ya es el número funcional
-  // del documento, un N° de referencia visual sería redundante.
+  // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Factura" sigue siendo el
+  // identificador funcional del documento; "N°" es solo el índice visual de fila (primera
+  // columna), ambos coexisten en el listado principal.
   const receivableColumns: ZHDataTableColumn<SalesReceivableDto>[] = [
     { key: "invoice", header: "Factura", render: (r) => <span className="mono">{r.invoiceNumber}</span> },
     { key: "customer", header: "Cliente", render: (r) => r.customerName },
@@ -128,6 +129,7 @@ export function AccountsReceivablePage() {
           rows={items}
           rowKey={(r) => r.id}
           loading={loading}
+          showRowNumber
           emptyMessage="Sin cuentas por cobrar."
         />
         {!loading && total > items.length && (

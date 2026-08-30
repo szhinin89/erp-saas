@@ -119,6 +119,8 @@ export function SupplierCreditListPage() {
           rows={items}
           rowKey={(row) => row.id}
           loading={loading}
+          showRowNumber
+          rowNumberOffset={(page - 1) * PAGE_SIZE}
           emptyMessage="No hay créditos de proveedor registrados."
           page={page}
           pageSize={PAGE_SIZE}

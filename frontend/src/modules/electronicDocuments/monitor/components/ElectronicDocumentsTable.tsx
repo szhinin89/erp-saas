@@ -165,6 +165,8 @@ export function ElectronicDocumentsTable({
       rowKey={(row) => row.id}
       onRowClick={(row) => onSelect(row.id)}
       loading={loading}
+      showRowNumber
+      rowNumberOffset={(page - 1) * pageSize}
       emptyMessage={t("electronicDocuments.monitor.table.empty")}
       page={page}
       pageSize={pageSize}

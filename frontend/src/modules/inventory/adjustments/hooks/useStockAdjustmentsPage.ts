@@ -13,7 +13,7 @@ import type {
 } from "../types";
 import { useAdjustmentLifecycleActions } from "./useAdjustmentLifecycleActions";
 
-const PAGE_SIZE = 20;
+export const PAGE_SIZE = 20;
 
 export type StockAdjustmentsFilterState = {
   warehouseId: string;

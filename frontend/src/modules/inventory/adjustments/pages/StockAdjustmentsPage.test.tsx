@@ -293,3 +293,39 @@ describe("StockAdjustmentsPage", () => {
     expect(screen.queryByText("Ocurrió un error.")).toBeNull();
   });
 });
+
+describe("StockAdjustmentsPage — ZH-LISTING-MAIN-ROW-NUMBER-FIX-07, showRowNumber", () => {
+  it('muestra la columna "N°" primero, antes de "N.º", sin reemplazar el número funcional', async () => {
+    vi.mocked(stockAdjustmentsService.list).mockResolvedValue({
+      items: [adjustment({ status: "Draft" })],
+      pageNumber: 1,
+      pageSize: 20,
+      totalCount: 1,
+    });
+
+    renderPage();
+    await screen.findByText("AJU-000001");
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+    expect(headers.indexOf("N°")).toBeLessThan(headers.indexOf("N.º"));
+    // El número funcional del documento se conserva intacto.
+    expect(screen.getByText("AJU-000001")).toBeTruthy();
+  });
+
+  it('la primera fila muestra "1" en la columna N°', async () => {
+    vi.mocked(stockAdjustmentsService.list).mockResolvedValue({
+      items: [adjustment({ status: "Draft" })],
+      pageNumber: 1,
+      pageSize: 20,
+      totalCount: 1,
+    });
+
+    renderPage();
+    await screen.findByText("AJU-000001");
+
+    const rows = screen.getAllByRole("row").slice(1);
+    const firstCell = rows[0].querySelectorAll("td")[0];
+    expect(firstCell.textContent).toBe("1");
+  });
+});

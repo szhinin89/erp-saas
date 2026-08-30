@@ -74,8 +74,9 @@ export function SalesPage() {
   const emissionType =
     ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
 
-  // ZH-LISTING-GLOBAL-STANDARD-06: sin showRowNumber — "Nro. Factura" ya es el número
-  // funcional del documento, un N° de referencia visual sería redundante.
+  // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Nro. Factura" sigue siendo el
+  // identificador funcional del documento; "N°" es solo el índice visual de fila (primera
+  // columna), ambos coexisten en el listado principal.
   const salesListColumns: ZHDataTableColumn<SalesListItemDto>[] = [
     {
       key: "invoiceNumber",
@@ -192,6 +193,7 @@ export function SalesPage() {
             rows={ctx.listItems}
             rowKey={(inv) => inv.id}
             loading={ctx.listLoading}
+            showRowNumber
             tableClassName="table--compact table--neutral"
             emptyMessage="Sin facturas registradas."
           />

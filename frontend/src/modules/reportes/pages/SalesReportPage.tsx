@@ -5,16 +5,13 @@ import {
   ReportKpiCard,
   ReportFiltersBar,
   ReportFilterField,
-  ReportTablePanel,
-  ReportTable,
-  ReportTableHead,
-  ReportTh,
-  ReportTd,
   ReportClientAvatar,
   ReportRowId,
   ReportStatusBadge,
   type RptStatusTone,
 } from "../../../components/ReportPageTemplate";
+import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate, todayIso } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
@@ -87,6 +84,29 @@ export function SalesReportPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companySessionVersion]);
 
+  const salesReportColumns: ZHDataTableColumn<SalesReportRowDto>[] = [
+    { key: "invoice", header: "Factura", render: (row) => <ReportRowId id={row.invoiceNumber} /> },
+    { key: "date", header: "Fecha", cellClassName: "subtle", render: (row) => formatDate(row.issueDate) },
+    { key: "customer", header: "Cliente", render: (row) => <ReportClientAvatar name={row.customerName} /> },
+    { key: "subtotal", header: "Subtotal", align: "right", render: (row) => formatMoney(row.subtotal) },
+    { key: "vat", header: "IVA", align: "right", render: (row) => formatMoney(row.totalVat) },
+    { key: "discount", header: "Descuento", align: "right", render: (row) => formatMoney(row.totalDiscount) },
+    { key: "total", header: "Total", align: "right", render: (row) => formatMoney(row.grandTotal) },
+    {
+      key: "status",
+      header: "Estado",
+      render: (row) => (
+        <ReportStatusBadge label={STATUS_LABEL[row.status] ?? row.status} tone={STATUS_TONE[row.status] ?? "neutral"} />
+      ),
+    },
+    {
+      key: "emission",
+      header: "Emisión",
+      cellClassName: "subtle",
+      render: (row) => EMISSION_LABEL[row.emissionType] ?? row.emissionType,
+    },
+  ];
+
   return (
     <ReportPage
       key={`sales-report-${companySessionVersion}`}
@@ -146,62 +166,23 @@ export function SalesReportPage() {
         </ReportFilterField>
       </ReportFiltersBar>
 
-      <ReportTablePanel
-        total={totals.count}
-        showing={rows.length > 0 ? `1-${rows.length}` : "0"}
-        hasNext={false}
-        footerLeft={`Descuento total: ${formatMoney(totals.totalDiscount)}`}
-      >
-        {loading ? (
-          <p className="rpt-footer-note">Cargando…</p>
-        ) : error ? (
-          <p className="rpt-footer-note">{error}</p>
-        ) : rows.length === 0 ? (
-          <p className="rpt-footer-note">
-            No hay ventas en el rango seleccionado.
+      {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
+
+      <div className="pg-section">
+        <ZHDataTable
+          columns={salesReportColumns}
+          rows={rows}
+          rowKey={(row) => row.id}
+          loading={loading}
+          showRowNumber
+          emptyMessage="No hay ventas en el rango seleccionado."
+        />
+        {!loading && rows.length > 0 && (
+          <p className="rpt-footer-note zh-mt-8">
+            Descuento total: {formatMoney(totals.totalDiscount)}
           </p>
-        ) : (
-          <ReportTable>
-            <ReportTableHead>
-              <ReportTh>Factura</ReportTh>
-              <ReportTh>Fecha</ReportTh>
-              <ReportTh>Cliente</ReportTh>
-              <ReportTh align="right">Subtotal</ReportTh>
-              <ReportTh align="right">IVA</ReportTh>
-              <ReportTh align="right">Descuento</ReportTh>
-              <ReportTh align="right">Total</ReportTh>
-              <ReportTh>Estado</ReportTh>
-              <ReportTh>Emisión</ReportTh>
-            </ReportTableHead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <ReportTd>
-                    <ReportRowId id={row.invoiceNumber} />
-                  </ReportTd>
-                  <ReportTd className="subtle">{formatDate(row.issueDate)}</ReportTd>
-                  <ReportTd>
-                    <ReportClientAvatar name={row.customerName} />
-                  </ReportTd>
-                  <ReportTd align="right">{formatMoney(row.subtotal)}</ReportTd>
-                  <ReportTd align="right">{formatMoney(row.totalVat)}</ReportTd>
-                  <ReportTd align="right">{formatMoney(row.totalDiscount)}</ReportTd>
-                  <ReportTd align="right">{formatMoney(row.grandTotal)}</ReportTd>
-                  <ReportTd>
-                    <ReportStatusBadge
-                      label={STATUS_LABEL[row.status] ?? row.status}
-                      tone={STATUS_TONE[row.status] ?? "neutral"}
-                    />
-                  </ReportTd>
-                  <ReportTd className="subtle">
-                    {EMISSION_LABEL[row.emissionType] ?? row.emissionType}
-                  </ReportTd>
-                </tr>
-              ))}
-            </tbody>
-          </ReportTable>
         )}
-      </ReportTablePanel>
+      </div>
     </ReportPage>
   );
 }

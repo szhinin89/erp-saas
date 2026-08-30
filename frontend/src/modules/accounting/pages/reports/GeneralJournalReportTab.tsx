@@ -178,6 +178,8 @@ export function GeneralJournalReportTab() {
         rows={lines}
         rowKey={(r) => `${r.journalEntryId}-${r.accountId}-${r.debit}-${r.credit}`}
         loading={loading}
+        showRowNumber
+        rowNumberOffset={(page - 1) * PAGE_SIZE}
         emptyMessage="No hay asientos contabilizados (Posted) en el rango seleccionado. Ajuste las fechas o el filtro de origen."
         page={page}
         pageSize={PAGE_SIZE}

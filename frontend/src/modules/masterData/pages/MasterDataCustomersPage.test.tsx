@@ -237,3 +237,14 @@ describe("MasterDataCustomersPage — sin diálogos nativos", () => {
     alertSpy.mockRestore();
   });
 });
+
+describe("MasterDataCustomersPage — ZH-LISTING-COMPLIANCE-AUDIT-08, showRowNumber", () => {
+  it('muestra "N°" como primera columna sin perder la identificación del cliente', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+    expect(screen.getByText("0999999999")).toBeTruthy();
+  });
+});

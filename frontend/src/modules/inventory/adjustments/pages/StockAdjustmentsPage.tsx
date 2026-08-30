@@ -15,7 +15,7 @@ import {
 } from "../../../../components/PageShell";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../../lib/sanitizers";
-import { useStockAdjustmentsPage } from "../hooks/useStockAdjustmentsPage";
+import { useStockAdjustmentsPage, PAGE_SIZE } from "../hooks/useStockAdjustmentsPage";
 import { AdjustmentLifecycleModals } from "../components/AdjustmentLifecycleModals";
 import {
   adjustmentStatusBadge,
@@ -52,8 +52,9 @@ export function StockAdjustmentsPage() {
   const totalCost = (row: StockAdjustmentDto) =>
     row.lines.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
 
-  // ZH-LISTING-MIGRATION-ALL-02: sin showRowNumber — "N.º" (adjustmentNumber) ya es el número
-  // funcional del documento; agregar un N° de referencia visual sería redundante/confuso.
+  // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "N.º" (adjustmentNumber) sigue
+  // siendo el identificador funcional del documento; "N°" es solo el índice visual de fila,
+  // ambos coexisten en un listado principal (con offset por la paginación server-side).
   const adjustmentColumns: ZHDataTableColumn<StockAdjustmentDto>[] = [
     {
       key: "number",
@@ -297,7 +298,13 @@ export function StockAdjustmentsPage() {
           />
         ) : (
           <>
-            <ZHDataTable columns={adjustmentColumns} rows={ctx.rows} rowKey={(row) => row.id} />
+            <ZHDataTable
+              columns={adjustmentColumns}
+              rows={ctx.rows}
+              rowKey={(row) => row.id}
+              showRowNumber
+              rowNumberOffset={(ctx.pageNumber - 1) * PAGE_SIZE}
+            />
 
             <div className="adj-pager">
               <span className="subtle">

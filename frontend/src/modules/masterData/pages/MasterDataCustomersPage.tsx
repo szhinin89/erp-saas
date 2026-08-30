@@ -436,6 +436,7 @@ export function MasterDataCustomersPage() {
             statusFilter={page.statusFilter}
             setStatusFilter={page.setStatusFilter}
             page={page.page}
+            pageSize={page.pageSize}
             totalPages={page.totalPages}
             setPage={page.setPage}
             searchInputRef={searchRef}

@@ -173,6 +173,8 @@ export function ExpenseDocumentsPage() {
             columns={columns}
             rowKey={(row) => row.id}
             loading={loading}
+            showRowNumber
+            rowNumberOffset={(page - 1) * 25}
             emptyMessage="No hay documentos de gasto registrados."
             page={page}
             pageSize={25}

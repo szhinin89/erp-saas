@@ -124,6 +124,7 @@ export function TrialBalanceReportTab() {
         rows={lines}
         rowKey={(r) => r.accountId}
         loading={loading}
+        showRowNumber
         emptyMessage="No hay cuentas con actividad contabilizada (Posted) en el rango seleccionado."
       />
       {lines.length > 0 && (

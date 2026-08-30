@@ -30,6 +30,7 @@ export interface MasterDataPartnerListTabProps {
   statusFilter: BusinessPartnerStatusFilter;
   setStatusFilter: (v: BusinessPartnerStatusFilter) => void;
   page: number;
+  pageSize: number;
   totalPages: number;
   setPage: (n: number) => void;
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
@@ -58,6 +59,7 @@ export function MasterDataPartnerListTab({
   statusFilter,
   setStatusFilter,
   page,
+  pageSize,
   totalPages,
   setPage,
   searchInputRef,
@@ -278,6 +280,8 @@ export function MasterDataPartnerListTab({
             columns={partnerColumns}
             rows={partners}
             rowKey={(bp) => bp.id}
+            showRowNumber
+            rowNumberOffset={(page - 1) * pageSize}
             rowClassName={(bp) => (!bp.isActive ? "prd-row--inactive" : undefined)}
           />
 

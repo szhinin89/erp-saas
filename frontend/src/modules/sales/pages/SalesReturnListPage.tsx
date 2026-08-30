@@ -185,6 +185,8 @@ export function SalesReturnListPage() {
           rows={items}
           rowKey={(row) => row.id}
           loading={loading}
+          showRowNumber
+          rowNumberOffset={(page - 1) * PAGE_SIZE}
           emptyMessage="No hay devoluciones registradas."
           page={page}
           pageSize={PAGE_SIZE}

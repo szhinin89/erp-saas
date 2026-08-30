@@ -123,6 +123,7 @@ export function AdjustmentReasonListTab({
         columns={columns}
         rows={sorted}
         rowKey={(row) => row.id}
+        showRowNumber
         rowClassName={(row) => (row.isActive ? undefined : "prd-row--inactive")}
       />
 

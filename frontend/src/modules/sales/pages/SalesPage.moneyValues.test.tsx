@@ -294,6 +294,33 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     expect(container.querySelector(".zh-table-cell--num")).toBeTruthy();
   });
 
+  it('listado de facturas: muestra "N°" primero, antes de "Nro. Factura", sin reemplazar el número funcional (ZH-LISTING-MAIN-ROW-NUMBER-FIX-07)', () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        tab: "listado",
+        listItems: [
+          {
+            id: "inv-1",
+            invoiceNumber: "001-001-000000123",
+            issueDate: "2026-07-01",
+            customerId: "cust-1",
+            customerName: "Juan Pérez",
+            grandTotal: 115,
+            lineCount: 2,
+            status: "Authorized",
+            createdAt: "2026-07-01T00:00:00Z",
+          },
+        ],
+      }),
+    );
+    renderSalesPage();
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("N°");
+    expect(headers.indexOf("N°")).toBeLessThan(headers.indexOf("Nro. Factura"));
+    expect(screen.getByText("001-001-000000123")).toBeTruthy();
+  });
+
   it('desglose de impuestos: Base y Valor usan ZHMoneyValue', () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({

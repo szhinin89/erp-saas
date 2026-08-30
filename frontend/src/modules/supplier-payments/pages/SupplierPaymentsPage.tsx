@@ -110,6 +110,8 @@ export function SupplierPaymentsPage() {
             columns={columns}
             rowKey={(row) => row.id}
             loading={loading}
+            showRowNumber
+            rowNumberOffset={(page - 1) * 25}
             emptyMessage="No hay pagos a proveedores registrados."
             page={page}
             pageSize={25}
