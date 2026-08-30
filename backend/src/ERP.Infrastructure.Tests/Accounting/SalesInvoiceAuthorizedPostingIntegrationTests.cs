@@ -373,6 +373,195 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         return inv;
     }
 
+    /// <summary>
+    /// Smoke funcional (checkpoint ADR-032 hasta Fase 6, 2026-08-29) — regla con las 4 líneas
+    /// reales de un asiento de venta completo: Debit(GrandTotal), Credit(Subtotal, TaxVat,
+    /// TaxIce, TaxIrbpnr). Verifica que Fase 3 (ICE ahora computado desde _taxes en Ventas
+    /// también) no rompió el balance del asiento real contra Postgres.
+    /// </summary>
+    private async Task SeedRuleAndPeriodWithIvaIceIrbpnrAsync(ErpDbContext db, DateOnly entryDate)
+    {
+        var debitAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        var salesAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"4.1.{Guid.NewGuid():N}"[..8]),
+            "Ventas",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        var vatAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
+            "IVA por pagar",
+            null,
+            AccountType.Liability,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        var iceAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"2.2.{Guid.NewGuid():N}"[..8]),
+            "ICE por pagar",
+            null,
+            AccountType.Liability,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        var irbpnrAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"2.3.{Guid.NewGuid():N}"[..8]),
+            "IRBPNR por pagar",
+            null,
+            AccountType.Liability,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
+        db.Accounts.AddRange(debitAccount, salesAccount, vatAccount, iceAccount, irbpnrAccount);
+
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(salesAccount.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
+        rule.AddLine(vatAccount.Id, AccountNature.Credit, PostingAmountKind.TaxVat);
+        rule.AddLine(iceAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIce);
+        rule.AddLine(irbpnrAccount.Id, AccountNature.Credit, PostingAmountKind.TaxIrbpnr);
+
+        var period = AccountingPeriod.Create(
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
+            new DateOnly(entryDate.Year, entryDate.Month, 1),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
+
+        db.PostingRules.Add(rule);
+        db.AccountingPeriods.Add(period);
+        await db.SaveChangesAsync();
+    }
+
+    private SalesInvoice BuildAuthorizableInvoiceWithIvaIceIrbpnr(
+        DateOnly issueDate,
+        string invoiceNumber
+    )
+    {
+        var inv = BuildAuthorizableInvoice(issueDate, invoiceNumber);
+        var line = inv.Lines[0];
+
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3) — mismo orden que Compras: ReplaceTaxes
+        // antes de ApplyTaxes.
+        line.ReplaceTaxes(
+            [
+                ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax.Create(
+                    line.Id,
+                    _tenantId,
+                    "5",
+                    "5001",
+                    "IRBPNR",
+                    0.10m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                    line.TaxableBase,
+                    0.30m,
+                    ERP.Domain.Modules.Sales.Enums.SalesTaxSource.Calculated
+                ),
+            ]
+        );
+        // IVA 15% + ICE 10% (Percentage) — Fase 3 completada: IceCode/IceRate/IceAmount ahora
+        // computados desde _taxes en Ventas también, nunca un escalar paralelo.
+        line.ApplyTaxes("10", 15m, "IVA", "3072", 10m, "ICE bebidas");
+
+        // El pago de contado sembrado por BuildAuthorizableInvoice (100m) ya no cubre el nuevo
+        // GrandTotal (100 + 16.5 IVA + 10 ICE + 0.30 IRBPNR) — se reemplaza por el monto correcto.
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            inv.GrandTotal
+        );
+        inv.ReplacePayments(new[] { payment }, _createdBy);
+
+        return inv;
+    }
+
+    [Fact]
+    public async Task Smoke_IVA_ICE_IRBPNR_juntos_genera_asiento_balanceado_con_totales_correctos()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodWithIvaIceIrbpnrAsync(db, issueDate);
+
+        var inv = BuildAuthorizableInvoiceWithIvaIceIrbpnr(issueDate, "001-001-000000010");
+        db.SalesInvoices.Add(inv);
+        await db.SaveChangesAsync();
+
+        // Subtotal 100, ICE 10 (10% de 100), IVA 15% sobre (100+10)=110 → 16.5, IRBPNR fijo 0.30.
+        inv.TotalIce.Should().Be(10m);
+        inv.Subtotal.Should().Be(100m);
+        var line = inv.Lines[0];
+        line.VatAmount.Should().Be(16.5m);
+        line.IceCode.Should().Be("3072");
+        line.IceAmount.Should().Be(10m);
+        line.IrbpnrAmount.Should().Be(0.30m);
+        inv.TotalIrbpnr.Should().Be(0.30m);
+
+        inv.Authorize(_createdBy);
+        await db.SaveChangesAsync();
+
+        inv.GrandTotal.Should().Be(100m + 16.5m + 10m + 0.30m);
+
+        await using var verifyDb = CreateContext();
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.SourceEventId == inv.Id);
+
+        entry.Should().NotBeNull();
+        entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
+        entry.Lines.Should().HaveCount(5, "GrandTotal + Subtotal + TaxVat + TaxIce + TaxIrbpnr");
+        var totalDebit = entry.Lines.Sum(l => l.Debit);
+        var totalCredit = entry.Lines.Sum(l => l.Credit);
+        totalDebit.Should()
+            .Be(
+                totalCredit,
+                "el asiento debe balancear con IVA+ICE+IRBPNR incluidos tras completar Fase 3"
+            );
+        totalDebit.Should().Be(inv.GrandTotal);
+    }
+
     [Fact]
     public async Task Autorizar_SalesInvoice_genera_JournalEntry_Posted()
     {
