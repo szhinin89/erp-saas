@@ -25,23 +25,31 @@ public sealed class DocumentSequenceExclusivityTests
     // P0-02 §7.1bis: PurchaseReturnSequence is an independent sequence,
     // not ERP DocumentSequence. Exact-path exclusion prevents a name-collision
     // false positive without permitting other callers or mutators.
+    // SUPPLIER-PAYMENTS-FOUNDATION-15B: SupplierPaymentSequence es el mismo patrón exacto
+    // (secuencia independiente, no DocumentSequence — ver su propio doc comment), con el mismo
+    // caller único y legítimo (SupplierPaymentSequenceRepository.CaptureNextAsync, advisory lock
+    // + sequence.CaptureAndIncrement()) — misma exclusión por path exacto, mismo criterio.
     private static readonly HashSet<string> AllowedCaptureAndIncrementCallers = new(
         StringComparer.OrdinalIgnoreCase
     )
     {
         "src/ERP.Infrastructure/Persistence/Repositories/Purchases/PurchaseReturnSequenceRepository.cs",
+        "src/ERP.Infrastructure/Persistence/Repositories/Payables/SupplierPaymentSequenceRepository.cs",
     };
 
     // SEQ-GATE-02: solo la entidad puede mutar su propio CurrentSeq.
     // P0-02 §7.1bis: PurchaseReturnSequence is an independent sequence,
     // not ERP DocumentSequence. Exact-path exclusion prevents a name-collision
     // false positive without permitting other callers or mutators.
+    // SUPPLIER-PAYMENTS-FOUNDATION-15B: SupplierPaymentSequence.CurrentSeq solo se muta dentro de
+    // su propia entidad (Create()/CaptureAndIncrement()) — mismo criterio que PurchaseReturnSequence.
     private static readonly HashSet<string> AllowedCurrentSeqMutators = new(
         StringComparer.OrdinalIgnoreCase
     )
     {
         "src/ERP.Domain/Modules/Company/Entities/DocumentSequence.cs",
         "src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturnSequence.cs",
+        "src/ERP.Domain/Modules/Payables/Entities/SupplierPaymentSequence.cs",
     };
 
     // SEQ-GATE-03: solo el repositorio puede emitir SQL de escritura sobre la tabla.

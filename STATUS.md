@@ -4,6 +4,18 @@
 
 ---
 
+## DocumentSequenceExclusivityTests (SEQ_GATE_01/02) — RESUELTO (2026-08-29)
+
+**Estado: COMPLETADO.** Deuda preexistente documentada en el checkpoint de ADR-032 — diagnosticada y cerrada, sin relación con IRBPNR/ICE/ADR-032 (nunca tocó ese ADR ni impuestos/ventas/compras/XML).
+
+- **Causa raíz real**: gate de arquitectura basado en scan de texto (`DocumentSequenceExclusivityTests.cs`) con un allowlist de archivos autorizados a llamar `.CaptureAndIncrement()` / mutar `CurrentSeq`. `SupplierPaymentSequence`/`SupplierPaymentSequenceRepository` (SUPPLIER-PAYMENTS-FOUNDATION-15B) replican, a propósito y documentado en su propio doc comment, el mismo patrón de secuencia independiente ya usado por `PurchaseReturnSequence` (no es una instancia de `DocumentSequence`, infraestructura FROZEN — un pago a proveedor no emite comprobante SRI). `PurchaseReturnSequence` ya tenía su exclusión exacta por path en el allowlist; `SupplierPaymentSequence` nunca la recibió cuando se creó — el gate lo detectaba como violación real, cuando en realidad el código de producción ya seguía el patrón correcto (advisory lock en el repositorio + `CurrentSeq` mutado únicamente dentro de la propia entidad).
+- **Verificado antes de corregir**: `grep` confirmó que `SupplierPaymentSequenceRepository.cs` es el único caller de `.CaptureAndIncrement()` fuera de la entidad y de `PurchaseReturnSequenceRepository.cs` (ya permitido), y que `SupplierPaymentSequence.cs` es el único mutador de `CurrentSeq` fuera de `DocumentSequence.cs`/`PurchaseReturnSequence.cs` (ya permitidos) — ninguna otra violación real en el árbol.
+- **Fix**: 2 entradas nuevas en los allowlists ya existentes (`AllowedCaptureAndIncrementCallers`, `AllowedCurrentSeqMutators`), mismo criterio exacto que la exclusión ya otorgada a `PurchaseReturnSequence`. **No se relajó ningún guard** — el gate sigue bloqueando cualquier otro caller/mutador no listado; solo se corrigió un allowlist incompleto.
+- **No tocado**: ADR-032, impuestos/ICE/IRBPNR, Ventas, Compras, XML/RIDE, menú, permisos, SaaS — confirmado por el diff (1 solo archivo, el propio test de arquitectura).
+- **Validaciones**: `dotnet build` (solución completa) sin errores. `ERP.Infrastructure.Tests` filtrado a `DocumentSequenceExclusivityTests` (8 tests) en verde. **`ERP.Infrastructure.Tests` completo: 499/499 en verde** — primera vez en esta sesión que la suite completa pasa sin ningún hallazgo pendiente. `ERP.Domain.Tests` 962/962, `ERP.Application.Tests` 1312/1312 (sin cambios, verificados por no compartir código). `git diff --check` limpio.
+
+---
+
 ## ADR-032 / TAX-LINE-SSOT-ICE-IRBPNR-01 — CERRADO hasta Fase 6 (2026-08-29)
 
 **Estado: implementación principal completada.** Ver [ADR-032](docs/decisions/ADR-032-tax-line-ssot-ice-irbpnr.md) para el diseño completo y el detalle de cada fase/subfase (secciones abajo en este mismo archivo). Este bloque es el resumen de cierre — no repite el detalle ya documentado.
