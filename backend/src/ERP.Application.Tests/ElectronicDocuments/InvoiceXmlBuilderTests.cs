@@ -18,6 +18,7 @@ public sealed class InvoiceXmlBuilderTests
             {
                 "VAT" => "2",
                 "ICE" => "3",
+                "IRBPNR" => "5",
                 _ => null,
             };
     }
@@ -107,6 +108,91 @@ public sealed class InvoiceXmlBuilderTests
             .Element("codigo")!
             .Value.Should()
             .Be("2");
+    }
+
+    /// <summary>Misma línea que <see cref="ValidInvoiceData"/> pero con IVA+ICE+IRBPNR juntos —
+    /// ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01 (cerrado 2026-08-29, ADR-032 §9).</summary>
+    private static ElectronicDocumentData InvoiceDataWithVatIceIrbpnr() =>
+        ValidInvoiceData() with
+        {
+            Details =
+            [
+                new ElectronicDocumentDetailLine(
+                    Code: "SKU-001",
+                    Description: "Producto con IVA+ICE+IRBPNR",
+                    Quantity: 1m,
+                    UnitPrice: 100m,
+                    Discount: 0m,
+                    Subtotal: 100m,
+                    Taxes:
+                    [
+                        new ElectronicDocumentDetailTax("VAT", "2", 110m, 15m, 16.5m),
+                        new ElectronicDocumentDetailTax("ICE", "3072", 100m, 10m, 10m),
+                        new ElectronicDocumentDetailTax("IRBPNR", "5001", 100m, 0.1m, 0.30m),
+                    ]
+                ),
+            ],
+            TaxSummary =
+            [
+                new ElectronicDocumentTaxSummary("VAT", "2", 110m, 16.5m),
+                new ElectronicDocumentTaxSummary("ICE", "3072", 100m, 10m),
+                new ElectronicDocumentTaxSummary("IRBPNR", "5001", 100m, 0.30m),
+            ],
+            Totals = new ElectronicDocumentTotals(
+                Subtotal: 100m,
+                TotalDiscount: 0m,
+                TotalTax: 16.5m + 10m + 0.30m,
+                GrandTotal: 100m + 16.5m + 10m + 0.30m,
+                CurrencyCode: "USD"
+            ),
+            Payments = [new ElectronicDocumentPayment("01", 100m + 16.5m + 10m + 0.30m, null, null)],
+        };
+
+    [Fact]
+    public void Build_factura_con_IRBPNR_genera_nodo_impuesto_con_codigo_SRI_5()
+    {
+        var builder = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver());
+
+        var result = builder.Build(InvoiceDataWithVatIceIrbpnr());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var xdoc = XDocument.Parse(result.Value!.Xml);
+        var impuestos = xdoc
+            .Root!.Element("detalles")!
+            .Element("detalle")!
+            .Element("impuestos")!
+            .Elements("impuesto")
+            .ToList();
+
+        impuestos.Should().HaveCount(3, "IVA + ICE + IRBPNR deben viajar como 3 nodos independientes");
+        impuestos
+            .Select(i => i.Element("codigo")!.Value)
+            .Should()
+            .BeEquivalentTo(["2", "3", "5"]);
+        var irbpnrNode = impuestos.Single(i => i.Element("codigo")!.Value == "5");
+        irbpnrNode.Element("baseImponible")!.Value.Should().Be("100.00");
+        irbpnrNode.Element("valor")!.Value.Should().Be("0.30");
+    }
+
+    [Fact]
+    public void Build_factura_sin_IRBPNR_no_genera_nodo_de_codigo_5_falso()
+    {
+        var builder = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver());
+
+        var result = builder.Build(ValidInvoiceData());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var xdoc = XDocument.Parse(result.Value!.Xml);
+        var impuestos = xdoc
+            .Root!.Element("detalles")!
+            .Element("detalle")!
+            .Element("impuestos")!
+            .Elements("impuesto")
+            .ToList();
+
+        impuestos.Should().HaveCount(1, "la línea original solo tiene IVA — sin ICE ni IRBPNR falsos");
+        impuestos.Should().NotContain(i => i.Element("codigo")!.Value == "5");
+        impuestos.Should().NotContain(i => i.Element("codigo")!.Value == "3");
     }
 
     [Fact]

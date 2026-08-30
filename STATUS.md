@@ -4,6 +4,18 @@
 
 ---
 
+## ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01 — IRBPNR en XML electrónico (2026-08-29)
+
+**Estado: COMPLETADO.** Cierra el pendiente registrado en ADR-032 §9, ejecutado antes de Fase 7 tal como se pidió.
+
+- **Causa raíz**: `SriTaxCategoryCodeResolver` (`ERP.Infrastructure/Services/ElectronicDocuments/`) solo reconocía `"VAT"→"2"` e `"ICE"→"3"`. `InvoiceXmlBuilder.Validate()` exige que **todo** `TaxCode` presente en el documento resuelva a un código SRI antes de construir el XML — una factura de venta con IRBPNR fallaba por completo ("código de impuesto que el sistema no reconoce"), aunque `SalesInvoiceElectronicDocumentDataProvider` (Subfase 5C) ya emitía la etiqueta "IRBPNR" correctamente desde `SalesInvoiceDetail.Taxes`.
+- **Fix**: una línea nueva en el diccionario del resolver — `["IRBPNR"] = "5"`. `InvoiceXmlBuilder` no se tocó (ya era agnóstico, itera genéricamente sobre las etiquetas que le llegan) — confirmado por `git diff` vacío sobre ese archivo.
+- **Tests agregados**: `SriTaxCategoryCodeResolverTests.Resolve_irbpnr_returns_sri_tax_category_code_5`; `InvoiceXmlBuilderTests.Build_factura_con_IRBPNR_genera_nodo_impuesto_con_codigo_SRI_5` (IVA+ICE+IRBPNR juntos, 3 nodos `<impuesto>`, códigos "2"/"3"/"5") y `Build_factura_sin_IRBPNR_no_genera_nodo_de_codigo_5_falso`. La cobertura de `SalesInvoiceElectronicDocumentDataProvider` para IVA+ICE+IRBPNR ya existía de la Subfase 5C (`Factura_con_IVA_ICE_e_IRBPNR_produce_los_3_impuestos`, `Linea_sin_IRBPNR_no_genera_nodo_IRBPNR_falso`) — confirmada en verde, sin necesidad de ampliarla.
+- **No tocado** (regla explícita): RIDE, Recepción XML, SaaS/Platform, permisos, menú, catálogos SRI globales, los 3 archivos de `ChartOfAccountsPage` (frontend, cambios preexistentes sin commitear de otra tarea).
+- **Validaciones**: `dotnet build` (solución completa) sin errores. `ERP.Application.Tests` 1312/1312 (incluye ElectronicDocuments, 106 tests filtrados). `ERP.Infrastructure.Tests` filtrado a ElectronicDocuments/resolver (13 tests) en verde. `git diff --check` limpio.
+
+---
+
 ## TAX-LINE-SSOT-ICE-IRBPNR-01 — Fase 3 (ICE) completada + Fase 6 (auditoría de legacy) (2026-08-29)
 
 **Estado: COMPLETADO.** Ver [ADR-032](docs/decisions/ADR-032-tax-line-ssot-ice-irbpnr.md). Ajuste de plan pedido explícitamente: no dejar `Ice*`/`ExciseTaxCode` como legacy indefinidamente sin primero cerrar la Fase 3 original (invertir autoridad a `*DetailTax`), que nunca se había completado para ICE — solo para IRBPNR y `PurchaseCreditNoteTaxSummary`.

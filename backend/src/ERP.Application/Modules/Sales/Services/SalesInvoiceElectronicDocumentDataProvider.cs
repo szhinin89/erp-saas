@@ -206,17 +206,12 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
 
     /// <summary>
     /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) — etiqueta que
-    /// <see cref="ERP.Infrastructure.Services.ElectronicDocuments.SriTaxCategoryCodeResolver"/> ya
-    /// traduce a código SRI. Mapeo por <c>SriTaxCategoryCodes</c> (Domain), no un literal nuevo:
-    /// "IRBPNR" queda listado aquí para no perder la fila si algún día el resolver la reconoce, pero
-    /// hoy el resolver (infraestructura FROZEN de ElectronicDocuments, fuera de esta subfase) solo
-    /// traduce "VAT"/"ICE" — una línea con IRBPNR ya llega completa en la lista, lista para cuando
-    /// esa infraestructura se extienda en un ticket propio.
+    /// <see cref="ERP.Infrastructure.Services.ElectronicDocuments.SriTaxCategoryCodeResolver"/>
+    /// traduce a código SRI. Mapeo por <c>SriTaxCategoryCodes</c> (Domain), no un literal nuevo.
     ///
-    /// PENDIENTE — ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01: SriTaxCategoryCodeResolver hoy solo
-    /// reconoce VAT→"2" e ICE→"3"; falta extenderlo para IRBPNR→"5". No se toca en esta subfase
-    /// (fuera de alcance de 5C — InvoiceXmlBuilder/SriTaxCategoryCodeResolver quedan intactos).
-    /// Registrado también en ADR-032 §9.
+    /// ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01 (cerrado 2026-08-29, ver ADR-032 §9): el resolver
+    /// ya traduce las tres etiquetas — "VAT"→"2", "ICE"→"3", "IRBPNR"→"5". Una línea con IRBPNR
+    /// genera su nodo &lt;impuesto&gt; en el XML igual que IVA/ICE.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> ElectronicDocumentTaxLabelByCode =
         new Dictionary<string, string>(StringComparer.Ordinal)
