@@ -59,7 +59,14 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         bool AllowsPosting
     );
 
-    public const int RetailChartAccountCount = 92;
+    // ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: 92 -> 102. El código contable manda la jerarquía
+    // (regla canónica: "1.1.01" implica padre "1.1", "1.1.01.001" implica padre "1.1.01"). La
+    // auditoría ACCOUNTING-CHART-LOAD-HIERARCHY-AUDIT-01 encontró 10 hojas de 4 segmentos
+    // parentadas directamente bajo un padre de 2 segmentos (saltándose el nivel de 3 segmentos
+    // intermedio) — se agregan las 10 cuentas agrupadoras intermedias faltantes
+    // (3.1.01/3.1.02/3.1.03/4.2.01/5.1.01/6.1.01/6.2.01/6.3.01/6.4.01/6.5.01), todas
+    // AllowsPosting=false y ninguna referenciada por MinimalPostingRules.
+    public const int RetailChartAccountCount = 102;
 
     private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
@@ -108,9 +115,12 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         new("2.1.04.001", "Sueldos por pagar", "2.1.04", AccountType.Liability, AccountNature.Credit, true),
         new("3", "Patrimonio", null, AccountType.Equity, AccountNature.Credit, false),
         new("3.1", "Capital y resultados", "3", AccountType.Equity, AccountNature.Credit, false),
-        new("3.1.01.001", "Capital", "3.1", AccountType.Equity, AccountNature.Credit, true),
-        new("3.1.02.001", "Resultados acumulados", "3.1", AccountType.Equity, AccountNature.Credit, true),
-        new("3.1.03.001", "Resultado del ejercicio", "3.1", AccountType.Equity, AccountNature.Credit, true),
+        new("3.1.01", "Capital social", "3.1", AccountType.Equity, AccountNature.Credit, false),
+        new("3.1.01.001", "Capital", "3.1.01", AccountType.Equity, AccountNature.Credit, true),
+        new("3.1.02", "Resultados de ejercicios anteriores", "3.1", AccountType.Equity, AccountNature.Credit, false),
+        new("3.1.02.001", "Resultados acumulados", "3.1.02", AccountType.Equity, AccountNature.Credit, true),
+        new("3.1.03", "Resultado del ejercicio actual", "3.1", AccountType.Equity, AccountNature.Credit, false),
+        new("3.1.03.001", "Resultado del ejercicio", "3.1.03", AccountType.Equity, AccountNature.Credit, true),
         new("4", "Ingresos", null, AccountType.Income, AccountNature.Credit, false),
         new("4.1", "Ingresos operacionales", "4", AccountType.Income, AccountNature.Credit, false),
         new("4.1.01", "Ventas de mercaderia", "4.1", AccountType.Income, AccountNature.Credit, false),
@@ -120,45 +130,55 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         new("4.1.01.004", "Ventas no objeto de IVA", "4.1.01", AccountType.Income, AccountNature.Credit, true),
         new("4.1.01.005", "Ventas de servicios retail", "4.1.01", AccountType.Income, AccountNature.Credit, true),
         new("4.2", "Otros ingresos", "4", AccountType.Income, AccountNature.Credit, false),
-        new("4.2.01.001", "Ingresos por ajustes positivos de inventario", "4.2", AccountType.Income, AccountNature.Credit, true),
-        new("4.2.01.003", "Diferencias positivas de caja", "4.2", AccountType.Income, AccountNature.Credit, true),
+        new("4.2.01", "Ajustes y diferencias positivas", "4.2", AccountType.Income, AccountNature.Credit, false),
+        new("4.2.01.001", "Ingresos por ajustes positivos de inventario", "4.2.01", AccountType.Income, AccountNature.Credit, true),
+        new("4.2.01.003", "Diferencias positivas de caja", "4.2.01", AccountType.Income, AccountNature.Credit, true),
         new("5", "Costos", null, AccountType.Cost, AccountNature.Debit, false),
         new("5.1", "Costo de ventas", "5", AccountType.Cost, AccountNature.Debit, false),
-        new("5.1.01.001", "Costo de ventas mercaderia", "5.1", AccountType.Cost, AccountNature.Debit, true),
-        new("5.1.01.002", "Costo de servicios retail", "5.1", AccountType.Cost, AccountNature.Debit, true),
-        new("5.1.01.003", "Costo ICE/IRBP no recuperable", "5.1", AccountType.Cost, AccountNature.Debit, true),
-        new("5.1.02", "Ajustes de inventario", "5", AccountType.Cost, AccountNature.Debit, false),
+        new("5.1.01", "Costo directo de ventas", "5.1", AccountType.Cost, AccountNature.Debit, false),
+        new("5.1.01.001", "Costo de ventas mercaderia", "5.1.01", AccountType.Cost, AccountNature.Debit, true),
+        new("5.1.01.002", "Costo de servicios retail", "5.1.01", AccountType.Cost, AccountNature.Debit, true),
+        new("5.1.01.003", "Costo ICE/IRBP no recuperable", "5.1.01", AccountType.Cost, AccountNature.Debit, true),
+        // ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: padre corregido de "5" a "5.1" — por código
+        // ("5.1.02" son 3 segmentos) el padre canónico es el prefijo inmediato "5.1" (Costo de
+        // ventas, ya existente), no la raíz "5". Bug de dato preexistente, sin tocar código/nombre.
+        new("5.1.02", "Ajustes de inventario", "5.1", AccountType.Cost, AccountNature.Debit, false),
         new("5.1.02.001", "Mermas y faltantes de inventario", "5.1.02", AccountType.Cost, AccountNature.Debit, true),
         new("5.1.02.002", "Descuadres negativos de inventario", "5.1.02", AccountType.Cost, AccountNature.Debit, true),
         new("6", "Gastos", null, AccountType.Expense, AccountNature.Debit, false),
         new("6.1", "Gastos administrativos", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.1.01.001", "Gastos administrativos generales", "6.1", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.002", "Suministros de oficina", "6.1", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.003", "Servicios basicos", "6.1", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.004", "Arriendos", "6.1", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.005", "Honorarios profesionales", "6.1", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.006", "Mantenimiento y reparaciones", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01", "Gastos administrativos operativos", "6.1", AccountType.Expense, AccountNature.Debit, false),
+        new("6.1.01.001", "Gastos administrativos generales", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.002", "Suministros de oficina", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.003", "Servicios basicos", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.004", "Arriendos", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.005", "Honorarios profesionales", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.006", "Mantenimiento y reparaciones", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
         // EXPENSES-CATALOG-BOOTSTRAP-09-FIX — faltaban cuentas propias para 2 de las 7 categorías
         // que ExpensesCatalogBootstrapStep necesita bajo "Gastos administrativos" (el plan solo
         // tenía 6 cuentas hoja para 7 categorías del catálogo de gastos, forzando un mapeo
         // desplazado/incorrecto). Aditivo: no reemplaza ni renombra ninguna cuenta existente.
-        new("6.1.01.007", "Tecnologia y sistemas", "6.1", AccountType.Expense, AccountNature.Debit, true),
-        new("6.1.01.008", "Movilizacion y transporte", "6.1", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.007", "Tecnologia y sistemas", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.1.01.008", "Movilizacion y transporte", "6.1.01", AccountType.Expense, AccountNature.Debit, true),
         new("6.2", "Gastos de venta", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.2.01.001", "Publicidad y marketing", "6.2", AccountType.Expense, AccountNature.Debit, true),
-        new("6.2.01.002", "Comisiones de venta", "6.2", AccountType.Expense, AccountNature.Debit, true),
-        new("6.2.01.003", "Empaques, fundas y suministros de venta", "6.2", AccountType.Expense, AccountNature.Debit, true),
-        new("6.2.01.004", "Transporte y entregas a clientes", "6.2", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01", "Gastos comerciales directos", "6.2", AccountType.Expense, AccountNature.Debit, false),
+        new("6.2.01.001", "Publicidad y marketing", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01.002", "Comisiones de venta", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01.003", "Empaques, fundas y suministros de venta", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.2.01.004", "Transporte y entregas a clientes", "6.2.01", AccountType.Expense, AccountNature.Debit, true),
         new("6.3", "Gastos financieros", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.3.01.001", "Comisiones bancarias", "6.3", AccountType.Expense, AccountNature.Debit, true),
-        new("6.3.01.002", "Comisiones tarjetas credito/debito", "6.3", AccountType.Expense, AccountNature.Debit, true),
-        new("6.3.01.003", "Intereses financieros", "6.3", AccountType.Expense, AccountNature.Debit, true),
+        new("6.3.01", "Gastos financieros directos", "6.3", AccountType.Expense, AccountNature.Debit, false),
+        new("6.3.01.001", "Comisiones bancarias", "6.3.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.3.01.002", "Comisiones tarjetas credito/debito", "6.3.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.3.01.003", "Intereses financieros", "6.3.01", AccountType.Expense, AccountNature.Debit, true),
         new("6.4", "Impuestos y no deducibles", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.4.01.001", "Impuestos no recuperables", "6.4", AccountType.Expense, AccountNature.Debit, true),
-        new("6.4.01.002", "Multas y gastos no deducibles", "6.4", AccountType.Expense, AccountNature.Debit, true),
+        new("6.4.01", "Impuestos, multas y no deducibles", "6.4", AccountType.Expense, AccountNature.Debit, false),
+        new("6.4.01.001", "Impuestos no recuperables", "6.4.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.4.01.002", "Multas y gastos no deducibles", "6.4.01", AccountType.Expense, AccountNature.Debit, true),
         new("6.5", "Descuadres y perdidas operativas", "6", AccountType.Expense, AccountNature.Debit, false),
-        new("6.5.01.001", "Descuadres de caja", "6.5", AccountType.Expense, AccountNature.Debit, true),
-        new("6.5.01.002", "Mermas retail", "6.5", AccountType.Expense, AccountNature.Debit, true),
+        new("6.5.01", "Descuadres y mermas operativas", "6.5", AccountType.Expense, AccountNature.Debit, false),
+        new("6.5.01.001", "Descuadres de caja", "6.5.01", AccountType.Expense, AccountNature.Debit, true),
+        new("6.5.01.002", "Mermas retail", "6.5.01", AccountType.Expense, AccountNature.Debit, true),
     ];
 
     internal static readonly IReadOnlyCollection<string> RequiredRetailAccountCodes =
@@ -301,7 +321,18 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             if (accountIdByCode.ContainsKey(m.Code))
                 continue;
 
-            var parentAccountId = m.ParentCode is null ? (Guid?)null : accountIdByCode[m.ParentCode];
+            Guid? parentAccountId = null;
+            if (m.ParentCode is not null)
+            {
+                if (!accountIdByCode.TryGetValue(m.ParentCode, out var parentId))
+                    throw new InvalidOperationException(
+                        $"RetailChart inválido: la cuenta '{m.Code}' declara ParentCode '{m.ParentCode}' "
+                            + "pero esa cuenta padre no existe ni fue declarada antes en la lista. "
+                            + "El código contable manda la jerarquía (ACCOUNTING-CHART-CANONICAL-HIERARCHY-01) "
+                            + "— agregue la cuenta agrupadora intermedia antes de sus hijas."
+                    );
+                parentAccountId = parentId;
+            }
             var account = Account.Create(
                 tenantId,
                 companyId,

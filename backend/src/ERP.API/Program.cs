@@ -381,6 +381,38 @@ if (args.Contains("backfill-master-data-classifications"))
     return;
 }
 
+// Comando de una sola vez (ACCOUNTING-CHART-CANONICAL-HIERARCHY-01): corrige ParentAccountId de
+// cuentas existentes para que coincida con el padre canónico implicado por su código, en TODAS
+// las companies activas — incluida Production. Deliberadamente NO gateado por IsProduction() ni
+// invocado automáticamente en ningún arranque (a diferencia de AccountingChartBackfillService.
+// EnsureAsync, que sigue excluyendo Production sin cambios): esta es una operación de despliegue
+// explícita que un operador dispara a mano una sola vez, después de revisar el diagnóstico
+// antes/después que imprime por consola. Diagnóstico previo + transacción por company (rollback
+// si algo falla) — ver AccountingChartBackfillService.RunControlledHierarchyMaintenanceAsync.
+// `dotnet run -- backfill-accounting-chart-hierarchy`. Sale sin iniciar el host web.
+if (args.Contains("backfill-accounting-chart-hierarchy"))
+{
+    using var hierarchyBackfillScope = app.Services.CreateScope();
+    var hierarchyBackfillService =
+        hierarchyBackfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var summary = await hierarchyBackfillService.RunControlledHierarchyMaintenanceAsync();
+    Console.WriteLine(
+        $"[backfill-accounting-chart-hierarchy] Companies: {summary.TotalCompanies}. "
+            + $"Con hallazgos antes: {summary.CompaniesWithIssuesBefore}. "
+            + $"Con hallazgos después: {summary.CompaniesWithIssuesAfter}. "
+            + $"ParentAccountId corregidos: {summary.TotalFixed}. "
+            + $"Pendientes sin resolver (fuera del blueprint): {summary.TotalUnresolved}."
+    );
+    foreach (var company in summary.Companies.Where(c => c.IssuesBefore > 0 || c.UnresolvedParentCount > 0))
+    {
+        Console.WriteLine(
+            $"  - Company {company.CompanyId}: antes={company.IssuesBefore} después={company.IssuesAfter} "
+                + $"corregidos={company.FixedParentCount} sin_resolver={company.UnresolvedParentCount}"
+        );
+    }
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())

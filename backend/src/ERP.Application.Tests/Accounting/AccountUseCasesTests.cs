@@ -105,6 +105,113 @@ public sealed class AccountUseCasesTests
         m.Accounts.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    /// <summary>
+    /// ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: el ParentAccountId debe coincidir con el padre
+    /// canónico implicado por el código — no basta con que exista, sino que sea el prefijo
+    /// inmediato correcto (aquí "2" existe pero "1.1" implica padre "1", no "2").
+    /// </summary>
+    [Fact]
+    public async Task CreateAccount_rechaza_padre_que_no_coincide_con_el_codigo()
+    {
+        var unrelated = NewAccount("2", "Pasivo");
+        var m = new Mocks();
+        m.Accounts
+            .Setup(r => r.FindByCodeAsync(TenantId, CompanyId, "1.1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Account?)null);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { unrelated });
+
+        var handler = new CreateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object,
+            Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>()
+        );
+        var result = await handler.Handle(
+            new CreateAccountCommand("1.1", "x", unrelated.Id, AccountType.Asset, AccountNature.Debit, true),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        m.Accounts.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAccount_rechaza_codigo_raiz_con_padre_indicado()
+    {
+        var m = new Mocks();
+        m.Accounts
+            .Setup(r => r.FindByCodeAsync(TenantId, CompanyId, "9", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Account?)null);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account>());
+
+        var handler = new CreateAccountHandler(
+            m.Accounts.Object,
+            m.Tenant.Object,
+            m.Company.Object,
+            m.User.Object,
+            Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>()
+        );
+        var result = await handler.Handle(
+            new CreateAccountCommand("9", "x", Guid.NewGuid(), AccountType.Asset, AccountNature.Debit, false),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateAccount_rechaza_padre_que_no_coincide_con_el_codigo()
+    {
+        var unrelated = NewAccount("2", "Pasivo");
+        var account = NewAccount("1.1", "Activo Corriente");
+
+        var m = new Mocks();
+        m.Accounts
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(account);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { unrelated, account });
+
+        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        var result = await handler.Handle(
+            new UpdateAccountCommand(account.Id, "Activo Corriente", unrelated.Id, false),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        account.ParentAccountId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAccount_rechaza_quitar_padre_de_cuenta_con_codigo_compuesto()
+    {
+        var parent = NewAccount("1", "Activo");
+        var account = NewAccount("1.1", "Activo Corriente", parent.Id);
+
+        var m = new Mocks();
+        m.Accounts
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(account);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { parent, account });
+
+        var handler = new UpdateAccountHandler(m.Accounts.Object, m.Tenant.Object, m.Company.Object, m.User.Object);
+        // Intenta dejar la cuenta "1.1" sin padre — inválido, su código exige padre "1".
+        var result = await handler.Handle(
+            new UpdateAccountCommand(account.Id, "Activo Corriente", null, false),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+    }
+
     [Fact]
     public async Task UpdateAccount_rechaza_ciclo_al_reparentar()
     {

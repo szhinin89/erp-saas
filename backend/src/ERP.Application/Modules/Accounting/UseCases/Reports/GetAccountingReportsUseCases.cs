@@ -4,6 +4,7 @@ using ERP.Application.Modules.Accounting.Queries;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentValidation;
 using MediatR;
 
@@ -223,18 +224,23 @@ public sealed class GetGeneralLedgerReportHandler
         if (q.AccountId is { } accountId)
             targetAccounts = allAccounts.Where(a => a.Id == accountId).ToList();
         else if (!string.IsNullOrWhiteSpace(q.AccountCodeFrom) || !string.IsNullOrWhiteSpace(q.AccountCodeTo))
+            // ACCOUNTING-REPORTS-HIERARCHY-SMOKE-01: el rango de código también debe comparar en
+            // orden natural — con StringComparer.Ordinal, un rango "1.1.2".."1.1.9" excluía
+            // incorrectamente "1.1.10" (ordinalmente "1.1.10" < "1.1.9" porque compara carácter a
+            // carácter), aunque "1.1.10" sí cae dentro del rango numérico. Mismo comparador que el
+            // orden de la lista, para que filtro y orden sean consistentes entre sí.
             targetAccounts = allAccounts
                 .Where(a =>
                     (string.IsNullOrWhiteSpace(q.AccountCodeFrom)
-                        || string.CompareOrdinal(a.Code.Value, q.AccountCodeFrom) >= 0)
+                        || AccountCodeComparer.Instance.Compare(a.Code.Value, q.AccountCodeFrom) >= 0)
                     && (string.IsNullOrWhiteSpace(q.AccountCodeTo)
-                        || string.CompareOrdinal(a.Code.Value, q.AccountCodeTo) <= 0)
+                        || AccountCodeComparer.Instance.Compare(a.Code.Value, q.AccountCodeTo) <= 0)
                 )
                 .ToList();
         else
             targetAccounts = allAccounts;
 
-        targetAccounts = targetAccounts.OrderBy(a => a.Code.Value, StringComparer.Ordinal).ToList();
+        targetAccounts = targetAccounts.OrderBy(a => a.Code.Value, AccountCodeComparer.Instance).ToList();
 
         if (targetAccounts.Count == 0)
             return Result<GetGeneralLedgerReportResponse>.Success(
@@ -426,7 +432,7 @@ public sealed class GetTrialBalanceReportHandler
             );
         }
 
-        lines = lines.OrderBy(l => l.AccountCode, StringComparer.Ordinal).ToList();
+        lines = lines.OrderBy(l => l.AccountCode, AccountCodeComparer.Instance).ToList();
 
         var totalPeriodDebit = lines.Sum(l => l.PeriodDebit);
         var totalPeriodCredit = lines.Sum(l => l.PeriodCredit);
@@ -510,7 +516,7 @@ public sealed class GetIncomeStatementReportHandler
         var allAccounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
         var relevantAccounts = allAccounts
             .Where(a => a.AccountType is AccountType.Income or AccountType.Cost or AccountType.Expense)
-            .OrderBy(a => a.Code.Value, StringComparer.Ordinal)
+            .OrderBy(a => a.Code.Value, AccountCodeComparer.Instance)
             .ToList();
 
         var totals = await _repo.GetAccountLineTotalsAsync(
@@ -579,7 +585,7 @@ public sealed class GetBalanceSheetReportHandler
         var allAccounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
         var relevantAccounts = allAccounts
             .Where(a => a.AccountType is AccountType.Asset or AccountType.Liability or AccountType.Equity)
-            .OrderBy(a => a.Code.Value, StringComparer.Ordinal)
+            .OrderBy(a => a.Code.Value, AccountCodeComparer.Instance)
             .ToList();
 
         var totals = await _repo.GetAccountLineTotalsAsync(

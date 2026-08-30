@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Accounting.Services;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding.Steps;
 using FluentAssertions;
@@ -437,6 +438,75 @@ public sealed class AccountingBootstrapStepTests
             .ContainSingle(because: "la regla ya existe (aunque deshabilitada) — el seed nunca re-crea ni reactiva una regla existente")
             .Which.IsActive.Should()
             .BeFalse();
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CHART-CANONICAL-HIERARCHY-01 Fase 8/Test de bootstrap: la plantilla RetailChart
+    /// sembrada debe pasar el diagnóstico de invariantes sin ningún hallazgo — 0 padres
+    /// faltantes/desalineados, 0 diferencias Level vs profundidad de código, 0 ciclos, 0 cuentas
+    /// con hijas y AllowsPosting=true.
+    /// </summary>
+    [Fact]
+    public async Task Plantilla_retail_sembrada_no_tiene_inconsistencias_de_jerarquia()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var accounts = await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
+        var postingRules = await db
+            .PostingRules.Include(r => r.Lines)
+            .Where(r => r.CompanyId == _companyId)
+            .ToListAsync();
+        var report = AccountHierarchyDiagnostics.Analyze(accounts, postingRules);
+
+        report.Issues.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CHART-CANONICAL-HIERARCHY-01 Fase 2: las 10 cuentas agrupadoras intermedias
+    /// faltantes (código de 4 segmentos parentado directo bajo uno de 2) quedan creadas con el
+    /// padre canónico correcto, y el bug de dato preexistente ("5.1.02" bajo "5" en vez de "5.1")
+    /// queda corregido.
+    /// </summary>
+    [Fact]
+    public async Task Crea_las_10_cuentas_agrupadoras_intermedias_faltantes_con_padre_canonico()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var accounts = await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync();
+        var byCode = accounts.ToDictionary(a => a.Code.Value);
+
+        var expectedIntermediates = new[]
+        {
+            ("3.1.01", "3.1"),
+            ("3.1.02", "3.1"),
+            ("3.1.03", "3.1"),
+            ("4.2.01", "4.2"),
+            ("5.1.01", "5.1"),
+            ("6.1.01", "6.1"),
+            ("6.2.01", "6.2"),
+            ("6.3.01", "6.3"),
+            ("6.4.01", "6.4"),
+            ("6.5.01", "6.5"),
+        };
+
+        foreach (var (code, parentCode) in expectedIntermediates)
+        {
+            byCode.Should().ContainKey(code);
+            var account = byCode[code];
+            account.AllowsPosting.Should().BeFalse();
+            account.IsActive.Should().BeTrue();
+            account.ParentAccountId.Should().Be(byCode[parentCode].Id);
+        }
+
+        byCode["5.1.02"].ParentAccountId.Should().Be(byCode["5.1"].Id);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

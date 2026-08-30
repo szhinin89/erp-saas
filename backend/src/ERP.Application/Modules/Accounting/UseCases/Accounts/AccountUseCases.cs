@@ -4,6 +4,7 @@ using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Accounting.Services;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentValidation;
 using MediatR;
@@ -133,7 +134,8 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
                 $"Ya existe una cuenta con el código '{cmd.Code}' en esta empresa."
             );
 
-        var byId = (await _repo.GetByCompanyAsync(tenantId, companyId, ct)).ToDictionary(a => a.Id);
+        var accounts = await _repo.GetByCompanyAsync(tenantId, companyId, ct);
+        var byId = accounts.ToDictionary(a => a.Id);
 
         // ACCOUNTING-CHART-OF-ACCOUNTS-02: existencia/pertenencia del padre — invariante
         // cross-aggregate deliberadamente diferida por Account.cs a esta capa (ver <remarks>).
@@ -142,6 +144,14 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
             return Result<AccountDto>.ValidationFailure(
                 "La cuenta padre indicada no existe en esta empresa."
             );
+
+        // ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: el código contable manda la jerarquía — el
+        // ParentAccountId indicado (o su ausencia) debe coincidir con el padre canónico implicado
+        // por el código, para que Create/Update nunca puedan reintroducir manualmente el mismo
+        // tipo de inconsistencia que corrigió el backfill (ver AccountHierarchyDiagnostics).
+        var canonicalParentError = Map.ValidateCanonicalParent(cmd.Code, cmd.ParentAccountId, accounts);
+        if (canonicalParentError is not null)
+            return Result<AccountDto>.ValidationFailure(canonicalParentError);
 
         try
         {
@@ -205,7 +215,8 @@ public sealed class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand,
         if (account is null)
             return Result<AccountDto>.NotFound("Cuenta no encontrada.");
 
-        var byId = (await _repo.GetByCompanyAsync(tenantId, companyId, ct)).ToDictionary(a => a.Id);
+        var accounts = await _repo.GetByCompanyAsync(tenantId, companyId, ct);
+        var byId = accounts.ToDictionary(a => a.Id);
 
         if (cmd.ParentAccountId is { } parentId)
         {
@@ -222,6 +233,18 @@ public sealed class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand,
                     "No se puede asignar ese padre: generaría un ciclo en el Plan de Cuentas."
                 );
         }
+
+        // ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: Code es inmutable en Update (ver doc comment de
+        // UpdateAccountCommand) — el padre canónico se deriva del código ya existente de la cuenta,
+        // igual criterio que en CreateAccountHandler, para que reparentar tampoco pueda romper la
+        // jerarquía canónica.
+        var canonicalParentError = Map.ValidateCanonicalParent(
+            account.Code.Value,
+            cmd.ParentAccountId,
+            accounts
+        );
+        if (canonicalParentError is not null)
+            return Result<AccountDto>.ValidationFailure(canonicalParentError);
 
         try
         {
@@ -467,6 +490,36 @@ public sealed class GetAccountByCodeHandler
 
 file static class Map
 {
+    /// <summary>
+    /// ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: valida que <paramref name="parentAccountId"/>
+    /// coincida con el padre canónico implicado por <paramref name="code"/> — mismo criterio
+    /// compartido por Create (código nuevo) y Update (código ya existente, inmutable). Devuelve
+    /// null si es válido, o el mensaje de error a devolver como ValidationFailure.
+    /// </summary>
+    public static string? ValidateCanonicalParent(
+        string code,
+        Guid? parentAccountId,
+        IReadOnlyList<Account> accounts
+    )
+    {
+        var expectedParentCode = AccountHierarchyRules.GetExpectedParentCode(code);
+
+        if (expectedParentCode is null)
+            return parentAccountId is not null
+                ? $"El código '{code}' es de cuenta raíz (sin '.') — no puede tener cuenta padre."
+                : null;
+
+        var expectedParent = accounts.FirstOrDefault(a =>
+            string.Equals(a.Code.Value, expectedParentCode, StringComparison.Ordinal)
+        );
+        if (expectedParent is null)
+            return $"El código '{code}' requiere que exista primero la cuenta agrupadora '{expectedParentCode}'.";
+
+        return parentAccountId != expectedParent.Id
+            ? $"El código '{code}' implica que su cuenta padre debe ser '{expectedParentCode}' — la cuenta padre indicada no coincide."
+            : null;
+    }
+
     public static AccountDto ToDto(Account a, IReadOnlyDictionary<Guid, Account> byId)
     {
         Account? parent = a.ParentAccountId is { } pid && byId.TryGetValue(pid, out var p) ? p : null;

@@ -4,6 +4,22 @@
 
 ---
 
+## ACCOUNTING-CHART-CANONICAL-HIERARCHY-01 (+ QA-01 + REPORTS-HIERARCHY-SMOKE-01 + FINAL-CLOSEOUT-01) — CERRADO (2026-08-29)
+
+**Estado: COMPLETADO.** Plan de Cuentas con jerarquía canónica por código, protegida a futuro, y reportes contables alineados. Runbook: [`docs/operations/ACCOUNTING_CHART_HIERARCHY_BACKFILL_RUNBOOK.md`](docs/operations/ACCOUNTING_CHART_HIERARCHY_BACKFILL_RUNBOOK.md).
+
+- **Regla canónica**: el código contable manda la jerarquía — "1.1.01" implica padre "1.1", "1.1.01.001" implica padre "1.1.01". `ParentAccountId` y `Level` (calculado, no persistido) quedan siempre alineados con el código.
+- **Blueprint corregido** (`AccountingBootstrapStep.cs`, `RetailChartAccountCount` 92→102): 10 cuentas agrupadoras intermedias agregadas (`3.1.01`/`3.1.02`/`3.1.03`/`4.2.01`/`5.1.01`/`6.1.01`/`6.2.01`/`6.3.01`/`6.4.01`/`6.5.01`, todas `AllowsPosting=false`, ninguna referenciada en `MinimalPostingRules`) + 1 bug de dato corregido (`5.1.02` colgaba de "5" en vez de "5.1"). Ningún código ni nombre de cuenta existente cambió.
+- **Backfill para companies existentes**: `AccountingChartBackfillService.BackfillHierarchyAsync` (automático en `EnsureAsync`, fuera de Production, sin cambios en ese guard) + `RunControlledHierarchyMaintenanceAsync` — diagnóstico previo, fix transaccional por company (rollback si falla), diagnóstico posterior — disparado solo vía `dotnet run --project backend/src/ERP.API -- backfill-accounting-chart-hierarchy` (nunca automático, ver runbook).
+- **Create/Update Account** ahora valida que `ParentAccountId` coincida con el padre canónico implicado por el código (`Map.ValidateCanonicalParent`) — impide reintroducir manualmente el mismo tipo de inconsistencia que corrigió el backfill.
+- **Orden natural**: `AccountCodeComparer` (Domain, `IComparer<string>` por segmentos, numérico cuando corresponde) aplicado en `AccountRepository.GetByCompanyAsync` y en los 4 reportes contables (Balance de Comprobación, Libro Mayor incl. su filtro de rango `AccountCodeFrom`/`AccountCodeTo` — hallazgo P1 corregido en el smoke, Estado de Resultados, Estado de Situación Financiera). Orden macro (Activo→Pasivo→Patrimonio, Ingresos→Costos→Gastos) garantizado estructuralmente por el DTO (propiedades separadas por grupo, no una lista mezclada).
+- **`AccountHierarchyDiagnostics`** (Domain, puro): analiza 7 invariantes (padre huérfano/faltante/desalineado, Level≠profundidad, agrupadora posteable, ciclos, PostingRule inválida) — reutilizado por bootstrap, backfill y el comando CLI de mantenimiento controlado.
+- **`AccountTreeBuilder`** (Domain, puro): árbol padre/hijo con acumulación de saldos hacia agrupadoras, orden natural — listo para futuros diagramas/reportes jerárquicos, sin endpoint nuevo expuesto todavía.
+- **Resultado final**: 0 padres faltantes, 0 cuentas huérfanas, 0 `ParentAccountId` desalineados, 0 diferencias Level vs profundidad, 0 ciclos, 0 agrupadoras con `AllowsPosting=true`, 0 `PostingRule` inválidas — confirmado en `ERP.Domain.Tests`/`ERP.Application.Tests`/`ERP.Infrastructure.Tests` filtrados a `Accounting`/`Seeding` (83+200+65+52, todos en verde) y en `ChartOfAccountsPage.test.tsx` (7/7) + `tsc --noEmit` + `npm run build` limpios.
+- **No tocado**: Posting Engine (`JournalFactory`/`PostingRuleResolver`/`PostingPipeline`), códigos contables existentes, nombres de cuentas existentes, lógica de asientos, UI de Plan de Cuentas (el frontend ya calculaba orden/profundidad visual correctamente por código desde antes).
+
+---
+
 ## DocumentSequenceExclusivityTests (SEQ_GATE_01/02) — RESUELTO (2026-08-29)
 
 **Estado: COMPLETADO.** Deuda preexistente documentada en el checkpoint de ADR-032 — diagnosticada y cerrada, sin relación con IRBPNR/ICE/ADR-032 (nunca tocó ese ADR ni impuestos/ventas/compras/XML).

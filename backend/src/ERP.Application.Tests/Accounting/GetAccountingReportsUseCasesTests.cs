@@ -102,6 +102,261 @@ public sealed class GetAccountingReportsUseCasesTests
         result.Value.TotalCredit.Should().Be(150m);
     }
 
+    // ── ACCOUNTING-REPORTS-HIERARCHY-SMOKE-01: orden natural end-to-end ───
+
+    [Fact]
+    public async Task GeneralLedger_ordena_cuentas_por_codigo_natural_no_lexicografico()
+    {
+        // Ordinal pondría "1.1.10" antes de "1.1.2" (compara carácter a carácter): confirmamos
+        // que el handler usa AccountCodeComparer y no StringComparer.Ordinal.
+        var a2 = NewAccount("1.1.2", "Cuenta 2", AccountType.Asset, AccountNature.Debit);
+        var a10 = NewAccount("1.1.10", "Cuenta 10", AccountType.Asset, AccountNature.Debit);
+        var a1 = NewAccount("1.1.1", "Cuenta 1", AccountType.Asset, AccountNature.Debit);
+
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
+        repo.Setup(r =>
+                r.GetPostedLinesByAccountAsync(
+                    TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new List<JournalEntryLineReportRow>());
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { a10, a2, a1 }); // orden de entrada deliberadamente desordenado
+
+        var handler = new GetGeneralLedgerReportHandler(
+            repo.Object, accountRepo.Object, EmptyResolver().Object, Tenant().Object, Company().Object
+        );
+
+        var result = await handler.Handle(
+            new GetGeneralLedgerReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
+
+        result.Value!.Accounts.Select(a => a.AccountCode).Should().Equal("1.1.1", "1.1.2", "1.1.10");
+    }
+
+    [Fact]
+    public async Task GeneralLedger_rango_de_codigo_usa_orden_natural_no_ordinal()
+    {
+        // Con StringComparer.Ordinal, el rango "1.1.2".."1.1.9" excluiría "1.1.10" por error de
+        // comparación carácter a carácter. Con orden natural, "1.1.10" > "1.1.9" y queda fuera del
+        // rango correctamente por motivo numérico real, no accidental.
+        var a2 = NewAccount("1.1.2", "Cuenta 2", AccountType.Asset, AccountNature.Debit);
+        var a9 = NewAccount("1.1.9", "Cuenta 9", AccountType.Asset, AccountNature.Debit);
+        var a10 = NewAccount("1.1.10", "Cuenta 10", AccountType.Asset, AccountNature.Debit);
+
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
+        repo.Setup(r =>
+                r.GetPostedLinesByAccountAsync(
+                    TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new List<JournalEntryLineReportRow>());
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { a2, a9, a10 });
+
+        var handler = new GetGeneralLedgerReportHandler(
+            repo.Object, accountRepo.Object, EmptyResolver().Object, Tenant().Object, Company().Object
+        );
+
+        var result = await handler.Handle(
+            new GetGeneralLedgerReportQuery(
+                new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31),
+                AccountCodeFrom: "1.1.2", AccountCodeTo: "1.1.9"
+            ),
+            CancellationToken.None
+        );
+
+        result.Value!.Accounts.Select(a => a.AccountCode).Should().Equal("1.1.2", "1.1.9");
+    }
+
+    [Fact]
+    public async Task TrialBalance_ordena_cuentas_por_codigo_natural_no_lexicografico()
+    {
+        var a2 = NewAccount("1.1.2", "Cuenta 2", AccountType.Asset, AccountNature.Debit);
+        var a10 = NewAccount("1.1.10", "Cuenta 10", AccountType.Asset, AccountNature.Debit);
+
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, null, It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), null, It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+                {
+                    [a2.Id] = (10m, 0m),
+                    [a10.Id] = (20m, 0m),
+                }
+            );
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { a10, a2 });
+
+        var handler = new GetTrialBalanceReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+
+        var result = await handler.Handle(
+            new GetTrialBalanceReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
+
+        result.Value!.Lines.Select(l => l.AccountCode).Should().Equal("1.1.2", "1.1.10");
+    }
+
+    [Fact]
+    public async Task IncomeStatement_respeta_orden_macro_ingresos_costos_gastos_y_orden_natural_dentro_de_cada_grupo()
+    {
+        var salesA = NewAccount("4.1.2", "Ventas B", AccountType.Income, AccountNature.Credit);
+        var salesB = NewAccount("4.1.10", "Ventas A", AccountType.Income, AccountNature.Credit);
+        var cogs = NewAccount("5.1.01", "Costo de ventas", AccountType.Cost, AccountNature.Debit);
+        var rent = NewAccount("6.1.02", "Arriendo B", AccountType.Expense, AccountNature.Debit);
+        var payroll = NewAccount("6.1.10", "Sueldos A", AccountType.Expense, AccountNature.Debit);
+
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+                {
+                    [salesA.Id] = (0m, 100m),
+                    [salesB.Id] = (0m, 200m),
+                    [cogs.Id] = (50m, 0m),
+                    [rent.Id] = (10m, 0m),
+                    [payroll.Id] = (20m, 0m),
+                }
+            );
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { payroll, rent, cogs, salesB, salesA });
+
+        var handler = new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+
+        var result = await handler.Handle(
+            new GetIncomeStatementReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
+
+        // Orden macro: Ingresos → Costos → Gastos, garantizado estructuralmente por las 3
+        // propiedades separadas del DTO (no una sola lista mezclada).
+        result.Value!.IncomeLines.Select(l => l.AccountCode).Should().Equal("4.1.2", "4.1.10");
+        result.Value.CostLines.Select(l => l.AccountCode).Should().Equal("5.1.01");
+        result.Value.ExpenseLines.Select(l => l.AccountCode).Should().Equal("6.1.02", "6.1.10");
+    }
+
+    [Fact]
+    public async Task IncomeStatement_no_muestra_cuenta_agrupadora_sin_saldo_directo_como_movimiento()
+    {
+        var group = NewAccount("6.1", "Gastos administrativos", AccountType.Expense, AccountNature.Debit);
+        var leaf = NewAccount("6.1.01", "Arriendo", AccountType.Expense, AccountNature.Debit);
+
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                // La agrupadora nunca recibe líneas de asiento (Posting Engine solo postea a
+                // hojas AllowsPosting=true) — no aparece en totals, mismo criterio que produce
+                // este dict en producción.
+                new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)> { [leaf.Id] = (50m, 0m) }
+            );
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { group, leaf });
+
+        var handler = new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+
+        var result = await handler.Handle(
+            new GetIncomeStatementReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
+
+        result.Value!.ExpenseLines.Should().ContainSingle(l => l.AccountId == leaf.Id);
+        result.Value.ExpenseLines.Should().NotContain(l => l.AccountId == group.Id);
+    }
+
+    [Fact]
+    public async Task BalanceSheet_respeta_orden_macro_activo_pasivo_patrimonio_y_orden_natural_dentro_de_cada_grupo()
+    {
+        var cashA = NewAccount("1.1.2", "Bancos B", AccountType.Asset, AccountNature.Debit);
+        var cashB = NewAccount("1.1.10", "Bancos A", AccountType.Asset, AccountNature.Debit);
+        var payable = NewAccount("2.1.01", "Cuentas por pagar", AccountType.Liability, AccountNature.Credit);
+        var capitalA = NewAccount("3.1.2", "Capital B", AccountType.Equity, AccountNature.Credit);
+        var capitalB = NewAccount("3.1.10", "Capital A", AccountType.Equity, AccountNature.Credit);
+
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r =>
+                r.GetAccountLineTotalsAsync(
+                    TenantId, CompanyId, null, It.IsAny<DateOnly>(),
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+                {
+                    [cashA.Id] = (100m, 0m),
+                    [cashB.Id] = (200m, 0m),
+                    [payable.Id] = (0m, 150m),
+                    [capitalA.Id] = (0m, 50m),
+                    [capitalB.Id] = (0m, 100m),
+                }
+            );
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { capitalB, capitalA, payable, cashB, cashA });
+
+        var handler = new GetBalanceSheetReportHandler(repo.Object, accountRepo.Object, Tenant().Object, Company().Object);
+
+        var result = await handler.Handle(new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)), CancellationToken.None);
+
+        // Orden macro: Activo → Pasivo → Patrimonio, garantizado estructuralmente.
+        result.Value!.AssetLines.Select(l => l.AccountCode).Should().Equal("1.1.2", "1.1.10");
+        result.Value.LiabilityLines.Select(l => l.AccountCode).Should().Equal("2.1.01");
+        result.Value.EquityLines.Select(l => l.AccountCode).Should().Equal("3.1.2", "3.1.10");
+    }
+
     // ── Libro Mayor ─────────────────────────────────────────────────────
 
     [Fact]

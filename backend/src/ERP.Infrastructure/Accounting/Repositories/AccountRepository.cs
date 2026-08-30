@@ -43,7 +43,15 @@ public sealed class AccountRepository : IAccountRepository
         Guid tenantId,
         Guid companyId,
         CancellationToken ct = default
-    ) => await Scoped(tenantId, companyId).OrderBy(x => x.Code).ToListAsync(ct);
+    )
+    {
+        // ACCOUNTING-CHART-CANONICAL-HIERARCHY-01: orden natural por segmentos de código (no
+        // lexicográfico simple — "1.1.2" debe ordenar antes que "1.1.10"). No traducible a SQL,
+        // así que se ordena en memoria tras materializar; el Plan de Cuentas de una Company es
+        // acotado (decenas/pocos cientos de filas), no un dataset masivo.
+        var accounts = await Scoped(tenantId, companyId).ToListAsync(ct);
+        return accounts.OrderBy(x => x.Code.Value, AccountCodeComparer.Instance).ToList();
+    }
 
     public Task<Account?> FindByCodeAsync(
         Guid tenantId,
