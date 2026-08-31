@@ -200,6 +200,15 @@ public sealed class TaxIdentificationEcuadorTests
     }
 
     [Fact]
+    public void RUC_sociedad_privada_residuo_10_infiere_codigo_2()
+    {
+        // BUGFIX-SRI-RUC-VALIDATOR-01 — caso obligatorio: RucValidator rechazaba este RUC
+        // por un residuo de módulo 11 = 10 tratado incorrectamente como inválido.
+        var id = TaxIdentification.Create("04", "0990789061001");
+        id.TryInferLegalEntityTypeCode().Should().Be(2);
+    }
+
+    [Fact]
     public void CI_infiere_codigo_1_persona_natural()
     {
         var id = TaxIdentification.Create("05", "0302126842");

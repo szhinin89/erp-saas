@@ -78,8 +78,8 @@ public static class RucValidator
             suma += (ruc[i] - '0') * CoefSociedadPrivada[i];
 
         int residuo = suma % 11;
-        if (residuo == 10)
-            return false; // dígito verificador inválido en M11
+        if (residuo == 1)
+            return false; // verificador resultaría en 10 (dos dígitos), inválido en M11
         int verificador = residuo == 0 ? 0 : 11 - residuo;
 
         return (ruc[9] - '0') == verificador && ruc[10..] != "000";
@@ -97,8 +97,8 @@ public static class RucValidator
             suma += (ruc[i] - '0') * CoefEntidadPublica[i];
 
         int residuo = suma % 11;
-        if (residuo == 10)
-            return false;
+        if (residuo == 1)
+            return false; // verificador resultaría en 10 (dos dígitos), inválido en M11
         int verificador = residuo == 0 ? 0 : 11 - residuo;
 
         return (ruc[8] - '0') == verificador && ruc[9..] != "0000";

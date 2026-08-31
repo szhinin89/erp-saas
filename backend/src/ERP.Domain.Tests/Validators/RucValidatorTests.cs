@@ -61,4 +61,48 @@ public sealed class RucValidatorTests
         invalidEst.Length.Should().Be(13);
         RucValidator.EsRucValido(invalidEst).Should().BeFalse();
     }
+
+    [Fact]
+    public void EsRucValido_sociedad_privada_con_residuo_10_debe_ser_valido()
+    {
+        // BUGFIX-SRI-RUC-VALIDATOR-01: caso obligatorio. Tercer dígito 9, módulo 11
+        // produce residuo=10 → verificador=11-10=1. El código previo rechazaba este
+        // residuo por error (lo trataba como inválido, cuando el caso realmente
+        // inválido es residuo=1, que produciría un verificador de dos dígitos).
+        RucValidator.EsRucValido("0990789061001").Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("1713175071001")] // persona natural (tercer dígito 0-5), cédula válida conocida
+    public void EsRucValido_persona_natural_valido(string ruc)
+    {
+        RucValidator.EsRucValido(ruc).Should().BeTrue();
+    }
+
+    [Fact]
+    public void EsRucValido_entidad_publica_barrido_debe_encontrar_al_menos_uno()
+    {
+        for (var d = 0; d <= 9; d++)
+        {
+            var r = "17600169" + d + "0001";
+            if (RucValidator.EsRucValido(r))
+            {
+                RucValidator.EsRucValido(r).Should().BeTrue();
+                return;
+            }
+        }
+
+        throw new InvalidOperationException(
+            "No se encontró RUC de entidad pública válido para la prueba (revisar algoritmo)."
+        );
+    }
+
+    [Theory]
+    [InlineData("1790016918001")] // sociedad privada con dígito verificador incorrecto
+    [InlineData("1760016919001")] // entidad pública con dígito verificador incorrecto
+    [InlineData("0990789069001")] // caso obligatorio con verificador alterado (debe fallar)
+    public void EsRucValido_digito_verificador_incorrecto_es_invalido(string ruc)
+    {
+        RucValidator.EsRucValido(ruc).Should().BeFalse();
+    }
 }
