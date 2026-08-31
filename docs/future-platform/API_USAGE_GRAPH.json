@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-30T17:49:55.633Z",
+  "generatedAt": "2026-08-31T02:05:48.117Z",
   "summary": {
-    "total": 112,
-    "allowed": 112,
+    "total": 113,
+    "allowed": 113,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -144,6 +144,14 @@
         "frontend/src/modules/auth/api/authService.ts",
         "frontend/src/modules/lib/authRefreshPolicy.test.ts",
         "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/logout",
+      "files": [
+        "frontend/src/lib/session/logoutSession.test.ts"
       ],
       "legacy": false,
       "allowed": true

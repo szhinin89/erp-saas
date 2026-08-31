@@ -1,5 +1,7 @@
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
+using ERP.Application.Auth.DTOs;
+using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Common;
 using FluentAssertions;
@@ -107,5 +109,49 @@ public sealed class AuthControllerTests
 
         response.Should().BeOfType<OkObjectResult>();
         sentRequest.Should().Be(command);
+    }
+
+    // ── Logout: la cookie de refresh se borra siempre, incluso si el mediator falla ──
+
+    [Fact]
+    public async Task Logout_envia_el_LogoutCommand_correcto_y_limpia_la_cookie_de_refresh()
+    {
+        object? sentRequest = null;
+        var controller = BuildController(req =>
+        {
+            sentRequest = req;
+            return Result<string>.Success("ok");
+        });
+        var response = await controller.Logout(
+            new LogoutRequest("raw-refresh-token", false),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<OkObjectResult>();
+        sentRequest.Should().Be(new LogoutCommand("raw-refresh-token", false));
+
+        var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
+        setCookieHeaders.Should()
+            .Contain(
+                h => h.Contains("erp_refresh_token=") && h.Contains("expires="),
+                "el logout debe emitir un Set-Cookie que expira/borra erp_refresh_token"
+            );
+    }
+
+    [Fact]
+    public async Task Logout_limpia_la_cookie_de_refresh_incluso_si_el_LogoutCommand_falla()
+    {
+        var controller = BuildController(_ => Result<string>.Failure("Refresh token inválido."));
+
+        var response = await controller.Logout(
+            new LogoutRequest("raw-refresh-token", false),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<BadRequestObjectResult>();
+
+        var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
+        setCookieHeaders.Should()
+            .Contain(h => h.Contains("erp_refresh_token="), "la cookie debe limpiarse aunque el comando falle");
     }
 }

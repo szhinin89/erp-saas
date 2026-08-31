@@ -4,7 +4,7 @@ import { ZHToast } from "./zh/ZHToast";
 import { ZHGlobalDialogs } from "./zh/ZHGlobalDialogs";
 import { CompanySwitcher } from "./CompanySwitcher";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { fullLogout } from "../lib/session/fullLogout";
+import { logoutSession } from "../lib/session/logoutSession";
 import { LayoutFrame } from "./layout/LayoutFrame";
 import { useAppLayoutNavigation } from "./useAppLayoutNavigation";
 import { RouteAccessGuard } from "./RouteAccessGuard";
@@ -26,8 +26,7 @@ export function AppLayout() {
   const branchGate = useBranchGate();
 
   const handleLogout = () => {
-    fullLogout();
-    navigate("/login");
+    void logoutSession().finally(() => navigate("/login"));
   };
 
   return (
