@@ -189,13 +189,18 @@
   border-radius: var(--radius-sm);
   box-shadow: inset 3px 0 0 transparent;
 }
-/* Hover: fondo suave + indicador lateral neutro (más fino que el activo), para que
-   no dependa solo del color y quede distinguible de is-active. */
-.zh-launcher__moduleToggle:hover:not(.is-active) {
+/* Hover: fondo suave + indicador lateral neutro (más fino que el current), para que
+   no dependa solo del color y quede distinguible de la ruta actual. */
+.zh-launcher__moduleToggle:hover:not(.is-current) {
   background: var(--color-surface);
   box-shadow: inset 2px 0 0 var(--color-outline-variant);
 }
-.zh-launcher__moduleToggle.is-active {
+.zh-launcher__module.is-open > .zh-launcher__moduleToggle:not(.is-current) {
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  box-shadow: inset 2px 0 0 var(--color-outline-variant);
+}
+.zh-launcher__moduleToggle.is-current {
   color: var(--color-brand-dark);
   background: var(--color-primary-fixed);
   box-shadow: inset 3px 0 0 var(--color-brand-accent);
@@ -206,9 +211,13 @@
   height: 20px;
   color: var(--color-text-secondary);
 }
-.zh-launcher__moduleToggle.is-active .zh-launcher__moduleIcon,
-.zh-launcher__moduleToggle[aria-expanded="true"] .zh-launcher__moduleIcon {
+.zh-launcher__moduleToggle.is-current .zh-launcher__moduleIcon {
   color: var(--color-primary);
+}
+.zh-launcher__module.is-open
+  > .zh-launcher__moduleToggle:not(.is-current)
+  .zh-launcher__moduleIcon {
+  color: var(--color-outline);
 }
 .zh-launcher__moduleLabel {
   flex: 1;
@@ -404,16 +413,16 @@
     color var(--transition),
     background var(--transition);
 }
-/* Hover: fondo suave + indicador lateral neutro. Se omite en la fila activa para que
+/* Hover: fondo suave + indicador lateral neutro. Se omite en la fila current para que
    el hover nunca se confunda con el indicador (más grueso y con color de marca) de
-   is-active — el estado activo siempre debe leerse más fuerte que un simple hover. */
-.zh-launcher__item:not(.is-active):hover,
-.zh-launcher__item:not(.is-active):focus-within {
+   ruta actual — el estado current siempre debe leerse más fuerte que un simple hover. */
+.zh-launcher__item:not(.is-current):hover,
+.zh-launcher__item:not(.is-current):focus-within {
   background: var(--color-surface);
   border-color: var(--color-border-light);
   box-shadow: inset 2px 0 0 var(--color-outline-variant);
 }
-.zh-launcher__item:not(.is-active) .zh-launcher__itemLink:hover {
+.zh-launcher__item:not(.is-current) .zh-launcher__itemLink:hover {
   text-decoration: none;
 }
 .zh-launcher__itemLink:active,
@@ -425,17 +434,17 @@
   cursor: default;
 }
 
-/* Phase 3 + Phase 5: active state con contraste correcto */
-.zh-launcher__item.is-active .zh-launcher__itemLink {
+/* Phase 3 + Phase 5: current state con contraste correcto */
+.zh-launcher__item.is-current .zh-launcher__itemLink {
   color: var(--color-brand-dark);
 }
-.zh-launcher__item.is-active {
+.zh-launcher__item.is-current {
   background: var(--color-primary-subtle);
   border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
   box-shadow: inset 3px 0 0 var(--color-brand-accent);
 }
 
-.zh-launcher__item.is-active::before {
+.zh-launcher__item.is-current::before {
   border-color: var(--color-brand-accent);
   background: var(--color-brand-accent);
 }
@@ -451,7 +460,7 @@
   opacity: 0.9;
 }
 
-.zh-launcher__item.is-active .zh-launcher__itemIcon {
+.zh-launcher__item.is-current .zh-launcher__itemIcon {
   color: var(--color-primary);
 }
 
@@ -476,7 +485,7 @@
   line-height: 1.25;
 }
 
-.zh-launcher__item.is-active .zh-launcher__itemLabel {
+.zh-launcher__item.is-current .zh-launcher__itemLabel {
   font-weight: 700;
 }
 

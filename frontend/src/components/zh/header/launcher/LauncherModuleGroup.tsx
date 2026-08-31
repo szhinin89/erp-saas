@@ -54,13 +54,18 @@ export function LauncherModuleGroup({
   }
 
   const open = expandedModuleId === group.id;
+  const current = group.isActive;
   const contentId = `zh-launcher-module-${group.id}`;
 
   return (
-    <div className={`zh-launcher__module${open ? " is-open" : ""}`}>
+    <div
+      className={`zh-launcher__module${open ? " is-open" : ""}${current ? " is-current" : ""}`}
+      data-state={open ? "open" : "closed"}
+      data-current={current ? "true" : undefined}
+    >
       <button
         type="button"
-        className={`zh-launcher__moduleToggle${group.isActive ? " is-active" : ""}`}
+        className={`zh-launcher__moduleToggle${current ? " is-current" : ""}`}
         aria-expanded={open}
         aria-controls={contentId}
         onClick={() => onToggleModule(group.id)}

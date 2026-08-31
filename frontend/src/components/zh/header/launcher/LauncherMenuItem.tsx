@@ -26,13 +26,14 @@ export function LauncherMenuItem({
   toggleFavorite,
   t,
 }: LauncherMenuItemProps) {
-  const active = item.to ? isActivePath(item.to, currentPath) : false;
+  const current = item.to ? isActivePath(item.to, currentPath) : false;
 
   // Cap visual a 2 niveles de indentación (Módulo > Categoría > Formulario = depth 0/1;
   // categorías anidadas adicionales reusan el indent de depth 2). Ver docs/ARCHITECTURE.md#app-launcher.
   return (
     <div
-      className={`zh-launcher__item zh-launcher__item--depth-${Math.min(depth, 2)}${active ? " is-active" : ""}`}
+      className={`zh-launcher__item zh-launcher__item--depth-${Math.min(depth, 2)}${current ? " is-current" : ""}`}
+      data-current={current ? "true" : undefined}
     >
       {item.to ? (
         <a
@@ -44,13 +45,10 @@ export function LauncherMenuItem({
           aria-label={
             item.description ? `${item.label}: ${item.description}` : item.label
           }
-          aria-current={active ? "page" : undefined}
+          aria-current={current ? "page" : undefined}
           onClick={() => onNavigate(item.to!)}
         >
-          <LauncherIcon
-            name="document"
-            className="zh-launcher__itemIcon"
-          />
+          <LauncherIcon name="document" className="zh-launcher__itemIcon" />
           <span className="zh-launcher__itemContent">
             <span className="zh-launcher__itemLabel">{item.label}</span>
           </span>
@@ -60,10 +58,7 @@ export function LauncherMenuItem({
           className="zh-launcher__itemLink zh-launcher__itemLink--disabled"
           title={t("app.layout.menuMissingRoute")}
         >
-          <LauncherIcon
-            name="document"
-            className="zh-launcher__itemIcon"
-          />
+          <LauncherIcon name="document" className="zh-launcher__itemIcon" />
           <span className="zh-launcher__itemContent">
             <span className="zh-launcher__itemLabel">{item.label}</span>
           </span>

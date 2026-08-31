@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { NavItem } from "../../../../nav/navConfig";
 import type { MainMenuGroup } from "../../../useAppLayoutNavigation";
 import { LauncherModuleGroup } from "./LauncherModuleGroup";
@@ -42,7 +42,51 @@ const moduleGroup: MainMenuGroup = {
   items: [categoryItem],
 };
 
-function renderModule(overrides?: Partial<Parameters<typeof LauncherModuleGroup>[0]>) {
+const suppliersManagementItem: NavItem = {
+  id: "item-masterdata-suppliers",
+  to: "/masterdata/suppliers",
+  label: "Proveedores",
+};
+const suppliersManagementCategory: NavItem = {
+  id: "category-suppliers-management",
+  to: "/masterdata/suppliers/management-group",
+  label: "Gestión",
+  children: [suppliersManagementItem],
+};
+const suppliersModuleGroup: MainMenuGroup = {
+  id: "suppliers",
+  label: "Proveedores",
+  icon: "purchases",
+  isActive: false,
+  items: [suppliersManagementCategory],
+};
+const kardexItem: NavItem = {
+  id: "item-inventory-kardex",
+  to: "/inventory/kardex",
+  label: "Historial de Existencias",
+};
+const inventoryAdjustmentsItem: NavItem = {
+  id: "item-inventory-adjustments",
+  to: "/inventory/adjustments",
+  label: "Ajustes de inventario",
+};
+const inventoryOperationCategory: NavItem = {
+  id: "category-inventory-operation",
+  to: "/inventory/operation-group",
+  label: "Operación",
+  children: [kardexItem, inventoryAdjustmentsItem],
+};
+const inventoryModuleGroup: MainMenuGroup = {
+  id: "inventory",
+  label: "Inventario",
+  icon: "inventory",
+  isActive: true,
+  items: [inventoryOperationCategory],
+};
+
+function renderModule(
+  overrides?: Partial<Parameters<typeof LauncherModuleGroup>[0]>,
+) {
   return render(
     <LauncherModuleGroup
       group={moduleGroup}
@@ -57,6 +101,38 @@ function renderModule(overrides?: Partial<Parameters<typeof LauncherModuleGroup>
       onToggleGroup={vi.fn()}
       {...overrides}
     />,
+  );
+}
+
+function renderModules({
+  currentPath = "/inventory/kardex",
+  expandedModuleId = "inventory",
+  expandedGroupId = "inventory:category-inventory-operation",
+  groups = [suppliersModuleGroup, inventoryModuleGroup],
+}: {
+  currentPath?: string;
+  expandedModuleId?: string | null;
+  expandedGroupId?: string | null;
+  groups?: MainMenuGroup[];
+} = {}) {
+  return render(
+    <div>
+      {groups.map((group) => (
+        <LauncherModuleGroup
+          key={group.id}
+          group={group}
+          currentPath={currentPath}
+          onNavigate={vi.fn()}
+          isFavorite={() => false}
+          toggleFavorite={vi.fn()}
+          t={t}
+          expandedModuleId={expandedModuleId}
+          onToggleModule={vi.fn()}
+          expandedGroupId={expandedGroupId}
+          onToggleGroup={vi.fn()}
+        />
+      ))}
+    </div>,
   );
 }
 
@@ -76,7 +152,9 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     const link = screen.getByText("Facturas de compra").closest("a");
     expect(link?.getAttribute("href")).toBe("/purchases");
 
-    const sibling = screen.getByText("Recepción electrónica (TXT)").closest("a");
+    const sibling = screen
+      .getByText("Recepción electrónica (TXT)")
+      .closest("a");
     expect(sibling?.getAttribute("href")).toBe("/purchases/reception");
   });
 
@@ -86,7 +164,9 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     const activeLink = screen.getByText("Facturas de compra").closest("a");
     expect(activeLink?.getAttribute("aria-current")).toBe("page");
 
-    const inactiveLink = screen.getByText("Recepción electrónica (TXT)").closest("a");
+    const inactiveLink = screen
+      .getByText("Recepción electrónica (TXT)")
+      .closest("a");
     expect(inactiveLink?.getAttribute("aria-current")).toBeNull();
   });
 
@@ -119,6 +199,125 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     });
     expect(favOff.getAttribute("aria-pressed")).toBe("false");
     expect(favOff.className).not.toContain("is-on");
+  });
+});
+
+describe("App Launcher — estados current/open/hover (ZH-MENU-ACTIVE-STATE-FIX-01)", () => {
+  it("cuando la ruta actual pertenece a Inventario, Inventario es current y Proveedores no", () => {
+    renderModules();
+
+    const inventoryToggle = screen.getByRole("button", { name: "Inventario" });
+    const suppliersToggle = screen.getByRole("button", { name: "Proveedores" });
+
+    expect(inventoryToggle.className).toContain("is-current");
+    expect(
+      inventoryToggle
+        .closest(".zh-launcher__module")
+        ?.getAttribute("data-current"),
+    ).toBe("true");
+    expect(suppliersToggle.className).not.toContain("is-current");
+    expect(
+      suppliersToggle
+        .closest(".zh-launcher__module")
+        ?.getAttribute("data-current"),
+    ).toBeNull();
+  });
+
+  it("cuando Inventario está expandido, muestra sus grupos y Proveedores no queda visualmente current", () => {
+    renderModules();
+
+    expect(screen.getByText("Operación")).toBeTruthy();
+    expect(screen.getByText("Historial de Existencias")).toBeTruthy();
+
+    const inventoryModule = screen
+      .getByRole("button", { name: "Inventario" })
+      .closest(".zh-launcher__module");
+    const suppliersModule = screen
+      .getByRole("button", { name: "Proveedores" })
+      .closest(".zh-launcher__module");
+
+    expect(inventoryModule?.className).toContain("is-open");
+    expect(inventoryModule?.getAttribute("data-state")).toBe("open");
+    expect(suppliersModule?.className).not.toContain("is-current");
+    expect(suppliersModule?.getAttribute("data-current")).toBeNull();
+  });
+
+  it("cuando un formulario de Inventario está activo, el formulario tiene aria-current y solo su módulo padre es current", () => {
+    renderModules();
+
+    const kardexLink = screen
+      .getByText("Historial de Existencias")
+      .closest("a");
+    const adjustmentsLink = screen
+      .getByText("Ajustes de inventario")
+      .closest("a");
+    const currentModules = document.querySelectorAll(
+      ".zh-launcher__module.is-current",
+    );
+
+    expect(kardexLink?.getAttribute("aria-current")).toBe("page");
+    expect(kardexLink?.closest(".zh-launcher__item")?.className).toContain(
+      "is-current",
+    );
+    expect(adjustmentsLink?.getAttribute("aria-current")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Inventario" }).className,
+    ).toContain("is-current");
+    expect(
+      screen.getByRole("button", { name: "Proveedores" }).className,
+    ).not.toContain("is-current");
+    expect(currentModules).toHaveLength(1);
+  });
+
+  it("hover/focus sobre un formulario no cambia aria-current ni el módulo current", () => {
+    renderModules();
+
+    const kardexLink = screen
+      .getByText("Historial de Existencias")
+      .closest("a");
+    const suppliersToggle = screen.getByRole("button", { name: "Proveedores" });
+    const inventoryToggle = screen.getByRole("button", { name: "Inventario" });
+
+    expect(kardexLink).toBeTruthy();
+    fireEvent.mouseOver(kardexLink!);
+    fireEvent.focus(kardexLink!);
+
+    expect(kardexLink?.getAttribute("aria-current")).toBe("page");
+    expect(inventoryToggle.className).toContain("is-current");
+    expect(suppliersToggle.className).not.toContain("is-current");
+    expect(
+      document.querySelectorAll(".zh-launcher__module.is-current"),
+    ).toHaveLength(1);
+  });
+
+  it("si otro módulo está expandido pero la ruta pertenece a Proveedores, open y current se mantienen separados", () => {
+    renderModules({
+      currentPath: "/masterdata/suppliers",
+      groups: [
+        { ...suppliersModuleGroup, isActive: true },
+        { ...inventoryModuleGroup, isActive: false },
+      ],
+      expandedModuleId: "inventory",
+      expandedGroupId: "inventory:category-inventory-operation",
+    });
+
+    const suppliersModule = screen
+      .getByRole("button", { name: "Proveedores" })
+      .closest(".zh-launcher__module");
+    const inventoryModule = screen
+      .getByRole("button", { name: "Inventario" })
+      .closest(".zh-launcher__module");
+
+    expect(suppliersModule?.className).toContain("is-current");
+    expect(suppliersModule?.className).not.toContain("is-open");
+    expect(inventoryModule?.className).toContain("is-open");
+    expect(inventoryModule?.className).not.toContain("is-current");
+    expect(
+      screen.getByRole("button", { name: "Inventario" }).className,
+    ).not.toContain("is-current");
+    expect(
+      document.querySelectorAll(".zh-launcher__module.is-current"),
+    ).toHaveLength(1);
   });
 });
 
