@@ -47,6 +47,18 @@ public interface IRefreshTokenService
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Igual que <see cref="ValidateAndRotateAsync"/> (revocado, vencimiento individual,
+    /// ventana absoluta) pero SIN rotar el token. Usado por Reautenticación (Fase 4): necesita
+    /// confirmar identidad/sesión viva antes de pedir la contraseña, sin quemar el refresh token
+    /// vigente si la contraseña resulta incorrecta. El resultado nunca trae <c>NewToken</c>/
+    /// <c>NewExpiry</c> (no hay rotación) — solo identidad.
+    /// </summary>
+    Task<RefreshTokenValidationResult> ValidateWithoutRotatingAsync(
+        string rawToken,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Revoca todos los refresh tokens activos del usuario (logout global / cambio contraseña).</summary>
     Task RevokeAllForUserAsync(
         Guid userId,
@@ -107,6 +119,22 @@ public sealed class RefreshTokenValidationResult
             IsValid = false,
             IsRateLimited = true,
             Error = error,
+        };
+
+    /// <summary>Éxito sin rotación — ver <see cref="IRefreshTokenService.ValidateWithoutRotatingAsync"/>.</summary>
+    public static RefreshTokenValidationResult Identity(
+        Guid userId,
+        Guid tenantId,
+        Guid? companyId,
+        string userType
+    ) =>
+        new()
+        {
+            IsValid = true,
+            UserId = userId,
+            TenantId = tenantId,
+            CompanyId = companyId,
+            UserType = userType,
         };
 
     public static RefreshTokenValidationResult Ok(

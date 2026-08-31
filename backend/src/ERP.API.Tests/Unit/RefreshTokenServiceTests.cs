@@ -190,6 +190,80 @@ public sealed class RefreshTokenServiceTests
         stored.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddMinutes(60), TimeSpan.FromMinutes(1));
     }
 
+    // ── ValidateWithoutRotatingAsync (Fase 4 — Reautenticación) ──────────────
+
+    [Fact]
+    public async Task ValidateWithoutRotating_token_valido_devuelve_identidad_sin_rotar()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
+
+        var (rawToken, _) = await service.CreateAsync(
+            userId,
+            tenantId,
+            companyId,
+            RefreshUserType.Identity
+        );
+
+        var result = await service.ValidateWithoutRotatingAsync(rawToken);
+
+        result.IsValid.Should().BeTrue(result.Error);
+        result.UserId.Should().Be(userId);
+        result.TenantId.Should().Be(tenantId);
+        result.CompanyId.Should().Be(companyId);
+        result.NewToken.Should().BeNull();
+        result.NewExpiry.Should().BeNull();
+
+        // No rota: el mismo rawToken sigue siendo válido para un refresh normal después.
+        repo.Stored.Should().HaveCount(1);
+        repo.Stored[0].IsRevoked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ValidateWithoutRotating_token_revocado_falla()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var revocado = RefreshToken.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            RefreshUserType.Identity,
+            "hash-revocado",
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
+        );
+        revocado.Revoke("Logout");
+        repo.Stored.Add(revocado);
+        repo.SetupHash("raw-revocado", revocado);
+
+        var result = await service.ValidateWithoutRotatingAsync("raw-revocado");
+
+        result.IsValid.Should().BeFalse();
+        result.Error.Should().Contain("revocado");
+    }
+
+    [Fact]
+    public async Task ValidateWithoutRotating_sesion_absoluta_vencida_falla()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo, new AuthOptions { SessionAbsoluteLifetimeMinutes = -1 });
+        var (rawToken, _) = await service.CreateAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            RefreshUserType.Identity
+        );
+
+        var result = await service.ValidateWithoutRotatingAsync(rawToken);
+
+        result.IsValid.Should().BeFalse();
+        result.Error.Should().Contain("Sesión expirada");
+    }
+
     [Fact]
     public async Task ValidateAndRotate_token_inexistente_falla()
     {

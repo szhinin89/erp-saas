@@ -3,6 +3,7 @@ using ERP.API.Tests.Support;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
+using ERP.Application.Auth.UseCases.Reauthenticate;
 using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Common;
 using FluentAssertions;
@@ -35,6 +36,19 @@ public sealed class AuthControllerTests
                 RequestServices = services.BuildServiceProvider(),
             },
         };
+        return controller;
+    }
+
+    private static AuthController BuildControllerWithRefreshCookie(
+        Func<object, object> handler,
+        string rawToken
+    )
+    {
+        var controller = BuildController(handler);
+        controller.ControllerContext.HttpContext.Request.Headers.Append(
+            "Cookie",
+            $"erp_refresh_token={rawToken}"
+        );
         return controller;
     }
 
@@ -165,6 +179,85 @@ public sealed class AuthControllerTests
         var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
 
         response.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    // ── Reautenticación tras bloqueo por inactividad (Fase 4) ────────────────
+
+    [Fact]
+    public async Task Reauthenticate_sin_cookie_de_sesion_devuelve_401_sin_llamar_al_mediator()
+    {
+        var mediatorCalled = false;
+        var controller = BuildController(_ =>
+        {
+            mediatorCalled = true;
+            return Result<AuthResponseDto>.Success(null!);
+        });
+
+        var response = await controller.Reauthenticate(
+            new ReauthenticateRequest("Sup3rSecret!"),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<UnauthorizedObjectResult>();
+        mediatorCalled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Reauthenticate_exitoso_devuelve_200_y_re_emite_la_cookie_de_refresh()
+    {
+        object? sentRequest = null;
+        var controller = BuildControllerWithRefreshCookie(
+            req =>
+            {
+                sentRequest = req;
+                return Result<AuthResponseDto>.Success(
+                    new AuthResponseDto(
+                        Guid.NewGuid(),
+                        "Ana",
+                        "ana",
+                        "ana@test.com",
+                        "Admin",
+                        Guid.NewGuid(),
+                        "new-access-token"
+                    )
+                    {
+                        RefreshToken = "new-refresh-token",
+                        RefreshTokenExpiry = DateTime.UtcNow.AddHours(8),
+                    }
+                );
+            },
+            "raw-refresh-token"
+        );
+
+        var response = await controller.Reauthenticate(
+            new ReauthenticateRequest("Sup3rSecret!"),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<OkObjectResult>();
+        sentRequest.Should().Be(new ReauthenticateCommand("raw-refresh-token", "Sup3rSecret!"));
+
+        var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
+        setCookieHeaders.Should().Contain(h => h.Contains("erp_refresh_token=new-refresh-token"));
+    }
+
+    [Fact]
+    public async Task Reauthenticate_con_contrasena_incorrecta_devuelve_401_sin_cookie_nueva()
+    {
+        var controller = BuildControllerWithRefreshCookie(
+            _ => Result<AuthResponseDto>.Failure("Contraseña incorrecta."),
+            "raw-refresh-token"
+        );
+
+        var response = await controller.Reauthenticate(
+            new ReauthenticateRequest("password-mala"),
+            CancellationToken.None
+        );
+
+        response.Should().BeOfType<UnauthorizedObjectResult>();
+        controller
+            .ControllerContext.HttpContext.Response.Headers.SetCookie.Should()
+            .BeEmpty("una contraseña incorrecta no debe emitir ninguna cookie nueva");
     }
 
     // ── Logout: la cookie de refresh se borra siempre, incluso si el mediator falla ──

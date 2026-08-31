@@ -219,6 +219,37 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         );
     }
 
+    public async Task<RefreshTokenValidationResult> ValidateWithoutRotatingAsync(
+        string rawToken,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var tokenHash = Hash(rawToken);
+        var stored = await _repo.GetByHashAsync(tokenHash, cancellationToken);
+        if (stored is null)
+            return RefreshTokenValidationResult.Fail("Refresh token no válido.");
+
+        if (stored.IsRevoked)
+            return RefreshTokenValidationResult.Fail(
+                "Refresh token revocado. Inicia sesión nuevamente."
+            );
+
+        if (stored.AbsoluteExpiresAt <= DateTime.UtcNow)
+            return RefreshTokenValidationResult.Fail("Sesión expirada. Inicia sesión nuevamente.");
+
+        if (!stored.IsActive)
+            return RefreshTokenValidationResult.Fail(
+                "Refresh token expirado. Inicia sesión nuevamente."
+            );
+
+        return RefreshTokenValidationResult.Identity(
+            stored.UserId,
+            stored.TenantId,
+            stored.CompanyId,
+            stored.UserType
+        );
+    }
+
     private async Task<RefreshTokenValidationResult> HandleRevokedReuseAsync(
         RefreshToken stored,
         CancellationToken cancellationToken

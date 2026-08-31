@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { broadcastIdleLock, listenForRemoteIdleLock } from "./idleBroadcast";
+import {
+  broadcastIdleLock,
+  listenForRemoteIdleLock,
+  broadcastIdleUnlock,
+  listenForRemoteIdleUnlock,
+} from "./idleBroadcast";
 
 const IDLE_LOCK_STORAGE_KEY = "erp.idle.locked";
+const IDLE_UNLOCK_STORAGE_KEY = "erp.idle.unlocked";
 
 describe("idleBroadcast", () => {
   beforeEach(() => {
@@ -64,5 +70,50 @@ describe("idleBroadcast", () => {
     );
 
     expect(onLocked).not.toHaveBeenCalled();
+  });
+
+  // ── Desbloqueo entre pestañas (Fase 4 — reautenticación) ─────────────────
+
+  it("broadcastIdleUnlock guarda solo un marcador no sensible en localStorage", () => {
+    broadcastIdleUnlock();
+
+    const stored = localStorage.getItem(IDLE_UNLOCK_STORAGE_KEY);
+    expect(stored).not.toBeNull();
+    expect(stored).toMatch(/^\d+-0?\.\d+$/);
+  });
+
+  it("listenForRemoteIdleUnlock invoca el callback cuando otra pestaña se reautentica", () => {
+    const onUnlocked = vi.fn();
+    const cleanup = listenForRemoteIdleUnlock(onUnlocked);
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: IDLE_UNLOCK_STORAGE_KEY,
+        newValue: "123-0.456",
+      }),
+    );
+
+    expect(onUnlocked).toHaveBeenCalledTimes(1);
+    cleanup();
+  });
+
+  it("un evento de lock no dispara el callback de unlock ni viceversa", () => {
+    const onLocked = vi.fn();
+    const onUnlocked = vi.fn();
+    const cleanupLock = listenForRemoteIdleLock(onLocked);
+    const cleanupUnlock = listenForRemoteIdleUnlock(onUnlocked);
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: IDLE_LOCK_STORAGE_KEY,
+        newValue: "123-0.456",
+      }),
+    );
+
+    expect(onLocked).toHaveBeenCalledTimes(1);
+    expect(onUnlocked).not.toHaveBeenCalled();
+
+    cleanupLock();
+    cleanupUnlock();
   });
 });

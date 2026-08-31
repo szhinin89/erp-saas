@@ -8,6 +8,7 @@ using ERP.Application.Auth.UseCases.ListMyCompanies;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
+using ERP.Application.Auth.UseCases.Reauthenticate;
 using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Auth.UseCases.SwitchCompany;
 using ERP.Application.Common;
@@ -130,6 +131,48 @@ public sealed class AuthController : ControllerBase
             return this.ApiTooManyRequests(result.Error ?? "Demasiados intentos.");
 
         return this.ApiUnauthorized(result.Error ?? "Refresh token inválido.");
+    }
+
+    /// <summary>
+    /// Fase 4: reautenticación del mismo usuario tras bloqueo por inactividad (SessionLockOverlay
+    /// en frontend). Identidad SIEMPRE desde la cookie httpOnly, nunca del body — no acepta
+    /// username ni refresh token editables, así el modal no puede usarse para reautenticar a otro
+    /// usuario. <see cref="ReauthenticateHandler"/> documenta por qué la sesión resultante reinicia
+    /// la ventana absoluta de 8 horas en vez de heredarla (a diferencia de <see cref="Refresh"/>).
+    /// </summary>
+    [HttpPost("reauthenticate")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth-refresh-ip")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Reauthenticate(
+        [FromBody] ReauthenticateRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        var rawToken = AuthRefreshCookieHelper.ResolveRefreshToken(Request, fromBody: null);
+        if (string.IsNullOrWhiteSpace(rawToken))
+            return this.ApiUnauthorized("Se requiere una sesión activa para reautenticar.");
+
+        var result = await _mediator.Send(
+            new ReauthenticateCommand(rawToken, request.Password),
+            cancellationToken
+        );
+        if (result.IsSuccess)
+        {
+            if (
+                result.Value?.RefreshToken is not null
+                && result.Value.RefreshTokenExpiry is not null
+            )
+                AuthRefreshCookieHelper.SetRefreshCookie(
+                    HttpContext,
+                    result.Value.RefreshToken,
+                    result.Value.RefreshTokenExpiry.Value
+                );
+
+            return this.ApiOk(result.Value);
+        }
+
+        return this.ApiUnauthorized(result.Error ?? "No se pudo reautenticar.");
     }
 
     [HttpPost("logout")]

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, cleanup } from "@testing-library/react";
 import { useIdleTimeout } from "./useIdleTimeout";
 import { useSessionIdleStore } from "../../store/sessionIdleStore";
 
@@ -13,6 +13,9 @@ describe("useIdleTimeout", () => {
   });
 
   afterEach(() => {
+    // Cada test monta el hook sin desmontarlo explícitamente — cleanup() desmonta
+    // cualquier renderHook pendiente para no acumular listeners de un test al siguiente.
+    cleanup();
     vi.useRealTimers();
     useSessionIdleStore.setState({ isLocked: false });
   });
@@ -88,6 +91,20 @@ describe("useIdleTimeout", () => {
     );
 
     expect(useSessionIdleStore.getState().isLocked).toBe(true);
+  });
+
+  it("multi-pestaña: una reautenticación en otra pestaña (evento storage unlocked) desbloquea esta también", () => {
+    renderHook(() => useIdleTimeout(TIMEOUT_MS));
+    useSessionIdleStore.setState({ isLocked: true });
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "erp.idle.unlocked",
+        newValue: "123-0.456",
+      }),
+    );
+
+    expect(useSessionIdleStore.getState().isLocked).toBe(false);
   });
 
   it("una vez bloqueado, deja de escuchar actividad (el candado no se levanta solo)", () => {

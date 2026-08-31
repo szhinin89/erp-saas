@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-31T02:05:48.117Z",
+  "generatedAt": "2026-08-31T03:28:59.376Z",
   "summary": {
-    "total": 113,
-    "allowed": 113,
+    "total": 114,
+    "allowed": 114,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -160,6 +160,14 @@
       "endpoint": "/api/v1/auth/my-companies",
       "files": [
         "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/reauthenticate",
+      "files": [
+        "frontend/src/lib/session/reauthenticate.test.ts"
       ],
       "legacy": false,
       "allowed": true

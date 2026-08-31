@@ -1,7 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useSessionIdleStore } from "../../store/sessionIdleStore";
 import { IDLE_TIMEOUT_MS } from "./sessionIdleConfig";
-import { broadcastIdleLock, listenForRemoteIdleLock } from "./idleBroadcast";
+import {
+  broadcastIdleLock,
+  listenForRemoteIdleLock,
+  listenForRemoteIdleUnlock,
+} from "./idleBroadcast";
 
 /** Eventos que cuentan como "actividad real" del usuario. */
 const ACTIVITY_EVENTS = [
@@ -29,6 +33,15 @@ export function useIdleTimeout(timeoutMs: number = IDLE_TIMEOUT_MS): void {
   useEffect(() => {
     return listenForRemoteIdleLock(() => {
       useSessionIdleStore.getState().lock();
+    });
+  }, []);
+
+  // Desbloqueo por reautenticación exitosa en otra pestaña (Fase 4): la cookie de refresh ya
+  // se actualizó (compartida por el navegador), así que esta pestaña puede desbloquear su UI
+  // con seguridad sin repetir el login — ver idleBroadcast.ts.
+  useEffect(() => {
+    return listenForRemoteIdleUnlock(() => {
+      useSessionIdleStore.getState().unlock();
     });
   }, []);
 

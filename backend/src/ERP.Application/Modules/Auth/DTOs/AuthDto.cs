@@ -11,6 +11,14 @@ public record RefreshRequest(string? RefreshToken = null);
 /// <param name="AllDevices">Si true, revoca todos los tokens del usuario (logout global).</param>
 public record LogoutRequest(string? RefreshToken, bool AllDevices = false);
 
+/// <summary>
+/// Fase 4 (reautenticación tras bloqueo por inactividad). Deliberadamente sin username ni
+/// refresh token en el body — la identidad viene siempre de la cookie httpOnly
+/// <c>erp_refresh_token</c>, nunca de algo que el cliente pueda manipular.
+/// </summary>
+/// <param name="Password">Contraseña del mismo usuario dueño de la sesión bloqueada.</param>
+public record ReauthenticateRequest(string Password);
+
 public record LoginDto(string Username, string Password);
 
 public record AuthResponseDto(
