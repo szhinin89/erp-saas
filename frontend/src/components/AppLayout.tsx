@@ -2,9 +2,11 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { ZHAppTenantHeader } from "./zh/ZHAppTenantHeader";
 import { ZHToast } from "./zh/ZHToast";
 import { ZHGlobalDialogs } from "./zh/ZHGlobalDialogs";
+import { SessionLockOverlay } from "./zh/SessionLockOverlay";
 import { CompanySwitcher } from "./CompanySwitcher";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { logoutSession } from "../lib/session/logoutSession";
+import { useIdleTimeout } from "../lib/session/useIdleTimeout";
 import { LayoutFrame } from "./layout/LayoutFrame";
 import { useAppLayoutNavigation } from "./useAppLayoutNavigation";
 import { RouteAccessGuard } from "./RouteAccessGuard";
@@ -24,6 +26,10 @@ export function AppLayout() {
   } = useAppLayoutNavigation();
 
   const branchGate = useBranchGate();
+
+  // Fase 3: barrera de inactividad — un único temporizador para todas las rutas
+  // protegidas (AppLayout se monta una sola vez, no por pantalla).
+  useIdleTimeout();
 
   const handleLogout = () => {
     void logoutSession().finally(() => navigate("/login"));
@@ -80,6 +86,7 @@ export function AppLayout() {
       )}
       <ZHToast />
       <ZHGlobalDialogs />
+      <SessionLockOverlay />
     </LayoutFrame>
   );
 }
