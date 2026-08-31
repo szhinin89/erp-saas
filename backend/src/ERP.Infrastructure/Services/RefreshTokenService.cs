@@ -46,8 +46,17 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     {
         var rawToken = GenerateRaw();
         var tokenHash = Hash(rawToken);
+        var (expiresAt, absoluteExpiresAt) = ComputeExpiries(inheritedAbsoluteExpiresAt: null);
 
-        var entity = RefreshToken.Create(userId, tenantId, companyId, userType, tokenHash);
+        var entity = RefreshToken.Create(
+            userId,
+            tenantId,
+            companyId,
+            userType,
+            tokenHash,
+            expiresAt,
+            absoluteExpiresAt
+        );
         await _repo.AddAsync(entity, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
 
@@ -66,8 +75,17 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     {
         var rawToken = GenerateRaw();
         var tokenHash = Hash(rawToken);
+        var (expiresAt, absoluteExpiresAt) = ComputeExpiries(inheritedAbsoluteExpiresAt: null);
 
-        var entity = RefreshToken.Create(userId, tenantId, companyId, userType, tokenHash);
+        var entity = RefreshToken.Create(
+            userId,
+            tenantId,
+            companyId,
+            userType,
+            tokenHash,
+            expiresAt,
+            absoluteExpiresAt
+        );
         await _repo.AddAsync(entity, cancellationToken);
 
         LogRefreshTokenCreated(userId, entity.FamilyId, userType, entity.ExpiresAt);
@@ -116,6 +134,18 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         if (stored.IsRevoked)
             return await HandleRevokedReuseAsync(stored, cancellationToken);
 
+        if (stored.AbsoluteExpiresAt <= DateTime.UtcNow)
+        {
+            LogAudit(
+                RefreshTokenAuditEvents.RefreshRotationFailed,
+                stored,
+                null,
+                null,
+                "Sesión expirada (límite absoluto)"
+            );
+            return RefreshTokenValidationResult.Fail("Sesión expirada. Inicia sesión nuevamente.");
+        }
+
         if (!stored.IsActive)
         {
             LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, null, "Expirado");
@@ -131,12 +161,17 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
 
         var newRaw = GenerateRaw();
         var newHash = Hash(newRaw);
+        var (successorExpiresAt, successorAbsoluteExpiresAt) = ComputeExpiries(
+            inheritedAbsoluteExpiresAt: stored.AbsoluteExpiresAt
+        );
         var successor = RefreshToken.Create(
             stored.UserId,
             stored.TenantId,
             stored.CompanyId,
             stored.UserType,
             newHash,
+            successorExpiresAt,
+            successorAbsoluteExpiresAt,
             familyId: stored.FamilyId,
             parentTokenId: stored.Id,
             rotationDepth: stored.RotationDepth + 1
@@ -330,6 +365,31 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Calcula el vencimiento individual y el límite absoluto de sesión de un refresh token.
+    /// Al emitir el primer token de una familia, <paramref name="inheritedAbsoluteExpiresAt"/> es
+    /// null y el límite absoluto se fija por primera vez. Al rotar, el caller pasa el límite
+    /// absoluto del token anterior sin cambios — la rotación nunca extiende la sesión. El
+    /// vencimiento individual devuelto nunca supera el límite absoluto, por lo que cualquier
+    /// consulta existente que filtre por <c>ExpiresAt</c> ya respeta la ventana de sesión.
+    /// </summary>
+    private (DateTime ExpiresAt, DateTime AbsoluteExpiresAt) ComputeExpiries(
+        DateTime? inheritedAbsoluteExpiresAt
+    )
+    {
+        var now = DateTime.UtcNow;
+        var absoluteExpiresAt =
+            inheritedAbsoluteExpiresAt
+            ?? now.AddMinutes(_authOptions.SessionAbsoluteLifetimeMinutes);
+        var individualExpiresAt = now.AddMinutes(
+            _authOptions.RefreshTokenIndividualLifetimeMinutes
+        );
+        var expiresAt = individualExpiresAt < absoluteExpiresAt
+            ? individualExpiresAt
+            : absoluteExpiresAt;
+        return (expiresAt, absoluteExpiresAt);
     }
 
     private bool IsBenignRotationReuse(RefreshToken stored) =>

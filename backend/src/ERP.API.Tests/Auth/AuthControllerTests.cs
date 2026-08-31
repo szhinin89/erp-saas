@@ -3,6 +3,7 @@ using ERP.API.Tests.Support;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
+using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Common;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
@@ -109,6 +110,61 @@ public sealed class AuthControllerTests
 
         response.Should().BeOfType<OkObjectResult>();
         sentRequest.Should().Be(command);
+    }
+
+    // ── Refresh: expiración absoluta de sesión (Fase 2) ──────────────────────
+
+    [Fact]
+    public async Task Refresh_con_sesion_dentro_de_la_ventana_absoluta_devuelve_200_y_re_emite_cookie()
+    {
+        var newExpiry = DateTime.UtcNow.AddMinutes(480);
+        var controller = BuildController(_ =>
+            Result<AuthResponseDto>.Success(
+                new AuthResponseDto(
+                    Guid.NewGuid(),
+                    "Ana",
+                    "ana",
+                    "ana@test.com",
+                    "Admin",
+                    Guid.NewGuid(),
+                    "new-access-token"
+                )
+                {
+                    RefreshToken = "new-refresh-token",
+                    RefreshTokenExpiry = newExpiry,
+                }
+            )
+        );
+
+        var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
+
+        response.Should().BeOfType<OkObjectResult>();
+        var setCookieHeaders = controller.ControllerContext.HttpContext.Response.Headers.SetCookie;
+        setCookieHeaders.Should().Contain(h => h.Contains("erp_refresh_token=new-refresh-token"));
+    }
+
+    [Fact]
+    public async Task Refresh_despues_de_vencer_la_ventana_absoluta_de_sesion_devuelve_401()
+    {
+        var controller = BuildController(_ =>
+            Result<AuthResponseDto>.Failure("Sesión expirada. Inicia sesión nuevamente.")
+        );
+
+        var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
+
+        response.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task Refresh_con_token_revocado_devuelve_401_no_200()
+    {
+        var controller = BuildController(_ =>
+            Result<AuthResponseDto>.Failure("Refresh token revocado. Inicia sesión nuevamente.")
+        );
+
+        var response = await controller.Refresh(new RefreshRequest("raw-token"), CancellationToken.None);
+
+        response.Should().BeOfType<UnauthorizedObjectResult>();
     }
 
     // ── Logout: la cookie de refresh se borra siempre, incluso si el mediator falla ──

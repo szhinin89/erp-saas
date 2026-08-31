@@ -93,7 +93,9 @@ public sealed class CreateAuthenticatedSessionHandlerTests
             TenantId,
             CompanyId,
             RefreshUserType.Identity,
-            "hash-" + Guid.NewGuid()
+            "hash-" + Guid.NewGuid(),
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
         );
 
     private static (

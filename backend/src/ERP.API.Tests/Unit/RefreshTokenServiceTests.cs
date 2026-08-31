@@ -35,12 +35,19 @@ public sealed class RefreshTokenServiceTests
         );
 
         rawToken.Should().NotBeNullOrEmpty();
-        expiry.Should().BeAfter(DateTime.UtcNow.AddDays(25));
+        // Con la política por defecto (SessionAbsoluteLifetimeMinutes=480, 8h) el vencimiento
+        // individual queda dominado por el límite absoluto de sesión, no por los 30 días de
+        // higiene de RefreshTokenIndividualLifetimeMinutes.
+        expiry.Should().BeCloseTo(DateTime.UtcNow.AddMinutes(480), TimeSpan.FromMinutes(1));
 
         repo.Stored.Should().HaveCount(1);
         repo.Stored[0].TokenHash.Should().Be(RefreshTokenService.Hash(rawToken));
         repo.Stored[0].FamilyId.Should().Be(repo.Stored[0].Id);
         repo.Stored[0].RotationDepth.Should().Be(0);
+        repo.Stored[0]
+            .AbsoluteExpiresAt.Should()
+            .BeCloseTo(DateTime.UtcNow.AddMinutes(480), TimeSpan.FromMinutes(1));
+        repo.Stored[0].ExpiresAt.Should().Be(repo.Stored[0].AbsoluteExpiresAt);
     }
 
     // ── Validación y rotación ─────────────────────────────────────────────
@@ -76,6 +83,113 @@ public sealed class RefreshTokenServiceTests
         original.ReasonRevoked.Should().Be("Rotación");
     }
 
+    // ── Expiración absoluta de sesión (Fase 2) ───────────────────────────────
+
+    [Fact]
+    public async Task ValidateAndRotate_dentro_de_la_ventana_absoluta_emite_nuevo_access_y_refresh()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo, new AuthOptions { SessionAbsoluteLifetimeMinutes = 480 });
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+
+        var (rawToken, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
+        var result = await service.ValidateAndRotateAsync(rawToken);
+
+        result.IsValid.Should().BeTrue(result.Error);
+        result.NewToken.Should().NotBeNullOrEmpty();
+        result.NewExpiry.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task ValidateAndRotate_despues_de_vencer_la_ventana_absoluta_falla()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        // Ventana absoluta ya vencida en el pasado: simula una sesión que superó su límite.
+        var service = Build(repo, new AuthOptions { SessionAbsoluteLifetimeMinutes = -1 });
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+
+        var (rawToken, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
+        var result = await service.ValidateAndRotateAsync(rawToken);
+
+        result.IsValid.Should().BeFalse();
+        result.Error.Should().Contain("Sesión expirada");
+        result.IsRateLimited.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ValidateAndRotate_la_rotacion_no_extiende_la_expiracion_absoluta()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo, new AuthOptions { SessionAbsoluteLifetimeMinutes = 480 });
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+
+        var (rawToken1, _) = await service.CreateAsync(
+            userId,
+            tenantId,
+            null,
+            RefreshUserType.Legacy
+        );
+        var original = repo.Stored[0];
+        var originalAbsolute = original.AbsoluteExpiresAt;
+
+        var result = await service.ValidateAndRotateAsync(rawToken1);
+        var successor = repo.Stored.First(t =>
+            t.TokenHash == RefreshTokenService.Hash(result.NewToken!)
+        );
+
+        successor.AbsoluteExpiresAt.Should().Be(originalAbsolute);
+    }
+
+    [Fact]
+    public async Task ValidateAndRotate_el_sucesor_hereda_la_misma_expiracion_absoluta_tras_varias_rotaciones()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo, new AuthOptions { SessionAbsoluteLifetimeMinutes = 480 });
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+
+        var (raw, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
+        var initialAbsolute = repo.Stored[0].AbsoluteExpiresAt;
+
+        var r1 = await service.ValidateAndRotateAsync(raw);
+        var r2 = await service.ValidateAndRotateAsync(r1.NewToken!);
+        var r3 = await service.ValidateAndRotateAsync(r2.NewToken!);
+
+        r3.IsValid.Should().BeTrue(r3.Error);
+        var thirdSuccessor = repo.Stored.First(t =>
+            t.TokenHash == RefreshTokenService.Hash(r3.NewToken!)
+        );
+        thirdSuccessor.AbsoluteExpiresAt.Should().Be(initialAbsolute);
+        thirdSuccessor.RotationDepth.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Create_el_vencimiento_individual_nunca_supera_el_limite_absoluto()
+    {
+        // Ventana absoluta más corta que la vida individual configurada (30 días por defecto):
+        // ExpiresAt debe quedar acotado al límite absoluto, nunca extenderlo.
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(
+            repo,
+            new AuthOptions
+            {
+                RefreshTokenIndividualLifetimeMinutes = 43_200,
+                SessionAbsoluteLifetimeMinutes = 60,
+            }
+        );
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+
+        await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
+
+        var stored = repo.Stored[0];
+        stored.ExpiresAt.Should().Be(stored.AbsoluteExpiresAt);
+        stored.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddMinutes(60), TimeSpan.FromMinutes(1));
+    }
+
     [Fact]
     public async Task ValidateAndRotate_token_inexistente_falla()
     {
@@ -99,7 +213,9 @@ public sealed class RefreshTokenServiceTests
             tenantId,
             null,
             RefreshUserType.Legacy,
-            "hash-revocado"
+            "hash-revocado",
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
         );
         revocado.Revoke("Test");
         repo.Stored.Add(revocado);
@@ -110,7 +226,9 @@ public sealed class RefreshTokenServiceTests
             tenantId,
             null,
             RefreshUserType.Legacy,
-            "hash-activo"
+            "hash-activo",
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
         );
         repo.Stored.Add(activoOtraFamilia);
 
@@ -165,8 +283,24 @@ public sealed class RefreshTokenServiceTests
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
-        var a = RefreshToken.Create(userId, tenantId, null, RefreshUserType.Legacy, "h1");
-        var b = RefreshToken.Create(userId, tenantId, null, RefreshUserType.Legacy, "h2");
+        var a = RefreshToken.Create(
+            userId,
+            tenantId,
+            null,
+            RefreshUserType.Legacy,
+            "h1",
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
+        );
+        var b = RefreshToken.Create(
+            userId,
+            tenantId,
+            null,
+            RefreshUserType.Legacy,
+            "h2",
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
+        );
         repo.Stored.AddRange([a, b]);
 
         await service.RevokeFamilyAsync(a.FamilyId, "Compromiso");
@@ -183,7 +317,10 @@ public sealed class RefreshTokenServiceTests
         RefreshTokenService.Hash("test-token").Should().Be(RefreshTokenService.Hash("test-token"));
     }
 
-    private static RefreshTokenService Build(FakeRefreshTokenRepository repo)
+    private static RefreshTokenService Build(
+        FakeRefreshTokenRepository repo,
+        AuthOptions? authOptions = null
+    )
     {
         var cache = new MemoryDistributedCache(
             Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions())
@@ -192,7 +329,8 @@ public sealed class RefreshTokenServiceTests
             cache,
             NullLogger<RefreshTokenRateLimiter>.Instance
         );
-        var options = Options.Create(new AuthOptions { RefreshRotationGraceSeconds = 5 });
+        authOptions ??= new AuthOptions { RefreshRotationGraceSeconds = 5 };
+        var options = Options.Create(authOptions);
         return new RefreshTokenService(
             repo,
             rateLimiter,
