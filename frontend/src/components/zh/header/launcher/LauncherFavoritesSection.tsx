@@ -69,7 +69,7 @@ export function LauncherFavoritesSection({
       </button>
 
       <div
-        className={`zh-launcher__favoritesContent${isExpanded ? " is-expanded" : ""}`}
+        className={`zh-launcher__favoritesContent${isExpanded ? " is-expanded" : ""}${isExpanded && showAll ? " is-full" : ""}`}
       >
         {favorites.length === 0 ? (
           <div className="zh-launcher__favoritesEmpty">

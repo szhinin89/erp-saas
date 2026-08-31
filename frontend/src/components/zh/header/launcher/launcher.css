@@ -7,12 +7,13 @@
 
 /* ── Nivel 0 — Favoritos ──────────────────────────────────── */
 .zh-launcher__favorites {
-  margin: var(--space-2) var(--space-3) var(--space-3);
-  padding: var(--space-1) 0;
+  margin: 0 var(--space-3) var(--space-3);
+  padding: 0;
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-container-low);
-  box-shadow: var(--shadow-xs);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: none;
+  overflow: hidden;
 }
 
 /* El header completo es el toggle del acordeón */
@@ -27,9 +28,11 @@
   padding: 0 var(--space-3);
   font-family: var(--font-family);
   text-align: left;
-  transition: background var(--transition);
-  min-height: 32px;
-  border-radius: var(--radius-md);
+  transition:
+    background var(--transition),
+    color var(--transition);
+  min-height: 40px;
+  border-radius: 0;
 }
 .zh-launcher__favoritesHeader:hover {
   background: var(--color-surface-container);
@@ -37,9 +40,8 @@
 .zh-launcher__favoritesIcon {
   width: 18px;
   height: 18px;
-  color: var(--color-warning);
+  color: var(--color-outline);
   flex-shrink: 0;
-  font-variation-settings: "FILL" 1;
 }
 .zh-launcher__favoritesTitle {
   flex: 1;
@@ -47,15 +49,15 @@
   font-size: var(--text-label-sm-size);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
 }
 .zh-launcher__favoritesCount {
   font-size: var(--text-label-sm-size);
   font-weight: 600;
-  color: var(--color-text-secondary);
-  background: var(--color-surface);
-  border-radius: 10px;
+  color: var(--color-primary);
+  background: var(--color-primary-fixed);
+  border-radius: var(--radius-pill);
   padding: 0 6px;
   min-width: 18px;
   text-align: center;
@@ -75,14 +77,22 @@
   transform: rotate(180deg);
 }
 
-/* Acordeón: max-height transition */
+/* Acordeón: max-height transition. El tope en expanded/full es generoso a propósito
+   (no ajustado al conteo visible) para que "mostrar más" nunca corte la lista — el
+   scroll real lo resuelve el panel contenedor (.zh-app-header__launcherBody). */
 .zh-launcher__favoritesContent {
   max-height: 0;
   overflow: hidden;
   transition: max-height 200ms ease;
+  background: var(--color-surface);
+  border-top: 1px solid transparent;
 }
 .zh-launcher__favoritesContent.is-expanded {
-  max-height: 240px;
+  max-height: 260px;
+  border-top-color: var(--color-border-light);
+}
+.zh-launcher__favoritesContent.is-expanded.is-full {
+  max-height: 1200px;
 }
 
 .zh-launcher__favoritesEmpty {
@@ -102,8 +112,18 @@
 .zh-launcher__favoritesBody {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding-top: 0;
+  gap: 2px;
+  padding: var(--space-1);
+}
+/* Compactado ligero: los accesos rápidos son una vista resumida, no necesitan la
+   misma altura de fila que el árbol completo. */
+.zh-launcher__favoritesBody .zh-launcher__item {
+  min-height: 36px;
+  margin: 0;
+}
+.zh-launcher__favoritesBody .zh-launcher__itemLink {
+  min-height: 36px;
+  padding-left: var(--space-2);
 }
 
 .zh-launcher__favoritesToggle {
@@ -125,22 +145,27 @@
 
 /* ── Nivel 2 — Módulos del ERP ───────────────────────────── */
 .zh-launcher__modules {
-  padding: 0 var(--space-2) var(--space-3);
-  background: var(--color-surface);
+  padding: 0 var(--space-3) var(--space-3);
+  background: transparent;
 }
 
 .zh-launcher__module + .zh-launcher__module {
-  margin-top: 2px;
+  margin-top: var(--space-1);
 }
 
 .zh-launcher__module {
-  border-radius: var(--radius-lg);
-  transition: background var(--transition);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    background var(--transition),
+    border-color var(--transition);
 }
 
 .zh-launcher__module.is-open {
-  padding: 2px 0 var(--space-2);
+  padding: var(--space-1) 0 var(--space-2);
   background: var(--color-surface-container-low);
+  border-color: var(--color-border-light);
+  overflow: hidden;
 }
 
 .zh-launcher__moduleToggle {
@@ -160,24 +185,29 @@
     background var(--transition),
     color var(--transition),
     box-shadow var(--transition);
-  min-height: 44px;
-  border-radius: var(--radius-md);
+  min-height: 42px;
+  border-radius: var(--radius-sm);
   box-shadow: inset 3px 0 0 transparent;
 }
-.zh-launcher__moduleToggle:hover {
-  background: var(--color-surface-container);
+/* Hover: fondo suave + indicador lateral neutro (más fino que el activo), para que
+   no dependa solo del color y quede distinguible de is-active. */
+.zh-launcher__moduleToggle:hover:not(.is-active) {
+  background: var(--color-surface);
+  box-shadow: inset 2px 0 0 var(--color-outline-variant);
 }
 .zh-launcher__moduleToggle.is-active {
   color: var(--color-brand-dark);
-  box-shadow: inset 3px 0 0 var(--color-brand-accent);
-}
-.zh-launcher__moduleToggle.is-active:not(:hover) {
   background: var(--color-primary-fixed);
+  box-shadow: inset 3px 0 0 var(--color-brand-accent);
 }
 
 .zh-launcher__moduleIcon {
   width: 20px;
   height: 20px;
+  color: var(--color-text-secondary);
+}
+.zh-launcher__moduleToggle.is-active .zh-launcher__moduleIcon,
+.zh-launcher__moduleToggle[aria-expanded="true"] .zh-launcher__moduleIcon {
   color: var(--color-primary);
 }
 .zh-launcher__moduleLabel {
@@ -203,15 +233,23 @@
 
 .zh-launcher__moduleBody {
   position: relative;
-  padding: 0 0 2px;
+  padding: var(--space-1) 0 0;
 }
 .zh-launcher__module--single {
   padding: 0;
 }
+.zh-launcher__module--single .zh-launcher__item {
+  min-height: 42px;
+  margin: 0;
+}
+.zh-launcher__module--single .zh-launcher__itemLink {
+  min-height: 42px;
+  padding-left: var(--space-3);
+}
 
 /* ── Nivel 3 — Categorías funcionales ────────────────────── */
 .zh-launcher__category {
-  margin: var(--space-1) 0 0;
+  margin: var(--space-1) var(--space-2) 0;
 }
 
 .zh-launcher__categoryToggle {
@@ -222,10 +260,10 @@
   border: none;
   background: none;
   cursor: pointer;
-  min-height: 24px;
-  width: calc(100% - var(--space-4));
-  margin: 0 var(--space-2);
-  padding: 2px var(--space-1) 2px 42px;
+  min-height: 34px;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-1) var(--space-1) var(--space-5);
   font-family: var(--font-family);
   text-align: left;
   transition:
@@ -234,22 +272,24 @@
   border-top: 1px solid var(--color-border-light);
 }
 .zh-launcher__category--depth-1 > .zh-launcher__categoryToggle {
-  padding-left: 58px;
+  padding-left: var(--space-8);
 }
 
 .zh-launcher__category--depth-2 > .zh-launcher__categoryToggle {
-  padding-left: 74px;
+  padding-left: calc(var(--space-8) + var(--space-4));
 }
 
 .zh-launcher__categoryToggle:hover {
   color: var(--color-text-primary);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
 }
 
 .zh-launcher__categoryLabel {
-  font-size: 11px;
+  font-size: var(--text-label-sm-size);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.045em;
+  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
 }
 /* Caret de categoría — mismo patrón que módulo */
@@ -267,34 +307,41 @@
 }
 .zh-launcher__categoryBody {
   position: relative;
-  padding: 1px 0 0;
+  padding: 2px 0 var(--space-1);
 }
 .zh-launcher__categoryBody::before {
   content: "";
   position: absolute;
   top: var(--space-1);
   bottom: var(--space-1);
-  left: 38px;
+  left: 27px;
   width: 1px;
   background: var(--color-outline-variant);
 }
 
 .zh-launcher__category--depth-1 > .zh-launcher__categoryBody::before {
-  left: 54px;
+  left: 43px;
 }
 
 .zh-launcher__category--depth-2 > .zh-launcher__categoryBody::before {
-  left: 70px;
+  left: 59px;
 }
 
 /* ── Nivel 4 — Formularios finales ───────────────────────── */
 .zh-launcher__item {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 20px;
+  grid-template-columns: minmax(0, 1fr) 28px;
   align-items: center;
-  min-height: 32px;
-  margin: 0;
+  min-height: 38px;
+  margin: 0 var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  box-shadow: inset 3px 0 0 transparent;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 .zh-launcher__item--depth-0 {
   padding-left: 0;
@@ -309,7 +356,7 @@
 .zh-launcher__categoryBody > .zh-launcher__item::before {
   content: "";
   position: absolute;
-  left: 35px;
+  left: 16px;
   top: 50%;
   z-index: 1;
   width: 7px;
@@ -323,13 +370,13 @@
 .zh-launcher__category--depth-1
   > .zh-launcher__categoryBody
   > .zh-launcher__item::before {
-  left: 51px;
+  left: 16px;
 }
 
 .zh-launcher__category--depth-2
   > .zh-launcher__categoryBody
   > .zh-launcher__item::before {
-  left: 67px;
+  left: 16px;
 }
 
 .zh-launcher__favorites .zh-launcher__item::before {
@@ -345,24 +392,28 @@
   border: none;
   background: none;
   cursor: pointer;
-  min-height: 32px;
-  padding: 0 var(--space-2) 0 34px;
+  min-height: 38px;
+  padding: 0 var(--space-1) 0 34px;
   font-family: var(--font-family);
   font-size: var(--text-body-md-size);
   color: var(--color-text-primary);
   text-decoration: none;
   text-align: left;
-  border-radius: var(--radius-md);
-  /* Indicador activo sin alterar el ancho del ítem. */
-  box-shadow: inset 3px 0 0 transparent;
+  border-radius: inherit;
   transition:
-    background var(--transition),
     color var(--transition),
-    box-shadow var(--transition);
+    background var(--transition);
 }
-/* Phase 5: hover subtle */
-.zh-launcher__itemLink:hover {
-  background: var(--color-surface-container);
+/* Hover: fondo suave + indicador lateral neutro. Se omite en la fila activa para que
+   el hover nunca se confunda con el indicador (más grueso y con color de marca) de
+   is-active — el estado activo siempre debe leerse más fuerte que un simple hover. */
+.zh-launcher__item:not(.is-active):hover,
+.zh-launcher__item:not(.is-active):focus-within {
+  background: var(--color-surface);
+  border-color: var(--color-border-light);
+  box-shadow: inset 2px 0 0 var(--color-outline-variant);
+}
+.zh-launcher__item:not(.is-active) .zh-launcher__itemLink:hover {
   text-decoration: none;
 }
 .zh-launcher__itemLink:active,
@@ -377,7 +428,10 @@
 /* Phase 3 + Phase 5: active state con contraste correcto */
 .zh-launcher__item.is-active .zh-launcher__itemLink {
   color: var(--color-brand-dark);
+}
+.zh-launcher__item.is-active {
   background: var(--color-primary-subtle);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
   box-shadow: inset 3px 0 0 var(--color-brand-accent);
 }
 
@@ -387,8 +441,8 @@
 }
 
 .zh-launcher__itemIcon {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   text-align: center;
   flex-shrink: 0;
   font-size: 15px;
@@ -413,10 +467,12 @@
   white-space: nowrap;
 }
 
+/* Nivel 4 (Formulario): texto normal — pesa menos que la Categoría (mayúscula/bold) y
+   el Módulo (bold 15px), para que la jerarquía se lea de un vistazo. */
 .zh-launcher__itemLabel {
   display: block;
-  font-size: var(--text-label-sm-size);
-  font-weight: 500;
+  font-size: var(--text-body-md-size);
+  font-weight: var(--text-body-md-weight);
   line-height: 1.25;
 }
 
@@ -441,10 +497,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  min-height: 18px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+.zh-launcher__fav:hover {
+  background: var(--color-surface-container);
 }
 .zh-launcher__favIcon {
   width: 16px;
@@ -474,6 +535,18 @@
 .zh-launcher__fav:hover .zh-launcher__favIcon {
   color: var(--color-warning);
   opacity: 1;
+}
+
+/* Touch/mobile: no hay :hover real, así que la estrella no-favorita debe verse
+   siempre, pero discreta (baja opacidad) — evita que el menú luzca "sucio" de
+   estrellas mientras sigue siendo descubrible sin gesto de hover. */
+@media (hover: none) {
+  .zh-launcher__favIcon {
+    opacity: 0.45;
+  }
+  .zh-launcher__fav.is-on .zh-launcher__favIcon {
+    opacity: 1;
+  }
 }
 
 /* ── Foco visible ─────────────────────────────────────────── */

@@ -44,6 +44,7 @@ export function LauncherMenuItem({
           aria-label={
             item.description ? `${item.label}: ${item.description}` : item.label
           }
+          aria-current={active ? "page" : undefined}
           onClick={() => onNavigate(item.to!)}
         >
           <LauncherIcon
