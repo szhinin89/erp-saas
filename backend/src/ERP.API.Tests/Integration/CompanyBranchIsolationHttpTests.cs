@@ -4,6 +4,7 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -14,8 +15,8 @@ namespace ERP.API.Tests.Integration;
 /// <summary>
 /// FASE 4C (ZH-AUTH-HTTP-COMPANY-BRANCH-ISOLATION-04C) — prueba de integración HTTP real, contra
 /// PostgreSQL (Testcontainers) y el <see cref="Program"/> completo, de lo que FASE 4B ya probó a
-/// nivel unitario con mocks: que un request con X-Company-Id (Empresa A, con membership real) y
-/// X-Branch-Id de una sucursal de Empresa B nunca pasa por BranchScopeBehavior/IBranchAccessGuard.
+/// nivel unitario con mocks: que los headers X-Company-Id y X-Branch-Id pasan por middleware,
+/// controller, autorización, MediatR, CompanyScopeBehavior, BranchScopeBehavior y guards reales.
 /// Sigue el mismo patrón que <see cref="CajaVentasFlowFixture"/> (PostgreSqlTestWebAppFactory +
 /// TestJwtFactory) — no se introduce infraestructura de test nueva.
 ///
@@ -26,26 +27,20 @@ namespace ERP.API.Tests.Integration;
 /// vacía), y su policy <c>perm:{CajaPermissions.View}</c> la satisface el bypass de rol Admin en
 /// RuntimePermissionAuthorizer sin necesitar perfiles/permisos granulares.
 ///
-/// Nota de diseño (regla 4 de la fase): igual que CajaVentasFlowFixture, este factory reemplaza
-/// ICurrentTenant/ICurrentCompany/ICurrentUser por dobles mutables fijados directamente en el
-/// fixture — la empresa operativa NO se resuelve leyendo el header X-Company-Id real (eso ya lo
-/// cubre CurrentCompanyService, una clase trivial de una línea, sin lógica de negocio que probar).
-/// Lo que sí viaja como header HTTP real, exactamente como lo hace el frontend, es X-Branch-Id —
-/// que es también el único de los dos por el que puede colarse una sucursal cruzada, porque
-/// CompanyScopeBehavior ya fija la empresa operativa antes de que BranchScopeBehavior/
-/// IBranchAccessGuard evalúen la sucursal. Construir un factory que además parsee X-Company-Id
-/// desde el header habría requerido reimplementar el middleware de autenticación de pruebas ya
-/// existente — fuera de alcance para esta fase (regla 5: no convertir esto en refactor de auth).
+/// Nota de diseño: el factory usa la opción opt-in useHttpCompanyContext para conservar
+/// CurrentCompanyService real en esta suite; así X-Company-Id se resuelve desde HttpContext.
 /// </summary>
 public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlTestWebAppFactory _baseFactory = new();
+    private readonly PostgreSqlTestWebAppFactory _baseFactory = new(useHttpCompanyContext: true);
     private Guid _adminId;
 
     public HttpClient Client { get; private set; } = null!;
     public Guid TenantId { get; private set; }
     public Guid CompanyAId { get; private set; }
+    public Guid CompanyBId { get; private set; }
     public Guid BranchAId { get; private set; }
+    public Guid BranchAWithoutAccessId { get; private set; }
     public Guid BranchBId { get; private set; }
     public Guid UserId { get; private set; }
 
@@ -66,8 +61,9 @@ public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
         );
 
         _baseFactory.MutableTenant.TenantId = TenantId;
-        _baseFactory.MutableCompany.CompanyId = CompanyAId;
         _baseFactory.MutableUser.UserId = UserId;
+        JobCompanyContext.Current = Guid.Empty;
+        JobBranchContext.Current = Guid.Empty;
     }
 
     public async Task DisposeAsync() => await _baseFactory.DisposeAsync();
@@ -102,12 +98,22 @@ public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
         db.Companies.AddRange(companyA, companyB);
         await db.SaveChangesAsync();
         CompanyAId = companyA.Id;
+        CompanyBId = companyB.Id;
 
         var branchA = NewBranch(TenantId, companyA.Id, "Matriz A", "SUC-A", _adminId);
+        var branchAWithoutAccess = NewBranch(
+            TenantId,
+            companyA.Id,
+            "Sucursal A Sin Acceso",
+            "SUC-A2",
+            _adminId,
+            isMainBranch: false
+        );
         var branchB = NewBranch(TenantId, companyB.Id, "Matriz B", "SUC-B", _adminId);
-        db.Branches.AddRange(branchA, branchB);
+        db.Branches.AddRange(branchA, branchAWithoutAccess, branchB);
         await db.SaveChangesAsync();
         BranchAId = branchA.Id;
+        BranchAWithoutAccessId = branchAWithoutAccess.Id;
         BranchBId = branchB.Id;
 
         var user = IdentityUser.Create(
@@ -140,7 +146,8 @@ public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
         Guid companyId,
         string name,
         string code,
-        Guid createdBy
+        Guid createdBy,
+        bool isMainBranch = true
     ) =>
         Branch.Create(
             tenantId,
@@ -166,7 +173,7 @@ public sealed class CompanyBranchIsolationHttpFixture : IAsyncLifetime
             null,
             null,
             null,
-            isMainBranch: true,
+            isMainBranch: isMainBranch,
             createdBy,
             companyId: companyId
         );
@@ -181,30 +188,90 @@ public sealed class CompanyBranchIsolationHttpTests : IClassFixture<CompanyBranc
     public CompanyBranchIsolationHttpTests(CompanyBranchIsolationHttpFixture fixture) => _f = fixture;
 
     [Fact]
-    public async Task Request_con_X_Company_Id_Empresa_A_y_X_Branch_Id_de_Empresa_B_es_rechazado_403()
+    public async Task Request_con_X_Company_Id_y_X_Branch_Id_ambos_de_Empresa_A_es_aceptado_200()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
-        request.Headers.Add("X-Branch-Id", _f.BranchBId.ToString());
+        using var response = await SendAsync(_f.CompanyAId, _f.BranchAId);
 
-        var response = await _f.Client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Usuario_sin_acceso_a_Empresa_B_falla_403_y_no_cambia_contexto()
+    {
+        using var okBefore = await SendAsync(_f.CompanyAId, _f.BranchAId);
+        okBefore.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(_f.CompanyBId, _f.BranchBId);
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        body.Should()
+            .NotContain(
+                _f.CompanyBId.ToString(),
+                "el body de un 403 no debe filtrar el identificador de la empresa no autorizada"
+            );
+
+        using var okAfter = await SendAsync(_f.CompanyAId, _f.BranchAId);
+        okAfter.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Branch_de_otra_company_con_Empresa_A_falla_403()
+    {
+        using var response = await SendAsync(_f.CompanyAId, _f.BranchBId);
         var body = await response.Content.ReadAsStringAsync();
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         body.Should()
             .NotContain(
                 _f.BranchBId.ToString(),
-                "el body de un 403 nunca debe filtrar información de la sucursal cruzada"
+                "el body de un 403 no debe filtrar información de la sucursal cruzada"
             );
     }
 
     [Fact]
-    public async Task Request_con_X_Company_Id_y_X_Branch_Id_ambos_de_Empresa_A_es_aceptado_200()
+    public async Task Branch_de_la_misma_company_sin_CompanyUserBranch_falla_403()
+    {
+        using var response = await SendAsync(_f.CompanyAId, _f.BranchAWithoutAccessId);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Header_company_invalido_falla_403_y_no_reutiliza_contexto_anterior()
+    {
+        using var okBefore = await SendAsync(_f.CompanyAId, _f.BranchAId);
+        okBefore.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync("not-a-company-guid", _f.BranchAId.ToString());
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        using var okAfter = await SendAsync(_f.CompanyAId, _f.BranchAId);
+        okAfter.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Header_branch_invalido_falla_403_y_no_reutiliza_contexto_anterior()
+    {
+        using var okBefore = await SendAsync(_f.CompanyAId, _f.BranchAId);
+        okBefore.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(_f.CompanyAId.ToString(), "not-a-branch-guid");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        using var okAfter = await SendAsync(_f.CompanyAId, _f.BranchAId);
+        okAfter.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private Task<HttpResponseMessage> SendAsync(Guid companyId, Guid branchId) =>
+        SendAsync(companyId.ToString(), branchId.ToString());
+
+    private async Task<HttpResponseMessage> SendAsync(string companyId, string branchId)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
-        request.Headers.Add("X-Branch-Id", _f.BranchAId.ToString());
+        request.Headers.Add("X-Company-Id", companyId);
+        request.Headers.Add("X-Branch-Id", branchId);
 
-        var response = await _f.Client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return await _f.Client.SendAsync(request);
     }
 }

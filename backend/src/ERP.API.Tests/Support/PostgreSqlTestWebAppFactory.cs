@@ -15,12 +15,19 @@ namespace ERP.API.Tests.Support;
 /// </summary>
 internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private readonly bool _useHttpCompanyContext;
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("erp_test")
         .WithUsername("erp")
         .WithPassword("erp_test_secret")
         .Build();
+
+    public PostgreSqlTestWebAppFactory(bool useHttpCompanyContext = false)
+    {
+        _useHttpCompanyContext = useHttpCompanyContext;
+    }
 
     public MutableCurrentTenant MutableTenant { get; } = new();
     public MutableCurrentCompany MutableCompany { get; } = new();
@@ -104,10 +111,13 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
 
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentTenant)).ToList())
                 services.Remove(d);
-            foreach (
-                var d in services.Where(x => x.ServiceType == typeof(ICurrentCompany)).ToList()
-            )
-                services.Remove(d);
+            if (!_useHttpCompanyContext)
+            {
+                foreach (
+                    var d in services.Where(x => x.ServiceType == typeof(ICurrentCompany)).ToList()
+                )
+                    services.Remove(d);
+            }
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentUser)).ToList())
                 services.Remove(d);
 
@@ -115,10 +125,13 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
             services.AddSingleton<ICurrentTenant>(sp =>
                 sp.GetRequiredService<MutableCurrentTenant>()
             );
-            services.AddSingleton(MutableCompany);
-            services.AddSingleton<ICurrentCompany>(sp =>
-                sp.GetRequiredService<MutableCurrentCompany>()
-            );
+            if (!_useHttpCompanyContext)
+            {
+                services.AddSingleton(MutableCompany);
+                services.AddSingleton<ICurrentCompany>(sp =>
+                    sp.GetRequiredService<MutableCurrentCompany>()
+                );
+            }
             services.AddSingleton(MutableUser);
             services.AddSingleton<ICurrentUser>(sp => sp.GetRequiredService<MutableCurrentUser>());
 
