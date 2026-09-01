@@ -510,6 +510,7 @@
   "app.header.appLauncher.showLess": "Ver menos",
   "app.header.search.comingSoon": "Búsqueda global (próximamente)",
   "app.header.notifications.comingSoon": "Notificaciones (próximamente)",
+  "app.header.branch.select": "Seleccionar sucursal",
   "app.languageSwitcher.aria": "Cambiar idioma",
   "app.language.es": "Español",
   "app.language.en": "Inglés",

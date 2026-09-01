@@ -223,6 +223,103 @@ public sealed class SwitchCompanyHandlerTests
     }
 
     [Fact]
+    public async Task SwitchCompany_resuelve_la_sucursal_principal_de_la_empresa_destino_y_nunca_reutiliza_la_de_otra_empresa()
+    {
+        // FASE 4B — caso 4: usuario cambia de Empresa A a Empresa B (el destino de BuildValidSwitch
+        // es "company"). Ambas empresas tienen su propia sucursal marcada IsMainBranch dentro del
+        // mismo tenant. ResolveMainBranchIdAsync filtra por CompanyId en memoria sobre TODAS las
+        // sucursales activas del tenant — este test prueba explícitamente que ese filtro nunca deja
+        // pasar la sucursal principal de la empresa anterior cuando ambas coexisten en el resultado
+        // de IBranchRepository.GetAsync.
+        var (f, tenant, companyB, user, _) = BuildValidSwitch();
+        var otherCompanyAId = Guid.NewGuid();
+        var branchDeEmpresaA = NewMainBranch(tenant.Id, otherCompanyAId);
+        var branchDeEmpresaB = NewMainBranch(tenant.Id, companyB.Id);
+
+        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { branchDeEmpresaA, branchDeEmpresaB });
+
+        var sessionDto = new AuthenticatedSessionDto(
+            new UserSessionDto(
+                Guid.NewGuid(),
+                tenant.Id,
+                companyB.Id,
+                user.Id,
+                branchDeEmpresaB.Id,
+                "terminal-unresolved",
+                "Active",
+                DateTime.UtcNow,
+                null,
+                null
+            ),
+            "raw-refresh-token",
+            DateTime.UtcNow.AddDays(30)
+        );
+
+        CreateAuthenticatedSessionCommand? sentCommand = null;
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<CreateAuthenticatedSessionCommand>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<IRequest<Result<AuthenticatedSessionDto>>, CancellationToken>(
+                (cmd, _) => sentCommand = (CreateAuthenticatedSessionCommand)cmd
+            )
+            .ReturnsAsync(Result<AuthenticatedSessionDto>.Success(sessionDto));
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(
+            new SwitchCompanyCommand(companyB.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        sentCommand.Should().NotBeNull();
+        sentCommand!.CompanyId.Should().Be(companyB.Id);
+        sentCommand.BranchId.Should().Be(branchDeEmpresaB.Id);
+        sentCommand.BranchId.Should().NotBe(branchDeEmpresaA.Id);
+    }
+
+    [Fact]
+    public async Task SwitchCompany_con_sucursales_principales_ambiguas_entre_empresas_no_crea_sesion_en_vez_de_adivinar()
+    {
+        // Si por un defecto de datos existieran DOS sucursales IsMainBranch para la MISMA empresa
+        // destino, el heurístico no debe adivinar cuál usar — debe comportarse igual que "sin
+        // sucursal principal resoluble" (sin UserSession), nunca elegir una al azar ni reutilizar
+        // la de otra empresa.
+        var (f, tenant, companyB, user, _) = BuildValidSwitch();
+        var branchUno = NewMainBranch(tenant.Id, companyB.Id);
+        var branchDos = NewMainBranch(tenant.Id, companyB.Id);
+        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { branchUno, branchDos });
+        f.RefreshTokenService.Setup(s =>
+                s.CreateAsync(
+                    user.Id,
+                    tenant.Id,
+                    companyB.Id,
+                    RefreshUserType.Identity,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(("legacy-refresh-token", DateTime.UtcNow.AddDays(30)));
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(
+            new SwitchCompanyCommand(companyB.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.RefreshToken.Should().Be("legacy-refresh-token");
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<CreateAuthenticatedSessionCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public async Task SwitchCompany_sin_sucursal_principal_resoluble_preserva_el_flujo_anterior()
     {
         var (f, tenant, company, user, _) = BuildValidSwitch();

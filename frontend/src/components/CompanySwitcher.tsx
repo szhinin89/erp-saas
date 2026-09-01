@@ -2,20 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CompanySwitcher.css";
 import { authService } from "../modules/auth/api/authService";
-import { companyManagementService } from "../modules/company-management/api/companyManagementService";
-import { bumpCompanyOperationalSession } from "../lib/session/companySession";
-import { loadDecimalConfig } from "../lib/config/decimal.config";
-import { logDevSessionContext } from "../lib/session/devSessionLog";
+import { syncCompanySelection } from "../modules/auth/syncCompanySelection";
 import { useAuthStore } from "../store/authStore";
-import { useSessionStore } from "../store/sessionStore";
-import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingStatusStore";
 import type { AccessibleCompany } from "../types/access";
-import type { AuthResponse } from "../types/auth";
 
 export function CompanySwitcher() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const login = useAuthStore((s) => s.login);
   const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
   const [switching, setSwitching] = useState(false);
 
@@ -49,25 +42,7 @@ export function CompanySwitcher() {
     setSwitching(true);
     try {
       const session = await authService.switchCompany(companyId);
-      const auth: AuthResponse = {
-        userId: session.userId,
-        fullName: session.fullName,
-        username: session.username,
-        email: session.email,
-        role: session.role,
-        tenantId: session.tenantId,
-        companyId: session.companyId,
-        token: session.token,
-        refreshToken: session.refreshToken,
-        refreshTokenExpiry: session.refreshTokenExpiry,
-      };
-      login(auth);
-      bumpCompanyOperationalSession();
-      logDevSessionContext("switch-company");
-      void companyManagementService.getCurrent();
-      void useSessionStore.getState().refresh();
-      void loadDecimalConfig();
-      void useElectronicInvoicingStatusStore.getState().refresh();
+      await syncCompanySelection(session);
       navigate("/dashboard", { replace: true });
     } finally {
       setSwitching(false);

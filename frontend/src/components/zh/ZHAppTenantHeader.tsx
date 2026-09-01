@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useAuthStore } from "../../store/authStore";
+import { useActiveBranchStore } from "../../store/activeBranchStore";
 import { useSessionStore } from "../../store/sessionStore";
 import { useI18n } from "../../i18n/i18n";
 import { useAuthenticatedImage } from "../../hooks/useAuthenticatedImage";
@@ -27,12 +28,16 @@ export function ZHAppTenantHeader(props: {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const tenant = useSessionStore((s) => s.tenant);
+  const branch = useActiveBranchStore((s) => s.branch);
   const logoSrc = useAuthenticatedImage(tenant?.logo?.url);
   const { navigation, rightExtra, onLogout } = props;
 
   if (!user) return null;
 
   const tenantName = tenant?.displayName || t("app.tenant.defaultName");
+  const branchName = user.companyId
+    ? (branch?.name ?? t("app.header.branch.select", "Seleccionar sucursal"))
+    : null;
 
   return (
     <div className="zh-tenant-header zh-app-tenantHeader">
@@ -52,6 +57,7 @@ export function ZHAppTenantHeader(props: {
 
           <ZHHeaderCompanyIdentity
             name={tenantName || user.fullName || "ZH"}
+            branchName={branchName}
             role={user.role}
             logoSrc={logoSrc}
           />

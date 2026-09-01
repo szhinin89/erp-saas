@@ -37,11 +37,11 @@
   min-width: 0;
 }
 
-/* ── 2. Company identity (todo en una sola fila: logo, nombre, badges) ── */
+/* ── 2. Company identity ─────────────────────────────────── */
 .zh-app-header__identity {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
   flex: 0 1 auto;
 }
@@ -70,6 +70,14 @@
   object-fit: cover;
 }
 
+.zh-app-header__identityText {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
 .zh-app-header__name {
   font-size: 15px;
   font-weight: 700;
@@ -79,7 +87,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   text-transform: uppercase;
-  flex: 0 1 auto;
+  max-width: min(44vw, 520px);
 }
 .zh-app-header__context {
   font-size: 12px;
@@ -87,8 +95,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 /* Improve contrast of RuntimeModeBadge (.badge--blue) on the primary-colored header */
@@ -535,6 +542,9 @@
     width: 36px;
     padding: 0;
   }
+  .zh-app-header__name {
+    max-width: calc(100vw - 92px);
+  }
   .zh-app-tenantRightExtra .company-switcher-label {
     display: none;
   }
@@ -568,4 +578,3 @@
     min-height: 38px;
   }
 }
-

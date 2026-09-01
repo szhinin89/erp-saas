@@ -6,16 +6,21 @@ function initials(name: string) {
   return init || "ZH";
 }
 
-/** Identidad de empresa activa: logo/iniciales, nombre, rol y contexto de sesión (Company/SuperAdmin). */
+/** Identidad operativa activa: logo/iniciales, empresa, sucursal y rol. */
 export function ZHHeaderCompanyIdentity(props: {
   name: string;
+  branchName?: string | null;
   role: string;
   logoSrc?: string | null;
 }) {
-  const { name, role, logoSrc } = props;
+  const { name, branchName, role, logoSrc } = props;
+  const operationalContext = branchName ? `${name} / ${branchName}` : name;
+  const title = branchName
+    ? `Empresa: ${name}\nSucursal: ${branchName}\nRol: ${role}`
+    : `Empresa: ${name}\nRol: ${role}`;
 
   return (
-    <div className="zh-app-header__identity">
+    <div className="zh-app-header__identity" title={title}>
       <div className="zh-app-header__logo" aria-hidden="true">
         {logoSrc ? (
           <img className="zh-app-header__logoImg" src={logoSrc} alt="" />
@@ -23,10 +28,12 @@ export function ZHHeaderCompanyIdentity(props: {
           <span className="zh-app-header__initials">{initials(name)}</span>
         )}
       </div>
-      <div className="zh-app-header__name">{name}</div>
-      <div className="zh-app-header__context">
-        <span className="zh-tenant-badge">{role}</span>
-        <RuntimeModeBadge />
+      <div className="zh-app-header__identityText">
+        <div className="zh-app-header__name">{operationalContext}</div>
+        <div className="zh-app-header__context">
+          <span className="zh-tenant-badge">{role}</span>
+          <RuntimeModeBadge />
+        </div>
       </div>
     </div>
   );

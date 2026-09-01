@@ -510,6 +510,7 @@
   "app.header.appLauncher.showLess": "Show less",
   "app.header.search.comingSoon": "Global search (coming soon)",
   "app.header.notifications.comingSoon": "Notifications (coming soon)",
+  "app.header.branch.select": "Select branch",
   "app.languageSwitcher.aria": "Change language",
   "app.language.es": "Spanish",
   "app.language.en": "English",

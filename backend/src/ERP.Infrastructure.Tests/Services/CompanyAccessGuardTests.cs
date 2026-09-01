@@ -1,0 +1,182 @@
+using ERP.Application.Common;
+using ERP.Application.Common.Security;
+using ERP.Application.Modules.Companies;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Tenants.Interfaces;
+using ERP.Infrastructure.Services;
+using FluentAssertions;
+using Moq;
+
+namespace ERP.Infrastructure.Tests.Services;
+
+/// <summary>
+/// FASE 4B (ZH-AUTH-BACKEND-COMPANY-BRANCH-ISOLATION-04B) — prueba directamente la implementación
+/// real de <see cref="CompanyAccessGuard"/> (no un mock de la interfaz, como hacen
+/// CompanyScopeBehaviorTests). El header X-Company-Id nunca es autoridad por sí solo: este guard
+/// es el único punto que revalida, en cada request, que la empresa pertenece al tenant del JWT y
+/// que el usuario tiene una CompanyUserMembership real y activa en ella.
+/// </summary>
+public sealed class CompanyAccessGuardTests
+{
+    private static readonly Guid CreatedBy = Guid.NewGuid();
+
+    private sealed class Fixture
+    {
+        public Mock<IAccessRepository> Access { get; } = new();
+        public Mock<ICompanyRepository> Companies { get; } = new();
+        public Mock<ICurrentUser> CurrentUser { get; } = new();
+        public Mock<ICurrentTenant> CurrentTenant { get; } = new();
+        public Mock<ICurrentCompany> CurrentCompany { get; } = new();
+        public Mock<ITenantRepository> Tenants { get; } = new();
+        public Mock<ISecurityMetrics> Metrics { get; } = new();
+
+        public CompanyAccessGuard BuildGuard() =>
+            new(
+                Access.Object,
+                Companies.Object,
+                CurrentUser.Object,
+                CurrentTenant.Object,
+                CurrentCompany.Object,
+                Tenants.Object,
+                Metrics.Object
+            );
+    }
+
+    private static (Fixture f, Tenant tenant, Company company, Guid userId) BuildAuthenticatedContext()
+    {
+        var f = new Fixture();
+        var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], CreatedBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Empresa A S.A.",
+            createdBy: CreatedBy
+        );
+        var userId = Guid.NewGuid();
+
+        f.CurrentUser.Setup(u => u.IsAuthenticated).Returns(true);
+        f.CurrentUser.Setup(u => u.UserId).Returns(userId);
+        f.CurrentTenant.Setup(t => t.TenantId).Returns(tenant.Id);
+        f.Tenants.Setup(t => t.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+
+        return (f, tenant, company, userId);
+    }
+
+    [Fact]
+    public async Task RequireMembershipAsync_sin_membership_en_la_empresa_rechaza_el_acceso()
+    {
+        var (f, tenant, company, userId) = BuildAuthenticatedContext();
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("No tiene acceso a esta empresa.");
+        f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Once);
+    }
+
+    [Fact]
+    public async Task RequireMembershipAsync_con_membership_inactiva_rechaza_el_acceso()
+    {
+        var (f, tenant, company, userId) = BuildAuthenticatedContext();
+        var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
+        membership.Deactivate(CreatedBy);
+
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("No tiene acceso a esta empresa.");
+    }
+
+    [Fact]
+    public async Task RequireMembershipAsync_empresa_de_otro_tenant_rechaza_el_acceso_como_fuga_cross_company()
+    {
+        var (f, tenant, _, userId) = BuildAuthenticatedContext();
+        var otherTenant = Tenant.Create("Otro Tenant", $"other-{Guid.NewGuid():N}"[..16], CreatedBy);
+        var companyDeOtroTenant = Company.CreateManaged(
+            otherTenant.Id,
+            "1790012345002",
+            "Empresa de otro tenant S.A.",
+            createdBy: CreatedBy
+        );
+
+        f.Companies.Setup(c => c.GetByIdAsync(companyDeOtroTenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(companyDeOtroTenant);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(companyDeOtroTenant.Id);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Empresa no encontrada o no pertenece al tenant activo.");
+        f.Metrics.Verify(m => m.RecordCrossCompanyDenied(null), Times.Once);
+        f.Access.Verify(
+            a =>
+                a.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never,
+            "nunca debe consultar membership de una empresa que ni siquiera pertenece al tenant del JWT"
+        );
+    }
+
+    [Fact]
+    public async Task RequireMembershipAsync_con_membership_activa_en_la_empresa_correcta_permite_el_acceso()
+    {
+        var (f, tenant, company, userId) = BuildAuthenticatedContext();
+        var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
+
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CompanyId.Should().Be(company.Id);
+        result.Value.TenantId.Should().Be(tenant.Id);
+        result.Value.UserId.Should().Be(userId);
+    }
+
+    [Fact]
+    public async Task RequireCurrentCompanyAsync_sin_header_X_Company_Id_rechaza_antes_de_consultar_membership()
+    {
+        var (f, _, _, _) = BuildAuthenticatedContext();
+        f.CurrentCompany.Setup(c => c.HasCompanyContext).Returns(false);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireCurrentCompanyAsync();
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("No hay empresa operativa seleccionada.");
+        f.Metrics.Verify(m => m.RecordInvalidCompanyContext(null), Times.Once);
+        f.Companies.Verify(
+            c => c.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+}

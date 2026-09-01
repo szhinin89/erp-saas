@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../api/authService";
-import { bumpCompanyOperationalSession } from "../../../lib/session/companySession";
-import { logDevSessionContext } from "../../../lib/session/devSessionLog";
+import { syncCompanySelection } from "../syncCompanySelection";
 import { useAuthStore } from "../../../store/authStore";
-import type { AuthResponse } from "../../../types/auth";
 import type { AccessibleCompany } from "../../../types/access";
 import { useI18n } from "../../../i18n/i18n";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
@@ -18,7 +16,6 @@ export function CompanySelectPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
   useDocumentTitle(t("subscriberSelect.title", "Selecciona una empresa"));
-  const login = useAuthStore((s) => s.login);
   const user = useAuthStore((s) => s.user);
 
   const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
@@ -61,21 +58,7 @@ export function CompanySelectPage() {
     setLoading(true);
     try {
       const session = await authService.switchCompany(companyId);
-      const auth: AuthResponse = {
-        userId: session.userId,
-        fullName: session.fullName,
-        username: session.username,
-        email: session.email,
-        role: session.role,
-        tenantId: session.tenantId,
-        companyId: session.companyId,
-        token: session.token,
-        refreshToken: session.refreshToken,
-        refreshTokenExpiry: session.refreshTokenExpiry,
-      };
-      login(auth);
-      bumpCompanyOperationalSession();
-      logDevSessionContext("switch-company");
+      await syncCompanySelection(session);
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       const ax = err as {
