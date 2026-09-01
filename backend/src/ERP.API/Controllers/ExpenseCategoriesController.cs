@@ -2,7 +2,6 @@ using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Expenses.UseCases.Categories;
 using ERP.Domain.Kernel.Permissions;
-using ERP.Domain.Modules.Expenses.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

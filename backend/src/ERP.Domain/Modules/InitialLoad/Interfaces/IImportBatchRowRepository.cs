@@ -1,5 +1,4 @@
 using ERP.Domain.Modules.InitialLoad.Entities;
-using ERP.Domain.Modules.InitialLoad.Enums;
 
 namespace ERP.Domain.Modules.InitialLoad.Interfaces;
 

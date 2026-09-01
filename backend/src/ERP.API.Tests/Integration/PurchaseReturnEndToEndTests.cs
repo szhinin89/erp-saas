@@ -1,9 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
-using ERP.Application.Modules.Finance.DTOs;
 using ERP.Application.Modules.Finance.UseCases;
-using ERP.Application.Modules.Finance.UseCases.Payments;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Branches.Entities;

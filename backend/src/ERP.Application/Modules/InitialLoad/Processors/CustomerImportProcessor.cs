@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
@@ -10,6 +9,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using MediatR;
+using System.Text.Json;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 

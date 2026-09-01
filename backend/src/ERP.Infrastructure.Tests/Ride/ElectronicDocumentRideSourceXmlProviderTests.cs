@@ -3,9 +3,9 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Audit;
-using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
@@ -23,7 +23,6 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Testcontainers.PostgreSql;
 

@@ -1,8 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
-using ERP.Application.Modules.Finance.DTOs;
-using ERP.Application.Modules.Finance.UseCases.Payments;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -18,14 +16,13 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
-using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Persistence.Services;
 using FluentAssertions;
-using Moq;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence;

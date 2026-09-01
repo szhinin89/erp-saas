@@ -5,7 +5,6 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;

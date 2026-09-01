@@ -1,4 +1,3 @@
-using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentXml;
@@ -7,6 +6,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using FluentAssertions;
 using Moq;
+using System.Text;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 

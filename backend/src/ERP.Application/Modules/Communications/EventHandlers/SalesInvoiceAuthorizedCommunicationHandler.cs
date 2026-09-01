@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Net;
-using System.Net.Mail;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.DTOs;
@@ -16,6 +13,9 @@ using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
+using System.Net;
+using System.Net.Mail;
 
 namespace ERP.Application.Modules.Communications.EventHandlers;
 

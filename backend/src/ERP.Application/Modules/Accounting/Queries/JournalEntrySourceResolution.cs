@@ -1,7 +1,7 @@
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
-using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.Queries;
 

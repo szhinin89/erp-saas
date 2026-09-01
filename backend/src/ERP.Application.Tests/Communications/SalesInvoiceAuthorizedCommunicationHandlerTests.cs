@@ -1,6 +1,6 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Communications.EventHandlers;
 using ERP.Application.Modules.Communications.DTOs;
+using ERP.Application.Modules.Communications.EventHandlers;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;

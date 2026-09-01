@@ -49,13 +49,13 @@ public sealed class GetPermissionCatalogHandlerTests
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         foreach (var group in result.Value!.Groups)
-        foreach (var category in group.Categories)
-        foreach (var item in category.Items)
-        {
-            item.Actions.Should().NotBeEmpty();
-            item.Actions[0].Code.Should().Be(item.Permission);
-            item.Actions[0].Label.Should().Be("Ver / Acceder");
-        }
+            foreach (var category in group.Categories)
+                foreach (var item in category.Items)
+                {
+                    item.Actions.Should().NotBeEmpty();
+                    item.Actions[0].Code.Should().Be(item.Permission);
+                    item.Actions[0].Label.Should().Be("Ver / Acceder");
+                }
     }
 
     [Fact]
@@ -79,9 +79,9 @@ public sealed class GetPermissionCatalogHandlerTests
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
 
         foreach (var group in result.Value!.Groups)
-        foreach (var category in group.Categories)
-        foreach (var item in category.Items)
-            item.Actions.Select(a => a.Code).Should().OnlyHaveUniqueItems();
+            foreach (var category in group.Categories)
+                foreach (var item in category.Items)
+                    item.Actions.Select(a => a.Code).Should().OnlyHaveUniqueItems();
     }
 
     [Fact]

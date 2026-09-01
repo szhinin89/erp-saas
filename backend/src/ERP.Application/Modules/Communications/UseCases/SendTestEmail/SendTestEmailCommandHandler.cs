@@ -1,8 +1,8 @@
-using System.Net.Mail;
 using ERP.Application.Common;
 using ERP.Application.Modules.Communications.DTOs;
 using ERP.Application.Modules.Communications.Services;
 using MediatR;
+using System.Net.Mail;
 
 namespace ERP.Application.Modules.Communications.UseCases.SendTestEmail;
 

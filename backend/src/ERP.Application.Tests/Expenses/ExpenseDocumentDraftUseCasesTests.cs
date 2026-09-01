@@ -1,4 +1,3 @@
-using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.DocTypes.Services;
@@ -14,12 +13,12 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.DocTypes.Constants;
-using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using FluentAssertions;
 using Moq;
+using System.Reflection;
 
 namespace ERP.Application.Tests.Expenses;
 

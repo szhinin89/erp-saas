@@ -1,7 +1,6 @@
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
-using ERP.Domain.Modules.Expenses.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

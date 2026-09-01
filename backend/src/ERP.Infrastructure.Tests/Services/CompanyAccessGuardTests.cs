@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Security;
-using ERP.Application.Modules.Companies;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Entities;

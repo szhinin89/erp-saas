@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;

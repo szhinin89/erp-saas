@@ -1,5 +1,4 @@
 using ERP.Domain.Modules.DocTypes.Entities;
-using ERP.Domain.Modules.DocTypes.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

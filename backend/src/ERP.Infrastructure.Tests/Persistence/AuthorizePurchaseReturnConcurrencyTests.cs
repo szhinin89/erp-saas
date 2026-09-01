@@ -16,8 +16,8 @@ using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
-using Moq;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence;

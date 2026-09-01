@@ -1,7 +1,6 @@
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
-using ERP.Domain.Modules.SriCatalogs.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

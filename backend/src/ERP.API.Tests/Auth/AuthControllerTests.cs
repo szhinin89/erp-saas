@@ -4,7 +4,6 @@ using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Auth.UseCases.Reauthenticate;
-using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Common;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;

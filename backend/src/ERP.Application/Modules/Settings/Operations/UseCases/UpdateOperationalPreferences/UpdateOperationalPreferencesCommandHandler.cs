@@ -1,4 +1,3 @@
-using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Modules.Settings.Operations.DTOs;
 using ERP.Domain.Configuration.Constants;
@@ -6,6 +5,7 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using MediatR;
+using System.Globalization;
 
 namespace ERP.Application.Modules.Settings.Operations.UseCases.UpdateOperationalPreferences;
 

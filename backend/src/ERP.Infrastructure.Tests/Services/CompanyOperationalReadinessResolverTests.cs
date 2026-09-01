@@ -15,8 +15,8 @@ using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Moq;
 using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
-using EstablishmentEntity = ERP.Domain.Modules.Company.Entities.Establishment;
 using EmissionPointEntity = ERP.Domain.Modules.Company.Entities.EmissionPoint;
+using EstablishmentEntity = ERP.Domain.Modules.Company.Entities.Establishment;
 
 namespace ERP.Infrastructure.Tests.Services;
 

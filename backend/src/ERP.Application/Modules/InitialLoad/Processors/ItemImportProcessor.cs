@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Items.UseCases.Brands;
 using ERP.Application.Items.UseCases.CategoryNodes;
@@ -10,6 +9,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Items.Interfaces;
 using MediatR;
+using System.Text.Json;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 

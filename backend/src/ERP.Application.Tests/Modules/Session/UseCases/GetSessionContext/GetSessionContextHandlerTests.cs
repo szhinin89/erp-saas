@@ -1,6 +1,5 @@
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
-using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
 using ERP.Application.Modules.Media;
 using ERP.Application.Modules.Session.UseCases.GetSessionContext;

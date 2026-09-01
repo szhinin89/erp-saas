@@ -1,10 +1,10 @@
-using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyOperationalReadiness;
 using ERP.Domain.Modules.Company.Interfaces;
 using FluentAssertions;
 using Moq;
+using System.Reflection;
 
 namespace ERP.Application.Tests.Companies;
 

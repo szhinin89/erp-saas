@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Companies;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;

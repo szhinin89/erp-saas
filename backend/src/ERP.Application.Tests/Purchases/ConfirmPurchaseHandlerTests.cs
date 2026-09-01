@@ -14,7 +14,6 @@ using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Payables.Entities;
-using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;

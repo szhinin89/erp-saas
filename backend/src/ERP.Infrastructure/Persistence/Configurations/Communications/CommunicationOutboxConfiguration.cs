@@ -1,6 +1,5 @@
 using ERP.Domain.Modules.Communications.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Communications;
