@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { canProvisionCompanies } from "../../../access/permissionUi";
 import { useI18n } from "../../../i18n/i18n";
 import {
   companyManagementFormSchema,
@@ -21,6 +22,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhTextInput } from "../../../components/zh/inputs";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
+import { useAuthStore } from "../../../store/authStore";
 
 const defaults = (): CompanyManagementFormValues => ({
   taxId: "",
@@ -37,6 +39,8 @@ export function CompanyManagementFormPage({
   const { t } = useI18n();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const user = useAuthStore((s) => s.user);
+  const canCreate = canProvisionCompanies(user);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +83,11 @@ export function CompanyManagementFormPage({
     setError("");
     setSaving(true);
     try {
+      if (mode === "create" && !canCreate) {
+        setError(t("companyManagement.error.create"));
+        setSaving(false);
+        return;
+      }
       const payload = {
         taxId: values.taxId.trim(),
         legalName: values.legalName.trim(),
@@ -114,6 +123,8 @@ export function CompanyManagementFormPage({
       setSaving(false);
     }
   });
+
+  if (mode === "create" && !canCreate) return <Navigate to="/companies" replace />;
 
   return (
     <PageShell

@@ -11,13 +11,14 @@ import {
 } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { canProvisionCompanies } from "../../../access/permissionUi";
+import { useAuthStore } from "../../../store/authStore";
 import { CurrentCompanyCard } from "./CurrentCompanyCard";
 
 export function CompanyManagementListPage() {
   const { t } = useI18n();
-  const { canShow } = usePermissionsUi();
-  const canCreate = canShow("erp.companies.create");
+  const user = useAuthStore((s) => s.user);
+  const canCreate = canProvisionCompanies(user);
   const [items, setItems] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
