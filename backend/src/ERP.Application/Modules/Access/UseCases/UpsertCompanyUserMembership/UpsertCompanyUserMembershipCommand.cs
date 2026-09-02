@@ -14,6 +14,7 @@ namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 /// </summary>
 public record UpsertCompanyUserMembershipCommand(
     Guid TenantId,
+    Guid CompanyId,
     string Username,
     string Role,
     Guid? ProfileId = null,

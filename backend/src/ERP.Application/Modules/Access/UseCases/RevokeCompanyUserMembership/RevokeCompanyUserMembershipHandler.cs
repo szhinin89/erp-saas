@@ -2,6 +2,7 @@ using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
 
@@ -13,7 +14,7 @@ public class RevokeCompanyUserMembershipHandler
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentUser _currentUser;
     private readonly ITenantRepository _tenantRepository;
-    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
     private readonly INavigationBuilder _navigationBuilder;
 
@@ -21,7 +22,7 @@ public class RevokeCompanyUserMembershipHandler
         IAccessRepository accessRepository,
         ICurrentUser currentUser,
         ITenantRepository TenantRepository,
-        ICompanyProvisioningService companyProvisioning,
+        ICompanyRepository companyRepository,
         IPermissionsCacheInvalidator permissionsCache,
         INavigationBuilder navigationBuilder
     )
@@ -29,7 +30,7 @@ public class RevokeCompanyUserMembershipHandler
         _accessRepository = accessRepository;
         _currentUser = currentUser;
         _tenantRepository = TenantRepository;
-        _companyProvisioning = companyProvisioning;
+        _companyRepository = companyRepository;
         _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
     }
@@ -48,10 +49,13 @@ public class RevokeCompanyUserMembershipHandler
         if (tenant is null)
             return Result<object>.Success(new { });
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
-            tenant,
+        var company = await _companyRepository.GetByIdForTenantAsync(
+            command.CompanyId,
+            command.TenantId,
             cancellationToken
         );
+        if (company is null)
+            return Result<object>.NotFound("Empresa no encontrada para el tenant.");
 
         var username = command.Username.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);

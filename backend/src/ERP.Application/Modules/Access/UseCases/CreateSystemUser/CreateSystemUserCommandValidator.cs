@@ -9,6 +9,9 @@ public sealed class CreateSystemUserCommandValidator : AbstractValidator<CreateS
 {
     public CreateSystemUserCommandValidator()
     {
+        RuleFor(x => x.TenantId).NotEmpty().WithMessage("El tenant es obligatorio.");
+        RuleFor(x => x.CompanyId).NotEmpty().WithMessage("La empresa es obligatoria.");
+
         RuleFor(x => x.Username)
             .NotEmpty()
             .Matches("^[a-zA-Z0-9][a-zA-Z0-9._-]{1,48}[a-zA-Z0-9]$")

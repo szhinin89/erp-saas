@@ -21,6 +21,7 @@ namespace ERP.Application.Tests.Access;
 public sealed class CreateSystemUserHandlerTests
 {
     private static readonly Guid CreatedBy = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
     private const string Username = "nuevo.usuario";
     private const string Email = "nuevo@test.com";
 
@@ -54,7 +55,7 @@ public sealed class CreateSystemUserHandlerTests
     }
 
     private static CreateSystemUserCommand ValidCommand(Guid tenantId) =>
-        new(tenantId, Username, "Ana", "Perez", Email, "S3curePass!", "User");
+        new(tenantId, CompanyId, Username, "Ana", "Perez", Email, "S3curePass!", "User");
 
     [Fact]
     public async Task Username_ya_existente_devuelve_Conflict_y_no_crea_nada()
@@ -147,6 +148,7 @@ public sealed class CreateSystemUserHandlerTests
         var handler = f.BuildHandler();
         var command = new CreateSystemUserCommand(
             tenantId,
+            CompanyId,
             Username,
             "Ana",
             "Perez",
@@ -160,6 +162,7 @@ public sealed class CreateSystemUserHandlerTests
         result.IsSuccess.Should().BeTrue();
         sentCommand.Should().NotBeNull();
         sentCommand!.TenantId.Should().Be(tenantId);
+        sentCommand.CompanyId.Should().Be(CompanyId);
         sentCommand.Username.Should().Be(Username);
         sentCommand.Role.Should().Be("Admin");
         sentCommand.ProfileId.Should().Be(profileId);

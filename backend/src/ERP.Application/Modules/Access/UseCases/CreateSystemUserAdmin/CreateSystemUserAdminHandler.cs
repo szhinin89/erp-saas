@@ -1,6 +1,7 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateSystemUser;
 using ERP.Application.Common;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
 
@@ -8,7 +9,7 @@ namespace ERP.Application.Access.UseCases.CreateSystemUserAdmin;
 
 /// <summary>
 /// Único agregado propio: resolver TenantId/CompanyId del contexto autenticado y verificar que la
-/// empresa activa coincida con la empresa por defecto del tenant, mismo criterio que
+/// empresa activa exista dentro del tenant actual, mismo criterio que
 /// <see cref="ERP.Application.Access.UseCases.UpsertCompanyUserMembershipAdmin.UpsertCompanyUserMembershipAdminHandler"/>.
 /// Nunca reimplementa la creación de IdentityUser/CompanyUserMembership — todo se delega vía MediatR.
 /// </summary>
@@ -18,21 +19,21 @@ public sealed class CreateSystemUserAdminHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
     private readonly ITenantRepository _tenantRepository;
-    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IMediator _mediator;
 
     public CreateSystemUserAdminHandler(
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ITenantRepository tenantRepository,
-        ICompanyProvisioningService companyProvisioning,
+        ICompanyRepository companyRepository,
         IMediator mediator
     )
     {
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
         _tenantRepository = tenantRepository;
-        _companyProvisioning = companyProvisioning;
+        _companyRepository = companyRepository;
         _mediator = mediator;
     }
 
@@ -48,18 +49,20 @@ public sealed class CreateSystemUserAdminHandler
         if (tenant is null)
             return Result<CreateSystemUserResultDto>.NotFound("Tenant no encontrado.");
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
-            tenant,
+        var company = await _companyRepository.GetByIdForTenantAsync(
+            _currentCompany.CompanyId,
+            _currentTenant.TenantId,
             cancellationToken
         );
-        if (company.Id != _currentCompany.CompanyId)
-            return Result<CreateSystemUserResultDto>.Forbidden(
-                "La empresa activa no coincide con el contexto administrado."
+        if (company is null)
+            return Result<CreateSystemUserResultDto>.NotFound(
+                "Empresa activa no encontrada para el tenant."
             );
 
         return await _mediator.Send(
             new CreateSystemUserCommand(
                 _currentTenant.TenantId,
+                company.Id,
                 command.Username,
                 command.FirstName,
                 command.LastName,

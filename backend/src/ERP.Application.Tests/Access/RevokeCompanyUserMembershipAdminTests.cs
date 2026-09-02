@@ -2,6 +2,7 @@ using ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 using ERP.Application.Access.UseCases.RevokeCompanyUserMembershipAdmin;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
 using FluentAssertions;
@@ -48,7 +49,7 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
     private sealed class Fixture
     {
         public Mock<ITenantRepository> TenantRepo { get; } = new();
-        public Mock<ICompanyProvisioningService> CompanyProvisioning { get; } = new();
+        public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
 
         public RevokeCompanyUserMembershipAdminHandler BuildHandler(
@@ -59,7 +60,7 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
                 new CurrentTenantStub(tenantId),
                 new CurrentCompanyStub(companyId),
                 TenantRepo.Object,
-                CompanyProvisioning.Object,
+                CompanyRepo.Object,
                 Mediator.Object
             );
     }
@@ -72,8 +73,8 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         var f = new Fixture();
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(company);
 
@@ -98,22 +99,26 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         result.IsSuccess.Should().BeTrue();
         sentCommand.Should().NotBeNull();
         sentCommand!.TenantId.Should().Be(tenant.Id);
+        sentCommand.CompanyId.Should().Be(company.Id);
         sentCommand.Username.Should().Be(Username);
     }
 
     [Fact]
-    public async Task Empresa_activa_distinta_de_la_del_tenant_devuelve_Forbidden_y_no_delega_en_Fase_D()
+    public async Task Empresa_activa_inexistente_en_el_tenant_devuelve_NotFound_y_no_delega_en_Fase_D()
     {
         var tenant = NewTenant();
-        var tenantDefaultCompany = NewCompany(tenant.Id);
         var otherActiveCompanyId = Guid.NewGuid();
         var f = new Fixture();
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(
+                    otherActiveCompanyId,
+                    tenant.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
-            .ReturnsAsync(tenantDefaultCompany);
+            .ReturnsAsync((Company?)null);
 
         var handler = f.BuildHandler(tenant.Id, otherActiveCompanyId);
         var result = await handler.Handle(
@@ -122,7 +127,7 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.Mediator.Verify(
             m =>
                 m.Send(
@@ -147,8 +152,8 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         var f = new Fixture();
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(company);
         f.Mediator.Setup(m =>

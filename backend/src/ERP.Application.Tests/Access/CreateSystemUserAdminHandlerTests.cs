@@ -3,6 +3,7 @@ using ERP.Application.Access.UseCases.CreateSystemUser;
 using ERP.Application.Access.UseCases.CreateSystemUserAdmin;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
 using FluentAssertions;
@@ -15,7 +16,7 @@ namespace ERP.Application.Tests.Access;
 /// Envoltorio delgado sobre CreateSystemUserHandler (probado en CreateSystemUserHandlerTests) —
 /// estos tests cubren únicamente el agregado propio de esta fase: resolución de TenantId/CompanyId
 /// desde el contexto autenticado (nunca del request) y el aislamiento cuando la empresa activa no
-/// coincide con la empresa por defecto del tenant, mismo criterio que
+/// existe dentro del tenant, mismo criterio que
 /// UpsertCompanyUserMembershipAdminHandlerTests.
 /// </summary>
 public sealed class CreateSystemUserAdminHandlerTests
@@ -50,7 +51,7 @@ public sealed class CreateSystemUserAdminHandlerTests
     private sealed class Fixture
     {
         public Mock<ITenantRepository> TenantRepo { get; } = new();
-        public Mock<ICompanyProvisioningService> CompanyProvisioning { get; } = new();
+        public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
 
         public CreateSystemUserAdminHandler BuildHandler(Guid tenantId, Guid companyId) =>
@@ -58,7 +59,7 @@ public sealed class CreateSystemUserAdminHandlerTests
                 new CurrentTenantStub(tenantId),
                 new CurrentCompanyStub(companyId),
                 TenantRepo.Object,
-                CompanyProvisioning.Object,
+                CompanyRepo.Object,
                 Mediator.Object
             );
     }
@@ -71,8 +72,8 @@ public sealed class CreateSystemUserAdminHandlerTests
         var f = new Fixture();
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(company);
 
@@ -105,23 +106,27 @@ public sealed class CreateSystemUserAdminHandlerTests
         result.IsSuccess.Should().BeTrue();
         sentCommand.Should().NotBeNull();
         sentCommand!.TenantId.Should().Be(tenant.Id);
+        sentCommand.CompanyId.Should().Be(company.Id);
         sentCommand.Email.Should().Be(Email);
         sentCommand.Role.Should().Be("User");
     }
 
     [Fact]
-    public async Task Empresa_activa_distinta_de_la_del_tenant_devuelve_Forbidden_y_no_delega()
+    public async Task Empresa_activa_inexistente_en_el_tenant_devuelve_NotFound_y_no_delega()
     {
         var tenant = NewTenant();
-        var tenantDefaultCompany = NewCompany(tenant.Id);
         var otherActiveCompanyId = Guid.NewGuid();
         var f = new Fixture();
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(
+                    otherActiveCompanyId,
+                    tenant.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
-            .ReturnsAsync(tenantDefaultCompany);
+            .ReturnsAsync((Company?)null);
 
         var handler = f.BuildHandler(tenant.Id, otherActiveCompanyId);
         var result = await handler.Handle(
@@ -137,7 +142,7 @@ public sealed class CreateSystemUserAdminHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.Mediator.Verify(
             m => m.Send(It.IsAny<CreateSystemUserCommand>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -181,8 +186,8 @@ public sealed class CreateSystemUserAdminHandlerTests
         var f = new Fixture();
         f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(company);
         f.Mediator.Setup(m =>

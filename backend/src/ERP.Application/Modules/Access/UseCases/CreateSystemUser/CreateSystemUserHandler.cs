@@ -84,6 +84,7 @@ public sealed class CreateSystemUserHandler
             var membershipResult = await _mediator.Send(
                 new UpsertCompanyUserMembershipCommand(
                     command.TenantId,
+                    command.CompanyId,
                     username,
                     command.Role,
                     command.ProfileId

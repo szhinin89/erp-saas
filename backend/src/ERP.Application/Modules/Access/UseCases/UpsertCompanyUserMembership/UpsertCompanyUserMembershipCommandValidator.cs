@@ -8,6 +8,7 @@ public sealed class UpsertCompanyUserMembershipCommandValidator
     public UpsertCompanyUserMembershipCommandValidator()
     {
         RuleFor(x => x.TenantId).NotEmpty().WithMessage("El tenant es obligatorio.");
+        RuleFor(x => x.CompanyId).NotEmpty().WithMessage("La empresa es obligatoria.");
 
         RuleFor(x => x.Username)
             .NotEmpty()

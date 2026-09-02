@@ -3,5 +3,5 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 
-public record RevokeCompanyUserMembershipCommand(Guid TenantId, string Username)
+public record RevokeCompanyUserMembershipCommand(Guid TenantId, Guid CompanyId, string Username)
     : IRequest<Result<object>>;

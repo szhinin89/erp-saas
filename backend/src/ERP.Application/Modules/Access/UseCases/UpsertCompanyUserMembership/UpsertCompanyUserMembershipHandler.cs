@@ -9,6 +9,7 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
 
@@ -20,7 +21,7 @@ public class UpsertCompanyUserMembershipHandler
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentUser _currentUser;
     private readonly ITenantRepository _tenantRepository;
-    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
     private readonly INavigationBuilder _navigationBuilder;
     private readonly IBranchRepository _branchRepository;
@@ -31,7 +32,7 @@ public class UpsertCompanyUserMembershipHandler
         IAccessRepository accessRepository,
         ICurrentUser currentUser,
         ITenantRepository TenantRepository,
-        ICompanyProvisioningService companyProvisioning,
+        ICompanyRepository companyRepository,
         IPermissionsCacheInvalidator permissionsCache,
         INavigationBuilder navigationBuilder,
         IBranchRepository branchRepository,
@@ -42,7 +43,7 @@ public class UpsertCompanyUserMembershipHandler
         _accessRepository = accessRepository;
         _currentUser = currentUser;
         _tenantRepository = TenantRepository;
-        _companyProvisioning = companyProvisioning;
+        _companyRepository = companyRepository;
         _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
         _branchRepository = branchRepository;
@@ -64,10 +65,13 @@ public class UpsertCompanyUserMembershipHandler
         if (tenant is null)
             return Result<object>.Failure("Tenant no encontrado.");
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
-            tenant,
+        var company = await _companyRepository.GetByIdForTenantAsync(
+            command.CompanyId,
+            command.TenantId,
             cancellationToken
         );
+        if (company is null)
+            return Result<object>.NotFound("Empresa no encontrada para el tenant.");
 
         var username = command.Username.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
@@ -132,7 +136,7 @@ public class UpsertCompanyUserMembershipHandler
                     branchId,
                     cancellationToken
                 );
-                if (branch is null)
+                if (branch is null || branch.CompanyId != company.Id)
                     return Result<object>.NotFound($"La sucursal {branchId} no existe.");
             }
 

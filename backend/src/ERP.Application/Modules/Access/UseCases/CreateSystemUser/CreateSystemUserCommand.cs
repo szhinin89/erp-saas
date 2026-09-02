@@ -12,6 +12,7 @@ namespace ERP.Application.Access.UseCases.CreateSystemUser;
 /// </summary>
 public sealed record CreateSystemUserCommand(
     Guid TenantId,
+    Guid CompanyId,
     string Username,
     string FirstName,
     string LastName,

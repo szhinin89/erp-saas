@@ -1,5 +1,6 @@
 using ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 using ERP.Application.Common;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
 
@@ -7,14 +8,8 @@ namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembershipAdmin;
 
 /// <summary>
 /// Fase I-A. Único agregado propio: resolver TenantId/CompanyId del contexto autenticado y
-/// verificar que la empresa activa (<see cref="ICurrentCompany.CompanyId"/>) coincida con la
-/// empresa que <see cref="ICompanyProvisioningService.EnsureDefaultCompanyAsync"/> resolvería para
-/// el tenant actual antes de delegar — ese método devuelve la primera empresa activa del tenant
-/// (ver <c>CompanyProvisioningService.EnsureDefaultCompanyAsync</c>), que en un tenant con más de
-/// una empresa administrada no necesariamente es la empresa activa del request. Sin esta
-/// verificación explícita, un administrador con la empresa B seleccionada podría terminar
-/// escribiendo sobre la empresa A (la "default" del tenant) sin darse cuenta. Nunca reimplementa
-/// la lógica de membership/branch/preferences de
+/// verificar que la empresa activa (<see cref="ICurrentCompany.CompanyId"/>) exista dentro del
+/// tenant actual antes de delegar. Nunca reimplementa la lógica de membership/branch/preferences de
 /// <see cref="UpsertCompanyUserMembershipHandler"/> — todo se delega vía MediatR.
 /// </summary>
 public sealed class UpsertCompanyUserMembershipAdminHandler
@@ -23,21 +18,21 @@ public sealed class UpsertCompanyUserMembershipAdminHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
     private readonly ITenantRepository _tenantRepository;
-    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IMediator _mediator;
 
     public UpsertCompanyUserMembershipAdminHandler(
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ITenantRepository tenantRepository,
-        ICompanyProvisioningService companyProvisioning,
+        ICompanyRepository companyRepository,
         IMediator mediator
     )
     {
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
         _tenantRepository = tenantRepository;
-        _companyProvisioning = companyProvisioning;
+        _companyRepository = companyRepository;
         _mediator = mediator;
     }
 
@@ -53,18 +48,18 @@ public sealed class UpsertCompanyUserMembershipAdminHandler
         if (tenant is null)
             return Result<object>.NotFound("Tenant no encontrado.");
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
-            tenant,
+        var company = await _companyRepository.GetByIdForTenantAsync(
+            _currentCompany.CompanyId,
+            _currentTenant.TenantId,
             cancellationToken
         );
-        if (company.Id != _currentCompany.CompanyId)
-            return Result<object>.Forbidden(
-                "La empresa activa no coincide con el contexto administrado."
-            );
+        if (company is null)
+            return Result<object>.NotFound("Empresa activa no encontrada para el tenant.");
 
         return await _mediator.Send(
             new UpsertCompanyUserMembershipCommand(
                 _currentTenant.TenantId,
+                company.Id,
                 command.Username,
                 command.Role,
                 command.ProfileId,
