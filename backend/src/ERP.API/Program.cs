@@ -8,6 +8,7 @@ using ERP.API.Health;
 using ERP.API.Middleware;
 using ERP.API.Services;
 using ERP.Application;
+using ERP.Domain.Kernel.Security;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Caching;
 using ERP.Infrastructure.Persistence;
@@ -347,7 +348,17 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireAuthenticatedUser().AddRequirements(new HasTenantRequirement())
     );
 
-    options.AddPolicy("IntegrationApi", policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy(
+        "IntegrationApi",
+        policy => policy.RequireAuthenticatedUser().RequireClaim("integration_api", "true")
+    );
+
+    options.AddPolicy(
+        "CompanyProvisioning",
+        policy => policy.RequireAuthenticatedUser()
+            .RequireClaim("tenant_id", Guid.Empty.ToString())
+            .RequireRole(SecurityRoles.Admin)
+    );
 
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
     options.DefaultPolicy = options.GetPolicy("Session")!;

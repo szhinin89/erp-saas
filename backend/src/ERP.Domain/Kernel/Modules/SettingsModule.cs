@@ -38,8 +38,7 @@ public static class SettingsModule
         SortOrder = 10,
         Id = "00000000-0000-4000-8000-000000000104",
         ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        RelatedActionPermissionsCsv = SettingsPermissions.CompaniesCreate + ","
-            + SettingsPermissions.CompaniesUpdate
+        RelatedActionPermissionsCsv = SettingsPermissions.CompaniesUpdate
     )]
     public const string Companies = "/companies";
 

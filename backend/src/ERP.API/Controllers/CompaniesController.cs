@@ -278,7 +278,7 @@ public sealed class CompaniesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesCreate}")]
+    [Authorize(Policy = "CompanyProvisioning")]
     [ProducesResponseType(typeof(ApiResponse<CompanyDetailDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(
         [FromBody] CreateCompanyCommand command,
