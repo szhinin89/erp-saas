@@ -17,6 +17,9 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.EnsureSchema(
                 name: "global");
 
+            migrationBuilder.EnsureSchema(
+                name: "access");
+
             migrationBuilder.CreateTable(
                 name: "access_profile_permissions",
                 columns: table => new
@@ -2208,6 +2211,31 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "doc_type",
                         principalColumn: "code",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "global_user_roles",
+                schema: "access",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_global_user_roles", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_global_user_roles_identity_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "identity_users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -7060,6 +7088,13 @@ namespace ERP.Infrastructure.Migrations
                 column: "country_id");
 
             migrationBuilder.CreateIndex(
+                name: "ux_global_user_roles_user_role",
+                schema: "access",
+                table: "global_user_roles",
+                columns: new[] { "user_id", "role" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_identity_users_email",
                 table: "identity_users",
                 column: "email",
@@ -9309,6 +9344,10 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "expense_payment_schedules");
+
+            migrationBuilder.DropTable(
+                name: "global_user_roles",
+                schema: "access");
 
             migrationBuilder.DropTable(
                 name: "import_batch_files");

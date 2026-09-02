@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260902160810_AddGlobalUserRoles")]
-    partial class AddGlobalUserRoles
+    [Migration("20260902210758_InitialEnterpriseBaseline")]
+    partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
