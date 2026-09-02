@@ -71,7 +71,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     {
         var company = await _companyRepo.GetByIdForTenantAsync(companyId, tenantId, cancellationToken);
 
-        var branches = await _branchRepo.GetAsync(tenantId, activeFilter: true, cancellationToken: cancellationToken);
+        var branches = await _branchRepo.GetByCompanyAsync(tenantId, companyId, activeFilter: true, cancellationToken: cancellationToken);
         var mainBranch = branches.FirstOrDefault(b => b.IsMainBranch);
 
         var mainEstablishment = await _establishmentRepo.GetMainByCompanyAsync(

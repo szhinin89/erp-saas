@@ -103,8 +103,15 @@ public sealed class CreateCashRegisterBranchOwnershipTests
     {
         var branchOfCompanyB = CreateBranch(CompanyBId);
         var f = new Fixture();
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, branchOfCompanyB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(branchOfCompanyB);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    branchOfCompanyB.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Branch?)null);
 
         var result = await f.BuildHandler()
             .Handle(BuildCommand(branchOfCompanyB.Id), CancellationToken.None);
@@ -119,7 +126,14 @@ public sealed class CreateCashRegisterBranchOwnershipTests
     {
         var ownBranch = CreateBranch(CompanyAId);
         var f = new Fixture();
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, ownBranch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    ownBranch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ownBranch);
 
         CashRegister? captured = null;

@@ -166,7 +166,9 @@ public sealed class SwitchCompanyHandlerTests
     {
         var (f, tenant, company, user, _) = BuildValidSwitch();
         var branch = NewMainBranch(tenant.Id, company.Id);
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
 
         var sessionDto = new AuthenticatedSessionDto(
@@ -228,16 +230,23 @@ public sealed class SwitchCompanyHandlerTests
         // FASE 4B — caso 4: usuario cambia de Empresa A a Empresa B (el destino de BuildValidSwitch
         // es "company"). Ambas empresas tienen su propia sucursal marcada IsMainBranch dentro del
         // mismo tenant. ResolveMainBranchIdAsync filtra por CompanyId en memoria sobre TODAS las
-        // sucursales activas del tenant — este test prueba explícitamente que ese filtro nunca deja
-        // pasar la sucursal principal de la empresa anterior cuando ambas coexisten en el resultado
-        // de IBranchRepository.GetAsync.
+        // sucursales activas de la empresa destino — este test prueba explícitamente que no se
+        // consulta el conjunto tenant-only al cambiar de empresa.
         var (f, tenant, companyB, user, _) = BuildValidSwitch();
         var otherCompanyAId = Guid.NewGuid();
         var branchDeEmpresaA = NewMainBranch(tenant.Id, otherCompanyAId);
         var branchDeEmpresaB = NewMainBranch(tenant.Id, companyB.Id);
 
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { branchDeEmpresaA, branchDeEmpresaB });
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    companyB.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new[] { branchDeEmpresaB });
 
         var sessionDto = new AuthenticatedSessionDto(
             new UserSessionDto(
@@ -288,7 +297,9 @@ public sealed class SwitchCompanyHandlerTests
         var (f, tenant, companyB, user, _) = BuildValidSwitch();
         var branchUno = NewMainBranch(tenant.Id, companyB.Id);
         var branchDos = NewMainBranch(tenant.Id, companyB.Id);
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, companyB.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branchUno, branchDos });
         f.RefreshTokenService.Setup(s =>
                 s.CreateAsync(
@@ -323,7 +334,9 @@ public sealed class SwitchCompanyHandlerTests
     public async Task SwitchCompany_sin_sucursal_principal_resoluble_preserva_el_flujo_anterior()
     {
         var (f, tenant, company, user, _) = BuildValidSwitch();
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<Branch>());
         f.RefreshTokenService.Setup(s =>
                 s.CreateAsync(
@@ -403,7 +416,8 @@ public sealed class SwitchCompanyHandlerTests
         );
         f.BranchRepo.Verify(
             r =>
-                r.GetAsync(
+                r.GetByCompanyAsync(
+                    It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<bool?>(),
                     It.IsAny<string>(),
@@ -418,7 +432,9 @@ public sealed class SwitchCompanyHandlerTests
     {
         var (f, tenant, company, user, _) = BuildValidSwitch();
         var branch = NewMainBranch(tenant.Id, company.Id);
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
         f.Mediator.Setup(m =>
                 m.Send(It.IsAny<CreateAuthenticatedSessionCommand>(), It.IsAny<CancellationToken>())
@@ -509,7 +525,8 @@ public sealed class SwitchCompanyHandlerTests
         sentCommand!.BranchId.Should().Be(defaultBranchId);
         f.BranchRepo.Verify(
             r =>
-                r.GetAsync(
+                r.GetByCompanyAsync(
+                    It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<bool?>(),
                     It.IsAny<string>(),
@@ -589,7 +606,9 @@ public sealed class SwitchCompanyHandlerTests
                     )
                 )
             );
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
 
         var handler = f.BuildHandler();

@@ -37,8 +37,9 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
 
         var company = companyAccess.Value!;
 
-        var branch = await _branchRepository.GetByIdAsync(
+        var branch = await _branchRepository.GetByIdForCompanyAsync(
             company.TenantId,
+            company.CompanyId,
             branchId,
             cancellationToken
         );
@@ -47,11 +48,6 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
 
         if (!branch.IsActive)
             return Result<BranchAccessContext>.Failure("La sucursal está deshabilitada.");
-
-        if (branch.CompanyId != company.CompanyId)
-            return Result<BranchAccessContext>.Failure(
-                "La sucursal no pertenece a la empresa operativa actual."
-            );
 
         var membership = await _accessRepository.GetCompanyUserMembershipAsync(
             company.CompanyId,

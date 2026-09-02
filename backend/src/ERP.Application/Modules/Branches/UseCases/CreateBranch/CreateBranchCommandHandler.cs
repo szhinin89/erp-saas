@@ -65,6 +65,7 @@ public sealed class CreateBranchCommandHandler
         if (command.IsMainBranch)
             clearedIds = await _repo.ClearMainBranchExceptAsync(
                 tenantId,
+                companyId,
                 null,
                 userId,
                 cancellationToken

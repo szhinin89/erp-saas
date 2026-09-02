@@ -269,7 +269,7 @@ public sealed class SalesReceivableUseCasesTests
         var branchRepo = new Mock<IBranchRepository>();
         branchRepo
             .Setup(r =>
-                r.GetAsync(TenantId, null, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(TenantId, CompanyId, null, null, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(new List<Branch> { branch });
 

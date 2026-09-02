@@ -215,7 +215,14 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var branch = NewBranch(tenant.Id, company.Id);
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
         SetupNoExistingPreferences(f);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(branch);
         f.CompanyUserBranchRepo.Setup(r =>
                 r.ExistsAsync(It.IsAny<Guid>(), branch.Id, It.IsAny<CancellationToken>())
@@ -289,7 +296,12 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var missingBranchId = Guid.NewGuid();
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
         f.BranchRepo.Setup(r =>
-                r.GetByIdAsync(tenant.Id, missingBranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    missingBranchId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((Branch?)null);
 
@@ -325,7 +337,14 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var branch = NewBranch(tenant.Id, company.Id);
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
         SetupNoExistingPreferences(f);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(branch);
         f.CompanyUserBranchRepo.Setup(r =>
                 r.ExistsAsync(It.IsAny<Guid>(), branch.Id, It.IsAny<CancellationToken>())
@@ -688,8 +707,15 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var companyB = NewCompany(tenant.Id);
         var branchA = NewBranch(tenant.Id, companyA.Id);
         var f = BuildBaseFixture(user, tenant, companyB, existingMembership: null);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branchA.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(branchA);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyB.Id,
+                    branchA.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Branch?)null);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(

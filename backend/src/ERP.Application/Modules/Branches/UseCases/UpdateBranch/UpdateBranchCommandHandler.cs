@@ -18,6 +18,7 @@ public sealed class UpdateBranchCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
     public UpdateBranchCommandHandler(
@@ -26,6 +27,7 @@ public sealed class UpdateBranchCommandHandler
         IUserActivityRepository activity,
         IConfigurationChangeLogger changeLogger,
         ICurrentTenant tenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
@@ -34,6 +36,7 @@ public sealed class UpdateBranchCommandHandler
         _activity = activity;
         _changeLogger = changeLogger;
         _currentTenant = tenant;
+        _company = company;
         _user = user;
     }
 
@@ -43,9 +46,15 @@ public sealed class UpdateBranchCommandHandler
     )
     {
         var tenantId = _currentTenant.TenantId;
+        var companyId = _company.CompanyId;
         var userId = _user.UserId;
 
-        var entity = await _repo.GetByIdAsync(tenantId, command.Id, cancellationToken);
+        var entity = await _repo.GetByIdForCompanyAsync(
+            tenantId,
+            companyId,
+            command.Id,
+            cancellationToken
+        );
         if (entity is null)
             return Result<BranchListItemDto>.Failure("Sucursal no encontrada.");
 
@@ -68,6 +77,7 @@ public sealed class UpdateBranchCommandHandler
         {
             var clearedIds = await _repo.ClearMainBranchExceptAsync(
                 tenantId,
+                companyId,
                 command.Id,
                 userId,
                 cancellationToken

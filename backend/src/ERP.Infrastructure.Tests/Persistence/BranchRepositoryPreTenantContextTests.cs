@@ -156,6 +156,34 @@ public sealed class BranchRepositoryPreTenantContextTests : IAsyncLifetime
         branch!.Id.Should().Be(_branchAId);
     }
 
+    [Fact]
+    public async Task GetByCompanyAsync_sin_contexto_ambiente_devuelve_solo_sucursales_de_la_empresa_solicitada()
+    {
+        await using var db = CreateContext(NoAmbientContext(), NoAmbientCompanyContext());
+        var repo = new BranchRepository(db);
+
+        var branches = await repo.GetByCompanyAsync(
+            _tenantId,
+            _companyAId,
+            activeFilter: true,
+            search: null
+        );
+
+        branches.Should().ContainSingle(b => b.Id == _branchAId);
+        branches.Should().NotContain(b => b.Id == _branchBId);
+    }
+
+    [Fact]
+    public async Task GetByIdForCompanyAsync_no_devuelve_sucursal_de_otra_empresa_del_mismo_tenant()
+    {
+        await using var db = CreateContext(NoAmbientContext(), NoAmbientCompanyContext());
+        var repo = new BranchRepository(db);
+
+        var branch = await repo.GetByIdForCompanyAsync(_tenantId, _companyAId, _branchBId);
+
+        branch.Should().BeNull();
+    }
+
     // ── Escenario B — switch-company con JWT/contexto ambiente de la empresa anterior ──────
 
     [Fact]
@@ -174,6 +202,36 @@ public sealed class BranchRepositoryPreTenantContextTests : IAsyncLifetime
         var mainBranchOfCompanyB = branches.Where(b => b.CompanyId == _companyBId && b.IsMainBranch);
 
         mainBranchOfCompanyB.Should().ContainSingle(b => b.Id == _branchBId);
+    }
+
+    [Fact]
+    public async Task ClearMainBranchExceptAsync_solo_desmarca_sucursales_principales_de_la_empresa_indicada()
+    {
+        var updatedBy = Guid.NewGuid();
+        await using var db = CreateContext(
+            new FixedCurrentTenant(_tenantId),
+            new FixedCurrentCompany(_companyAId, hasCompanyContext: true)
+        );
+        var repo = new BranchRepository(db);
+
+        var clearedIds = await repo.ClearMainBranchExceptAsync(
+            _tenantId,
+            _companyAId,
+            exceptBranchId: null,
+            updatedBy: updatedBy
+        );
+        await repo.SaveChangesAsync();
+
+        clearedIds.Should().ContainSingle(id => id == _branchAId);
+        clearedIds.Should().NotContain(_branchBId);
+
+        await using var verifyDb = CreateContext(NoAmbientContext(), NoAmbientCompanyContext());
+        var verifyRepo = new BranchRepository(verifyDb);
+        var branchA = await verifyRepo.GetByIdAsync(_tenantId, _branchAId);
+        var branchB = await verifyRepo.GetByIdAsync(_tenantId, _branchBId);
+
+        branchA!.IsMainBranch.Should().BeFalse();
+        branchB!.IsMainBranch.Should().BeTrue();
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

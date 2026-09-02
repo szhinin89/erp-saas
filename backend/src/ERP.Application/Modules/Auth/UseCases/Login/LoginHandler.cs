@@ -289,13 +289,14 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         CancellationToken cancellationToken
     )
     {
-        var branches = await _branchRepository.GetAsync(
+        var branches = await _branchRepository.GetByCompanyAsync(
             tenantId,
+            companyId,
             activeFilter: true,
             search: null,
             cancellationToken
         );
-        var mainBranches = branches.Where(b => b.CompanyId == companyId && b.IsMainBranch).ToList();
+        var mainBranches = branches.Where(b => b.IsMainBranch).ToList();
         return mainBranches.Count == 1 ? mainBranches[0].Id : null;
     }
 }

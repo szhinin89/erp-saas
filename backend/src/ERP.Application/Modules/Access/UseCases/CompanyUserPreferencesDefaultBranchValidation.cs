@@ -18,6 +18,7 @@ internal static class CompanyUserPreferencesDefaultBranchValidation
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
         Guid tenantId,
+        Guid companyId,
         Guid companyUserMembershipId,
         Guid? defaultBranchId,
         CompanyUserLoginMode loginMode,
@@ -32,8 +33,9 @@ internal static class CompanyUserPreferencesDefaultBranchValidation
         if (defaultBranchId is null)
             return null;
 
-        var branch = await branchRepository.GetByIdAsync(
+        var branch = await branchRepository.GetByIdForCompanyAsync(
             tenantId,
+            companyId,
             defaultBranchId.Value,
             cancellationToken
         );

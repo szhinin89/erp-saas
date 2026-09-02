@@ -154,7 +154,12 @@ public sealed class GetSessionContextHandlerTests
         f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
         f.CurrentBranch.Setup(b => b.BranchId).Returns(branchDeEmpresaA.Id);
         f.BranchRepo.Setup(r =>
-                r.GetByIdAsync(tenant.Id, branchDeEmpresaA.Id, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    branchDeEmpresaA.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(branchDeEmpresaA);
 
@@ -188,9 +193,14 @@ public sealed class GetSessionContextHandlerTests
         f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
         f.CurrentBranch.Setup(b => b.BranchId).Returns(branchDeEmpresaB.Id);
         f.BranchRepo.Setup(r =>
-                r.GetByIdAsync(tenant.Id, branchDeEmpresaB.Id, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    branchDeEmpresaB.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
-            .ReturnsAsync(branchDeEmpresaB);
+            .ReturnsAsync((Branch?)null);
 
         // Sin sesión activa reutilizable y sin membership resoluble para el heurístico —
         // fuerza el escenario "no hay ninguna sucursal segura que ofrecer", que es el
@@ -211,7 +221,12 @@ public sealed class GetSessionContextHandlerTests
         result.Value!.Branch.Should().BeNull();
         f.BranchRepo.Verify(
             r =>
-                r.GetByIdAsync(tenant.Id, branchDeEmpresaB.Id, It.IsAny<CancellationToken>()),
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    branchDeEmpresaB.Id,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once,
             "solo se consulta una vez, para descartar el header — nunca se vuelve a resolver como branch válido"
         );

@@ -66,16 +66,15 @@ public sealed class GetMyAvailableBranchesHandler
             .ToHashSet();
 
         var branches = (
-            await _branchRepository.GetAsync(
+            await _branchRepository.GetByCompanyAsync(
                 _currentTenant.TenantId,
+                _currentCompany.CompanyId,
                 activeFilter: true,
                 search: null,
                 cancellationToken
             )
         )
-            .Where(b =>
-                b.CompanyId == _currentCompany.CompanyId && authorizedBranchIds.Contains(b.Id)
-            )
+            .Where(b => authorizedBranchIds.Contains(b.Id))
             .OrderByDescending(b => b.IsMainBranch)
             .ThenBy(b => b.Name)
             .Select(b => new AvailableBranchOptionDto(b.Id, b.Name, b.IsMainBranch))

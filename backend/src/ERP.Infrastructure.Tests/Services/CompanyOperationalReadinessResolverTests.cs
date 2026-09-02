@@ -54,7 +54,7 @@ public sealed class CompanyOperationalReadinessResolverTests
                 .ReturnsAsync((CompanyEntity?)null);
             BranchRepo
                 .Setup(r =>
-                    r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+                    r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(Array.Empty<Branch>());
             EstablishmentRepo
@@ -226,7 +226,9 @@ public sealed class CompanyOperationalReadinessResolverTests
         var cashRegister = CashRegister.Create(TenantId, CompanyId, branch.Id, "CAJA-01", "Caja Principal", UserId);
 
         f.BranchRepo
-            .Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
         f.EstablishmentRepo
             .Setup(r => r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))

@@ -20,11 +20,9 @@ namespace ERP.Application.Access.UseCases.UpdateCompanyUserBranchesAdmin;
 /// login que el DefaultBranchId siga autorizado y falla con un ValidationFailure controlado si no
 /// lo está — nunca fue asumido que CompanyUserBranch tuviera siempre al menos una fila activa.
 ///
-/// IBranchRepository.GetByIdAsync solo filtra por TenantId (no por CompanyId, a diferencia de
-/// entidades que usan ForOperationalScope) — por eso se compara branch.CompanyId manualmente
-/// contra membership.CompanyId. Se usa el mismo mensaje para "no existe" y "pertenece a otra
-/// empresa" (igual criterio que GetCompanyUserPreferencesAdminHandler para membresías) para no
-/// revelar por diferencia de mensaje que un BranchId de otra empresa existe.
+/// La validación de sucursales usa tenant+empresa explícitos. Se usa el mismo mensaje para
+/// "no existe" y "pertenece a otra empresa" (igual criterio que GetCompanyUserPreferencesAdminHandler
+/// para membresías) para no revelar por diferencia de mensaje que un BranchId de otra empresa existe.
 /// </summary>
 public sealed class UpdateCompanyUserBranchesAdminHandler
     : IRequestHandler<UpdateCompanyUserBranchesAdminCommand, Result<CompanyUserBranchesAdminDto>>
@@ -81,12 +79,13 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
         // solicitadas pasen las tres reglas (existe, pertenece a la empresa, activa).
         foreach (var branchId in requestedBranchIds)
         {
-            var branch = await _branchRepository.GetByIdAsync(
+            var branch = await _branchRepository.GetByIdForCompanyAsync(
                 _currentTenant.TenantId,
+                membership.CompanyId,
                 branchId,
                 cancellationToken
             );
-            if (branch is null || branch.CompanyId != membership.CompanyId)
+            if (branch is null)
                 return Result<CompanyUserBranchesAdminDto>.ValidationFailure(
                     $"La sucursal {branchId} no existe o no pertenece a la empresa."
                 );
@@ -146,13 +145,14 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
     )
     {
         var companyBranches = (
-            await _branchRepository.GetAsync(
+            await _branchRepository.GetByCompanyAsync(
                 _currentTenant.TenantId,
+                companyId,
                 activeFilter: true,
+                search: null,
                 cancellationToken: cancellationToken
             )
         )
-            .Where(b => b.CompanyId == companyId)
             .ToList();
 
         var options = companyBranches

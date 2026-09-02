@@ -107,8 +107,15 @@ public sealed class WarehouseBranchOwnershipTests
     {
         var branchOfCompanyB = CreateBranch(CompanyBId);
         var f = new CreateFixture();
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, branchOfCompanyB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(branchOfCompanyB);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    branchOfCompanyB.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Branch?)null);
 
         var result = await f.BuildHandler()
             .Handle(BuildCreateCommand(branchOfCompanyB.Id), CancellationToken.None);
@@ -123,7 +130,14 @@ public sealed class WarehouseBranchOwnershipTests
     {
         var f = new CreateFixture();
         var missingBranchId = Guid.NewGuid();
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, missingBranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    missingBranchId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((Branch?)null);
 
         var result = await f.BuildHandler()
@@ -138,7 +152,14 @@ public sealed class WarehouseBranchOwnershipTests
     {
         var ownBranch = CreateBranch(CompanyAId);
         var f = new CreateFixture();
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, ownBranch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    ownBranch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ownBranch);
 
         var result = await f.BuildHandler()
@@ -215,8 +236,15 @@ public sealed class WarehouseBranchOwnershipTests
         var f = new UpdateFixture();
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(warehouse);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, branchOfCompanyB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(branchOfCompanyB);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    branchOfCompanyB.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Branch?)null);
 
         var result = await f.BuildHandler()
             .Handle(BuildUpdateCommand(warehouse.Id, branchOfCompanyB.Id), CancellationToken.None);
@@ -235,7 +263,14 @@ public sealed class WarehouseBranchOwnershipTests
         var f = new UpdateFixture();
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(warehouse);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(TenantId, otherOwnBranch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CompanyAId,
+                    otherOwnBranch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(otherOwnBranch);
 
         var result = await f.BuildHandler()

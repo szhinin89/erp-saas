@@ -13,8 +13,23 @@ public interface IBranchRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<IReadOnlyList<Branch>> GetByCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        bool? activeFilter = true,
+        string? search = null,
+        CancellationToken cancellationToken = default
+    );
+
     Task<Branch?> GetByIdAsync(
         Guid tenantId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<Branch?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
         Guid id,
         CancellationToken cancellationToken = default
     );
@@ -22,6 +37,7 @@ public interface IBranchRepository
     /// <summary>CONFIG-FOUNDATION-P2-01: devuelve los Id de las sucursales desmarcadas (para auditoría).</summary>
     Task<IReadOnlyList<Guid>> ClearMainBranchExceptAsync(
         Guid tenantId,
+        Guid companyId,
         Guid? exceptBranchId,
         Guid updatedBy,
         CancellationToken cancellationToken = default

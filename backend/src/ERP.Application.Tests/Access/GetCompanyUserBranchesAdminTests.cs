@@ -103,7 +103,15 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
                 r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(membership);
-        f.BranchRepo.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    TenantId,
+                    CurrentCompanyId,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { branchA, branchB });
         f.CompanyUserBranchRepo.Setup(r =>
                 r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
@@ -124,19 +132,26 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
     }
 
     [Fact]
-    public async Task Excluye_sucursales_de_otra_empresa_aunque_el_repositorio_las_devuelva()
+    public async Task Pide_sucursales_filtradas_por_empresa_en_el_repositorio()
     {
         var membership = Membership(CurrentCompanyId);
         var ownBranch = NewBranch(CurrentCompanyId, "Matriz");
-        var foreignBranch = NewBranch(OtherCompanyId, "Sucursal ajena");
 
         var f = new Fixture();
         f.AccessRepo.Setup(r =>
                 r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(membership);
-        f.BranchRepo.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { ownBranch, foreignBranch });
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    TenantId,
+                    CurrentCompanyId,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new[] { ownBranch });
         f.CompanyUserBranchRepo.Setup(r =>
                 r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
             )
@@ -150,7 +165,17 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Branches.Should().ContainSingle(b => b.BranchId == ownBranch.Id);
-        result.Value.Branches.Should().NotContain(b => b.BranchId == foreignBranch.Id);
+        f.BranchRepo.Verify(
+            r =>
+                r.GetByCompanyAsync(
+                    TenantId,
+                    CurrentCompanyId,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -173,7 +198,8 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.BranchRepo.Verify(
             r =>
-                r.GetAsync(
+                r.GetByCompanyAsync(
+                    It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<bool?>(),
                     It.IsAny<string?>(),

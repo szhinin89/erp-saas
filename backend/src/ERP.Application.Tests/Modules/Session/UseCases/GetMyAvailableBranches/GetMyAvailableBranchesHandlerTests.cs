@@ -110,16 +110,10 @@ public sealed class GetMyAvailableBranchesHandlerTests
         var mainBranch = CreateBranch("Matriz", isMain: true);
         var northBranch = CreateBranch("Norte", isMain: false);
         var revokedBranch = CreateBranch("Sur (revocada)", isMain: false);
-        var otherCompanyBranch = CreateBranch(
-            "Otra empresa",
-            isMain: false,
-            companyId: Guid.NewGuid()
-        );
-
         f.BranchRepository.Setup(r =>
-                r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(new[] { mainBranch, northBranch, revokedBranch, otherCompanyBranch });
+            .ReturnsAsync(new[] { mainBranch, northBranch, revokedBranch });
 
         var authorizations = new[]
         {
@@ -184,7 +178,7 @@ public sealed class GetMyAvailableBranchesHandlerTests
             )
             .ReturnsAsync(membership);
         f.BranchRepository.Setup(r =>
-                r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(Array.Empty<Branch>());
         f.CompanyUserBranchRepository.Setup(r =>
@@ -222,7 +216,7 @@ public sealed class GetMyAvailableBranchesHandlerTests
 
         var mainBranch = CreateBranch("Matriz", isMain: true);
         f.BranchRepository.Setup(r =>
-                r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(new[] { mainBranch });
         f.CompanyUserBranchRepository.Setup(r =>

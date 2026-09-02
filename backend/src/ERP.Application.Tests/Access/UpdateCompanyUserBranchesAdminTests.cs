@@ -112,13 +112,26 @@ public sealed class UpdateCompanyUserBranchesAdminHandlerTests
                 r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(membership);
-        foreach (var branch in companyBranches)
+        foreach (var branch in companyBranches.Where(b => b.CompanyId == membership.CompanyId))
             f.BranchRepo.Setup(r =>
-                    r.GetByIdAsync(TenantId, branch.Id, It.IsAny<CancellationToken>())
+                    r.GetByIdForCompanyAsync(
+                        TenantId,
+                        membership.CompanyId,
+                        branch.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(branch);
-        f.BranchRepo.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(companyBranches.Where(b => b.IsActive).ToList());
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    TenantId,
+                    membership.CompanyId,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(companyBranches.Where(b => b.CompanyId == membership.CompanyId && b.IsActive).ToList());
         f.CompanyUserBranchRepo.Setup(r =>
                 r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
             )
@@ -269,7 +282,12 @@ public sealed class UpdateCompanyUserBranchesAdminHandlerTests
 
         var f = BuildBaseFixture(membership, new[] { branchA }, new[] { authA });
         f.BranchRepo.Setup(r =>
-                r.GetByIdAsync(TenantId, missingBranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    CurrentCompanyId,
+                    missingBranchId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((Branch?)null);
 
@@ -369,7 +387,13 @@ public sealed class UpdateCompanyUserBranchesAdminHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.BranchRepo.Verify(
-            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdForCompanyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -399,7 +423,13 @@ public sealed class UpdateCompanyUserBranchesAdminHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         f.BranchRepo.Verify(
-            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdForCompanyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
         f.CompanyUserBranchRepo.Verify(

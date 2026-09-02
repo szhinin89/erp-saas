@@ -73,6 +73,7 @@ public sealed class CreateCompanyUserPreferencesHandler
             _branchRepository,
             _companyUserBranchRepository,
             company.TenantId,
+            membership.CompanyId,
             membership.Id,
             command.DefaultBranchId,
             loginMode,

@@ -83,15 +83,20 @@ public sealed class BranchAccessGuardTests
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
         f.BranchRepo.Setup(r =>
-                r.GetByIdAsync(tenantId, branchDeEmpresaB.Id, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(
+                    tenantId,
+                    companyAId,
+                    branchDeEmpresaB.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
-            .ReturnsAsync(branchDeEmpresaB);
+            .ReturnsAsync((Branch?)null);
 
         var guard = f.BuildGuard();
         var result = await guard.RequireBranchAsync(branchDeEmpresaB.Id);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("La sucursal no pertenece a la empresa operativa actual.");
+        result.Error.Should().Be("Sucursal no encontrada.");
         f.CompanyUserBranchRepo.Verify(
             r =>
                 r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
@@ -120,7 +125,14 @@ public sealed class BranchAccessGuardTests
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenantId, branchId, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenantId,
+                    companyAId,
+                    branchId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((Branch?)null);
 
         var guard = f.BuildGuard();
@@ -144,7 +156,13 @@ public sealed class BranchAccessGuardTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
         f.BranchRepo.Verify(
-            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdForCompanyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -161,7 +179,14 @@ public sealed class BranchAccessGuardTests
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenantId, branch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenantId,
+                    companyAId,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(branch);
         f.AccessRepo.Setup(a =>
                 a.GetCompanyUserMembershipAsync(companyAId, userId, It.IsAny<CancellationToken>())
@@ -191,7 +216,14 @@ public sealed class BranchAccessGuardTests
 
         f.CompanyGuard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<CompanyAccessContext>.Success(ActiveCompanyA(userId, tenantId, companyAId)));
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenantId, branch.Id, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenantId,
+                    companyAId,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(branch);
         f.AccessRepo.Setup(a =>
                 a.GetCompanyUserMembershipAsync(companyAId, userId, It.IsAny<CancellationToken>())

@@ -167,13 +167,14 @@ public sealed class GetSessionContextHandler
     {
         if (_currentBranch.HasBranchContext)
         {
-            var headerBranch = await _branchRepository.GetByIdAsync(
+            var headerBranch = await _branchRepository.GetByIdForCompanyAsync(
                 _currentTenant.TenantId,
+                companyId,
                 _currentBranch.BranchId,
                 cancellationToken
             );
 
-            if (headerBranch is not null && headerBranch.CompanyId == companyId)
+            if (headerBranch is not null)
                 return new SessionBranchDto(
                     headerBranch.Id,
                     headerBranch.Name,
@@ -214,8 +215,9 @@ public sealed class GetSessionContextHandler
         if (branchId is not Guid resolved || resolved == Guid.Empty)
             return null;
 
-        var branch = await _branchRepository.GetByIdAsync(
+        var branch = await _branchRepository.GetByIdForCompanyAsync(
             _currentTenant.TenantId,
+            companyId,
             resolved,
             cancellationToken
         );
@@ -235,13 +237,14 @@ public sealed class GetSessionContextHandler
         CancellationToken cancellationToken
     )
     {
-        var branches = await _branchRepository.GetAsync(
+        var branches = await _branchRepository.GetByCompanyAsync(
             _currentTenant.TenantId,
+            companyId,
             activeFilter: true,
             search: null,
             cancellationToken
         );
-        var mainBranches = branches.Where(b => b.CompanyId == companyId && b.IsMainBranch).ToList();
+        var mainBranches = branches.Where(b => b.IsMainBranch).ToList();
         return mainBranches.Count == 1 ? mainBranches[0].Id : null;
     }
 

@@ -228,7 +228,12 @@ public sealed class GetReceivableByInvoiceHandler
         string? createdByName = null;
         if (summary != default)
         {
-            var branch = await _branchRepo.GetByIdAsync(tid, summary.BranchId, ct);
+            var branch = await _branchRepo.GetByIdForCompanyAsync(
+                tid,
+                _c.CompanyId,
+                summary.BranchId,
+                ct
+            );
             branchName = branch?.Name;
 
             var users = await _accessRepo.GetUsersByIdsAsync(new[] { summary.CreatedBy }, ct);
@@ -300,10 +305,15 @@ public sealed class GetReceivablesListHandler
         var invoiceIds = items.Select(x => x.InvoiceId).Distinct().ToList();
         var summaries = await _invoiceRepo.GetReceivableSummariesByIdsAsync(tid, invoiceIds, ct);
 
-        // Sucursales del tenant: sin método batch por id en IBranchRepository — el conjunto es
+        // Sucursales de la empresa: sin método batch por id en IBranchRepository — el conjunto es
         // acotado (una empresa opera con pocas sucursales), así que traer todas una vez por
         // página es más barato que N+1 y no requiere tocar el módulo de Sucursales.
-        var branches = await _branchRepo.GetAsync(tid, activeFilter: null, cancellationToken: ct);
+        var branches = await _branchRepo.GetByCompanyAsync(
+            tid,
+            _c.CompanyId,
+            activeFilter: null,
+            cancellationToken: ct
+        );
         var branchNames = branches.ToDictionary(b => b.Id, b => b.Name);
 
         var creatorIds = summaries.Values.Select(s => s.CreatedBy).Distinct().ToList();

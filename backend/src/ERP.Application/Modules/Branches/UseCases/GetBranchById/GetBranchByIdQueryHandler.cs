@@ -10,11 +10,17 @@ public sealed class GetBranchByIdQueryHandler
 {
     private readonly IBranchRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public GetBranchByIdQueryHandler(IBranchRepository repo, ICurrentTenant tenant)
+    public GetBranchByIdQueryHandler(
+        IBranchRepository repo,
+        ICurrentTenant tenant,
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<BranchDetailDto>> Handle(
@@ -22,7 +28,12 @@ public sealed class GetBranchByIdQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var x = await _repo.GetByIdAsync(_currentTenant.TenantId, request.Id, cancellationToken);
+        var x = await _repo.GetByIdForCompanyAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            request.Id,
+            cancellationToken
+        );
         if (x is null)
             return Result<BranchDetailDto>.Failure("Sucursal no encontrada.");
 

@@ -42,8 +42,9 @@ public sealed class CreateEstablishmentCommandHandler
 
         if (command.BranchId.HasValue)
         {
-            var branch = await _branches.GetByIdAsync(
+            var branch = await _branches.GetByIdForCompanyAsync(
                 tenantId,
+                companyId,
                 command.BranchId.Value,
                 cancellationToken
             );

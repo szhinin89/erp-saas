@@ -70,12 +70,13 @@ public sealed class GetSalesReceiptPrintPayloadQueryHandler
         if (company is null || company.TenantId != _currentTenant.TenantId)
             return Result<SalesReceiptPrintPayloadDto>.NotFound("Factura no encontrada.");
 
-        var branch = await _branches.GetByIdAsync(
+        var branch = await _branches.GetByIdForCompanyAsync(
             _currentTenant.TenantId,
+            invoice.CompanyId,
             invoice.BranchId,
             cancellationToken
         );
-        if (branch is null || branch.CompanyId != invoice.CompanyId)
+        if (branch is null)
             return Result<SalesReceiptPrintPayloadDto>.NotFound("Factura no encontrada.");
 
         var electronicDocument = await _electronicDocuments.GetBySourceAsync(

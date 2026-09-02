@@ -163,7 +163,9 @@ public sealed class LoginHandlerTests
         var branch = NewMainBranch(tenant.Id, company.Id);
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
 
         var sessionDto = new AuthenticatedSessionDto(
@@ -238,7 +240,9 @@ public sealed class LoginHandlerTests
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
         // Ninguna sucursal marcada como IsMainBranch → no hay resolución posible.
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<Branch>());
         f.RefreshTokenService.Setup(s =>
                 s.CreateAsync(
@@ -350,7 +354,8 @@ public sealed class LoginHandlerTests
         );
         f.BranchRepo.Verify(
             r =>
-                r.GetAsync(
+                r.GetByCompanyAsync(
+                    It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<bool?>(),
                     It.IsAny<string>(),
@@ -402,7 +407,9 @@ public sealed class LoginHandlerTests
         var branch = NewMainBranch(tenant.Id, company.Id);
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
         f.Mediator.Setup(m =>
                 m.Send(It.IsAny<CreateAuthenticatedSessionCommand>(), It.IsAny<CancellationToken>())
@@ -524,7 +531,8 @@ public sealed class LoginHandlerTests
         // sucursal directamente desde CompanyUserPreferences, sin lecturas adicionales.
         f.BranchRepo.Verify(
             r =>
-                r.GetAsync(
+                r.GetByCompanyAsync(
+                    It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<bool?>(),
                     It.IsAny<string>(),
@@ -628,7 +636,9 @@ public sealed class LoginHandlerTests
                     )
                 )
             );
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
 
         var handler = f.BuildHandler();
@@ -674,7 +684,9 @@ public sealed class LoginHandlerTests
         var branch = NewMainBranch(tenant.Id, company.Id);
 
         var f = BuildValidLoginFixture(user, tenant, company, membership);
-        f.BranchRepo.Setup(r => r.GetAsync(tenant.Id, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(tenant.Id, company.Id, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { branch });
 
         var sessionDto = new AuthenticatedSessionDto(

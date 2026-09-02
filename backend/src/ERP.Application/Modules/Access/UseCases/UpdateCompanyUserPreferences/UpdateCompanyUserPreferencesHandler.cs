@@ -48,6 +48,7 @@ public sealed class UpdateCompanyUserPreferencesHandler
             _branchRepository,
             _companyUserBranchRepository,
             existing.TenantId,
+            existing.CompanyId,
             existing.CompanyUserMembershipId,
             command.DefaultBranchId,
             loginMode,

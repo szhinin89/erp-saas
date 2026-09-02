@@ -312,7 +312,7 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
         f.BranchRepository.Setup(r =>
-                r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(tenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((Branch?)null);
 
@@ -353,7 +353,7 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
         f.BranchRepository.Setup(r =>
-                r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(tenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(BranchEntity(tenantId));
         f.CompanyUserBranchRepository.Setup(r =>
@@ -404,7 +404,7 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
         f.BranchRepository.Setup(r =>
-                r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(tenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(inactiveBranch);
         f.CompanyUserBranchRepository.Setup(r =>
@@ -456,7 +456,13 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         f.BranchRepository.Verify(
-            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.GetByIdForCompanyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -576,7 +582,7 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
             )
             .ReturnsAsync(existing);
         f.BranchRepository.Setup(r =>
-                r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(BranchEntity());
         f.CompanyUserBranchRepository.Setup(r =>
@@ -630,7 +636,7 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
             )
             .ReturnsAsync(existing);
         f.BranchRepository.Setup(r =>
-                r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(BranchEntity());
         f.CompanyUserBranchRepository.Setup(r =>
@@ -668,7 +674,7 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
             )
             .ReturnsAsync(existing);
         f.BranchRepository.Setup(r =>
-                r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, BranchId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(inactiveBranch);
         f.CompanyUserBranchRepository.Setup(r =>

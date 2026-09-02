@@ -11,11 +11,8 @@ namespace ERP.Application.Access.UseCases.GetCompanyUserBranchesAdmin;
 /// mismo mensaje para "membresía inexistente" y "pertenece a otra empresa" — evita que un
 /// administrador de otra empresa pueda confirmar por diferencia de respuesta que un
 /// CompanyUserId de otra empresa existe.
-/// IBranchRepository.GetAsync/GetByIdAsync solo filtran por TenantId (no por CompanyId) — a
-/// diferencia de otras entidades operacionales que sí aplican scope de empresa automático
-/// (ForOperationalScope). Por eso este handler filtra manualmente por
-/// membership.CompanyId después de leer del repositorio, en vez de asumir que el resultado ya
-/// viene acotado a la empresa activa.
+/// IBranchRepository mantiene métodos tenant-only para login/pre-login, pero esta lectura
+/// administrativa siempre debe pedir sucursales por empresa explícita.
 /// </summary>
 public sealed class GetCompanyUserBranchesAdminHandler
     : IRequestHandler<GetCompanyUserBranchesAdminQuery, Result<CompanyUserBranchesAdminDto?>>
@@ -56,13 +53,14 @@ public sealed class GetCompanyUserBranchesAdminHandler
             );
 
         var companyBranches = (
-            await _branchRepository.GetAsync(
+            await _branchRepository.GetByCompanyAsync(
                 _currentTenant.TenantId,
+                membership.CompanyId,
                 activeFilter: true,
+                search: null,
                 cancellationToken: cancellationToken
             )
         )
-            .Where(b => b.CompanyId == membership.CompanyId)
             .ToList();
 
         var authorizations = await _companyUserBranchRepository.GetByMembershipAsync(

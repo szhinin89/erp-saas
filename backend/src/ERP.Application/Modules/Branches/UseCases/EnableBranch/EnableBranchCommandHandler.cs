@@ -13,18 +13,21 @@ public sealed class EnableBranchCommandHandler
     private readonly IBranchRepository _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
     public EnableBranchCommandHandler(
         IBranchRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
         _activity = activity;
         _currentTenant = tenant;
+        _company = company;
         _user = user;
     }
 
@@ -33,8 +36,9 @@ public sealed class EnableBranchCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var entity = await _repo.GetByIdAsync(
+        var entity = await _repo.GetByIdForCompanyAsync(
             _currentTenant.TenantId,
+            _company.CompanyId,
             request.Id,
             cancellationToken
         );

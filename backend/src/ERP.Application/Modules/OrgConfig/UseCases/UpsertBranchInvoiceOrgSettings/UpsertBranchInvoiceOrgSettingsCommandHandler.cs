@@ -42,8 +42,13 @@ public sealed class UpsertBranchInvoiceOrgSettingsCommandHandler
         var companyId = _currentCompany.CompanyId;
         var userId = _currentUser.UserId;
 
-        var branch = await _branchRepo.GetByIdAsync(tenantId, command.BranchId, cancellationToken);
-        if (branch is null || branch.CompanyId != companyId)
+        var branch = await _branchRepo.GetByIdForCompanyAsync(
+            tenantId,
+            companyId,
+            command.BranchId,
+            cancellationToken
+        );
+        if (branch is null)
             return Result<BranchInvoiceOrgSettingsDto>.Failure(
                 "La sucursal no existe o no pertenece a esta empresa."
             );

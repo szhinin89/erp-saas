@@ -131,12 +131,13 @@ public class UpsertCompanyUserMembershipHandler
 
             foreach (var branchId in distinctBranchIds)
             {
-                var branch = await _branchRepository.GetByIdAsync(
+                var branch = await _branchRepository.GetByIdForCompanyAsync(
                     tenant.Id,
+                    company.Id,
                     branchId,
                     cancellationToken
                 );
-                if (branch is null || branch.CompanyId != company.Id)
+                if (branch is null)
                     return Result<object>.NotFound($"La sucursal {branchId} no existe.");
             }
 

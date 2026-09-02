@@ -10,11 +10,17 @@ public sealed class GetBranchesQueryHandler
 {
     private readonly IBranchRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public GetBranchesQueryHandler(IBranchRepository repo, ICurrentTenant tenant)
+    public GetBranchesQueryHandler(
+        IBranchRepository repo,
+        ICurrentTenant tenant,
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<IReadOnlyList<BranchListItemDto>>> Handle(
@@ -22,8 +28,9 @@ public sealed class GetBranchesQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var items = await _repo.GetAsync(
+        var items = await _repo.GetByCompanyAsync(
             _currentTenant.TenantId,
+            _currentCompany.CompanyId,
             request.ActiveFilter,
             request.Search,
             cancellationToken

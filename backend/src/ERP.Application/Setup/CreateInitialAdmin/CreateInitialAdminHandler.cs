@@ -138,8 +138,13 @@ public sealed class CreateInitialAdminHandler
                 // ya creó y persistió la sucursal principal — la buscamos y autorizamos aquí, dentro
                 // de la misma transacción, igual patrón que E2ESeedService.SeedAdminAccessAsync.
                 var mainBranch = (
-                    await _branches.GetAsync(tenant.Id, activeFilter: true, cancellationToken: ct)
-                ).FirstOrDefault(b => b.CompanyId == company.Id && b.IsMainBranch);
+                    await _branches.GetByCompanyAsync(
+                        tenant.Id,
+                        company.Id,
+                        activeFilter: true,
+                        cancellationToken: ct
+                    )
+                ).FirstOrDefault(b => b.IsMainBranch);
                 if (mainBranch is not null)
                 {
                     await _companyUserBranches.AddAsync(

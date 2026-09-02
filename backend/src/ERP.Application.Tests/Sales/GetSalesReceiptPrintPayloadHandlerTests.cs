@@ -53,7 +53,14 @@ public sealed class GetSalesReceiptPrintPayloadHandlerTests
 
             Companies.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateCompany());
-            Branches.Setup(r => r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+            Branches.Setup(r =>
+                    r.GetByIdForCompanyAsync(
+                        TenantId,
+                        CompanyId,
+                        BranchId,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(CreateBranch());
             CashSessions.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateCashSession());
