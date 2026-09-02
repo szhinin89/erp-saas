@@ -3,6 +3,7 @@ using ERP.Application.Common.Security;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
@@ -162,6 +163,94 @@ public sealed class CompanyAccessGuardTests
     }
 
     [Fact]
+    public async Task RequireMembershipAsync_empresa_suspendida_rechaza_acceso_operativo()
+    {
+        var (f, _, company, userId) = BuildAuthenticatedContext();
+        company.SuspendOperations();
+        var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
+
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Empresa no disponible para operar.");
+        company.OperationalStatus.Should().Be(CompanyOperationalStatus.Suspended);
+        f.Access.Verify(
+            a =>
+                a.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task RequireMembershipAsync_empresa_suspendida_permite_acceso_no_operativo_si_no_exige_empresa_activa()
+    {
+        var (f, tenant, company, userId) = BuildAuthenticatedContext();
+        company.SuspendOperations();
+        var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
+
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(
+            company.Id,
+            requireActiveCompany: false
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CompanyId.Should().Be(company.Id);
+        result.Value.TenantId.Should().Be(tenant.Id);
+        result.Value.CompanyIsActive.Should().BeTrue();
+        company.OperationalStatus.Should().Be(CompanyOperationalStatus.Suspended);
+    }
+
+    [Fact]
+    public async Task RequireMembershipAsync_empresa_inactiva_rechaza_acceso_operativo()
+    {
+        var (f, _, company, userId) = BuildAuthenticatedContext();
+        company.UpdateAdminIdentity(company.LegalName, company.TradeName, isActive: false, CreatedBy);
+        var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
+
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Empresa no disponible para operar.");
+        f.Access.Verify(
+            a =>
+                a.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public async Task RequireCurrentCompanyAsync_sin_header_X_Company_Id_rechaza_antes_de_consultar_membership()
     {
         var (f, _, _, _) = BuildAuthenticatedContext();
@@ -175,6 +264,38 @@ public sealed class CompanyAccessGuardTests
         f.Metrics.Verify(m => m.RecordInvalidCompanyContext(null), Times.Once);
         f.Companies.Verify(
             c => c.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task RequireCurrentCompanyAsync_empresa_suspendida_rechaza_acceso_operativo()
+    {
+        var (f, _, company, userId) = BuildAuthenticatedContext();
+        company.SuspendOperations();
+        var membership = CompanyUserMembership.Create(company.Id, userId, "Admin", null, CreatedBy);
+
+        f.CurrentCompany.Setup(c => c.HasCompanyContext).Returns(true);
+        f.CurrentCompany.Setup(c => c.CompanyId).Returns(company.Id);
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireCurrentCompanyAsync();
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Empresa no disponible para operar.");
+        f.Access.Verify(
+            a =>
+                a.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }

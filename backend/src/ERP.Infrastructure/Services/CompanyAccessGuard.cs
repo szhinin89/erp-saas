@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Security;
 using ERP.Application.Modules.Companies;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -75,8 +76,14 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
             );
         }
 
-        if (requireActiveCompany && !company.IsActive)
-            return Result<CompanyAccessContext>.Failure("La empresa está inactiva.");
+        if (
+            requireActiveCompany
+            && (
+                !company.IsActive
+                || company.OperationalStatus != CompanyOperationalStatus.Operational
+            )
+        )
+            return Result<CompanyAccessContext>.Failure("Empresa no disponible para operar.");
 
         var membership = await _access.GetCompanyUserMembershipAsync(
             companyId,
