@@ -41,7 +41,8 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
             .HasColumnName("emission_type")
             .HasConversion<short>()
             .IsRequired()
-            .HasDefaultValue(EmissionType.Electronic);
+            .HasDefaultValue(EmissionType.Electronic)
+            .HasSentinel((EmissionType)0);
 
         builder
             .Property(x => x.SriPaymentMethodCode)

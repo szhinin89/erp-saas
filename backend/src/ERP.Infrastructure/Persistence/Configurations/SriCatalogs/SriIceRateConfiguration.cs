@@ -20,6 +20,7 @@ public class SriIceRateConfiguration : IEntityTypeConfiguration<SriIceRate>
             .HasColumnName("calculation_type")
             .HasConversion<int>()
             .HasDefaultValue(SriTaxCalculationType.Percentage)
+            .HasSentinel((SriTaxCalculationType)0)
             .IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 

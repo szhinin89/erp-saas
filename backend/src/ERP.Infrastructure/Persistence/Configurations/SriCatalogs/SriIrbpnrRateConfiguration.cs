@@ -20,6 +20,7 @@ public class SriIrbpnrRateConfiguration : IEntityTypeConfiguration<SriIrbpnrRate
             .HasColumnName("calculation_type")
             .HasConversion<int>()
             .HasDefaultValue(SriTaxCalculationType.Specific)
+            .HasSentinel((SriTaxCalculationType)0)
             .IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 

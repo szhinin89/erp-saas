@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Tenants.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -115,7 +116,8 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder
             .Property(x => x.OperationalStatus)
             .HasColumnName("operational_status")
-            .HasDefaultValue(ERP.Domain.Modules.Company.Enums.CompanyOperationalStatus.Operational)
+            .HasDefaultValue(CompanyOperationalStatus.Operational)
+            .HasSentinel((CompanyOperationalStatus)0)
             .IsRequired();
 
         builder

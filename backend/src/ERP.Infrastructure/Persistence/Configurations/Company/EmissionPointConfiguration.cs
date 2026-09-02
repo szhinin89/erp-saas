@@ -28,7 +28,8 @@ public class EmissionPointConfiguration : IEntityTypeConfiguration<EmissionPoint
             .Property(x => x.EmissionType)
             .HasColumnName("emission_type")
             .IsRequired()
-            .HasDefaultValue(EmissionType.Electronic);
+            .HasDefaultValue(EmissionType.Electronic)
+            .HasSentinel((EmissionType)0);
         builder.Property(x => x.IsDefault).HasColumnName("is_default").IsRequired();
 
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
