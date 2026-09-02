@@ -1,6 +1,18 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-08-30** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-02** · Kernel refactor: **2026-06-05**.
+
+---
+
+## ZH-ADMINGLOBALCORE-LOGIN-FLOW-05I — AdminGlobalCore login flow para provisioning (2026-09-02)
+
+**Estado: CERRADA.** Commit `28b6ddbf feat(auth): add global core admin login for company provisioning`.
+
+- Se agregó rol global persistido para `AdminGlobalCore` y endpoint `POST /api/v1/auth/global-login`, emitiendo token global con `tenant_id = Guid.Empty`.
+- La policy `CompanyProvisioning` quedó compatible con token global; `POST /api/v1/companies` permite crear empresas bajo el tenant real recibido en body solo desde el contexto global autorizado.
+- Admin en modo empresa queda correctamente bloqueado para provisioning: backend devuelve `403` en `POST /api/v1/companies`; frontend 5H-01 oculta "Nueva empresa" y redirige `/companies/new` a `/companies` cuando el usuario no puede provisionar.
+- Se ajustó auditoría de `PriceList` para soportar bootstrap ejecutado desde contexto global.
+- **Validado**: `dotnet build backend/src/ERP.API/ERP.API.csproj` OK; `POST /api/v1/auth/global-login` OK con `tenant_id = Guid.Empty`; `POST /api/v1/companies` con AdminEmpresa normal devuelve `403`; `POST /api/v1/companies` con AdminGlobalCore crea empresa correctamente; `GET /api/v1/companies` con token global devuelve `403` esperado.
 
 ---
 
