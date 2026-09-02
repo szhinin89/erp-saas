@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260809192409_AddPurchaseInvoiceTaxSummary")]
-    partial class AddPurchaseInvoiceTaxSummary
+    [Migration("20260902143757_InitialEnterpriseBaseline")]
+    partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -619,6 +619,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTime>("AbsoluteExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("absolute_expires_at");
+
                     b.Property<Guid?>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
@@ -868,6 +872,11 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_branches_tenant_id");
 
+                    b.HasIndex("TenantId", "CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_branches_tenant_company_main")
+                        .HasFilter("is_main_branch = true");
+
                     b.ToTable("branches", (string)null);
                 });
 
@@ -1045,6 +1054,109 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("config_module", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Configuration.Entities.ConfigurationChangeLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<Guid>("ChangedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("field_name");
+
+                    b.Property<bool>("IsSensitive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_sensitive");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("new_value");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("old_value");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("scope");
+
+                    b.Property<Guid>("ScopeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("ValueType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("value_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "ChangedAtUtc")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_config_change_log_tenant_company_changed_at");
+
+                    b.HasIndex("TenantId", "CompanyId", "Key")
+                        .HasDatabaseName("ix_config_change_log_tenant_company_key");
+
+                    b.HasIndex("TenantId", "CompanyId", "EntityType", "EntityId")
+                        .HasDatabaseName("ix_config_change_log_tenant_company_entity");
+
+                    b.HasIndex("TenantId", "CompanyId", "Scope", "ScopeId")
+                        .HasDatabaseName("ix_config_change_log_tenant_company_scope");
+
+                    b.ToTable("configuration_change_log", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Configuration.Entities.OrgSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1102,6 +1214,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)")
                         .HasColumnName("value");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -1193,6 +1311,50 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_sri_settings_company_id");
 
                     b.ToTable("sri_settings", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Configuration.Entities.SystemProviderSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CiiuCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("ciiu_code");
+
+                    b.Property<DateOnly?>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<bool>("Enabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("LegalName")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("legal_name");
+
+                    b.Property<string>("Ruc")
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)")
+                        .HasColumnName("ruc");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("system_provider_settings", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Geography.Entities.GeoCanton", b =>
@@ -3525,6 +3687,317 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("cash_sessions", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Communications.Entities.CommunicationOutbox", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BodyHtml")
+                        .HasMaxLength(16000)
+                        .HasColumnType("character varying(16000)")
+                        .HasColumnName("body_html");
+
+                    b.Property<string>("BodyText")
+                        .HasMaxLength(16000)
+                        .HasColumnType("character varying(16000)")
+                        .HasColumnName("body_text");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("channel");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<string>("CorrelationType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("FailedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("failed_at_utc");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<int>("MaxRetries")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_retries");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at_utc");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("priority");
+
+                    b.Property<DateTime?>("ProcessingStartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processing_started_at_utc");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("purpose");
+
+                    b.Property<string>("RecipientEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("recipient_email");
+
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("recipient_name");
+
+                    b.Property<string>("RecipientPhone")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("recipient_phone");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("retry_count");
+
+                    b.Property<DateTime>("ScheduledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_at_utc");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("subject");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_communication_outbox_idempotency")
+                        .HasFilter("idempotency_key IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "Status", "ScheduledAtUtc", "NextAttemptAtUtc")
+                        .HasDatabaseName("ix_communication_outbox_due");
+
+                    b.HasIndex("TenantId", "CompanyId", "CorrelationType", "CorrelationId", "Purpose", "RecipientEmail")
+                        .HasDatabaseName("ix_communication_outbox_correlation");
+
+                    b.ToTable("communication_outbox", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Communications.Entities.CommunicationOutboxAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttachmentType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("attachment_type");
+
+                    b.Property<byte[]>("BinaryContent")
+                        .HasColumnType("bytea")
+                        .HasColumnName("binary_content");
+
+                    b.Property<Guid>("CommunicationOutboxId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("communication_outbox_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileStoragePath")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("file_storage_path");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommunicationOutboxId")
+                        .HasDatabaseName("ix_communication_outbox_attachments_outbox");
+
+                    b.ToTable("communication_outbox_attachments", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Communications.Entities.CommunicationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("channel");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("HtmlTemplate")
+                        .HasMaxLength(16000)
+                        .HasColumnType("character varying(16000)")
+                        .HasColumnName("html_template");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("language");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("SubjectTemplate")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("subject_template");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TextTemplate")
+                        .HasMaxLength(16000)
+                        .HasColumnType("character varying(16000)")
+                        .HasColumnName("text_template");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "Channel", "Code", "Language")
+                        .IsUnique()
+                        .HasDatabaseName("ux_communication_templates_code_language");
+
+                    b.ToTable("communication_templates", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.Company", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3532,10 +4005,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<string>("BrandingConfiguration")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("branding_configuration");
 
                     b.Property<string>("CorporateEmail")
                         .HasMaxLength(120)
@@ -3735,6 +4204,55 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("company", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsResponsibleOnSales")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_responsible_on_sales");
+
+                    b.Property<string>("SriTaxCategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("sri_tax_category_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_company_special_tax_responsibilities_tenant");
+
+                    b.HasIndex("CompanyId", "SriTaxCategoryCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_company_special_tax_responsibility");
+
+                    b.ToTable("company_special_tax_responsibilities", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.DocumentSequence", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3869,6 +4387,11 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_ep_code");
 
+                    b.HasIndex("TenantId", "CompanyId", "EstablishmentId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_emission_point_establishment_default")
+                        .HasFilter("is_default = true");
+
                     b.ToTable("emission_point", (string)null);
                 });
 
@@ -3960,50 +4483,262 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_establishment_tenant_branch")
                         .HasFilter("branch_id IS NOT NULL");
 
+                    b.HasIndex("TenantId", "CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_establishment_tenant_company_main")
+                        .HasFilter("is_main = true");
+
                     b.ToTable("establishment", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.GeneralParameter", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocType", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("doc_type", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            Code = "FACVEN",
+                            IsActive = true,
+                            Name = "Factura de Venta"
+                        },
+                        new
+                        {
+                            Code = "NCVDEV",
+                            IsActive = true,
+                            Name = "Nota de Crédito de Venta"
+                        },
+                        new
+                        {
+                            Code = "FACCOM",
+                            IsActive = true,
+                            Name = "Factura de Compra"
+                        },
+                        new
+                        {
+                            Code = "NCCDEV",
+                            IsActive = true,
+                            Name = "Nota de Crédito de Compra"
+                        },
+                        new
+                        {
+                            Code = "GASDOC",
+                            IsActive = true,
+                            Name = "Documento de Gasto"
+                        },
+                        new
+                        {
+                            Code = "RETGAS",
+                            IsActive = true,
+                            Name = "Retención en Gasto"
+                        },
+                        new
+                        {
+                            Code = "PAGPRO",
+                            IsActive = true,
+                            Name = "Pago a Proveedor"
+                        },
+                        new
+                        {
+                            Code = "COBCLI",
+                            IsActive = true,
+                            Name = "Cobro a Cliente"
+                        },
+                        new
+                        {
+                            Code = "ASI",
+                            IsActive = true,
+                            Name = "Asiento Contable Manual"
+                        },
+                        new
+                        {
+                            Code = "AJUINV",
+                            IsActive = true,
+                            Name = "Ajuste de Inventario"
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocTypeSriMap", b =>
+                {
+                    b.Property<string>("DocTypeCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("doc_type_code");
+
+                    b.Property<string>("SriDocTypeCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("sri_doc_type_code");
+
+                    b.HasKey("DocTypeCode");
+
+                    b.HasIndex("SriDocTypeCode");
+
+                    b.ToTable("doc_type_sri_map", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            DocTypeCode = "FACVEN",
+                            SriDocTypeCode = "01"
+                        },
+                        new
+                        {
+                            DocTypeCode = "NCVDEV",
+                            SriDocTypeCode = "04"
+                        },
+                        new
+                        {
+                            DocTypeCode = "NCCDEV",
+                            SriDocTypeCode = "04"
+                        },
+                        new
+                        {
+                            DocTypeCode = "RETGAS",
+                            SriDocTypeCode = "07"
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocumentFlowPolicy", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccountingPostingMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("accounting_posting_mode");
+
+                    b.Property<string>("AuthorizationMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("authorization_mode");
+
+                    b.Property<string>("CancellationMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("cancellation_mode");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Key")
+                    b.Property<string>("ConfirmationMode")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("key");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("confirmation_mode");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CreationMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("creation_mode");
+
+                    b.Property<string>("DocumentTypeCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("document_type_code");
+
+                    b.Property<string>("InventoryImpactMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("inventory_impact_mode");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NotificationMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("notification_mode");
+
+                    b.Property<string>("PayableGenerationMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("payable_generation_mode");
+
+                    b.Property<string>("PendingDocumentMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("pending_document_mode");
+
+                    b.Property<bool>("RequiresAttachment")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_attachment");
+
+                    b.Property<bool>("RequiresCancellationReason")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_cancellation_reason");
+
+                    b.Property<bool>("RequiresDueDate")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_due_date");
+
+                    b.Property<bool>("RequiresSupplier")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_supplier");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
-                    b.Property<string>("Value")
-                        .HasColumnType("text")
-                        .HasColumnName("value");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_general_parameter_tenant_id");
+                    b.HasIndex("DocumentTypeCode");
 
-                    b.HasIndex("CompanyId", "Key")
+                    b.HasIndex("TenantId", "CompanyId", "DocumentTypeCode")
                         .IsUnique()
-                        .HasDatabaseName("uq_gen_param");
+                        .HasDatabaseName("uq_document_flow_policy_company_doc_type");
 
-                    b.ToTable("general_parameter", (string)null);
+                    b.ToTable("document_flow_policy", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument", b =>
@@ -4308,6 +5043,450 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_electronic_document_sri_message_user_occurred_at");
 
                     b.ToTable("electronic_document_sri_message", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeductible")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deductible");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_id");
+
+                    b.Property<bool>("RequiresInvoice")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_invoice");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_expense_category_nodes_tenant_company");
+
+                    b.HasIndex("TenantId", "CompanyId", "IsActive")
+                        .HasDatabaseName("ix_expense_category_nodes_tenant_company_active");
+
+                    b.HasIndex("TenantId", "CompanyId", "Level", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_expense_category_nodes_root_code")
+                        .HasFilter("\"parent_id\" IS NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "Level", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("uq_expense_category_nodes_root_name")
+                        .HasFilter("\"parent_id\" IS NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "ParentId", "Level", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_expense_category_nodes_parent_code")
+                        .HasFilter("\"parent_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "ParentId", "Level", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("uq_expense_category_nodes_parent_name")
+                        .HasFilter("\"parent_id\" IS NOT NULL");
+
+                    b.ToTable("expense_category_nodes", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_expense_category_nodes_hierarchy", "(\"level\" = 0 AND \"parent_id\" IS NULL AND \"accounting_account_id\" IS NULL) OR (\"level\" = 1 AND \"parent_id\" IS NOT NULL AND \"accounting_account_id\" IS NULL) OR (\"level\" = 2 AND \"parent_id\" IS NOT NULL AND \"accounting_account_id\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("AccountingDate")
+                        .HasColumnType("date")
+                        .HasColumnName("accounting_date");
+
+                    b.Property<DateTime?>("AuthorizationDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("authorization_date");
+
+                    b.Property<string>("AuthorizationNumber")
+                        .HasMaxLength(49)
+                        .HasColumnType("character varying(49)")
+                        .HasColumnName("authorization_number");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<decimal?>("ConfirmedGrandTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("confirmed_grand_total");
+
+                    b.Property<decimal?>("ConfirmedSubtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("confirmed_subtotal");
+
+                    b.Property<decimal?>("ConfirmedTotalDiscount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("confirmed_total_discount");
+
+                    b.Property<decimal?>("ConfirmedTotalTax")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("confirmed_total_tax");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("document_number");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("document_type");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateOnly>("IssueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("issue_date");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<int>("PaymentTermDaysBetween")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_term_days_between");
+
+                    b.Property<Guid>("PaymentTermId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_term_id");
+
+                    b.Property<int>("PaymentTermInstallments")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_term_installments");
+
+                    b.Property<string>("PaymentTermName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("payment_term_name");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("supplier_name");
+
+                    b.Property<string>("SupplierTaxId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("supplier_tax_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PaymentTermId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_expense_documents_tenant_company");
+
+                    b.HasIndex("TenantId", "CompanyId", "IssueDate")
+                        .HasDatabaseName("ix_expense_documents_tenant_company_issue_date");
+
+                    b.HasIndex("TenantId", "CompanyId", "Status")
+                        .HasDatabaseName("ix_expense_documents_tenant_company_status");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierId", "DocumentType", "DocumentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_expense_documents_tenant_company_supplier_type_number");
+
+                    b.ToTable("expense_documents", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("description");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("discount_amount");
+
+                    b.Property<decimal>("DiscountPct")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("discount_pct");
+
+                    b.Property<Guid>("ExpenseDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expense_document_id");
+
+                    b.Property<Guid>("ExpenseSubcategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expense_subcategory_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("notes");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("SnapshotAccountingAccountCode")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("snapshot_accounting_account_code");
+
+                    b.Property<Guid>("SnapshotAccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("snapshot_accounting_account_id");
+
+                    b.Property<string>("SnapshotAccountingAccountName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("snapshot_accounting_account_name");
+
+                    b.Property<string>("SnapshotVatName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("snapshot_vat_name");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("UnitAmount")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("unit_amount");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<string>("VatCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("vat_code");
+
+                    b.Property<decimal>("VatRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpenseDocumentId")
+                        .HasDatabaseName("ix_expense_lines_document");
+
+                    b.HasIndex("ExpenseSubcategoryId");
+
+                    b.HasIndex("SnapshotAccountingAccountId");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_expense_lines_tenant");
+
+                    b.HasIndex("TenantId", "ExpenseSubcategoryId")
+                        .HasDatabaseName("ix_expense_lines_tenant_subcategory");
+
+                    b.ToTable("expense_lines", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpensePaymentSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<Guid>("ExpenseDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expense_document_id");
+
+                    b.Property<int>("InstallmentNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("installment_number");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpenseDocumentId", "InstallmentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_expense_payment_schedules_document_number");
+
+                    b.HasIndex("TenantId", "DueDate")
+                        .HasDatabaseName("ix_expense_payment_schedules_tenant_duedate");
+
+                    b.HasIndex("TenantId", "ExpenseDocumentId")
+                        .HasDatabaseName("ix_expense_payment_schedules_tenant_document");
+
+                    b.ToTable("expense_payment_schedules", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", b =>
@@ -4661,6 +5840,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("direction");
 
+                    b.Property<Guid?>("FinancialDestinationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_destination_id");
+
                     b.Property<Guid>("PartnerId")
                         .HasColumnType("uuid")
                         .HasColumnName("partner_id");
@@ -4704,6 +5887,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("updated_by");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FinancialDestinationId");
 
                     b.HasIndex("PartnerId");
 
@@ -4947,6 +6132,310 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("supplier_credit_refund_transactions", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AutoCreateCatalogValues")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("auto_create_catalog_values");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<int>("ImportType")
+                        .HasColumnType("integer")
+                        .HasColumnName("import_type");
+
+                    b.Property<int>("ImportedRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("imported_rows");
+
+                    b.Property<int>("IssueRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("issue_rows");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("label");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_rows");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("ValidRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("valid_rows");
+
+                    b.Property<DateTime?>("ValidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validated_at");
+
+                    b.Property<int>("WarningRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("warning_rows");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_import_batches_company");
+
+                    b.HasIndex("TenantId", "CompanyId", "ImportType", "Status")
+                        .HasDatabaseName("ix_import_batches_company_type_status");
+
+                    b.ToTable("import_batches", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatchFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)")
+                        .HasColumnName("file_name");
+
+                    b.Property<Guid>("ImportBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_batch_id");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("StoredPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("stored_path");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImportBatchId")
+                        .HasDatabaseName("ix_import_batch_files_batch");
+
+                    b.ToTable("import_batch_files", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatchIssue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FieldName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("field_name");
+
+                    b.Property<Guid>("ImportBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_batch_id");
+
+                    b.Property<Guid>("ImportBatchRowId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_batch_row_id");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_number");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer")
+                        .HasColumnName("severity");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImportBatchRowId")
+                        .HasDatabaseName("ix_import_batch_issues_row");
+
+                    b.HasIndex("ImportBatchId", "Severity")
+                        .HasDatabaseName("ix_import_batch_issues_batch_severity");
+
+                    b.ToTable("import_batch_issues", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatchRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_business_partner_id");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("HasBlockingIssue")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_blocking_issue");
+
+                    b.Property<Guid>("ImportBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_batch_id");
+
+                    b.Property<bool>("IsImported")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_imported");
+
+                    b.Property<string>("ParsedData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("parsed_data");
+
+                    b.Property<string>("RawData")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("raw_data");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_number");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImportBatchId", "HasBlockingIssue")
+                        .HasDatabaseName("ix_import_batch_rows_batch_blocking");
+
+                    b.HasIndex("ImportBatchId", "RowNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_import_batch_rows_batch_row_number");
+
+                    b.ToTable("import_batch_rows", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.CurrentStock", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5018,6 +6507,80 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_current_stocks_tenant_product_warehouse");
 
                     b.ToTable("current_stocks", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReason", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AllowedMovementType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("allowed_movement_type");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsSystemSeeded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system_seeded");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name");
+
+                    b.Property<bool>("RequiresNotes")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_notes");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_inventory_adjustment_reasons_tenant_code");
+
+                    b.ToTable("inventory_adjustment_reasons", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.Lot", b =>
@@ -5218,15 +6781,18 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("adjustment_number");
 
-                    b.Property<decimal>("AdjustmentQty")
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("adjustment_qty");
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
 
-                    b.Property<string>("AdjustmentType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("adjustment_type");
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<string>("CancelledReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cancelled_reason");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
@@ -5248,26 +6814,20 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("executed_by");
 
+                    b.Property<string>("MovementType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("movement_type");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("ReasonId")
                         .HasColumnType("uuid")
-                        .HasColumnName("product_id");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("product_name");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("reason");
+                        .HasColumnName("reason_id");
 
                     b.Property<int>("Sequential")
                         .HasColumnType("integer")
@@ -5303,6 +6863,15 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ReasonId")
+                        .HasDatabaseName("ix_stock_adjustments_reason");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_stock_adjustments_status");
+
+                    b.HasIndex("WarehouseId")
+                        .HasDatabaseName("ix_stock_adjustments_warehouse");
+
                     b.HasIndex("TenantId", "AdjustmentNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_stock_adjustments_tenant_number");
@@ -5320,26 +6889,54 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<decimal>("AdjustmentQuantity")
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("adjustment_quantity");
+                    b.Property<string>("BaseUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("base_uom_code");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
 
-                    b.Property<decimal>("PhysicalQuantity")
+                    b.Property<decimal>("ConversionFactor")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("conversion_factor");
+
+                    b.Property<decimal?>("CurrentStockAfter")
                         .HasColumnType("numeric(18,4)")
-                        .HasColumnName("physical_quantity");
+                        .HasColumnName("current_stock_after");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<decimal?>("CurrentStockBefore")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("current_stock_before");
+
+                    b.Property<Guid>("ItemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("product_id");
+                        .HasColumnName("item_id");
 
-                    b.Property<string>("Reason")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("reason");
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("item_name");
+
+                    b.Property<string>("LineNotes")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("line_notes");
+
+                    b.Property<Guid?>("PackagingLevelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("packaging_level_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("quantity");
+
+                    b.Property<decimal>("QuantityInBaseUom")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("quantity_in_base_uom");
 
                     b.Property<short>("SortOrder")
                         .HasColumnType("smallint")
@@ -5349,23 +6946,28 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("stock_adjustment_id");
 
-                    b.Property<decimal>("SystemQuantity")
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("system_quantity");
-
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
-                    b.Property<decimal>("UnitCost")
-                        .HasColumnType("numeric(18,6)")
-                        .HasColumnName("unit_cost");
+                    b.Property<decimal?>("TotalCost")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_cost");
 
-                    b.Property<Guid>("WarehouseId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("warehouse_id");
+                    b.Property<decimal?>("UnitCostBase")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("unit_cost_base");
+
+                    b.Property<string>("UomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("uom_code");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_stock_adjustment_lines_item");
 
                     b.HasIndex("StockAdjustmentId")
                         .HasDatabaseName("ix_stock_adjustment_lines_adjustment");
@@ -5791,6 +7393,11 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_warehouses_tenant_branch_code")
                         .HasFilter("code IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "BranchId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_warehouses_tenant_branch_main")
+                        .HasFilter("is_main = true");
 
                     b.ToTable("warehouses", (string)null);
                 });
@@ -6533,6 +8140,65 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("item_packaging_levels", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("SriTaxCategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("sri_tax_category_code");
+
+                    b.Property<string>("TaxCatalogCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_catalog_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_item_special_tax_configurations_tenant");
+
+                    b.HasIndex("ItemId", "SriTaxCategoryCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_special_tax_configuration");
+
+                    b.ToTable("item_special_tax_configurations", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubstitute", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6623,6 +8289,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("item_id");
 
+                    b.Property<Guid?>("PackagingLevelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("packaging_level_id");
+
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
@@ -6640,6 +8310,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("updated_by");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PackagingLevelId")
+                        .HasDatabaseName("ix_item_supplier_codes_packaging_level");
 
                     b.HasIndex("SupplierId");
 
@@ -7185,6 +8858,458 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("app_features", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.AccountsPayable", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("AccountingDate")
+                        .HasColumnType("date")
+                        .HasColumnName("accounting_date");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("document_number");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("document_type");
+
+                    b.Property<DateOnly>("IssueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("issue_date");
+
+                    b.Property<Guid>("OriginId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("origin_id");
+
+                    b.Property<int>("OriginType")
+                        .HasColumnType("integer")
+                        .HasColumnName("origin_type");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "CompanyId", "OriginType", "OriginId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_accounts_payables_tenant_company_origin");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierId", "Status")
+                        .HasDatabaseName("ix_accounts_payables_tenant_company_supplier_status");
+
+                    b.ToTable("accounts_payables", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.AccountsPayableInstallment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountsPayableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounts_payable_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<decimal>("CreditNoteAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("credit_note_amount");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<int>("InstallmentNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("installment_number");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("paid_amount");
+
+                    b.Property<decimal>("RetainedAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("retained_amount");
+
+                    b.Property<decimal>("ReturnCreditAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("return_credit_amount");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("SupplierCreditAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("supplier_credit_amount");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountsPayableId", "InstallmentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_accounts_payable_installments_payable_number");
+
+                    b.HasIndex("TenantId", "AccountsPayableId")
+                        .HasDatabaseName("ix_accounts_payable_installments_tenant_payable");
+
+                    b.HasIndex("TenantId", "DueDate")
+                        .HasDatabaseName("ix_accounts_payable_installments_tenant_duedate");
+
+                    b.ToTable("accounts_payable_installments", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("PaymentDate")
+                        .HasColumnType("date")
+                        .HasColumnName("payment_date");
+
+                    b.Property<string>("ReceiptNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("receipt_number");
+
+                    b.Property<string>("ReverseReason")
+                        .HasColumnType("text")
+                        .HasColumnName("reverse_reason");
+
+                    b.Property<DateTime?>("ReversedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reversed_at_utc");
+
+                    b.Property<Guid?>("ReversedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversed_by");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<string>("SystemNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("system_number");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "CompanyId", "Status")
+                        .HasDatabaseName("ix_supplier_payments_tenant_company_status");
+
+                    b.HasIndex("TenantId", "CompanyId", "SystemNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_payments_tenant_company_system_number");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierId", "PaymentDate")
+                        .HasDatabaseName("ix_supplier_payments_tenant_company_supplier_date");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierId", "ReceiptNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_payments_tenant_company_supplier_receipt_number")
+                        .HasFilter("\"receipt_number\" IS NOT NULL");
+
+                    b.ToTable("supplier_payments", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentAllocationLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("SupplierPaymentApplicationLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_payment_application_line_id");
+
+                    b.Property<Guid>("SupplierPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_payment_id");
+
+                    b.Property<Guid>("SupplierPaymentMethodLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_payment_method_line_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierPaymentApplicationLineId")
+                        .HasDatabaseName("ix_supplier_payment_allocations_application_line");
+
+                    b.HasIndex("SupplierPaymentId");
+
+                    b.HasIndex("SupplierPaymentMethodLineId")
+                        .HasDatabaseName("ix_supplier_payment_allocations_method_line");
+
+                    b.HasIndex("TenantId", "SupplierPaymentId")
+                        .HasDatabaseName("ix_supplier_payment_allocations_tenant_payment");
+
+                    b.ToTable("supplier_payment_allocations", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentApplicationLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountsPayableInstallmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounts_payable_installment_id");
+
+                    b.Property<decimal>("AmountApplied")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_applied");
+
+                    b.Property<Guid>("SupplierPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_payment_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountsPayableInstallmentId")
+                        .HasDatabaseName("ix_supplier_payment_applications_installment");
+
+                    b.HasIndex("SupplierPaymentId");
+
+                    b.HasIndex("TenantId", "SupplierPaymentId")
+                        .HasDatabaseName("ix_supplier_payment_applications_tenant_payment");
+
+                    b.ToTable("supplier_payment_applications", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentMethodLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateOnly?>("CheckDate")
+                        .HasColumnType("date")
+                        .HasColumnName("check_date");
+
+                    b.Property<string>("CheckNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("check_number");
+
+                    b.Property<Guid>("FinancialDestinationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_destination_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("PaymentMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_method_id");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("reference_number");
+
+                    b.Property<Guid>("SupplierPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_payment_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FinancialDestinationId")
+                        .HasDatabaseName("ix_supplier_payment_methods_financial_destination");
+
+                    b.HasIndex("PaymentMethodId")
+                        .HasDatabaseName("ix_supplier_payment_methods_payment_method");
+
+                    b.HasIndex("SupplierPaymentId");
+
+                    b.HasIndex("TenantId", "SupplierPaymentId")
+                        .HasDatabaseName("ix_supplier_payment_methods_tenant_payment");
+
+                    b.ToTable("supplier_payment_methods", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentSequence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CurrentSeq")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_seq");
+
+                    b.Property<string>("Prefix")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("prefix");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_payment_sequences_tenant_company");
+
+                    b.ToTable("supplier_payment_sequences", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_supplier_payment_sequence_current_seq_positive", "\"current_seq\" >= 1");
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceList", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7272,6 +9397,11 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "CompanyId", "Code")
                         .IsUnique()
                         .HasDatabaseName("uq_price_lists_tenant_company_code");
+
+                    b.HasIndex("TenantId", "CompanyId", "IsDefault")
+                        .IsUnique()
+                        .HasDatabaseName("uq_price_lists_tenant_company_default")
+                        .HasFilter("is_default = true");
 
                     b.ToTable("price_lists", (string)null);
                 });
@@ -8128,6 +10258,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(17)")
                         .HasColumnName("credit_note_number");
 
+                    b.Property<decimal>("IceAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("ice_amount");
+
+                    b.Property<decimal>("IrbpnrAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("irbpnr_amount");
+
                     b.Property<DateOnly>("IssueDate")
                         .HasColumnType("date")
                         .HasColumnName("issue_date");
@@ -8297,6 +10435,132 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_purchase_credit_note_details_tenant_purchase_credit_note");
 
                     b.ToTable("purchase_credit_note_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("PurchaseCreditNoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_credit_note_id");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<Guid>("SourcePurchaseInvoiceTaxSummaryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_purchase_invoice_tax_summary_id");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PurchaseCreditNoteId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("SourcePurchaseInvoiceTaxSummaryId");
+
+                    b.HasIndex("TenantId", "PurchaseCreditNoteId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_credit_note");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_invoice");
+
+                    b.HasIndex("TenantId", "SourcePurchaseInvoiceTaxSummaryId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_source_summary");
+
+                    b.HasIndex("TenantId", "CompanyId", "BranchId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summaries_tenant_company_branch");
+
+                    b.ToTable("purchase_credit_note_tax_summaries", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummaryLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<Guid>("PurchaseCreditNoteTaxSummaryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_credit_note_tax_summary_id");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseCreditNoteTaxSummaryId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summary_lines_summary");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_credit_note_tax_summary_lines_tenant");
+
+                    b.ToTable("purchase_credit_note_tax_summary_lines", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
@@ -8614,6 +10878,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BaseUomCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("UNIT")
+                        .HasColumnName("base_uom_code");
+
                     b.Property<decimal>("ConversionFactor")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("numeric(18,6)")
@@ -8638,22 +10910,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("freight_allocated");
 
-                    b.Property<decimal>("IceAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("ice_amount");
-
-                    b.Property<string>("IceCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("ice_code");
-
-                    b.Property<decimal>("IceRate")
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("ice_rate");
-
                     b.Property<Guid>("InvoiceId")
                         .HasColumnType("uuid")
-                        .HasColumnName("invoice_id");
+                        .HasColumnName("purchase_invoice_id");
 
                     b.Property<bool>("IsFrozen")
                         .ValueGeneratedOnAdd()
@@ -8684,6 +10943,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("other_costs_allocated");
 
+                    b.Property<Guid?>("PackagingLevelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("packaging_level_id");
+
                     b.Property<Guid?>("PurchaseOrderDetailId")
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_order_detail_id");
@@ -8699,11 +10962,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal>("QuantityInBaseUom")
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity_in_base_uom");
-
-                    b.Property<string>("SnapshotIceName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("snapshot_ice_name");
 
                     b.Property<string>("SnapshotItemName")
                         .HasMaxLength(254)
@@ -8804,6 +11062,70 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_invoice_details", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<Guid>("PurchaseInvoiceDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_detail_id");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseInvoiceDetailId")
+                        .HasDatabaseName("ix_purchase_invoice_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_invoice_detail_taxes_tenant");
+
+                    b.ToTable("purchase_invoice_detail_taxes", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8840,6 +11162,28 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal>("IceRate")
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("ice_rate");
+
+                    b.Property<decimal>("IrbpnrAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("irbpnr_amount");
+
+                    b.Property<string>("IrbpnrCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("irbpnr_code");
+
+                    b.Property<string>("IrbpnrName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("irbpnr_name");
+
+                    b.Property<decimal>("IrbpnrRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(10,4)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("irbpnr_rate");
 
                     b.Property<Guid>("PurchaseInvoiceId")
                         .HasColumnType("uuid")
@@ -8990,139 +11334,6 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_line_pvp_audit", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<decimal>("CreditNoteAppliedAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("credit_note_applied_amount");
-
-                    b.Property<decimal>("PaidAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("paid_amount");
-
-                    b.Property<Guid>("PurchaseId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("purchase_id");
-
-                    b.Property<decimal>("ReturnAppliedAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("return_applied_amount");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<decimal>("SupplierCreditAppliedAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("supplier_credit_applied_amount");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("total_amount");
-
-                    b.Property<decimal>("TotalRetained")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("total_retained");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PurchaseId")
-                        .IsUnique()
-                        .HasDatabaseName("uq_purchase_payables_purchase");
-
-                    b.HasIndex("TenantId", "CompanyId")
-                        .HasDatabaseName("ix_purchase_payables_tenant_company");
-
-                    b.ToTable("purchase_payables", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayableInstallment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("amount");
-
-                    b.Property<DateOnly>("DueDate")
-                        .HasColumnType("date")
-                        .HasColumnName("due_date");
-
-                    b.Property<int>("InstallmentNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("installment_number");
-
-                    b.Property<decimal>("PaidAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("paid_amount");
-
-                    b.Property<Guid>("PayableId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("payable_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PayableId", "InstallmentNumber")
-                        .IsUnique()
-                        .HasDatabaseName("uq_payable_installment_number");
-
-                    b.ToTable("purchase_payable_installments", (string)null);
-                });
-
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePaymentSchedule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9221,6 +11432,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal?>("AuthorizedIceTotal")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("authorized_ice_total");
+
+                    b.Property<decimal?>("AuthorizedIrbpnrTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_irbpnr_total");
 
                     b.Property<decimal?>("AuthorizedSubtotal")
                         .HasColumnType("numeric(18,2)")
@@ -9508,15 +11723,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("historical_cost_amount");
 
-                    b.Property<string>("IceCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("ice_code");
-
-                    b.Property<decimal?>("IceRate")
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("ice_rate");
-
                     b.Property<bool>("IsFrozen")
                         .HasColumnType("boolean")
                         .HasColumnName("is_frozen");
@@ -9540,10 +11746,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal?>("ReturnedDiscountAmount")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("returned_discount_amount");
-
-                    b.Property<decimal?>("ReturnedIceAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("returned_ice_amount");
 
                     b.Property<decimal?>("ReturnedSubtotal")
                         .HasColumnType("numeric(18,2)")
@@ -9591,6 +11793,66 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_purchase_return_details_tenant_purchase_return");
 
                     b.ToTable("purchase_return_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<Guid>("PurchaseReturnDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_return_detail_id");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseReturnDetailId")
+                        .HasDatabaseName("ix_purchase_return_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_return_detail_taxes_tenant");
+
+                    b.ToTable("purchase_return_detail_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnSequence", b =>
@@ -10054,7 +12316,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
-                        .HasColumnName("status");
+                        .HasColumnName("document_status");
 
                     b.Property<decimal>("Subtotal")
                         .HasColumnType("numeric(18,2)")
@@ -10246,6 +12508,98 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_purchase_reception_lines_document");
 
                     b.ToTable("purchase_reception_lines", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLineAdditionalField", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("PurchaseReceptionLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_reception_line_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseReceptionLineId")
+                        .HasDatabaseName("ix_purchase_reception_line_additional_fields_line");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_reception_line_additional_fields_tenant");
+
+                    b.ToTable("purchase_reception_line_additional_fields", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLineTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("PurchaseReceptionLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_reception_line_id");
+
+                    b.Property<decimal>("Tarifa")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseReceptionLineId")
+                        .HasDatabaseName("ix_purchase_reception_line_taxes_line");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_purchase_reception_line_taxes_tenant");
+
+                    b.ToTable("purchase_reception_line_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Ride.Entities.RidePdfDocument", b =>
@@ -10615,6 +12969,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BaseUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("base_uom_code");
+
                     b.Property<decimal>("ConversionFactor")
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("conversion_factor");
@@ -10633,19 +12993,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("discount_pct");
 
-                    b.Property<decimal>("IceAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("ice_amount");
-
-                    b.Property<string>("IceCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("ice_code");
-
-                    b.Property<decimal>("IceRate")
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("ice_rate");
-
                     b.Property<Guid>("InvoiceId")
                         .HasColumnType("uuid")
                         .HasColumnName("invoice_id");
@@ -10663,6 +13010,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("notes");
 
+                    b.Property<Guid?>("PackagingLevelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("packaging_level_id");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity");
@@ -10670,11 +13021,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal>("QuantityInBaseUom")
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity_in_base_uom");
-
-                    b.Property<string>("SnapshotIceName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("snapshot_ice_name");
 
                     b.Property<string>("SnapshotItemName")
                         .HasMaxLength(254)
@@ -10737,6 +13083,70 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_sales_invoice_details_tenant_invoice");
 
                     b.ToTable("sales_invoice_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<Guid>("SalesInvoiceDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_invoice_detail_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<decimal>("TaxableBase")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("taxable_base");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesInvoiceDetailId")
+                        .HasDatabaseName("ix_sales_invoice_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_sales_invoice_detail_taxes_tenant");
+
+                    b.ToTable("sales_invoice_detail_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoicePayment", b =>
@@ -10941,6 +13351,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("authorized_total_ice");
 
+                    b.Property<decimal?>("AuthorizedTotalIrbpnr")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_total_irbpnr");
+
                     b.Property<decimal?>("AuthorizedTotalVat")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("authorized_total_vat");
@@ -11131,6 +13545,16 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BaseUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("base_uom_code");
+
+                    b.Property<decimal>("ConversionFactor")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("conversion_factor");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -11145,19 +13569,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("discount_pct");
 
-                    b.Property<decimal>("IceAmount")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("ice_amount");
-
-                    b.Property<string>("IceCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("ice_code");
-
-                    b.Property<decimal>("IceRate")
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("ice_rate");
-
                     b.Property<bool>("IsFrozen")
                         .HasColumnType("boolean")
                         .HasColumnName("is_frozen");
@@ -11170,9 +13581,17 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("original_invoice_detail_id");
 
+                    b.Property<Guid?>("PackagingLevelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("packaging_level_id");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity");
+
+                    b.Property<decimal>("QuantityInBaseUom")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("quantity_in_base_uom");
 
                     b.Property<Guid>("ReturnId")
                         .HasColumnType("uuid")
@@ -11235,6 +13654,62 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_sales_return_details_tenant_return");
 
                     b.ToTable("sales_return_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnDetailTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("calculation_type");
+
+                    b.Property<decimal?>("Rate")
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("rate");
+
+                    b.Property<Guid>("SalesReturnDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_return_detail_id");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<string>("TaxName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tax_name");
+
+                    b.Property<string>("TaxRateCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_rate_code");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesReturnDetailId")
+                        .HasDatabaseName("ix_sales_return_detail_taxes_detail");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_sales_return_detail_taxes_tenant");
+
+                    b.ToTable("sales_return_detail_taxes", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnRefundAllocation", b =>
@@ -11966,6 +14441,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("code");
 
+                    b.Property<int>("CalculationType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("calculation_type");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -11996,6 +14477,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3011",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Cigarrillos rubios importados",
                             Percentage = 150.00m
@@ -12003,6 +14485,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3021",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Cigarrillos negros nacionales",
                             Percentage = 150.00m
@@ -12010,6 +14493,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3041",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Bebidas gaseosas con azúcar añadida",
                             Percentage = 10.00m
@@ -12017,6 +14501,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3051",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Bebidas energizantes",
                             Percentage = 10.00m
@@ -12024,6 +14509,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3071",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Perfumes y aguas de tocador",
                             Percentage = 20.00m
@@ -12031,6 +14517,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3072",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Videojuegos",
                             Percentage = 35.00m
@@ -12038,6 +14525,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3073",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Armas de fuego deportivas",
                             Percentage = 300.00m
@@ -12045,6 +14533,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3081",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Vehículos ≤3.5t (hasta USD 30k)",
                             Percentage = 5.00m
@@ -12052,6 +14541,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3082",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Vehículos ≤3.5t (USD 30k–40k)",
                             Percentage = 10.00m
@@ -12059,6 +14549,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3083",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Vehículos ≤3.5t (más de USD 40k)",
                             Percentage = 15.00m
@@ -12066,6 +14557,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3091",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Aviones / helicópteros de uso privado",
                             Percentage = 15.00m
@@ -12073,6 +14565,7 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3101",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Servicios de televisión pagada",
                             Percentage = 15.00m
@@ -12080,9 +14573,17 @@ namespace ERP.Infrastructure.Migrations
                         new
                         {
                             Code = "3111",
+                            CalculationType = 1,
                             IsActive = true,
                             Name = "Bebidas alcohólicas (incl. cerveza)",
                             Percentage = 75.00m
+                        },
+                        new
+                        {
+                            Code = "3053",
+                            CalculationType = 2,
+                            IsActive = true,
+                            Name = "Bebidas gaseosas con alto contenido de azúcar"
                         });
                 });
 
@@ -12262,6 +14763,56 @@ namespace ERP.Infrastructure.Migrations
                             IdTypeCode = "09",
                             IsActive = true,
                             UsageType = "Carrier"
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriIrbpnrRate", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("code");
+
+                    b.Property<int>("CalculationType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2)
+                        .HasColumnName("calculation_type");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal?>("Percentage")
+                        .HasPrecision(8, 4)
+                        .HasColumnType("numeric(8,4)")
+                        .HasColumnName("percentage");
+
+                    b.Property<decimal?>("UnitValue")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("unit_value");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("sri_irbpnr_rate", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            Code = "5001",
+                            CalculationType = 2,
+                            IsActive = true,
+                            Name = "Impuesto Redimible a las Botellas Plásticas No Retornables",
+                            UnitValue = 0.02m
                         });
                 });
 
@@ -14165,6 +16716,15 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Communications.Entities.CommunicationOutboxAttachment", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Communications.Entities.CommunicationOutbox", null)
+                        .WithMany("Attachments")
+                        .HasForeignKey("CommunicationOutboxId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.Company", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriCountry", "Country")
@@ -14188,6 +16748,15 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Country");
 
                     b.Navigation("TaxRegime");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.DocumentSequence", b =>
@@ -14242,15 +16811,104 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.GeneralParameter", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocTypeSriMap", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", "Company")
-                        .WithMany("Parameters")
-                        .HasForeignKey("CompanyId")
+                    b.HasOne("ERP.Domain.Modules.DocTypes.Entities.DocType", null)
+                        .WithMany()
+                        .HasForeignKey("DocTypeCode")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Company");
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriDocType", null)
+                        .WithMany()
+                        .HasForeignKey("SriDocTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocumentFlowPolicy", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.DocTypes.Entities.DocType", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseDocument", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.PaymentTerm", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentTermId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseDocument", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ExpenseDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode", null)
+                        .WithMany()
+                        .HasForeignKey("ExpenseSubcategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("SnapshotAccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpensePaymentSchedule", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseDocument", null)
+                        .WithMany("PaymentSchedules")
+                        .HasForeignKey("ExpenseDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", b =>
@@ -14284,6 +16942,11 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
                 {
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialDestinationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
                         .WithMany()
                         .HasForeignKey("PartnerId")
@@ -14298,7 +16961,7 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.PaymentApplicationLine", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", null)
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.AccountsPayable", null)
                         .WithMany()
                         .HasForeignKey("PayableId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -14359,6 +17022,24 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Purchases.Entities.SupplierCreditMovement", null)
                         .WithMany()
                         .HasForeignKey("SupplierCreditMovementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatchFile", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.InitialLoad.Entities.ImportBatch", null)
+                        .WithMany("Files")
+                        .HasForeignKey("ImportBatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockAdjustment", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReason", null)
+                        .WithMany()
+                        .HasForeignKey("ReasonId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -14632,6 +17313,15 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("SpecialTaxConfigurations")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubstitute", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
@@ -14648,6 +17338,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.ItemPackagingLevel", null)
+                        .WithMany()
+                        .HasForeignKey("PackagingLevelId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
                         .WithMany()
@@ -14703,6 +17398,114 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.AccountsPayable", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.AccountsPayableInstallment", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.AccountsPayable", null)
+                        .WithMany("Installments")
+                        .HasForeignKey("AccountsPayableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPayment", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentAllocationLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.SupplierPaymentApplicationLine", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierPaymentApplicationLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.SupplierPayment", null)
+                        .WithMany("AllocationLines")
+                        .HasForeignKey("SupplierPaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.SupplierPaymentMethodLine", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierPaymentMethodLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentApplicationLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.AccountsPayableInstallment", null)
+                        .WithMany()
+                        .HasForeignKey("AccountsPayableInstallmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.SupplierPayment", null)
+                        .WithMany("ApplicationLines")
+                        .HasForeignKey("SupplierPaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPaymentMethodLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialDestinationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.SupplierPayment", null)
+                        .WithMany("MethodLines")
+                        .HasForeignKey("SupplierPaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListItem", b =>
@@ -14799,6 +17602,48 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", null)
+                        .WithMany("TaxSummaries")
+                        .HasForeignKey("PurchaseCreditNoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", null)
+                        .WithMany()
+                        .HasForeignKey("SourcePurchaseInvoiceTaxSummaryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummaryLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseCreditNoteTaxSummaryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -14850,6 +17695,15 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseInvoiceDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -14867,15 +17721,6 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
                         .WithMany("TaxSummaries")
                         .HasForeignKey("PurchaseInvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayableInstallment", b =>
-                {
-                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", null)
-                        .WithMany("Installments")
-                        .HasForeignKey("PayableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -14942,6 +17787,15 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseReturnDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -14982,7 +17836,7 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", null)
+                    b.HasOne("ERP.Domain.Modules.Payables.Entities.AccountsPayable", null)
                         .WithMany()
                         .HasForeignKey("TargetPurchasePayableId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -15023,6 +17877,24 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", null)
                         .WithMany("Lines")
                         .HasForeignKey("PurchaseReceptionDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLineAdditionalField", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine", null)
+                        .WithMany("AdditionalFields")
+                        .HasForeignKey("PurchaseReceptionLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLineTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseReceptionLineId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -15149,6 +18021,15 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("SalesInvoiceDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoicePayment", b =>
@@ -15331,6 +18212,15 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnDetailTax", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesReturnDetail", null)
+                        .WithMany("Taxes")
+                        .HasForeignKey("SalesReturnDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnRefundAllocation", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesReturn", null)
@@ -15390,11 +18280,14 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Movements");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Communications.Entities.CommunicationOutbox", b =>
+                {
+                    b.Navigation("Attachments");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.Company", b =>
                 {
                     b.Navigation("Establishments");
-
-                    b.Navigation("Parameters");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.EmissionPoint", b =>
@@ -15407,6 +18300,13 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("EmissionPoints");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseDocument", b =>
+                {
+                    b.Navigation("Lines");
+
+                    b.Navigation("PaymentSchedules");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CreditTerm", b =>
                 {
                     b.Navigation("Installments");
@@ -15415,6 +18315,11 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.ImportBatch", b =>
+                {
+                    b.Navigation("Files");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockAdjustment", b =>
@@ -15433,6 +18338,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Navigation("PackagingLevels");
 
+                    b.Navigation("SpecialTaxConfigurations");
+
                     b.Navigation("Substitutes");
 
                     b.Navigation("SupplierCodes");
@@ -15449,6 +18356,20 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Barcodes");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.AccountsPayable", b =>
+                {
+                    b.Navigation("Installments");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Payables.Entities.SupplierPayment", b =>
+                {
+                    b.Navigation("AllocationLines");
+
+                    b.Navigation("ApplicationLines");
+
+                    b.Navigation("MethodLines");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.IssuedWithholding", b =>
                 {
                     b.Navigation("Details");
@@ -15457,6 +18378,13 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
                 {
                     b.Navigation("Lines");
+
+                    b.Navigation("TaxSummaries");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNoteTaxSummary", b =>
+                {
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
@@ -15468,14 +18396,19 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("TaxSummaries");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail", b =>
                 {
-                    b.Navigation("Installments");
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetail", b =>
+                {
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", b =>
@@ -15488,11 +18421,23 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Lines");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine", b =>
+                {
+                    b.Navigation("AdditionalFields");
+
+                    b.Navigation("Taxes");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoice", b =>
                 {
                     b.Navigation("Lines");
 
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesInvoiceDetail", b =>
+                {
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReceivable", b =>
@@ -15505,6 +18450,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Lines");
 
                     b.Navigation("RefundAllocations");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesReturnDetail", b =>
+                {
+                    b.Navigation("Taxes");
                 });
 #pragma warning restore 612, 618
         }
