@@ -30,6 +30,17 @@ public interface IAccessRepository
     Task<int> CountIdentityUsersAsync(CancellationToken cancellationToken = default);
     Task AddUserAsync(IdentityUser user, CancellationToken cancellationToken = default);
 
+    Task AddGlobalUserRoleAsync(
+        GlobalUserRole role,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GlobalUserRole?> GetActiveGlobalUserRoleAsync(
+        Guid userId,
+        string role,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<CompanyUserMembership>> GetActiveCompanyUserMembershipsForUserSystemAsync(
         Guid identityUserId,
         CancellationToken cancellationToken = default

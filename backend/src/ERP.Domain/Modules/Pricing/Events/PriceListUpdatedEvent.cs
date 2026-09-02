@@ -1,4 +1,4 @@
-using ERP.Domain.Audit;
+﻿using ERP.Domain.Audit;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Pricing.Enums;
 
@@ -11,6 +11,7 @@ namespace ERP.Domain.Modules.Pricing.Events;
 /// </summary>
 public sealed class PriceListUpdatedEvent : BaseDomainEvent, IAuditEvent
 {
+    public Guid CompanyId { get; }
     public Guid PriceListId { get; }
     public PricingRuleType? OldRuleType { get; }
     public decimal? OldRuleValue { get; }
@@ -19,6 +20,7 @@ public sealed class PriceListUpdatedEvent : BaseDomainEvent, IAuditEvent
 
     public PriceListUpdatedEvent(
         Guid tenantId,
+        Guid companyId,
         Guid priceListId,
         PricingRuleType? oldRuleType,
         decimal? oldRuleValue,
@@ -27,6 +29,7 @@ public sealed class PriceListUpdatedEvent : BaseDomainEvent, IAuditEvent
     )
     {
         TenantId = tenantId;
+        CompanyId = companyId;
         PriceListId = priceListId;
         OldRuleType = oldRuleType;
         OldRuleValue = oldRuleValue;

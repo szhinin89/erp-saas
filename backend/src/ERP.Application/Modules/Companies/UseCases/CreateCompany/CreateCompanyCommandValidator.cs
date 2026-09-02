@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Companies.UseCases.CreateCompany;
 
@@ -6,6 +6,10 @@ public sealed class CreateCompanyCommandValidator : AbstractValidator<CreateComp
 {
     public CreateCompanyCommandValidator()
     {
+        RuleFor(x => x.TenantId)
+            .NotEmpty()
+            .WithMessage("El tenant es obligatorio.");
+
         RuleFor(x => x.TaxId)
             .NotEmpty()
             .WithMessage("El RUC / identificador fiscal es obligatorio.")

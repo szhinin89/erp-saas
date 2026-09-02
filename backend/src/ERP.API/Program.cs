@@ -24,6 +24,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using QuestPDF.Infrastructure;
 using Serilog;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
@@ -355,9 +356,24 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy(
         "CompanyProvisioning",
-        policy => policy.RequireAuthenticatedUser()
-            .RequireClaim("tenant_id", Guid.Empty.ToString())
-            .RequireRole(SecurityRoles.Admin)
+        policy =>
+            policy.RequireAuthenticatedUser()
+                .RequireAssertion(context =>
+                {
+                    var hasGlobalTenant = context.User.HasClaim(
+                        "tenant_id",
+                        Guid.Empty.ToString()
+                    );
+
+                    var hasAdminRole =
+                        context.User.IsInRole(SecurityRoles.Admin)
+                        || context.User.Claims.Any(c =>
+                            (c.Type == ClaimTypes.Role || c.Type == "role")
+                            && c.Value == SecurityRoles.Admin
+                        );
+
+                    return hasGlobalTenant && hasAdminRole;
+                })
     );
 
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.

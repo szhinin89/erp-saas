@@ -155,6 +155,7 @@ public class ErpDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
+    public DbSet<GlobalUserRole> GlobalUserRoles => Set<GlobalUserRole>();
     public DbSet<CompanyUserMembership> CompanyUserMemberships => Set<CompanyUserMembership>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<CompanyUserBranch> CompanyUserBranches => Set<CompanyUserBranch>();

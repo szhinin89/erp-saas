@@ -84,6 +84,21 @@ public class AccessRepository : IAccessRepository
     public Task AddUserAsync(IdentityUser user, CancellationToken cancellationToken = default) =>
         _db.IdentityUsers.AddAsync(user, cancellationToken).AsTask();
 
+    public Task AddGlobalUserRoleAsync(
+        GlobalUserRole role,
+        CancellationToken cancellationToken = default
+    ) => _db.GlobalUserRoles.AddAsync(role, cancellationToken).AsTask();
+
+    public Task<GlobalUserRole?> GetActiveGlobalUserRoleAsync(
+        Guid userId,
+        string role,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.GlobalUserRoles.FirstOrDefaultAsync(
+            r => r.UserId == userId && r.Role == role && r.IsActive,
+            cancellationToken
+        );
+
     public async Task<
         IReadOnlyList<CompanyUserMembership>
     > GetActiveCompanyUserMembershipsForUserSystemAsync(

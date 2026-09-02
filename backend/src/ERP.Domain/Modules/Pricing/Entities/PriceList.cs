@@ -84,7 +84,7 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
             RuleValue = ruleValue,
         };
         pl.SetCreated(createdBy);
-        pl.RaiseDomainEvent(new PriceListCreatedEvent(tenantId, pl.Id));
+        pl.RaiseDomainEvent(new PriceListCreatedEvent(tenantId, companyId, pl.Id));
         return pl;
     }
 
@@ -129,7 +129,7 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
     public new void Enable(Guid updatedBy)
     {
         base.Enable(updatedBy);
-        RaiseDomainEvent(new PriceListEnabledEvent(TenantId, Id));
+        RaiseDomainEvent(new PriceListEnabledEvent(TenantId, CompanyId, Id));
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         this.EnsureEditable("La lista de precios", "deshabilitarse");
 
         base.Disable(updatedBy);
-        RaiseDomainEvent(new PriceListDisabledEvent(TenantId, Id));
+        RaiseDomainEvent(new PriceListDisabledEvent(TenantId, CompanyId, Id));
     }
 
     public void Update(
@@ -189,7 +189,7 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         RuleValue = ruleValue;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
-            new PriceListUpdatedEvent(TenantId, Id, oldRuleType, oldRuleValue, ruleType, ruleValue)
+            new PriceListUpdatedEvent(TenantId, CompanyId, Id, oldRuleType, oldRuleValue, ruleType, ruleValue)
         );
     }
 

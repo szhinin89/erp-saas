@@ -40,7 +40,6 @@ namespace ERP.API.Controllers;
 )]
 [ApiController]
 [Route("api/v1/companies")]
-[Authorize]
 [Produces("application/json")]
 public sealed class CompaniesController : ControllerBase
 {
@@ -115,6 +114,7 @@ public sealed class CompaniesController : ControllerBase
     }
 
     [HttpGet("profile/logo/content")]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesView}")]
     public async Task<IActionResult> GetLogoContent(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetCompanyLogoContentQuery(), cancellationToken);
@@ -207,6 +207,7 @@ public sealed class CompaniesController : ControllerBase
     }
 
     [HttpGet("profile/logo-alt/content")]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesView}")]
     public async Task<IActionResult> GetLogoAltContent(
         CancellationToken cancellationToken = default
     )

@@ -29,8 +29,8 @@ public sealed class PriceListAuditHandler
     public Task Handle(PriceListCreatedEvent e, CancellationToken ct) =>
         _audit.RecordAsync(
             PriceListAudit.Create(
-                _context.Actor,
-                _context.CompanyId,
+                _context.Actor with { TenantId = e.TenantId!.Value },
+                e.CompanyId,
                 e.PriceListId,
                 ((IAuditEvent)e).Action
             ),
@@ -40,8 +40,8 @@ public sealed class PriceListAuditHandler
     public Task Handle(PriceListUpdatedEvent e, CancellationToken ct) =>
         _audit.RecordAsync(
             PriceListAudit.Create(
-                _context.Actor,
-                _context.CompanyId,
+                _context.Actor with { TenantId = e.TenantId!.Value },
+                e.CompanyId,
                 e.PriceListId,
                 ((IAuditEvent)e).Action,
                 e.OldRuleType,
@@ -55,8 +55,8 @@ public sealed class PriceListAuditHandler
     public Task Handle(PriceListEnabledEvent e, CancellationToken ct) =>
         _audit.RecordAsync(
             PriceListAudit.Create(
-                _context.Actor,
-                _context.CompanyId,
+                _context.Actor with { TenantId = e.TenantId!.Value },
+                e.CompanyId,
                 e.PriceListId,
                 ((IAuditEvent)e).Action
             ),
@@ -66,8 +66,8 @@ public sealed class PriceListAuditHandler
     public Task Handle(PriceListDisabledEvent e, CancellationToken ct) =>
         _audit.RecordAsync(
             PriceListAudit.Create(
-                _context.Actor,
-                _context.CompanyId,
+                _context.Actor with { TenantId = e.TenantId!.Value },
+                e.CompanyId,
                 e.PriceListId,
                 ((IAuditEvent)e).Action
             ),

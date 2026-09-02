@@ -4,6 +4,7 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.CompletePasswordReset;
+using ERP.Application.Auth.UseCases.GlobalLogin;
 using ERP.Application.Auth.UseCases.ListMyCompanies;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Auth.UseCases.Logout;
@@ -71,6 +72,33 @@ public sealed class AuthController : ControllerBase
     /// Login devolvió cuando RequirePasswordReset estaba activo (sin JWT), fija la nueva
     /// contraseña y devuelve una sesión completa igual que un login exitoso.
     /// </summary>
+
+    [HttpPost("global-login")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GlobalLogin(
+        [FromBody] GlobalLoginCommand command,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsSuccess)
+        {
+            if (
+                result.Value?.RefreshToken is not null
+                && result.Value.RefreshTokenExpiry is not null
+            )
+                AuthRefreshCookieHelper.SetRefreshCookie(
+                    HttpContext,
+                    result.Value.RefreshToken,
+                    result.Value.RefreshTokenExpiry.Value
+                );
+
+            return this.ApiOk(result.Value);
+        }
+
+        return MapAuthFailure(result.Error);
+    }
     [HttpPost("complete-password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
