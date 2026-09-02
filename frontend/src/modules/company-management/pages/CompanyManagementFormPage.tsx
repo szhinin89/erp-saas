@@ -25,6 +25,7 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { useAuthStore } from "../../../store/authStore";
 
 const defaults = (): CompanyManagementFormValues => ({
+  tenantId: "",
   taxId: "",
   legalName: "",
   tradeName: "",
@@ -94,7 +95,20 @@ export function CompanyManagementFormPage({
         tradeName: values.tradeName?.trim() || null,
       };
       if (mode === "create") {
-        await companyManagementService.create(payload);
+        const tenantId = values.tenantId?.trim();
+        if (!tenantId) {
+          setFieldError("tenantId", {
+            type: "manual",
+            message: "El tenant destino es obligatorio.",
+          });
+          setSaving(false);
+          return;
+        }
+
+        await companyManagementService.create({
+          tenantId,
+          ...payload,
+        });
       } else if (id) {
         await companyManagementService.update(id, {
           id,
@@ -140,6 +154,19 @@ export function CompanyManagementFormPage({
           {error ? <ZHPageNotice variant="error" message={error} /> : null}
           <ZHFormSection title={t("companyManagement.sectionIdentity")}>
             <ZHGrid cols={2}>
+              {mode === "create" ? (
+                <ZHField
+                  label="Tenant destino"
+                  required
+                  fieldError={errors.tenantId?.message}
+                >
+                  <ZhTextInput
+                    disabled={saving}
+                    placeholder="GUID del tenant real"
+                    {...register("tenantId")}
+                  />
+                </ZHField>
+              ) : null}
               <ZHField
                 label={t("companyManagement.taxId")}
                 required
@@ -208,3 +235,4 @@ export function CompanyManagementFormPage({
     </PageShell>
   );
 }
+

@@ -62,6 +62,43 @@ public sealed class RefreshTokenHandler
         if (user is null || !user.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
+        if (v.TenantId == Guid.Empty)
+        {
+            var globalRole = await _accessRepository.GetActiveGlobalUserRoleAsync(
+                user.Id,
+                SecurityRoles.Admin,
+                cancellationToken
+            );
+
+            if (globalRole is null)
+                return Result<AuthResponseDto>.Failure("Rol global no activo.");
+
+            var globalAccessToken = _accessTokenService.GenerateSessionToken(
+                user,
+                Guid.Empty,
+                SecurityRoles.Admin
+            );
+
+            return Result<AuthResponseDto>.Success(
+                new AuthResponseDto(
+                    user.Id,
+                    user.FullName,
+                    user.Username,
+                    user.Email?.Value,
+                    SecurityRoles.Admin,
+                    Guid.Empty,
+                    globalAccessToken
+                )
+                {
+                    CompanyId = null,
+                    RequiresCompanySelection = false,
+                    OnboardingCompleted = true,
+                    RefreshToken = v.NewToken,
+                    RefreshTokenExpiry = v.NewExpiry,
+                }
+            );
+        }
+
         var tenant = await _tenantRepository.GetByIdAsync(v.TenantId, cancellationToken);
         if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("Tenant no encontrado o inactivo.");

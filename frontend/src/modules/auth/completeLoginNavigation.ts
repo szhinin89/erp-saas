@@ -1,4 +1,5 @@
-import type { NavigateFunction } from "react-router-dom";
+﻿import type { NavigateFunction } from "react-router-dom";
+import { GLOBAL_TENANT_ID } from "../../access/permissionUi";
 import type { AuthResponse } from "../../types/auth";
 
 /**
@@ -14,6 +15,14 @@ export function completeLoginNavigation(
   navigate: NavigateFunction,
 ) {
   login(payload);
+
+  const isGlobalCoreSession =
+    payload.tenantId === GLOBAL_TENANT_ID && !payload.companyId;
+
+  if (isGlobalCoreSession) {
+    navigate("/companies/new", { replace: true });
+    return;
+  }
 
   if (payload.requiresCompanySelection) {
     navigate("/select-company", { replace: true });

@@ -36,14 +36,22 @@ export function LoginPage() {
 
   const copyrightText = getCopyrightText();
 
-  const onValid = async (form: LoginFormValues) => {
+  const authenticate = async (
+    form: LoginFormValues,
+    mode: "company" | "global",
+  ) => {
     setError("");
     setLoading(true);
     try {
-      const payload = await authService.loginUser({
+      const credentials = {
         username: form.username.trim().toLowerCase(),
         password: form.password,
-      });
+      };
+
+      const payload =
+        mode === "global"
+          ? await authService.globalLogin(credentials)
+          : await authService.loginUser(credentials);
 
       if (payload.requiresPasswordReset) {
         // Sin sesión real (Token viene vacío) — no se llama login(). El token viaja por router
@@ -70,6 +78,9 @@ export function LoginPage() {
 
   /* ── Render ───────────────────────────────────────────────── */
 
+  const onValid = (form: LoginFormValues) => authenticate(form, "company");
+
+  const onGlobalLogin = handleSubmit((form) => authenticate(form, "global"));
   return (
     <div className="zh-auth-bg">
       {/* Decorative background */}
@@ -226,7 +237,15 @@ export function LoginPage() {
                   </>
                 )}
               </button>
-            </form>
+  
+            <button
+              type="button"
+              className="lp-forgot-link"
+              onClick={onGlobalLogin}
+              disabled={loading}
+            >
+              Ingresar como administrador global
+            </button>          </form>
           </div>
 
           {/* Card footer */}
@@ -259,3 +278,4 @@ export function LoginPage() {
     </div>
   );
 }
+

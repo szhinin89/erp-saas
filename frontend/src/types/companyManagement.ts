@@ -1,4 +1,4 @@
-export interface CompanyListItem {
+﻿export interface CompanyListItem {
   id: string;
   tenantId: string;
   legalName: string;
@@ -26,12 +26,16 @@ export interface CompanyDetail {
 }
 
 export interface CreateCompanyPayload {
+  tenantId: string;
   taxId: string;
   legalName: string;
   tradeName?: string | null;
 }
 
-export type UpdateCompanyPayload = CreateCompanyPayload & {
+export interface UpdateCompanyPayload {
   id: string;
+  taxId: string;
+  legalName: string;
+  tradeName?: string | null;
   isActive: boolean;
-};
+}

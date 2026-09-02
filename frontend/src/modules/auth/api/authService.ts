@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../../lib/apiEnvelope";
+﻿import { apiGet, apiPost } from "../../lib/apiEnvelope";
 import { normalizeAuthResponse } from "../normalizeAuthResponse";
 import type { AuthResponse, LoginRequest } from "../../../types/auth";
 import type { AccessibleCompany } from "../../../types/access";
@@ -14,6 +14,12 @@ export const authService = {
     apiPost<Record<string, unknown>>("/api/v1/auth/login", credentials).then(
       mapAuthResponse,
     ),
+
+  globalLogin: (credentials: LoginRequest) =>
+    apiPost<Record<string, unknown>>(
+      "/api/v1/auth/global-login",
+      credentials,
+    ).then(mapAuthResponse),
 
   refresh: (refreshToken?: string | null) =>
     apiPost<Record<string, unknown>>(
@@ -40,3 +46,4 @@ export const authService = {
       payload,
     ).then(mapAuthResponse),
 };
+

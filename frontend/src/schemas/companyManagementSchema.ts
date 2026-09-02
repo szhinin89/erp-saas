@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 const rucSchema = z
   .string()
@@ -6,6 +6,7 @@ const rucSchema = z
   .length(13, "El RUC debe tener 13 caracteres.");
 
 export const companyManagementFormSchema = z.object({
+  tenantId: z.string().trim().optional().or(z.literal("")),
   taxId: rucSchema,
   legalName: z
     .string()
