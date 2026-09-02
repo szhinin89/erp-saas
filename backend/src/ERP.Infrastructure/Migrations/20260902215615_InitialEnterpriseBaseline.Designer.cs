@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260902210758_InitialEnterpriseBaseline")]
+    [Migration("20260902215615_InitialEnterpriseBaseline")]
     partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />

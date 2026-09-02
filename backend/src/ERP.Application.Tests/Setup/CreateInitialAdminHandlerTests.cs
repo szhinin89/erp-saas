@@ -51,15 +51,16 @@ public sealed class CreateInitialAdminHandlerTests
             // Por defecto (sin bootstrap de sucursal en el test) no hay sucursal principal —
             // el handler debe seguir teniendo éxito sin crear CompanyUserBranch en ese caso.
             BranchRepo
-                .Setup(r =>
-                    r.GetAsync(
-                        It.IsAny<Guid>(),
-                        It.IsAny<bool?>(),
-                        It.IsAny<string?>(),
-                        It.IsAny<CancellationToken>()
-                    )
+            .Setup(r =>
+                r.GetByCompanyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
                 )
-                .ReturnsAsync(Array.Empty<Branch>());
+            )
+            .ReturnsAsync(Array.Empty<Branch>());
 
             // El handler delega toda la escritura a ExecuteInTransactionAsync — el fake solo corre
             // el delegate inline (sin transacción real), para que los asserts sobre los demás mocks
@@ -138,6 +139,17 @@ public sealed class CreateInitialAdminHandlerTests
                 ),
             Times.Once
         );
+        f.AccessRepo.Verify(
+        r =>
+            r.AddGlobalUserRoleAsync(
+                It.Is<ERP.Domain.Access.Entities.GlobalUserRole>(g =>
+                    g.Role == "Admin" && g.IsActive
+                ),
+                It.IsAny<CancellationToken>()
+            ),
+        Times.Once,
+        "el admin inicial también debe quedar autorizado como AdminGlobalCore"
+    );
         f.CompanyProvisioning.Verify(
             p => p.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
             Times.Once,
@@ -188,48 +200,50 @@ public sealed class CreateInitialAdminHandlerTests
 
         Branch? mainBranch = null;
         f.BranchRepo
-            .Setup(r =>
-                r.GetAsync(
-                    It.IsAny<Guid>(),
-                    It.IsAny<bool?>(),
-                    It.IsAny<string?>(),
-                    It.IsAny<CancellationToken>()
-                )
+        .Setup(r =>
+            r.GetByCompanyAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()
             )
-            .ReturnsAsync(
-                (Guid tenantId, bool? _, string? _, CancellationToken _) =>
-                {
-                    mainBranch ??= Branch.Create(
-                        tenantId: tenantId,
-                        name: "Sucursal Principal",
-                        address: "—",
-                        code: "001",
-                        description: null,
-                        reference: null,
-                        postalCode: null,
-                        phone: null,
-                        secondaryPhone: null,
-                        email: null,
-                        website: null,
-                        managerName: null,
-                        managerPosition: null,
-                        managerEmail: null,
-                        managerPhone: null,
-                        countryId: null,
-                        provinceId: null,
-                        cantonId: null,
-                        parishId: null,
-                        latitude: null,
-                        longitude: null,
-                        openingDate: null,
-                        internalNotes: null,
-                        isMainBranch: true,
-                        createdBy: Guid.NewGuid(),
-                        companyId: createdCompany!.Id
-                    );
-                    return new List<Branch> { mainBranch };
-                }
-            );
+        )
+        .ReturnsAsync(
+            (Guid tenantId, Guid companyId, bool? _, string? _, CancellationToken _) =>
+            {
+                mainBranch ??= Branch.Create(
+                    tenantId: tenantId,
+                    name: "Sucursal Principal",
+                    address: "—",
+                    code: "001",
+                    description: null,
+                    reference: null,
+                    postalCode: null,
+                    phone: null,
+                    secondaryPhone: null,
+                    email: null,
+                    website: null,
+                    managerName: null,
+                    managerPosition: null,
+                    managerEmail: null,
+                    managerPhone: null,
+                    countryId: null,
+                    provinceId: null,
+                    cantonId: null,
+                    parishId: null,
+                    latitude: null,
+                    longitude: null,
+                    openingDate: null,
+                    internalNotes: null,
+                    isMainBranch: true,
+                    createdBy: Guid.NewGuid(),
+                    companyId: companyId
+                );
+
+                return new List<Branch> { mainBranch };
+            }
+        );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
@@ -245,6 +259,16 @@ public sealed class CreateInitialAdminHandlerTests
                 ),
             Times.Once
         );
+        f.AccessRepo.Verify(
+        r =>
+            r.AddGlobalUserRoleAsync(
+                It.Is<ERP.Domain.Access.Entities.GlobalUserRole>(g =>
+                    g.Role == "Admin" && g.IsActive
+                ),
+                It.IsAny<CancellationToken>()
+            ),
+        Times.Once
+    );
     }
 
     [Fact]

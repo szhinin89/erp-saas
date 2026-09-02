@@ -129,7 +129,13 @@ public sealed class CreateInitialAdminHandler
 
                 await _access.AddUserAsync(user, ct);
                 await _access.AddCompanyUserMembershipAsync(membership, ct);
+                var globalRole = GlobalUserRole.Create(
+                    user.Id,
+                    SecurityRoles.Admin,
+                    bootstrapId
+                );
 
+                await _access.AddGlobalUserRoleAsync(globalRole, ct);
                 // ERP-CORE-CLOSEOUT-06: sin esto, el admin inicial queda con CompanyUserMembership
                 // pero CERO CompanyUserBranch — BranchAccessGuard lo bloquea en toda operación
                 // branch-scoped (venta/compra/caja) y el modal de selección de sucursal del
