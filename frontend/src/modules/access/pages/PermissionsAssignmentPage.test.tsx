@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { cleanup, configure, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { useAuthStore } from "../../../store/authStore";
@@ -9,6 +9,19 @@ import { PermissionsAssignmentPage } from "./PermissionsAssignmentPage";
 import { profileService } from "../api/profileService";
 import { adminPermissionsService } from "../api/adminPermissionsService";
 import { message } from "../../../lib/messages";
+
+/**
+ * ZH-FRONTEND-TEST-STABILITY-PERMISSIONS-01: este archivo quedó ocasionalmente en rojo (~1 de
+ * cada 6-10 corridas) solo cuando se ejecuta la suite completa (160 archivos en paralelo), nunca
+ * de forma aislada — un `waitFor` distinto fallaba en cada repetición (colapsar/expandir, filtro,
+ * error de guardado), siempre por "Unable to find" sin ningún estado incorrecto de por medio.
+ * Confirmado con `--no-file-parallelism`: la suite completa corre 100% verde de forma consistente
+ * en ese modo. Causa raíz: contención de CPU al arrancar ~160 workers en paralelo empuja el
+ * `asyncUtilTimeout` por defecto de Testing Library (1000ms) por encima del real, sin que exista
+ * ningún bug de estado — no una condición de carrera del componente. Se sube el timeout para este
+ * archivo únicamente; no cambia qué se afirma, solo cuánto se espera bajo carga.
+ */
+configure({ asyncUtilTimeout: 5000 });
 
 /**
  * ADMIN-PERMISSIONS-SSOT-KERNEL-02: el árbol de grupos/pantallas/acciones ahora se carga desde
