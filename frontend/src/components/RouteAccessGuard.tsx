@@ -4,8 +4,6 @@ import { useI18n } from "../i18n/i18n";
 import { NoAccessPage } from "./PageShell";
 import type { MainMenuGroup } from "./useAppLayoutNavigation";
 import type { NavItem } from "../nav/navConfig";
-import { canProvisionCompanies } from "../access/permissionUi";
-import { useAuthStore } from "../store/authStore";
 
 /**
  * Rutas de redirección legacy (<Navigate replace>) cuyo primer segmento no coincide
@@ -67,11 +65,6 @@ export function RouteAccessGuard({
 }) {
   const location = useLocation();
   const { t } = useI18n();
-  const user = useAuthStore((s) => s.user);
-
-  if (canProvisionCompanies(user) && location.pathname === "/companies/new") {
-    return <>{children}</>;
-  }
 
   if (
     sessionMenuResolved &&

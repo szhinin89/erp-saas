@@ -17,11 +17,6 @@ export const companyManagementRoutes = [
     element={<CompanyManagementHubPage />}
   />,
   <Route
-    key="erp-companies-new"
-    path="/companies/new"
-    element={<CompanyManagementFormPage mode="create" />}
-  />,
-  <Route
     key="erp-companies-edit"
     path="/companies/:id/edit"
     element={<CompanyManagementFormPage mode="edit" />}

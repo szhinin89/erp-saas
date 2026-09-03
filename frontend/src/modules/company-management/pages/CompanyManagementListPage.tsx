@@ -11,14 +11,10 @@ import {
 } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { canProvisionCompanies } from "../../../access/permissionUi";
-import { useAuthStore } from "../../../store/authStore";
 import { CurrentCompanyCard } from "./CurrentCompanyCard";
 
 export function CompanyManagementListPage() {
   const { t } = useI18n();
-  const user = useAuthStore((s) => s.user);
-  const canCreate = canProvisionCompanies(user);
   const [items, setItems] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -50,24 +46,15 @@ export function CompanyManagementListPage() {
       <ZHCard
         title={t("companyManagement.listTitle")}
         actions={
-          <>
-            <ZHBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              onClick={() => void refresh()}
-              disabled={loading}
-            >
-              {t("common.refresh")}
-            </ZHBtn>
-            {canCreate ? (
-              <Link to="/companies/new">
-                <ZHBtn variant="primary" size="sm" type="button">
-                  {t("companyManagement.create")}
-                </ZHBtn>
-              </Link>
-            ) : null}
-          </>
+          <ZHBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={() => void refresh()}
+            disabled={loading}
+          >
+            {t("common.refresh")}
+          </ZHBtn>
         }
       >
         {error ? <p className="zh-error-text">{error}</p> : null}
