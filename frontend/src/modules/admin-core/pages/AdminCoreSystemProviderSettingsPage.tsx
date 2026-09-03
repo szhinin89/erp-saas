@@ -71,7 +71,7 @@ export function AdminCoreSystemProviderSettingsPage() {
           setLoadError(
             formatApiRequestError(e, {
               offline: "No se pudo conectar con el servidor.",
-              generic: "No se pudo cargar la configuración del proveedor de sistema.",
+              generic: "No se pudo cargar la configuración global del proveedor tecnológico.",
             }),
           );
       } finally {
@@ -109,7 +109,7 @@ export function AdminCoreSystemProviderSettingsPage() {
         setSaveError(
           formatApiRequestError(e, {
             offline: "No se pudo conectar con el servidor.",
-            generic: "No se pudo guardar la configuración del proveedor de sistema.",
+            generic: "No se pudo guardar la configuración global del proveedor tecnológico.",
           }),
         );
       }
@@ -120,9 +120,18 @@ export function AdminCoreSystemProviderSettingsPage() {
 
   return (
     <PageShell
-      title="Proveedor SRI"
-      subtitle="Configuración global del proveedor del sistema de facturación electrónica"
+      title="Proveedor tecnológico SRI"
+      subtitle="Configuración global de los datos del proveedor tecnológico usados por el sistema para el envío de comprobantes electrónicos."
     >
+      <ZHPageNotice
+        variant="info"
+        message="Esta sección configura los datos del proveedor tecnológico del sistema requeridos para facturación electrónica. Estos datos aplican a toda la plataforma y no corresponden al RUC, firma electrónica, ambiente SRI, establecimientos ni puntos de emisión de una empresa."
+      />
+      <p className="zh-text-muted zh-text-xs zh-mb-8">
+        Para configurar la firma electrónica o los parámetros SRI de una empresa, ingresa
+        primero a la empresa desde AdminCore o usa el módulo de facturación electrónica dentro
+        del ERP operativo.
+      </p>
       <ZHCard>
         {loading ? (
           <p>Cargando configuración…</p>
@@ -134,21 +143,37 @@ export function AdminCoreSystemProviderSettingsPage() {
             {savedAt ? (
               <ZHPageNotice
                 variant="success"
-                message="Configuración del proveedor de sistema guardada correctamente."
+                message="Configuración global del proveedor tecnológico guardada correctamente."
               />
             ) : null}
-            <ZHFormSection title="Identidad del proveedor">
+            <ZHFormSection title="Identidad del proveedor tecnológico">
               <ZHGrid cols={2}>
-                <ZHField label="RUC" fieldError={errors.ruc?.message}>
+                <ZHField
+                  label="RUC"
+                  fieldError={errors.ruc?.message}
+                  hint="RUC del proveedor tecnológico autorizado."
+                >
                   <ZhTextInput disabled={saving} {...register("ruc")} />
                 </ZHField>
-                <ZHField label="Razón social" fieldError={errors.legalName?.message}>
+                <ZHField
+                  label="Razón social"
+                  fieldError={errors.legalName?.message}
+                  hint="Razón social registrada del proveedor tecnológico."
+                >
                   <ZhTextInput disabled={saving} {...register("legalName")} />
                 </ZHField>
-                <ZHField label="Código CIIU" fieldError={errors.ciiuCode?.message}>
+                <ZHField
+                  label="Código CIIU"
+                  fieldError={errors.ciiuCode?.message}
+                  hint="Actividad económica registrada para el proveedor tecnológico, si aplica."
+                >
                   <ZhTextInput disabled={saving} {...register("ciiuCode")} />
                 </ZHField>
-                <ZHField label="Fecha de vigencia" fieldError={errors.effectiveDate?.message}>
+                <ZHField
+                  label="Fecha de vigencia"
+                  fieldError={errors.effectiveDate?.message}
+                  hint="Fecha desde la cual esta configuración global está vigente."
+                >
                   <ZhDateInput disabled={saving} {...register("effectiveDate")} />
                 </ZHField>
               </ZHGrid>
@@ -159,7 +184,7 @@ export function AdminCoreSystemProviderSettingsPage() {
               render={({ field }) => (
                 <ZHToggle
                   label="Habilitado"
-                  description="Requiere RUC, razón social y CIIU completos."
+                  description="Activa esta configuración global cuando los datos del proveedor tecnológico estén completos y vigentes."
                   value={!!field.value}
                   onChange={field.onChange}
                   disabled={saving}
@@ -171,7 +196,7 @@ export function AdminCoreSystemProviderSettingsPage() {
             ) : null}
             <div className="zh-form-actions-row zh-form-actions-row--end">
               <ZHBtn variant="primary" size="sm" type="submit" disabled={saving}>
-                {saving ? "Guardando…" : "Guardar"}
+                {saving ? "Guardando…" : "Guardar configuración global"}
               </ZHBtn>
             </div>
           </form>

@@ -102,6 +102,49 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
     expect(sessionService.getContext).not.toHaveBeenCalled();
   });
 
+  it("muestra el título 'Proveedor tecnológico SRI'", async () => {
+    setGlobalAdminSession();
+    vi.mocked(systemProviderSettingsService.get).mockResolvedValue({
+      ruc: null,
+      legalName: null,
+      ciiuCode: null,
+      enabled: false,
+      effectiveDate: null,
+      isFullyConfigured: false,
+      updatedAtUtc: null,
+    });
+
+    renderRoute();
+
+    expect(await screen.findByText("Proveedor tecnológico SRI")).toBeTruthy();
+  });
+
+  it("muestra el bloque informativo aclarando que no es la configuración SRI de una empresa", async () => {
+    setGlobalAdminSession();
+    vi.mocked(systemProviderSettingsService.get).mockResolvedValue({
+      ruc: null,
+      legalName: null,
+      ciiuCode: null,
+      enabled: false,
+      effectiveDate: null,
+      isFullyConfigured: false,
+      updatedAtUtc: null,
+    });
+
+    renderRoute();
+
+    expect(
+      await screen.findByText(
+        /no corresponden al RUC, firma electrónica, ambiente SRI, establecimientos ni puntos de emisión de una empresa/,
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Para configurar la firma electrónica o los parámetros SRI de una empresa/,
+      ),
+    ).toBeTruthy();
+  });
+
   it("bloquea a un AdminEmpresa (tenant real) redirigiendo a /admin-core/login", async () => {
     useAuthStore.setState({
       user: {
@@ -172,7 +215,7 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
       target: { value: "J6201" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar configuración global" }));
 
     await waitFor(() => {
       expect(systemProviderSettingsService.update).toHaveBeenCalledWith({
@@ -186,7 +229,7 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
 
     expect(
       await screen.findByText(
-        "Configuración del proveedor de sistema guardada correctamente.",
+        "Configuración global del proveedor tecnológico guardada correctamente.",
       ),
     ).toBeTruthy();
   });
@@ -213,7 +256,7 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
     renderRoute();
 
     await screen.findByLabelText("RUC", { exact: false });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar configuración global" }));
 
     expect(await screen.findByText("No se pudo guardar el cambio.")).toBeTruthy();
   });
