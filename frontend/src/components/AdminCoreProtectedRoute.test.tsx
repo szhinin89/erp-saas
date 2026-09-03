@@ -15,6 +15,7 @@ function renderAt(path: string) {
           <Route path="/admin-core/dashboard" element={<div>ADMIN_CORE_DASHBOARD</div>} />
         </Route>
         <Route path="/admin-core/login" element={<div>ADMIN_CORE_LOGIN</div>} />
+        <Route path="/dashboard" element={<div>DASHBOARD_OPERATIVO</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -52,7 +53,11 @@ describe("AdminCoreProtectedRoute", () => {
     expect(screen.getByText("ADMIN_CORE_DASHBOARD")).toBeTruthy();
   });
 
-  it("redirige a un AdminEmpresa (tenant real) fuera de /admin-core/*", () => {
+  it("redirige a un AdminEmpresa (tenant real) fuera de /admin-core/*, a su propio dashboard operativo", () => {
+    // No a /admin-core/login: ya tiene una sesión válida, no necesita reautenticarse — y esta
+    // misma rama es la que evita el bug de "operate-company termina en /admin-core/login"
+    // (BUGFIX AdminGlobalCore → Ingresar a esta empresa): una sesión operativa real (tenant_id
+    // != GLOBAL_TENANT_ID) nunca debe caer al fallback de "no autenticado".
     useAuthStore.setState({
       user: {
         userId: "user-1",
@@ -69,7 +74,8 @@ describe("AdminCoreProtectedRoute", () => {
 
     renderAt("/admin-core/dashboard");
 
-    expect(screen.getByText("ADMIN_CORE_LOGIN")).toBeTruthy();
+    expect(screen.getByText("DASHBOARD_OPERATIVO")).toBeTruthy();
+    expect(screen.queryByText("ADMIN_CORE_LOGIN")).toBeNull();
   });
 
   it("redirige a un usuario no autenticado a /admin-core/login", () => {

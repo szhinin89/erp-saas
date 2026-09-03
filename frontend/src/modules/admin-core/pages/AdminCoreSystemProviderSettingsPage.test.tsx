@@ -42,6 +42,7 @@ function renderRoute() {
           </Route>
         </Route>
         <Route path="/admin-core/login" element={<div>ADMIN_CORE_LOGIN</div>} />
+        <Route path="/dashboard" element={<div>DASHBOARD_OPERATIVO</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -145,7 +146,7 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
     ).toBeTruthy();
   });
 
-  it("bloquea a un AdminEmpresa (tenant real) redirigiendo a /admin-core/login", async () => {
+  it("bloquea a un AdminEmpresa (tenant real), lo manda a su dashboard operativo", async () => {
     useAuthStore.setState({
       user: {
         userId: "user-1",
@@ -162,7 +163,7 @@ describe("AdminCoreSystemProviderSettingsPage", () => {
 
     renderRoute();
 
-    expect(await screen.findByText("ADMIN_CORE_LOGIN")).toBeTruthy();
+    expect(await screen.findByText("DASHBOARD_OPERATIVO")).toBeTruthy();
     expect(systemProviderSettingsService.get).not.toHaveBeenCalled();
   });
 
