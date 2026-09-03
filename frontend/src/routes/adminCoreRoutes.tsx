@@ -9,6 +9,10 @@ const AdminCoreCompanyCreatePage = lazyNamedPage(
   () => import("../modules/admin-core/pages/AdminCoreCompanyCreatePage"),
   "AdminCoreCompanyCreatePage",
 );
+const AdminCoreSystemProviderSettingsPage = lazyNamedPage(
+  () => import("../modules/admin-core/pages/AdminCoreSystemProviderSettingsPage"),
+  "AdminCoreSystemProviderSettingsPage",
+);
 
 /** Rutas protegidas de AdminGlobalCore — montadas dentro de AdminCoreProtectedRoute/AdminCoreLayout, nunca dentro de AppLayout. */
 export const adminCoreRoutes = [
@@ -21,5 +25,10 @@ export const adminCoreRoutes = [
     key="admin-core-companies-new"
     path="/admin-core/companies/new"
     element={<AdminCoreCompanyCreatePage />}
+  />,
+  <Route
+    key="admin-core-system-provider-settings"
+    path="/admin-core/system-provider-settings"
+    element={<AdminCoreSystemProviderSettingsPage />}
   />,
 ];

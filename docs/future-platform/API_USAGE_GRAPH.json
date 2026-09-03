@@ -1,13 +1,14 @@
 {
-  "generatedAt": "2026-09-01T14:21:50.214Z",
+  "generatedAt": "2026-09-03T17:43:31.242Z",
   "summary": {
-    "total": 114,
-    "allowed": 114,
+    "total": 119,
+    "allowed": 119,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
   "allowedPrefixes": [
     "/api/platform",
+    "/api/admin-core",
     "/api/accounting",
     "/api/auth",
     "/api/master",
@@ -51,7 +52,8 @@
     "/api/sales-receivables",
     "/api/setup",
     "/api/supplier-catalog",
-    "/api/session"
+    "/api/session",
+    "/api/system"
   ],
   "forbiddenPrefixes": [
     "/api/superadmin"
@@ -69,6 +71,14 @@
       "endpoint": "/api/v1/accounting/accounts",
       "files": [
         "frontend/src/modules/finance/pages/FinancialDestinationsPage.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/admin-core/companies",
+      "files": [
+        "frontend/src/modules/admin-core/api/adminCoreService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -134,6 +144,30 @@
       "files": [
         "frontend/src/modules/auth/pages/ForgotPasswordPage.tsx",
         "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/global-login",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/global/operate-company",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/global/return",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -991,6 +1025,14 @@
       "endpoint": "/api/v1/supplier-payments/sp-1/reverse",
       "files": [
         "frontend/src/modules/supplier-payments/api/supplierPaymentService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/system/provider-settings",
+      "files": [
+        "frontend/src/modules/admin-core/api/systemProviderSettingsService.ts"
       ],
       "legacy": false,
       "allowed": true

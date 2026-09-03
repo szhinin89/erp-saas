@@ -79,7 +79,8 @@
     "/api/sales-receivables",
     "/api/setup",
     "/api/supplier-catalog",
-    "/api/session"
+    "/api/session",
+    "/api/system"
   ],
   "allowedUiRoutePrefixes": [
     "/platform",

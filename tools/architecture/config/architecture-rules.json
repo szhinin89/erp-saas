@@ -87,6 +87,7 @@
       { "from": "saas", "to": "company-management" },
       { "from": "admin-core", "to": "auth" },
       { "from": "admin-core", "to": "company-management" },
+      { "from": "admin-core", "to": "session" },
       { "from": "superadmin", "to": "lib" },
       { "from": "saas", "to": "lib" },
       { "from": "*", "to": "lib" },
