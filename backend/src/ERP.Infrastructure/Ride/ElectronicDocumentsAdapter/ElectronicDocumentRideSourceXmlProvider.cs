@@ -15,12 +15,34 @@ namespace ERP.Infrastructure.Ride.ElectronicDocumentsAdapter;
 /// su repositorio ni su <c>ErpDbContext</c>. Traduce <c>ElectronicDocumentType</c> (string en el
 /// DTO) a <see cref="RideDocumentType"/> — la única clase de todo el módulo que conoce ambos
 /// vocabularios (H5, ADR-025 §8).
+///
+/// SRI-RIDE-SOURCE-CONTEXT-CLEANUP-02: <paramref name="tenantId"/>/<paramref name="companyId"/>
+/// no se usan para consultar (ambos requests MediatR resuelven tenant/empresa desde
+/// <c>ICurrentTenant</c>/<c>ICurrentCompany</c>, el contexto ambiental real de la request) —
+/// siguen existiendo en la firma porque documentan la intención del llamador (<c>RidePipeline</c>
+/// ya los recibe para branding/cache/plantilla) y porque, en todo el resto del pipeline, siempre
+/// deben coincidir con ese contexto ambiental. Se validan aquí explícitamente contra
+/// <see cref="ICurrentTenant"/>/<see cref="ICurrentCompany"/>: un desajuste (que nunca debería
+/// ocurrir en producción, ambos valores siempre se derivan del mismo contexto autenticado) falla
+/// cerrado con <see cref="Result{T}.Forbidden"/> en vez de consultar silenciosamente el contexto
+/// ambiental como si el parámetro no existiera.
 /// </summary>
 public sealed class ElectronicDocumentRideSourceXmlProvider : IRideSourceXmlProvider
 {
     private readonly ISender _sender;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public ElectronicDocumentRideSourceXmlProvider(ISender sender) => _sender = sender;
+    public ElectronicDocumentRideSourceXmlProvider(
+        ISender sender,
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
+    )
+    {
+        _sender = sender;
+        _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
+    }
 
     public async Task<Result<RideSourceXmlLookup>> GetAuthorizedXmlAsync(
         Guid tenantId,
@@ -30,6 +52,11 @@ public sealed class ElectronicDocumentRideSourceXmlProvider : IRideSourceXmlProv
         CancellationToken ct = default
     )
     {
+        if (tenantId != _currentTenant.TenantId || companyId != _currentCompany.CompanyId)
+            return Result<RideSourceXmlLookup>.Forbidden(
+                "El tenant/empresa solicitados no coinciden con el contexto autenticado actual."
+            );
+
         var documentResult = await _sender.Send(
             new GetElectronicDocumentQuery(sourceModule, sourceEntityId),
             ct

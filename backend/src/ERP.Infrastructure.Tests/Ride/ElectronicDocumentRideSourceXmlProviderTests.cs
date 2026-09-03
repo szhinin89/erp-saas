@@ -275,16 +275,14 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
     }
 
     /// <summary>
-    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — cross-tenant explícito para RIDE. Hallazgo de esta
-    /// fase: <see cref="ElectronicDocumentRideSourceXmlProvider.GetAuthorizedXmlAsync"/> recibe
-    /// <c>tenantId</c>/<c>companyId</c> como parámetros pero los ignora — delega en
-    /// <c>GetElectronicDocumentQuery</c>/<c>GetElectronicDocumentXmlQuery</c> vía MediatR, que
-    /// resuelven el tenant/empresa activos exclusivamente desde <c>ICurrentTenant</c>/
-    /// <c>ICurrentCompany</c> (el contexto ambiental real de la request, igual que en
-    /// producción). Por eso el aislamiento cross-tenant real se prueba aquí mutando el campo
-    /// ambiental <c>_tenantId</c> del fixture (lo que sí controla el filtro EF), no el argumento
-    /// del método — pasar un tenantId distinto como argumento sería un no-op y daría un falso
-    /// negativo.
+    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — cross-tenant vía el contexto ambiental real (mismo
+    /// mecanismo que producción: <c>GetElectronicDocumentQuery</c>/<c>GetElectronicDocumentXmlQuery</c>
+    /// resuelven tenant/empresa desde <c>ICurrentTenant</c>/<c>ICurrentCompany</c>, nunca desde
+    /// los parámetros de este método). Se muta el campo ambiental <c>_tenantId</c> del fixture —
+    /// que también controla el <c>tenantId</c> explícito pasado por <see cref="GetAuthorizedXmlAsync"/>,
+    /// así que el guard de SRI-RIDE-SOURCE-CONTEXT-CLEANUP-02 (ver <see cref="GetAuthorizedXmlAsync_with_mismatched_tenantId_parameter_fails_closed_without_querying"/>)
+    /// no interfiere aquí: ambos valores siguen coincidiendo entre sí, solo cambian respecto al
+    /// tenant dueño del documento sembrado.
     /// </summary>
     [Fact]
     public async Task Authorized_document_is_never_returned_to_a_different_ambient_tenant()
@@ -323,6 +321,51 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         {
             _tenantId = owningTenantId;
         }
+    }
+
+    /// <summary>
+    /// SRI-RIDE-SOURCE-CONTEXT-CLEANUP-02 — <paramref name="tenantId"/>/<paramref name="companyId"/>
+    /// ya no son parámetros decorativos: <see cref="ElectronicDocumentRideSourceXmlProvider"/> los
+    /// valida contra <c>ICurrentTenant</c>/<c>ICurrentCompany</c> antes de consultar nada. Un
+    /// <c>tenantId</c> explícito que no coincide con el ambiental (esto nunca debería pasar en
+    /// producción — ambos siempre se derivan del mismo contexto autenticado) falla cerrado con
+    /// <c>Forbidden</c>, sin llegar a enviar ningún request MediatR.
+    /// </summary>
+    [Fact]
+    public async Task GetAuthorizedXmlAsync_with_mismatched_tenantId_parameter_fails_closed_without_querying()
+    {
+        var sourceEntityId = Guid.NewGuid();
+
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var provider = scope.ServiceProvider.GetRequiredService<IRideSourceXmlProvider>();
+        var result = await provider.GetAuthorizedXmlAsync(
+            Guid.NewGuid(), // no coincide con el ICurrentTenant ambiental (_tenantId)
+            _companyId,
+            SourceModule,
+            sourceEntityId
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+    }
+
+    /// <summary>Mismo guard que arriba, para el lado de <c>companyId</c>.</summary>
+    [Fact]
+    public async Task GetAuthorizedXmlAsync_with_mismatched_companyId_parameter_fails_closed_without_querying()
+    {
+        var sourceEntityId = Guid.NewGuid();
+
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var provider = scope.ServiceProvider.GetRequiredService<IRideSourceXmlProvider>();
+        var result = await provider.GetAuthorizedXmlAsync(
+            _tenantId,
+            Guid.NewGuid(), // no coincide con el ICurrentCompany ambiental (_companyId)
+            SourceModule,
+            sourceEntityId
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
     }
 
     [Fact]
