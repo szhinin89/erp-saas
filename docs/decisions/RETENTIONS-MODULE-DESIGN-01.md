@@ -4,7 +4,7 @@
 
 **Aprobado para planificación por fases.** 2026-09-03.
 
-Este documento **no implementa cambios por sí mismo**. Rediseña la fase E1 de [`EXPENSES-FUTURE-ROADMAP-02.md`](./EXPENSES-FUTURE-ROADMAP-02.md), que originalmente proponía retención IVA como campos directos en `ExpenseLine`/`ExpenseDocument`. Esa propuesta queda **corregida**: Retenciones es un módulo/agregado independiente y transversal del ERP — no una funcionalidad interna de Gastos ni de Compras. Documenta una auditoría de código real y el diseño aprobado. Cualquier implementación futura requiere su propia entrega de desarrollo, con sus propios tests, y el detalle de fases E1-A a E1-G definido aquí.
+Este documento **no implementa cambios por sí mismo**. Rediseña la fase E1 de [`EXPENSES-FUTURE-ROADMAP-02.md`](./EXPENSES-FUTURE-ROADMAP-02.md), que originalmente proponía retención IVA como campos directos en `ExpenseLine`/`ExpenseDocument`. Esa propuesta queda **corregida**: Retenciones es un módulo/agregado independiente y transversal del ERP — no una funcionalidad interna de Gastos ni de Compras. Documenta una auditoría de código real y el diseño aprobado. Cualquier implementación futura requiere su propia entrega de desarrollo, con sus propios tests, y el detalle de fases E1-0 a E1-E definido aquí.
 
 ## Contexto
 
@@ -30,6 +30,59 @@ Evidencia verificada en el código real (rutas relativas a la raíz del repo):
 - **Gap funcional detectado, no corregido por este diseño**: `SupplierRoleConfig.IsRequiredToKeepAccounting` está persistido pero `RetentionCalculator` nunca lo consume para diferenciar porcentajes IVA 30%/70% o Renta 1%/2% — el cálculo depende solo del código resuelto del catálogo. Se documenta como deuda heredada (ver "Decisiones aprobadas" #10).
 - **ISD nunca se calcula** (`RetentionCalculator` retorna `TotalRetainedIsd = 0` siempre) — permanece fuera de alcance en E1.
 - **Punto de creación de `AccountsPayable` en Gastos duplicado**: `ExpenseDocumentConfirmUseCases.cs` líneas 178-216 y 446-484 contienen el mismo bloque de creación de CxP en dos handlers distintos (confirmar borrador vs. crear ya confirmado). Retentions no agrega una tercera responsabilidad ahí — se integra como acción posterior e independiente (ver "Flujo desde Gastos").
+
+## Elegibilidad para emitir retenciones
+
+No toda empresa puede o debe emitir retenciones. Según normativa SRI: actúan como agentes de retención del Impuesto a la Renta las personas jurídicas y personas naturales obligadas a llevar contabilidad que paguen o acrediten ingresos gravados; el SRI mantiene una calificación de agentes de retención y de contribuyentes especiales, con número de resolución y fecha de vigencia; el agente de retención debe emitir el comprobante en el momento del pago o acreditación en cuenta, lo que ocurra primero; para IVA se expide un comprobante de retención por cada comprobante de venta con transacciones sujetas a retención; los comprobantes de retención electrónicos están reconocidos por la normativa de comprobantes electrónicos SRI (relevante para la fase futura de XML/RIDE, no para E1).
+
+Antes de emitir/generar un `RetentionDocument`, el ERP debe validar:
+
+1. **La empresa actual es agente de retención o está obligada según su configuración tributaria** — condición a nivel `Company`, nunca decidida por el usuario ni por el frontend.
+2. **El proveedor/sujeto retenido no está exento** — `SupplierRoleConfig.IsRetentionExempt` debe respetarse tal cual existe hoy; si está `true`, no se emite retención sobre ese proveedor.
+3. **El documento origen tiene base retenible** — el `RetentionCalculator` ya modela esto (`SkipReason` cuando no aplica); la validación de elegibilidad de empresa/proveedor es una guarda *previa* a invocar el cálculo, no un reemplazo de él.
+4. **Existen códigos de retención aplicables desde catálogo/SSOT** — vía `IRetentionCodeResolver` contra `SriRetentionCodes`, sin fallback hardcodeado: si no hay código activo, la emisión debe fallar explícitamente, no asumir un valor por defecto.
+
+### Origen de la condición de agente de retención
+
+La condición de agente de retención **debe leerse de la configuración empresarial (`Company`), nunca del usuario ni del frontend** — mismo principio ya vigente en el proyecto de no confiar en el body para autoridad de tenant/company/branch.
+
+**Campos verificados en el código real** (`backend/src/ERP.Domain/Modules/Company/Entities/Company.cs`) — auditoría de reutilización antes de proponer campos nuevos:
+
+| Campo propuesto | Estado en `Company` | Equivalente encontrado |
+|---|---|---|
+| `IsRetentionAgent` | **Parcial — reutilizar** | `WithholdsRenta` (bool) y `WithholdsVat` (bool) ya existen, uno por tipo de impuesto — más preciso que un único booleano genérico. No hay campo agregado "es agente de retención" y no hace falta: se deriva de `WithholdsRenta || WithholdsVat` según el tipo de retención que se esté emitiendo. |
+| `RetentionAgentResolutionNumber` | **No existe — pendiente** | Ningún campo asocia número de resolución SRI a `WithholdsRenta`/`WithholdsVat`. |
+| `RetentionAgentEffectiveFrom` | **No existe — pendiente** | Ningún campo asocia fecha de vigencia a `WithholdsRenta`/`WithholdsVat`. |
+| `IsSpecialTaxpayer` | **Parcial — reutilizar** | `SpecialTaxpayerNo` (string) ya existe; el booleano se infiere de `!string.IsNullOrWhiteSpace(SpecialTaxpayerNo)`, sin campo booleano explícito. |
+| `SpecialTaxpayerResolutionNumber` | **Ya cubierto** | `SpecialTaxpayerNo` ya cumple ese rol (es, de hecho, el número de resolución de contribuyente especial). |
+| `IsRequiredToKeepAccounting` (nivel empresa) | **Ya existe con otro nombre — reutilizar** | `IsAccountingReq` (bool, `Company.cs:36`, seteado en `UpdateFiscalSettings`, `Company.cs:255`). |
+
+No existe `CompanyTaxProfile` como entidad separada (solo referenciado como concepto futuro en docs de arquitectura). `SriSettings` (`backend/src/ERP.Domain/Modules/Configuration/Entities/SriSettings.cs`) existe pero solo contiene certificado digital/ambiente/WSDL — nada de agente de retención ni contribuyente especial.
+
+**Conclusión de reutilización**: `WithholdsRenta`, `WithholdsVat`, `IsAccountingReq` y `SpecialTaxpayerNo` en `Company` cubren la mayor parte de la necesidad y **deben reutilizarse tal cual**, sin duplicarlos. Lo único genuinamente ausente es la trazabilidad de la resolución SRI que habilita `WithholdsRenta`/`WithholdsVat` (número + fecha de vigencia) — sin eso, el ERP puede saber *que* la empresa retiene pero no *desde cuándo* ni *con qué respaldo documental*, lo cual es relevante si el estado de agente de retención cambia en el tiempo (calificación/descalificación SRI).
+
+### Campos nuevos propuestos (solo si se confirma la brecha)
+
+Si se decide cerrar esa brecha antes de emitir retenciones en producción:
+
+```
+Company (extensión aditiva, no romper UpdateFiscalSettings existente):
+  RetentionAgentResolutionNumber : string?   // resolución SRI que habilita WithholdsRenta/WithholdsVat
+  RetentionAgentEffectiveFrom    : DateTime? // vigencia de esa resolución
+```
+
+No se propone `IsRetentionAgent` ni `IsSpecialTaxpayer` como campos nuevos — serían booleanos redundantes sobre datos ya existentes (`WithholdsRenta`/`WithholdsVat`/`SpecialTaxpayerNo`), y el proyecto ya tiene una regla general contra duplicar fuentes de verdad.
+
+### `SupplierRoleConfig.IsRequiredToKeepAccounting`
+
+Se reafirma lo ya documentado en "Hallazgos técnicos": este campo existe y se valida como requisito de datos, pero **no se usa hoy** para diferenciar porcentajes de retención (IVA 30%/70%, Renta 1%/2%). Esta sección no cambia esa decisión — queda como regla fiscal a analizar en una fase posterior (ver "Decisiones aprobadas" y "Preguntas que quedan para análisis futuro"), no se corrige en E1 ni en E1-0.
+
+### Alcance de esta sección en E1
+
+- `RetentionDocument` sigue siendo un módulo independiente — la validación de elegibilidad es una guarda que el módulo `Retentions` consulta sobre `Company` (vía un servicio de solo lectura, sin duplicar el dato), no una entidad nueva de Retentions.
+- La UI/proceso de emisión sigue integrada dentro de Gastos (y, en el futuro, Compras) — no se crea una pantalla separada de "elegibilidad" para el usuario; el sistema simplemente bloquea la emisión con un mensaje explícito si la empresa no es agente de retención para el tipo de impuesto correspondiente.
+- E1 no inventa automatización de calificación/descalificación SRI, ni sincronización con el SRI para verificar vigencia — la fuente es exclusivamente la configuración ya cargada en `Company`.
+- E1 no hardcodea ningún porcentaje ni código de retención — todo sigue viniendo de `IRetentionCodeResolver`/`SriRetentionCodes`, sin excepción por el hecho de agregar esta validación.
 
 ## Arquitectura propuesta
 
@@ -195,13 +248,12 @@ Explícitamente fuera de alcance de E1. `ElectronicDocumentType.Retention = 4` y
 
 ## Fases pequeñas de implementación
 
-- **E1-A** — Dominio + Aplicación de `Retentions` (entidades, enums, `IssueRetentionUseCases`, `CancelRetentionUseCases`, reubicar `RetentionCalculator`/`IRetentionCodeResolver`). Tests de dominio + regresión completa de Purchases.
-- **E1-B** — Infraestructura (`RetentionDocumentConfiguration`, repositorio, migración EF) + registro de `DocTypeCode` para Retentions en `CaptureNextAsync` (nomenclatura `RET`, salvo que la inspección técnica exija mantener `RETGAS`).
-- **E1-C** — Integración con CxP y Contabilidad: `ApplyRetention`/`ReverseRetention` desde `IssueRetentionHandler`, nuevos translators de posting (estrictos).
-- **E1-D** — API (`RetentionsController`) + integración desde Gastos (endpoint de preview + emisión manual, acción posterior a la confirmación).
-- **E1-E** — UI mínima en Gastos: acción "Emitir retención" sobre gasto confirmado, vista de retención emitida, cancelación. (`frontend/src/modules/retentions` en esta fase o posterior, según alcance UI real).
-- **E1-F** — Permisos finos (`retentions.issue`, `retentions.cancel`, `retentions.view`) + `DocumentFlowPolicy` propia de Retentions, con reglas mínimas (motivo de cancelación si corresponde).
-- **E1-G** — Tests end-to-end (emitir→CxP neto→asiento→cancelar→reverso) para el flujo desde Gastos.
+- **E1-0 — Elegibilidad / configuración de agente de retención.** Servicio de solo lectura que resuelve elegibilidad desde `Company` (`WithholdsRenta`/`WithholdsVat`/`IsAccountingReq`/`SpecialTaxpayerNo`, reutilizados tal cual); si se confirma la brecha de trazabilidad SRI, agrega `RetentionAgentResolutionNumber`/`RetentionAgentEffectiveFrom` a `Company` como extensión aditiva de `UpdateFiscalSettings`. Sin este servicio, ninguna fase posterior puede validar elegibilidad antes de emitir. Tests de dominio/aplicación de la regla de elegibilidad, incluyendo el caso "empresa no es agente de retención" bloqueando la emisión.
+- **E1-A — Dominio + Aplicación de `Retentions`.** Entidades, enums, `IssueRetentionUseCases`, `CancelRetentionUseCases`, reubicar `RetentionCalculator`/`IRetentionCodeResolver`, consumir el servicio de elegibilidad de E1-0 como guarda previa al cálculo. Tests de dominio + regresión completa de Purchases (por la reubicación de servicios compartidos).
+- **E1-B — Infraestructura / persistencia.** `RetentionDocumentConfiguration`, repositorio, migración EF, registro de `DocTypeCode` para Retentions en `CaptureNextAsync` (nomenclatura `RET`, salvo que la inspección técnica exija mantener `RETGAS`).
+- **E1-C — Integración con Expenses Confirm.** No se agrega nada dentro de `ExpenseDocumentConfirmUseCases.cs` (ver "Flujo desde Gastos"); se expone el endpoint/comando de emisión manual sobre un `ExpenseDocument` ya `Confirmed`, incluyendo `ApplyRetention`/`ReverseRetention` desde `IssueRetentionHandler` y los translators de posting (estrictos). Incluye permisos finos (`retentions.issue`, `retentions.cancel`, `retentions.view`) y la `DocumentFlowPolicy` propia de Retentions con reglas mínimas (motivo de cancelación si corresponde).
+- **E1-D — UI integrada en `ExpenseDocumentFormPage`.** Acción "Emitir retención" visible sobre un gasto confirmado (bloqueada con mensaje explícito si la empresa no es agente de retención, resuelto por E1-0), vista de la retención emitida, cancelación. Integrada dentro de la página existente de Gastos — no se crea un módulo de UI separado en E1 (`frontend/src/modules/retentions` queda para una fase posterior si el alcance UI lo justifica).
+- **E1-E — Tests end-to-end.** Flujo completo desde Gastos: elegibilidad→emitir→CxP neto→asiento→cancelar→reverso, incluyendo el caso bloqueado por falta de elegibilidad.
 
 Cada fase cierra sus propios tests antes de darse por completa.
 
@@ -213,6 +265,7 @@ Cada fase cierra sus propios tests antes de darse por completa.
 - **Riesgo al mover código compartido**: reubicar `RetentionCalculator`/`IRetentionCodeResolver` toca un flujo en producción (Compras) — exige tests de regresión completos antes de dar por cerrada E1-A.
 - **Riesgo de nomenclatura de documento**: adoptar `RET` como código transversal sin verificar en E1-B si colisiona con `RETGAS` ya seedeado podría requerir migración de datos de catálogo — debe resolverse en la inspección técnica de esa fase, no asumirse de antemano.
 - **Riesgo normativo SRI**: la relación futura con `ElectronicDocuments` (XML/RIDE) queda sin resolver hasta su propia ADR — cualquier necesidad de compliance fiscal antes de esa fase deberá evaluarse manualmente (comprobante físico/PDF, ver decisión #11).
+- **Riesgo de emisión indebida por configuración incompleta de `Company`**: si `WithholdsRenta`/`WithholdsVat` no están correctamente configurados para una empresa que en realidad sí es agente de retención (o viceversa), el ERP bloquearía o permitiría emisiones incorrectamente sin que sea un bug del módulo `Retentions` en sí — depende enteramente de que el dato en `Company` esté al día. Mitigado únicamente por E1-0 validando explícitamente antes de emitir, nunca asumiendo.
 
 ## Decisiones aprobadas
 
@@ -227,6 +280,8 @@ Cada fase cierra sus propios tests antes de darse por completa.
 9. El posting de retenciones es estricto: si falla el asiento, la retención no se emite. La regeneración de un asiento fallido queda para herramienta futura y controlada, fuera de E1.
 10. El gap de `IsRequiredToKeepAccounting` (no consumido hoy por `RetentionCalculator`) no se corrige en E1 — se documenta como deuda fiscal heredada para análisis posterior.
 11. Fuera de alcance de E1: XML/RIDE de retención, autorización SRI, migración de Compras, retenciones automáticas, corrección de reglas fiscales avanzadas, ISD.
+12. Antes de emitir un `RetentionDocument`, el ERP valida elegibilidad tributaria: empresa agente de retención según `Company` (`WithholdsRenta`/`WithholdsVat`/`IsAccountingReq`/`SpecialTaxpayerNo`, reutilizados sin duplicar), proveedor no exento (`SupplierRoleConfig.IsRetentionExempt`), base retenible en el documento origen, y código de retención activo en catálogo. La condición de agente de retención viene siempre de la configuración empresarial, nunca del usuario ni del frontend.
+13. No se crean campos booleanos nuevos redundantes (`IsRetentionAgent`/`IsSpecialTaxpayer`) sobre datos que ya existen en `Company`. Si se confirma la necesidad de trazar resolución SRI y vigencia, se agregan únicamente `RetentionAgentResolutionNumber`/`RetentionAgentEffectiveFrom` como extensión aditiva, en la fase E1-0.
 
 ## Preguntas que quedan para análisis futuro
 
@@ -236,6 +291,8 @@ Cada fase cierra sus propios tests antes de darse por completa.
 4. ¿Vale la pena migrar Compras a `RetentionDocument` en el mediano plazo, dado que `IssuedWithholding` ya está en producción con endpoints, UI y tests propios — o se acepta convivencia permanente de ambas entidades mientras funcionen?
 5. ¿Cuándo y cómo se corrige el gap de `IsRequiredToKeepAccounting` en `RetentionCalculator`? Requiere su propio análisis fiscal antes de tocar el cálculo de porcentajes.
 6. ¿Qué forma toma el comprobante de retención antes de que exista XML/RIDE (E1 no lo contempla siquiera en PDF) — se define en una fase E1-H futura o se posterga junto con la relación a `ElectronicDocuments`?
+7. ¿Se confirma la necesidad real de trazar `RetentionAgentResolutionNumber`/`RetentionAgentEffectiveFrom` en E1-0, o basta con `WithholdsRenta`/`WithholdsVat` como están hoy (sin fecha de vigencia) mientras no exista un caso real de cambio de calificación SRI en el tiempo?
+8. ¿Quién actualiza `WithholdsRenta`/`WithholdsVat`/`SpecialTaxpayerNo` en `Company` cuando cambia la calificación SRI de la empresa — proceso manual del administrador, o se evalúa alguna sincronización futura con el SRI? Fuera de alcance de E1 en cualquier caso, pero afecta qué tan urgente es E1-0.
 
 ## Entrega
 

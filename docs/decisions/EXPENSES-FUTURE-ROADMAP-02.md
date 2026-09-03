@@ -34,7 +34,7 @@ El módulo de Gastos ya cuenta con, verificado en código:
 
 ## Roadmap aprobado
 
-- **E1** — Retenciones básicas IVA, mediante el módulo transversal `Retentions`. Gastos es el primer consumidor. Ver [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md) para arquitectura, entidades, estados, fases (E1-A a E1-G) y decisiones aprobadas — este roadmap ya no detalla su diseño interno.
+- **E1** — Retenciones básicas IVA, mediante el módulo transversal `Retentions`, con validación previa de elegibilidad tributaria (empresa agente de retención, proveedor no exento). Gastos es el primer consumidor. Ver [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md) para arquitectura, entidades, estados, fases (E1-0 a E1-E) y decisiones aprobadas — este roadmap ya no detalla su diseño interno.
 - **E2** — Retención de renta + comprobante de retención PDF, sin XML SRI.
 - **E3** — Adjuntos obligatorios.
 - **E4** — Reporte de Gastos v1.
@@ -73,9 +73,9 @@ El módulo de Gastos ya cuenta con, verificado en código:
 
 ### E1 — Retenciones básicas (IVA), vía módulo transversal `Retentions`
 
-**Rediseñada (2026-09-03).** El detalle completo de arquitectura, agregado `RetentionDocument`, entidad `RetentionDocumentLine`, estados/transiciones, flujo desde Gastos, flujo futuro desde Compras, impacto en CxP/contabilidad, fases de implementación (E1-A a E1-G), riesgos y decisiones aprobadas está documentado en [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md) — no se repite aquí para evitar dos fuentes de verdad.
+**Rediseñada (2026-09-03).** El detalle completo de arquitectura, agregado `RetentionDocument`, entidad `RetentionDocumentLine`, estados/transiciones, flujo desde Gastos, flujo futuro desde Compras, impacto en CxP/contabilidad, reglas de elegibilidad tributaria SRI, fases de implementación (E1-0 a E1-E), riesgos y decisiones aprobadas está documentado en [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md) — no se repite aquí para evitar dos fuentes de verdad.
 
-**Resumen:** Retenciones deja de plantearse como campos directos en `ExpenseLine`/`ExpenseDocument` y pasa a ser un módulo independiente (`ERP.Domain/Modules/Retentions`, etc.) con relación genérica a su documento origen (`SourceDocumentType`/`SourceDocumentId`). Gastos es el primer consumidor implementado; Compras sigue usando `IssuedWithholding` sin cambios hasta una fase de migración separada. Emisión manual y explícita sobre un gasto ya confirmado.
+**Resumen:** Retenciones deja de plantearse como campos directos en `ExpenseLine`/`ExpenseDocument` y pasa a ser un módulo independiente (`ERP.Domain/Modules/Retentions`, etc.) con relación genérica a su documento origen (`SourceDocumentType`/`SourceDocumentId`). Antes de emitir, valida que la empresa sea agente de retención (reutilizando `Company.WithholdsRenta`/`WithholdsVat`/`IsAccountingReq`/`SpecialTaxpayerNo`, ya existentes) y que el proveedor no esté exento (`SupplierRoleConfig.IsRetentionExempt`). Gastos es el primer consumidor implementado; Compras sigue usando `IssuedWithholding` sin cambios hasta una fase de migración separada. Emisión manual y explícita sobre un gasto ya confirmado.
 
 ### E2 — Retención de renta + comprobante de retención (PDF, sin XML SRI)
 
