@@ -37,18 +37,21 @@ public sealed class LoadPvpSnapshotsHandler
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IPricingResolver _pricingResolver;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public LoadPvpSnapshotsHandler(
         IPurchaseInvoiceRepository repo,
         IPricingResolver pricingResolver,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
         _repo = repo;
         _pricingResolver = pricingResolver;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -58,7 +61,7 @@ public sealed class LoadPvpSnapshotsHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
@@ -83,12 +86,19 @@ public sealed class UpdateLinePvpHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
-    public UpdateLinePvpHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t, ICurrentUser u)
+    public UpdateLinePvpHandler(
+        IPurchaseInvoiceRepository repo,
+        ICurrentTenant t,
+        ICurrentBranch b,
+        ICurrentUser u
+    )
     {
         _repo = repo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -98,7 +108,7 @@ public sealed class UpdateLinePvpHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure(

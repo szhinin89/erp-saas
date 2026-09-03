@@ -5,12 +5,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 
-/// <summary>
-/// Fase I-6B: branch-scoped por exigencia de contexto (defensa en profundidad) — mismo criterio
-/// que <c>GetReceivableByInvoiceQuery</c>: <c>SalesInvoice</c> no tiene <c>BranchId</c> de
-/// cabecera, así que esto no filtra resultados por sucursal, solo exige sucursal activa
-/// autorizada.
-/// </summary>
 public sealed record GetReturnableLinesByInvoiceQuery(Guid InvoiceId)
     : IRequest<Result<IReadOnlyList<ReturnableLineDto>>>,
         IBranchScopedRequest;
@@ -21,16 +15,19 @@ public sealed class GetReturnableLinesByInvoiceHandler
     private readonly ISalesInvoiceRepository _invoiceRepo;
     private readonly ISalesReturnRepository _returnRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
     public GetReturnableLinesByInvoiceHandler(
         ISalesInvoiceRepository invoiceRepo,
         ISalesReturnRepository returnRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentBranch b
     )
     {
         _invoiceRepo = invoiceRepo;
         _returnRepo = returnRepo;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<IReadOnlyList<ReturnableLineDto>>> Handle(
@@ -39,7 +36,7 @@ public sealed class GetReturnableLinesByInvoiceHandler
     )
     {
         var invoice = await _invoiceRepo.GetByIdAsync(_t.TenantId, q.InvoiceId, ct);
-        if (invoice is null)
+        if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<IReadOnlyList<ReturnableLineDto>>.NotFound("Factura no encontrada.");
 
         var result = new List<ReturnableLineDto>();

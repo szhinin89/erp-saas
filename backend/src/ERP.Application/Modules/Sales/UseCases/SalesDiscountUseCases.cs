@@ -15,18 +15,21 @@ public sealed class ApplySalesDiscountHandler
 {
     private readonly ISalesInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
 
     public ApplySalesDiscountHandler(
         ISalesInvoiceRepository repo,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
         _t = t;
+        _b = b;
         _u = u;
         _preferences = preferences;
     }
@@ -37,7 +40,7 @@ public sealed class ApplySalesDiscountHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         // CONFIG-DYNAMIC-OPERATIONS-01 (sales.pos.allow_manual_discount / max_discount_percent):

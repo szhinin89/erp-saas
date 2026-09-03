@@ -51,6 +51,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
 
@@ -72,6 +73,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences
     )
@@ -93,6 +95,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _logger = logger;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
         _preferences = preferences;
     }
@@ -107,7 +110,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         var uid = _u.UserId;
 
         var inv = await _repo.GetByIdAsync(tid, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         if (inv.Status != Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft)

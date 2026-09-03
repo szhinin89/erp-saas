@@ -162,7 +162,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         BusinessPartner? customerBp = null,
         SalesFiscalPolicyResult? fiscalPolicy = null,
         bool paymentMethodIsCreditAllowed = false,
-        bool allowSellWithoutStock = false
+        bool allowSellWithoutStock = false,
+        Guid? activeBranchId = null
     ) =>
         BuildHandler(
             inv,
@@ -171,7 +172,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             customerBp,
             fiscalPolicy,
             paymentMethodIsCreditAllowed,
-            allowSellWithoutStock
+            allowSellWithoutStock,
+            activeBranchId
         );
 
     private static (
@@ -185,7 +187,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         BusinessPartner? customerBp = null,
         SalesFiscalPolicyResult? fiscalPolicy = null,
         bool paymentMethodIsCreditAllowed = false,
-        bool allowSellWithoutStock = false
+        bool allowSellWithoutStock = false,
+        Guid? activeBranchId = null
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -222,6 +225,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
@@ -294,6 +299,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object,
             preferences.Object
         );
@@ -310,7 +316,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     private static (
         AuthorizeSalesInvoiceHandler handler,
         Mock<IStockRepository> stockRepo
-    ) BuildHandlerWithInsufficientStock(SalesInvoice inv, bool allowSellWithoutStock)
+    ) BuildHandlerWithInsufficientStock(
+        SalesInvoice inv,
+        bool allowSellWithoutStock,
+        Guid? activeBranchId = null
+    )
     {
         var repo = new Mock<ISalesInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
@@ -342,6 +352,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
@@ -400,6 +412,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object,
             preferences.Object
         );
@@ -513,7 +526,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     private static (
         AuthorizeSalesInvoiceHandler handler,
         Mock<IStockRepository> stockRepo
-    ) BuildHandlerWithStockQuantity(SalesInvoice inv, decimal availableQuantity)
+    ) BuildHandlerWithStockQuantity(
+        SalesInvoice inv,
+        decimal availableQuantity,
+        Guid? activeBranchId = null
+    )
     {
         var repo = new Mock<ISalesInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
@@ -554,6 +571,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
@@ -612,6 +631,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object,
             preferences.Object
         );
@@ -1285,5 +1305,51 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             .Be(
                 "Consumidor Final no puede registrar ventas a crédito. Seleccione un cliente identificado o cambie la condición de pago a contado."
             );
+    }
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): AuthorizeSalesInvoiceCommand
+    /// está marcado IBranchScopedRequest, pero ese marker solo exige sucursal activa autorizada — no
+    /// garantiza que la factura cargada pertenezca a esa sucursal. Debe rechazar con NotFound (nunca
+    /// revelar existencia cross-branch) cuando la factura pertenece a otra sucursal.
+    /// </summary>
+    [Fact]
+    public async Task Factura_de_otra_sucursal_retorna_NotFound_y_no_la_autoriza()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today);
+        var otherBranchId = Guid.NewGuid();
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            activeBranchId: otherBranchId
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ERP.Application.Common.ApiResponseCodes.Common.NotFound);
+        inv.Status.Should().Be(SalesInvoiceStatus.Draft);
+    }
+
+    /// <summary>Misma factura, sucursal activa correcta (BranchId por defecto) — debe seguir funcionando.</summary>
+    [Fact]
+    public async Task Factura_de_la_misma_sucursal_sigue_autorizandose_correctamente()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today);
+        var (handler, _, _) = BuildHandler(inv, today, CreateIdentifiedCustomerBp());
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(SalesInvoiceStatus.Authorized);
     }
 }

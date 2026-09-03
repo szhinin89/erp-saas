@@ -85,16 +85,19 @@ public sealed class ApplyGlobalDiscountHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public ApplyGlobalDiscountHandler(
         IPurchaseInvoiceRepository repo,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
         _repo = repo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -104,7 +107,7 @@ public sealed class ApplyGlobalDiscountHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
@@ -128,12 +131,19 @@ public sealed class AllocateFreightHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
-    public AllocateFreightHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t, ICurrentUser u)
+    public AllocateFreightHandler(
+        IPurchaseInvoiceRepository repo,
+        ICurrentTenant t,
+        ICurrentBranch b,
+        ICurrentUser u
+    )
     {
         _repo = repo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -143,7 +153,7 @@ public sealed class AllocateFreightHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
@@ -168,18 +178,21 @@ public sealed class RecalculatePurchaseHandler
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ISriTaxResolver _tax;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public RecalculatePurchaseHandler(
         IPurchaseInvoiceRepository repo,
         ISriTaxResolver tax,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
         _repo = repo;
         _tax = tax;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -189,7 +202,7 @@ public sealed class RecalculatePurchaseHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
@@ -267,16 +280,19 @@ public sealed class DistributePurchaseCostHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public DistributePurchaseCostHandler(
         IPurchaseInvoiceRepository repo,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
         _repo = repo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -286,7 +302,7 @@ public sealed class DistributePurchaseCostHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");

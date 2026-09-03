@@ -395,6 +395,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
 
@@ -410,6 +411,7 @@ public sealed class UpdateSalesDraftHandler
         ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences
     )
@@ -425,6 +427,7 @@ public sealed class UpdateSalesDraftHandler
         _companyTaxRepo = companyTaxRepo;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
         _preferences = preferences;
     }
@@ -441,7 +444,7 @@ public sealed class UpdateSalesDraftHandler
             return Result<SalesInvoiceDto>.ValidationFailure("El cliente se encuentra inactivo.");
 
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTerm.Id)

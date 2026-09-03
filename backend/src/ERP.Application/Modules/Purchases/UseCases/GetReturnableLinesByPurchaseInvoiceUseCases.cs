@@ -23,16 +23,19 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandler
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
     public GetReturnableLinesByPurchaseInvoiceHandler(
         IPurchaseInvoiceRepository invoiceRepo,
         IPurchaseReturnRepository returnRepo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentBranch b
     )
     {
         _invoiceRepo = invoiceRepo;
         _returnRepo = returnRepo;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<IReadOnlyList<ReturnableLineDto>>> Handle(
@@ -43,7 +46,7 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandler
         var tid = _t.TenantId;
 
         var invoice = await _invoiceRepo.GetByIdAsync(tid, q.PurchaseInvoiceId, ct);
-        if (invoice is null)
+        if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<IReadOnlyList<ReturnableLineDto>>.NotFound(
                 "Factura de compra no encontrada."
             );

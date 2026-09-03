@@ -57,16 +57,19 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandlerTests
         GetReturnableLinesByPurchaseInvoiceHandler handler,
         Mock<IPurchaseInvoiceRepository> invoiceRepo,
         Mock<IPurchaseReturnRepository> returnRepo
-    ) BuildHandler()
+    ) BuildHandler(Guid? activeBranchId = null)
     {
         var invoiceRepo = new Mock<IPurchaseInvoiceRepository>();
         var returnRepo = new Mock<IPurchaseReturnRepository>();
         var t = new Mock<ICurrentTenant>();
         t.SetupGet(x => x.TenantId).Returns(TenantId);
+        var b = new Mock<ICurrentBranch>();
+        b.SetupGet(x => x.BranchId).Returns(activeBranchId ?? BranchId);
         var handler = new GetReturnableLinesByPurchaseInvoiceHandler(
             invoiceRepo.Object,
             returnRepo.Object,
-            t.Object
+            t.Object,
+            b.Object
         );
         return (handler, invoiceRepo, returnRepo);
     }
@@ -143,6 +146,30 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandlerTests
 
         var result = await handler.Handle(
             new GetReturnableLinesByPurchaseInvoiceQuery(Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): la query está marcada
+    /// IBranchScopedRequest, pero eso solo exige sucursal activa autorizada — no que la compra
+    /// pertenezca a esa sucursal. Debe rechazar con NotFound cuando la compra es de otra sucursal
+    /// (nunca revelar existencia cross-branch, ni exponer sus líneas devolvibles).
+    /// </summary>
+    [Fact]
+    public async Task Compra_de_otra_sucursal_retorna_NotFound()
+    {
+        var (handler, invoiceRepo, _) = BuildHandler(activeBranchId: Guid.NewGuid());
+        var invoice = ConfirmedInvoiceWithOneLine(10);
+        invoiceRepo
+            .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invoice);
+
+        var result = await handler.Handle(
+            new GetReturnableLinesByPurchaseInvoiceQuery(invoice.Id),
             CancellationToken.None
         );
 

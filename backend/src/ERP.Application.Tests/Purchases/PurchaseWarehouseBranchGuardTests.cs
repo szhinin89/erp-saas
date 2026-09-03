@@ -320,6 +320,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ILogger<ConfirmPurchaseHandler>>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == BranchA),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             preferences.Object
         );

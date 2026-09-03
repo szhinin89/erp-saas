@@ -70,7 +70,8 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
 
     private static GetReturnableLinesByInvoiceHandler BuildHandler(
         SalesInvoice invoice,
-        Mock<ISalesReturnRepository> returnRepo
+        Mock<ISalesReturnRepository> returnRepo,
+        Guid? activeBranchId = null
     )
     {
         var invoiceRepo = new Mock<ISalesInvoiceRepository>();
@@ -79,11 +80,15 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
             .ReturnsAsync(invoice);
 
         var tenant = Mock.Of<ERP.Application.Common.ICurrentTenant>(t => t.TenantId == TenantId);
+        var branch = Mock.Of<ERP.Application.Common.ICurrentBranch>(b =>
+            b.BranchId == (activeBranchId ?? BranchId)
+        );
 
         return new GetReturnableLinesByInvoiceHandler(
             invoiceRepo.Object,
             returnRepo.Object,
-            tenant
+            tenant,
+            branch
         );
     }
 
@@ -198,6 +203,28 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
         line.RemainingQuantity.Should().Be(9m);
     }
 
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): la query está marcada
+    /// IBranchScopedRequest, pero eso solo exige sucursal activa autorizada — no que la factura
+    /// pertenezca a esa sucursal. Debe rechazar con NotFound cuando la factura es de otra sucursal
+    /// (nunca revelar existencia cross-branch, ni exponer sus líneas devolvibles).
+    /// </summary>
+    [Fact]
+    public async Task Factura_de_otra_sucursal_retorna_NotFound()
+    {
+        var (invoice, _) = BuildAuthorizedInvoice(("Producto A", 10m, 5m));
+        var returnRepo = new Mock<ISalesReturnRepository>();
+        var handler = BuildHandler(invoice, returnRepo, activeBranchId: Guid.NewGuid());
+
+        var result = await handler.Handle(
+            new GetReturnableLinesByInvoiceQuery(invoice.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ERP.Application.Common.ApiResponseCodes.Common.NotFound);
+    }
+
     [Fact]
     public async Task Factura_inexistente_retorna_NotFound()
     {
@@ -207,11 +234,13 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
             .ReturnsAsync((SalesInvoice?)null);
         var returnRepo = new Mock<ISalesReturnRepository>();
         var tenant = Mock.Of<ERP.Application.Common.ICurrentTenant>(t => t.TenantId == TenantId);
+        var branch = Mock.Of<ERP.Application.Common.ICurrentBranch>(b => b.BranchId == BranchId);
 
         var handler = new GetReturnableLinesByInvoiceHandler(
             invoiceRepo.Object,
             returnRepo.Object,
-            tenant
+            tenant,
+            branch
         );
 
         var result = await handler.Handle(
@@ -289,8 +318,9 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
             .ReturnsAsync(invoice);
 
         var tenant = Mock.Of<ERP.Application.Common.ICurrentTenant>(t => t.TenantId == TenantId);
+        var branch = Mock.Of<ERP.Application.Common.ICurrentBranch>(b => b.BranchId == BranchId);
 
-        return new GetReturnableLinesByInvoiceHandler(invoiceRepo.Object, returnRepo, tenant);
+        return new GetReturnableLinesByInvoiceHandler(invoiceRepo.Object, returnRepo, tenant, branch);
     }
 
     /// <summary>

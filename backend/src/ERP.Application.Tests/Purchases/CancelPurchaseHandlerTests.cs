@@ -123,13 +123,16 @@ public sealed class CancelPurchaseHandlerTests
         Mock<IAccountsPayableRepository> payableRepo,
         Mock<IStockRepository> stockRepo,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
-        Mock<IUnitOfWork> uow
+        Mock<IUnitOfWork> uow,
+        Guid? activeBranchId = null
     )
     {
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
@@ -142,6 +145,7 @@ public sealed class CancelPurchaseHandlerTests
             Mock.Of<ILogger<CancelPurchaseHandler>>(),
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object
         );
     }
@@ -578,5 +582,72 @@ public sealed class CancelPurchaseHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): CancelPurchaseCommand
+    /// está marcado IBranchScopedRequest, pero ese marker solo exige sucursal activa autorizada — no
+    /// garantiza que la compra cargada pertenezca a esa sucursal. Debe rechazar con NotFound (nunca
+    /// revelar existencia cross-branch) cuando la compra pertenece a otra sucursal.
+    /// </summary>
+    [Fact]
+    public async Task Compra_de_otra_sucursal_retorna_NotFound_y_no_la_anula()
+    {
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var inv = CreateConfirmedInvoice();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+
+        var handler = BuildHandler(
+            repo,
+            payableRepo,
+            stockRepo,
+            purchaseReturnRepo,
+            uow,
+            activeBranchId: Guid.NewGuid()
+        );
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ERP.Application.Common.ApiResponseCodes.Common.NotFound);
+        inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
+
+    /// <summary>Misma compra, sucursal activa correcta (BranchId por defecto) — debe seguir anulándose.</summary>
+    [Fact]
+    public async Task Compra_de_la_misma_sucursal_sigue_anulandose_correctamente()
+    {
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var inv = CreateConfirmedInvoice();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountsPayableOriginType.PurchaseInvoice,
+                    inv.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((AccountsPayable?)null);
+        repo.Setup(r =>
+                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((IssuedWithholding?)null);
+
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
     }
 }

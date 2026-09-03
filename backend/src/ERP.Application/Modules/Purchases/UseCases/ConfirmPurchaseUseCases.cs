@@ -48,6 +48,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly ILogger<ConfirmPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
 
@@ -63,6 +64,7 @@ public sealed class ConfirmPurchaseHandler
         ILogger<ConfirmPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences
     )
@@ -78,6 +80,7 @@ public sealed class ConfirmPurchaseHandler
         _logger = logger;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
         _preferences = preferences;
     }
@@ -92,7 +95,7 @@ public sealed class ConfirmPurchaseHandler
         var uid = _u.UserId;
 
         var inv = await _repo.GetByIdAsync(tid, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)

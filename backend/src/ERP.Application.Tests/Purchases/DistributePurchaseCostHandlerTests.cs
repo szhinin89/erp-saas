@@ -46,7 +46,8 @@ public sealed class DistributePurchaseCostHandlerTests
 
     private static DistributePurchaseCostHandler BuildHandler(
         PurchaseInvoice? invoice,
-        out Mock<IPurchaseInvoiceRepository> repo
+        out Mock<IPurchaseInvoiceRepository> repo,
+        Guid? activeBranchId = null
     )
     {
         repo = new Mock<IPurchaseInvoiceRepository>();
@@ -57,6 +58,7 @@ public sealed class DistributePurchaseCostHandlerTests
         return new DistributePurchaseCostHandler(
             repo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == (activeBranchId ?? BranchId)),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId)
         );
     }
@@ -148,5 +150,27 @@ public sealed class DistributePurchaseCostHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Lines[0].FreightAllocated.Should().Be(10m);
         inv.Lines[1].FreightAllocated.Should().Be(0m);
+    }
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): DistributePurchaseCostCommand
+    /// está marcado IBranchScopedRequest, pero ese marker solo exige sucursal activa autorizada — no
+    /// garantiza que la compra cargada pertenezca a esa sucursal. Debe rechazar con NotFound (nunca
+    /// revelar existencia cross-branch) cuando la compra pertenece a otra sucursal.
+    /// </summary>
+    [Fact]
+    public async Task Compra_de_otra_sucursal_retorna_NotFound()
+    {
+        var inv = CreateDraftWithLines((1m, 100m));
+        var handler = BuildHandler(inv, out var repo, activeBranchId: Guid.NewGuid());
+
+        var result = await handler.Handle(
+            new DistributePurchaseCostCommand(inv.Id, PurchaseCostType.Freight, 10m, new List<Guid> { inv.Lines[0].Id }),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

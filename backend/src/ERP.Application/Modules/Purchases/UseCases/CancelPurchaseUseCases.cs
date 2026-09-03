@@ -45,6 +45,7 @@ public sealed class CancelPurchaseHandler
     private readonly ILogger<CancelPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public CancelPurchaseHandler(
@@ -56,6 +57,7 @@ public sealed class CancelPurchaseHandler
         ILogger<CancelPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
@@ -67,6 +69,7 @@ public sealed class CancelPurchaseHandler
         _logger = logger;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
     }
 
@@ -91,7 +94,7 @@ public sealed class CancelPurchaseHandler
 
             // ── 1. Cargar y validar (recarga autoritativa bajo lock) ───────
             var inv = await _repo.GetByIdAsync(tid, cmd.PurchaseInvoiceId, ct);
-            if (inv is null)
+            if (inv is null || inv.BranchId != _b.BranchId)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");

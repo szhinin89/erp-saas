@@ -232,7 +232,8 @@ public sealed class ConfirmPurchaseHandlerTests
         Item? itemForXmlLines = null,
         Item? itemForMarginGuard = null,
         decimal? marginGuardSalePrice = null,
-        bool allowConfirmWithoutReceptionXml = true
+        bool allowConfirmWithoutReceptionXml = true,
+        Guid? activeBranchId = null
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -434,6 +435,9 @@ public sealed class ConfirmPurchaseHandlerTests
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
 
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
+
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
         user.Setup(u => u.Email).Returns("test@test.com");
@@ -479,6 +483,7 @@ public sealed class ConfirmPurchaseHandlerTests
             logger.Object,
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object,
             preferences.Object
         );
@@ -1004,6 +1009,8 @@ public sealed class ConfirmPurchaseHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
@@ -1024,6 +1031,7 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object,
             preferencesOverride.Object
         );
@@ -1476,5 +1484,39 @@ public sealed class ConfirmPurchaseHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+    }
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): ConfirmPurchaseCommand
+    /// está marcado IBranchScopedRequest, pero ese marker solo exige sucursal activa autorizada — no
+    /// garantiza que la compra cargada pertenezca a esa sucursal. El guard bodega↔sucursal (STEP 0)
+    /// no cubre este caso porque nunca se llega a evaluar la bodega de una compra ajena. Debe
+    /// rechazar con NotFound (nunca revelar existencia cross-branch) cuando la compra pertenece a
+    /// otra sucursal.
+    /// </summary>
+    [Fact]
+    public async Task Compra_de_otra_sucursal_retorna_NotFound_y_no_la_confirma()
+    {
+        var inv = CreateDraftInvoice();
+        var (handler, _, _, _) = BuildHandler(inv, activeBranchId: Guid.NewGuid());
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ERP.Application.Common.ApiResponseCodes.Common.NotFound);
+        inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+    }
+
+    /// <summary>Misma compra, sucursal activa correcta (BranchId por defecto) — debe seguir confirmándose.</summary>
+    [Fact]
+    public async Task Compra_de_la_misma_sucursal_sigue_confirmandose_correctamente()
+    {
+        var inv = CreateDraftInvoice();
+        var (handler, _, _, _) = BuildHandler(inv);
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
     }
 }

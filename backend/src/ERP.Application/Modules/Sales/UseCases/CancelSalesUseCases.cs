@@ -20,6 +20,7 @@ public sealed class CancelSalesInvoiceHandler
     private readonly ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository _edocRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public CancelSalesInvoiceHandler(
@@ -29,6 +30,7 @@ public sealed class CancelSalesInvoiceHandler
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
@@ -38,6 +40,7 @@ public sealed class CancelSalesInvoiceHandler
         _edocRepo = edocRepo;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
     }
 
@@ -47,7 +50,7 @@ public sealed class CancelSalesInvoiceHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null)
+        if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         // ── Cancelar CxC asociada si existe ────────────────────────

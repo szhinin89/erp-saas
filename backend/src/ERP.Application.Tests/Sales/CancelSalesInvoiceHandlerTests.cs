@@ -32,7 +32,13 @@ public sealed class CancelSalesInvoiceHandlerTests
         CancelSalesInvoiceHandler Handler,
         Mock<IStockRepository> StockRepo,
         SalesInvoice Invoice
-    ) BuildHandler(decimal quantity, decimal conversionFactor, Guid itemId, Guid warehouseId)
+    ) BuildHandler(
+        decimal quantity,
+        decimal conversionFactor,
+        Guid itemId,
+        Guid warehouseId,
+        Guid? activeBranchId = null
+    )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
         var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
@@ -99,6 +105,8 @@ public sealed class CancelSalesInvoiceHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
@@ -109,6 +117,7 @@ public sealed class CancelSalesInvoiceHandlerTests
             edocRepo.Object,
             tenant.Object,
             company.Object,
+            branch.Object,
             user.Object
         );
 
@@ -199,5 +208,80 @@ public sealed class CancelSalesInvoiceHandlerTests
                 ),
             Times.Once
         );
+    }
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): CancelSalesInvoiceCommand
+    /// está marcado IBranchScopedRequest, pero ese marker solo exige sucursal activa autorizada — no
+    /// garantiza que la factura cargada pertenezca a esa sucursal. El handler debe rechazar con
+    /// NotFound (nunca revelar existencia cross-branch) cuando la factura pertenece a otra sucursal.
+    /// </summary>
+    [Fact]
+    public async Task Factura_de_otra_sucursal_retorna_NotFound_y_no_la_anula()
+    {
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var otherBranchId = Guid.NewGuid();
+        var (handler, stockRepo, inv) = BuildHandler(
+            quantity: 5m,
+            conversionFactor: 1m,
+            itemId: itemId,
+            warehouseId: warehouseId,
+            activeBranchId: otherBranchId
+        );
+
+        var result = await handler.Handle(
+            new CancelSalesInvoiceCommand(inv.Id, "Motivo de prueba"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ERP.Application.Common.ApiResponseCodes.Common.NotFound);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
+                ),
+            Times.Never
+        );
+    }
+
+    /// <summary>Misma factura, sucursal activa correcta (BranchId por defecto) — debe seguir funcionando.</summary>
+    [Fact]
+    public async Task Factura_de_la_misma_sucursal_sigue_anulandose_correctamente()
+    {
+        var itemId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        var (handler, _, inv) = BuildHandler(
+            quantity: 5m,
+            conversionFactor: 1m,
+            itemId: itemId,
+            warehouseId: warehouseId
+        );
+
+        var result = await handler.Handle(
+            new CancelSalesInvoiceCommand(inv.Id, "Motivo de prueba"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Cancelled);
     }
 }

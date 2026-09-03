@@ -130,6 +130,7 @@ public sealed class PurchaseIceSpecificResolutionTests
             repo.Object,
             tax.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId)
         );
 
