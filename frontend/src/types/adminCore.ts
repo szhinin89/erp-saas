@@ -8,3 +8,10 @@ export interface AdminCoreCompany {
   tradeName: string | null;
   isActive: boolean;
 }
+
+/** Tenant/grupo derivado de AdminCoreCompany — para selectores (crear empresa) sin exponer el GUID al usuario. */
+export interface AdminCoreTenant {
+  tenantId: string;
+  tenantName: string;
+  tenantIsActive: boolean;
+}

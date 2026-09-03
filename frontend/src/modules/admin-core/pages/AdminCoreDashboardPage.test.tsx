@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
 import { adminCoreService } from "../api/adminCoreService";
@@ -64,6 +64,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   useAuthStore.setState({
     user: null,
     isAuthenticated: false,
@@ -96,6 +97,27 @@ describe("AdminCoreDashboardPage", () => {
     expect(accessService.getSessionMenu).not.toHaveBeenCalled();
     expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
     expect(sessionService.getContext).not.toHaveBeenCalled();
+  });
+
+  it("cada grupo de tenant tiene una acción 'Crear empresa en este tenant' hacia /admin-core/companies/new con el tenantId", async () => {
+    vi.mocked(adminCoreService.listCompanies).mockResolvedValue([
+      {
+        tenantId: "tenant-a",
+        tenantName: "Tenant A",
+        tenantIsActive: true,
+        companyId: "company-1",
+        ruc: "1790012345001",
+        legalName: "Empresa Uno",
+        tradeName: null,
+        isActive: true,
+      },
+    ]);
+
+    renderDashboard();
+
+    await screen.findByText("Tenant A");
+    const link = screen.getByRole("link", { name: "Crear empresa en este tenant" });
+    expect(link.getAttribute("href")).toBe("/admin-core/companies/new?tenantId=tenant-a");
   });
 
   it("operate-company navega a /dashboard operativo", async () => {

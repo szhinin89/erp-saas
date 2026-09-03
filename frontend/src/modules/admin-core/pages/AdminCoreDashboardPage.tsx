@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
@@ -134,6 +134,13 @@ export function AdminCoreDashboardPage() {
           <ZHCard
             key={group.tenantId}
             title={`${group.tenantName}${group.tenantIsActive ? "" : " (tenant inactivo)"}`}
+            actions={
+              <Link to={`/admin-core/companies/new?tenantId=${group.tenantId}`}>
+                <ZHBtn variant="ghost" size="sm" type="button">
+                  Crear empresa en este tenant
+                </ZHBtn>
+              </Link>
+            }
             className="zh-mb-16"
           >
             <ZHDataTable
