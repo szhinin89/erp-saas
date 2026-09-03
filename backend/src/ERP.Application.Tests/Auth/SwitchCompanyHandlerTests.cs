@@ -428,6 +428,58 @@ public sealed class SwitchCompanyHandlerTests
     }
 
     [Fact]
+    public async Task SwitchCompany_empresa_destino_pertenece_a_otro_tenant_falla_sin_consultar_membresia()
+    {
+        // MEDIO cluster (auditoría multi-tenant): distinto del caso "sin membresía" — aquí la
+        // empresa destino existe pero pertenece a OTRO tenant que el activo del caller.
+        // GetByIdForTenantAsync está tenant-scoped por contrato (companyId + tenantId): una
+        // empresa de otro tenant nunca puede resolverse, sin importar si el id es válido o
+        // adivinable. El handler debe fallar en ese primer paso y nunca llegar a comprobar
+        // membresía ni crear ninguna sesión.
+        var f = new Fixture();
+        var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], CreatedBy);
+        var companyOfOtherTenant = Guid.NewGuid();
+        f.CurrentUser.Setup(c => c.IsAuthenticated).Returns(true);
+        f.CurrentUser.Setup(c => c.UserId).Returns(Guid.NewGuid());
+        f.CurrentTenant.Setup(c => c.TenantId).Returns(tenant.Id);
+        f.CompanyRepo
+            .Setup(r =>
+                r.GetByIdForTenantAsync(
+                    companyOfOtherTenant,
+                    tenant.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Company?)null);
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(
+            new SwitchCompanyCommand(companyOfOtherTenant),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no pertenece al tenant activo");
+        f.AccessRepo.Verify(
+            r =>
+                r.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<CreateAuthenticatedSessionCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public async Task SwitchCompany_UserSession_en_conflicto_devuelve_Result_Conflict()
     {
         var (f, tenant, company, user, _) = BuildValidSwitch();

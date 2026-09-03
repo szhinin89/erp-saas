@@ -232,6 +232,47 @@ public sealed class UpsertProfilePermissionsHandlerTests
     }
 
     [Fact]
+    public async Task Profile_belonging_to_another_tenant_is_rejected_as_not_found_and_nothing_is_saved()
+    {
+        // MEDIO cluster (auditoría multi-tenant): GetProfileByIdAsync está tenant-scoped por
+        // contrato (tenantId + profileId) — un perfil que pertenece a OTRO tenant nunca puede
+        // resolverse desde el tenant activo del caller, sin importar si el ProfileId es válido o
+        // adivinable. Distinto de "perfil inexistente": aquí el perfil sí existe, pero en otro
+        // tenant.
+        SetAssignerRole(SecurityRoles.Admin);
+        var profileOfAnotherTenant = Guid.NewGuid();
+        _repo
+            .Setup(x =>
+                x.GetProfileByIdAsync(
+                    TenantId,
+                    profileOfAnotherTenant,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((AccessProfile?)null);
+
+        var handler = CreateHandler();
+        var command = new UpsertProfilePermissionsCommand(
+            profileOfAnotherTenant,
+            new[] { new PermissionUpsertItem("access.profiles.view", true) }
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Perfil no existe");
+        _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _repo.Verify(
+            x =>
+                x.AddProfilePermissionAsync(
+                    It.IsAny<AccessProfilePermission>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public async Task Non_admin_assigner_without_resolvable_operational_context_is_forbidden()
     {
         SetAssignerRole("User");
