@@ -80,4 +80,27 @@ public sealed class GetElectronicDocumentQueryHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().BeNull();
     }
+
+    /// <summary>
+    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — cross-tenant explícito: GetBySourceAsync solo se
+    /// mockea para <see cref="TenantId"/> (equivalente al filtro EF fail-closed real); un actor
+    /// de otro tenant nunca matchea ese Setup, aunque el CompanyId activo coincida por accidente.
+    /// </summary>
+    [Fact]
+    public async Task Documento_de_otro_tenant_se_oculta_como_null()
+    {
+        var otherTenantId = Guid.NewGuid();
+        var sourceEntityId = Guid.NewGuid();
+        var document = CreateDocument(CompanyAId, sourceEntityId);
+        var f = new Fixture(activeCompanyId: CompanyAId);
+        f.Tenant.Setup(t => t.TenantId).Returns(otherTenantId);
+        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await f.BuildHandler()
+            .Handle(new GetElectronicDocumentQuery(SourceModule, sourceEntityId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value.Should().BeNull();
+    }
 }

@@ -99,4 +99,34 @@ public sealed class GetElectronicDocumentXmlQueryHandlerTests
             Times.Never
         );
     }
+
+    /// <summary>
+    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — cross-tenant explícito: GetBySourceAsync solo se
+    /// mockea para <see cref="TenantId"/> (equivalente al filtro EF fail-closed real); un actor
+    /// de otro tenant nunca matchea ese Setup y recibe NotFound sin tocar el storage.
+    /// </summary>
+    [Fact]
+    public async Task Xml_de_documento_de_otro_tenant_devuelve_NotFound_sin_leer_storage()
+    {
+        var otherTenantId = Guid.NewGuid();
+        var sourceEntityId = Guid.NewGuid();
+        var document = CreateDocumentWithDraftXml(CompanyAId, sourceEntityId);
+        var f = new Fixture(activeCompanyId: CompanyAId);
+        f.Tenant.Setup(t => t.TenantId).Returns(otherTenantId);
+        f.Repo.Setup(r => r.GetBySourceAsync(TenantId, SourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new GetElectronicDocumentXmlQuery(SourceModule, sourceEntityId, ElectronicDocumentXmlVariant.Draft),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        f.FileStorage.Verify(
+            s => s.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
 }

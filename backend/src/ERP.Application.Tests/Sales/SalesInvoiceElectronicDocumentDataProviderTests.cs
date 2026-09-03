@@ -245,6 +245,36 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         detail.Subtotal.Should().Be(50m);
     }
 
+    /// <summary>
+    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — frontera normativa: los datos del emisor del XML
+    /// (RUC/razón social) SIEMPRE vienen de <c>Company</c>/<c>SriSettings</c> (empresa emisora
+    /// real, company-scoped), NUNCA de <c>SystemProviderSettings</c> (proveedor tecnológico
+    /// global de AdminCore, ERP-CORE-CLOSEOUT-09). El constructor de
+    /// <see cref="SalesInvoiceElectronicDocumentDataProvider"/> ni siquiera declara una
+    /// dependencia de <c>ISystemProviderSettingsRepository</c> (ver <see cref="Mocks.BuildProvider"/>
+    /// — 6 dependencias, ninguna es ese repositorio) — esta prueba deja constancia explícita de
+    /// que <c>Issuer.TaxId</c>/<c>Issuer.LegalName</c> son exactamente los de la empresa activa,
+    /// para que un cambio futuro que intente inyectar el proveedor de sistema como si fuera el
+    /// emisor rompa aquí primero.
+    /// </summary>
+    [Fact]
+    public async Task GetDataAsync_Issuer_proviene_de_Company_y_SriSettings_nunca_de_SystemProviderSettings()
+    {
+        var invoice = BuildAuthorizedInvoiceWithPresentationLine();
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        // Mismos valores sembrados en SeedHappyPath para la empresa activa (Company.CreateManaged
+        // con RUC "1790012345001" / "Empresa Test S.A.") — nunca un RUC/razón social de proveedor
+        // de sistema, que este provider ni siquiera puede leer.
+        result.Value!.Issuer.TaxId.Should().Be("1790012345001");
+        result.Value.Issuer.LegalName.Should().Be("Empresa Test S.A.");
+    }
+
     // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) ──────────────────────────────
 
     private static SalesInvoiceDetail CreateAuthorizedLine(

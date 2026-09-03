@@ -326,6 +326,12 @@ A partir de este cierre, cualquier cambio al núcleo de `ElectronicDocuments` de
 - Todo cambio, incluso bajo una de las 4 causas permitidas, sigue el protocolo de gate ya establecido: ¿es un bug real? ¿existe evidencia? ¿es reproducible? ¿cuál es el riesgo? ¿qué impacto tiene? ¿rompe compatibilidad? — antes de tocar código.
 - Detalle completo de responsabilidades, límites, dependencias, interfaces públicas, estados, pipeline, eventos y deuda aceptada conscientemente: ver ADR-023.
 
+### Frontera: proveedor tecnológico global vs. empresa emisora (SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01)
+
+`SystemProviderSettings` (`ERP.Domain.Configuration.Entities`, singleton `Id=1`, sin `TenantId`/`CompanyId` — configurado desde AdminCore) es el registro del proveedor tecnológico del sistema ante el SRI (ERP-CORE-CLOSEOUT-09), **distinto y no intercambiable** con los datos del emisor de cada comprobante (`Company`/`SriSettings`/`Establishment`, siempre `TenantId`+`CompanyId` scoped). Hoy `SystemProviderSettings` **no se inyecta en ningún XML/RIDE** — `SalesInvoiceElectronicDocumentDataProvider` (el único ensamblador de `ElectronicDocumentData.Issuer`) no declara dependencia alguna de `ISystemProviderSettingsRepository`, y `InvoiceXmlBuilder`/`CreditNoteXmlBuilder` tampoco la conocen.
+
+Cuando se implemente la obligación normativa pendiente (Resolución NAC-DGERCGC26-00000027) de declarar el proveedor de sistema en el XML, el campo/elemento exacto donde va debe confirmarse contra la ficha técnica SRI vigente antes de tocar los XML builders — y el campo del **emisor** (`ruc`/`razonSocial` de `infoTributaria`) debe seguir viniendo exclusivamente de `Company`/`SriSettings` de la empresa activa, nunca de `SystemProviderSettings`. Regresión que protege esta frontera hoy: `SalesInvoiceElectronicDocumentDataProviderTests.GetDataAsync_Issuer_proviene_de_Company_y_SriSettings_nunca_de_SystemProviderSettings`.
+
 ---
 
 ## Auditoría por Dominio: Entity Audit (INMUTABLE) + Process Audit (diseño futuro)

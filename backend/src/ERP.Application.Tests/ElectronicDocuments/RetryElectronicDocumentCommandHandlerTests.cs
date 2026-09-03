@@ -211,6 +211,53 @@ public sealed class RetryElectronicDocumentCommandHandlerTests
         );
     }
 
+    /// <summary>
+    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — cross-tenant explícito: GetByIdAsync solo se mockea
+    /// para <see cref="TenantId"/> (equivalente al filtro EF fail-closed real); un actor de otro
+    /// tenant nunca matchea ese Setup y el reintento nunca se delega al issuer.
+    /// </summary>
+    [Fact]
+    public async Task Handle_when_document_belongs_to_another_tenant_returns_not_found()
+    {
+        var otherTenantId = Guid.NewGuid();
+        var document = NewReceivedDocument(OwningCompanyId);
+
+        var repository = new Mock<IElectronicDocumentRepository>();
+        repository
+            .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var issuer = new Mock<IElectronicDocumentIssuer>();
+
+        var otherTenant = new Mock<ICurrentTenant>();
+        otherTenant.SetupGet(t => t.TenantId).Returns(otherTenantId);
+
+        var handler = NewHandler(
+            issuer,
+            repository,
+            otherTenant,
+            CompanyContext(OwningCompanyId),
+            UserContext()
+        );
+
+        var result = await handler.Handle(
+            new RetryElectronicDocumentCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        issuer.Verify(
+            i =>
+                i.RetryAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
     [Fact]
     public async Task Handle_when_document_does_not_exist_returns_not_found()
     {

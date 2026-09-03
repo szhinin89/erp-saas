@@ -274,6 +274,57 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         result.Value!.Status.Should().Be(RideSourceXmlStatus.NotApplicable);
     }
 
+    /// <summary>
+    /// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — cross-tenant explícito para RIDE. Hallazgo de esta
+    /// fase: <see cref="ElectronicDocumentRideSourceXmlProvider.GetAuthorizedXmlAsync"/> recibe
+    /// <c>tenantId</c>/<c>companyId</c> como parámetros pero los ignora — delega en
+    /// <c>GetElectronicDocumentQuery</c>/<c>GetElectronicDocumentXmlQuery</c> vía MediatR, que
+    /// resuelven el tenant/empresa activos exclusivamente desde <c>ICurrentTenant</c>/
+    /// <c>ICurrentCompany</c> (el contexto ambiental real de la request, igual que en
+    /// producción). Por eso el aislamiento cross-tenant real se prueba aquí mutando el campo
+    /// ambiental <c>_tenantId</c> del fixture (lo que sí controla el filtro EF), no el argumento
+    /// del método — pasar un tenantId distinto como argumento sería un no-op y daría un falso
+    /// negativo.
+    /// </summary>
+    [Fact]
+    public async Task Authorized_document_is_never_returned_to_a_different_ambient_tenant()
+    {
+        const string xmlContent = "<factura>contenido de prueba</factura>";
+        var sourceEntityId = Guid.NewGuid();
+        var authorizedPath =
+            $"electronic-documents/{_tenantId:N}/invoice/{Guid.NewGuid():N}/authorized.xml";
+
+        await using (var scope = _serviceProvider.CreateAsyncScope())
+        {
+            var fileStorage =
+                scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>();
+            await using var contentStream = new MemoryStream(
+                System.Text.Encoding.UTF8.GetBytes(xmlContent)
+            );
+            await fileStorage.SaveAsync(authorizedPath, contentStream);
+
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var document = BuildAuthorizedDocument(sourceEntityId, authorizedPath);
+            db.ElectronicDocuments.Add(document);
+            await db.SaveChangesAsync();
+        }
+
+        var owningTenantId = _tenantId;
+        _tenantId = Guid.NewGuid();
+        try
+        {
+            var result = await GetAuthorizedXmlAsync(sourceEntityId);
+
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Status.Should().Be(RideSourceXmlStatus.NotApplicable);
+            result.Value.AuthorizedXml.Should().BeNull();
+        }
+        finally
+        {
+            _tenantId = owningTenantId;
+        }
+    }
+
     [Fact]
     public async Task Cancelled_document_returns_not_applicable()
     {
