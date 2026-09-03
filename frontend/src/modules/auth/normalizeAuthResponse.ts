@@ -64,5 +64,8 @@ export function normalizeAuthResponse(raw: AuthLike): AuthResponse {
       "passwordResetTokenExpiresIn",
       "PasswordResetTokenExpiresIn",
     ),
+    operatorMode: pickBoolean(raw, "operatorMode", "OperatorMode"),
+    globalAdminUserId:
+      pickString(raw, "globalAdminUserId", "GlobalAdminUserId") || null,
   };
 }

@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { getAccessToken } from "../lib/session/authTokenMemory";
 import { CompanyOperationalStatus } from "../types/auth";
+import { GLOBAL_TENANT_ID } from "../access/permissionUi";
 
 /** Rutas ERP operativas que exigen companyId. */
 function requiresCompanyContext(path: string): boolean {
@@ -30,6 +31,13 @@ export function ProtectedRoute() {
 
   const token = getAccessToken();
   const path = location.pathname;
+
+  // AdminGlobalCore Fase D.6: una sesión global sin operar empresa (tenant_id ==
+  // GLOBAL_TENANT_ID, sin companyId) nunca debe entrar al AppLayout operativo — solo llega
+  // aquí tras operate-company, momento en el que tenantId deja de ser GLOBAL_TENANT_ID.
+  if (isAuthenticated && user?.tenantId === GLOBAL_TENANT_ID && !user.companyId) {
+    return <Navigate to="/admin-core/dashboard" replace />;
+  }
 
   // Suspended company — block ERP access
   if (

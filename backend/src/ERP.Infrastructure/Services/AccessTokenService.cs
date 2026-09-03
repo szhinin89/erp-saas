@@ -56,6 +56,26 @@ public class AccessTokenService : IAccessTokenService
         return GenerateToken(userId, tenantId, role, DateTime.UtcNow.AddMinutes(expMinutes), []);
     }
 
+    public string GenerateSessionToken(
+        IdentityUser user,
+        Guid tenantId,
+        string role,
+        IEnumerable<Claim> extraClaims
+    )
+    {
+        var expMinutes = int.Parse(
+            _configuration["Jwt:ExpirationMinutes"] ?? "60",
+            CultureInfo.InvariantCulture
+        );
+        return GenerateToken(
+            user.Id,
+            tenantId,
+            role,
+            DateTime.UtcNow.AddMinutes(expMinutes),
+            IdentityClaims(user).Concat(extraClaims)
+        );
+    }
+
     /// <summary>
     /// Claims de identidad visible (nombre/email) embebidas en el token — snapshot al momento
     /// de emisión. Fuente única para <c>CurrentUserService.FullName</c>/<c>Email</c>, que a su

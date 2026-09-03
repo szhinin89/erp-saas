@@ -37,6 +37,16 @@ export const authService = {
       companyId,
     }).then(mapAuthResponse),
 
+  operateCompany: (companyId: string) =>
+    apiPost<Record<string, unknown>>("/api/v1/auth/global/operate-company", {
+      companyId,
+    }).then(mapAuthResponse),
+
+  returnToGlobal: () =>
+    apiPost<Record<string, unknown>>("/api/v1/auth/global/return", {}).then(
+      mapAuthResponse,
+    ),
+
   completePasswordReset: (payload: {
     passwordResetToken: string;
     newPassword: string;

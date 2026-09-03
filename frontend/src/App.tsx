@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminCoreProtectedRoute } from "./components/AdminCoreProtectedRoute";
 import { HomeRedirect } from "./components/HomeRedirect";
 import { AppLayout } from "./components/AppLayout";
+import { AdminCoreLayout } from "./modules/admin-core/components/AdminCoreLayout";
 import { ConfigProvider } from "./modules/config";
 import {
   publicRoutes,
@@ -10,6 +12,7 @@ import {
   catalogRoutes,
   companyManagementRoutes,
   accessRoutes,
+  adminCoreRoutes,
 } from "./routes";
 import { SessionBootstrap } from "./components/SessionBootstrap";
 import { registerGlobalNavigator } from "./lib/navigation/globalNavigator";
@@ -38,6 +41,11 @@ function AppRoutes() {
             {companyManagementRoutes}
             {accessRoutes}
           </Route>
+        </Route>
+
+        {/* AdminGlobalCore — shell separado, nunca anidado dentro de AppLayout/ProtectedRoute */}
+        <Route element={<AdminCoreProtectedRoute />}>
+          <Route element={<AdminCoreLayout />}>{adminCoreRoutes}</Route>
         </Route>
 
         <Route path="*" element={<HomeRedirect />} />

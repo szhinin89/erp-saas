@@ -6,3 +6,14 @@
   top: 0;
   z-index: 40;
 }
+
+/* ── AdminGlobalCore operator banner ─────────────────────────── */
+.app-operatorBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.app-operatorBanner .zh-page-notice {
+  flex: 1;
+}

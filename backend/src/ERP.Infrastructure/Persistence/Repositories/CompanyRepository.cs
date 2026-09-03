@@ -117,6 +117,15 @@ public sealed class CompanyRepository : ICompanyRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Company>> GetAllForAdminCoreAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .Companies.AsPlatformQuery()
+            .AsNoTracking()
+            .OrderBy(c => c.LegalName)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(Company company, CancellationToken cancellationToken = default) =>
         await _db.Companies.AddAsync(company, cancellationToken);
 

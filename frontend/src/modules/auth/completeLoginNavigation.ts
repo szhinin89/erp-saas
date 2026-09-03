@@ -20,7 +20,7 @@ export function completeLoginNavigation(
     payload.tenantId === GLOBAL_TENANT_ID && !payload.companyId;
 
   if (isGlobalCoreSession) {
-    navigate("/companies/new", { replace: true });
+    navigate("/admin-core/dashboard", { replace: true });
     return;
   }
 

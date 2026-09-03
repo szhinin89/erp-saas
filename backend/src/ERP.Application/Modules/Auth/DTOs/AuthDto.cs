@@ -59,4 +59,14 @@ public record AuthResponseDto(
 
     /// <summary>Segundos de vigencia de PasswordResetToken desde esta respuesta.</summary>
     public int? PasswordResetTokenExpiresIn { get; init; }
+
+    /// <summary>
+    /// AdminGlobalCore: true cuando esta sesión operativa fue emitida por
+    /// <c>POST /auth/global/operate-company</c> (admin global operando una empresa). El frontend
+    /// muestra el banner "AdminGlobalCore operando empresa" con acción "Volver al Admin Core".
+    /// </summary>
+    public bool OperatorMode { get; init; }
+
+    /// <summary>Id del IdentityUser admin global dueño de la sesión, solo presente si OperatorMode=true.</summary>
+    public Guid? GlobalAdminUserId { get; init; }
 }

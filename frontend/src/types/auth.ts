@@ -43,4 +43,8 @@ export interface AuthResponse {
   passwordResetToken?: string | null;
   /** Segundos de vigencia de passwordResetToken desde esta respuesta. */
   passwordResetTokenExpiresIn?: number | null;
+  /** AdminGlobalCore: true cuando esta sesión operativa fue emitida por operate-company. */
+  operatorMode?: boolean | null;
+  /** Id del admin global dueño de la sesión, solo presente si operatorMode=true. */
+  globalAdminUserId?: string | null;
 }

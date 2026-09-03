@@ -1,0 +1,12 @@
+.admin-core-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-3) 0;
+}
+
+.admin-core-header-brand {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-size: var(--text-title-sm-size, 16px);
+}

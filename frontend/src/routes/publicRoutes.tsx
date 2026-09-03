@@ -25,6 +25,10 @@ const CompletePasswordResetPage = lazyNamedPage(
   () => import("../modules/auth/pages/CompletePasswordResetPage"),
   "CompletePasswordResetPage",
 );
+const AdminCoreLoginPage = lazyNamedPage(
+  () => import("../modules/admin-core/pages/AdminCoreLoginPage"),
+  "AdminCoreLoginPage",
+);
 
 export const publicRoutes = [
   <Route key="login" path="/login" element={<LoginPage />} />,
@@ -50,4 +54,10 @@ export const publicRoutes = [
   />,
   // First-run ERP setup
   <Route key="setup" path="/setup" element={<SetupPage />} />,
+  // AdminGlobalCore — shell separado del ERP operativo
+  <Route
+    key="admin-core-login"
+    path="/admin-core/login"
+    element={<AdminCoreLoginPage />}
+  />,
 ];

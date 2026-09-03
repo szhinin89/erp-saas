@@ -55,6 +55,11 @@ public interface ICompanyRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>AdminGlobalCore: todas las empresas de todos los tenants (activas e inactivas), para el dashboard global.</summary>
+    Task<IReadOnlyList<CompanyEntity>> GetAllForAdminCoreAsync(
+        CancellationToken cancellationToken = default
+    );
+
     Task AddAsync(CompanyEntity company, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

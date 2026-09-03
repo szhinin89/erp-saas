@@ -237,15 +237,18 @@ export function LoginPage() {
                   </>
                 )}
               </button>
-  
-            <button
-              type="button"
-              className="lp-forgot-link"
-              onClick={onGlobalLogin}
-              disabled={loading}
-            >
-              Ingresar como administrador global
-            </button>          </form>
+
+              {import.meta.env.DEV ? (
+                <button
+                  type="button"
+                  className="lp-forgot-link"
+                  onClick={onGlobalLogin}
+                  disabled={loading}
+                >
+                  Ingresar como administrador global (dev)
+                </button>
+              ) : null}
+            </form>
           </div>
 
           {/* Card footer */}

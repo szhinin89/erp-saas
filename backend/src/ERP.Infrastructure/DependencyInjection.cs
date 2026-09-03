@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentCompany, CurrentCompanyService>();
         services.AddScoped<ICurrentBranch, CurrentBranchService>();
+        services.AddScoped<ICurrentOperatorContext, CurrentOperatorContextService>();
         services.AddScoped<
             ICurrentCashSession,
             ERP.Infrastructure.Services.CurrentCashSessionService
