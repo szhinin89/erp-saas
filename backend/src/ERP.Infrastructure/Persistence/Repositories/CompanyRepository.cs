@@ -1,6 +1,7 @@
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -19,7 +20,7 @@ public sealed class CompanyRepository : ICompanyRepository
     public Task<Company?> GetTrackedByIdForIntegrationAsync(
         Guid id,
         CancellationToken cancellationToken = default
-    ) => _db.Companies.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    ) => _db.Companies.AsPlatformQuery().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     public Task<Company?> GetByTenantAndTaxIdentificationNumberAsync(
         Guid tenantId,
@@ -39,7 +40,7 @@ public sealed class CompanyRepository : ICompanyRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .Companies.IgnoreQueryFilters()
+            .Companies.AsPlatformQuery()
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 c => c.TaxIdentificationNumber == taxIdentificationNumber,
@@ -76,7 +77,7 @@ public sealed class CompanyRepository : ICompanyRepository
         CancellationToken cancellationToken = default
     ) =>
         await _db
-            .Companies.IgnoreQueryFilters()
+            .Companies.AsPlatformQuery()
             .AsNoTracking()
             .Where(c => c.TenantId == tenantId && c.IsActive)
             .OrderBy(c => c.LegalName)
@@ -93,7 +94,7 @@ public sealed class CompanyRepository : ICompanyRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .Companies.IgnoreQueryFilters()
+            .Companies.AsPlatformQuery()
             .Include(c => c.TaxRegime)
             .AsNoTracking()
             .FirstOrDefaultAsync(
@@ -110,7 +111,7 @@ public sealed class CompanyRepository : ICompanyRepository
             return Array.Empty<Company>();
 
         return await _db
-            .Companies.IgnoreQueryFilters()
+            .Companies.AsPlatformQuery()
             .AsNoTracking()
             .Where(c => companyIds.Contains(c.Id) && c.IsActive)
             .ToListAsync(cancellationToken);

@@ -17,6 +17,7 @@ public sealed class CreateCompanyUserPreferencesHandler
     private readonly IBranchRepository _branchRepository;
     private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
     private readonly ICompanyUserPreferencesRepository _preferencesRepository;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
 
     public CreateCompanyUserPreferencesHandler(
@@ -25,6 +26,7 @@ public sealed class CreateCompanyUserPreferencesHandler
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
         ICompanyUserPreferencesRepository preferencesRepository,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser
     )
     {
@@ -33,6 +35,7 @@ public sealed class CreateCompanyUserPreferencesHandler
         _branchRepository = branchRepository;
         _companyUserBranchRepository = companyUserBranchRepository;
         _preferencesRepository = preferencesRepository;
+        _currentCompany = currentCompany;
         _currentUser = currentUser;
     }
 
@@ -45,7 +48,14 @@ public sealed class CreateCompanyUserPreferencesHandler
             command.CompanyUserMembershipId,
             cancellationToken
         );
-        if (membership is null)
+        // ACCESS-SCOPE-HARDENING-01 — defensa en profundidad: GetCompanyUserMembershipByIdAsync
+        // bypasea el filtro global (busca solo por Id, sin TenantId/CompanyId). Este comando es
+        // internal-only hoy (invocado únicamente por UpsertCompanyUserMembershipHandler con un Id
+        // recién creado, y por UpdateCompanyUserPreferencesAdminHandler, que ya valida
+        // membership.CompanyId antes de despachar) — este re-check no cambia su comportamiento
+        // actual, pero evita que un futuro caller sin ese pre-check cree preferencias (incluido
+        // DefaultBranchId) para una membresía de otra empresa.
+        if (membership is null || membership.CompanyId != _currentCompany.CompanyId)
             return Result<CompanyUserPreferencesDto>.NotFound("La membresía no existe.");
 
         if (

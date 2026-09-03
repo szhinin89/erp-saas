@@ -181,10 +181,12 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         public Mock<IBranchRepository> BranchRepository { get; } = new();
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepository { get; } = new();
         public Mock<ICompanyUserPreferencesRepository> PreferencesRepository { get; } = new();
+        public Mock<ICurrentCompany> CurrentCompany { get; } = new();
         public Mock<ICurrentUser> CurrentUser { get; } = new();
 
-        public Fixture()
+        public Fixture(Guid? activeCompanyId = null)
         {
+            CurrentCompany.SetupGet(x => x.CompanyId).Returns(activeCompanyId ?? CompanyId);
             CurrentUser.SetupGet(x => x.UserId).Returns(ActorUserId);
         }
 
@@ -195,6 +197,7 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
                 BranchRepository.Object,
                 CompanyUserBranchRepository.Object,
                 PreferencesRepository.Object,
+                CurrentCompany.Object,
                 CurrentUser.Object
             );
     }
@@ -291,6 +294,38 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         f.PreferencesRepository.Verify(
             r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    /// <summary>
+    /// ACCESS-SCOPE-HARDENING-01 — defensa en profundidad: AccessRepository.GetCompanyUserMembershipByIdAsync
+    /// bypasea el filtro global (busca solo por Id). Una membresía de OTRA empresa nunca debe poder
+    /// crear preferencias operativas (incluido DefaultBranchId) vía este comando, aunque el
+    /// repositorio la devuelva.
+    /// </summary>
+    [Fact]
+    public async Task Membership_de_otra_empresa_devuelve_NotFound_y_no_persiste()
+    {
+        var otherCompanyId = Guid.NewGuid();
+        var f = new Fixture(activeCompanyId: otherCompanyId);
+        var membership = Membership(); // CompanyId == CompanyId (constante de la clase)
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(Command(membership.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        f.PreferencesRepository.Verify(
+            r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.PreferencesRepository.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

@@ -1,6 +1,7 @@
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -28,7 +29,7 @@ public sealed class BranchRepository : IBranchRepository
         // JWT/ICurrentTenant/ICurrentCompany — sin esto, cualquier login sin preferencias devuelve
         // 0 sucursales siempre. El WHERE explícito por tenantId de abajo sigue siendo la autoridad
         // real de scoping, igual que en AccessRepository/UserSessionRepository/CompanyUserBranchRepository.
-        var q = _context.Branches.IgnoreQueryFilters().AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.Branches.AsPlatformQuery().AsQueryable().Where(x => x.TenantId == tenantId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)
@@ -58,7 +59,7 @@ public sealed class BranchRepository : IBranchRepository
         // IgnoreQueryFilters: mismo patrón que GetAsync, pero aquí el alcance operativo
         // sí exige empresa activa explícita para no mezclar sucursales de otras empresas del tenant.
         var q = _context
-            .Branches.IgnoreQueryFilters()
+            .Branches.AsPlatformQuery()
             .AsQueryable()
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId);
 
@@ -89,7 +90,7 @@ public sealed class BranchRepository : IBranchRepository
         // llama esto durante el login (revalidación de DefaultBranchId), antes de que exista contexto
         // de tenant/company. El WHERE explícito por tenantId sigue siendo la autoridad real.
         _context
-            .Branches.IgnoreQueryFilters()
+            .Branches.AsPlatformQuery()
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
 
     public Task<Branch?> GetByIdForCompanyAsync(
@@ -99,7 +100,7 @@ public sealed class BranchRepository : IBranchRepository
         CancellationToken cancellationToken = default
     ) =>
         _context
-            .Branches.IgnoreQueryFilters()
+            .Branches.AsPlatformQuery()
             .FirstOrDefaultAsync(
                 x => x.TenantId == tenantId && x.CompanyId == companyId && x.Id == id,
                 cancellationToken

@@ -14,14 +14,10 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
         "src/ERP.Infrastructure/MasterData/Reconciliation/BusinessPartnerReconciliationService.cs", // platform-level reconciliation
         "src/ERP.Infrastructure/Persistence/Repositories/AccessRepository.cs", // access checks need cross-tenant visibility
-        "src/ERP.Infrastructure/Persistence/Repositories/BranchRepository.cs", // login flow: GetAsync/GetByIdAsync se invocan antes de que exista ICurrentTenant/ICurrentCompany ambiente confiable, misma razón que AccessRepository/CompanyUserBranchRepository
         "src/ERP.Infrastructure/Persistence/Repositories/UserSessionRepository.cs", // login flow: se invoca antes de que exista ICurrentCompany ambiente confiable, misma razón que AccessRepository
         "src/ERP.Infrastructure/Persistence/Repositories/CompanyUserBranchRepository.cs", // idem — selección de sucursal ocurre durante el propio login
-        "src/ERP.Infrastructure/Persistence/Repositories/CompanyRepository.cs", // company bootstrap needs cross-tenant
         "src/ERP.Infrastructure/Persistence/Repositories/EmissionPointRepository.cs",
         "src/ERP.Infrastructure/Persistence/Repositories/EstablishmentRepository.cs",
-        "src/ERP.Infrastructure/Persistence/Repositories/ProductCatalogRepository.cs",
-        "src/ERP.Infrastructure/Persistence/Repositories/TenantRepository.cs", // tenant lookup is cross-tenant by nature
         "src/ERP.Infrastructure/Persistence/Repositories/DocumentSequenceRepository.cs", // advisory lock + transaction propia: bypass intencional para find-or-create atómico
         "src/ERP.Infrastructure/Seeding/Steps/OrganizationBootstrapStep.cs", // bootstrap needs cross-tenant visibility
         "src/ERP.Infrastructure/Seeding/Steps/ElectronicDocumentsBootstrapStep.cs", // idem
@@ -37,8 +33,6 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/Steps/CajaBootstrapStep.cs", // bootstrap needs cross-tenant visibility
         "src/ERP.Infrastructure/Persistence/Repositories/CompanyUserPreferencesRepository.cs", // login flow: se resuelve antes de ICurrentCompany ambiente confiable
         "src/ERP.Infrastructure/Persistence/Repositories/Configuration/OrgSettingsRepository.cs", // filtros explícitos por tenantId/companyId; jerarquía de scope no depende del query filter ambiental
-        "src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockAdjustmentRepository.cs", // filtro explícito por tenantId; secuencial debe considerar registros deshabilitados, no depende del query filter ambiental
-        "src/ERP.Infrastructure/Persistence/Repositories/Inventory/InventoryAdjustmentReasonRepository.cs", // INVENTORY-ADJUSTMENTS-02: uniqueness check de Code por tenant debe considerar motivos deshabilitados; filtro explícito TenantId reaplicado
         "src/ERP.Infrastructure/Seeding/E2E/E2ESeedService.cs", // provisioning E2E fuera de Production, bajo bandera explícita: mismo motivo que los *BootstrapStep (bootstrap needs cross-tenant visibility)
         "src/ERP.API/Health/MembershipConsistencyHealthCheck.cs", // health check sin contexto de tenant: mismo motivo que BusinessPartnerReconciliationService (chequeo de integridad cross-tenant de solo lectura)
         "src/ERP.Infrastructure/Seeding/MasterDataClassificationSeeder.cs", // CLASS-BP-CATALOGS-01: reutilizado por bootstrap step (request-scoped) y backfill (multi-tenant, sin contexto HTTP ambiente); filtro explícito TenantId+CompanyId, fail-closed
