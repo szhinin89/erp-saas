@@ -95,13 +95,14 @@ public sealed class CashSessionRepository : ICashSessionRepository
 
     public async Task<(IReadOnlyList<CashSession> Items, int Total)> GetPagedAsync(
         Guid tenantId,
+        Guid branchId,
         string? status,
         int page,
         int pageSize,
         CancellationToken ct = default
     )
     {
-        var q = Scoped(tenantId);
+        var q = Scoped(tenantId).Where(x => x.BranchId == branchId);
 
         if (
             !string.IsNullOrWhiteSpace(status)

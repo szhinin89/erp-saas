@@ -75,11 +75,13 @@ public sealed class GetCashSessionListHandler
 {
     private readonly ICashSessionRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
 
-    public GetCashSessionListHandler(ICashSessionRepository repo, ICurrentTenant t)
+    public GetCashSessionListHandler(ICashSessionRepository repo, ICurrentTenant t, ICurrentBranch b)
     {
         _repo = repo;
         _t = t;
+        _b = b;
     }
 
     public async Task<Result<CashSessionListResponse>> Handle(
@@ -89,6 +91,7 @@ public sealed class GetCashSessionListHandler
     {
         var (items, total) = await _repo.GetPagedAsync(
             _t.TenantId,
+            _b.BranchId,
             q.Status,
             q.PageNumber,
             q.PageSize,

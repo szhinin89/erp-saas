@@ -371,4 +371,75 @@ public sealed class CashSessionBranchScopeTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Id.Should().Be(session.Id);
     }
+
+    // ── GetCashSessionListHandler ────────────────────────────────────────
+
+    /// <summary>
+    /// Hallazgo ALTO auditoría de aislamiento (Caja): GetCashSessionListQuery está marcada
+    /// IBranchScopedRequest, pero el handler no pasaba la sucursal activa al repositorio — el
+    /// listado de sesiones de caja exponía sesiones de otras sucursales de la misma empresa. Ahora
+    /// el handler pasa <c>_b.BranchId</c> a <c>GetPagedAsync</c>, que filtra en base de datos.
+    /// </summary>
+    [Fact]
+    public async Task Listar_pasa_la_sucursal_activa_al_repositorio()
+    {
+        var repo = new Mock<ICashSessionRepository>();
+        repo.Setup(r =>
+                r.GetPagedAsync(TenantId, BranchAId, null, 1, 25, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((new List<CashSession> { CreateOpenSession(BranchAId) }, 1));
+
+        var handler = new GetCashSessionListHandler(
+            repo.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == BranchAId)
+        );
+
+        var result = await handler.Handle(new GetCashSessionListQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Total.Should().Be(1);
+        repo.Verify(
+            r => r.GetPagedAsync(TenantId, BranchAId, null, 1, 25, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        // No debe consultarse jamás con la sucursal B ni sin sucursal (comportamiento previo al fix).
+        repo.Verify(
+            r =>
+                r.GetPagedAsync(
+                    It.IsAny<Guid>(),
+                    It.Is<Guid>(b => b != BranchAId),
+                    It.IsAny<string?>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    /// <summary>Cambiar la sucursal activa a B debe pasar BranchB al repositorio — nunca reutilizar A.</summary>
+    [Fact]
+    public async Task Listar_en_sucursal_B_pasa_BranchB_y_no_BranchA()
+    {
+        var repo = new Mock<ICashSessionRepository>();
+        repo.Setup(r =>
+                r.GetPagedAsync(TenantId, BranchBId, null, 1, 25, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((new List<CashSession> { CreateOpenSession(BranchBId) }, 1));
+
+        var handler = new GetCashSessionListHandler(
+            repo.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == BranchBId)
+        );
+
+        var result = await handler.Handle(new GetCashSessionListQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        repo.Verify(
+            r => r.GetPagedAsync(TenantId, BranchBId, null, 1, 25, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
 }

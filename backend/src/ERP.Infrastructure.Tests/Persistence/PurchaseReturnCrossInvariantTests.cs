@@ -383,6 +383,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             NullLogger<CancelPurchaseHandler>.Instance,
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentCompany(() => _companyId),
+            new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId)
         );
 
@@ -798,6 +799,13 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         public Guid CompanyId => companyId();
         public bool IsAuthenticated => true;
         public bool HasCompanyContext => true;
+    }
+
+    private sealed class FixedCurrentBranch(Func<Guid> branchId) : ICurrentBranch
+    {
+        public Guid BranchId => branchId();
+        public bool IsAuthenticated => true;
+        public bool HasBranchContext => true;
     }
 
     private sealed class FixedCurrentUser(Guid userId) : ICurrentUser

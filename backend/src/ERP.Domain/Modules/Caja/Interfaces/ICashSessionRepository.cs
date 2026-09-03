@@ -42,6 +42,7 @@ public interface ICashSessionRepository
     );
     Task<(IReadOnlyList<CashSession> Items, int Total)> GetPagedAsync(
         Guid tenantId,
+        Guid branchId,
         string? status,
         int page,
         int pageSize,
