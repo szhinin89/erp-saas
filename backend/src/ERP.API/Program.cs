@@ -376,6 +376,28 @@ builder.Services.AddAuthorization(options =>
                 })
     );
 
+    options.AddPolicy(
+        "PlatformAdmin",
+        policy =>
+            policy.RequireAuthenticatedUser()
+                .RequireAssertion(context =>
+                {
+                    var hasGlobalTenant = context.User.HasClaim(
+                        "tenant_id",
+                        Guid.Empty.ToString()
+                    );
+
+                    var hasAdminRole =
+                        context.User.IsInRole(SecurityRoles.Admin)
+                        || context.User.Claims.Any(c =>
+                            (c.Type == ClaimTypes.Role || c.Type == "role")
+                            && c.Value == SecurityRoles.Admin
+                        );
+
+                    return hasGlobalTenant && hasAdminRole;
+                })
+    );
+
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
     options.DefaultPolicy = options.GetPolicy("Session")!;
 });

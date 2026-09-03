@@ -4,7 +4,6 @@ using ERP.API.Extensions;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSystemProviderSettings;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSystemProviderSettings;
-using ERP.Domain.Kernel.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,8 +14,9 @@ namespace ERP.API.Controllers;
 /// ERP-CORE-CLOSEOUT-09 — datos del proveedor del sistema de facturación electrónica (quién
 /// construyó/mantiene el software). Deliberadamente NO company-scoped: es un dato único por
 /// instancia del ERP, distinto del emisor de cada comprobante (<c>Company</c>/<c>SriSettings</c>,
-/// que sí son por empresa). Acceso: Admin del tenant únicamente — mismo patrón de autorización
-/// que <see cref="SecurityController"/>.
+/// que sí son por empresa). Acceso: solo AdminGlobalCore (tenant_id == Guid.Empty + rol Admin) —
+/// un Admin de tenant/empresa normal NO debe leer ni modificar este singleton compartido por
+/// todas las empresas del SaaS. Ver policy "PlatformAdmin" en Program.cs.
 /// </summary>
 [AppFeature(
     "Proveedor de sistema",
@@ -29,8 +29,7 @@ namespace ERP.API.Controllers;
 )]
 [ApiController]
 [Route("api/v1/system/provider-settings")]
-[Authorize(Policy = "Session")]
-[Authorize(Roles = SecurityRoles.Admin)]
+[Authorize(Policy = "PlatformAdmin")]
 [Produces("application/json")]
 public sealed class SystemProviderSettingsController : ControllerBase
 {
