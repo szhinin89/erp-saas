@@ -31,16 +31,24 @@ public sealed record SupplierPaymentsListResponse(
 
 // ── Queries ─────────────────────────────────────────────────────────────
 
+/// <summary>
+/// PAYABLES-BRANCH-SCOPE-DECISION-01 — CxP/pagos a proveedor son company-level, no branch-level
+/// (decisión de negocio): un pago a proveedor pertenece a la empresa, no a una sucursal operativa
+/// concreta (el <c>BranchId</c> que registra el pago es solo trazabilidad de origen, no un filtro de
+/// acceso). Marcado <see cref="ICompanyScopedRequest"/> (no <c>IBranchScopedRequest</c>) para no
+/// exigir sucursal activa al consultar.
+/// </summary>
 public sealed record GetSupplierPaymentByIdQuery(Guid Id)
     : IRequest<Result<SupplierPaymentDto>>,
-        IBranchScopedRequest;
+        ICompanyScopedRequest;
 
+/// <summary>PAYABLES-BRANCH-SCOPE-DECISION-01 — ver <see cref="GetSupplierPaymentByIdQuery"/>.</summary>
 public sealed record GetSupplierPaymentsListQuery(
     Guid? SupplierId = null,
     string? Status = null,
     int Page = 1,
     int PageSize = 25
-) : IRequest<Result<SupplierPaymentsListResponse>>, IBranchScopedRequest;
+) : IRequest<Result<SupplierPaymentsListResponse>>, ICompanyScopedRequest;
 
 // ── Handlers ────────────────────────────────────────────────────────────
 

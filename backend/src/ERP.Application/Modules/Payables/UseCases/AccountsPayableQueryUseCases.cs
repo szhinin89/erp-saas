@@ -69,10 +69,16 @@ public sealed record AccountsPayableDetailDto(
 
 // ── Queries ─────────────────────────────────────────────────────────────
 
+/// <summary>
+/// PAYABLES-BRANCH-SCOPE-DECISION-01 — CxP es company-level, no branch-level (decisión de negocio):
+/// una cuota o pago a proveedor pertenece a la empresa, no a una sucursal operativa concreta. Marcado
+/// <see cref="ICompanyScopedRequest"/> (no <c>IBranchScopedRequest</c>) para no exigir sucursal activa.
+/// </summary>
 public sealed record GetAccountsPayableByIdQuery(Guid Id)
     : IRequest<Result<AccountsPayableDetailDto>>,
-        IBranchScopedRequest;
+        ICompanyScopedRequest;
 
+/// <summary>PAYABLES-BRANCH-SCOPE-DECISION-01 — ver <see cref="GetAccountsPayableByIdQuery"/>.</summary>
 public sealed record GetAccountsPayablesListQuery(
     Guid? SupplierId = null,
     string? OriginType = null,
@@ -82,7 +88,7 @@ public sealed record GetAccountsPayablesListQuery(
     string? Search = null,
     int Page = 1,
     int PageSize = 25
-) : IRequest<Result<AccountsPayablesListResponse>>, IBranchScopedRequest;
+) : IRequest<Result<AccountsPayablesListResponse>>, ICompanyScopedRequest;
 
 public sealed record AccountsPayablesListResponse(
     IReadOnlyList<AccountsPayableListItemDto> Items,

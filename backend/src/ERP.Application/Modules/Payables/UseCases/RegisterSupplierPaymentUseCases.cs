@@ -107,6 +107,14 @@ public sealed record SupplierPaymentDto(
 /// (sin Draft — SUPPLIER-PAYMENTS-AUDIT-15A/FOUNDATION-15B), aplicándolo contra una o más
 /// <c>AccountsPayableInstallment</c>. Independiente de <c>RegisterCollectionCommand</c>
 /// (Payment/PaymentApplicationLine, Collections/CxC) — no lo reutiliza ni lo toca.
+/// PAYABLES-BRANCH-SCOPE-DECISION-01 — a diferencia de las queries de lectura de este módulo (ver
+/// <c>GetSupplierPaymentByIdQuery</c>), este Command SÍ se mantiene <c>IBranchScopedRequest</c>
+/// deliberadamente: <c>SupplierPayment.Create()</c> exige <c>branchId != Guid.Empty</c> como
+/// invariante de dominio (registra desde qué sucursal se emitió el pago, por trazabilidad — no como
+/// filtro de acceso), así que el handler necesita una sucursal activa válida para poder construir el
+/// agregado, aunque la autorización real (destino financiero, cuota, CxP) siga siendo 100%
+/// company-level. No mueve caja/banco por sucursal — ningún dato se filtra ni se restringe por
+/// <c>BranchId</c>.
 /// </summary>
 public sealed record RegisterSupplierPaymentCommand(
     Guid SupplierId,
