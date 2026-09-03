@@ -22,7 +22,7 @@ El módulo de Gastos ya cuenta con, verificado en código:
 
 ## Hallazgos principales
 
-- **Retenciones no existen en Expenses.** `ExpenseLine`/`ExpenseDocument` no tienen campos de retención. El motor (`AccountsPayable.ApplyRetention()`/`ReverseRetention()`, `RetentionCalculator` de Purchases) ya existe y es reutilizable, pero nunca se invoca desde el flujo de Gastos.
+- **Retenciones no existen en Expenses.** El motor (`AccountsPayable.ApplyRetention()`/`ReverseRetention()`, `RetentionCalculator` de Purchases) ya existe y es reutilizable, pero nunca se invoca desde el flujo de Gastos. **Corrección de diseño (2026-09-03):** la propuesta original de E1 modelaba la retención como campos directos en `ExpenseLine`/`ExpenseDocument`. Esa arquitectura fue rediseñada — retención es un proceso tributario transversal, no propiedad de un documento específico. Ver [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md).
 - **`AuthorizationMode` puede bloquear confirmación sin flujo Approve/Reject.** El campo existe en `DocumentFlowPolicy`, pero su enforcement actual (`DocumentFlowPolicyService.EnsureConfirmationFlowAsync`) simplemente lanza excepción y bloquea confirmar si `AuthorizationMode != None` — no existe estado `PendingApproval` ni comando Approve/Reject. Es una trampa operativa activable hoy sin darse cuenta.
 - **`RequiresAttachment` existe pero no se valida.** Campo declarado en `DocumentFlowPolicy`, nunca enforced en ningún handler de Expenses — a diferencia de `RequiresCancellationReason`, que sí está implementado. Genera falsa sensación de control si se activa.
 - **No hay reportes operativos de Gastos** (por categoría, proveedor, estado, pendientes de pago). Purchases sí tiene su "Reporte de Compras" equivalente.
@@ -34,7 +34,7 @@ El módulo de Gastos ya cuenta con, verificado en código:
 
 ## Roadmap aprobado
 
-- **E1** — Retenciones básicas IVA.
+- **E1** — Retenciones básicas IVA, mediante el módulo transversal `Retentions`. Gastos es el primer consumidor. Ver [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md) para arquitectura, entidades, estados, fases (E1-A a E1-G) y decisiones aprobadas — este roadmap ya no detalla su diseño interno.
 - **E2** — Retención de renta + comprobante de retención PDF, sin XML SRI.
 - **E3** — Adjuntos obligatorios.
 - **E4** — Reporte de Gastos v1.
@@ -46,7 +46,7 @@ El módulo de Gastos ya cuenta con, verificado en código:
 
 ## Orden recomendado de ejecución
 
-1. **E1** — Retenciones IVA.
+1. **E1** — Retenciones IVA vía el módulo `Retentions` (ver [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md)), primer consumidor Gastos.
 2. **E9** — Tests base del ciclo actual, en paralelo/inmediato a E1 (deuda ya existente, independiente de fases nuevas).
 3. **E3** — Adjuntos obligatorios.
 4. **E4** — Reporte de Gastos v1.
@@ -71,20 +71,11 @@ El módulo de Gastos ya cuenta con, verificado en código:
 
 ## Detalle de fases E1–E9
 
-### E1 — Retenciones básicas (IVA)
+### E1 — Retenciones básicas (IVA), vía módulo transversal `Retentions`
 
-**Impacto funcional:** hoy el CxP generado al confirmar un gasto queda por el bruto en vez del neto de retención, y no se genera asiento de retención. Para cualquier gasto con proveedor sujeto a retención de IVA, el pasivo y la contabilidad quedan incorrectos desde el día 1.
+**Rediseñada (2026-09-03).** El detalle completo de arquitectura, agregado `RetentionDocument`, entidad `RetentionDocumentLine`, estados/transiciones, flujo desde Gastos, flujo futuro desde Compras, impacto en CxP/contabilidad, fases de implementación (E1-A a E1-G), riesgos y decisiones aprobadas está documentado en [`RETENTIONS-MODULE-DESIGN-01.md`](./RETENTIONS-MODULE-DESIGN-01.md) — no se repite aquí para evitar dos fuentes de verdad.
 
-**Evidencia:**
-- `backend/src/ERP.Domain/Modules/Expenses/Entities/ExpenseLine.cs` — sin campos `WithholdingBase`/`WithholdingPct`/`WithholdingAmount`.
-- `AccountsPayable.ApplyRetention()` / `ReverseRetention()` — `backend/src/ERP.Domain/.../AccountsPayable.cs:239-254` — motor genérico ya existe, nunca invocado desde Expenses.
-- `RetentionCalculator` / `IRetentionCodeResolver` — `backend/src/ERP.Domain/Modules/Purchases/Services/RetentionCalculator.cs` — usado hoy solo por `IssueWithholdingUseCases.cs` de Purchases.
-- `ExpenseDocumentConfirmUseCases.cs:182-205` (`CreateAccountsPayableFromOriginRequest`) — punto de integración para el cálculo de retención antes de crear el CxP.
-- `ExpenseDocumentConfirmedPostingTranslator.cs:8-17` — traductor de posting donde debe añadirse la línea contable de retención.
-
-**Alcance:** agregar campos de retención a `ExpenseLine`/`ExpenseDocument` (base imponible, % SRI vía catálogo/config, monto); reutilizar `RetentionCalculator`; invocar `AccountsPayable.ApplyRetention()` al confirmar; extender los traductores de posting confirmado y cancelado (reverso).
-
-**Fuera de alcance:** retención de renta (E2), comprobante imprimible/XML (E2/E8), UI más allá de la captura mínima del dato de retención.
+**Resumen:** Retenciones deja de plantearse como campos directos en `ExpenseLine`/`ExpenseDocument` y pasa a ser un módulo independiente (`ERP.Domain/Modules/Retentions`, etc.) con relación genérica a su documento origen (`SourceDocumentType`/`SourceDocumentId`). Gastos es el primer consumidor implementado; Compras sigue usando `IssuedWithholding` sin cambios hasta una fase de migración separada. Emisión manual y explícita sobre un gasto ya confirmado.
 
 ### E2 — Retención de renta + comprobante de retención (PDF, sin XML SRI)
 
