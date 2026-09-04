@@ -564,8 +564,15 @@ public static class DependencyInjection
             ERP.Application.Modules.Ride.Parsers.IRideXmlParser,
             ERP.Application.Modules.Ride.Parsers.CreditNoteRideXmlParser
         >();
-        // Los demás tipos de comprobante (DebitNote, Retention, ShippingGuide, ...) añadirán su
-        // propio IRideXmlParser aquí — nunca tocar el resolver.
+        // Los demás tipos de comprobante (DebitNote, ShippingGuide, ...) añadirán su propio
+        // IRideXmlParser aquí — nunca tocar el resolver.
+        // RETENTIONS-RIDE-TEMPLATE-03C: Retención NO se registra como IRideXmlParser — su modelo
+        // (RetentionRideModel) no encaja en RideModel (forma comercial de Factura/NC). Tiene su
+        // propio contrato (IRetentionRideXmlParser), deliberadamente fuera de RideXmlParserResolver.
+        services.AddScoped<
+            ERP.Application.Modules.Ride.Parsers.IRetentionRideXmlParser,
+            ERP.Application.Modules.Ride.Parsers.RetentionRideXmlParser
+        >();
 
         services.AddScoped<
             ERP.Application.Modules.Ride.Templates.IRideTemplateResolver,
@@ -582,6 +589,12 @@ public static class DependencyInjection
             ERP.Application.Modules.Ride.Templates.CreditNoteRideTemplate
         >();
         // Las demás plantillas añadirán su propia IRideTemplate aquí — nunca tocar el resolver.
+        // RETENTIONS-RIDE-TEMPLATE-03C: mismo criterio que el parser — RetentionRideTemplate tiene
+        // su propio contrato (IRetentionRideTemplate), fuera de IRideTemplateResolver.
+        services.AddScoped<
+            ERP.Application.Modules.Ride.Templates.IRetentionRideTemplate,
+            ERP.Application.Modules.Ride.Templates.RetentionRideTemplate
+        >();
 
         services.AddScoped<
             ERP.Application.Modules.Ride.Services.IRideSourceXmlProvider,
