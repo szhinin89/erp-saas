@@ -38,6 +38,14 @@ public static class DependencyInjection
         // RetentionDocument (+ reversa de AP si corresponde), consumida por CancelRetentionHandler
         // (anulación aislada) y por CancelExpenseDocumentHandler (anulación transaccional).
         services.AddScoped<IRetentionCanceller, RetentionCanceller>();
+        // RETENTIONS-ELECTRONIC-DOCUMENT-MODEL-03A — construye el modelo canónico
+        // RetentionElectronicDocumentData desde un RetentionDocument ya Issued. Deliberadamente
+        // NO forma parte del registro genérico de IElectronicDocumentDataProvider (motor de
+        // ElectronicDocuments) en esta fase — ver comentario de tipo del provider.
+        services.AddScoped<
+            IRetentionElectronicDocumentDataProvider,
+            RetentionElectronicDocumentDataProvider
+        >();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));
