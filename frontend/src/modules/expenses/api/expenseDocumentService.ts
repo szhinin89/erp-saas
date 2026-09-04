@@ -1,8 +1,85 @@
 import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
+import { api } from "../../lib/api";
 
 const BASE = "/api/v1/expenses/documents";
 
 export type ExpenseStatus = "Draft" | "Confirmed" | "Cancelled";
+
+// ── RETENTIONS-UI-EXPENSES-01F ──────────────────────────────────────────────
+// Tipos espejo de los DTOs/records del backend (ver
+// backend/src/ERP.Application/Modules/Retentions/Services/IRetentionEligibilityService.cs,
+// backend/src/ERP.Application/Modules/Retentions/DTOs/RetentionDocumentDto.cs,
+// backend/src/ERP.Application/Modules/Expenses/DTOs/ExpenseDocumentDraftDtos.cs).
+// Serializados en camelCase por la configuración por defecto de ASP.NET Core
+// (System.Text.Json), con enums como string vía JsonStringEnumConverter registrado
+// en ERP.API/Program.cs — nunca se envía TenantId/CompanyId/BranchId en el body.
+
+/** RetentionTaxType (backend) — nombres de enum tal cual, sin traducir en el contrato de API. */
+export type RetentionTaxType = "Vat" | "Income";
+
+/** RetentionStatus (backend). */
+export type RetentionStatus = "Draft" | "Issued" | "Cancelled";
+
+export interface RetentionEligibilityResult {
+  canRetainVat: boolean;
+  canRetainIncome: boolean;
+  isSupplierExempt: boolean;
+  hasRetainableBase: boolean;
+  missingRetentionCode: boolean;
+  isSupplierRequiredToKeepAccounting: boolean;
+  suggestedVatRetentionCode: string | null;
+  suggestedIncomeRetentionCode: string | null;
+  reasons: string[];
+  /** Propiedad calculada del record C# (CanRetainVat || CanRetainIncome) — también serializada. */
+  isEligible: boolean;
+}
+
+export interface RetentionIntentLineRequest {
+  taxType: RetentionTaxType;
+  retentionCode: string;
+  baseAmount: number;
+  retentionRate: number;
+  retainedAmount: number;
+  description?: string | null;
+}
+
+export interface RetentionIntentRequest {
+  appliesRetention: boolean;
+  emissionPointId?: string | null;
+  retentionNumber?: string | null;
+  issueDate?: string | null;
+  lines?: RetentionIntentLineRequest[] | null;
+}
+
+export interface RetentionDocumentLineDto {
+  id: string;
+  taxType: RetentionTaxType;
+  retentionCode: string;
+  baseAmount: number;
+  retentionRate: number;
+  retainedAmount: number;
+  description: string | null;
+}
+
+export interface RetentionDocumentDto {
+  id: string;
+  companyId: string;
+  branchId: string;
+  sourceDocumentType: string;
+  sourceDocumentId: string;
+  subjectBusinessPartnerId: string;
+  emissionPointId: string;
+  retentionNumber: string | null;
+  issueDate: string | null;
+  status: RetentionStatus;
+  totalRetainedVat: number;
+  totalRetainedIncome: number;
+  totalRetained: number;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
+  lines: RetentionDocumentLineDto[];
+}
 
 export interface ExpenseLineDto {
   id: string;
@@ -122,9 +199,64 @@ export const expenseDocumentService = {
   update: (id: string, payload: UpdateExpenseDraftPayload) =>
     apiPut<ExpenseDocumentDetailDto>(`${BASE}/${id}`, payload),
 
-  confirm: (id: string) => apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/confirm`, {}),
+  /**
+   * RETENTIONS-UI-EXPENSES-01F — `retention` es opcional y por defecto `undefined`: llamadas
+   * existentes `confirm(id)` siguen enviando exactamente el mismo body `{}` que antes de esta
+   * fase (comportamiento preservado, sin retención). Solo se agrega la clave `retention` al
+   * body cuando el llamador la provee explícitamente.
+   */
+  confirm: (id: string, retention?: RetentionIntentRequest) =>
+    apiPost<ExpenseDocumentDetailDto>(
+      `${BASE}/${id}/confirm`,
+      retention ? { retention } : {},
+    ),
+
+  /**
+   * RETENTIONS-UI-EXPENSES-01F — POST /expenses/documents/confirmed (crea el gasto ya
+   * Confirmed, sin pasar por Draft). `retention` es opcional, mismo criterio que `confirm`.
+   */
+  createConfirmedExpense: (
+    payload: CreateExpenseDraftPayload,
+    retention?: RetentionIntentRequest,
+  ) =>
+    apiPost<ExpenseDocumentDetailDto>(`${BASE}/confirmed`, {
+      ...payload,
+      ...(retention ? { retention } : {}),
+    }),
 
   /** Confirmed → Cancelled. `reason` es obligatorio en el contrato del backend. */
   cancel: (id: string, reason: string) =>
     apiPost<ExpenseDocumentDetailDto>(`${BASE}/${id}/cancel`, { reason }),
+
+  /**
+   * RETENTIONS-ELIGIBILITY-01 — solo lectura, reevaluada siempre por el servidor antes de
+   * confirmar. El resultado mostrado en UI es informativo, nunca la fuente final de verdad.
+   */
+  getRetentionEligibility: (expenseDocumentId: string) =>
+    apiGet<RetentionEligibilityResult>(
+      `${BASE}/${expenseDocumentId}/retention-eligibility`,
+    ),
+
+  /**
+   * RETENTIONS-API-EXPENSES-01E — la retención activa asociada al gasto, si existe. 404 es un
+   * estado normal ("sin retención"), no un error — se traduce a `null` aquí para que el
+   * llamador nunca necesite distinguir "error de red" de "no existe retención".
+   */
+  getExpenseRetention: async (
+    expenseDocumentId: string,
+  ): Promise<RetentionDocumentDto | null> => {
+    try {
+      const { data } = await api.get<
+        { data: RetentionDocumentDto } | RetentionDocumentDto
+      >(`${BASE}/${expenseDocumentId}/retention`);
+      return (data && typeof data === "object" && "data" in data
+        ? data.data
+        : data) as RetentionDocumentDto;
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
+      if (status === 404) return null;
+      throw err;
+    }
+  },
 };

@@ -30,6 +30,7 @@ import {
 import {
   expenseDocumentService,
   type ExpenseDocumentDetailDto,
+  type RetentionEligibilityResult,
 } from "../api/expenseDocumentService";
 import {
   ExpenseDocumentHeader,
@@ -43,6 +44,7 @@ import {
 import { ExpenseDocumentLinesEditor } from "../components/ExpenseDocumentLinesEditor";
 import { ExpenseDocumentStatusBadge } from "../components/ExpenseDocumentStatusBadge";
 import { ExpenseDocumentTotals } from "../components/ExpenseDocumentTotals";
+import { ExpenseRetentionSection } from "../components/ExpenseRetentionSection";
 import {
   buildExpenseDraftPayload,
   calculateExpenseDocumentTotals,
@@ -54,6 +56,13 @@ import {
   newExpenseDraftLine,
   parseExpenseNumber,
 } from "../utils/expenseDocumentDraftModel";
+import {
+  buildRetentionIntentRequest,
+  emptyRetentionIntentState,
+  isRetentionIntentBlockedByEligibility,
+  isRetentionIntentComplete,
+  type RetentionIntentFormState,
+} from "../utils/expenseRetentionModel";
 import "../styles/expense-documents.css";
 
 const PERMISSIONS = {
@@ -108,6 +117,12 @@ export function ExpenseDocumentFormPage() {
   const [cancelling, setCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelReasonError, setCancelReasonError] = useState<string | undefined>();
+  const [retention, setRetention] = useState<RetentionIntentFormState>(
+    emptyRetentionIntentState(),
+  );
+  const [retentionEligibility, setRetentionEligibility] =
+    useState<RetentionEligibilityResult | null>(null);
+  const [retentionRefreshKey, setRetentionRefreshKey] = useState(0);
 
   const accountsById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
@@ -149,6 +164,8 @@ export function ExpenseDocumentFormPage() {
         setSupplier(null);
         setLines([newExpenseDraftLine()]);
       }
+      setRetention(emptyRetentionIntentState());
+      setRetentionRefreshKey((key) => key + 1);
     } catch (error) {
       setPageError(
         formatApiRequestError(error, {
@@ -261,9 +278,24 @@ export function ExpenseDocumentFormPage() {
   const handleConfirm = async () => {
     if (isNew || !id) return;
 
+    // RETENTIONS-UI-EXPENSES-01F — la UI bloquea ANTES de llamar al backend cuando ya sabe,
+    // con la última elegibilidad conocida, que la retención marcada no puede generarse. El
+    // backend sigue revalidando siempre (fail-closed real), esto solo evita una llamada que ya
+    // se sabe que va a fallar.
+    if (isRetentionIntentBlockedByEligibility(retention, retentionEligibility)) {
+      message.error(
+        "Este gasto no es elegible para retención con la configuración actual. Revise los motivos mostrados en la sección Retención.",
+      );
+      return;
+    }
+    if (retention.appliesRetention && !isRetentionIntentComplete(retention)) {
+      message.error("Complete los datos de la retención (punto de emisión, número, fecha y líneas) antes de confirmar.");
+      return;
+    }
+
     setConfirming(true);
     try {
-      await expenseDocumentService.confirm(id);
+      await expenseDocumentService.confirm(id, buildRetentionIntentRequest(retention));
       message.success("Gasto confirmado. Se genero el asiento contable.");
       setConfirmModalOpen(false);
       // EXPENSES-CONFIRM-FRONTEND-08: recargar desde API (no solo aplicar la respuesta del
@@ -423,6 +455,18 @@ export function ExpenseDocumentFormPage() {
               disabled={disabled || loading || !catalogReady}
               errors={lineErrors}
               onChange={setLines}
+            />
+          </ZHCard>
+
+          <ZHCard bodyClassName="exp-doc-card-body">
+            <ExpenseRetentionSection
+              expenseDocumentId={document?.id ?? null}
+              documentStatus={document?.status}
+              refreshKey={retentionRefreshKey}
+              disabled={disabled}
+              value={retention}
+              onChange={(patch) => setRetention((current) => ({ ...current, ...patch }))}
+              onEligibilityChange={setRetentionEligibility}
             />
           </ZHCard>
         </div>
