@@ -3,6 +3,7 @@ using ERP.Application.Access.Authorization;
 using ERP.Application.Access.Caching;
 using ERP.Application.Behaviors;
 using ERP.Application.Modules.Communications.Services;
+using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Application.Modules.Integration;
@@ -46,6 +47,10 @@ public static class DependencyInjection
             IRetentionElectronicDocumentDataProvider,
             RetentionElectronicDocumentDataProvider
         >();
+        // RETENTIONS-SRI-XML-MAPPER-03B — construye el XML desde RetentionElectronicDocumentData.
+        // Registrado con su propio contrato (IRetentionXmlBuilder), deliberadamente NO agregado a
+        // IElectronicDocumentXmlBuilderResolver (motor genérico) — el wiring final queda pendiente.
+        services.AddScoped<IRetentionXmlBuilder, RetentionXmlBuilder>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));
