@@ -36,6 +36,24 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// nueva. Idempotente por (SourceModule, FactType): solo crea las reglas que faltan, nunca
 /// duplica ni toca reglas ya editadas por el admin (mismo criterio que el plan de cuentas). No
 /// genera ningún asiento retroactivo — configuración únicamente.
+///
+/// RETENTIONS-POSTING-RULE-SEED-01H: agrega la <c>PostingRule</c> mínima que faltaba para
+/// <c>Retentions/DocumentIssued</c> (usada por <c>RetentionDocumentIssuedPostingTranslator</c>,
+/// confirmado leyendo su código real) — sin ella, todo gasto con retención fallaba fail-closed en
+/// cualquier entorno (confirmado en RETENTIONS-EXPENSES-E2E-QA-01G, que hasta ahora sembraba esa
+/// regla como fixture local del test). Reclasifica el monto retenido de "CxP proveedor" (Debe) a
+/// "Retenciones IVA por pagar" (Haber), igual que el ejemplo conceptual de
+/// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable". Usa
+/// <see cref="PostingAmountKind.Retention"/> (resuelto por JournalFactory a
+/// <c>PostingFact.RetainedAmount</c>) en ambas líneas — no <c>GrandTotal</c>, que en este hecho
+/// coincide numéricamente pero no es el campo semánticamente diseñado para este caso. Cuenta de
+/// crédito genérica ("2.1.02.002 Retenciones IVA por pagar"): el traductor actual solo transporta
+/// <c>RetainedAmount</c> total (IVA+Renta combinados si ambos aplicaran), sin desglose por tipo de
+/// impuesto — no hay cuenta combinada genérica en el plan de cuentas, así que se usa la cuenta de
+/// IVA (el único escenario de retención implementado hoy, ver RETENTIONS-MODULE-DESIGN-01.md); una
+/// retención de Renta futura quedaría mal clasificada contablemente hasta que el traductor separe
+/// los montos por tipo — deuda conocida, fuera de alcance de esta fase (no se modifica el
+/// traductor). Mismo mecanismo de idempotencia que el resto de <c>MinimalPostingRules</c>.
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -295,7 +313,30 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             "SupplierPaymentReversed",
             [new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal)]
         ),
+        // RETENTIONS-POSTING-RULE-SEED-01H — "Retentions"/"DocumentIssued" reclasifica el monto
+        // retenido: Debe CxP proveedor (se reduce lo exigible), Haber Retenciones IVA por pagar
+        // (nuevo pasivo). RetentionDocumentCancelledPostingTranslator no tiene entrada propia aquí
+        // — reversa el mismo asiento vía ReverseJournalEntryCommand, no resuelve una PostingRule
+        // nueva (mismo criterio que Purchases/PurchaseCreditNoteCancelled arriba).
+        new(
+            "Retentions",
+            "DocumentIssued",
+            [
+                new("2.1.01.001", AccountNature.Debit, PostingAmountKind.Retention),
+                new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention),
+            ]
+        ),
     ];
+
+    // RETENTIONS-POSTING-RULE-SEED-01H: expone las claves (SourceModule, FactType) requeridas para
+    // que AccountingChartBackfillService pueda detectar con precisión si a una company activa ya
+    // seedeada le falta específicamente una regla nueva (p. ej. esta misma fase agregando
+    // Retentions/DocumentIssued a companies que ya tenían Expenses/Purchases/Sales/Payables) — antes
+    // de esto, el backfill solo verificaba "¿tiene AL MENOS UNA PostingRule?", lo que dejaba a esas
+    // companies fuera de cualquier backfill automático de reglas nuevas agregadas después de su
+    // primer seed.
+    internal static readonly IReadOnlyCollection<(string SourceModule, string FactType)> RequiredPostingRuleKeys =
+        MinimalPostingRules.Select(r => (r.SourceModule, r.FactType)).ToArray();
 
     public async Task ExecuteAsync(
         CompanyBootstrapContext context,

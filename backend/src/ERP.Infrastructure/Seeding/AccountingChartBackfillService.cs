@@ -29,6 +29,17 @@ namespace ERP.Infrastructure.Seeding;
 /// por bloque (cuentas/período/reglas). ACCOUNTING-BASE-CHART-TEMPLATE-13 amplía el filtro: una
 /// company con las 13 cuentas mínimas y reglas ya sembradas igualmente debe pasar si le faltan
 /// cuentas de la nueva plantilla retail; las cuentas existentes quedan intactas.
+///
+/// RETENTIONS-POSTING-RULE-SEED-01H: el filtro "sin reglas de contabilización" seguía siendo
+/// "¿tiene AL MENOS UNA PostingRule?" — una company que ya tenía, por ejemplo,
+/// Expenses/Purchases/Sales/Payables sembradas en una corrida anterior nunca volvía a calificar
+/// para backfill, aun cuando esta misma fase agrega una regla nueva (Retentions/DocumentIssued)
+/// que esa company todavía no tiene. Se reemplaza por una comprobación precisa contra
+/// <see cref="AccountingBootstrapStep.RequiredPostingRuleKeys"/> (todas las claves
+/// (SourceModule, FactType) configuradas hoy) — cualquier company a la que le falte una sola de
+/// esas reglas vuelve a calificar. Nunca deja de detectar lo que el filtro anterior ya detectaba
+/// (compañías sin ninguna regla), solo agrega precisión para reglas nuevas agregadas después del
+/// primer seed de una company.
 /// </summary>
 public sealed partial class AccountingChartBackfillService
 {
@@ -72,14 +83,18 @@ public sealed partial class AccountingChartBackfillService
                 .ToListAsync(cancellationToken);
             var accountCodeSet = accountCodes.ToHashSet(StringComparer.Ordinal);
             var hasAllRetailAccounts = requiredAccountCodes.All(accountCodeSet.Contains);
-            var hasPostingRules = await _db
+            var existingRuleKeys = await _db
                 .PostingRules.IgnoreQueryFilters()
-                .AnyAsync(
-                    r => r.TenantId == company.TenantId && r.CompanyId == company.Id,
-                    cancellationToken
-                );
+                .Where(r => r.TenantId == company.TenantId && r.CompanyId == company.Id)
+                .Select(r => new { r.SourceModule, r.FactType })
+                .ToListAsync(cancellationToken);
+            var existingRuleKeySet = existingRuleKeys
+                .Select(r => (r.SourceModule, r.FactType))
+                .ToHashSet();
+            var hasAllPostingRules = AccountingBootstrapStep
+                .RequiredPostingRuleKeys.All(existingRuleKeySet.Contains);
 
-            if (!hasAllRetailAccounts || !hasPostingRules)
+            if (!hasAllRetailAccounts || !hasAllPostingRules)
                 companiesPendingBackfill.Add((company.Id, company.TenantId));
         }
 

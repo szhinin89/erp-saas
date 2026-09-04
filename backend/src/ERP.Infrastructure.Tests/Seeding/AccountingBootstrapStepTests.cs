@@ -27,8 +27,10 @@ public sealed class AccountingBootstrapStepTests
     /// SUPPLIER-PAYMENTS-POSTING-15D/SUPPLIER-PAYMENTS-REVERSE-16 (agregaron "Payables"/
     /// "SupplierPaymentConfirmed" y "Payables"/"SupplierPaymentReversed"). Antes eran 6 — los
     /// tests quedaron desactualizados y fallaban contra el código real, no al revés.
+    ///
+    /// RETENTIONS-POSTING-RULE-SEED-01H: pasa de 8 a 9 — agrega "Retentions"/"DocumentIssued".
     /// </summary>
-    private const int ExpectedPostingRulesCount = 8;
+    private const int ExpectedPostingRulesCount = 9;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -281,6 +283,7 @@ public sealed class AccountingBootstrapStepTests
                     ("Finance", "CollectionApplied"),
                     ("Payables", "SupplierPaymentConfirmed"),
                     ("Payables", "SupplierPaymentReversed"),
+                    ("Retentions", "DocumentIssued"),
                 }
             );
 
@@ -321,6 +324,87 @@ public sealed class AccountingBootstrapStepTests
         rules.Should().NotContain(r => r.SourceModule == "Finance" && r.FactType == "SupplierPaymentApplied");
         rules.Should()
             .NotContain(r => r.SourceModule == "Purchases" && r.FactType == "PurchaseCreditNoteCancelled");
+    }
+
+    /// <summary>
+    /// RETENTIONS-POSTING-RULE-SEED-01H — caso 1 y 3 del plan de tests: el seed crea la
+    /// PostingRule de Retentions con las líneas exactas del ejemplo conceptual de
+    /// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable" (Debe CxP proveedor,
+    /// Haber Retenciones IVA por pagar), usando PostingAmountKind.Retention en ambas líneas — el
+    /// mismo campo que RetentionDocumentIssuedPostingTranslator llena en PostingFact.RetainedAmount.
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_retentions_documentissued_con_debe_cxp_y_haber_retencion_iva()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+            );
+
+        rule.IsActive.Should().BeTrue();
+        rule.Lines.Should().HaveCount(2);
+
+        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        debitLine.AmountKind.Should().Be(PostingAmountKind.Retention);
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001", because: "Debe = CxP proveedor, cuenta genérica ya usada por el resto del ERP");
+
+        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        creditLine.AmountKind.Should().Be(PostingAmountKind.Retention);
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.02.002", because: "Haber = Retenciones IVA por pagar, cuenta canónica del plan retail");
+    }
+
+    /// <summary>
+    /// RETENTIONS-POSTING-RULE-SEED-01H — caso 6 del plan de tests: si a la empresa le falta (o
+    /// no permite asiento en) la cuenta canónica de Retenciones IVA por pagar, el seed NO crea la
+    /// PostingRule de Retentions — mismo criterio fail-closed ya usado por el resto de
+    /// MinimalPostingRules (ver No_crea_posting_rule_si_una_cuenta_requerida_no_permite_asiento) —
+    /// nunca crea una regla con una cuenta inválida/silenciosa. Las demás reglas no se ven afectadas.
+    /// </summary>
+    [Fact]
+    public async Task No_crea_posting_rule_de_retentions_si_la_cuenta_de_retencion_iva_no_permite_asiento()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            db.Accounts.Add(
+                ERP.Domain.Modules.Accounting.Entities.Account.Create(
+                    _tenantId,
+                    _companyId,
+                    ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("2.1.02.002"),
+                    "Retenciones IVA por pagar no postable",
+                    parentAccountId: null,
+                    accountType: AccountType.Liability,
+                    nature: AccountNature.Credit,
+                    allowsPosting: false,
+                    createdBy: _actorId
+                )
+            );
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
+        rules.Should().NotContain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
+        rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
+        rules.Should().Contain(r => r.SourceModule == "Payables" && r.FactType == "SupplierPaymentConfirmed");
     }
 
     [Fact]
