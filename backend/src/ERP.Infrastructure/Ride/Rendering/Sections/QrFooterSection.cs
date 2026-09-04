@@ -16,6 +16,22 @@ public static class QrFooterSection
         IContainer container,
         InvoiceRideDocumentLayout layout,
         byte[] qrImageBytes
+    ) => Compose(container, layout.QrPlaceholder, layout.Branding, qrImageBytes);
+
+    /// <summary>RETENTIONS-RIDE-PDF-RENDERER-03D — mismo render, para el Comprobante de Retención
+    /// (<see cref="RetentionRideDocumentLayout"/> también expone <c>QrPlaceholder</c>/<c>Branding</c>,
+    /// misma forma exacta) — evita duplicar esta sección para un segundo tipo de comprobante.</summary>
+    public static void Compose(
+        IContainer container,
+        RetentionRideDocumentLayout layout,
+        byte[] qrImageBytes
+    ) => Compose(container, layout.QrPlaceholder, layout.Branding, qrImageBytes);
+
+    private static void Compose(
+        IContainer container,
+        string qrPlaceholder,
+        ERP.Domain.Modules.Ride.ValueObjects.RideBranding branding,
+        byte[] qrImageBytes
     )
     {
         container
@@ -30,8 +46,8 @@ public static class QrFooterSection
                     .Column(column =>
                     {
                         column.Item().Text("Clave de Acceso:").Bold().FontSize(8);
-                        column.Item().Text(layout.QrPlaceholder).FontSize(7);
-                        if (layout.Branding.FooterText is { } footerText)
+                        column.Item().Text(qrPlaceholder).FontSize(7);
+                        if (branding.FooterText is { } footerText)
                             column.Item().PaddingTop(4).Text(footerText).FontSize(8);
                     });
             });

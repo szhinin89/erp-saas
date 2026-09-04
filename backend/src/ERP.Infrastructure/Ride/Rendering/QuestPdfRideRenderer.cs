@@ -27,10 +27,14 @@ namespace ERP.Infrastructure.Ride.Rendering;
 /// "Representación impresa del comprobante electrónico" en el pie — mismo <c>RideModel</c>,
 /// mismo pipeline, solo cambia la presentación.
 ///
-/// Solo soporta <see cref="InvoiceRideDocumentLayout"/> hoy porque es la única forma de layout
-/// que existe (Fase 6) — el chequeo de tipo es sobre la FORMA de los datos ya compuestos, nunca
-/// sobre <c>RideDocumentType</c> ni un <c>switch</c> documental. Un layout no soportado produce
-/// una excepción que <c>RidePipeline</c> ya captura (Fase 5) y convierte en
+/// Soporta dos formas de layout: <see cref="InvoiceRideDocumentLayout"/> (Factura/Nota de
+/// Crédito, Fase 6) y <see cref="RetentionRideDocumentLayout"/> (Comprobante de Retención,
+/// RETENTIONS-RIDE-PDF-RENDERER-03D) — el chequeo sigue siendo sobre la FORMA de los datos ya
+/// compuestos, nunca sobre <c>RideDocumentType</c> ni un <c>switch</c> documental: cada forma usa
+/// sus propias Sections (<c>Retention*Section</c>), reutilizando las que ya son genéricas por
+/// forma de datos (<c>AdditionalInfoSection</c>/<c>QrFooterSection</c>, con overload para cada
+/// layout) sin tocar el render de Factura/Nota de Crédito. Un layout no soportado produce una
+/// excepción que <c>RidePipeline</c> ya captura (Fase 5) y convierte en
 /// <c>RideOutcome.Failed</c> — nunca se propaga sin control.
 /// </summary>
 public sealed class QuestPdfRideRenderer : IRideRenderer
@@ -50,19 +54,27 @@ public sealed class QuestPdfRideRenderer : IRideRenderer
         _fileStorage = fileStorage;
     }
 
-    public async Task<byte[]> RenderAsync(
-        IRideDocumentLayout layout,
-        CancellationToken ct = default
+    public Task<byte[]> RenderAsync(IRideDocumentLayout layout, CancellationToken ct = default) =>
+        layout switch
+        {
+            InvoiceRideDocumentLayout invoiceLayout => RenderInvoiceAsync(invoiceLayout, ct),
+            RetentionRideDocumentLayout retentionLayout => RenderRetentionAsync(
+                retentionLayout,
+                ct
+            ),
+            _ => throw new NotSupportedException(
+                $"QuestPdfRideRenderer no soporta todavía el tipo de layout '{layout.GetType().Name}'."
+            ),
+        };
+
+    private async Task<byte[]> RenderInvoiceAsync(
+        InvoiceRideDocumentLayout invoiceLayout,
+        CancellationToken ct
     )
     {
-        if (layout is not InvoiceRideDocumentLayout invoiceLayout)
-            throw new NotSupportedException(
-                $"QuestPdfRideRenderer no soporta todavía el tipo de layout '{layout.GetType().Name}'."
-            );
-
         var qrImageBytes = _qrCodeGenerator.Generate(invoiceLayout.Header.AccessKey);
         var barcodeImageBytes = _barcodeGenerator.Generate(invoiceLayout.Header.AccessKey);
-        var logoBytes = await ResolveLogoBytesAsync(invoiceLayout, ct);
+        var logoBytes = await ResolveLogoBytesAsync(invoiceLayout.Branding, ct);
 
         var document = Document.Create(container =>
         {
@@ -127,12 +139,91 @@ public sealed class QuestPdfRideRenderer : IRideRenderer
         return document.GeneratePdf();
     }
 
-    private async Task<byte[]?> ResolveLogoBytesAsync(
-        InvoiceRideDocumentLayout layout,
+    private async Task<byte[]> RenderRetentionAsync(
+        RetentionRideDocumentLayout retentionLayout,
         CancellationToken ct
     )
     {
-        if (layout.Branding.LogoStoragePath is not { } path)
+        var qrImageBytes = _qrCodeGenerator.Generate(retentionLayout.Header.AccessKey);
+        var barcodeImageBytes = _barcodeGenerator.Generate(retentionLayout.Header.AccessKey);
+        var logoBytes = await ResolveLogoBytesAsync(retentionLayout.Branding, ct);
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(20);
+                page.DefaultTextStyle(style => style.FontSize(8));
+
+                page.Header()
+                    .Element(c =>
+                        RetentionHeaderSection.Compose(
+                            c,
+                            retentionLayout,
+                            logoBytes,
+                            barcodeImageBytes
+                        )
+                    );
+
+                page.Content()
+                    .PaddingVertical(6)
+                    .Column(column =>
+                    {
+                        column.Spacing(6);
+                        column
+                            .Item()
+                            .Element(c => RetentionSubjectSection.Compose(c, retentionLayout));
+                        column
+                            .Item()
+                            .Element(c =>
+                                RetentionSourceDocumentSection.Compose(c, retentionLayout)
+                            );
+                        column
+                            .Item()
+                            .Element(c => RetentionTaxLinesSection.Compose(c, retentionLayout));
+                        column
+                            .Item()
+                            .Row(row =>
+                            {
+                                row.RelativeItem(3)
+                                    .Element(c =>
+                                        AdditionalInfoSection.Compose(c, retentionLayout)
+                                    );
+                                row.ConstantItem(8);
+                                row.RelativeItem(2)
+                                    .Element(c => RetentionTotalSection.Compose(c, retentionLayout));
+                            });
+                    });
+
+                page.Footer()
+                    .Column(footer =>
+                    {
+                        footer
+                            .Item()
+                            .Element(c =>
+                                QrFooterSection.Compose(c, retentionLayout, qrImageBytes)
+                            );
+                        footer
+                            .Item()
+                            .PaddingTop(4)
+                            .AlignCenter()
+                            .Text("Representación impresa del comprobante electrónico.")
+                            .FontSize(7);
+                        footer.Item().AlignCenter().Text("www.sri.gob.ec").FontSize(7);
+                    });
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    private async Task<byte[]?> ResolveLogoBytesAsync(
+        ERP.Domain.Modules.Ride.ValueObjects.RideBranding branding,
+        CancellationToken ct
+    )
+    {
+        if (branding.LogoStoragePath is not { } path)
             return null;
 
         var stream = await _fileStorage.GetAsync(path, ct);

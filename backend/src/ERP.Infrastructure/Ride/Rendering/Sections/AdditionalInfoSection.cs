@@ -15,7 +15,19 @@ namespace ERP.Infrastructure.Ride.Rendering.Sections;
 /// </summary>
 public static class AdditionalInfoSection
 {
-    public static void Compose(IContainer container, InvoiceRideDocumentLayout layout)
+    public static void Compose(IContainer container, InvoiceRideDocumentLayout layout) =>
+        Compose(container, layout.AdditionalInfo);
+
+    /// <summary>RETENTIONS-RIDE-PDF-RENDERER-03D — mismo render, para el Comprobante de Retención
+    /// (<see cref="RetentionRideDocumentLayout"/> también expone <c>AdditionalInfo</c>, misma
+    /// forma exacta) — evita duplicar esta sección para un segundo tipo de comprobante.</summary>
+    public static void Compose(IContainer container, RetentionRideDocumentLayout layout) =>
+        Compose(container, layout.AdditionalInfo);
+
+    private static void Compose(
+        IContainer container,
+        IReadOnlyList<ERP.Domain.Modules.Ride.ValueObjects.RideAdditionalInfo> additionalInfo
+    )
     {
         container
             .RideBox()
@@ -29,7 +41,7 @@ public static class AdditionalInfoSection
                     .Bold()
                     .FontSize(9);
 
-                if (layout.AdditionalInfo.Count == 0)
+                if (additionalInfo.Count == 0)
                     return;
 
                 column
@@ -38,7 +50,7 @@ public static class AdditionalInfoSection
                     .Column(inner =>
                     {
                         inner.Spacing(2);
-                        foreach (var field in layout.AdditionalInfo)
+                        foreach (var field in additionalInfo)
                             inner.Item().Text($"{field.Name} : {field.Value}").FontSize(8);
                     });
             });
