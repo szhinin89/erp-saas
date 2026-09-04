@@ -655,6 +655,15 @@ public static class DependencyInjection
             ERP.Application.Modules.Ride.Services.IRideDocumentService,
             ERP.Application.Modules.Ride.Services.RideDocumentService
         >();
+        // RETENTIONS-ELECTRONIC-WIRING-03E — orquesta IRetentionRideXmlParser + IRetentionRideTemplate
+        // + IRideRenderer/IRideBrandingProvider (todos ya registrados arriba) en un único punto de
+        // entrada. Pipeline paralelo pequeño y explícito para Retención, sin pasar por RidePipeline
+        // (cache/storage claves por ElectronicDocumentId de un documento ya autorizado — Retención
+        // todavía no tiene ese estado). Deliberadamente NO se registra como IRideDocumentService.
+        services.AddScoped<
+            ERP.Application.Modules.Ride.Services.IRetentionRidePdfService,
+            ERP.Application.Modules.Ride.Services.RetentionRidePdfService
+        >();
 
         // ── Company BC (sequences) ───────────────────────────────────────────
         services.AddScoped<

@@ -51,6 +51,14 @@ public static class DependencyInjection
         // Registrado con su propio contrato (IRetentionXmlBuilder), deliberadamente NO agregado a
         // IElectronicDocumentXmlBuilderResolver (motor genérico) — el wiring final queda pendiente.
         services.AddScoped<IRetentionXmlBuilder, RetentionXmlBuilder>();
+        // RETENTIONS-ELECTRONIC-WIRING-03E — orquesta IRetentionElectronicDocumentDataProvider +
+        // IRetentionXmlBuilder (ambos ya registrados arriba) en un único punto de entrada. Pipeline
+        // paralelo pequeño y explícito para Retención — deliberadamente NO se registra en ningún
+        // resolver genérico de ElectronicDocuments.
+        services.AddScoped<
+            IRetentionElectronicDocumentXmlService,
+            RetentionElectronicDocumentXmlService
+        >();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));
