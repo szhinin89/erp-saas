@@ -32,4 +32,20 @@ public interface IRetentionDocumentRepository
         Guid sourceId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// RETENTIONS-APPLICATION-01C — trae la retención "activa" (<c>Status != Cancelled</c>) sobre
+    /// el documento origen dado, con sus líneas incluidas. Mismo criterio de "activa" ya usado por
+    /// <see cref="ExistsActiveBySourceAsync"/> — a diferencia de ese método (solo booleano), este
+    /// devuelve la entidad completa para <c>GetRetentionBySourceQuery</c>. Fail-closed
+    /// tenant/company vía el mismo scope que el resto del repositorio, nunca
+    /// <c>IgnoreQueryFilters</c>.
+    /// </summary>
+    Task<RetentionDocument?> GetBySourceAsync(
+        Guid tenantId,
+        Guid companyId,
+        RetentionSourceDocumentType sourceType,
+        Guid sourceId,
+        CancellationToken ct = default
+    );
 }

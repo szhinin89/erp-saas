@@ -45,4 +45,18 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
             .Where(x => x.SourceDocumentType == sourceType && x.SourceDocumentId == sourceId)
             .Where(x => x.Status != RetentionStatus.Cancelled)
             .AnyAsync(ct);
+
+    public Task<RetentionDocument?> GetBySourceAsync(
+        Guid tenantId,
+        Guid companyId,
+        RetentionSourceDocumentType sourceType,
+        Guid sourceId,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .Include(x => x.Lines)
+            .Where(x => x.CompanyId == companyId)
+            .Where(x => x.SourceDocumentType == sourceType && x.SourceDocumentId == sourceId)
+            .Where(x => x.Status != RetentionStatus.Cancelled)
+            .FirstOrDefaultAsync(ct);
 }
