@@ -11,6 +11,8 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Retentions.Enums;
+using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -288,10 +290,49 @@ public sealed class CancelExpenseDocumentUseCasesTests
         payable.Status.Should().NotBe(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
     }
 
+    // 12) RETENTIONS-EXPENSES-INTEGRATION-01D-2 — decisión mínima aceptable: bloquear la
+    // cancelación mientras exista una retención activa (Draft o Issued) sobre el gasto, en vez de
+    // cancelarlo silenciosamente y dejar la retención huérfana. La reversa completa (anular
+    // RetentionDocument + ReverseRetention en AP + asiento de reverso) queda para
+    // RETENTIONS-EXPENSES-INTEGRATION-01D-3.
+    [Fact]
+    public async Task Cancelar_gasto_con_retencion_activa_se_bloquea()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        fx.SetupNoPayable(document.Id);
+        fx.RetentionRepo
+            .Setup(r =>
+                r.ExistsActiveBySourceAsync(
+                    TenantId,
+                    CompanyId,
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    document.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("retención activa");
+        document.Status.Should().Be(ExpenseStatus.Confirmed);
+        fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private sealed class Fixture
     {
         public Mock<IExpenseDocumentRepository> Docs { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
+        public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
 
@@ -299,6 +340,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
             new(
                 Docs.Object,
                 PayableRepo.Object,
+                RetentionRepo.Object,
                 Uow.Object,
                 WorkflowPolicy.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
@@ -311,6 +353,19 @@ public sealed class CancelExpenseDocumentUseCasesTests
         public Fixture()
         {
             Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: por defecto, sin retención activa — mismo
+            // comportamiento que antes de esta fase para todos los tests existentes (regresión).
+            RetentionRepo
+                .Setup(r =>
+                    r.ExistsActiveBySourceAsync(
+                        TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.ExpenseDocument,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(false);
             WorkflowPolicy
                 .Setup(w =>
                     w.EnsureCancellationFlowAsync(

@@ -172,6 +172,54 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         );
     }
 
+    // 10) RETENTIONS-EXPENSES-INTEGRATION-01D-2 — CreateConfirmedExpenseCommand también cubre AP
+    // staged + ApplyRetention en la misma transacción (mismo contrato que
+    // ConfirmExpenseDocumentHandler, extendido simétricamente a este segundo call site).
+    [Fact]
+    public async Task Crear_confirmado_con_retencion_aplica_ApplyRetention_a_CxP_staged_y_no_duplica()
+    {
+        var fx = new Fixture();
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                (ExpenseDocument doc, RetentionIssueRequest req, CancellationToken _) =>
+                {
+                    var retention = RetentionDocument.Create(
+                        TenantId, CompanyId, doc.BranchId, RetentionSourceDocumentType.ExpenseDocument,
+                        doc.Id, doc.SupplierId, req.EmissionPointId, req.UserId
+                    );
+                    retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", 10m, 30m, 3m));
+                    retention.Issue(req.RetentionNumber, req.IssueDate, req.UserId);
+                    return Result<RetentionDocument>.Success(retention);
+                }
+            );
+        AccountsPayable? staged = null;
+        fx.Payables
+            .Setup(p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountsPayableFromOriginRequest, Guid, CancellationToken>((req, createdBy, _) =>
+            {
+                staged = AccountsPayable.CreateFromOrigin(
+                    req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                    req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                    req.IssueDate, req.AccountingDate, createdBy
+                );
+                foreach (var installment in req.Installments)
+                    staged.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+            })
+            .ReturnsAsync(() => staged!);
+
+        var result = await fx.Handler.Handle(fx.ValidCommand(AppliesRetentionIntent()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        staged.Should().NotBeNull();
+        staged!.RetainedAmount.Should().Be(3m);
+        staged.OutstandingAmount.Should().Be(staged.TotalAmount - 3m);
+        fx.Payables.Verify(
+            p => p.CreateFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
     private sealed class Fixture
     {
         public Mock<IExpenseDocumentRepository> Docs { get; } = new();
@@ -276,31 +324,17 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                         It.IsAny<CancellationToken>()
                     )
                 )
-                .ReturnsAsync(
-                    (CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) =>
-                    {
-                        var payable = AccountsPayable.CreateFromOrigin(
-                            req.TenantId,
-                            req.CompanyId,
-                            req.BranchId,
-                            req.SupplierId,
-                            req.OriginType,
-                            req.OriginId,
-                            req.DocumentType,
-                            req.DocumentNumber,
-                            req.IssueDate,
-                            req.AccountingDate,
-                            createdBy
-                        );
-                        foreach (var installment in req.Installments)
-                            payable.AddInstallment(
-                                installment.InstallmentNumber,
-                                installment.DueDate,
-                                installment.Amount
-                            );
-                        return payable;
-                    }
-                );
+                .ReturnsAsync((CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) => BuildPayable(req, createdBy));
+            // RETENTIONS-EXPENSES-INTEGRATION-01D-2
+            Payables
+                .Setup(p =>
+                    p.StageFromOriginAsync(
+                        It.IsAny<CreateAccountsPayableFromOriginRequest>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync((CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) => BuildPayable(req, createdBy));
             WorkflowPolicy
                 .Setup(w =>
                     w.EnsureDirectCreationAllowedAsync(
@@ -333,6 +367,18 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                         NotificationMode.None
                     )
                 );
+        }
+
+        private static AccountsPayable BuildPayable(CreateAccountsPayableFromOriginRequest req, Guid createdBy)
+        {
+            var payable = AccountsPayable.CreateFromOrigin(
+                req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                req.IssueDate, req.AccountingDate, createdBy
+            );
+            foreach (var installment in req.Installments)
+                payable.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+            return payable;
         }
 
         public CreateConfirmedExpenseCommand ValidCommand(RetentionIntent? retention = null) =>

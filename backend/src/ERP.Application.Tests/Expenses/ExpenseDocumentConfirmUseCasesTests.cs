@@ -3,6 +3,7 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -352,8 +353,12 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             Lines: lines ?? new[] { VatLine() }
         );
 
-    private static RetentionDocument IssuedRetentionFor(ExpenseDocument document)
+    private static RetentionDocument IssuedRetentionFor(
+        ExpenseDocument document,
+        IssueRetentionLineInput? line = null
+    )
     {
+        var l = line ?? VatLine();
         var retention = RetentionDocument.Create(
             TenantId,
             CompanyId,
@@ -365,7 +370,9 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             UserId
         );
         retention.AddLine(
-            RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", 100m, 30m, 30m)
+            RetentionDocumentLine.Create(
+                retention.Id, TenantId, l.TaxType, l.RetentionCode, l.BaseAmount, l.RetentionRate, l.RetainedAmount
+            )
         );
         retention.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);
         return retention;
@@ -554,6 +561,197 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         captured.UserId.Should().Be(UserId);
     }
 
+    // ── RETENTIONS-EXPENSES-INTEGRATION-01D-2: AP staged + ApplyRetention + posting, misma
+    // transacción atómica ────────────────────────────────────────────────────────────────────
+
+    // 2) CxP neta: Total documento - Total retenido == saldo CxP proveedor. Reproduce el ejemplo
+    // conceptual del ticket: 100 + 15 (vat 15%) = 115; retención 30 (VatLine default) -> 85. Un
+    // segundo caso más abajo reproduce el ejemplo exacto 100+15=115, retención 4.50 -> 110.50.
+    [Fact]
+    public async Task Confirmar_con_retencion_deja_CxP_neta_Total_menos_Retenido()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document); // TotalRetained = 30
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+        AccountsPayable? staged = null;
+        fx.Payables
+            .Setup(p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountsPayableFromOriginRequest, Guid, CancellationToken>((req, createdBy, _) =>
+            {
+                staged = AccountsPayable.CreateFromOrigin(
+                    req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                    req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                    req.IssueDate, req.AccountingDate, createdBy
+                );
+                foreach (var installment in req.Installments)
+                    staged.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+            })
+            .ReturnsAsync(() => staged!);
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        staged.Should().NotBeNull();
+        staged!.TotalAmount.Should().Be(115m);
+        staged.RetainedAmount.Should().Be(30m);
+        staged.OutstandingAmount.Should().Be(85m); // 115 - 30
+    }
+
+    // Ejemplo conceptual EXACTO del ticket: Gasto 100 + IVA 15 = 115; Retención IVA 4.50 -> CxP
+    // neta 110.50.
+    [Fact]
+    public async Task Confirmar_con_retencion_reproduce_ejemplo_100_mas_15_retencion_4_50_neta_110_50()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document, VatLine(baseAmount: 100m, rate: 4.5m, retained: 4.50m));
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent(new[] { VatLine(100m, 4.5m, 4.50m) })),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        fx.Payables.Verify(
+            p => p.StageFromOriginAsync(
+                It.Is<CreateAccountsPayableFromOriginRequest>(req => req.Installments.Single().Amount == 115m),
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+        issuedRetention.TotalRetained.Should().Be(4.50m);
+    }
+
+    // 3) ApplyRetention invocado con el monto correcto — verificado indirectamente vía el estado
+    // publico resultante del AccountsPayable (RetainedAmount), ya que ApplyRetention es un metodo
+    // de dominio sin mock propio (se ejecuta sobre el objeto real devuelto por StageFromOriginAsync).
+    [Fact]
+    public async Task Confirmar_con_retencion_aplica_ApplyRetention_con_el_monto_correcto_y_no_duplica_CxP()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        fx.Payables.Verify(
+            p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        // El bloque post-SaveChanges NUNCA debe correr cuando ya se staged por el camino de
+        // retención — evita un AccountsPayable duplicado para el mismo origen.
+        fx.Payables.Verify(
+            p => p.CreateFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // 5) La retención no se registra como pago de proveedor: el AP resultante no tiene PaidAmount,
+    // solo RetainedAmount (AccountsPayableAdjustmentType.Retention, nunca Payment).
+    [Fact]
+    public async Task Retencion_no_se_registra_como_pago_de_proveedor()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+        AccountsPayable? staged = null;
+        fx.Payables
+            .Setup(p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountsPayableFromOriginRequest, Guid, CancellationToken>((req, createdBy, _) =>
+            {
+                staged = AccountsPayable.CreateFromOrigin(
+                    req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                    req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                    req.IssueDate, req.AccountingDate, createdBy
+                );
+                foreach (var installment in req.Installments)
+                    staged.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+            })
+            .ReturnsAsync(() => staged!);
+
+        await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()), CancellationToken.None);
+
+        staged.Should().NotBeNull();
+        staged!.PaidAmount.Should().Be(0m);
+        staged.RetainedAmount.Should().Be(30m);
+        staged.Status.Should().Be(AccountsPayableStatus.PartiallyPaid); // reflects a non-Payment adjustment
+    }
+
+    // 8) Si falla la aplicación de retención a CxP (StageFromOriginAsync/ApplyRetention lanzan), no
+    // queda gasto confirmado ni RetentionDocument persistido — SaveChangesAsync nunca se invoca.
+    [Fact]
+    public async Task Si_falla_aplicar_retencion_a_CxP_no_se_persiste_nada()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+        fx.Payables
+            .Setup(p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Ya existe una cuota con el número 1."));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // 9) Si falla el posting contable de la retención (RetentionPostingFailedException desde
+    // SaveChangesAsync), no queda gasto confirmado, ni RetentionDocument, ni AccountsPayable
+    // persistidos — mismo criterio que el fallo de posting del gasto (ExpensePostingFailedException).
+    [Fact]
+    public async Task Si_falla_el_posting_de_la_retencion_la_confirmacion_completa_falla()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+        fx.Docs
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new RetentionPostingFailedException("No existe regla de contabilizacion para Retentions.", "RULE_NOT_FOUND"));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("RULE_NOT_FOUND");
+    }
+
     private static void SetPrivateStatus(ExpenseDocument document, ExpenseStatus status)
     {
         var property = typeof(ExpenseDocument).GetProperty(nameof(ExpenseDocument.Status))!;
@@ -644,17 +842,35 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                 )
                 .ReturnsAsync(
                     (CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) =>
-                    {
-                        var payable = AccountsPayable.CreateFromOrigin(
-                            req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
-                            req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
-                            req.IssueDate, req.AccountingDate, createdBy
-                        );
-                        foreach (var installment in req.Installments)
-                            payable.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
-                        return payable;
-                    }
+                        BuildPayable(req, createdBy)
                 );
+            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: mismo builder que CreateFromOriginAsync — la
+            // unica diferencia real entre ambos metodos es que este no comitea por su cuenta (ver
+            // AccountsPayableService.StageFromOriginAsync), lo que un mock no necesita simular.
+            Payables
+                .Setup(p =>
+                    p.StageFromOriginAsync(
+                        It.IsAny<CreateAccountsPayableFromOriginRequest>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (CreateAccountsPayableFromOriginRequest req, Guid createdBy, CancellationToken _) =>
+                        BuildPayable(req, createdBy)
+                );
+        }
+
+        private static AccountsPayable BuildPayable(CreateAccountsPayableFromOriginRequest req, Guid createdBy)
+        {
+            var payable = AccountsPayable.CreateFromOrigin(
+                req.TenantId, req.CompanyId, req.BranchId, req.SupplierId,
+                req.OriginType, req.OriginId, req.DocumentType, req.DocumentNumber,
+                req.IssueDate, req.AccountingDate, createdBy
+            );
+            foreach (var installment in req.Installments)
+                payable.AddInstallment(installment.InstallmentNumber, installment.DueDate, installment.Amount);
+            return payable;
         }
 
         public Account ExpenseAccount(

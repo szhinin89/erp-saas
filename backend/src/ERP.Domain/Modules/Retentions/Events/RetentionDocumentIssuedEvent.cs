@@ -17,6 +17,14 @@ public sealed class RetentionDocumentIssuedEvent : BaseDomainEvent, IAuditEvent
     public decimal TotalRetainedIncome { get; }
     public decimal TotalRetained { get; }
 
+    /// <summary>
+    /// RETENTIONS-EXPENSES-INTEGRATION-01D-2 — fecha de emisión congelada por
+    /// <c>RetentionDocument.Issue()</c>, necesaria para <c>PostingFact.EntryDate</c> del asiento de
+    /// la retención (mismo dato que <c>RetentionDocument.IssueDate</c>, expuesto aquí porque el
+    /// posting translator solo ve el evento, nunca el agregado).
+    /// </summary>
+    public DateOnly IssueDate { get; }
+
     public RetentionDocumentIssuedEvent(
         Guid tenantId,
         Guid retentionDocumentId,
@@ -27,7 +35,8 @@ public sealed class RetentionDocumentIssuedEvent : BaseDomainEvent, IAuditEvent
         string retentionNumber,
         decimal totalRetainedVat,
         decimal totalRetainedIncome,
-        decimal totalRetained
+        decimal totalRetained,
+        DateOnly issueDate
     )
     {
         TenantId = tenantId;
@@ -40,6 +49,7 @@ public sealed class RetentionDocumentIssuedEvent : BaseDomainEvent, IAuditEvent
         TotalRetainedVat = totalRetainedVat;
         TotalRetainedIncome = totalRetainedIncome;
         TotalRetained = totalRetained;
+        IssueDate = issueDate;
     }
 
     Guid IAuditEvent.EntityId => RetentionDocumentId;

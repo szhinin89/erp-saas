@@ -70,9 +70,10 @@ internal sealed class JournalFactory
     /// <summary>
     /// Único punto de mapeo entre <see cref="PostingAmountKind"/> y los montos ya resueltos por
     /// el módulo de origen en <see cref="PostingFact"/> — sin condicionales por SourceModule/
-    /// FactType. <see cref="PostingAmountKind.Retention"/> resuelve a 0m: PostingFact todavía no
-    /// transporta ese monto (fuera de alcance de esta fase, "No modificar PostingFact") — una
-    /// PostingRuleLine que lo referencie queda sin efecto hasta que PostingFact se enriquezca.
+    /// FactType. <see cref="PostingAmountKind.Retention"/> resuelve
+    /// <see cref="PostingFact.RetainedAmount"/> desde <c>RETENTIONS-EXPENSES-INTEGRATION-01D-2</c>
+    /// (antes resolvía siempre 0m porque el campo no existía — ver historial en git blame de este
+    /// comentario) — el gap quedaba explícitamente reservado para cuando PostingFact se enriqueciera.
     ///
     /// P0-02 Fase 6 (Remediación 01) — 5 casos nuevos, cada uno resuelve el campo nullable nuevo
     /// correspondiente de <see cref="PostingFact"/> (§19.1bis, PurchaseReturnAuthorized); ninguno
@@ -86,7 +87,7 @@ internal sealed class JournalFactory
             PostingAmountKind.TaxIce => fact.TotalIce,
             PostingAmountKind.Discount => fact.TotalDiscount,
             PostingAmountKind.GrandTotal => fact.GrandTotal,
-            PostingAmountKind.Retention => 0m,
+            PostingAmountKind.Retention => fact.RetainedAmount ?? 0m,
             PostingAmountKind.AppliedToPayable => fact.AppliedToPayableAmount ?? 0m,
             PostingAmountKind.SupplierCredit => fact.SupplierCreditAmount ?? 0m,
             PostingAmountKind.CostVarianceDebit => fact.CostVarianceDebitAmount ?? 0m,

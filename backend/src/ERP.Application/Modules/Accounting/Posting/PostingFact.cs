@@ -53,5 +53,12 @@ public sealed record PostingFact(
     // (a diferencia de los campos anteriores, todos monto único). Mismo criterio aditivo:
     // opcional, agregada al final, null por defecto — ningún call site existente se rompe.
     // Ver PostingAllocation.cs y JournalFactory.Create para cómo se consume.
-    IReadOnlyCollection<PostingAllocation>? Allocations = null
+    IReadOnlyCollection<PostingAllocation>? Allocations = null,
+    // RETENTIONS-EXPENSES-INTEGRATION-01D-2 — cierra el gap dejado deliberadamente abierto por
+    // PostingAmountKind.Retention (ver JournalFactory.ResolveAmount: hasta ahora resolvía siempre
+    // 0m porque "PostingFact todavía no transporta ese monto"). Mismo criterio aditivo que los
+    // campos anteriores: opcional, agregado al final, null por defecto — ningún call site
+    // existente cambia de comportamiento. Usado por RetentionDocumentIssuedPostingTranslator para
+    // el asiento de reclasificación (CxP proveedor → Retención por pagar).
+    decimal? RetainedAmount = null
 );

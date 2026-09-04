@@ -373,4 +373,88 @@ public sealed class JournalFactoryTests
         // Posted, así que este estado por sí solo ya prueba el balance.
         m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
     }
+
+    // ── RETENTIONS-EXPENSES-INTEGRATION-01D-2: PostingAmountKind.Retention (antes resolvía 0m
+    // siempre — ver comentario histórico en JournalFactory.ResolveAmount) ─────────────────────
+
+    private static PostingFact RetentionFact(decimal retainedAmount = 4.50m) =>
+        new(
+            TenantId,
+            CompanyId,
+            "Retentions",
+            "DocumentIssued",
+            Guid.NewGuid(),
+            new DateOnly(2026, 9, 3),
+            Subtotal: 0m,
+            TotalVat: retainedAmount,
+            TotalIce: 0m,
+            TotalDiscount: 0m,
+            GrandTotal: retainedAmount,
+            RetainedAmount: retainedAmount
+        );
+
+    [Fact]
+    public async Task PostingAmountKind_Retention_resuelve_PostingFact_RetainedAmount()
+    {
+        var accountId = Guid.NewGuid();
+        var rule = PostingRule.Create(TenantId, CompanyId, "Retentions", "DocumentIssued", null, null, null, CreatedBy);
+        rule.AddLine(accountId, AccountNature.Debit, PostingAmountKind.Retention);
+        rule.AddLine(Guid.NewGuid(), AccountNature.Credit, PostingAmountKind.Retention);
+
+        var m = new Mocks();
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+
+        var result = await m.BuildEngine().PostAsync(RetentionFact(4.50m));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().Contain(l => l.AccountId == accountId && l.Debit == 4.50m);
+    }
+
+    /// <summary>
+    /// Reproduce el ejemplo conceptual del ticket (docs/decisions/RETENTIONS-MODULE-DESIGN-01.md §
+    /// "Impacto contable"): Gasto 100 + IVA 15 = 115; Retención IVA 4.50 → el asiento de la
+    /// RETENCIÓN (separado del asiento del gasto, que no cambia) es Debe CxP proveedor 4.50, Haber
+    /// Retención IVA por pagar 4.50 — reclasificación, nunca modifica el asiento del gasto ya
+    /// generado.
+    /// </summary>
+    [Fact]
+    public async Task Asiento_de_retencion_acredita_Retencion_por_pagar_y_debita_CxP_proveedor_balanceado()
+    {
+        var accountsPayableAccount = Guid.NewGuid();
+        var retentionPayableAccount = Guid.NewGuid();
+        var rule = PostingRule.Create(TenantId, CompanyId, "Retentions", "DocumentIssued", null, null, null, CreatedBy);
+        rule.AddLine(accountsPayableAccount, AccountNature.Debit, PostingAmountKind.Retention);
+        rule.AddLine(retentionPayableAccount, AccountNature.Credit, PostingAmountKind.Retention);
+
+        var m = new Mocks();
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+
+        var result = await m.BuildEngine().PostAsync(RetentionFact(4.50m));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().HaveCount(2);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == accountsPayableAccount && l.Debit == 4.50m && l.Credit == 0m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == retentionPayableAccount && l.Credit == 4.50m && l.Debit == 0m);
+        m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
+        // Post() invoca EnsureBalanced() internamente — un asiento desbalanceado nunca llega a Posted.
+        m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
+    }
+
+    [Fact]
+    public async Task Sin_PostingRule_configurada_para_Retentions_el_posting_falla_fail_closed()
+    {
+        var m = new Mocks();
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PostingRule?)null);
+
+        var result = await m.BuildEngine().PostAsync(RetentionFact());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("RULE_NOT_FOUND");
+    }
 }

@@ -147,7 +147,8 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
                 RetentionNumber,
                 TotalRetainedVat,
                 TotalRetainedIncome,
-                TotalRetained
+                TotalRetained,
+                IssueDate.Value
             )
         );
     }

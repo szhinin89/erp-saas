@@ -4,6 +4,7 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Exceptions;
@@ -16,6 +17,7 @@ using ERP.Domain.Modules.DocTypes.Enums;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Retentions.Entities;
 using FluentValidation;
@@ -221,24 +223,27 @@ public sealed class ConfirmExpenseDocumentHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
 
-        // RETENTIONS-EXPENSES-INTEGRATION-01D-1: si el usuario marcó la intención de generar
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-1/01D-2: si el usuario marcó la intención de generar
         // retención, se construye/emite AQUÍ — ANTES del SaveChangesAsync de abajo y sin llamarlo
         // internamente (IRetentionIssuer solo hace staging, ver su comentario de tipo) — para que
-        // ambos agregados (ExpenseDocument confirmado + RetentionDocument emitido) se persistan en
-        // un único SaveChangesAsync, atómico por diseño de ErpDbContext.SaveChangesAsync (abre su
-        // propia transacción de BD cuando no hay una ambiente y envuelve ahí tanto la escritura
-        // inicial como los domain events publicados). Si la emisión falla, se retorna sin llamar
+        // los tres agregados (ExpenseDocument confirmado + AccountsPayable staged con la retención
+        // aplicada + RetentionDocument emitido) se persistan en un único SaveChangesAsync, atómico
+        // por diseño de ErpDbContext.SaveChangesAsync (abre su propia transacción de BD cuando no
+        // hay una ambiente y envuelve ahí tanto la escritura inicial como los domain events
+        // publicados, incluido el posting de la retención vía
+        // RetentionDocumentIssuedPostingTranslator). Si cualquier paso falla, se retorna sin llamar
         // SaveChangesAsync: la mutación en memoria de document.Confirm() de arriba nunca se
         // flushea, así que el gasto NO queda Confirmed en BD — todo o nada, sin necesidad de un
         // IUnitOfWork.BeginTransactionAsync explícito (evita además el riesgo de una transacción
         // anidada, ya que ni RetentionIssuer ni IRetentionEligibilityService abren una propia).
         //
-        // Pendiente explícito para RETENTIONS-EXPENSES-INTEGRATION-01D-2 (fuera de alcance de esta
-        // fase): la retención emitida aquí NO aplica su monto a AccountsPayable
-        // (AccountsPayable.ApplyRetention) ni genera asiento contable propio — no existe todavía un
-        // posting translator para RetentionDocumentIssuedEvent. La CxP creada más abajo (si
-        // PayableGenerationMode.OnConfirmation) queda por el monto BRUTO del gasto, sin descontar
-        // el retenido, hasta que 01D-2 conecte ese paso.
+        // 01D-2 cierra el gap dejado explícito por 01D-1: cuando hay retención, la CxP se crea
+        // STAGED aquí mismo (vía IAccountsPayableService.StageFromOriginAsync — nunca
+        // CreateFromOriginAsync, que comitea por su cuenta) y se le aplica ApplyRetention() ANTES
+        // del SaveChangesAsync único, en vez de crearse (bruta, sin retención) en el bloque
+        // posterior al posting (ver más abajo, ahora condicionado a que este camino NO se haya
+        // ejecutado, para no duplicar la CxP).
+        var retentionAppliedToPayable = false;
         if (cmd.Retention is { AppliesRetention: true } retention)
         {
             var retentionResult = await _retentionIssuer.IssueForExpenseAsync(
@@ -257,6 +262,57 @@ public sealed class ConfirmExpenseDocumentHandler
             );
             if (!retentionResult.IsSuccess)
                 return retentionResult.ToFailure<RetentionDocument, ExpenseDocumentDetailDto>();
+
+            var retentionDocument = retentionResult.Value!;
+
+            // Solo si la política declara PayableGenerationMode.OnConfirmation (mismo criterio que
+            // el bloque post-SaveChanges de abajo) hay una CxP a la que aplicar la retención en esta
+            // misma operación — si la empresa no genera CxP al confirmar, no hay saldo que netear
+            // aquí y la retención queda emitida sin efecto sobre CxP (mismo estado que 01D-1 dejaba
+            // para todos los casos).
+            if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation)
+            {
+                try
+                {
+                    var payable = await _payables.StageFromOriginAsync(
+                        new CreateAccountsPayableFromOriginRequest(
+                            _tenant.TenantId,
+                            _company.CompanyId,
+                            document.BranchId,
+                            document.SupplierId,
+                            AccountsPayableOriginType.ExpenseDocument,
+                            document.Id,
+                            document.DocumentType,
+                            document.DocumentNumber,
+                            document.IssueDate,
+                            document.AccountingDate,
+                            new[]
+                            {
+                                new AccountsPayableInstallmentInput(
+                                    1,
+                                    document.DueDate ?? document.AccountingDate,
+                                    document.GrandTotal
+                                ),
+                            }
+                        ),
+                        _user.UserId,
+                        ct
+                    );
+                    payable.ApplyRetention(retentionDocument.TotalRetained, _user.UserId);
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+                {
+                    // A diferencia del bloque post-SaveChanges (donde un fallo de CxP no revierte
+                    // la confirmación ya persistida), aquí SÍ debe fallar toda la operación: el
+                    // usuario pidió explícitamente retención, y una retención emitida sin su CxP
+                    // neta aplicada dejaría el saldo del proveedor bruto (incorrecto) — nunca un
+                    // estado intermedio (ver docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Flujo
+                    // funcional integrado de retenciones", punto 8).
+                    return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
+                }
+
+                retentionAppliedToPayable = true;
+            }
         }
 
         try
@@ -266,8 +322,11 @@ public sealed class ConfirmExpenseDocumentHandler
             // (en vez de solo loguear un warning) si IPostingEngine.PostAsync falla. La excepción se
             // propaga desde el Publish() interno de ErpDbContext.SaveChangesAsync, que hace rollback
             // completo de la transacción ANTES de este catch — el documento queda en Draft en BD,
-            // nada de lo mutado en memoria (Confirm() de arriba, ni el RetentionDocument en staging
-            // de arriba) llegó a persistirse.
+            // nada de lo mutado en memoria (Confirm() de arriba, ni el RetentionDocument/AccountsPayable
+            // en staging de arriba) llegó a persistirse.
+            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: mismo criterio para el posting de la retención
+            // — RetentionDocumentIssuedPostingTranslator lanza RetentionPostingFailedException si
+            // falla, capturada abajo, con el mismo efecto de rollback completo.
             // DOCUMENT-FLOW-POLICY-01: la política inicial obligatoria de GASDOC declara
             // AccountingPostingMode.OnConfirmation, que coincide con este comportamiento existente
             // (posting disparado por ExpenseDocumentConfirmedEvent al confirmar). Reestructurar el
@@ -279,16 +338,22 @@ public sealed class ConfirmExpenseDocumentHandler
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
+        catch (RetentionPostingFailedException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
+        }
 
         // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01: "al confirmar gasto, después de
         // posting contable exitoso, crear AccountsPayable" — solo si la política de flujo documental
-        // lo declara (PayableGenerationMode.OnConfirmation). El posting ya se confirmó y persistió
+        // lo declara (PayableGenerationMode.OnConfirmation) Y no se creó ya de forma staged por el
+        // camino de retención de arriba (RETENTIONS-EXPENSES-INTEGRATION-01D-2 — evita un
+        // AccountsPayable duplicado para el mismo origen). El posting ya se confirmó y persistió
         // arriba (si hubiera fallado, ya habríamos retornado). A diferencia del posting, un fallo
         // aquí NO debe revertir la confirmación ya persistida (el gasto ya tiene asiento contable
         // real) — se registra para seguimiento manual, mismo criterio que Purchases usa para gaps de
         // configuración que no bloquean el documento de origen. CreateFromOriginAsync es
         // idempotente, así que un reintento manual posterior es seguro.
-        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation)
+        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation && !retentionAppliedToPayable)
         {
             try
             {
@@ -556,12 +621,13 @@ public sealed class CreateConfirmedExpenseHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
 
-        // RETENTIONS-EXPENSES-INTEGRATION-01D-1: mismo criterio y mismos comentarios que
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-1/01D-2: mismo criterio y mismos comentarios que
         // ConfirmExpenseDocumentHandler — se emite ANTES del SaveChangesAsync de abajo (staging vía
         // IRetentionIssuer, sin SaveChanges propio) para que ExpenseDocument (recién agregado
-        // arriba) y RetentionDocument se persistan atómicamente en un único SaveChangesAsync. Si
-        // falla, se retorna sin persistir nada (ni el ExpenseDocument recién creado en memoria).
-        // Pendiente para 01D-2: no aplica el monto a AccountsPayable ni genera asiento propio.
+        // arriba), AccountsPayable (staged, con la retención ya aplicada) y RetentionDocument se
+        // persistan atómicamente en un único SaveChangesAsync. Si falla cualquier paso, se retorna
+        // sin persistir nada (ni el ExpenseDocument recién creado en memoria).
+        var retentionAppliedToPayable = false;
         if (cmd.Retention is { AppliesRetention: true } retention)
         {
             var retentionResult = await _retentionIssuer.IssueForExpenseAsync(
@@ -580,25 +646,78 @@ public sealed class CreateConfirmedExpenseHandler
             );
             if (!retentionResult.IsSuccess)
                 return retentionResult.ToFailure<RetentionDocument, ExpenseDocumentDetailDto>();
+
+            var retentionDocument = retentionResult.Value!;
+
+            // Mismo criterio que ConfirmExpenseDocumentHandler: solo si la política declara
+            // PayableGenerationMode.OnConfirmation hay una CxP a la que aplicar la retención en
+            // esta misma operación.
+            if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation)
+            {
+                try
+                {
+                    var payable = await _payables.StageFromOriginAsync(
+                        new CreateAccountsPayableFromOriginRequest(
+                            _tenant.TenantId,
+                            _company.CompanyId,
+                            document.BranchId,
+                            document.SupplierId,
+                            AccountsPayableOriginType.ExpenseDocument,
+                            document.Id,
+                            document.DocumentType,
+                            document.DocumentNumber,
+                            document.IssueDate,
+                            document.AccountingDate,
+                            new[]
+                            {
+                                new AccountsPayableInstallmentInput(
+                                    1,
+                                    document.DueDate ?? document.AccountingDate,
+                                    document.GrandTotal
+                                ),
+                            }
+                        ),
+                        _user.UserId,
+                        ct
+                    );
+                    payable.ApplyRetention(retentionDocument.TotalRetained, _user.UserId);
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+                {
+                    // Mismo criterio que ConfirmExpenseDocumentHandler: aquí SÍ debe fallar toda la
+                    // operación — el usuario pidió explícitamente retención, nunca un estado
+                    // intermedio con CxP bruta cuando se pidió neta.
+                    return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
+                }
+
+                retentionAppliedToPayable = true;
+            }
         }
 
         try
         {
             // Mismo criterio que ConfirmExpenseDocumentHandler (EXPENSES-CONFIRM-07): posting de
             // Gastos es estricto — ExpensePostingFailedException aborta la transacción completa,
-            // nada de lo construido arriba llega a persistirse.
+            // nada de lo construido arriba llega a persistirse. RETENTIONS-EXPENSES-INTEGRATION-01D-2:
+            // mismo criterio para RetentionPostingFailedException (posting de la retención).
             await _repo.SaveChangesAsync(ct);
         }
         catch (ExpensePostingFailedException ex)
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
+        catch (RetentionPostingFailedException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
+        }
 
         // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01, mismo criterio que
-        // ConfirmExpenseDocumentHandler: solo si PayableGenerationMode.OnConfirmation. El posting ya
-        // se confirmó y persistió arriba; un fallo aquí no revierte la confirmación ya persistida —
-        // se registra para seguimiento manual. CreateFromOriginAsync es idempotente.
-        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation)
+        // ConfirmExpenseDocumentHandler: solo si PayableGenerationMode.OnConfirmation Y no se creó
+        // ya de forma staged por el camino de retención de arriba (evita un AccountsPayable
+        // duplicado). El posting ya se confirmó y persistió arriba; un fallo aquí no revierte la
+        // confirmación ya persistida — se registra para seguimiento manual. CreateFromOriginAsync es
+        // idempotente.
+        if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation && !retentionAppliedToPayable)
         {
             try
             {
