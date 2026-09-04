@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Expenses.Enums;
+using ERP.Domain.Modules.Retentions.Enums;
 
 namespace ERP.Application.Modules.Expenses.DTOs;
 
@@ -12,6 +13,43 @@ public sealed record ExpenseDraftLineRequest(
     string? Notes = null
 );
 
+/// <summary>
+/// RETENTIONS-API-EXPENSES-01E — línea de retención tal como llega desde el body HTTP. Espejo de
+/// <see cref="ERP.Application.Modules.Retentions.UseCases.IssueRetentionLineInput"/> (mismo shape),
+/// mantenido como tipo de contrato de API independiente del command interno — mismo criterio ya
+/// usado por <see cref="CreateExpenseDraftRequest"/> frente a <c>CreateExpenseDraftCommand</c>.
+/// </summary>
+public sealed record RetentionIntentLineRequest(
+    RetentionTaxType TaxType,
+    string RetentionCode,
+    decimal BaseAmount,
+    decimal RetentionRate,
+    decimal RetainedAmount,
+    string? Description = null
+);
+
+/// <summary>
+/// RETENTIONS-API-EXPENSES-01E — intención opcional del usuario de generar una retención en la
+/// misma operación de confirmar un gasto. <c>null</c> (o <see cref="AppliesRetention"/> = false)
+/// preserva exactamente el comportamiento actual (sin retención). Nunca incluye
+/// <c>TenantId</c>/<c>CompanyId</c>/<c>BranchId</c> — esos siguen viniendo exclusivamente del
+/// contexto autenticado en el handler de Application.
+/// </summary>
+public sealed record RetentionIntentRequest(
+    bool AppliesRetention,
+    Guid? EmissionPointId,
+    string? RetentionNumber,
+    DateOnly? IssueDate,
+    IReadOnlyList<RetentionIntentLineRequest>? Lines
+);
+
+/// <summary>
+/// RETENTIONS-API-EXPENSES-01E — body opcional de <c>POST {id}/confirm</c>. Sin body (o con
+/// <c>Retention</c> ausente/null), el endpoint se comporta exactamente igual que antes de esta
+/// fase.
+/// </summary>
+public sealed record ConfirmExpenseDocumentRequest(RetentionIntentRequest? Retention = null);
+
 public sealed record CreateExpenseDraftRequest(
     Guid SupplierId,
     DateOnly IssueDate,
@@ -23,7 +61,8 @@ public sealed record CreateExpenseDraftRequest(
     IReadOnlyList<ExpenseDraftLineRequest> Lines,
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
-    string? Notes = null
+    string? Notes = null,
+    RetentionIntentRequest? Retention = null
 );
 
 public sealed record CancelExpenseDocumentRequest(string Reason);
