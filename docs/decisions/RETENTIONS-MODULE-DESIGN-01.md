@@ -204,33 +204,85 @@ Draft ──(descartado, sin persistir número)
 
 Guarda de dominio: `Issue()` solo permite `TotalRetained > 0` — si el cálculo da 0, no se emite un documento vacío (igual que `RetentionCalculator` hoy retorna `SkipReason` cuando no aplica).
 
+## Flujo funcional integrado de retenciones
+
+La retención depende de la configuración tributaria de la empresa emisora y del proveedor/sujeto retenido — no es una decisión libre del usuario, y el usuario debe entender con claridad, dentro del propio flujo de Compra/Gasto, por qué aplica o no aplica retención en cada documento.
+
+1. **`Retentions` sigue siendo un módulo independiente en arquitectura** — `RetentionDocument`, sus reglas de dominio, su repositorio y su posting viven en `ERP.Domain/Modules/Retentions`/`ERP.Application/Modules/Retentions`, sin fusionarse con Expenses ni Purchases (ver "Arquitectura propuesta"). Este rediseño cambia *cuándo* se invoca ese módulo, nunca *dónde* vive su código.
+2. **La captura/generación se integra dentro del documento origen** — Compra, Gasto o un futuro documento aplicable. El usuario nunca navega a una pantalla separada de "Retenciones" para generar una; la acción vive dentro del formulario del documento que la origina.
+3. **La retención no debe quedar como acción olvidable posterior.** La versión anterior de este diseño la modelaba como una acción manual sobre un documento ya `Confirmed`, ejecutable en cualquier momento después (o nunca). Ese modelo se corrige: si el usuario debe generar la retención, lo decide en el mismo momento en que confirma el documento origen — no queda un paso pendiente que dependa de que alguien recuerde volver.
+4. **Antes de confirmar el documento, el ERP evalúa** (reutilizando `RETENTIONS-ELIGIBILITY-01` sin duplicar su lógica):
+   - `Company.WithholdsVat`
+   - `Company.WithholdsRenta`
+   - `Company.IsAccountingReq`
+   - `Company.SpecialTaxpayerNo`
+   - `SupplierRoleConfig.IsRetentionExempt`
+   - `SupplierRoleConfig.IsRequiredToKeepAccounting`
+   - códigos de retención activos desde catálogo SRI
+   - base retenible del documento
+5. **La UI debe mostrar claramente**, dentro del formulario del documento origen:
+   - estado tributario de la empresa actual (¿retiene IVA? ¿retiene Renta?)
+   - estado tributario del proveedor (¿exento? ¿obligado a llevar contabilidad?)
+   - si aplica o no aplica retención para este documento
+   - el motivo cuando no aplica (una de las razones de `RetentionEligibilityResult.Reasons`, nunca un mensaje genérico)
+   - qué falta configurar cuando el sistema no puede calcular (p. ej. proveedor sin código de retención asignado)
+6. **Si el usuario marca que aplica retención pero faltan datos, el documento origen no se confirma.** No existe un estado intermedio de "confirmado sin retención generada" cuando el usuario pidió explícitamente que se generara — el bloqueo ocurre antes de tocar CxP o contabilidad, con el mismo mensaje explicativo que ya mostró la UI.
+7. **La confirmación es transaccional**, en este orden, dentro de una única transacción de base de datos:
+   1. Confirmar el documento origen (Compra/Gasto)
+   2. Crear `RetentionDocument` (si el usuario marcó que aplica y la elegibilidad server-side lo confirma)
+   3. Aplicar la retención en CxP (`AccountsPayable.ApplyRetention()`)
+   4. Generar el asiento contable de la retención
+8. **Si falla cualquiera de esos pasos, falla toda la confirmación** — rollback completo. Nunca queda un gasto/compra confirmado sin su retención cuando esta era obligatoria según lo marcado por el usuario, ni una retención sin su asiento, ni un asiento sin su CxP aplicada.
+9. **El usuario nunca ingresa `TenantId`, `CompanyId` ni `BranchId`** en ningún punto de este flujo — todo viene del contexto seguro (`ICurrentTenant`/`ICurrentCompany`/`ICurrentBranch`), igual que el resto del ERP.
+10. **No se hardcodean códigos ni porcentajes SRI** en ningún punto de este flujo integrado — siguen viniendo de `IRetentionCodeResolver`/`SriRetentionCodes`, sin excepción por la integración transaccional.
+11. **XML/RIDE no se implementa todavía** — este flujo integrado solo cubre `RetentionDocument` como documento interno del ERP; la relación con `ElectronicDocuments` sigue diferida a su propia fase con ADR previa (ver "Relación futura con SRI XML/RIDE").
+
+### Mensajes UX de referencia
+
+Ejemplos de los mensajes que la UI debe mostrar, derivados directamente de `RetentionEligibilityResult.Reasons` (nunca texto libre inventado en el frontend — el mensaje siempre viene resuelto del backend):
+
+- *"La empresa actual no está configurada para retener IVA."* — cuando `Company.WithholdsVat == false`.
+- *"El proveedor está marcado como exento de retención."* — cuando `SupplierRoleConfig.IsRetentionExempt == true`.
+- *"No existe código de retención activo para esta operación."* — cuando `MissingRetentionCode == true`.
+- *"La retención se generará al confirmar este documento."* — cuando la evaluación de elegibilidad es positiva y el usuario ha marcado la intención de generarla.
+
 ## Flujo desde Gastos (primer consumidor)
 
+**Rediseñado (2026-09-03) — la emisión se integra en la confirmación, no queda como acción posterior.** Ver "Flujo funcional integrado de retenciones" para la justificación funcional completa. Esta sección describe la secuencia técnica.
+
 ```
-ExpenseDocument (Confirmed)
+ExpenseDocument (Draft, con datos suficientes para evaluar retención)
    ↓
-[acción manual explícita del usuario — NO automática al confirmar]
+UI: al editar el gasto, el usuario ve el estado de elegibilidad (evaluado por RETENTIONS-ELIGIBILITY-01)
+    y, si aplica, marca la intención "generar retención al confirmar"
    ↓
-POST /retentions  { sourceDocumentType: ExpenseDocument, sourceDocumentId, emissionPointId }
+POST /expenses/documents/{id}/confirm  { applyRetention: bool }   (el flag es intención del usuario,
+                                          NUNCA el cálculo ni el monto — eso lo resuelve el servidor)
    ↓
-IssueRetentionHandler:
-   1. Carga ExpenseDocument, valida Confirmed, valida BranchId del usuario == BranchId del documento
-   2. Idempotencia: ¿ya existe RetentionDocument Issued para este origen? → Conflict
-   3. Resuelve SupplierRoleConfig del proveedor del gasto (IsRetentionExempt, códigos default)
-   4. RetentionCalculator.Calculate(...) — mismo servicio que Purchases, sin fork
-   5. RetentionDocument.CreateDraft(...) + líneas
-   6. CaptureNextAsync(tenantId, companyId, emissionPointId, RetentionDocTypeCode) → número
-   7. retentionDoc.Issue(number, userId) → evento
-   8. Carga AccountsPayable por (OriginType=ExpenseDocument, OriginId=expenseDocument.Id)
-   9. Si TotalRetained > 0: payable.ApplyRetention(TotalRetained, userId)
-   10. Si no existe AP y TotalRetained > 0: rollback con error (igual que hoy en Purchases)
+ConfirmExpenseDocumentHandler (transacción única):
+   1. Confirma ExpenseDocument (comportamiento actual, sin cambios: congela totales, dispara
+      ExpenseDocumentConfirmedEvent → posting del gasto)
+   2. Crea AccountsPayable vía CreateFromOriginAsync (comportamiento actual, sin cambios)
+   3. Si applyRetention == true:
+      a. Reevalúa elegibilidad server-side (RETENTIONS-ELIGIBILITY-01) — nunca confía en el flag
+         del paso anterior como prueba de que aplica; el flag es intención, la elegibilidad se
+         recalcula siempre en el servidor
+      b. Si no elegible → toda la confirmación falla (ver "Flujo funcional integrado de retenciones" #6)
+      c. RetentionCalculator.Calculate(...) — mismo servicio que Purchases, sin fork
+      d. RetentionDocument.CreateDraft(...) + líneas
+      e. CaptureNextAsync(tenantId, companyId, emissionPointId, RetentionDocTypeCode) → número
+      f. retentionDoc.Issue(number, userId) → evento
+      g. payable.ApplyRetention(TotalRetained, userId) sobre el AP recién creado en el paso 2
+   4. JournalEntry del gasto (paso 1) y JournalEntry de la retención (paso 3), ambos dentro de la
+      misma transacción de base de datos
    ↓
-JournalEntry de retención (vía RetentionDocumentIssuedPostingTranslator, nuevo)
+Si cualquier paso falla → rollback completo: el gasto NO queda Confirmed, no hay AP, no hay
+retención, no hay asientos. Nunca un estado intermedio.
 ```
 
-**Emisión manual explícita**: por decisión aprobada, la emisión de retención en Gastos es siempre una acción manual del usuario sobre un gasto ya `Confirmed` — nunca automática al confirmar. La automatización se analizará en una fase posterior, condicionada a normativa y reglas fiscales específicas del cliente.
+**Sigue siendo manual, cambia el momento**: la decisión de generar retención sigue siendo del usuario (no hay automatización de cuándo aplicar retención), pero deja de ser una acción posterior y separada sobre un documento ya confirmado — se integra como parte de la misma operación de confirmar, para que la retención nunca quede como paso olvidable. La automatización de la *decisión* (inferir automáticamente si debe aplicar sin que el usuario la marque) sigue diferida a una fase posterior, condicionada a normativa y reglas fiscales específicas del cliente.
 
-**Punto de integración**: no se agrega nada dentro de `ExpenseDocumentConfirmUseCases.cs` — la emisión de retención es una acción posterior e independiente sobre un documento ya confirmado, igual que Compras lo hace hoy (`POST {id}/withholding` es un endpoint separado de `Confirm`). Esto evita duplicar por tercera vez el bloque de creación de AP ya repetido dos veces en ese archivo.
+**Punto de integración**: a diferencia de la versión anterior de este documento, `ConfirmExpenseDocumentHandler`/`CreateConfirmedExpenseHandler` (`ExpenseDocumentConfirmUseCases.cs`, los dos call sites ya identificados en "Hallazgos técnicos", líneas 178-216 y 446-484) **sí incorporan** el paso de retención, como tercer bloque después de crear el AP, dentro de la misma transacción — ya no se evita por duplicación, se acepta porque la alternativa (retención como paso post-confirmación separable) es precisamente el riesgo que este rediseño corrige (ver "Flujo funcional integrado de retenciones" #3). La duplicación estructural entre ambos handlers permanece como deuda ya conocida, no agravada por este cambio (ambos necesitan el mismo bloque de todas formas).
 
 ## Flujo futuro desde Compras
 
@@ -256,6 +308,8 @@ Nuevos `RetentionDocumentIssuedPostingTranslator` y `RetentionDocumentCancelledP
 
 **Posting estricto (decisión aprobada)**: si falla la generación del asiento, la retención **no se emite** — la transacción completa se revierte, sin excepción. Una retención sin asiento sería un pasivo fiscal fantasma. La regeneración de un asiento fallido queda para una herramienta futura y controlada, fuera del alcance de E1.
 
+**Actualización (2026-09-03)**: con la integración transaccional (ver "Flujo funcional integrado de retenciones"), el posting estricto de la retención no solo revierte la propia retención — revierte **toda** la confirmación del documento origen si el usuario marcó que debía generarse. El posting del gasto/compra en sí (paso 1 de la transacción) no cambia su criterio de estrictez propio; lo que cambia es que ahora ambos postings (documento origen + retención) comparten una única transacción de base de datos cuando el usuario pidió retención.
+
 ## Relación futura con SRI XML/RIDE
 
 Explícitamente fuera de alcance de E1. `ElectronicDocumentType.Retention = 4` ya existe reservado en el enum (`ElectronicDocumentType.cs`) — la fase futura debería conectar `RetentionDocument` al pipeline genérico `ElectronicDocument` (`SourceModule="Retentions"`, `SourceEntityId=retentionDocument.Id`) en vez de replicar el patrón bespoke de `IssuedWithholding`, que mezcla campos SRI directamente en la entidad de negocio — decisión que este diseño considera un error a no repetir. Requiere su propia ADR (regla ya fijada: no tocar `ElectronicDocuments v1.0` sin ADR + evidencia técnica + tests + revisión de compatibilidad).
@@ -272,7 +326,7 @@ Explícitamente fuera de alcance de E1. `ElectronicDocumentType.Retention = 4` y
 - **`RETENTIONS-ELIGIBILITY-01` — Elegibilidad tributaria (obligatoria, previa a todo lo demás).** Servicio de solo lectura que resuelve elegibilidad desde `Company` (`WithholdsVat`/`WithholdsRenta`/`IsAccountingReq`/`SpecialTaxpayerNo`) y `SupplierRoleConfig` (`IsRetentionExempt`, códigos default), sin duplicar ningún campo; si se confirma la brecha de trazabilidad SRI, agrega `RetentionAgentResolutionNumber`/`RetentionAgentEffectiveFrom` a `Company` como extensión aditiva de `UpdateFiscalSettings`. Ningún caso de uso de `Retentions` puede crear/emitir un `RetentionDocument` sin pasar por esta guarda. Tests de dominio/aplicación de cada regla de "Comportamiento esperado" (empresa no habilitada por impuesto, proveedor exento, sin base retenible, sin código activo, datos incompletos).
 - **E1-A — Dominio + Aplicación de `Retentions`.** Entidades, enums, `IssueRetentionUseCases`, `CancelRetentionUseCases`, reubicar `RetentionCalculator`/`IRetentionCodeResolver`, consumir el servicio de `RETENTIONS-ELIGIBILITY-01` como guarda previa al cálculo. Tests de dominio + regresión completa de Purchases (por la reubicación de servicios compartidos).
 - **E1-B — Infraestructura / persistencia.** `RetentionDocumentConfiguration`, repositorio, migración EF, registro de `DocTypeCode` para Retentions en `CaptureNextAsync` (nomenclatura `RET`, salvo que la inspección técnica exija mantener `RETGAS`).
-- **E1-C — Integración con Expenses Confirm.** No se agrega nada dentro de `ExpenseDocumentConfirmUseCases.cs` (ver "Flujo desde Gastos"); se expone el endpoint/comando de emisión manual sobre un `ExpenseDocument` ya `Confirmed`, incluyendo `ApplyRetention`/`ReverseRetention` desde `IssueRetentionHandler` y los translators de posting (estrictos). Incluye permisos finos (`retentions.issue`, `retentions.cancel`, `retentions.view`) y la `DocumentFlowPolicy` propia de Retentions con reglas mínimas (motivo de cancelación si corresponde).
+- **E1-C — Integración con Expenses Confirm.** *(Actualizado 2026-09-03, ver "Flujo funcional integrado de retenciones")* — el flujo de retención se incorpora dentro de `ConfirmExpenseDocumentHandler`/`CreateConfirmedExpenseHandler` (`ExpenseDocumentConfirmUseCases.cs`), como paso transaccional posterior a la creación del AP, condicionado a un flag de intención del usuario (`applyRetention`) que el servidor siempre revalida contra `RETENTIONS-ELIGIBILITY-01` antes de ejecutar. Incluye `ApplyRetention`/`ReverseRetention` desde el mismo flujo de confirmación y los translators de posting (estrictos), permisos finos (`retentions.issue`, `retentions.cancel`, `retentions.view`) y la `DocumentFlowPolicy` propia de Retentions con reglas mínimas (motivo de cancelación si corresponde). La cancelación de una retención ya emitida (`RetentionDocument.Cancel()`) sigue siendo una acción separada sobre un documento ya confirmado — solo la *emisión* se integra al confirmar, no el ciclo completo.
 - **E1-D — UI integrada en `ExpenseDocumentFormPage`.** Acción "Emitir retención" visible sobre un gasto confirmado (bloqueada con mensaje explícito si la empresa no es agente de retención, resuelto por `RETENTIONS-ELIGIBILITY-01`), vista de la retención emitida, cancelación. Integrada dentro de la página existente de Gastos — no se crea un módulo de UI separado en E1 (`frontend/src/modules/retentions` queda para una fase posterior si el alcance UI lo justifica).
 - **E1-E — Tests end-to-end.** Flujo completo desde Gastos: elegibilidad→emitir→CxP neto→asiento→cancelar→reverso, incluyendo el caso bloqueado por falta de elegibilidad.
 
@@ -287,6 +341,8 @@ Cada fase cierra sus propios tests antes de darse por completa.
 - **Riesgo de nomenclatura de documento**: adoptar `RET` como código transversal sin verificar en E1-B si colisiona con `RETGAS` ya seedeado podría requerir migración de datos de catálogo — debe resolverse en la inspección técnica de esa fase, no asumirse de antemano.
 - **Riesgo normativo SRI**: la relación futura con `ElectronicDocuments` (XML/RIDE) queda sin resolver hasta su propia ADR — cualquier necesidad de compliance fiscal antes de esa fase deberá evaluarse manualmente (comprobante físico/PDF, ver decisión #11).
 - **Riesgo de emisión indebida por configuración incompleta de `Company`**: si `WithholdsRenta`/`WithholdsVat` no están correctamente configurados para una empresa que en realidad sí es agente de retención (o viceversa), el ERP bloquearía o permitiría emisiones incorrectamente sin que sea un bug del módulo `Retentions` en sí — depende enteramente de que el dato en `Company` esté al día. Mitigado únicamente por `RETENTIONS-ELIGIBILITY-01` validando explícitamente antes de emitir, nunca asumiendo.
+- **Riesgo de acoplamiento transaccional** *(nuevo, 2026-09-03)*: integrar la creación de `RetentionDocument` dentro de la misma transacción que `Confirm()` del documento origen aumenta el radio de falla de esa transacción — un problema en el posting de la retención ahora puede impedir confirmar un gasto que, sin retención, habría confirmado sin problema. Es el costo aceptado a cambio de eliminar el riesgo mayor (retención olvidada). Debe vigilarse en E1-E con tests explícitos de rollback completo ante falla en cualquiera de los 4 pasos.
+- **Riesgo de reevaluación server-side inconsistente con lo que vio el usuario**: si la UI mostró elegibilidad positiva pero el estado cambió entre que el usuario abrió el formulario y confirmó (p. ej. otro proceso desactivó el código de retención del proveedor), la reevaluación server-side en el paso 3a puede bloquear la confirmación con una razón que el usuario no anticipaba. Comportamiento correcto (fail-closed), pero debe comunicarse con un mensaje claro, no un error genérico.
 
 ## Decisiones aprobadas
 
@@ -294,7 +350,7 @@ Cada fase cierra sus propios tests antes de darse por completa.
 2. `RetentionDocument` se relaciona con su documento origen de forma genérica: `SourceDocumentType` + `SourceDocumentId`.
 3. `SourceDocumentType` contempla `ExpenseDocument`, `PurchaseInvoice`, y `Manual` reservado para futuro (sin implementación en E1).
 4. Gastos es el primer consumidor implementado. Compras sigue usando `IssuedWithholding` en E1; su migración queda para una fase separada.
-5. La emisión es manual y explícita: desde un gasto confirmado, el usuario decide si generar/emitir la retención. La automatización se analiza después, según normativa y reglas fiscales.
+5. **(Actualizado 2026-09-03)** La emisión sigue siendo manual y explícita — el usuario decide si generar la retención —, pero se integra dentro de la confirmación del documento origen, no como acción posterior separada. La confirmación es transaccional: confirmar documento → crear `RetentionDocument` → aplicar retención en CxP → generar asiento, todo o nada. Ver "Flujo funcional integrado de retenciones". La automatización de la *decisión* de aplicar retención (sin que el usuario la marque) se analiza después, según normativa y reglas fiscales.
 6. Nomenclatura del documento interno: transversal `RET`, salvo que la inspección técnica de E1-B demuestre que debe mantenerse otra (p. ej. `RETGAS`). El tipo SRI se resuelve desde `sri_doc_type`/`DocTypeSriMap`, nunca hardcodeado.
 7. `Retentions` tendrá su propia `DocumentFlowPolicy`. En E1 solo se aplican reglas mínimas necesarias (p. ej. motivo de cancelación si corresponde). Reglas normativas SRI avanzadas se analizan después.
 8. `Retentions` aplica/revierte retención usando `AccountsPayable.ApplyRetention()`/`ReverseRetention()` sin modificarlos. Se mantiene unicidad por origen para evitar múltiples retenciones activas sobre el mismo documento.
@@ -304,11 +360,12 @@ Cada fase cierra sus propios tests antes de darse por completa.
 12. Antes de emitir un `RetentionDocument`, el ERP valida elegibilidad tributaria: empresa agente de retención según `Company` (`WithholdsRenta`/`WithholdsVat`/`IsAccountingReq`/`SpecialTaxpayerNo`, reutilizados sin duplicar), proveedor no exento (`SupplierRoleConfig.IsRetentionExempt`), base retenible en el documento origen, y código de retención activo en catálogo. La condición de agente de retención viene siempre de la configuración empresarial, nunca del usuario ni del frontend.
 13. No se crean campos booleanos nuevos redundantes (`IsRetentionAgent`/`IsSpecialTaxpayer`) sobre datos que ya existen en `Company`. Si se confirma la necesidad de trazar resolución SRI y vigencia, se agregan únicamente `RetentionAgentResolutionNumber`/`RetentionAgentEffectiveFrom` como extensión aditiva, en la subfase `RETENTIONS-ELIGIBILITY-01`.
 14. `RETENTIONS-ELIGIBILITY-01` es obligatoria y previa a cualquier código de dominio/aplicación de `Retentions` — ningún caso de uso puede crear/emitir un `RetentionDocument` sin pasar por esa validación.
+15. **(2026-09-03)** La emisión de retención se integra dentro de la confirmación transaccional del documento origen (Compra/Gasto), no como acción posterior olvidable. La confirmación ejecuta, en una única transacción: confirmar documento → crear `RetentionDocument` → aplicar retención en CxP → generar asiento. Si falla cualquier paso, falla toda la confirmación. Ver "Flujo funcional integrado de retenciones".
 
 ## Preguntas que quedan para análisis futuro
 
-1. ¿La automatización de emisión de retención en Gastos (condicionada a normativa fiscal) se implementará como una fase posterior de E1, o como una decisión de negocio independiente evaluada más adelante?
-2. ¿Se requiere un control de tipo `FinancialLock` (como el que usa Compras hoy antes de emitir una retención) también para Gastos, o Gastos no tiene un concepto equivalente de concurrencia financiera sobre el mismo documento?
+1. ¿La automatización de la *decisión* de aplicar retención en Gastos (sin que el usuario la marque, condicionada a normativa fiscal) se implementará como una fase posterior de E1, o como una decisión de negocio independiente evaluada más adelante? (La integración transaccional ya aprobada no implica automatizar la decisión, solo el momento de ejecución si el usuario ya decidió que sí.)
+2. **(Más urgente tras la integración transaccional)** ¿Se requiere un control de tipo `FinancialLock` (como el que usa Compras hoy antes de emitir una retención) también para Gastos, ahora que la creación de `RetentionDocument` ocurre dentro de la misma transacción que `Confirm()`? Debe resolverse antes de E1-C, no después.
 3. ¿La nomenclatura `RET` reemplaza a `RETGAS` en catálogo, o conviven ambos códigos con significados distintos? Se resuelve en la inspección técnica de E1-B.
 4. ¿Vale la pena migrar Compras a `RetentionDocument` en el mediano plazo, dado que `IssuedWithholding` ya está en producción con endpoints, UI y tests propios — o se acepta convivencia permanente de ambas entidades mientras funcionen?
 5. ¿Cuándo y cómo se corrige el gap de `IsRequiredToKeepAccounting` en `RetentionCalculator`? Requiere su propio análisis fiscal antes de tocar el cálculo de porcentajes.
