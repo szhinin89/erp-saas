@@ -43,6 +43,13 @@ public sealed class AccountingBootstrapStepTests
             .ConfigureWarnings(warnings =>
                 warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning)
             )
+            // RETENTIONS-TAX-COMPONENT-POSTING-02C — TryCorrectLegacyRetentionsDocumentIssuedRule
+            // agrega/quita líneas de un PostingRule ya trackeado por una query previa en el mismo
+            // DbContext (mismo patrón que otros tests de este repo que mutan hijos de un agregado
+            // ya cargado, ver AuthorizePurchaseReturnConcurrencyTests) — sin este interceptor
+            // (normalmente registrado solo vía DependencyInjection.cs en producción), EF clasifica
+            // mal la línea nueva como Modified en vez de Added.
+            .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
             .Options;
 
         return new ErpDbContext(
@@ -327,14 +334,16 @@ public sealed class AccountingBootstrapStepTests
     }
 
     /// <summary>
-    /// RETENTIONS-POSTING-RULE-SEED-01H — caso 1 y 3 del plan de tests: el seed crea la
-    /// PostingRule de Retentions con las líneas exactas del ejemplo conceptual de
-    /// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable" (Debe CxP proveedor,
-    /// Haber Retenciones IVA por pagar), usando PostingAmountKind.Retention en ambas líneas — el
-    /// mismo campo que RetentionDocumentIssuedPostingTranslator llena en PostingFact.RetainedAmount.
+    /// RETENTIONS-POSTING-RULE-SEED-01H / RETENTIONS-TAX-COMPONENT-POSTING-02C — el seed crea la
+    /// PostingRule de Retentions con las 3 líneas exactas del ejemplo conceptual de
+    /// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable" separado por componente
+    /// tributario: Debe CxP proveedor (total, <see cref="PostingAmountKind.Retention"/>), Haber
+    /// Retenciones IVA por pagar (<see cref="PostingAmountKind.RetentionVat"/>), Haber Retenciones
+    /// Renta por pagar (<see cref="PostingAmountKind.RetentionIncome"/>) — 01H sembraba solo 2
+    /// líneas (IVA+Renta combinados bajo <c>Retention</c>); 02C separa el crédito.
     /// </summary>
     [Fact]
-    public async Task Seed_crea_postingrule_retentions_documentissued_con_debe_cxp_y_haber_retencion_iva()
+    public async Task Seed_crea_postingrule_retentions_documentissued_con_debe_cxp_y_haber_iva_y_renta_separados()
     {
         var dbName = Guid.NewGuid().ToString();
         await using var db = NewDbContext(dbName);
@@ -349,7 +358,7 @@ public sealed class AccountingBootstrapStepTests
             );
 
         rule.IsActive.Should().BeTrue();
-        rule.Lines.Should().HaveCount(2);
+        rule.Lines.Should().HaveCount(3);
 
         var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
         debitLine.AmountKind.Should().Be(PostingAmountKind.Retention);
@@ -357,11 +366,18 @@ public sealed class AccountingBootstrapStepTests
             .Should()
             .Be("2.1.01.001", because: "Debe = CxP proveedor, cuenta genérica ya usada por el resto del ERP");
 
-        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
-        creditLine.AmountKind.Should().Be(PostingAmountKind.Retention);
-        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
+        var creditLines = rule.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
+        creditLines.Should().HaveCount(2);
+
+        var vatLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.RetentionVat).Which;
+        (await db.Accounts.SingleAsync(a => a.Id == vatLine.AccountId)).Code.Value
             .Should()
             .Be("2.1.02.002", because: "Haber = Retenciones IVA por pagar, cuenta canónica del plan retail");
+
+        var incomeLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.RetentionIncome).Which;
+        (await db.Accounts.SingleAsync(a => a.Id == incomeLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.02.003", because: "Haber = Retenciones Renta por pagar, cuenta canónica del plan retail ya sembrada sin usar");
     }
 
     /// <summary>
@@ -591,6 +607,139 @@ public sealed class AccountingBootstrapStepTests
         }
 
         byCode["5.1.02"].ParentAccountId.Should().Be(byCode["5.1"].Id);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // RETENTIONS-TAX-COMPONENT-POSTING-02C — corrección de la regla legacy de 2 líneas (01H)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Escenario 5(a) del plan de tests: una company que ya tenía sembrada la forma vieja EXACTA
+    /// de 01H (2 líneas, Haber único con <see cref="PostingAmountKind.Retention"/> contra la
+    /// cuenta de IVA) recibe la corrección al volver a correr <c>ExecuteAsync</c> — queda con 3
+    /// líneas (Debe CxP sin cambios, Haber IVA con <c>RetentionVat</c>, Haber Renta nueva con
+    /// <c>RetentionIncome</c>), sin duplicar el Debe.
+    /// </summary>
+    [Fact]
+    public async Task Empresa_con_regla_legacy_de_2_lineas_recibe_correccion_a_3_lineas()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        Guid debitLineId;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            // Seed inicial (crea el plan de cuentas, incluida 2.1.02.003 sin usar) y luego se
+            // reemplazan las líneas de Retentions/DocumentIssued por la forma vieja de 01H —
+            // simula una company que pasó por el seed antes de que 02C existiera.
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var rule = await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Retentions"
+                    && r.FactType == "DocumentIssued"
+                );
+            db.PostingRules.Remove(rule);
+            await db.SaveChangesAsync();
+
+            var payablesAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+            ).Id;
+            var vatAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.02.002")
+            ).Id;
+
+            var legacyRule = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
+                _tenantId, _companyId, "Retentions", "DocumentIssued", null, null, null, _actorId
+            );
+            legacyRule.AddLine(payablesAccountId, AccountNature.Debit, PostingAmountKind.Retention);
+            legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.Retention);
+            db.PostingRules.Add(legacyRule);
+            await db.SaveChangesAsync();
+            debitLineId = legacyRule.Lines.Single(l => l.Nature == AccountNature.Debit).Id;
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var corrected = await verifyDb
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+            );
+
+        corrected.Lines.Should().HaveCount(3);
+        corrected
+            .Lines.Should()
+            .ContainSingle(l => l.Id == debitLineId, because: "el Debe de CxP proveedor no se toca")
+            .Which.AmountKind.Should()
+            .Be(PostingAmountKind.Retention);
+        corrected.Lines.Where(l => l.Nature == AccountNature.Credit).Select(l => l.AmountKind)
+            .Should()
+            .BeEquivalentTo(new[] { PostingAmountKind.RetentionVat, PostingAmountKind.RetentionIncome });
+        var incomeAccountId = corrected
+            .Lines.Single(l => l.AmountKind == PostingAmountKind.RetentionIncome)
+            .AccountId;
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == incomeAccountId)).Code.Value
+            .Should()
+            .Be("2.1.02.003");
+    }
+
+    /// <summary>
+    /// Escenario 5(c) del plan de tests: una company que ya tiene la forma vigente (3 líneas) no
+    /// se modifica al volver a correr <c>ExecuteAsync</c> — mismos Ids de línea, sin duplicar ni
+    /// re-insertar nada (mismo criterio de idempotencia del resto del seed).
+    /// </summary>
+    [Fact]
+    public async Task Empresa_con_regla_ya_completa_de_3_lineas_no_se_modifica()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        List<Guid> originalLineIds;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var rule = await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Retentions"
+                    && r.FactType == "DocumentIssued"
+                );
+            originalLineIds = rule.Lines.Select(l => l.Id).OrderBy(id => id).ToList();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb
+            .PostingRules.Include(r => r.Lines)
+            .Where(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Retentions" && r.FactType == "DocumentIssued"
+            )
+            .ToListAsync();
+
+        rules.Should().ContainSingle();
+        var finalLineIds = rules[0].Lines.Select(l => l.Id).OrderBy(id => id).ToList();
+        finalLineIds.Should().BeEquivalentTo(originalLineIds, because: "no debe agregar, quitar ni recrear líneas ya correctas");
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

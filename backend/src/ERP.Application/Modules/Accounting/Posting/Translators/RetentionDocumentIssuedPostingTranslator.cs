@@ -14,11 +14,24 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// retenido de "CxP proveedor" (Debe) a "Retención por pagar" (Haber) — ver
 /// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable" para el ejemplo conceptual
 /// (Gasto 100 + IVA 15 = 115; Retención IVA 4.50 → Debe CxP proveedor 4.50, Haber Retención IVA por
-/// pagar 4.50). Ambas cuentas se resuelven dinámicamente vía <c>PostingRule</c>/
+/// pagar 4.50). Todas las cuentas se resuelven dinámicamente vía <c>PostingRule</c>/
 /// <c>PostingRuleLine</c> configuradas por la empresa para SourceModule="Retentions",
 /// FactType="DocumentIssued" — SIN cuentas hardcodeadas: si la empresa no configuró esta regla,
 /// <c>PostingRuleResolver</c> falla fail-closed (mismo mecanismo ya usado por el resto del ERP,
 /// nunca un "cuenta de sistema" nueva ni un GUID fijo en código).
+///
+/// RETENTIONS-TAX-COMPONENT-POSTING-02C — el Haber ya no es una sola línea por el monto total: se
+/// separa por componente tributario (<see cref="PostingFact.RetainedVatAmount"/>/
+/// <see cref="PostingFact.RetainedIncomeAmount"/>, resueltos por JournalFactory a
+/// <see cref="ERP.Domain.Modules.Accounting.Enums.PostingAmountKind.RetentionVat"/>/
+/// <c>RetentionIncome</c> respectivamente), tomados directamente de
+/// <see cref="RetentionDocumentIssuedEvent.TotalRetainedVat"/>/<c>TotalRetainedIncome</c> — el
+/// evento ya los transporta por separado desde <c>RetentionDocument.Issue()</c> (construido a
+/// partir de <c>RetentionDocument.Lines</c>), así que no hay un segundo cálculo: es la misma
+/// fuente de verdad, solo consumida sin sumar. <c>RetainedAmount</c> (total) se mantiene sin
+/// cambios — sigue siendo el monto del Debe de CxP proveedor. Un componente en 0 no genera línea
+/// contable (JournalFactory ya omite líneas de monto cero, ver su doc comment) — nunca se emite
+/// una línea de Renta cuando la retención es solo de IVA, ni viceversa.
 ///
 /// Posting ESTRICTO (decisión aprobada en el diseño normativo, "Impacto contable"): si falla,
 /// LANZA <see cref="RetentionPostingFailedException"/> en vez de solo loguear — la transacción
@@ -49,7 +62,9 @@ public sealed class RetentionDocumentIssuedPostingTranslator
             TotalIce: 0m,
             TotalDiscount: 0m,
             GrandTotal: e.TotalRetained,
-            RetainedAmount: e.TotalRetained
+            RetainedAmount: e.TotalRetained,
+            RetainedVatAmount: e.TotalRetainedVat,
+            RetainedIncomeAmount: e.TotalRetainedIncome
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

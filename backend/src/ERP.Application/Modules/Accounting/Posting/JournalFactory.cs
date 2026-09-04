@@ -88,6 +88,12 @@ internal sealed class JournalFactory
             PostingAmountKind.Discount => fact.TotalDiscount,
             PostingAmountKind.GrandTotal => fact.GrandTotal,
             PostingAmountKind.Retention => fact.RetainedAmount ?? 0m,
+            // RETENTIONS-TAX-COMPONENT-POSTING-02C — cada componente resuelve su propio campo de
+            // PostingFact; una línea cuyo monto resuelto es 0 (p. ej. una retención solo de IVA,
+            // sin componente Renta) se omite automáticamente arriba en Create — nunca contabiliza
+            // una línea en cero.
+            PostingAmountKind.RetentionVat => fact.RetainedVatAmount ?? 0m,
+            PostingAmountKind.RetentionIncome => fact.RetainedIncomeAmount ?? 0m,
             PostingAmountKind.AppliedToPayable => fact.AppliedToPayableAmount ?? 0m,
             PostingAmountKind.SupplierCredit => fact.SupplierCreditAmount ?? 0m,
             PostingAmountKind.CostVarianceDebit => fact.CostVarianceDebitAmount ?? 0m,

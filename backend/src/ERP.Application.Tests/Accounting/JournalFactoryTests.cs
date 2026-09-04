@@ -457,4 +457,121 @@ public sealed class JournalFactoryTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be("RULE_NOT_FOUND");
     }
+
+    // ── RETENTIONS-TAX-COMPONENT-POSTING-02C: separación del Haber por componente tributario
+    // (IVA vs. Renta) — PostingRule de 3 líneas (Debe CxP total + Haber IVA + Haber Renta) —────
+
+    private static PostingFact RetentionFactByComponent(
+        decimal retainedVat = 0m,
+        decimal retainedIncome = 0m
+    ) =>
+        new(
+            TenantId,
+            CompanyId,
+            "Retentions",
+            "DocumentIssued",
+            Guid.NewGuid(),
+            new DateOnly(2026, 9, 3),
+            Subtotal: 0m,
+            TotalVat: retainedVat,
+            TotalIce: 0m,
+            TotalDiscount: 0m,
+            GrandTotal: retainedVat + retainedIncome,
+            RetainedAmount: retainedVat + retainedIncome,
+            RetainedVatAmount: retainedVat,
+            RetainedIncomeAmount: retainedIncome
+        );
+
+    private PostingRule ThreeLineRetentionRule(
+        Guid payablesAccount,
+        Guid vatAccount,
+        Guid incomeAccount
+    )
+    {
+        var rule = PostingRule.Create(TenantId, CompanyId, "Retentions", "DocumentIssued", null, null, null, CreatedBy);
+        rule.AddLine(payablesAccount, AccountNature.Debit, PostingAmountKind.Retention);
+        rule.AddLine(vatAccount, AccountNature.Credit, PostingAmountKind.RetentionVat);
+        rule.AddLine(incomeAccount, AccountNature.Credit, PostingAmountKind.RetentionIncome);
+        return rule;
+    }
+
+    /// <summary>Grupo 1 — retención solo IVA: Debe CxP total, Haber solo IVA (línea de Renta NO
+    /// generada porque su monto resuelto es 0), balanceado.</summary>
+    [Fact]
+    public async Task Retencion_solo_IVA_genera_solo_linea_de_IVA_balanceado()
+    {
+        var payablesAccount = Guid.NewGuid();
+        var vatAccount = Guid.NewGuid();
+        var incomeAccount = Guid.NewGuid();
+        var rule = ThreeLineRetentionRule(payablesAccount, vatAccount, incomeAccount);
+
+        var m = new Mocks();
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+
+        var result = await m.BuildEngine().PostAsync(RetentionFactByComponent(retainedVat: 10.5m, retainedIncome: 0m));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().HaveCount(2, because: "la línea de Renta se omite: su monto resuelto es 0");
+        m.Captured.Lines.Should().Contain(l => l.AccountId == payablesAccount && l.Debit == 10.5m && l.Credit == 0m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == vatAccount && l.Credit == 10.5m && l.Debit == 0m);
+        m.Captured.Lines.Should().NotContain(l => l.AccountId == incomeAccount);
+        m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
+        m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
+    }
+
+    /// <summary>Grupo 2 — retención solo Renta: Debe CxP total, Haber solo Renta (línea de IVA NO
+    /// generada), balanceado.</summary>
+    [Fact]
+    public async Task Retencion_solo_Renta_genera_solo_linea_de_Renta_balanceado()
+    {
+        var payablesAccount = Guid.NewGuid();
+        var vatAccount = Guid.NewGuid();
+        var incomeAccount = Guid.NewGuid();
+        var rule = ThreeLineRetentionRule(payablesAccount, vatAccount, incomeAccount);
+
+        var m = new Mocks();
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+
+        var result = await m.BuildEngine().PostAsync(RetentionFactByComponent(retainedVat: 0m, retainedIncome: 1.75m));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().HaveCount(2, because: "la línea de IVA se omite: su monto resuelto es 0");
+        m.Captured.Lines.Should().Contain(l => l.AccountId == payablesAccount && l.Debit == 1.75m && l.Credit == 0m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == incomeAccount && l.Credit == 1.75m && l.Debit == 0m);
+        m.Captured.Lines.Should().NotContain(l => l.AccountId == vatAccount);
+        m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
+        m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
+    }
+
+    /// <summary>Grupo 3 — retención mixta IVA+Renta (ejemplo del ticket: IVA 30.00, Renta 1.75,
+    /// total 31.75): Debe CxP total, Haber IVA = componente IVA exacto, Haber Renta = componente
+    /// Renta exacto, balanceado.</summary>
+    [Fact]
+    public async Task Retencion_mixta_IVA_y_Renta_separa_el_haber_por_componente_balanceado()
+    {
+        var payablesAccount = Guid.NewGuid();
+        var vatAccount = Guid.NewGuid();
+        var incomeAccount = Guid.NewGuid();
+        var rule = ThreeLineRetentionRule(payablesAccount, vatAccount, incomeAccount);
+
+        var m = new Mocks();
+        m.PostingRules
+            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Retentions", "DocumentIssued", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rule);
+
+        var result = await m.BuildEngine().PostAsync(RetentionFactByComponent(retainedVat: 30.00m, retainedIncome: 1.75m));
+
+        result.IsSuccess.Should().BeTrue();
+        m.Captured!.Lines.Should().HaveCount(3);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == payablesAccount && l.Debit == 31.75m && l.Credit == 0m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == vatAccount && l.Credit == 30.00m && l.Debit == 0m);
+        m.Captured.Lines.Should().Contain(l => l.AccountId == incomeAccount && l.Credit == 1.75m && l.Debit == 0m);
+        m.Captured.Lines.Sum(l => l.Debit).Should().Be(m.Captured.Lines.Sum(l => l.Credit));
+        m.Captured.Lines.Sum(l => l.Debit).Should().Be(31.75m);
+        m.Captured.Status.Should().Be(JournalEntryStatus.Posted);
+    }
 }

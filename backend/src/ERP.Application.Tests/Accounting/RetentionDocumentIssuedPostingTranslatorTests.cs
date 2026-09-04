@@ -73,6 +73,53 @@ public sealed class RetentionDocumentIssuedPostingTranslatorTests
         captured.GrandTotal.Should().Be(4.50m);
     }
 
+    /// <summary>
+    /// RETENTIONS-TAX-COMPONENT-POSTING-02C — el traductor transporta
+    /// TotalRetainedVat/TotalRetainedIncome del evento por separado (sin recalcular: el evento ya
+    /// es la fuente de verdad, construido desde RetentionDocument.Lines por Issue()), además de
+    /// RetainedAmount (total, sin cambios, sigue usándose para el Debe de CxP proveedor).
+    /// </summary>
+    [Fact]
+    public async Task Evento_mixto_IVA_y_Renta_separa_RetainedVatAmount_y_RetainedIncomeAmount_en_el_PostingFact()
+    {
+        var m = new Mocks();
+        PostingFact? captured = null;
+        m.PostingEngine
+            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+
+        await m.BuildTranslator()
+            .Handle(
+                Event(totalRetainedVat: 30.00m, totalRetainedIncome: 1.75m, totalRetained: 31.75m),
+                CancellationToken.None
+            );
+
+        captured.Should().NotBeNull();
+        captured!.RetainedAmount.Should().Be(31.75m, because: "el total sigue siendo el mismo campo para el Debe de CxP proveedor");
+        captured.RetainedVatAmount.Should().Be(30.00m);
+        captured.RetainedIncomeAmount.Should().Be(1.75m);
+    }
+
+    /// <summary>Retención solo-IVA: el componente Renta llega en 0 (no null) — JournalFactory es
+    /// quien decide omitir la línea, el traductor nunca oculta el dato.</summary>
+    [Fact]
+    public async Task Evento_solo_IVA_transporta_RetainedIncomeAmount_en_cero()
+    {
+        var m = new Mocks();
+        PostingFact? captured = null;
+        m.PostingEngine
+            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
+            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+
+        await m.BuildTranslator()
+            .Handle(Event(totalRetainedVat: 10.5m, totalRetainedIncome: 0m), CancellationToken.None);
+
+        captured!.RetainedVatAmount.Should().Be(10.5m);
+        captured.RetainedIncomeAmount.Should().Be(0m);
+    }
+
     [Fact]
     public async Task Posting_exitoso_no_lanza()
     {

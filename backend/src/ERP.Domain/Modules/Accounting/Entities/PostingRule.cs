@@ -131,4 +131,22 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
         );
         _lines.Add(line);
     }
+
+    /// <summary>
+    /// RETENTIONS-TAX-COMPONENT-POSTING-02C — quita una línea existente por su cuenta/naturaleza/
+    /// tipo de monto exactos, sin resolver ni validar nada nuevo (mismo alcance que
+    /// <see cref="AddLine"/>). Usado exclusivamente por backfills de infraestructura que migran una
+    /// regla sembrada con una forma antigua conocida a su forma vigente (ver
+    /// <c>AccountingBootstrapStep.CorrectLegacyPostingRulesAsync</c>) — nunca por edición manual de
+    /// un admin, que no expone este método. No hace nada si no encuentra una línea que coincida
+    /// exactamente (idempotente: correrlo dos veces no falla ni borra de más).
+    /// </summary>
+    public void RemoveLine(Guid accountId, AccountNature nature, PostingAmountKind amountKind)
+    {
+        var line = _lines.FirstOrDefault(l =>
+            l.AccountId == accountId && l.Nature == nature && l.AmountKind == amountKind
+        );
+        if (line is not null)
+            _lines.Remove(line);
+    }
 }

@@ -43,17 +43,25 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// cualquier entorno (confirmado en RETENTIONS-EXPENSES-E2E-QA-01G, que hasta ahora sembraba esa
 /// regla como fixture local del test). Reclasifica el monto retenido de "CxP proveedor" (Debe) a
 /// "Retenciones IVA por pagar" (Haber), igual que el ejemplo conceptual de
-/// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable". Usa
-/// <see cref="PostingAmountKind.Retention"/> (resuelto por JournalFactory a
-/// <c>PostingFact.RetainedAmount</c>) en ambas líneas — no <c>GrandTotal</c>, que en este hecho
-/// coincide numéricamente pero no es el campo semánticamente diseñado para este caso. Cuenta de
-/// crédito genérica ("2.1.02.002 Retenciones IVA por pagar"): el traductor actual solo transporta
-/// <c>RetainedAmount</c> total (IVA+Renta combinados si ambos aplicaran), sin desglose por tipo de
-/// impuesto — no hay cuenta combinada genérica en el plan de cuentas, así que se usa la cuenta de
-/// IVA (el único escenario de retención implementado hoy, ver RETENTIONS-MODULE-DESIGN-01.md); una
-/// retención de Renta futura quedaría mal clasificada contablemente hasta que el traductor separe
-/// los montos por tipo — deuda conocida, fuera de alcance de esta fase (no se modifica el
-/// traductor). Mismo mecanismo de idempotencia que el resto de <c>MinimalPostingRules</c>.
+/// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable". 01H sembraba 2 líneas
+/// (ambas <see cref="PostingAmountKind.Retention"/>, monto combinado IVA+Renta) contra la cuenta
+/// genérica de IVA ("2.1.02.002"), dejando explícitamente como deuda conocida que una retención de
+/// Renta quedaría mal clasificada hasta que el traductor separara los montos por tipo.
+///
+/// RETENTIONS-TAX-COMPONENT-POSTING-02C: cierra esa deuda. El traductor ya transporta
+/// <c>PostingFact.RetainedVatAmount</c>/<c>RetainedIncomeAmount</c> por separado (ver
+/// <c>RetentionDocumentIssuedPostingTranslator</c>), así que la regla pasa a 3 líneas: Debe CxP
+/// proveedor (<see cref="PostingAmountKind.Retention"/>, total — sin cambios), Haber
+/// "2.1.02.002 Retenciones IVA por pagar" (<see cref="PostingAmountKind.RetentionVat"/>), Haber
+/// "2.1.02.003 Retenciones renta por pagar" (<see cref="PostingAmountKind.RetentionIncome"/>) —
+/// ambas cuentas ya existían sembradas en <c>RetailChart</c> desde antes de 01H, "2.1.02.003" solo
+/// estaba sin usar. Una company que ya tenía la forma vieja de 01H (2 líneas) la recibe corregida
+/// vía <see cref="TryCorrectLegacyRetentionsDocumentIssuedRule"/> (ver ese método para el criterio
+/// exacto: solo corrige una coincidencia EXACTA con la forma vieja conocida, nunca reglas ya
+/// editadas manualmente) — <c>AccountingChartBackfillService.EnsureAsync</c> detecta a esas
+/// companies comparando el conteo de líneas, no solo la existencia de la clave (ver
+/// <see cref="RequiredPostingRuleLineCounts"/>). Mismo mecanismo de idempotencia que el resto de
+/// <c>MinimalPostingRules</c> para companies nuevas o sin esta regla en absoluto.
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -313,20 +321,50 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             "SupplierPaymentReversed",
             [new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal)]
         ),
-        // RETENTIONS-POSTING-RULE-SEED-01H — "Retentions"/"DocumentIssued" reclasifica el monto
-        // retenido: Debe CxP proveedor (se reduce lo exigible), Haber Retenciones IVA por pagar
-        // (nuevo pasivo). RetentionDocumentCancelledPostingTranslator no tiene entrada propia aquí
-        // — reversa el mismo asiento vía ReverseJournalEntryCommand, no resuelve una PostingRule
-        // nueva (mismo criterio que Purchases/PurchaseCreditNoteCancelled arriba).
+        // RETENTIONS-POSTING-RULE-SEED-01H / RETENTIONS-TAX-COMPONENT-POSTING-02C —
+        // "Retentions"/"DocumentIssued" reclasifica el monto retenido: Debe CxP proveedor (se
+        // reduce lo exigible por el total retenido), Haber Retenciones IVA por pagar (solo el
+        // componente IVA) + Haber Retenciones Renta por pagar (solo el componente Renta). 02C
+        // separa lo que 01H sembraba como una sola línea combinada de IVA (deuda documentada en su
+        // momento: "una retención de Renta futura quedaría mal clasificada... hasta que el
+        // traductor separe los montos por tipo") — ahora el traductor sí transporta ambos montos
+        // por separado (PostingFact.RetainedVatAmount/RetainedIncomeAmount) y esta regla tiene una
+        // línea propia por cada uno. Una línea cuyo componente es 0 (retención solo-IVA o
+        // solo-Renta) se omite automáticamente en JournalFactory — nunca se contabiliza en cero.
+        // RetentionDocumentCancelledPostingTranslator no tiene entrada propia aquí — reversa el
+        // mismo asiento vía ReverseJournalEntryCommand, no resuelve una PostingRule nueva (mismo
+        // criterio que Purchases/PurchaseCreditNoteCancelled arriba).
+        //
+        // Ver LegacyRetentionsDocumentIssuedVatLine/CorrectLegacyPostingRulesAsync más abajo: una
+        // company que ya tenía sembrada la forma vieja de 2 líneas (01H) se corrige a esta forma de
+        // 3 líneas por el backfill, no solo las companies nuevas.
         new(
             "Retentions",
             "DocumentIssued",
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.Retention),
-                new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention),
+                new("2.1.02.002", AccountNature.Credit, PostingAmountKind.RetentionVat),
+                new("2.1.02.003", AccountNature.Credit, PostingAmountKind.RetentionIncome),
             ]
         ),
     ];
+
+    // RETENTIONS-TAX-COMPONENT-POSTING-02C — forma sembrada por RETENTIONS-POSTING-RULE-SEED-01H
+    // para "Retentions"/"DocumentIssued", antes de que esta fase separara IVA/Renta. Usada
+    // exclusivamente para reconocer con precisión (nunca adivinar) qué companies tienen esa forma
+    // vieja exacta y corregirlas — ver CorrectLegacyPostingRulesAsync. No se usa para nada más.
+    private static readonly IReadOnlyList<MinimalPostingRuleLine> LegacyRetentionsDocumentIssuedLines =
+    [
+        new("2.1.01.001", AccountNature.Debit, PostingAmountKind.Retention),
+        new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention),
+    ];
+
+    // RETENTIONS-TAX-COMPONENT-POSTING-02C — línea vieja de esa forma que debe eliminarse
+    // (AmountKind Retention combinado) y las líneas nuevas que la reemplazan (RetentionVat +
+    // RetentionIncome). La línea de Debe (CxP proveedor) no cambia — se mantiene igual en ambas
+    // formas.
+    private static readonly MinimalPostingRuleLine LegacyRetentionsDocumentIssuedVatLine =
+        new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention);
 
     // RETENTIONS-POSTING-RULE-SEED-01H: expone las claves (SourceModule, FactType) requeridas para
     // que AccountingChartBackfillService pueda detectar con precisión si a una company activa ya
@@ -337,6 +375,20 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // primer seed.
     internal static readonly IReadOnlyCollection<(string SourceModule, string FactType)> RequiredPostingRuleKeys =
         MinimalPostingRules.Select(r => (r.SourceModule, r.FactType)).ToArray();
+
+    // RETENTIONS-TAX-COMPONENT-POSTING-02C — RequiredPostingRuleKeys (01H) detecta si a una
+    // company le falta una regla ENTERA, pero no si una regla existente quedó con menos líneas de
+    // las que su forma vigente en MinimalPostingRules declara hoy (exactamente lo que pasa con
+    // "Retentions"/"DocumentIssued": una company ya la tenía sembrada con 2 líneas, esta fase la
+    // amplía a 3). AccountingChartBackfillService.EnsureAsync compara el conteo real de
+    // PostingRuleLine contra este diccionario, no solo la existencia de la clave.
+    internal static readonly IReadOnlyDictionary<
+        (string SourceModule, string FactType),
+        int
+    > RequiredPostingRuleLineCounts = MinimalPostingRules.ToDictionary(
+        r => (r.SourceModule, r.FactType),
+        r => r.Lines.Count
+    );
 
     public async Task ExecuteAsync(
         CompanyBootstrapContext context,
@@ -451,7 +503,28 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             .Where(r => !existingRuleKeySet.Contains((r.SourceModule, r.FactType)))
             .ToList();
 
-        if (missingRules.Count == 0)
+        // RETENTIONS-TAX-COMPONENT-POSTING-02C — una regla existente (clave ya en
+        // existingRuleKeySet, por lo tanto NUNCA en missingRules arriba) puede seguir teniendo
+        // menos líneas de las que su forma vigente declara hoy — el único caso conocido es
+        // "Retentions"/"DocumentIssued" sembrada por RETENTIONS-POSTING-RULE-SEED-01H con 2
+        // líneas. legacyRule es null si esa regla no existe o ya tiene la forma vigente (nada que
+        // corregir) — ver CorrectLegacyPostingRulesAsync.
+        var legacyRule =
+            existingRuleKeySet.Contains(("Retentions", "DocumentIssued"))
+                ? await _db
+                    .PostingRules.IgnoreQueryFilters()
+                    .Include(r => r.Lines)
+                    .FirstOrDefaultAsync(
+                        r =>
+                            r.TenantId == tenantId
+                            && r.CompanyId == companyId
+                            && r.SourceModule == "Retentions"
+                            && r.FactType == "DocumentIssued",
+                        cancellationToken
+                    )
+                : null;
+
+        if (missingRules.Count == 0 && legacyRule is null)
         {
             LogPostingRulesSkipped(companyId);
             return;
@@ -513,14 +586,81 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             seededRulesCount++;
         }
 
-        if (seededRulesCount == 0)
+        var correctedLegacyRule = TryCorrectLegacyRetentionsDocumentIssuedRule(
+            legacyRule,
+            accountByCode,
+            companyId
+        );
+
+        if (seededRulesCount == 0 && !correctedLegacyRule)
         {
             LogPostingRulesSkipped(companyId);
             return;
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        LogPostingRulesSeeded(seededRulesCount, companyId);
+        if (seededRulesCount > 0)
+            LogPostingRulesSeeded(seededRulesCount, companyId);
+        if (correctedLegacyRule)
+            LogLegacyRetentionsRuleCorrected(companyId);
+    }
+
+    /// <summary>
+    /// RETENTIONS-TAX-COMPONENT-POSTING-02C — corrige <paramref name="rule"/> de la forma vieja de
+    /// 01H (2 líneas, IVA+Renta combinados bajo <see cref="PostingAmountKind.Retention"/>) a la
+    /// forma vigente (3 líneas, IVA/Renta separados) SOLO si sus líneas actuales coinciden
+    /// EXACTAMENTE con <see cref="LegacyRetentionsDocumentIssuedLines"/> — cualquier otra forma
+    /// (ya corregida, o modificada manualmente por un admin) se deja intacta, nunca se adivina ni
+    /// se sobreescribe (mismo criterio que el resto de este seed: "nunca toca reglas ya editadas
+    /// por el admin"). Devuelve <c>false</c> sin tocar nada si <paramref name="rule"/> es
+    /// <c>null</c>, si no coincide con la forma vieja, o si la cuenta de Renta no está disponible
+    /// (inactiva/sin AllowsPosting) — en ese último caso el estado previo (2 líneas) se mantiene en
+    /// vez de dejar la regla a medio corregir.
+    /// </summary>
+    private bool TryCorrectLegacyRetentionsDocumentIssuedRule(
+        PostingRule? rule,
+        Dictionary<string, AccountSeedLookup> accountByCode,
+        Guid companyId
+    )
+    {
+        if (rule is null)
+            return false;
+
+        var currentLines = rule
+            .Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind))
+            .ToHashSet();
+        var legacyLines = LegacyRetentionsDocumentIssuedLines
+            .Select(l => (accountByCode[l.AccountCode].Id, l.Nature, l.AmountKind))
+            .ToHashSet();
+
+        if (currentLines.Count != legacyLines.Count || !currentLines.SetEquals(legacyLines))
+            return false;
+
+        var vatAccountCode = LegacyRetentionsDocumentIssuedVatLine.AccountCode;
+        if (
+            !accountByCode.TryGetValue("2.1.02.003", out var incomeAccount)
+            || !incomeAccount.IsActive
+            || !incomeAccount.AllowsPosting
+        )
+        {
+            LogPostingRuleSkippedInvalidAccount(
+                "Retentions",
+                "DocumentIssued",
+                "2.1.02.003",
+                companyId
+            );
+            return false;
+        }
+
+        var vatAccount = accountByCode[vatAccountCode];
+        rule.RemoveLine(
+            vatAccount.Id,
+            LegacyRetentionsDocumentIssuedVatLine.Nature,
+            LegacyRetentionsDocumentIssuedVatLine.AmountKind
+        );
+        rule.AddLine(vatAccount.Id, AccountNature.Credit, PostingAmountKind.RetentionVat);
+        rule.AddLine(incomeAccount.Id, AccountNature.Credit, PostingAmountKind.RetentionIncome);
+        return true;
     }
 
     [LoggerMessage(
@@ -558,6 +698,13 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         Message = "Retail posting rules already complete for company {CompanyId}. Skipping."
     )]
     private partial void LogPostingRulesSkipped(Guid companyId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Corrected legacy Retentions/DocumentIssued posting rule (2 lines -> 3 lines, "
+            + "IVA/Renta separated) for company {CompanyId}."
+    )]
+    private partial void LogLegacyRetentionsRuleCorrected(Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

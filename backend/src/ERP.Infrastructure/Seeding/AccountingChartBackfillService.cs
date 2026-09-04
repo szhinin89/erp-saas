@@ -40,6 +40,19 @@ namespace ERP.Infrastructure.Seeding;
 /// esas reglas vuelve a calificar. Nunca deja de detectar lo que el filtro anterior ya detectaba
 /// (compañías sin ninguna regla), solo agrega precisión para reglas nuevas agregadas después del
 /// primer seed de una company.
+///
+/// RETENTIONS-TAX-COMPONENT-POSTING-02C: la comprobación de 01H seguía siendo por CLAVE
+/// (SourceModule, FactType) únicamente — una company con "Retentions"/"DocumentIssued" ya sembrada
+/// (aunque fuera con la forma vieja de 2 líneas de 01H) pasaba el chequeo ("la clave existe") y
+/// nunca volvía a calificar, aun cuando esta fase amplía esa misma regla a 3 líneas. Se agrega una
+/// segunda comprobación, por CONTEO de líneas, contra
+/// <see cref="AccountingBootstrapStep.RequiredPostingRuleLineCounts"/> — cualquier company cuya
+/// regla exista pero con menos líneas de las que su forma vigente declara hoy también califica.
+/// Mismo criterio que la comprobación anterior: nunca deja de detectar nada que ya detectaba, solo
+/// agrega precisión un nivel más profundo (no solo "¿existe la regla?", también "¿está completa?").
+/// La corrección real de las líneas la aplica
+/// <see cref="AccountingBootstrapStep.TryCorrectLegacyRetentionsDocumentIssuedRule"/>, invocado
+/// desde <see cref="AccountingBootstrapStep.ExecuteAsync"/> (reutilizado tal cual, no duplicado).
 /// </summary>
 public sealed partial class AccountingChartBackfillService
 {
@@ -83,16 +96,30 @@ public sealed partial class AccountingChartBackfillService
                 .ToListAsync(cancellationToken);
             var accountCodeSet = accountCodes.ToHashSet(StringComparer.Ordinal);
             var hasAllRetailAccounts = requiredAccountCodes.All(accountCodeSet.Contains);
-            var existingRuleKeys = await _db
+            var existingRules = await _db
                 .PostingRules.IgnoreQueryFilters()
                 .Where(r => r.TenantId == company.TenantId && r.CompanyId == company.Id)
-                .Select(r => new { r.SourceModule, r.FactType })
+                .Select(r => new
+                {
+                    r.SourceModule,
+                    r.FactType,
+                    LineCount = r.Lines.Count,
+                })
                 .ToListAsync(cancellationToken);
-            var existingRuleKeySet = existingRuleKeys
-                .Select(r => (r.SourceModule, r.FactType))
-                .ToHashSet();
-            var hasAllPostingRules = AccountingBootstrapStep
-                .RequiredPostingRuleKeys.All(existingRuleKeySet.Contains);
+            var existingRuleLineCounts = existingRules.ToDictionary(
+                r => (r.SourceModule, r.FactType),
+                r => r.LineCount
+            );
+            // RETENTIONS-TAX-COMPONENT-POSTING-02C — no basta con "¿existe la clave?"
+            // (existingRuleLineCounts.ContainsKey): una regla existente con menos líneas de las
+            // que RequiredPostingRuleLineCounts espera para esa clave también necesita backfill
+            // (ver doc comment de la clase). Una clave ausente cuenta como 0 líneas, así que esta
+            // sola comprobación cubre ambos casos: regla completamente faltante y regla incompleta.
+            var hasAllPostingRules = AccountingBootstrapStep.RequiredPostingRuleLineCounts.All(
+                required =>
+                    existingRuleLineCounts.TryGetValue(required.Key, out var actualLineCount)
+                    && actualLineCount >= required.Value
+            );
 
             if (!hasAllRetailAccounts || !hasAllPostingRules)
                 companiesPendingBackfill.Add((company.Id, company.TenantId));

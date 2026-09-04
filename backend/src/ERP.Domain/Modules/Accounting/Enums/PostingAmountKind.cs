@@ -28,4 +28,11 @@ public enum PostingAmountKind
     // FLOW-READY-02F.2 — IRBPNR (impuesto SRI código "5", Compras). Mismo criterio aditivo: se
     // agrega al final, nunca reasigna los valores existentes.
     TaxIrbpnr,
+
+    // RETENTIONS-TAX-COMPONENT-POSTING-02C — separa el monto retenido por componente tributario
+    // (antes todo iba a "Retention", una sola cuenta de IVA). Mismo criterio aditivo: se agregan
+    // al final, nunca se reasignan los valores existentes. "Retention" no se elimina — sigue
+    // usándose para el Debe de CxP proveedor (el total retenido, sin desglosar).
+    RetentionVat,
+    RetentionIncome,
 }

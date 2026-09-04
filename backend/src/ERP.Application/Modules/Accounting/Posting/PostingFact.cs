@@ -60,5 +60,13 @@ public sealed record PostingFact(
     // campos anteriores: opcional, agregado al final, null por defecto — ningún call site
     // existente cambia de comportamiento. Usado por RetentionDocumentIssuedPostingTranslator para
     // el asiento de reclasificación (CxP proveedor → Retención por pagar).
-    decimal? RetainedAmount = null
+    decimal? RetainedAmount = null,
+    // RETENTIONS-TAX-COMPONENT-POSTING-02C — separa RetainedAmount (total, sin cambios) por
+    // componente tributario, para que el asiento de retención pueda acreditar dos cuentas
+    // distintas (Retenciones IVA / Retenciones Renta) en vez de una sola. Mismo criterio aditivo:
+    // opcionales, agregados al final, null por defecto — ningún call site existente cambia de
+    // comportamiento. Usados por RetentionDocumentIssuedPostingTranslator junto con RetainedAmount
+    // (que sigue representando el total, para el Debe de CxP proveedor).
+    decimal? RetainedVatAmount = null,
+    decimal? RetainedIncomeAmount = null
 );
