@@ -6,6 +6,7 @@ using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Application.Modules.Integration;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using FluentValidation;
 using MediatR;
@@ -26,6 +27,9 @@ public static class DependencyInjection
         services.AddScoped<ICommunicationQueue, CommunicationQueue>();
         services.AddScoped<IRuntimePermissionAuthorizer, RuntimePermissionAuthorizer>();
         services.AddScoped<IExternalEntitlementService, NoOpExternalEntitlementService>();
+        // RETENTIONS-ELIGIBILITY-01 — solo orquesta repos ya registrados (Company, BusinessPartnerRole,
+        // IRetentionCodeResolver), sin EF directo, por eso vive/registra en Application, no Infrastructure.
+        services.AddScoped<IRetentionEligibilityService, RetentionEligibilityService>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));

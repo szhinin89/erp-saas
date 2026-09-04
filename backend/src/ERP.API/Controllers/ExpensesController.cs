@@ -2,7 +2,9 @@ using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
+using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Kernel.Permissions;
+using ERP.Domain.Modules.Retentions.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -98,6 +100,24 @@ public sealed class ExpensesController : ControllerBase
                     request.AuthorizationDate,
                     request.Notes
                 ),
+                ct
+            )
+        );
+
+    /// <summary>
+    /// RETENTIONS-ELIGIBILITY-01 — endpoint delgado (solo delega al mediator), de solo lectura.
+    /// Reutiliza el permiso de lectura ya existente de Gastos (<see cref="ExpensePermissions.DocumentsView"/>)
+    /// porque Retentions todavía no tiene su propio catálogo de permisos finos — eso queda para
+    /// E1-C (ver RETENTIONS-MODULE-DESIGN-01.md), que agrega `retentions.view`/`retentions.issue`/
+    /// `retentions.cancel`. No crea ni emite ningún <c>RetentionDocument</c> — esa entidad no
+    /// existe todavía en esta subfase.
+    /// </summary>
+    [HttpGet("{id:guid}/retention-eligibility")]
+    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsView}")]
+    public async Task<IActionResult> GetRetentionEligibility(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new GetRetentionEligibilityQuery(RetentionSourceDocumentType.ExpenseDocument, id),
                 ct
             )
         );
