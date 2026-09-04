@@ -16,8 +16,7 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
 {
     private readonly IElectronicDocumentRepository _repository;
-    private readonly IElectronicDocumentDataProviderResolver _providerResolver;
-    private readonly IElectronicDocumentXmlBuilderResolver _xmlBuilderResolver;
+    private readonly IElectronicDocumentXmlSupplierResolver _xmlSupplierResolver;
     private readonly IElectronicDocumentSchemaValidatorResolver _schemaValidatorResolver;
     private readonly IElectronicDocumentSigningService _signingService;
     private readonly IElectronicDocumentXmlStorageService _xmlStorageService;
@@ -29,8 +28,7 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
 
     public ElectronicDocumentIssuer(
         IElectronicDocumentRepository repository,
-        IElectronicDocumentDataProviderResolver providerResolver,
-        IElectronicDocumentXmlBuilderResolver xmlBuilderResolver,
+        IElectronicDocumentXmlSupplierResolver xmlSupplierResolver,
         IElectronicDocumentSchemaValidatorResolver schemaValidatorResolver,
         IElectronicDocumentSigningService signingService,
         IElectronicDocumentXmlStorageService xmlStorageService,
@@ -42,8 +40,7 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     )
     {
         _repository = repository;
-        _providerResolver = providerResolver;
-        _xmlBuilderResolver = xmlBuilderResolver;
+        _xmlSupplierResolver = xmlSupplierResolver;
         _schemaValidatorResolver = schemaValidatorResolver;
         _signingService = signingService;
         _xmlStorageService = xmlStorageService;
@@ -137,13 +134,13 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         CancellationToken ct
     )
     {
-        var provider = _providerResolver.Resolve(request.DocumentType);
-        if (provider is null)
+        var supplier = _xmlSupplierResolver.Resolve(request.DocumentType);
+        if (supplier is null)
             return await FailAsync(
                 document,
                 request.UserId,
                 ct,
-                $"No hay un proveedor de datos registrado para el tipo de documento '{request.DocumentType}'."
+                $"No hay un generador de XML registrado para el tipo de documento '{request.DocumentType}'."
             );
 
         var reference = new ElectronicDocumentSourceReference(
@@ -161,41 +158,24 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         SignedElectronicDocumentXml signedXml;
         try
         {
-            var dataResult = await provider.GetDataAsync(reference, ct);
-            if (!dataResult.IsSuccess)
-            {
-                var reason =
-                    dataResult.Error
-                    ?? "No se pudo obtener el modelo común del documento de origen.";
-                LogStageFailed("Provider", request.SourceModule, request.SourceEntityId, reason);
-                return await FailAsync(document, request.UserId, ct, reason, dataResult.Code);
-            }
-
-            // El ambiente (Pruebas/Producción) recién se conoce aquí — se captura oportunistamente,
-            // sea cual sea el resultado de las etapas siguientes (persiste igual en un fallo posterior,
-            // porque toda salida de este método hace SaveChangesAsync).
-            document.SetEnvironment(dataResult.Value!.Emission.Environment);
-
-            var xmlBuilder = _xmlBuilderResolver.Resolve(request.DocumentType);
-            if (xmlBuilder is null)
-                return await FailAsync(
-                    document,
-                    request.UserId,
-                    ct,
-                    $"No hay un generador de XML registrado para el tipo de documento '{request.DocumentType}'."
-                );
-
-            // El XML solo se construye para validar que el modelo común es traducible a un
-            // comprobante bien formado — esta fase no lo guarda a disco (eso es de la fase de
-            // firma/almacenamiento).
-            var xmlResult = xmlBuilder.Build(dataResult.Value!);
+            // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: el supplier ya encapsula "obtener el modelo
+            // común y construir el XML" (camino comercial) o su equivalente propio (Retención) —
+            // este pipeline ya no conoce ElectronicDocumentData ni distingue por tipo aquí.
+            var xmlResult = await supplier.BuildXmlAsync(reference, ct);
             if (!xmlResult.IsSuccess)
             {
                 var reason =
                     xmlResult.Error ?? "No se pudo generar el XML del documento electrónico.";
-                LogStageFailed("XmlBuilder", request.SourceModule, request.SourceEntityId, reason);
+                LogStageFailed("XmlSupplier", request.SourceModule, request.SourceEntityId, reason);
                 return await FailAsync(document, request.UserId, ct, reason, xmlResult.Code);
             }
+
+            // El ambiente (Pruebas/Producción) recién se conoce aquí — se captura oportunistamente,
+            // sea cual sea el resultado de las etapas siguientes (persiste igual en un fallo posterior,
+            // porque toda salida de este método hace SaveChangesAsync). Antes de esta fase se leía
+            // de ElectronicDocumentData.Emission.Environment; ahora viaja en el propio
+            // ElectronicDocumentXml (ver DTOs/ElectronicDocumentXml.cs).
+            document.SetEnvironment(xmlResult.Value!.Environment);
 
             var schemaValidator = _schemaValidatorResolver.Resolve(request.DocumentType);
             if (schemaValidator is null)

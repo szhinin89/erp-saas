@@ -90,6 +90,9 @@ public sealed class InvoiceXmlBuilderTests
         result.Value!.AccessKey.Should().HaveLength(49);
         result.Value.AccessKey.Should().MatchRegex("^[0-9]{49}$");
         result.Value.DocumentType.Should().Be(ElectronicDocumentType.Invoice);
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: Environment viaja en el propio
+        // ElectronicDocumentXml (antes solo estaba en ElectronicDocumentData.Emission.Environment).
+        result.Value.Environment.Should().Be("1");
 
         var xdoc = XDocument.Parse(result.Value.Xml);
         xdoc.Root!.Name.LocalName.Should().Be("factura");

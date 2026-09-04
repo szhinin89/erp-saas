@@ -56,6 +56,7 @@ public sealed class CreditNoteXmlBuilder : IElectronicDocumentXmlBuilder
                     Encoding: XmlEncodingValue,
                     Version: XmlVersionValue,
                     DocumentType: DocumentType,
+                    Environment: data.Emission.Environment,
                     AccessKey: accessKey.Value,
                     GeneratedAtUtc: DateTime.UtcNow
                 )

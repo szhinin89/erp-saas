@@ -443,8 +443,27 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.XmlBuilders.IElectronicDocumentXmlBuilder,
             ERP.Application.Modules.ElectronicDocuments.XmlBuilders.CreditNoteXmlBuilder
         >();
-        // Los demás tipos de comprobante (DebitNote, Retention, ShippingGuide, ...) añadirán su
-        // propio IElectronicDocumentXmlBuilder aquí — nunca tocar el resolver.
+        // Los demás tipos de comprobante (DebitNote, ShippingGuide, ...) añadirán su propio
+        // IElectronicDocumentXmlBuilder aquí — nunca tocar el resolver.
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: Retención NO se registra como
+        // IElectronicDocumentDataProvider/IElectronicDocumentXmlBuilder — su modelo
+        // (RetentionElectronicDocumentData) no encaja en ElectronicDocumentData (forma comercial
+        // de Factura/NC). Tiene su propio supplier explícito, resuelto con prioridad por
+        // ElectronicDocumentXmlSupplierResolver (ver más abajo) — nunca tocar estos dos
+        // resolutores ni sus registros para incorporarla.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentXmlSupplierResolver,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentXmlSupplierResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentXmlSupplier,
+            ERP.Application.Modules.ElectronicDocuments.Services.RetentionElectronicDocumentXmlSupplier
+        >();
+        // Los demás tipos que necesiten su propia forma de datos añadirán su propio
+        // IElectronicDocumentXmlSupplier aquí — Factura/Nota de Crédito NUNCA se registran como
+        // IElectronicDocumentXmlSupplier: el resolver los resuelve automáticamente mediante el
+        // fallback comercial (CommercialElectronicDocumentXmlSupplier), reutilizando los dos
+        // resolutores de arriba sin duplicar registro.
 
         // Fase 9: mapeo real VAT→"2"/ICE→"3" (constante regulatoria SRI, no catálogo de BD —
         // ver justificación en SriTaxCategoryCodeResolver). Reemplaza al placeholder que

@@ -95,6 +95,7 @@ public sealed class ElectronicDocumentSigningServiceTests
             Encoding: "UTF-8",
             Version: "1.1.0",
             DocumentType: ElectronicDocumentType.Invoice,
+            Environment: "1",
             AccessKey: new string('1', 49),
             GeneratedAtUtc: DateTime.UtcNow
         );

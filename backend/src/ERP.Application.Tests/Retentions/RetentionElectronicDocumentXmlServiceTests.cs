@@ -107,6 +107,7 @@ public sealed class RetentionElectronicDocumentXmlServiceTests
             Encoding: "UTF-8",
             Version: "1.0.0",
             DocumentType: ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentType.Retention,
+            Environment: "1",
             AccessKey: new string('1', 49),
             GeneratedAtUtc: DateTime.UtcNow
         );

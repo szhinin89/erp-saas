@@ -108,6 +108,9 @@ public sealed class RetentionXmlBuilderTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.DocumentType.Should().Be(ElectronicDocumentType.Retention);
         result.Value.AccessKey.Should().HaveLength(49);
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: Environment viaja en el propio
+        // ElectronicDocumentXml (antes solo estaba en RetentionElectronicDocumentData.Emission.Environment).
+        result.Value.Environment.Should().Be("1");
 
         ValidateAgainstOfficialXsd(result.Value.Xml);
     }

@@ -90,6 +90,9 @@ public sealed class CreditNoteXmlBuilderTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.DocumentType.Should().Be(ElectronicDocumentType.CreditNote);
         result.Value.AccessKey.Should().HaveLength(49);
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: Environment viaja en el propio
+        // ElectronicDocumentXml (antes solo estaba en ElectronicDocumentData.Emission.Environment).
+        result.Value.Environment.Should().Be("1");
 
         ValidateAgainstOfficialXsd(result.Value.Xml);
     }

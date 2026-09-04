@@ -74,6 +74,7 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
                     Encoding: XmlEncodingValue,
                     Version: XmlVersionValue,
                     DocumentType: DocumentType,
+                    Environment: data.Emission.Environment,
                     AccessKey: accessKey.Value,
                     GeneratedAtUtc: DateTime.UtcNow
                 )

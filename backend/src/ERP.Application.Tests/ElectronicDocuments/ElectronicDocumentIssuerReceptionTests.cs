@@ -65,16 +65,12 @@ public sealed class ElectronicDocumentIssuerReceptionTests
             )
             .ReturnsAsync(Result<ElectronicDocumentData>.Success(SampleData()));
 
-        var providerResolver = new Mock<IElectronicDocumentDataProviderResolver>();
-        providerResolver
-            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
-            .Returns(providerMock.Object);
-
         var xml = new ElectronicDocumentXml(
             "<factura/>",
             "UTF-8",
             "1.1.0",
             ElectronicDocumentType.Invoice,
+            "2",
             ValidAccessKey,
             DateTime.UtcNow
         );
@@ -83,11 +79,6 @@ public sealed class ElectronicDocumentIssuerReceptionTests
         builderMock
             .Setup(b => b.Build(It.IsAny<ElectronicDocumentData>()))
             .Returns(Result<ElectronicDocumentXml>.Success(xml));
-
-        var builderResolver = new Mock<IElectronicDocumentXmlBuilderResolver>();
-        builderResolver
-            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
-            .Returns(builderMock.Object);
 
         var validatorMock = new Mock<IElectronicDocumentSchemaValidator>();
         validatorMock.Setup(v => v.DocumentType).Returns(ElectronicDocumentType.Invoice);
@@ -165,10 +156,21 @@ public sealed class ElectronicDocumentIssuerReceptionTests
         DatabaseUniqueViolationInfo? none = null;
         dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none)).Returns(false);
 
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: el pipeline ya no conoce provider/builder
+        // directamente — se envuelven en el mismo CommercialElectronicDocumentXmlSupplier real
+        // que ElectronicDocumentXmlSupplierResolver instanciaría como fallback, preservando el
+        // comportamiento exacto (y los mocks de provider/builder) que este archivo ya probaba.
+        var supplier = new CommercialElectronicDocumentXmlSupplier(
+            ElectronicDocumentType.Invoice,
+            providerMock.Object,
+            builderMock.Object
+        );
+        var supplierResolver = new Mock<IElectronicDocumentXmlSupplierResolver>();
+        supplierResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(supplier);
+
         return new ElectronicDocumentIssuer(
             repository.Object,
-            providerResolver.Object,
-            builderResolver.Object,
+            supplierResolver.Object,
             validatorResolver.Object,
             signingService.Object,
             storageService.Object,
@@ -231,6 +233,33 @@ public sealed class ElectronicDocumentIssuerReceptionTests
                 )
             );
         return reception;
+    }
+
+    // ── RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: primer tramo vía supplier ──
+
+    [Fact]
+    public async Task RegisterAsync_sets_the_environment_from_the_ElectronicDocumentXml_produced_by_the_supplier()
+    {
+        // Antes de 04D, Environment se leía de ElectronicDocumentData.Emission.Environment; ahora
+        // viaja en el propio ElectronicDocumentXml que el supplier devuelve (aquí "2", igual que
+        // SampleData().Emission.Environment, para confirmar que sigue siendo el mismo dato real,
+        // solo leído desde un lugar distinto).
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var reception = ReceptionReturning("RECIBIDA");
+        var issuer = BuildIssuer(repository, reception, UnreachableAuthorization());
+
+        // BuildIssuer ya configura AddAsync sin callback — se re-configura aquí (Moq usa el
+        // último Setup que coincide) para capturar la entidad sin duplicar el resto del wiring.
+        ElectronicDocument? added = null;
+        repository
+            .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+            .Callback<ElectronicDocument, CancellationToken>((d, _) => added = d)
+            .Returns(Task.CompletedTask);
+
+        await issuer.RegisterAsync(SampleRequest());
+
+        added.Should().NotBeNull();
+        added!.Environment.Should().Be("2");
     }
 
     // ── Fase 8: recepción ────────────────────────────────────────────────────

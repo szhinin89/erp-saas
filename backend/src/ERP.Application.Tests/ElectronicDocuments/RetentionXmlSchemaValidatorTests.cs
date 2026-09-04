@@ -39,6 +39,7 @@ public sealed class RetentionXmlSchemaValidatorTests
             Encoding: "UTF-8",
             Version: "1.0.0",
             DocumentType: ElectronicDocumentType.Retention,
+            Environment: "1",
             AccessKey: new string('1', 49),
             GeneratedAtUtc: DateTime.UtcNow
         );

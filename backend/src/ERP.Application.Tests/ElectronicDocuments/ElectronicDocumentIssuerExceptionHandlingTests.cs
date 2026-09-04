@@ -87,16 +87,12 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
             )
             .ReturnsAsync(Result<ElectronicDocumentData>.Success(SampleData()));
 
-        var providerResolver = new Mock<IElectronicDocumentDataProviderResolver>();
-        providerResolver
-            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
-            .Returns(providerMock.Object);
-
         var xml = new ElectronicDocumentXml(
             "<factura/>",
             "UTF-8",
             "1.1.0",
             ElectronicDocumentType.Invoice,
+            "2",
             ValidAccessKey,
             DateTime.UtcNow
         );
@@ -105,11 +101,6 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
         builderMock
             .Setup(b => b.Build(It.IsAny<ElectronicDocumentData>()))
             .Returns(Result<ElectronicDocumentXml>.Success(xml));
-
-        var builderResolver = new Mock<IElectronicDocumentXmlBuilderResolver>();
-        builderResolver
-            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
-            .Returns(builderMock.Object);
 
         var validatorMock = new Mock<IElectronicDocumentSchemaValidator>();
         validatorMock.Setup(v => v.DocumentType).Returns(ElectronicDocumentType.Invoice);
@@ -197,10 +188,20 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
         DatabaseUniqueViolationInfo? none = null;
         dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none)).Returns(false);
 
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: mismo criterio que ElectronicDocumentIssuerReceptionTests
+        // — se envuelven los mocks de provider/builder en el CommercialElectronicDocumentXmlSupplier
+        // real, resuelto vía un IElectronicDocumentXmlSupplierResolver mockeado.
+        var supplier = new CommercialElectronicDocumentXmlSupplier(
+            ElectronicDocumentType.Invoice,
+            providerMock.Object,
+            builderMock.Object
+        );
+        var supplierResolver = new Mock<IElectronicDocumentXmlSupplierResolver>();
+        supplierResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(supplier);
+
         var issuer = new ElectronicDocumentIssuer(
             repository.Object,
-            providerResolver.Object,
-            builderResolver.Object,
+            supplierResolver.Object,
             validatorResolver.Object,
             signingService.Object,
             storageService.Object,

@@ -75,8 +75,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
 
         return new ElectronicDocumentIssuer(
             repository.Object,
-            new Mock<IElectronicDocumentDataProviderResolver>().Object,
-            new Mock<IElectronicDocumentXmlBuilderResolver>().Object,
+            new Mock<IElectronicDocumentXmlSupplierResolver>().Object,
             new Mock<IElectronicDocumentSchemaValidatorResolver>().Object,
             new Mock<IElectronicDocumentSigningService>().Object,
             xmlStorage.Object,
