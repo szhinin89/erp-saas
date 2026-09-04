@@ -20,6 +20,17 @@ public interface IDocumentSequenceRepository
     );
 
     /// <summary>
+    /// DOCUMENT-SEQUENCES-CONFIG-03 — lectura simple (sin lock, respeta los query filters
+    /// globales de tenant/empresa) para el caso de uso de configuración de número inicial. Nunca
+    /// usar para capturar numeración — para eso existe exclusivamente <see cref="CaptureNextAsync"/>.
+    /// </summary>
+    Task<DocumentSequence?> GetByEmissionPointAndDocTypeAsync(
+        Guid emissionPointId,
+        string docTypeCode,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
     /// Obtiene el DocumentSequence con bloqueo pesimista (SELECT FOR UPDATE).
     /// Llamar siempre dentro de una transacción activa. Preferir <see cref="CaptureNextAsync"/>.
     /// </summary>

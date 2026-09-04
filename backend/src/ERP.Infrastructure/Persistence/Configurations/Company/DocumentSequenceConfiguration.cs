@@ -26,6 +26,11 @@ public class DocumentSequenceConfiguration : IEntityTypeConfiguration<DocumentSe
             .HasMaxLength(5)
             .IsRequired();
         builder.Property(x => x.CurrentSeq).HasColumnName("current_seq").IsRequired();
+        builder
+            .Property(x => x.HasBeenUsed)
+            .HasColumnName("has_been_used")
+            .IsRequired()
+            .HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
 

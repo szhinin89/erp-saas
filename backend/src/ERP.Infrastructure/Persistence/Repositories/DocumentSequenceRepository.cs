@@ -69,9 +69,9 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
                 await _db.Database.ExecuteSqlInterpolatedAsync(
                     $"""
                     INSERT INTO document_sequence
-                        (id, tenant_id, company_id, emission_point_id, doc_type_code, current_seq, created_at, updated_at)
+                        (id, tenant_id, company_id, emission_point_id, doc_type_code, current_seq, has_been_used, created_at, updated_at)
                     VALUES
-                        ({newId}, {tenantId}, {companyId}, {emissionPointId}, {docTypeCode}, {nextSeq}, {now}, {now})
+                        ({newId}, {tenantId}, {companyId}, {emissionPointId}, {docTypeCode}, {nextSeq}, TRUE, {now}, {now})
                     """,
                     ct
                 );
@@ -82,8 +82,12 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
                 seqValue = Math.Max(existing.CurrentSeq, 1);
                 var nextSeq = seqValue + 1;
                 var now = DateTime.UtcNow;
+                // has_been_used pasa a TRUE aquí igual que en el INSERT — DOCUMENT-SEQUENCES-CONFIG-03:
+                // esta es la única vía real de captura (CaptureNextAsync), así que a partir de esta
+                // línea la fila queda marcada como "usada" y ConfigureDocumentSequenceCommand ya no
+                // puede reconfigurar su número inicial libremente.
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"UPDATE document_sequence SET current_seq = {nextSeq}, updated_at = {now} WHERE id = {existing.Id}",
+                    $"UPDATE document_sequence SET current_seq = {nextSeq}, has_been_used = TRUE, updated_at = {now} WHERE id = {existing.Id}",
                     ct
                 );
             }
@@ -102,6 +106,17 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
                 await tx.DisposeAsync();
         }
     }
+
+    /// <inheritdoc/>
+    public Task<DocumentSequence?> GetByEmissionPointAndDocTypeAsync(
+        Guid emissionPointId,
+        string docTypeCode,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.DocumentSequences.FirstOrDefaultAsync(
+            s => s.EmissionPointId == emissionPointId && s.DocTypeCode == docTypeCode,
+            cancellationToken
+        );
 
     public async Task<DocumentSequence?> GetForUpdateAsync(
         Guid emissionPointId,

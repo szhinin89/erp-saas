@@ -33,3 +33,16 @@ public record EmissionPointListItemDto(
 
 /// <summary>DTO de lookup para poblar el selector de Establecimiento en el formulario.</summary>
 public record EstablishmentLookupDto(Guid Id, string Code, string Name);
+
+/// <summary>
+/// DOCUMENT-SEQUENCES-CONFIG-03 — estado de una secuencia documental SRI tras configurar su
+/// número inicial. <see cref="NextNumber"/> es el próximo secuencial a entregar (equivalente a
+/// <c>DocumentSequence.CurrentSeq</c>), no el último emitido.
+/// </summary>
+public record DocumentSequenceDto(
+    Guid EmissionPointId,
+    string DocTypeCode,
+    int NextNumber,
+    bool HasBeenUsed,
+    DateTime UpdatedAt
+);
