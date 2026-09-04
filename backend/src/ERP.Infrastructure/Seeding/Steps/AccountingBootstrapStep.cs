@@ -62,6 +62,13 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// companies comparando el conteo de líneas, no solo la existencia de la clave (ver
 /// <see cref="RequiredPostingRuleLineCounts"/>). Mismo mecanismo de idempotencia que el resto de
 /// <c>MinimalPostingRules</c> para companies nuevas o sin esta regla en absoluto.
+///
+/// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01: agrega la <c>PostingRule</c> mínima que faltaba
+/// por completo para <c>Expenses/DocumentConfirmed</c> — a diferencia del gap de 01H (regla
+/// incompleta), esta nunca tuvo entrada en <c>MinimalPostingRules</c>, detectado en preparación QA
+/// (RETENTIONS-SRI-SANDBOX-SEED-04F-1) al confirmar el primer gasto de una empresa de prueba. El
+/// mecanismo de detección/backfill existente (<see cref="RequiredPostingRuleKeys"/>) ya cubre esta
+/// clase de gap sin cambios adicionales: cualquier company activa sin esta clave vuelve a calificar.
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -345,6 +352,26 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.Retention),
                 new("2.1.02.002", AccountNature.Credit, PostingAmountKind.RetentionVat),
                 new("2.1.02.003", AccountNature.Credit, PostingAmountKind.RetentionIncome),
+            ]
+        ),
+        // ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 — "Expenses"/"DocumentConfirmed" faltaba
+        // por completo en este seed (confirmado leyendo ExpenseDocumentConfirmedPostingTranslator:
+        // el traductor existe y publica el hecho contable desde EXPENSES-CONFIRM-07, pero ninguna
+        // fase previa sembró la PostingRule correspondiente) — toda empresa nueva o existente
+        // llegaba fail-closed ("RULE_NOT_FOUND") al confirmar el primer gasto, hasta que se creaba
+        // manualmente vía CreatePostingRuleHandler (hallazgo real en preparación QA
+        // RETENTIONS-SRI-SANDBOX-SEED-04F-1). Mismo criterio que "Payables"/"SupplierPaymentConfirmed":
+        // la línea de Debe por cada categoría/subcategoría de gasto es dinámica vía
+        // PostingFact.Allocations en el traductor (cardinalidad variable, no representable como
+        // PostingRuleLine fija) — aquí solo se fijan las 2 líneas que sí son cuentas fijas de la
+        // empresa: Debe IVA crédito tributario (si el gasto tiene IVA; se omite en cero vía
+        // JournalFactory) y Haber CxP proveedores por el total.
+        new(
+            "Expenses",
+            "DocumentConfirmed",
+            [
+                new("1.1.05.001", AccountNature.Debit, PostingAmountKind.TaxVat),
+                new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
     ];

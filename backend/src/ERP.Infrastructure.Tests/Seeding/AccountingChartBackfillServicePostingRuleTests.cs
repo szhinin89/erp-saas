@@ -227,6 +227,114 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
             .BeEquivalentTo(originalLineIds, because: "ya está completa, EnsureAsync no debe tocarla");
     }
 
+    /// <summary>
+    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 — escenario real de la fase: una company
+    /// activa que ya pasó por el bootstrap ANTES de que "Expenses"/"DocumentConfirmed" existiera en
+    /// MinimalPostingRules (simulado quitando esa única regla luego del seed completo) vuelve a
+    /// calificar para backfill vía <see cref="AccountingBootstrapStep.RequiredPostingRuleKeys"/> —
+    /// mismo mecanismo que ya cerraba este tipo de gap para Retentions en 01H — y recibe solo la
+    /// regla faltante, sin duplicar ni tocar las demás.
+    /// </summary>
+    [Fact]
+    public async Task EnsureAsync_siembra_solo_expenses_documentconfirmed_para_company_a_la_que_solo_le_falta_esa()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        List<Guid> otherRuleIds;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            await SeedActiveCompanyAsync(db);
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var expensesRule = await db.PostingRules.SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+            );
+            db.PostingRules.Remove(expensesRule);
+            await db.SaveChangesAsync();
+
+            otherRuleIds = await db.PostingRules
+                .Where(r => r.CompanyId == _companyId)
+                .Select(r => r.Id)
+                .OrderBy(id => id)
+                .ToListAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var service = NewService(db);
+            await service.EnsureAsync();
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
+        rules.Should().Contain(r => r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed");
+
+        var untouchedIds = rules
+            .Where(r => !(r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"))
+            .Select(r => r.Id)
+            .OrderBy(id => id)
+            .ToList();
+        untouchedIds.Should().BeEquivalentTo(otherRuleIds, because: "el backfill no debe tocar las reglas que ya estaban completas");
+    }
+
+    /// <summary>
+    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 — una company con una PostingRule
+    /// "Expenses"/"DocumentConfirmed" personalizada por un admin (cuentas distintas a las del
+    /// blueprint retail) NO se toca: la clave ya existe, así que
+    /// <see cref="AccountingBootstrapStep.RequiredPostingRuleKeys"/> la da por completa (mismo
+    /// criterio que "no reglas ya editadas por el admin" del resto del seed) — a diferencia de
+    /// Retentions/DocumentIssued, esta regla no tiene una forma legacy conocida a corregir.
+    /// </summary>
+    [Fact]
+    public async Task EnsureAsync_no_toca_una_regla_personalizada_de_expenses_documentconfirmed()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        Guid customLineId;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            await SeedActiveCompanyAsync(db);
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var expensesRule = await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+                );
+            // Admin agrega una línea propia (p. ej. una cuenta puente adicional) — forma distinta
+            // de la que el seed produciría, nunca debe revertirse ni completarse silenciosamente.
+            var customAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "6.4.01.001")
+            ).Id;
+            expensesRule.AddLine(customAccountId, AccountNature.Debit, PostingAmountKind.Discount);
+            await db.SaveChangesAsync();
+            customLineId = expensesRule.Lines.Single(l => l.AmountKind == PostingAmountKind.Discount).Id;
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var service = NewService(db);
+            await service.EnsureAsync();
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rule = await verifyDb
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+            );
+        rule.Lines.Should().HaveCount(3, because: "la línea personalizada se mantiene, el backfill no la quita ni la altera");
+        rule.Lines.Should().Contain(l => l.Id == customLineId);
+    }
+
     private sealed class FakeHostEnvironment(bool isProduction) : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = isProduction ? "Production" : "Development";

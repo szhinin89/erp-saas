@@ -29,8 +29,11 @@ public sealed class AccountingBootstrapStepTests
     /// tests quedaron desactualizados y fallaban contra el código real, no al revés.
     ///
     /// RETENTIONS-POSTING-RULE-SEED-01H: pasa de 8 a 9 — agrega "Retentions"/"DocumentIssued".
+    ///
+    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01: pasa de 9 a 10 — agrega
+    /// "Expenses"/"DocumentConfirmed", que nunca había sido sembrada.
     /// </summary>
-    private const int ExpectedPostingRulesCount = 9;
+    private const int ExpectedPostingRulesCount = 10;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -291,12 +294,14 @@ public sealed class AccountingBootstrapStepTests
                     ("Payables", "SupplierPaymentConfirmed"),
                     ("Payables", "SupplierPaymentReversed"),
                     ("Retentions", "DocumentIssued"),
+                    ("Expenses", "DocumentConfirmed"),
                 }
             );
 
-        // Las 6 reglas "clásicas" tienen todas sus líneas fijas (>=2). Las 2 reglas de Pagos a
-        // Proveedores (SUPPLIER-PAYMENTS-POSTING-15D/SUPPLIER-PAYMENTS-REVERSE-16) solo fijan la
-        // línea de CxP — el Haber/Debe por cada medio de pago es dinámico vía
+        // Las 7 reglas "clásicas" (incluida "Expenses"/"DocumentConfirmed" desde
+        // ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01) tienen todas sus líneas fijas (>=2). Las 2
+        // reglas de Pagos a Proveedores (SUPPLIER-PAYMENTS-POSTING-15D/SUPPLIER-PAYMENTS-REVERSE-16)
+        // solo fijan la línea de CxP — el Haber/Debe por cada medio de pago es dinámico vía
         // PostingFact.Allocations, no representable como PostingRuleLine, así que cada una tiene
         // exactamente 1 línea fija.
         var rulesWithFixedTwoOrMoreLines = rules.Where(r =>
@@ -381,6 +386,45 @@ public sealed class AccountingBootstrapStepTests
     }
 
     /// <summary>
+    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 — la PostingRule de "Expenses"/"DocumentConfirmed"
+    /// nunca existió en MinimalPostingRules (a diferencia de Retentions/DocumentIssued, que 01H sí
+    /// sembraba, aunque incompleta). Confirma las 2 líneas fijas esperadas: Debe IVA crédito
+    /// tributario (si el gasto tiene IVA) y Haber CxP proveedores por el total — la línea Debe por
+    /// cada categoría/subcategoría de gasto es dinámica vía PostingFact.Allocations en
+    /// ExpenseDocumentConfirmedPostingTranslator, no representable como PostingRuleLine fija.
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_expenses_documentconfirmed_con_debe_iva_y_haber_cxp()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed"
+            );
+
+        rule.IsActive.Should().BeTrue();
+        rule.Lines.Should().HaveCount(2);
+
+        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        debitLine.AmountKind.Should().Be(PostingAmountKind.TaxVat);
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
+            .Should()
+            .Be("1.1.05.001", because: "Debe = IVA crédito tributario, se omite en cero si el gasto no tiene IVA");
+
+        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        creditLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001", because: "Haber = CxP proveedores por el total del gasto");
+    }
+
+    /// <summary>
     /// RETENTIONS-POSTING-RULE-SEED-01H — caso 6 del plan de tests: si a la empresa le falta (o
     /// no permite asiento en) la cuenta canónica de Retenciones IVA por pagar, el seed NO crea la
     /// PostingRule de Retentions — mismo criterio fail-closed ya usado por el resto de
@@ -421,6 +465,48 @@ public sealed class AccountingBootstrapStepTests
         rules.Should().NotContain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
         rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
         rules.Should().Contain(r => r.SourceModule == "Payables" && r.FactType == "SupplierPaymentConfirmed");
+    }
+
+    /// <summary>
+    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 — mismo criterio fail-closed que el resto de
+    /// MinimalPostingRules: si la cuenta canónica de IVA crédito tributario no permite asiento, el
+    /// seed NO crea la PostingRule de Expenses (nunca con una cuenta inválida/silenciosa). Las
+    /// demás reglas no se ven afectadas.
+    /// </summary>
+    [Fact]
+    public async Task No_crea_posting_rule_de_expenses_si_la_cuenta_de_iva_no_permite_asiento()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            db.Accounts.Add(
+                ERP.Domain.Modules.Accounting.Entities.Account.Create(
+                    _tenantId,
+                    _companyId,
+                    ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.05.001"),
+                    "IVA credito tributario no postable",
+                    parentAccountId: null,
+                    accountType: AccountType.Asset,
+                    nature: AccountNature.Debit,
+                    allowsPosting: false,
+                    createdBy: _actorId
+                )
+            );
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
+        rules.Should().NotContain(r => r.SourceModule == "Expenses" && r.FactType == "DocumentConfirmed");
+        rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
+        rules.Should().Contain(r => r.SourceModule == "Retentions" && r.FactType == "DocumentIssued");
     }
 
     [Fact]
