@@ -24,6 +24,17 @@ namespace ERP.API.Controllers;
 ///
 /// No firma XML, no envía al SRI, no persiste el XML como autorizado, no cachea el PDF —
 /// cada llamada genera XML y PDF de nuevo a partir del estado actual de la retención.
+///
+/// RETENTIONS-SRI-MANUAL-REGISTER-04E agrega <see cref="Register"/>: disparo manual y explícito
+/// del registro electrónico real (firma + SOAP + autorización, vía
+/// <see cref="ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer"/>) —
+/// deliberadamente separado de los dos endpoints de arriba, que siguen siendo preview/on-demand
+/// y nunca firman ni envían nada. Usa <see cref="ElectronicDocumentsPermissions.Retry"/> (no un
+/// permiso nuevo): es el mismo permiso que ya protege la acción de registro/reintento manual
+/// equivalente para Factura/Nota de Crédito en <c>ElectronicDocumentsController.Register</c>/
+/// <c>Retry</c>, y ya es asignable desde el catálogo de permisos (ligado al <c>[NavItem]</c> del
+/// Monitor de Documentos Electrónicos) — crear un permiso nuevo sin ese vínculo quedaría
+/// inasignable.
 /// </summary>
 [ApiController]
 [Route("api/v1/retentions")]
@@ -70,4 +81,19 @@ public sealed class RetentionsController : ControllerBase
 
         return File(result.Value!, "application/pdf", $"retencion-{id:N}.pdf");
     }
+
+    /// <summary>
+    /// Dispara el registro electrónico real (firma XAdES-BES + envío a Recepción SRI + consulta
+    /// de Autorización) de una retención ya <c>Issued</c>, vía el pipeline genérico
+    /// <c>IElectronicDocumentIssuer.RegisterAsync</c> — el mismo que usan Factura/Nota de
+    /// Crédito. Manual y explícito: no se dispara automáticamente al emitir la retención. Sin
+    /// body — solo usa <paramref name="id"/>.
+    /// </summary>
+    [HttpPost("{id:guid}/electronic/register")]
+    [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Retry}")]
+    public async Task<IActionResult> Register(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new RegisterRetentionElectronicDocumentCommand(id), ct),
+            "OK"
+        );
 }

@@ -169,4 +169,93 @@ public sealed class RetentionsControllerTests
         var badRequest = response.Should().BeOfType<BadRequestObjectResult>().Subject;
         badRequest.StatusCode.Should().Be(400);
     }
+
+    // ── POST {id}/electronic/register (RETENTIONS-SRI-MANUAL-REGISTER-04E) ──
+
+    private static ElectronicDocumentDto SampleElectronicDocumentDto() =>
+        new(
+            Guid.NewGuid(),
+            "Retention",
+            "Retentions",
+            Guid.NewGuid(),
+            "Signed",
+            new string('1', 49),
+            null,
+            null,
+            0,
+            null,
+            DateTime.UtcNow,
+            null
+        );
+
+    [Fact]
+    public async Task Register_success_returns_200_with_the_electronic_document_dto()
+    {
+        var expected = SampleElectronicDocumentDto();
+        var controller = BuildController(_ => Result<ElectronicDocumentDto>.Success(expected));
+
+        var response = await controller.Register(Guid.NewGuid(), CancellationToken.None);
+
+        var ok = response.Should().BeOfType<OkObjectResult>().Subject;
+        ok.StatusCode.Should().Be(200);
+        var body = ok.Value.Should().BeOfType<ApiResponse<ElectronicDocumentDto>>().Subject;
+        body.Data!.Id.Should().Be(expected.Id);
+    }
+
+    [Fact]
+    public async Task Register_delegates_exactly_the_retention_id_it_received()
+    {
+        RegisterRetentionElectronicDocumentCommand? captured = null;
+        var controller = BuildController(req =>
+        {
+            captured = (RegisterRetentionElectronicDocumentCommand)req;
+            return Result<ElectronicDocumentDto>.Success(SampleElectronicDocumentDto());
+        });
+        var id = Guid.NewGuid();
+
+        await controller.Register(id, CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.RetentionId.Should().Be(id);
+    }
+
+    [Fact]
+    public async Task Register_maps_not_found_to_404()
+    {
+        var controller = BuildController(_ =>
+            Result<ElectronicDocumentDto>.NotFound("La retención no existe.")
+        );
+
+        var response = await controller.Register(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Register_maps_a_draft_retention_validation_failure_to_422()
+    {
+        var controller = BuildController(_ =>
+            Result<ElectronicDocumentDto>.ValidationFailure(
+                "La retención debe estar emitida para registrar su documento electrónico (estado actual: Draft)."
+            )
+        );
+
+        var response = await controller.Register(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().BeOfType<UnprocessableEntityObjectResult>();
+    }
+
+    [Fact]
+    public async Task Register_maps_conflict_to_409_preserving_idempotency_semantics()
+    {
+        var controller = BuildController(_ =>
+            Result<ElectronicDocumentDto>.Conflict(
+                "Ya existe un documento electrónico registrado para este documento de origen."
+            )
+        );
+
+        var response = await controller.Register(Guid.NewGuid(), CancellationToken.None);
+
+        response.Should().BeOfType<ConflictObjectResult>();
+    }
 }
