@@ -4,6 +4,8 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -15,19 +17,88 @@ using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Retentions.Entities;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Expenses.UseCases.Documents;
 
-public sealed record ConfirmExpenseDocumentCommand(Guid Id)
+/// <summary>
+/// RETENTIONS-EXPENSES-INTEGRATION-01D-1 — intención OPCIONAL del usuario de generar una retención
+/// en la misma operación que confirma el gasto (ver
+/// <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c> § "Flujo funcional integrado de
+/// retenciones"). <see cref="AppliesRetention"/> es solo la intención — nunca prueba de que aplica:
+/// el servidor siempre revalida elegibilidad contra el documento real vía
+/// <see cref="IRetentionIssuer"/> antes de emitir. El monto/base/porcentaje de cada línea siguen sin
+/// numeración automática ni cálculo server-side en esta fase (mismo criterio ya documentado en
+/// <see cref="IssueRetentionCommand"/> — RETENTIONS-APPLICATION-01C).
+/// </summary>
+public sealed record RetentionIntent(
+    bool AppliesRetention,
+    Guid? EmissionPointId,
+    string? RetentionNumber,
+    DateOnly? IssueDate,
+    IReadOnlyList<IssueRetentionLineInput>? Lines
+);
+
+/// <summary>Reglas de <see cref="RetentionIntent"/> solo cuando <c>AppliesRetention == true</c> — compartidas por ambos commands de confirmación de gastos.</summary>
+public sealed class RetentionIntentValidator : AbstractValidator<RetentionIntent>
+{
+    public RetentionIntentValidator()
+    {
+        When(
+            x => x.AppliesRetention,
+            () =>
+            {
+                RuleFor(x => x.EmissionPointId)
+                    .Must(v => v.HasValue && v.Value != Guid.Empty)
+                    .WithMessage("El punto de emisión es obligatorio para generar la retención.");
+                RuleFor(x => x.RetentionNumber)
+                    .NotEmpty()
+                    .WithMessage("El número de retención es obligatorio para generar la retención.");
+                RuleFor(x => x.IssueDate)
+                    .NotEmpty()
+                    .WithMessage("La fecha de emisión de la retención es obligatoria.");
+                RuleFor(x => x.Lines)
+                    .NotEmpty()
+                    .WithMessage("Debe incluir al menos una línea de retención.");
+                RuleForEach(x => x.Lines!).SetValidator(new IssueRetentionLineValidator());
+            }
+        );
+    }
+}
+
+public sealed record ConfirmExpenseDocumentCommand(Guid Id, RetentionIntent? Retention = null)
     : IRequest<Result<ExpenseDocumentDetailDto>>,
         IBranchScopedRequest;
 
 public sealed class ConfirmExpenseDocumentValidator : AbstractValidator<ConfirmExpenseDocumentCommand>
 {
-    public ConfirmExpenseDocumentValidator() => RuleFor(x => x.Id).NotEmpty();
+    public ConfirmExpenseDocumentValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Retention!).SetValidator(new RetentionIntentValidator()).When(x => x.Retention is not null);
+    }
+}
+
+/// <summary>
+/// RETENTIONS-EXPENSES-INTEGRATION-01D-1 — traduce el fallo de una operación interna
+/// (<see cref="Result{TIn}"/>, p. ej. <see cref="IRetentionIssuer"/>) a un <see cref="Result{TOut}"/>
+/// del mismo tipo/código que devolvería el handler que la invoca, preservando el <c>Code</c>
+/// (Conflict/NotFound/ValidationError/...) para que el controller siga mapeando el status HTTP
+/// correcto.
+/// </summary>
+file static class ResultTranslation
+{
+    public static Result<TOut> ToFailure<TIn, TOut>(this Result<TIn> source) =>
+        source.Code switch
+        {
+            ApiResponseCodes.Common.Conflict => Result<TOut>.Conflict(source.Error!),
+            ApiResponseCodes.Common.NotFound => Result<TOut>.NotFound(source.Error!),
+            ApiResponseCodes.Common.Forbidden => Result<TOut>.Forbidden(source.Error!),
+            _ => Result<TOut>.ValidationFailure(source.Error!, source.Code),
+        };
 }
 
 public sealed class ConfirmExpenseDocumentHandler
@@ -38,6 +109,7 @@ public sealed class ConfirmExpenseDocumentHandler
     private readonly IAccountRepository _accounts;
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
+    private readonly IRetentionIssuer _retentionIssuer;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -50,6 +122,7 @@ public sealed class ConfirmExpenseDocumentHandler
         IAccountRepository accounts,
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
+        IRetentionIssuer retentionIssuer,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -62,6 +135,7 @@ public sealed class ConfirmExpenseDocumentHandler
         _accounts = accounts;
         _payables = payables;
         _workflowPolicy = workflowPolicy;
+        _retentionIssuer = retentionIssuer;
         _tenant = tenant;
         _company = company;
         _logger = logger;
@@ -147,6 +221,44 @@ public sealed class ConfirmExpenseDocumentHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
         }
 
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-1: si el usuario marcó la intención de generar
+        // retención, se construye/emite AQUÍ — ANTES del SaveChangesAsync de abajo y sin llamarlo
+        // internamente (IRetentionIssuer solo hace staging, ver su comentario de tipo) — para que
+        // ambos agregados (ExpenseDocument confirmado + RetentionDocument emitido) se persistan en
+        // un único SaveChangesAsync, atómico por diseño de ErpDbContext.SaveChangesAsync (abre su
+        // propia transacción de BD cuando no hay una ambiente y envuelve ahí tanto la escritura
+        // inicial como los domain events publicados). Si la emisión falla, se retorna sin llamar
+        // SaveChangesAsync: la mutación en memoria de document.Confirm() de arriba nunca se
+        // flushea, así que el gasto NO queda Confirmed en BD — todo o nada, sin necesidad de un
+        // IUnitOfWork.BeginTransactionAsync explícito (evita además el riesgo de una transacción
+        // anidada, ya que ni RetentionIssuer ni IRetentionEligibilityService abren una propia).
+        //
+        // Pendiente explícito para RETENTIONS-EXPENSES-INTEGRATION-01D-2 (fuera de alcance de esta
+        // fase): la retención emitida aquí NO aplica su monto a AccountsPayable
+        // (AccountsPayable.ApplyRetention) ni genera asiento contable propio — no existe todavía un
+        // posting translator para RetentionDocumentIssuedEvent. La CxP creada más abajo (si
+        // PayableGenerationMode.OnConfirmation) queda por el monto BRUTO del gasto, sin descontar
+        // el retenido, hasta que 01D-2 conecte ese paso.
+        if (cmd.Retention is { AppliesRetention: true } retention)
+        {
+            var retentionResult = await _retentionIssuer.IssueForExpenseAsync(
+                document,
+                new RetentionIssueRequest(
+                    _tenant.TenantId,
+                    _company.CompanyId,
+                    document.BranchId,
+                    _user.UserId,
+                    retention.EmissionPointId!.Value,
+                    retention.RetentionNumber!,
+                    retention.IssueDate!.Value,
+                    retention.Lines!
+                ),
+                ct
+            );
+            if (!retentionResult.IsSuccess)
+                return retentionResult.ToFailure<RetentionDocument, ExpenseDocumentDetailDto>();
+        }
+
         try
         {
             // EXPENSES-CONFIRM-07: a diferencia de Purchases/Sales, el posting de Gastos es
@@ -154,7 +266,8 @@ public sealed class ConfirmExpenseDocumentHandler
             // (en vez de solo loguear un warning) si IPostingEngine.PostAsync falla. La excepción se
             // propaga desde el Publish() interno de ErpDbContext.SaveChangesAsync, que hace rollback
             // completo de la transacción ANTES de este catch — el documento queda en Draft en BD,
-            // nada de lo mutado en memoria (Confirm() de arriba) llegó a persistirse.
+            // nada de lo mutado en memoria (Confirm() de arriba, ni el RetentionDocument en staging
+            // de arriba) llegó a persistirse.
             // DOCUMENT-FLOW-POLICY-01: la política inicial obligatoria de GASDOC declara
             // AccountingPostingMode.OnConfirmation, que coincide con este comportamiento existente
             // (posting disparado por ExpenseDocumentConfirmedEvent al confirmar). Reestructurar el
@@ -239,13 +352,26 @@ public sealed record CreateConfirmedExpenseCommand(
     IReadOnlyList<ExpenseDraftLineRequest> Lines,
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
-    string? Notes = null
+    string? Notes = null,
+    RetentionIntent? Retention = null
 ) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest, IExpenseDraftInput;
 
+/// <summary>
+/// RETENTIONS-EXPENSES-INTEGRATION-01D-1: en el vocabulario del negocio, "confirmar" un gasto
+/// incluye tanto confirmar un borrador existente (<see cref="ConfirmExpenseDocumentCommand"/>) como
+/// crearlo ya confirmado (este command) — ambos caminos terminan en <c>ExpenseStatus.Confirmed</c> y
+/// ambos ya comparten el mismo bloque de creación de CxP (ver
+/// <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c> § "Hallazgos técnicos", líneas 178-216/446-484
+/// antes de esta fase). Por eso <see cref="RetentionIntent"/> se extiende simétricamente a ambos
+/// commands, reutilizando el mismo <see cref="IRetentionIssuer"/>.
+/// </summary>
 public sealed class CreateConfirmedExpenseValidator : AbstractValidator<CreateConfirmedExpenseCommand>
 {
-    public CreateConfirmedExpenseValidator() =>
+    public CreateConfirmedExpenseValidator()
+    {
         Include(new ExpenseDraftHeaderRules<CreateConfirmedExpenseCommand>());
+        RuleFor(x => x.Retention!).SetValidator(new RetentionIntentValidator()).When(x => x.Retention is not null);
+    }
 }
 
 public sealed class CreateConfirmedExpenseHandler
@@ -260,6 +386,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly ISriTaxResolver _tax;
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
+    private readonly IRetentionIssuer _retentionIssuer;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -276,6 +403,7 @@ public sealed class CreateConfirmedExpenseHandler
         ISriTaxResolver tax,
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
+        IRetentionIssuer retentionIssuer,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -292,6 +420,7 @@ public sealed class CreateConfirmedExpenseHandler
         _tax = tax;
         _payables = payables;
         _workflowPolicy = workflowPolicy;
+        _retentionIssuer = retentionIssuer;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -425,6 +554,32 @@ public sealed class CreateConfirmedExpenseHandler
         catch (InvalidOperationException ex)
         {
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
+        }
+
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-1: mismo criterio y mismos comentarios que
+        // ConfirmExpenseDocumentHandler — se emite ANTES del SaveChangesAsync de abajo (staging vía
+        // IRetentionIssuer, sin SaveChanges propio) para que ExpenseDocument (recién agregado
+        // arriba) y RetentionDocument se persistan atómicamente en un único SaveChangesAsync. Si
+        // falla, se retorna sin persistir nada (ni el ExpenseDocument recién creado en memoria).
+        // Pendiente para 01D-2: no aplica el monto a AccountsPayable ni genera asiento propio.
+        if (cmd.Retention is { AppliesRetention: true } retention)
+        {
+            var retentionResult = await _retentionIssuer.IssueForExpenseAsync(
+                document,
+                new RetentionIssueRequest(
+                    _tenant.TenantId,
+                    _company.CompanyId,
+                    document.BranchId,
+                    _user.UserId,
+                    retention.EmissionPointId!.Value,
+                    retention.RetentionNumber!,
+                    retention.IssueDate!.Value,
+                    retention.Lines!
+                ),
+                ct
+            );
+            if (!retentionResult.IsSuccess)
+                return retentionResult.ToFailure<RetentionDocument, ExpenseDocumentDetailDto>();
         }
 
         try

@@ -5,7 +5,6 @@ using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
-using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
 using MediatR;
 
@@ -88,8 +87,7 @@ public sealed class IssueRetentionValidator : AbstractValidator<IssueRetentionCo
 public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionCommand, Result<RetentionDocumentDto>>
 {
     private readonly IExpenseDocumentRepository _expenseRepo;
-    private readonly IRetentionDocumentRepository _retentionRepo;
-    private readonly IRetentionEligibilityService _eligibilityService;
+    private readonly IRetentionIssuer _issuer;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -98,8 +96,7 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
 
     public IssueRetentionHandler(
         IExpenseDocumentRepository expenseRepo,
-        IRetentionDocumentRepository retentionRepo,
-        IRetentionEligibilityService eligibilityService,
+        IRetentionIssuer issuer,
         IUnitOfWork uow,
         ICurrentTenant tenant,
         ICurrentCompany company,
@@ -108,8 +105,7 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
     )
     {
         _expenseRepo = expenseRepo;
-        _retentionRepo = retentionRepo;
-        _eligibilityService = eligibilityService;
+        _issuer = issuer;
         _uow = uow;
         _tenant = tenant;
         _company = company;
@@ -149,94 +145,36 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
                 "Solo se puede emitir una retención sobre un gasto confirmado."
             );
 
-        // 3) Unicidad por origen — nunca crear una segunda retención activa sobre el mismo origen
-        // (ver docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Agregado raíz").
-        var alreadyExists = await _retentionRepo.ExistsActiveBySourceAsync(
-            tid,
-            cid,
-            cmd.SourceDocumentType,
-            cmd.SourceDocumentId,
-            ct
-        );
-        if (alreadyExists)
-            return Result<RetentionDocumentDto>.Conflict(
-                "Ya existe una retención activa para este documento origen."
-            );
-
-        // 4) Revalidar elegibilidad server-side con la base retenible real del ExpenseDocument —
-        // nunca confía en las líneas que el usuario envió como prueba de que aplica. Misma
-        // resolución de bases que GetRetentionEligibilityHandler (TotalVat / suma de TaxableBase).
-        var eligibility = await _eligibilityService.EvaluateAsync(
-            tid,
-            cid,
-            document.SupplierId,
-            document.TotalVat,
-            document.Lines.Sum(l => l.TaxableBase),
-            ct
-        );
-
-        var wantsVat = cmd.Lines.Any(l => l.TaxType == RetentionTaxType.Vat);
-        var wantsIncome = cmd.Lines.Any(l => l.TaxType == RetentionTaxType.Income);
-
-        if (wantsVat && !eligibility.CanRetainVat)
-            return Result<RetentionDocumentDto>.ValidationFailure(
-                string.Join(" ", eligibility.Reasons)
-            );
-        if (wantsIncome && !eligibility.CanRetainIncome)
-            return Result<RetentionDocumentDto>.ValidationFailure(
-                string.Join(" ", eligibility.Reasons)
-            );
-
-        // 5)-7) Crear el documento en Draft con los IDs del contexto seguro, agregar líneas y
-        // emitir. NO se toca AccountsPayable/JournalEntry/ExpenseDocument en esta fase — esta
-        // emisión queda completamente aislada (ver comentario de tipo del command).
-        RetentionDocument retention;
-        try
-        {
-            retention = RetentionDocument.Create(
+        // 3)-7) RETENTIONS-EXPENSES-INTEGRATION-01D-1: la unicidad por origen, la revalidación de
+        // elegibilidad server-side y la construcción/emisión del agregado se extrajeron a
+        // IRetentionIssuer (ERP.Application/Modules/Retentions/Services/RetentionIssuer.cs) — la
+        // misma operación que usa ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler para
+        // emitir la retención dentro de su propia transacción de confirmación. Este handler sigue
+        // siendo la única vía de emisión AISLADA (post-confirmación, fuera de la transacción de
+        // confirmar el gasto) — no se duplica lógica, solo se reutiliza.
+        var issued = await _issuer.IssueForExpenseAsync(
+            document,
+            new RetentionIssueRequest(
                 tid,
                 cid,
                 bid,
-                cmd.SourceDocumentType,
-                cmd.SourceDocumentId,
-                document.SupplierId,
+                uid,
                 cmd.EmissionPointId,
-                uid
-            );
-
-            foreach (var line in cmd.Lines)
-            {
-                retention.AddLine(
-                    RetentionDocumentLine.Create(
-                        retention.Id,
-                        tid,
-                        line.TaxType,
-                        line.RetentionCode,
-                        line.BaseAmount,
-                        line.RetentionRate,
-                        line.RetainedAmount,
-                        line.Description
-                    )
-                );
-            }
-
-            retention.Issue(cmd.RetentionNumber, cmd.IssueDate, uid);
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<RetentionDocumentDto>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<RetentionDocumentDto>.ValidationFailure(ex.Message);
-        }
+                cmd.RetentionNumber,
+                cmd.IssueDate,
+                cmd.Lines
+            ),
+            ct
+        );
+        if (!issued.IsSuccess)
+            return Result<RetentionDocumentDto>.Failure(issued.Error!, issued.Code);
 
         // 8) Persistir. Sin BeginTransactionAsync explícito — un único agregado nuevo
-        // (RetentionDocument + sus líneas), sin tocar ningún otro agregado en esta fase.
-        await _retentionRepo.AddAsync(retention, ct);
+        // (RetentionDocument + sus líneas, ya en staging vía IRetentionIssuer), sin tocar ningún
+        // otro agregado en esta fase.
         await _uow.SaveChangesAsync(ct);
 
-        return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(retention));
+        return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(issued.Value!));
     }
 }
 

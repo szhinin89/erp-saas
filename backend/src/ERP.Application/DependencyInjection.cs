@@ -30,6 +30,10 @@ public static class DependencyInjection
         // RETENTIONS-ELIGIBILITY-01 — solo orquesta repos ya registrados (Company, BusinessPartnerRole,
         // IRetentionCodeResolver), sin EF directo, por eso vive/registra en Application, no Infrastructure.
         services.AddScoped<IRetentionEligibilityService, RetentionEligibilityService>();
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-1 — operación interna reutilizable de emisión de
+        // RetentionDocument, consumida por IssueRetentionHandler (emisión aislada) y por
+        // ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler (emisión transaccional).
+        services.AddScoped<IRetentionIssuer, RetentionIssuer>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CompanyScopeBehavior<,>));

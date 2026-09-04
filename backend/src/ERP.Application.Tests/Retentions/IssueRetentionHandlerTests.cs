@@ -526,8 +526,12 @@ public sealed class IssueRetentionHandlerTests
         public IssueRetentionHandler Handler =>
             new(
                 ExpenseRepo.Object,
-                RetentionRepo.Object,
-                EligibilityService.Object,
+                // RETENTIONS-EXPENSES-INTEGRATION-01D-1: IssueRetentionHandler ya no habla
+                // directamente con RetentionRepo/EligibilityService — delega en RetentionIssuer
+                // (mismo servicio que usa ConfirmExpenseDocumentHandler). Se construye con los
+                // mismos mocks que antes, así las aserciones existentes sobre RetentionRepo/
+                // EligibilityService siguen siendo válidas sin cambiar ningún [Fact].
+                new RetentionIssuer(RetentionRepo.Object, EligibilityService.Object),
                 Uow.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),

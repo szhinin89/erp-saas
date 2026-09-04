@@ -3,6 +3,8 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -15,6 +17,8 @@ using ERP.Domain.Modules.Expenses.Events;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Retentions.Entities;
+using ERP.Domain.Modules.Retentions.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -332,6 +336,224 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         );
     }
 
+    // ── RETENTIONS-EXPENSES-INTEGRATION-01D-1: retención integrada en la confirmación ─────────
+
+    private static readonly Guid EmissionPointId = Guid.NewGuid();
+
+    private static IssueRetentionLineInput VatLine(decimal baseAmount = 100m, decimal rate = 30m, decimal retained = 30m) =>
+        new(RetentionTaxType.Vat, "725", baseAmount, rate, retained);
+
+    private static RetentionIntent AppliesRetentionIntent(IReadOnlyList<IssueRetentionLineInput>? lines = null) =>
+        new(
+            AppliesRetention: true,
+            EmissionPointId: EmissionPointId,
+            RetentionNumber: "001-001-000000001",
+            IssueDate: new DateOnly(2026, 9, 3),
+            Lines: lines ?? new[] { VatLine() }
+        );
+
+    private static RetentionDocument IssuedRetentionFor(ExpenseDocument document)
+    {
+        var retention = RetentionDocument.Create(
+            TenantId,
+            CompanyId,
+            document.BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            document.Id,
+            document.SupplierId,
+            EmissionPointId,
+            UserId
+        );
+        retention.AddLine(
+            RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", 100m, 30m, 30m)
+        );
+        retention.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);
+        return retention;
+    }
+
+    // 1) Sin Retention: comportamiento actual sin cambios — el IssueRetentionIssuer nunca se invoca.
+    [Fact]
+    public async Task Confirmar_sin_intencion_de_retencion_no_invoca_al_emisor()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
+        fx.RetentionIssuer.Verify(
+            i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // 2) AppliesRetention=false: tampoco invoca al emisor ni crea retención.
+    [Fact]
+    public async Task Confirmar_con_AppliesRetention_false_no_crea_retencion()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+        var cmd = new ConfirmExpenseDocumentCommand(
+            document.Id,
+            new RetentionIntent(false, null, null, null, null)
+        );
+
+        var result = await fx.Handler.Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        fx.RetentionIssuer.Verify(
+            i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // 3) AppliesRetention=true, elegible: emite la retención en la misma transacción de confirmación.
+    [Fact]
+    public async Task Confirmar_con_AppliesRetention_true_elegible_crea_RetentionDocument_Issued()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
+        issuedRetention.Status.Should().Be(RetentionStatus.Issued);
+        // El SaveChangesAsync unico persiste TANTO la confirmacion del gasto COMO la retencion
+        // (ya en staging via IRetentionIssuer.AddAsync interno) — una sola llamada, atomica.
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // 4)-8) Si el emisor rechaza (empresa no habilitada, proveedor exento, sin base, sin codigo,
+    // origen duplicado) la confirmacion completa falla y NO se persiste nada — el gasto no queda
+    // Confirmed en BD. Estas razones de negocio ya estan cubiertas en detalle por
+    // IssueRetentionHandlerTests/RetentionEligibilityServiceTests (RetentionIssuer las reutiliza sin
+    // duplicarlas) — aqui se prueba el CONTRATO de integracion: cualquier fallo del emisor aborta
+    // toda la confirmacion, nunca solo la retencion.
+    [Theory]
+    [InlineData("La empresa no está configurada como agente de retención de IVA.")]
+    [InlineData("El proveedor está exento de retención.")]
+    [InlineData("El documento origen no tiene base retenible de IVA.")]
+    [InlineData("El proveedor no tiene código de retención de IVA configurado.")]
+    public async Task Confirmar_falla_completa_si_el_emisor_rechaza_por_regla_de_negocio(string reason)
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.ValidationFailure(reason));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be(reason);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        fx.Payables.Verify(
+            p => p.CreateFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    // 8) Ya existe retención activa para el origen — el emisor devuelve Conflict, la confirmación
+    // completa falla igual (mismo contrato de "todo o nada" que las fallas de elegibilidad).
+    [Fact]
+    public async Task Confirmar_falla_completa_si_ya_existe_retencion_activa_para_el_origen()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.Conflict("Ya existe una retención activa para este documento origen."));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // 9) Si falla la emisión de retención, el gasto NO queda Confirmed — se verifica que nunca se
+    // llega a persistir (SaveChangesAsync nunca se invoca), que es lo que en producción evita que
+    // ErpDbContext escriba el estado Confirmed en BD. La mutación en memoria de Confirm() (arriba,
+    // antes de invocar al emisor) no se revierte aquí porque nunca llegó a flushearse — mismo
+    // criterio que "Si_falla_el_posting_la_confirmacion_falla_y_el_documento_queda_Draft".
+    [Fact]
+    public async Task Si_falla_la_emision_de_retencion_el_gasto_no_queda_persistido_como_Confirmed()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.ValidationFailure("El proveedor está exento de retención."));
+
+        var result = await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        // Nunca se llamo SaveChangesAsync -> en produccion el gasto sigue Draft en BD (el rollback
+        // real de persistencia no se simula en un test basado en mocks, igual que el test analogo
+        // de fallo de posting).
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // 10)/11) Tenant/Company/Branch siempre del contexto seguro, nunca del body — RetentionIntent no
+    // expone esos campos (imposible que el body los mande) y el RetentionIssueRequest construido por
+    // el handler usa exactamente los valores de ICurrentTenant/ICurrentCompany/document.BranchId.
+    [Fact]
+    public void RetentionIntent_no_expone_TenantId_CompanyId_BranchId_ni_SourceDocumentType()
+    {
+        var properties = typeof(RetentionIntent).GetProperties().Select(p => p.Name).ToArray();
+
+        properties.Should().NotContain(new[] { "TenantId", "CompanyId", "BranchId", "SourceDocumentType", "SourceDocumentId" });
+    }
+
+    [Fact]
+    public async Task Confirmar_con_retencion_usa_IDs_del_contexto_seguro_no_del_body()
+    {
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m));
+        fx.SetupDocument(document);
+        var issuedRetention = IssuedRetentionFor(document);
+        RetentionIssueRequest? captured = null;
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<ExpenseDocument, RetentionIssueRequest, CancellationToken>((_, req, _) => captured = req)
+            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
+
+        await fx.Handler.Handle(
+            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
+            CancellationToken.None
+        );
+
+        captured.Should().NotBeNull();
+        captured!.TenantId.Should().Be(TenantId);
+        captured.CompanyId.Should().Be(CompanyId);
+        captured.BranchId.Should().Be(BranchId);
+        captured.UserId.Should().Be(UserId);
+    }
+
     private static void SetPrivateStatus(ExpenseDocument document, ExpenseStatus status)
     {
         var property = typeof(ExpenseDocument).GetProperty(nameof(ExpenseDocument.Status))!;
@@ -345,6 +567,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         public Mock<IAccountRepository> Accounts { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
+        public Mock<IRetentionIssuer> RetentionIssuer { get; } = new();
 
         public ExpenseCategoryNode Type { get; }
         public ExpenseCategoryNode Category { get; }
@@ -358,6 +581,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                 Accounts.Object,
                 Payables.Object,
                 WorkflowPolicy.Object,
+                RetentionIssuer.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

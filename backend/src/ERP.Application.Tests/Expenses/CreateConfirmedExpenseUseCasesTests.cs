@@ -4,6 +4,8 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
 using ERP.Application.Modules.Payables.UseCases;
+using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
@@ -20,6 +22,8 @@ using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Retentions.Entities;
+using ERP.Domain.Modules.Retentions.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -101,6 +105,73 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         );
     }
 
+    // ── RETENTIONS-EXPENSES-INTEGRATION-01D-1: mismo contrato de retencion integrada que
+    // ConfirmExpenseDocumentHandler, extendido simetricamente a este handler (ver justificacion en
+    // el comentario de tipo de CreateConfirmedExpenseValidator). No se repiten aqui los 12 casos
+    // detallados ya cubiertos en ExpenseDocumentConfirmUseCasesTests — solo se confirma que el
+    // mismo IRetentionIssuer se invoca/orquesta igual en este segundo call site.
+
+    private static readonly Guid EmissionPointId = Guid.NewGuid();
+
+    private static RetentionIntent AppliesRetentionIntent() =>
+        new(
+            AppliesRetention: true,
+            EmissionPointId: EmissionPointId,
+            RetentionNumber: "001-001-000000001",
+            IssueDate: new DateOnly(2026, 8, 27),
+            Lines: new IssueRetentionLineInput[] { new(RetentionTaxType.Vat, "725", 10m, 30m, 3m) }
+        );
+
+    [Fact]
+    public async Task Crear_confirmado_con_retencion_elegible_la_emite_en_la_misma_transaccion()
+    {
+        var fx = new Fixture();
+        RetentionDocument? issuedRetention = null;
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                (ExpenseDocument doc, RetentionIssueRequest req, CancellationToken _) =>
+                {
+                    var retention = RetentionDocument.Create(
+                        TenantId, CompanyId, doc.BranchId, RetentionSourceDocumentType.ExpenseDocument,
+                        doc.Id, doc.SupplierId, req.EmissionPointId, req.UserId
+                    );
+                    retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", 10m, 30m, 3m));
+                    retention.Issue(req.RetentionNumber, req.IssueDate, req.UserId);
+                    issuedRetention = retention;
+                    return Result<RetentionDocument>.Success(retention);
+                }
+            );
+
+        var result = await fx.Handler.Handle(fx.ValidCommand(AppliesRetentionIntent()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
+        issuedRetention.Should().NotBeNull();
+        issuedRetention!.Status.Should().Be(RetentionStatus.Issued);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Crear_confirmado_falla_completa_si_el_emisor_de_retencion_rechaza()
+    {
+        var fx = new Fixture();
+        fx.RetentionIssuer
+            .Setup(i => i.IssueForExpenseAsync(It.IsAny<ExpenseDocument>(), It.IsAny<RetentionIssueRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RetentionDocument>.ValidationFailure("El proveedor está exento de retención."));
+
+        var result = await fx.Handler.Handle(fx.ValidCommand(AppliesRetentionIntent()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("El proveedor está exento de retención.");
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Once);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        fx.Payables.Verify(
+            p => p.CreateFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
     private sealed class Fixture
     {
         public Mock<IExpenseDocumentRepository> Docs { get; } = new();
@@ -112,6 +183,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
+        public Mock<IRetentionIssuer> RetentionIssuer { get; } = new();
 
         public Account Account { get; }
         public ExpenseCategoryNode Type { get; }
@@ -132,6 +204,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 Tax.Object,
                 Payables.Object,
                 WorkflowPolicy.Object,
+                RetentionIssuer.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -262,7 +335,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 );
         }
 
-        public CreateConfirmedExpenseCommand ValidCommand() =>
+        public CreateConfirmedExpenseCommand ValidCommand(RetentionIntent? retention = null) =>
             new(
                 Supplier.Id,
                 new DateOnly(2026, 8, 27),
@@ -272,7 +345,8 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 PaymentTerm.Id,
                 null,
                 new[] { new ExpenseDraftLineRequest(Subcategory.Id, "Gasto", 1m, 10m) },
-                Notes: "Confirmado directo"
+                Notes: "Confirmado directo",
+                Retention: retention
             );
     }
 }
