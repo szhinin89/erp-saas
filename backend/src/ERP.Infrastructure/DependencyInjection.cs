@@ -516,6 +516,14 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.SchemaValidation.IElectronicDocumentSchemaValidator,
             ERP.Application.Modules.ElectronicDocuments.SchemaValidation.CreditNoteXmlSchemaValidator
         >();
+        // RETENTIONS-SRI-SCHEMA-VALIDATOR-04C: Comprobante de Retención V1.0.0 — mismo patrón,
+        // ningún cambio al resolver ni a IXmlSchemaProvider. manifest.json.Retention.activeVersion
+        // permanece null hasta que exista también el wiring completo (04B/04D) y una autorización
+        // real verificada — ver RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B, sección J.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.SchemaValidation.IElectronicDocumentSchemaValidator,
+            ERP.Application.Modules.ElectronicDocuments.SchemaValidation.RetentionXmlSchemaValidator
+        >();
         // Los demás tipos de comprobante añadirán su propio IElectronicDocumentSchemaValidator
         // aquí — nunca tocar el resolver ni IXmlSchemaProvider.
 
