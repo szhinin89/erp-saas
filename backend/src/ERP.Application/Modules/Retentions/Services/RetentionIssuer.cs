@@ -1,9 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 
 namespace ERP.Application.Modules.Retentions.Services;
 
@@ -33,30 +35,48 @@ public interface IRetentionIssuer
     );
 }
 
-/// <summary>Datos ya resueltos del contexto seguro + intención de retención, para <see cref="IRetentionIssuer"/>.</summary>
+/// <summary>
+/// Datos ya resueltos del contexto seguro + intención de retención, para <see cref="IRetentionIssuer"/>.
+/// RETENTIONS-DOCUMENT-SEQUENCE-02E: ya NO incluye un número de retención manual — se genera
+/// internamente vía <see cref="IDocumentSequenceRepository.CaptureNextAsync"/> a partir de
+/// <see cref="EmissionPointId"/>, que este record ya traía desde antes de esta fase.
+/// </summary>
 public sealed record RetentionIssueRequest(
     Guid TenantId,
     Guid CompanyId,
     Guid BranchId,
     Guid UserId,
     Guid EmissionPointId,
-    string RetentionNumber,
     DateOnly IssueDate,
     IReadOnlyList<IssueRetentionLineInput> Lines
 );
 
 public sealed class RetentionIssuer : IRetentionIssuer
 {
+    /// <summary>Código SRI "07" = Comprobante de Retención — misma identidad fija que
+    /// <c>IssueWithholdingHandler.WithholdingDocTypeCode</c>, la retención de Compras ya emitida
+    /// hoy vía la misma infraestructura central de secuencias.</summary>
+    private const string RetentionDocTypeCode = SriDocumentTypeCodes.Withholding;
+
     private readonly IRetentionDocumentRepository _retentionRepo;
     private readonly IRetentionEligibilityService _eligibilityService;
+    private readonly IEmissionPointRepository _emissionPointRepo;
+    private readonly IEstablishmentRepository _establishmentRepo;
+    private readonly IDocumentSequenceRepository _sequenceRepo;
 
     public RetentionIssuer(
         IRetentionDocumentRepository retentionRepo,
-        IRetentionEligibilityService eligibilityService
+        IRetentionEligibilityService eligibilityService,
+        IEmissionPointRepository emissionPointRepo,
+        IEstablishmentRepository establishmentRepo,
+        IDocumentSequenceRepository sequenceRepo
     )
     {
         _retentionRepo = retentionRepo;
         _eligibilityService = eligibilityService;
+        _emissionPointRepo = emissionPointRepo;
+        _establishmentRepo = establishmentRepo;
+        _sequenceRepo = sequenceRepo;
     }
 
     public async Task<Result<RetentionDocument>> IssueForExpenseAsync(
@@ -97,6 +117,27 @@ public sealed class RetentionIssuer : IRetentionIssuer
             return Result<RetentionDocument>.ValidationFailure(string.Join(" ", eligibility.Reasons));
         if (wantsIncome && !eligibility.CanRetainIncome)
             return Result<RetentionDocument>.ValidationFailure(string.Join(" ", eligibility.Reasons));
+
+        // RETENTIONS-DOCUMENT-SEQUENCE-02E — resolver el punto de emisión y su establecimiento
+        // ANTES de construir el agregado (mismo orden que IssueWithholdingHandler): valida que
+        // exista y pertenezca a la empresa/tenant activos (GetByIdAsync ya filtra por tenant +
+        // query filter global de empresa — un punto de emisión de otro tenant/empresa nunca es
+        // visible aquí) antes de gastar ningún recurso construyendo líneas.
+        var emissionPoint = await _emissionPointRepo.GetByIdAsync(
+            request.EmissionPointId,
+            request.TenantId,
+            ct
+        );
+        if (emissionPoint is null)
+            return Result<RetentionDocument>.NotFound("Punto de emisión no encontrado.");
+
+        var establishment = await _establishmentRepo.GetByIdAsync(
+            request.TenantId,
+            emissionPoint.EstablishmentId,
+            ct
+        );
+        if (establishment is null)
+            return Result<RetentionDocument>.NotFound("Establecimiento no encontrado.");
 
         RetentionDocument retention;
         try
@@ -154,7 +195,21 @@ public sealed class RetentionIssuer : IRetentionIssuer
                 );
             }
 
-            retention.Issue(request.RetentionNumber, request.IssueDate, request.UserId);
+            // CaptureNextAsync: atómico (advisory lock + transacción propia) — mismo punto de
+            // entrada FROZEN (ADR-019) que ya usa IssueWithholdingHandler para el mismo doc type
+            // "07". Se llama aquí, lo más tarde posible (líneas ya construidas, justo antes de
+            // Issue()), para minimizar la ventana de un hueco si algo falla después. El número
+            // nunca llega desde el cliente — RetentionIssueRequest ya no tiene ese campo.
+            var sequential = await _sequenceRepo.CaptureNextAsync(
+                request.TenantId,
+                request.CompanyId,
+                request.EmissionPointId,
+                RetentionDocTypeCode,
+                ct
+            );
+            var retentionNumber = $"{establishment.Code}-{emissionPoint.Code}-{sequential}";
+
+            retention.Issue(retentionNumber, request.IssueDate, request.UserId);
         }
         catch (ArgumentException ex)
         {

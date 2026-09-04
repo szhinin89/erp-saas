@@ -348,7 +348,6 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         new(
             AppliesRetention: true,
             EmissionPointId: EmissionPointId,
-            RetentionNumber: "001-001-000000001",
             IssueDate: new DateOnly(2026, 9, 3),
             Lines: lines ?? new[] { VatLine() }
         );
@@ -405,7 +404,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         fx.SetupDocument(document);
         var cmd = new ConfirmExpenseDocumentCommand(
             document.Id,
-            new RetentionIntent(false, null, null, null, null)
+            new RetentionIntent(false, null, null, null)
         );
 
         var result = await fx.Handler.Handle(cmd, CancellationToken.None);

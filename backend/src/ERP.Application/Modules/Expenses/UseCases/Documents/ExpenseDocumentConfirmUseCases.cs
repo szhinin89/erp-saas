@@ -33,13 +33,14 @@ namespace ERP.Application.Modules.Expenses.UseCases.Documents;
 /// retenciones"). <see cref="AppliesRetention"/> es solo la intención — nunca prueba de que aplica:
 /// el servidor siempre revalida elegibilidad contra el documento real vía
 /// <see cref="IRetentionIssuer"/> antes de emitir. El monto/base/porcentaje de cada línea siguen sin
-/// numeración automática ni cálculo server-side en esta fase (mismo criterio ya documentado en
-/// <see cref="IssueRetentionCommand"/> — RETENTIONS-APPLICATION-01C).
+/// cálculo server-side en esta fase (mismo criterio ya documentado en <see cref="IssueRetentionCommand"/>
+/// — RETENTIONS-APPLICATION-01C). RETENTIONS-DOCUMENT-SEQUENCE-02E: ya no incluye un número de
+/// retención manual — <see cref="IRetentionIssuer"/> lo genera vía <c>CaptureNextAsync</c> a partir
+/// de <see cref="EmissionPointId"/>.
 /// </summary>
 public sealed record RetentionIntent(
     bool AppliesRetention,
     Guid? EmissionPointId,
-    string? RetentionNumber,
     DateOnly? IssueDate,
     IReadOnlyList<IssueRetentionLineInput>? Lines
 );
@@ -56,9 +57,6 @@ public sealed class RetentionIntentValidator : AbstractValidator<RetentionIntent
                 RuleFor(x => x.EmissionPointId)
                     .Must(v => v.HasValue && v.Value != Guid.Empty)
                     .WithMessage("El punto de emisión es obligatorio para generar la retención.");
-                RuleFor(x => x.RetentionNumber)
-                    .NotEmpty()
-                    .WithMessage("El número de retención es obligatorio para generar la retención.");
                 RuleFor(x => x.IssueDate)
                     .NotEmpty()
                     .WithMessage("La fecha de emisión de la retención es obligatoria.");
@@ -254,7 +252,6 @@ public sealed class ConfirmExpenseDocumentHandler
                     document.BranchId,
                     _user.UserId,
                     retention.EmissionPointId!.Value,
-                    retention.RetentionNumber!,
                     retention.IssueDate!.Value,
                     retention.Lines!
                 ),
@@ -638,7 +635,6 @@ public sealed class CreateConfirmedExpenseHandler
                     document.BranchId,
                     _user.UserId,
                     retention.EmissionPointId!.Value,
-                    retention.RetentionNumber!,
                     retention.IssueDate!.Value,
                     retention.Lines!
                 ),

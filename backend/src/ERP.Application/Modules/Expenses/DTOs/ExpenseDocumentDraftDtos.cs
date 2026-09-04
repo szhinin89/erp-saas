@@ -38,11 +38,15 @@ public sealed record RetentionIntentLineRequest(
 /// preserva exactamente el comportamiento actual (sin retención). Nunca incluye
 /// <c>TenantId</c>/<c>CompanyId</c>/<c>BranchId</c> — esos siguen viniendo exclusivamente del
 /// contexto autenticado en el handler de Application.
+///
+/// RETENTIONS-DOCUMENT-SEQUENCE-02E: ya NO acepta un número de retención manual — el servidor lo
+/// genera siempre internamente a partir de <see cref="EmissionPointId"/>. Si un cliente todavía
+/// envía un campo <c>retentionNumber</c> en el JSON, el binder de ASP.NET Core lo ignora en
+/// silencio (no forma parte de este contrato) — nunca puede sustituir el número generado.
 /// </summary>
 public sealed record RetentionIntentRequest(
     bool AppliesRetention,
     Guid? EmissionPointId,
-    string? RetentionNumber,
     DateOnly? IssueDate,
     IReadOnlyList<RetentionIntentLineRequest>? Lines
 );

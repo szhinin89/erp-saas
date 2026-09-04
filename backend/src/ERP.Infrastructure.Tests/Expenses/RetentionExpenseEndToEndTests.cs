@@ -17,6 +17,8 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.DocTypes.Entities;
 using ERP.Domain.Modules.DocTypes.Enums;
@@ -32,6 +34,7 @@ using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
@@ -263,7 +266,36 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _subcategoryId = subcategory.Id;
 
-        _emissionPointId = Guid.NewGuid(); // sin FK física (RetentionDocumentConfiguration) — numeración manual en E1.
+        // RETENTIONS-DOCUMENT-SEQUENCE-02E: EmissionPoint real (con Establishment), ya que
+        // RetentionIssuer ahora resuelve ambos y llama CaptureNextAsync — la FK física de
+        // document_sequence.emission_point_id (ADR-019) exige que la fila exista de verdad.
+        var establishment = Establishment.Create(
+            _tenantId,
+            branchId: null,
+            _companyId,
+            code: "001",
+            name: "RETQA Establecimiento Matriz",
+            address: "Av. Retenciones 123",
+            phone: null,
+            isMain: true,
+            createdBy: _createdBy
+        );
+        db.Establishments.Add(establishment);
+        await db.SaveChangesAsync();
+
+        var emissionPoint = EmissionPoint.Create(
+            _tenantId,
+            _companyId,
+            establishment.Id,
+            code: "001",
+            name: "RETQA Punto de Emision",
+            emissionType: EmissionType.Electronic,
+            isDefault: true,
+            createdBy: _createdBy
+        );
+        db.EmissionPoints.Add(emissionPoint);
+        await db.SaveChangesAsync();
+        _emissionPointId = emissionPoint.Id;
 
         // ── DocumentFlowPolicy obligatoria para GASDOC (mismos defaults que
         // DocumentFlowPolicyBootstrapStep.BuildExpenseDocumentDefault) ────────────────
@@ -395,7 +427,10 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
                     new CompanyRepository(db),
                     new BusinessPartnerRoleRepository(db),
                     new RetentionCodeResolver(db)
-                )
+                ),
+                new EmissionPointRepository(db),
+                new EstablishmentRepository(db),
+                new DocumentSequenceRepository(db)
             ),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -440,11 +475,10 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             new FixedCurrentBranch(_branchId)
         );
 
-    private RetentionIntent BuildVatRetentionIntent(decimal vatAmount, string number) =>
+    private RetentionIntent BuildVatRetentionIntent(decimal vatAmount) =>
         new(
             AppliesRetention: true,
             EmissionPointId: _emissionPointId,
-            RetentionNumber: number,
             IssueDate: new DateOnly(2026, 8, 15),
             Lines: new[]
             {
@@ -485,7 +519,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         // Paso 3: confirmar con RetentionIntent (VAT = 15, retenido 70% = 10.5).
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m, "001-001-000000001")), CancellationToken.None);
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
 
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
@@ -564,7 +598,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         eligibility.Value!.CanRetainVat.Should().BeFalse();
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m, "001-001-000000002")), CancellationToken.None);
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
 
         confirmResult.IsSuccess.Should().BeFalse("la empresa no está habilitada para retener IVA");
 
@@ -588,7 +622,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         eligibility.Value.CanRetainVat.Should().BeFalse();
 
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m, "001-001-000000003")), CancellationToken.None);
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
 
         confirmResult.IsSuccess.Should().BeFalse("el proveedor esta exento de retencion");
 
@@ -610,7 +644,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         eligibility.Value.CanRetainVat.Should().BeFalse();
 
         var intent = new RetentionIntent(
-            true, _emissionPointId, "001-001-000000004", new DateOnly(2026, 8, 15),
+            true, _emissionPointId, new DateOnly(2026, 8, 15),
             new[] { new IssueRetentionLineInput(RetentionTaxType.Vat, MissingRetentionVatCode, 15m, 70m, 10.5m) }
         );
         var confirmResult = await BuildConfirmHandler(db)
@@ -625,15 +659,16 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     [Fact]
     public void Bloqueo_RetentionIntent_incompleto_falla_validacion_antes_de_tocar_nada()
     {
-        // AppliesRetention=true pero sin líneas/número — el validador real (RetentionIntentValidator,
-        // el mismo que corre en el pipeline de MediatR vía FluentValidation) debe rechazarlo. No se
-        // invoca ningún handler ni se toca BD: la guarda ocurre antes de eso.
-        var intent = new RetentionIntent(true, null, null, null, null);
+        // AppliesRetention=true pero sin punto de emision/fecha/líneas — el validador real
+        // (RetentionIntentValidator, el mismo que corre en el pipeline de MediatR vía
+        // FluentValidation) debe rechazarlo. No se invoca ningún handler ni se toca BD: la guarda
+        // ocurre antes de eso. RETENTIONS-DOCUMENT-SEQUENCE-02E: ya no valida RetentionNumber —
+        // el número lo genera siempre el servidor, nunca es un input a validar.
+        var intent = new RetentionIntent(true, null, null, null);
         var validation = new RetentionIntentValidator().Validate(intent);
 
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.EmissionPointId));
-        validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.RetentionNumber));
         validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.IssueDate));
         validation.Errors.Should().Contain(e => e.PropertyName == nameof(RetentionIntent.Lines));
     }
@@ -649,7 +684,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-005");
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m, "001-001-000000005")), CancellationToken.None);
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         var (dbCancel, _) = BuildWiredContext();
@@ -690,7 +725,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-006");
         var confirmResult = await BuildConfirmHandler(db)
-            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m, "001-001-000000006")), CancellationToken.None);
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
         confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
 
         // Aplica un pago mínimo directamente sobre la cuota (sin pasar por RegisterSupplierPaymentCommand
@@ -765,6 +800,94 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         await using var verifyDb2 = CreateContext();
         (await verifyDb2.ExpenseDocuments.FirstAsync(x => x.Id == expenseId)).Status.Should().Be(ExpenseStatus.Cancelled);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // RETENTIONS-DOCUMENT-SEQUENCE-02E — numeración generada por CaptureNextAsync
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Numero_inicial_configurado_en_850_hace_que_la_retencion_arranque_ahi_y_la_siguiente_incremente()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+
+        // DOCUMENT-SEQUENCES-CONFIG-03: configurar el número inicial ANTES de la primera captura
+        // real — mismo mecanismo que expone PUT /api/v1/settings/document-sequences/configure,
+        // aplicado aquí directamente sobre el agregado (esa fase ya tiene su propia suite de tests
+        // dedicada; no se repite el endpoint HTTP acá).
+        var sequenceRepo = new DocumentSequenceRepository(db);
+        var sequence = DocumentSequence.Create(_tenantId, _companyId, _emissionPointId, SriDocumentTypeCodes.Withholding);
+        sequence.ConfigureNextNumber(850);
+        await sequenceRepo.AddAsync(sequence);
+        await sequenceRepo.SaveChangesAsync();
+
+        var expenseId1 = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-SEQ-001");
+        var confirm1 = await BuildConfirmHandler(db)
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId1, BuildVatRetentionIntent(15m)), CancellationToken.None);
+        confirm1.IsSuccess.Should().BeTrue(because: confirm1.Error);
+
+        // Contexto NUEVO para la segunda confirmación — mismo criterio que el resto de la suite
+        // (p. ej. Cancelar_gasto_confirmado_con_retencion_revierte_todo_sin_pagos_aplicados usa un
+        // db distinto para confirmar y para cancelar) y el mismo patrón de producción real: cada
+        // request HTTP resuelve su propio DbContext. Reutilizar el mismo db context para dos
+        // capturas sucesivas es un artefacto de test, no el comportamiento real — el change
+        // tracker de EF mantendría en memoria el DocumentSequence ya trackeado por el seed de
+        // arriba, con su CurrentSeq desactualizado (CaptureNextAsync escribe con SQL raw, que
+        // nunca actualiza una entidad ya trackeada), produciendo un número duplicado que jamás
+        // ocurre contra un DbContext fresco por request.
+        var (dbSecond, _) = BuildWiredContext();
+        var expenseId2 = await CreateDraftExpenseAsync(dbSecond, _supplierNonExemptId, "RETQA-SEQ-002");
+        var confirm2 = await BuildConfirmHandler(dbSecond)
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId2, BuildVatRetentionIntent(15m)), CancellationToken.None);
+        confirm2.IsSuccess.Should().BeTrue(because: confirm2.Error);
+
+        await using var verifyDb = CreateContext();
+        var retention1 = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId1);
+        var retention2 = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId2);
+
+        retention1.RetentionNumber.Should().Be("001-001-000000850");
+        retention2.RetentionNumber.Should().Be("001-001-000000851");
+    }
+
+    [Fact]
+    public async Task Concurrencia_no_duplica_numero_de_retencion_para_el_mismo_punto_de_emision()
+    {
+        // La garantía de exclusión mutua bajo concurrencia (advisory lock + transacción explícita,
+        // hasta 500 req concurrentes sin duplicados) ya está probada exhaustivamente contra
+        // Postgres real en ERP.API.Tests.Integration.DocumentSequenceConcurrencyTests (ADR-019) —
+        // no se repite esa prueba de carga aquí. Este test confirma únicamente que el flujo real de
+        // Retentions (ConfirmExpenseDocumentHandler → RetentionIssuer → CaptureNextAsync) preserva
+        // esa garantía cuando varias retenciones se emiten en paralelo sobre el mismo punto de
+        // emisión — con una carga moderada (10) para no duplicar el costo de la suite de 500 ya
+        // existente.
+        const int n = 10;
+        var (seedDb, _) = BuildWiredContext();
+        await SeedPostingRulesAndPeriodAsync(seedDb, new DateOnly(2026, 8, 15));
+
+        var expenseIds = new List<Guid>();
+        for (var i = 0; i < n; i++)
+            expenseIds.Add(await CreateDraftExpenseAsync(seedDb, _supplierNonExemptId, $"RETQA-CONC-{i:D3}"));
+
+        var results = await Task.WhenAll(
+            expenseIds.Select(async expenseId =>
+            {
+                var (db, _) = BuildWiredContext();
+                return await BuildConfirmHandler(db)
+                    .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+            })
+        );
+
+        results.Should().OnlyContain(r => r.IsSuccess);
+
+        await using var verifyDb = CreateContext();
+        var numbers = await verifyDb.RetentionDocuments
+            .Where(x => expenseIds.Contains(x.SourceDocumentId))
+            .Select(x => x.RetentionNumber)
+            .ToListAsync();
+
+        numbers.Should().HaveCount(n);
+        numbers.Should().OnlyHaveUniqueItems("CaptureNextAsync debe seguir garantizando unicidad incluso bajo confirmaciones concurrentes de gastos con retención");
     }
 
     // ── Infraestructura de test (mismos stubs que SupplierPaymentEndToEndTests) ─────

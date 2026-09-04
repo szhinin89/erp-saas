@@ -1,12 +1,16 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Events;
 using ERP.Domain.Modules.Retentions.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 using FluentAssertions;
 using Moq;
 
@@ -64,7 +68,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -76,7 +79,186 @@ public sealed class IssueRetentionHandlerTests
         result.Value.RetentionNumber.Should().Be("001-001-000000001");
     }
 
+    // ── RETENTIONS-DOCUMENT-SEQUENCE-02E: generación server-side del número ────
+
+    [Fact]
+    public void IssueRetentionCommand_no_expone_una_propiedad_RetentionNumber()
+    {
+        // Estructuralmente imposible enviar un número manual desde el cliente — no existe ninguna
+        // propiedad que el body HTTP pueda poblar para sustituir el número generado por
+        // CaptureNextAsync. Mismo criterio que el test de forma para Tenant/Company/Branch (#11).
+        var properties = typeof(IssueRetentionCommand).GetProperties().Select(p => p.Name).ToArray();
+
+        properties.Should().NotContain("RetentionNumber");
+    }
+
+    [Fact]
+    public async Task El_numero_final_se_ensambla_desde_Establishment_Code_EmissionPoint_Code_y_el_secuencial_capturado()
+    {
+        // Prueba que el ensamblado NO está hardcodeado a "001-001-*": establecimiento "007", punto
+        // "003", secuencial "000000850" (simulando una secuencia ya configurada vía
+        // DOCUMENT-SEQUENCES-CONFIG-03) debe producir exactamente "007-003-000000850".
+        var fx = new Fixture();
+        fx.SetupEmissionPoint(establishmentCode: "007", emissionPointCode: "003");
+        fx.SequenceRepo
+            .Setup(r => r.CaptureNextAsync(
+                TenantId, CompanyId, EmissionPointId, SriDocumentTypeCodes.Withholding,
+                It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync("000000850");
+
+        var document = fx.ConfirmedDocument(BranchId);
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.RetentionNumber.Should().Be("007-003-000000850");
+    }
+
+    [Fact]
+    public async Task Dos_emisiones_sucesivas_incrementan_el_secuencial()
+    {
+        // El mock de secuencia no tiene estado real — se configura explícitamente una secuencia de
+        // retornos (SetupSequence) para simular lo que CaptureNextAsync haría contra Postgres real
+        // (ver DocumentSequenceConfigurationTests/RetentionExpenseEndToEndTests para el
+        // incremento real contra BD). Aquí se prueba que el handler usa el valor devuelto tal cual
+        // en cada llamada, sin cachear ni recalcular.
+        var fx = new Fixture();
+        fx.SequenceRepo
+            .SetupSequence(r => r.CaptureNextAsync(
+                TenantId, CompanyId, EmissionPointId, SriDocumentTypeCodes.Withholding,
+                It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync("000000850")
+            .ReturnsAsync("000000851");
+
+        var document1 = fx.ConfirmedDocument(BranchId);
+        fx.SetupDocument(document1);
+        fx.SetupEligibility(document1.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        var result1 = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument, document1.Id, EmissionPointId,
+                new DateOnly(2026, 9, 3), new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        var document2 = fx.ConfirmedDocument(BranchId, documentNumber: "001-001-000000999");
+        fx.SetupDocument(document2);
+        fx.SetupEligibility(document2.SupplierId, FullyEligible);
+        var result2 = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument, document2.Id, EmissionPointId,
+                new DateOnly(2026, 9, 3), new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result1.IsSuccess.Should().BeTrue(because: result1.Error);
+        result2.IsSuccess.Should().BeTrue(because: result2.Error);
+        result1.Value!.RetentionNumber.Should().Be("001-001-000000850");
+        result2.Value!.RetentionNumber.Should().Be("001-001-000000851");
+    }
+
+    [Fact]
+    public async Task EmissionPoint_inexistente_o_de_otra_empresa_falla_cerrado_con_NotFound()
+    {
+        var fx = new Fixture();
+        var otherEmissionPointId = Guid.NewGuid();
+        // Sin Setup para otherEmissionPointId: el mock devuelve null por defecto — mismo
+        // comportamiento que el repositorio real cuando el punto de emisión no existe o pertenece
+        // a otro tenant/empresa (los query filters globales lo excluyen).
+        var document = fx.ConfirmedDocument(BranchId);
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                otherEmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        fx.RetentionRepo.Verify(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.SequenceRepo.Verify(
+            r => r.CaptureNextAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "no debe capturar ningún número si el punto de emisión no se pudo resolver"
+        );
+    }
+
+    [Fact]
+    public async Task Establishment_inexistente_para_el_EmissionPoint_falla_cerrado_con_NotFound()
+    {
+        var fx = new Fixture();
+        var orphanEmissionPoint = EmissionPoint.Create(
+            TenantId, CompanyId, Guid.NewGuid() /* establecimiento inexistente */,
+            code: "001", name: "EP huérfano", emissionType: EmissionType.Electronic,
+            isDefault: false, createdBy: UserId
+        );
+        fx.EmissionPointRepo
+            .Setup(r => r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(orphanEmissionPoint);
+        // EstablishmentRepo sin Setup para orphanEmissionPoint.EstablishmentId -> null por defecto.
+
+        var document = fx.ConfirmedDocument(BranchId);
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
     // ── 2/3) Validator ───────────────────────────────────────────────────
+
+    [Fact]
+    public void Rechaza_EmissionPointId_vacio()
+    {
+        var cmd = new IssueRetentionCommand(
+            RetentionSourceDocumentType.ExpenseDocument,
+            Guid.NewGuid(),
+            Guid.Empty,
+            new DateOnly(2026, 9, 3),
+            new[] { VatLine() }
+        );
+
+        var result = new IssueRetentionValidator().Validate(cmd);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(IssueRetentionCommand.EmissionPointId));
+    }
 
     [Fact]
     public void Rechaza_SourceDocumentId_vacio()
@@ -85,7 +267,6 @@ public sealed class IssueRetentionHandlerTests
             RetentionSourceDocumentType.ExpenseDocument,
             Guid.Empty,
             EmissionPointId,
-            "001-001-000000001",
             new DateOnly(2026, 9, 3),
             new[] { VatLine() }
         );
@@ -103,7 +284,6 @@ public sealed class IssueRetentionHandlerTests
             (RetentionSourceDocumentType)999,
             Guid.NewGuid(),
             EmissionPointId,
-            "001-001-000000001",
             new DateOnly(2026, 9, 3),
             new[] { VatLine() }
         );
@@ -126,7 +306,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.PurchaseInvoice,
                 Guid.NewGuid(),
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -154,7 +333,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.Manual,
                 Guid.NewGuid(),
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -183,7 +361,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -217,7 +394,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -251,7 +427,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -285,7 +460,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -317,7 +491,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -361,7 +534,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -391,7 +563,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine(baseAmount: 100m, rate: 30m, retained: 30m) }
             ),
@@ -427,7 +598,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -454,7 +624,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -490,7 +659,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -528,7 +696,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -570,7 +737,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -593,7 +759,6 @@ public sealed class IssueRetentionHandlerTests
                 RetentionSourceDocumentType.ExpenseDocument,
                 document.Id,
                 EmissionPointId,
-                "001-001-000000001",
                 new DateOnly(2026, 9, 3),
                 new[] { VatLine() }
             ),
@@ -609,7 +774,62 @@ public sealed class IssueRetentionHandlerTests
         public Mock<IExpenseDocumentRepository> ExpenseRepo { get; } = new();
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IRetentionEligibilityService> EligibilityService { get; } = new();
+        public Mock<IEmissionPointRepository> EmissionPointRepo { get; } = new();
+        public Mock<IEstablishmentRepository> EstablishmentRepo { get; } = new();
+        public Mock<IDocumentSequenceRepository> SequenceRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
+
+        /// <summary>
+        /// RETENTIONS-DOCUMENT-SEQUENCE-02E: por defecto, todo test resuelve el mismo punto de
+        /// emisión (establecimiento "001", punto "001") y captura "000000001" — reproduce
+        /// exactamente el número "001-001-000000001" que los [Fact] existentes ya esperaban cuando
+        /// ese valor todavía era un input manual del command. Tests que necesiten un secuencial
+        /// distinto (incremento, número configurado) sobreescriben <see cref="SequenceRepo"/>
+        /// explícitamente.
+        /// </summary>
+        public Fixture()
+        {
+            SetupEmissionPoint();
+            SequenceRepo
+                .Setup(r => r.CaptureNextAsync(
+                    TenantId, CompanyId, EmissionPointId, SriDocumentTypeCodes.Withholding,
+                    It.IsAny<CancellationToken>()
+                ))
+                .ReturnsAsync("000000001");
+        }
+
+        /// <summary>Sobreescribe el establecimiento/punto de emisión resuelto para <see cref="EmissionPointId"/> — para probar que el ensamblado final no está hardcodeado a "001-001-*".</summary>
+        public void SetupEmissionPoint(string establishmentCode = "001", string emissionPointCode = "001")
+        {
+            var establishment = Establishment.Create(
+                TenantId,
+                branchId: null,
+                CompanyId,
+                code: establishmentCode,
+                name: "Matriz Test",
+                address: "Av. Siempre Viva 123",
+                phone: null,
+                isMain: true,
+                createdBy: UserId
+            );
+            var emissionPoint = EmissionPoint.Create(
+                TenantId,
+                CompanyId,
+                establishment.Id,
+                code: emissionPointCode,
+                name: "EP Test",
+                emissionType: EmissionType.Electronic,
+                isDefault: true,
+                createdBy: UserId
+            );
+
+            EmissionPointRepo
+                .Setup(r => r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(emissionPoint);
+            EstablishmentRepo
+                .Setup(r => r.GetByIdAsync(TenantId, emissionPoint.EstablishmentId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(establishment);
+        }
 
         public IssueRetentionHandler Handler =>
             new(
@@ -619,7 +839,15 @@ public sealed class IssueRetentionHandlerTests
                 // (mismo servicio que usa ConfirmExpenseDocumentHandler). Se construye con los
                 // mismos mocks que antes, así las aserciones existentes sobre RetentionRepo/
                 // EligibilityService siguen siendo válidas sin cambiar ningún [Fact].
-                new RetentionIssuer(RetentionRepo.Object, EligibilityService.Object),
+                // RETENTIONS-DOCUMENT-SEQUENCE-02E: se agregan EmissionPointRepo/EstablishmentRepo/
+                // SequenceRepo — RetentionIssuer ya genera el número internamente.
+                new RetentionIssuer(
+                    RetentionRepo.Object,
+                    EligibilityService.Object,
+                    EmissionPointRepo.Object,
+                    EstablishmentRepo.Object,
+                    SequenceRepo.Object
+                ),
                 Uow.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),

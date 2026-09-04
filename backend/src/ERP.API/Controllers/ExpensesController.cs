@@ -215,7 +215,6 @@ public sealed class ExpensesController : ControllerBase
             : new RetentionIntent(
                 request.AppliesRetention,
                 request.EmissionPointId,
-                request.RetentionNumber,
                 request.IssueDate,
                 request.Lines?
                     .Select(l => new IssueRetentionLineInput(

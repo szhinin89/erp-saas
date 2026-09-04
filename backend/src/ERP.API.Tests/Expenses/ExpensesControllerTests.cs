@@ -312,7 +312,6 @@ public sealed class ExpensesControllerTests
             new RetentionIntentRequest(
                 AppliesRetention: true,
                 EmissionPointId: emissionPointId,
-                RetentionNumber: "001-001-000000123",
                 IssueDate: new DateOnly(2026, 9, 3),
                 Lines: new[]
                 {
@@ -339,7 +338,6 @@ public sealed class ExpensesControllerTests
                     new RetentionIntent(
                         AppliesRetention: true,
                         EmissionPointId: emissionPointId,
-                        RetentionNumber: "001-001-000000123",
                         IssueDate: new DateOnly(2026, 9, 3),
                         Lines: new[]
                         {
@@ -395,7 +393,6 @@ public sealed class ExpensesControllerTests
             Retention = new RetentionIntentRequest(
                 AppliesRetention: true,
                 EmissionPointId: emissionPointId,
-                RetentionNumber: "001-001-000000456",
                 IssueDate: new DateOnly(2026, 9, 3),
                 Lines: new[]
                 {
@@ -425,7 +422,6 @@ public sealed class ExpensesControllerTests
                     new RetentionIntent(
                         AppliesRetention: true,
                         EmissionPointId: emissionPointId,
-                        RetentionNumber: "001-001-000000456",
                         IssueDate: new DateOnly(2026, 9, 3),
                         Lines: new[]
                         {

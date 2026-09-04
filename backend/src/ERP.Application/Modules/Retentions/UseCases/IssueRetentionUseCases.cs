@@ -41,10 +41,12 @@ public sealed record IssueRetentionLineInput(
 /// de una fase posterior (ver <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c> § "Flujo
 /// funcional integrado de retenciones").
 ///
-/// <see cref="RetentionNumber"/> es obligatorio en esta fase: no existe todavía un <c>DocType</c>
-/// sembrado para Retentions en <c>CaptureNextAsync</c>/<c>DocumentSequence</c> — la numeración
-/// automática queda para la fase de integración (E1-B/E1-C). Nunca se hardcodea aquí un prefijo
-/// tipo "RET".
+/// <see cref="RetentionNumber"/>: RETENTIONS-DOCUMENT-SEQUENCE-02E — ya no viaja en este command.
+/// <see cref="RetentionIssuer"/> lo genera internamente vía
+/// <see cref="ERP.Domain.Modules.Company.Interfaces.IDocumentSequenceRepository.CaptureNextAsync"/>
+/// a partir de <see cref="EmissionPointId"/> (mismo patrón ya probado por
+/// <c>IssueWithholdingHandler</c> para el mismo doc type SRI "07") — nunca un valor enviado por el
+/// cliente.
 ///
 /// <c>TenantId</c>/<c>CompanyId</c>/<c>BranchId</c> NUNCA viajan en este command — salen siempre
 /// de <see cref="ICurrentTenant"/>/<see cref="ICurrentCompany"/>/<see cref="ICurrentBranch"/> en el
@@ -54,7 +56,6 @@ public sealed record IssueRetentionCommand(
     RetentionSourceDocumentType SourceDocumentType,
     Guid SourceDocumentId,
     Guid EmissionPointId,
-    string RetentionNumber,
     DateOnly IssueDate,
     IReadOnlyList<IssueRetentionLineInput> Lines
 ) : IRequest<Result<RetentionDocumentDto>>, IBranchScopedRequest;
@@ -82,7 +83,6 @@ public sealed class IssueRetentionValidator : AbstractValidator<IssueRetentionCo
         RuleFor(x => x.SourceDocumentType).IsInEnum();
         RuleFor(x => x.EmissionPointId).NotEmpty();
         RuleFor(x => x.IssueDate).NotEmpty();
-        RuleFor(x => x.RetentionNumber).NotEmpty();
         RuleFor(x => x.Lines).NotEmpty();
         RuleForEach(x => x.Lines).SetValidator(new IssueRetentionLineValidator());
     }
@@ -166,7 +166,6 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
                 bid,
                 uid,
                 cmd.EmissionPointId,
-                cmd.RetentionNumber,
                 cmd.IssueDate,
                 cmd.Lines
             ),
