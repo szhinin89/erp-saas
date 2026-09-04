@@ -57,7 +57,6 @@ const PAYLOAD: CreateExpenseDraftPayload = {
 const RETENTION_INTENT: RetentionIntentRequest = {
   appliesRetention: true,
   emissionPointId: "ep-1",
-  retentionNumber: "001-001-000000001",
   issueDate: "2026-09-01",
   lines: [
     {
@@ -89,6 +88,17 @@ describe("expenseDocumentService — confirm (regresión + retención)", () => {
       { retention: RETENTION_INTENT },
     );
   });
+
+  it("RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F: el body de retention nunca incluye retentionNumber, pero conserva emissionPointId", async () => {
+    apiPostMock.mockResolvedValue({});
+    await expenseDocumentService.confirm("exp-1", RETENTION_INTENT);
+    const [, body] = apiPostMock.mock.calls[0] as [
+      string,
+      { retention: Record<string, unknown> },
+    ];
+    expect(body.retention).not.toHaveProperty("retentionNumber");
+    expect(body.retention).toHaveProperty("emissionPointId", "ep-1");
+  });
 });
 
 describe("expenseDocumentService.createConfirmedExpense", () => {
@@ -119,6 +129,17 @@ describe("expenseDocumentService.createConfirmedExpense", () => {
     expect(body).not.toHaveProperty("tenantId");
     expect(body).not.toHaveProperty("companyId");
     expect(body).not.toHaveProperty("branchId");
+  });
+
+  it("RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F: el body de retention nunca incluye retentionNumber, pero conserva emissionPointId", async () => {
+    apiPostMock.mockResolvedValue({});
+    await expenseDocumentService.createConfirmedExpense(PAYLOAD, RETENTION_INTENT);
+    const [, body] = apiPostMock.mock.calls[0] as [
+      string,
+      { retention: Record<string, unknown> },
+    ];
+    expect(body.retention).not.toHaveProperty("retentionNumber");
+    expect(body.retention).toHaveProperty("emissionPointId", "ep-1");
   });
 });
 

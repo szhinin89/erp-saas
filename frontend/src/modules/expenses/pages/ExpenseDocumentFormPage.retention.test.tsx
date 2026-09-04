@@ -344,11 +344,16 @@ describe("ExpenseDocumentFormPage — sección de retención", () => {
     fireEvent.click(toggle);
 
     await waitFor(() => expect(screen.getByText("Punto de emisión")).toBeTruthy());
-    expect(screen.getByText("Número de retención")).toBeTruthy();
     expect(screen.getByText("Fecha de emisión")).toBeTruthy();
+    // RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F: ya no hay un campo editable de número de
+    // retención — solo el mensaje informativo de que el servidor lo genera al confirmar.
     expect(
-      screen.getByText("La retención se generará al confirmar este documento."),
+      screen.getByText(
+        "El número de retención se generará automáticamente al confirmar este documento.",
+      ),
     ).toBeTruthy();
+    expect(screen.queryByText("Número de retención")).toBeNull();
+    expect(screen.queryByLabelText(/^Número de retención/)).toBeNull();
   });
 
   it("caso 6 y 7: envía RetentionIntent al confirmar, sin tenantId/companyId/branchId en el body", async () => {
@@ -368,14 +373,11 @@ describe("ExpenseDocumentFormPage — sección de retención", () => {
     await waitFor(() => expect(screen.getByText("Punto de emisión")).toBeTruthy());
 
     // Los campos ZHField marcan "required" agregando "*" al texto del <label> (p. ej.
-    // "Punto de emisión*"), y el campo "Numero" de la cabecera del gasto comparte maxLength con
-    // "Número de retención" — se localizan por regex sobre el texto exacto del label, no por
-    // maxLength, para no colisionar.
+    // "Punto de emisión*") — se localizan por regex sobre el texto exacto del label. Ya no hay
+    // un campo "Número de retención" que capturar (RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F): el
+    // backend lo genera siempre a partir de emissionPointId.
     fireEvent.change(screen.getByLabelText(/^Punto de emisión/), {
       target: { value: "ep-1" },
-    });
-    fireEvent.change(screen.getByLabelText(/^Número de retención/), {
-      target: { value: "001-001-000000005" },
     });
     fireEvent.change(screen.getByLabelText(/^Fecha de emisión/), {
       target: { value: "2026-09-01" },
@@ -400,12 +402,14 @@ describe("ExpenseDocumentFormPage — sección de retención", () => {
     expect(calledIntent).toMatchObject({
       appliesRetention: true,
       emissionPointId: "ep-1",
-      retentionNumber: "001-001-000000005",
       issueDate: "2026-09-01",
     });
     expect(calledIntent).not.toHaveProperty("tenantId");
     expect(calledIntent).not.toHaveProperty("companyId");
     expect(calledIntent).not.toHaveProperty("branchId");
+    // RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F: el payload nunca envía un número manual — el
+    // backend lo genera siempre a partir de emissionPointId.
+    expect(calledIntent).not.toHaveProperty("retentionNumber");
     expect(calledIntent?.lines?.[0]).not.toHaveProperty("tenantId");
   });
 

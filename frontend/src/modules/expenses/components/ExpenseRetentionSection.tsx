@@ -266,7 +266,10 @@ export function ExpenseRetentionSection({
 
       {value.appliesRetention && canApply && (
         <>
-          <ZHFormAlert type="success" message="La retención se generará al confirmar este documento." />
+          <ZHFormAlert
+            type="success"
+            message="El número de retención se generará automáticamente al confirmar este documento."
+          />
 
           {!canReadEmissionPoints && (
             <ZHFormAlert
@@ -276,7 +279,7 @@ export function ExpenseRetentionSection({
             />
           )}
 
-          <ZHGrid cols={3}>
+          <ZHGrid cols={2}>
             <ZHField label="Punto de emisión" required>
               <ZhSelect
                 value={value.emissionPointId}
@@ -290,19 +293,6 @@ export function ExpenseRetentionSection({
                   </option>
                 ))}
               </ZhSelect>
-            </ZHField>
-
-            <ZHField
-              label="Número de retención"
-              required
-              hint="Numeración automática pendiente de una fase futura — ingrese el número manualmente."
-            >
-              <ZhTextInput
-                value={value.retentionNumber}
-                maxLength={30}
-                disabled={disabled}
-                onChange={(event) => onChange({ retentionNumber: event.target.value })}
-              />
             </ZHField>
 
             <ZHField label="Fecha de emisión" required>

@@ -49,10 +49,15 @@ export interface RetentionIntentLineRequest {
   retentionCodeDescription?: string | null;
 }
 
+/**
+ * RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F — ya NO incluye un número de retención manual: el
+ * backend lo genera siempre server-side vía `DocumentSequence.CaptureNextAsync(..., "07")` a
+ * partir de `emissionPointId` (ver RETENTIONS-DOCUMENT-SEQUENCE-02E) — enviarlo desde aquí sería
+ * un campo fantasma que el backend ya ignora en silencio.
+ */
 export interface RetentionIntentRequest {
   appliesRetention: boolean;
   emissionPointId?: string | null;
-  retentionNumber?: string | null;
   issueDate?: string | null;
   lines?: RetentionIntentLineRequest[] | null;
 }

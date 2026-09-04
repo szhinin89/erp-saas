@@ -23,10 +23,14 @@ export interface RetentionIntentLineFormState {
   description: string;
 }
 
+/**
+ * RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F — sin `retentionNumber`: el backend lo genera siempre
+ * server-side a partir de `emissionPointId` (`CaptureNextAsync(..., "07")`), nunca un input del
+ * usuario.
+ */
 export interface RetentionIntentFormState {
   appliesRetention: boolean;
   emissionPointId: string;
-  retentionNumber: string;
   issueDate: string;
   lines: RetentionIntentLineFormState[];
 }
@@ -49,7 +53,6 @@ export function emptyRetentionIntentState(): RetentionIntentFormState {
   return {
     appliesRetention: false,
     emissionPointId: "",
-    retentionNumber: "",
     issueDate: "",
     lines: [],
   };
@@ -63,7 +66,6 @@ export function emptyRetentionIntentState(): RetentionIntentFormState {
 export function isRetentionIntentComplete(state: RetentionIntentFormState): boolean {
   if (!state.appliesRetention) return true;
   if (!state.emissionPointId) return false;
-  if (!state.retentionNumber.trim()) return false;
   if (!state.issueDate) return false;
   if (state.lines.length === 0) return false;
   return state.lines.every((line) => {
@@ -91,7 +93,6 @@ export function buildRetentionIntentRequest(
   return {
     appliesRetention: true,
     emissionPointId: state.emissionPointId || null,
-    retentionNumber: state.retentionNumber.trim() || null,
     issueDate: state.issueDate || null,
     lines,
   };
