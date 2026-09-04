@@ -392,7 +392,8 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         Guid supplierId,
         string documentNumber,
         decimal unitAmount = 100m,
-        decimal vatRate = 15m
+        decimal vatRate = 15m,
+        string? taxSupportCode = null
     )
     {
         var supplier = await db.BusinessPartners.FirstAsync(x => x.Id == supplierId);
@@ -401,7 +402,8 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             supplier.Name.LegalName, supplier.Identification.Number,
             new DateOnly(2026, 8, 15), new DateOnly(2026, 8, 15),
             "01", documentNumber, _paymentTermId, "Contado QA", 1, 0, _createdBy,
-            dueDate: new DateOnly(2026, 8, 15)
+            dueDate: new DateOnly(2026, 8, 15),
+            taxSupportCode: taxSupportCode
         );
         var line = ExpenseLine.Create(
             document.Id, _tenantId, _subcategoryId, _expenseAccountId,
@@ -888,6 +890,87 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         numbers.Should().HaveCount(n);
         numbers.Should().OnlyHaveUniqueItems("CaptureNextAsync debe seguir garantizando unicidad incluso bajo confirmaciones concurrentes de gastos con retención");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G — codSustento en el snapshot
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Retencion_emitida_copia_TaxSupportCode_del_ExpenseDocument_real_contra_Postgres()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        var expenseId = await CreateDraftExpenseAsync(
+            db, _supplierNonExemptId, "RETQA-TAXSUP-001", taxSupportCode: "02"
+        );
+
+        var confirmResult = await BuildConfirmHandler(db)
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+        confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
+
+        await using var verifyDb = CreateContext();
+        var retention = await verifyDb.RetentionDocuments
+            .FirstAsync(x => x.SourceDocumentId == expenseId);
+
+        retention.SourceDocumentTaxSupportCode.Should().Be("02");
+    }
+
+    [Fact]
+    public async Task TaxSupportCode_del_snapshot_no_cambia_si_el_ExpenseDocument_origen_se_edita_despues_de_emitir()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        var expenseId = await CreateDraftExpenseAsync(
+            db, _supplierNonExemptId, "RETQA-TAXSUP-002", taxSupportCode: "02"
+        );
+
+        var confirmResult = await BuildConfirmHandler(db)
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+        confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
+
+        // El gasto ya está Confirmed (EnsureDraft bloquea UpdateDraft) — no hay forma real de
+        // "editarlo" después. Simulamos el escenario que la regla 8 prohíbe (recalcular el
+        // snapshot histórico desde datos vivos) igual que
+        // Snapshot_de_TaxSupportCode_queda_congelado_y_no_sigue_al_documento_origen_tras_emitir en
+        // IssueRetentionHandlerTests: una corrección manual directa en BD sobre la misma fila
+        // (fuera del dominio, el único camino físicamente posible una vez Confirmed) no debe
+        // alterar la retención ya emitida, porque RetentionDocument nunca lee en vivo — solo
+        // guardó una copia primitiva al emitir.
+        await using (var mutateDb = CreateContext())
+        {
+            var liveDocument = await mutateDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
+            liveDocument.GetType()
+                .GetProperty(nameof(ExpenseDocument.TaxSupportCode))!
+                .SetValue(liveDocument, "04");
+            await mutateDb.SaveChangesAsync();
+        }
+
+        await using var verifyDb = CreateContext();
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId);
+        var mutatedDocument = await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId);
+
+        mutatedDocument.TaxSupportCode.Should().Be("04", "confirma que la mutación directa sí ocurrió");
+        retention.SourceDocumentTaxSupportCode.Should()
+            .Be("02", "el snapshot ya emitido nunca se recalcula desde el documento origen");
+    }
+
+    [Fact]
+    public async Task Retencion_sigue_emitiendose_si_el_ExpenseDocument_no_tiene_TaxSupportCode()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        var expenseId = await CreateDraftExpenseAsync(
+            db, _supplierNonExemptId, "RETQA-TAXSUP-003", taxSupportCode: null
+        );
+
+        var confirmResult = await BuildConfirmHandler(db)
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
+
+        confirmResult.IsSuccess.Should().BeTrue(because: confirmResult.Error);
+        await using var verifyDb = CreateContext();
+        var retention = await verifyDb.RetentionDocuments.FirstAsync(x => x.SourceDocumentId == expenseId);
+        retention.SourceDocumentTaxSupportCode.Should().BeNull();
     }
 
     // ── Infraestructura de test (mismos stubs que SupplierPaymentEndToEndTests) ─────

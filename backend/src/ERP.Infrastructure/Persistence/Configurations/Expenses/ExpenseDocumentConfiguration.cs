@@ -65,6 +65,13 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .Property(x => x.Notes)
             .HasColumnName("notes")
             .HasMaxLength(ExpenseDocument.NotesMaxLen);
+        // RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G — nullable, aditiva: documentos existentes
+        // quedan en NULL (mismo criterio de compatibilidad que las columnas de snapshot agregadas
+        // en RETENTIONS-TAX-COMPONENT-MODEL-02B para RetentionDocument).
+        builder
+            .Property(x => x.TaxSupportCode)
+            .HasColumnName("tax_support_code")
+            .HasMaxLength(ExpenseDocument.TaxSupportCodeMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
         builder

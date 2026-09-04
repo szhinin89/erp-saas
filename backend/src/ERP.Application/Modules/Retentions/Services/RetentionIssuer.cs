@@ -144,16 +144,23 @@ public sealed class RetentionIssuer : IRetentionIssuer
         {
             // RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot del documento sustento, resuelto AQUÍ
             // (Application, con el ExpenseDocument ya cargado) y nunca por el propio agregado.
-            // TaxSupportCode (codSustento) queda null: ExpenseDocument no lo captura hoy (solo
-            // PurchaseInvoice.TaxSupportCode lo hace) y SupplierRoleConfig.DefaultTaxSupportCode no
-            // está cargado en este flujo — gap documentado, no un olvido (ver comentario del campo
-            // en RetentionDocument.SourceDocumentTaxSupportCode).
+            // RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G: TaxSupportCode (codSustento) ya no se
+            // hardcodea a null — se copia tal cual del ExpenseDocument ya cargado, que a su vez lo
+            // resolvió al crearse/editarse (input explícito o, en su ausencia, el default
+            // configurable SupplierRoleConfig.DefaultTaxSupportCode — ver
+            // ExpenseDraftRules.ResolveTaxSupportCode). Sigue pudiendo ser null para gastos
+            // creados antes de esta fase o sin default de proveedor configurado — gap conocido y
+            // aceptado (nunca bloquea la emisión de la retención), documentado en el comentario de
+            // tipo de RetentionDocument.SourceDocumentTaxSupportCode. El valor queda congelado en
+            // este snapshot al momento de emitir: un cambio posterior en
+            // ExpenseDocument.TaxSupportCode o en el default del proveedor nunca modifica una
+            // retención ya emitida.
             var sourceSnapshot = new RetentionDocument.SourceDocumentSnapshot(
                 document.DocumentType,
                 document.DocumentNumber,
                 document.IssueDate,
                 document.AuthorizationNumber,
-                null,
+                document.TaxSupportCode,
                 document.Subtotal,
                 document.GrandTotal
             );

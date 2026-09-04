@@ -209,6 +209,61 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // ── RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G ──────────────────────────
+
+    [Fact]
+    public async Task Create_Draft_usa_TaxSupportCode_explicito_del_command_cuando_llega()
+    {
+        var fx = new Fixture();
+        fx.SetSupplierDefaultTaxSupportCode("01"); // default del proveedor — el explícito debe ganarle.
+        var command = fx.ValidCreateCommand() with { TaxSupportCode = "02" };
+
+        var result = await fx.CreateHandler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.TaxSupportCode.Should().Be("02");
+    }
+
+    [Fact]
+    public async Task Create_Draft_sin_TaxSupportCode_explicito_usa_el_default_configurado_del_proveedor()
+    {
+        var fx = new Fixture();
+        fx.SetSupplierDefaultTaxSupportCode("01");
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.TaxSupportCode.Should().Be("01");
+    }
+
+    [Fact]
+    public async Task Create_Draft_sin_TaxSupportCode_ni_default_de_proveedor_queda_null()
+    {
+        var fx = new Fixture(); // SupplierRoleConfig.Create sin defaultTaxSupportCode en el constructor del Fixture.
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.TaxSupportCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Update_Draft_usa_TaxSupportCode_explicito_del_command_cuando_llega()
+    {
+        var fx = new Fixture();
+        fx.SetSupplierDefaultTaxSupportCode("01");
+        var document = fx.ExistingDraftDocument();
+        fx.Docs
+            .Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        var command = fx.ValidUpdateCommand(document.Id) with { TaxSupportCode = "02" };
+
+        var result = await fx.UpdateHandler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.TaxSupportCode.Should().Be("02");
+    }
+
     [Fact]
     public void ExpenseLine_y_request_no_exponen_campos_de_inventario_o_compras()
     {
@@ -284,6 +339,25 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId)
             );
+
+        /// <summary>
+        /// RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G — reconstruye <see cref="SupplierRole"/> con
+        /// un <c>DefaultTaxSupportCode</c> distinto y re-registra el mock, simulando que el
+        /// proveedor ya tiene ese default configurado (admin de Terceros → Proveedor).
+        /// </summary>
+        public void SetSupplierDefaultTaxSupportCode(string? code)
+        {
+            var role = BusinessPartnerRole.Create(
+                TenantId,
+                Supplier.Id,
+                RoleType.Supplier,
+                UserId,
+                SupplierRoleConfig.Create(PaymentTerm.Id, defaultTaxSupportCode: code)
+            );
+            Roles
+                .Setup(r => r.GetByTypeAsync(Supplier.Id, RoleType.Supplier, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(role);
+        }
 
         public UpdateExpenseDraftHandler UpdateHandler =>
             new(

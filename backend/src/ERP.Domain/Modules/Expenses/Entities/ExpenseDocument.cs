@@ -13,6 +13,8 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public const int SupplierTaxIdMaxLen = 20;
     public const int PaymentTermNameMaxLen = 120;
     public const int NotesMaxLen = 500;
+    /// <summary>Código de sustento tributario SRI (catálogo <c>global.sri_tax_support</c>, 2 dígitos: "01".."19"). Mismo campo que <see cref="ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice.TaxSupportCode"/> — misma semántica documental (Tabla 5 Ficha Técnica SRI), aplicada al documento origen de Gastos.</summary>
+    public const int TaxSupportCodeMaxLen = 5;
 
     public Guid CompanyId { get; private set; }
     public Guid BranchId { get; private set; }
@@ -31,6 +33,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public int PaymentTermDaysBetween { get; private set; }
     public DateOnly? DueDate { get; private set; }
     public string? Notes { get; private set; }
+    public string? TaxSupportCode { get; private set; }
     public ExpenseStatus Status { get; private set; } = ExpenseStatus.Draft;
 
     public decimal? ConfirmedSubtotal { get; private set; }
@@ -77,7 +80,8 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         string? authorizationNumber = null,
         DateTime? authorizationDate = null,
         DateOnly? dueDate = null,
-        string? notes = null
+        string? notes = null,
+        string? taxSupportCode = null
     )
     {
         if (tenantId == Guid.Empty)
@@ -124,6 +128,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
             PaymentTermDaysBetween = paymentTermDaysBetween,
             DueDate = dueDate,
             Notes = notes?.Trim(),
+            TaxSupportCode = OptionalCode.Normalize(taxSupportCode),
             Status = ExpenseStatus.Draft,
         };
         document.SetCreated(createdBy);
@@ -162,7 +167,8 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         string? authorizationNumber = null,
         DateTime? authorizationDate = null,
         DateOnly? dueDate = null,
-        string? notes = null
+        string? notes = null,
+        string? taxSupportCode = null
     )
     {
         EnsureDraft();
@@ -198,6 +204,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         PaymentTermDaysBetween = paymentTermDaysBetween;
         DueDate = dueDate;
         Notes = notes?.Trim();
+        TaxSupportCode = OptionalCode.Normalize(taxSupportCode);
         SetUpdated(updatedBy);
     }
 

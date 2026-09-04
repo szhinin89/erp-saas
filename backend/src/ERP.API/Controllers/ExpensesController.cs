@@ -71,7 +71,8 @@ public sealed class ExpensesController : ControllerBase
                     request.Lines,
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
-                    request.Notes
+                    request.Notes,
+                    request.TaxSupportCode
                 ),
                 ct
             )
@@ -98,7 +99,8 @@ public sealed class ExpensesController : ControllerBase
                     request.Lines,
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
-                    request.Notes
+                    request.Notes,
+                    request.TaxSupportCode
                 ),
                 ct
             )
@@ -174,6 +176,7 @@ public sealed class ExpensesController : ControllerBase
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
                     request.Notes,
+                    request.TaxSupportCode,
                     ToRetentionIntent(request.Retention)
                 ),
                 ct

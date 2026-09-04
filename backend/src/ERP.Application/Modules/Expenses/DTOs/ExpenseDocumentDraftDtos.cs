@@ -70,6 +70,9 @@ public sealed record CreateExpenseDraftRequest(
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
     string? Notes = null,
+    // RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G: opcional; si no llega, el handler usa el
+    // default configurable del proveedor (SupplierRoleConfig.DefaultTaxSupportCode).
+    string? TaxSupportCode = null,
     RetentionIntentRequest? Retention = null
 );
 
@@ -86,7 +89,8 @@ public sealed record UpdateExpenseDraftRequest(
     IReadOnlyList<ExpenseDraftLineRequest> Lines,
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
-    string? Notes = null
+    string? Notes = null,
+    string? TaxSupportCode = null
 );
 
 public sealed record ExpenseDocumentListItemDto(
@@ -138,6 +142,7 @@ public sealed record ExpenseDocumentDetailDto(
     decimal TotalTax,
     decimal GrandTotal,
     string? Notes,
+    string? TaxSupportCode,
     ExpenseStatus Status,
     IReadOnlyList<ExpenseLineDto> Lines,
     string? CancelReason,

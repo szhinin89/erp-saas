@@ -415,6 +415,7 @@ public sealed record CreateConfirmedExpenseCommand(
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
     string? Notes = null,
+    string? TaxSupportCode = null,
     RetentionIntent? Retention = null
 ) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest, IExpenseDraftInput;
 
@@ -574,7 +575,8 @@ public sealed class CreateConfirmedExpenseHandler
                 cmd.AuthorizationNumber,
                 cmd.AuthorizationDate,
                 dueDate.Value,
-                cmd.Notes
+                cmd.Notes,
+                ExpenseDraftRules.ResolveTaxSupportCode(cmd.TaxSupportCode, supplier.Role)
             );
 
             var lines = await ExpenseDraftRules.BuildLinesAsync(

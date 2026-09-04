@@ -40,7 +40,8 @@ public sealed record CreateExpenseDraftCommand(
     IReadOnlyList<ExpenseDraftLineRequest> Lines,
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
-    string? Notes = null
+    string? Notes = null,
+    string? TaxSupportCode = null
 ) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest, IExpenseDraftInput;
 
 public sealed record UpdateExpenseDraftCommand(
@@ -55,7 +56,8 @@ public sealed record UpdateExpenseDraftCommand(
     IReadOnlyList<ExpenseDraftLineRequest> Lines,
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
-    string? Notes = null
+    string? Notes = null,
+    string? TaxSupportCode = null
 ) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest, IExpenseDraftInput;
 
 public sealed class ListExpenseDocumentsValidator
@@ -118,6 +120,7 @@ internal sealed class ExpenseDraftHeaderRules<T> : AbstractValidator<T>
         RuleFor(x => x.AuthorizationNumber)
             .MaximumLength(ExpenseDocument.AuthorizationNumberMaxLen);
         RuleFor(x => x.Notes).MaximumLength(ExpenseDocument.NotesMaxLen);
+        RuleFor(x => x.TaxSupportCode).MaximumLength(ExpenseDocument.TaxSupportCodeMaxLen);
         RuleFor(x => x.DueDate)
             .Must((x, dueDate) => !dueDate.HasValue || dueDate.Value >= x.IssueDate)
             .WithMessage("La fecha de vencimiento no puede ser anterior a la fecha de emision.");
@@ -163,6 +166,13 @@ public interface IExpenseDraftInput
     IReadOnlyList<ExpenseDraftLineRequest> Lines { get; }
     string? AuthorizationNumber { get; }
     string? Notes { get; }
+    /// <summary>
+    /// RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G — override explícito del código de sustento
+    /// tributario SRI para este documento. <c>null</c> deja que
+    /// <see cref="ExpenseDraftRules.ResolveTaxSupportCode"/> use el default configurable del
+    /// proveedor (<c>SupplierRoleConfig.DefaultTaxSupportCode</c>) — nunca un valor inventado aquí.
+    /// </summary>
+    string? TaxSupportCode { get; }
 }
 
 public sealed class CreateExpenseDraftHandler
@@ -291,7 +301,8 @@ public sealed class CreateExpenseDraftHandler
                 cmd.AuthorizationNumber,
                 cmd.AuthorizationDate,
                 dueDate.Value,
-                cmd.Notes
+                cmd.Notes,
+                ExpenseDraftRules.ResolveTaxSupportCode(cmd.TaxSupportCode, supplier.Role)
             );
 
             var lines = await ExpenseDraftRules.BuildLinesAsync(
@@ -439,7 +450,8 @@ public sealed class UpdateExpenseDraftHandler
                 cmd.AuthorizationNumber,
                 cmd.AuthorizationDate,
                 dueDate.Value,
-                cmd.Notes
+                cmd.Notes,
+                ExpenseDraftRules.ResolveTaxSupportCode(cmd.TaxSupportCode, supplier.Role)
             );
 
             var lines = await ExpenseDraftRules.BuildLinesAsync(
@@ -628,6 +640,23 @@ internal static class ExpenseDraftRules
             );
 
         return new PaymentTermResolution(paymentTerm, null);
+    }
+
+    /// <summary>
+    /// RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G — mismo patrón de resolución que
+    /// <see cref="ResolvePaymentTermAsync"/>: el valor explícito del command (si lo hay) prevalece;
+    /// si no llega, cae al default configurable del proveedor
+    /// (<c>SupplierRoleConfig.DefaultTaxSupportCode</c> — mismo campo que ya usan
+    /// <c>PurchaseInvoice</c>/Compras como sugerencia de pre-llenado, nunca un valor inventado
+    /// aquí). <c>null</c> es un resultado válido cuando ninguna de las dos fuentes lo tiene — se
+    /// documenta como gap conocido, no bloquea la creación del gasto.
+    /// </summary>
+    public static string? ResolveTaxSupportCode(string? explicitCode, BusinessPartnerRole? supplierRole)
+    {
+        var trimmed = explicitCode?.Trim();
+        return string.IsNullOrEmpty(trimmed)
+            ? supplierRole?.SupplierConfig?.DefaultTaxSupportCode
+            : trimmed;
     }
 
     public static DueDateResolution ResolveDueDate(
@@ -854,6 +883,7 @@ internal static class ExpenseDocumentMapper
             document.TotalTax,
             document.GrandTotal,
             document.Notes,
+            document.TaxSupportCode,
             document.Status,
             document.Lines.OrderBy(x => x.SortOrder).Select(ToLine).ToList(),
             document.CancelReason,

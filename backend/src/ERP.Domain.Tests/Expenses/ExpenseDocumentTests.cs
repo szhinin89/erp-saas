@@ -298,6 +298,80 @@ public sealed class ExpenseDocumentTests
         propertyNames.Should().NotContain(forbiddenPropertyNames);
     }
 
+    // ── RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G ──────────────────────────
+
+    [Fact]
+    public void CreateDraft_normaliza_TaxSupportCode_vacio_a_null()
+    {
+        var document = ExpenseDocument.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Servicios", "1790012345001",
+            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow),
+            "01", "001-001-000000001", PaymentTermId, "Contado", 1, 0, UserId,
+            taxSupportCode: "   "
+        );
+
+        document.TaxSupportCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateDraft_recorta_y_persiste_TaxSupportCode_con_contenido_real()
+    {
+        var document = ExpenseDocument.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Servicios", "1790012345001",
+            DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow),
+            "01", "001-001-000000001", PaymentTermId, "Contado", 1, 0, UserId,
+            taxSupportCode: " 02 "
+        );
+
+        document.TaxSupportCode.Should().Be("02");
+    }
+
+    [Fact]
+    public void CreateDraft_sin_TaxSupportCode_queda_null()
+    {
+        var document = CreateDraftDocument();
+
+        document.TaxSupportCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void UpdateDraft_actualiza_TaxSupportCode()
+    {
+        var document = CreateDraftDocument();
+
+        document.UpdateDraft(
+            SupplierId, "Proveedor Servicios", "1790012345001",
+            document.IssueDate, document.AccountingDate, document.DocumentType, document.DocumentNumber,
+            PaymentTermId, "Contado", 1, 0, UserId,
+            taxSupportCode: "02"
+        );
+
+        document.TaxSupportCode.Should().Be("02");
+    }
+
+    [Fact]
+    public void UpdateDraft_sin_TaxSupportCode_lo_deja_null()
+    {
+        var document = CreateDraftDocument();
+        document.UpdateDraft(
+            SupplierId, "Proveedor Servicios", "1790012345001",
+            document.IssueDate, document.AccountingDate, document.DocumentType, document.DocumentNumber,
+            PaymentTermId, "Contado", 1, 0, UserId,
+            taxSupportCode: "02"
+        );
+
+        // Segunda edición sin pasar taxSupportCode — mismo criterio que el resto de campos
+        // opcionales de UpdateDraft (Notes, AuthorizationNumber): el default null sobreescribe,
+        // no preserva el valor anterior. UpdateDraft reemplaza el estado completo del borrador.
+        document.UpdateDraft(
+            SupplierId, "Proveedor Servicios", "1790012345001",
+            document.IssueDate, document.AccountingDate, document.DocumentType, document.DocumentNumber,
+            PaymentTermId, "Contado", 1, 0, UserId
+        );
+
+        document.TaxSupportCode.Should().BeNull();
+    }
+
     private static ExpenseDocument CreateDraftDocument() =>
         ExpenseDocument.CreateDraft(
             TenantId,

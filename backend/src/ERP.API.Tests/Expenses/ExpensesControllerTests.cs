@@ -122,7 +122,8 @@ public sealed class ExpensesControllerTests
                     request.Lines,
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
-                    request.Notes
+                    request.Notes,
+                    request.TaxSupportCode
                 )
             );
     }
@@ -157,7 +158,8 @@ public sealed class ExpensesControllerTests
                     request.Lines,
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
-                    request.Notes
+                    request.Notes,
+                    request.TaxSupportCode
                 )
             );
     }
@@ -419,6 +421,7 @@ public sealed class ExpensesControllerTests
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
                     request.Notes,
+                    request.TaxSupportCode,
                     new RetentionIntent(
                         AppliesRetention: true,
                         EmissionPointId: emissionPointId,
@@ -584,7 +587,8 @@ public sealed class ExpensesControllerTests
             Guid.NewGuid(),
             null,
             new[] { line },
-            Notes: "Borrador"
+            Notes: "Borrador",
+            TaxSupportCode: "02"
         );
     }
 
@@ -600,7 +604,8 @@ public sealed class ExpensesControllerTests
             Guid.NewGuid(),
             null,
             new[] { line },
-            Notes: "Borrador editado"
+            Notes: "Borrador editado",
+            TaxSupportCode: "02"
         );
     }
 
@@ -625,6 +630,7 @@ public sealed class ExpensesControllerTests
             0m,
             0m,
             100m,
+            null,
             null,
             ExpenseStatus.Draft,
             Array.Empty<ExpenseLineDto>(),

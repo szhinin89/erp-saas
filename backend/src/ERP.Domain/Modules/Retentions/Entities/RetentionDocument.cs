@@ -63,11 +63,12 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
 
     /// <summary>
     /// Código SRI de sustento tributario (codSustento, 01-19, catálogo <c>SriTaxSupport</c>).
-    /// Ningún dato del ERP hoy lo trae ya resuelto hasta este punto de la cadena de emisión:
-    /// <c>ExpenseDocument</c> no lo captura (solo <c>PurchaseInvoice.TaxSupportCode</c> lo hace) y
-    /// <c>SupplierRoleConfig.DefaultTaxSupportCode</c> no está cargado en el handler que construye
-    /// esta retención. Queda como columna preparada (nullable) para cuando una fase futura
-    /// (XML/RIDE) resuelva y pase este dato — documentado como gap conocido, no como bug.
+    /// RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G: se copia de <c>ExpenseDocument.TaxSupportCode</c>
+    /// (mismo campo que <c>PurchaseInvoice.TaxSupportCode</c> ya tenía para Compras), resuelto por
+    /// <c>RetentionIssuer</c> al emitir. Sigue siendo nullable — permanece <c>null</c> cuando el
+    /// gasto se creó antes de esta fase o el proveedor no tiene <c>SupplierRoleConfig.DefaultTaxSupportCode</c>
+    /// configurado (gap de datos conocido y aceptado, nunca bloquea la emisión). El valor queda
+    /// congelado en este snapshot: nunca se recalcula desde el documento origen después de emitir.
     /// </summary>
     public string? SourceDocumentTaxSupportCode { get; private set; }
     public decimal? SourceDocumentSubtotal { get; private set; }
@@ -92,8 +93,9 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
     /// documento origen YA CARGADO — el agregado nunca lo resuelve por su cuenta (sin dependencia a
     /// repositorios). Todos los campos son opcionales porque <c>SourceDocumentType</c> contempla
     /// orígenes (<c>Manual</c>) que podrían no tener un comprobante sustento físico, y porque
-    /// <see cref="TaxSupportCode"/> (codSustento SRI) no está disponible hoy en la cadena de
-    /// creación de <c>ExpenseDocument</c> (ver comentario de <see cref="SourceDocumentTaxSupportCode"/>).
+    /// <see cref="TaxSupportCode"/> (codSustento SRI) puede seguir sin resolverse para gastos sin
+    /// dato propio ni default de proveedor configurado (ver comentario de
+    /// <see cref="SourceDocumentTaxSupportCode"/>).
     /// </summary>
     public sealed record SourceDocumentSnapshot(
         string? SriTypeCode,

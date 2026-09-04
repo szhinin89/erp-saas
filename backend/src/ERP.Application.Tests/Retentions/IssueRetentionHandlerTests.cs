@@ -675,11 +675,102 @@ public sealed class IssueRetentionHandlerTests
         captured.SourceDocumentAuthorizationNumber.Should().Be(document.AuthorizationNumber);
         captured.SourceDocumentSubtotal.Should().Be(document.Subtotal);
         captured.SourceDocumentTotal.Should().Be(document.GrandTotal);
-        // codSustento: gap conocido, documentado — ExpenseDocument no lo captura hoy.
+        // codSustento: null aquí porque ConfirmedDocument(BranchId) por defecto no configura uno
+        // (ni explícito ni default de proveedor) — no es un gap del flujo, ver el siguiente test
+        // para el caso con dato real.
         captured.SourceDocumentTaxSupportCode.Should().BeNull();
         // Periodo fiscal derivado de la IssueDate DE LA RETENCIÓN (parámetro del command), no de
         // la del documento sustento — son fechas distintas por diseño.
         captured.FiscalPeriod.Should().Be("09/2026");
+    }
+
+    // ── RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G ──────────────────────────
+
+    [Fact]
+    public async Task Snapshot_copia_TaxSupportCode_del_ExpenseDocument_cuando_existe()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument(BranchId, taxSupportCode: "02");
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.SourceDocumentTaxSupportCode.Should().Be("02");
+    }
+
+    [Fact]
+    public async Task Snapshot_de_TaxSupportCode_queda_congelado_y_no_sigue_al_documento_origen_tras_emitir()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument(BranchId, taxSupportCode: "02");
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+
+        // Regla 8 (RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G): "no recalcular el snapshot
+        // histórico desde datos vivos". Igual que el test de SourceDocumentNumber/Total ya
+        // existente arriba: una instancia distinta del ExpenseDocument origen (mismo Id, dato
+        // distinto) nunca puede alterar retroactivamente un snapshot ya emitido, porque
+        // RetentionDocument nunca guarda una referencia viva al agregado origen.
+        var laterDocumentWithDifferentCode = fx.ConfirmedDocument(
+            BranchId,
+            documentNumber: "001-001-999999998",
+            taxSupportCode: "04"
+        );
+
+        result.Value!.SourceDocumentTaxSupportCode.Should().Be("02");
+        result.Value.SourceDocumentTaxSupportCode.Should().NotBe(laterDocumentWithDifferentCode.TaxSupportCode);
+    }
+
+    [Fact]
+    public async Task Snapshot_TaxSupportCode_ausente_en_el_ExpenseDocument_no_bloquea_la_emision_de_la_retencion()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument(BranchId, taxSupportCode: null);
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        // Compatibilidad con gastos existentes/sin default de proveedor (regla 9): null es un
+        // resultado válido, nunca un rechazo — la emisión de la retención sigue funcionando igual.
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.Status.Should().Be(RetentionStatus.Issued);
+        result.Value.SourceDocumentTaxSupportCode.Should().BeNull();
     }
 
     [Fact]
@@ -876,16 +967,25 @@ public sealed class IssueRetentionHandlerTests
                 ))
                 .ReturnsAsync(false);
 
-        public ExpenseDocument DraftDocument(Guid branchId, string documentNumber = "001-001-000000123") =>
+        public ExpenseDocument DraftDocument(
+            Guid branchId,
+            string documentNumber = "001-001-000000123",
+            string? taxSupportCode = null
+        ) =>
             ExpenseDocument.CreateDraft(
                 TenantId, CompanyId, branchId, SupplierId, "Proveedor Demo", "1791352688001",
                 new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), "01", documentNumber,
-                Guid.NewGuid(), "Contado", 1, 0, UserId
+                Guid.NewGuid(), "Contado", 1, 0, UserId,
+                taxSupportCode: taxSupportCode
             );
 
-        public ExpenseDocument ConfirmedDocument(Guid branchId, string documentNumber = "001-001-000000123")
+        public ExpenseDocument ConfirmedDocument(
+            Guid branchId,
+            string documentNumber = "001-001-000000123",
+            string? taxSupportCode = null
+        )
         {
-            var document = DraftDocument(branchId, documentNumber);
+            var document = DraftDocument(branchId, documentNumber, taxSupportCode);
             var line = ExpenseLine.Create(
                 document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
                 "Internet", 1m, 100m, "0"
