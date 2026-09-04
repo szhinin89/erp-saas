@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.DocTypes.Enums;
@@ -11,6 +12,7 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
@@ -290,29 +292,69 @@ public sealed class CancelExpenseDocumentUseCasesTests
         payable.Status.Should().NotBe(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
     }
 
-    // 12) RETENTIONS-EXPENSES-INTEGRATION-01D-2 — decisión mínima aceptable: bloquear la
-    // cancelación mientras exista una retención activa (Draft o Issued) sobre el gasto, en vez de
-    // cancelarlo silenciosamente y dejar la retención huérfana. La reversa completa (anular
-    // RetentionDocument + ReverseRetention en AP + asiento de reverso) queda para
-    // RETENTIONS-EXPENSES-INTEGRATION-01D-3.
+    // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — reemplaza el bloqueo mínimo de 01D-2: al anular un
+    // gasto con una retención Issued activa, la retención se anula, su impacto en la CxP se
+    // reversa y todo queda atómico en la misma operación (mismo SaveChangesAsync único).
+
+    // 2) Cancela también el RetentionDocument (Status pasa a Cancelled).
     [Fact]
-    public async Task Cancelar_gasto_con_retencion_activa_se_bloquea()
+    public async Task Cancelar_gasto_con_retencion_activa_cancela_tambien_la_retencion()
     {
         var fx = new Fixture();
         var document = fx.ConfirmedDocument();
         fx.SetupDocument(document);
         fx.SetupNoPayable(document.Id);
-        fx.RetentionRepo
-            .Setup(r =>
-                r.ExistsActiveBySourceAsync(
-                    TenantId,
-                    CompanyId,
-                    RetentionSourceDocumentType.ExpenseDocument,
-                    document.Id,
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(true);
+        var retention = fx.SetupIssuedRetention(document.Id);
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        retention.CancelReason.Should().Contain("Documento duplicado");
+        document.Status.Should().Be(ExpenseStatus.Cancelled);
+        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // 3) Revierte la retención aplicada en la CxP — el saldo vuelve al bruto.
+    [Fact]
+    public async Task Cancelar_gasto_con_retencion_activa_revierte_retencion_en_la_CxP()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        var payable = fx.SetupPayable(document.Id, document.GrandTotal);
+        payable.ApplyRetention(4.50m, UserId);
+        var retention = fx.SetupIssuedRetention(document.Id, totalRetained: 4.50m);
+
+        payable.RetainedAmount.Should().Be(4.50m);
+        payable.OutstandingAmount.Should().Be(document.GrandTotal - 4.50m);
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        payable.RetainedAmount.Should().Be(0m, "ReverseRetention debe devolver el saldo bruto");
+        // La CxP del gasto también se anula al anular el gasto (sin pagos aplicados) — el saldo
+        // bruto restaurado es el que queda reflejado antes de esa anulación.
+        payable.Status.Should().Be(AccountsPayableStatus.Cancelled);
+    }
+
+    // 5) Si falla la cancelación de RetentionDocument (regla de dominio: solo Issued es
+    // cancelable), el gasto NO queda Cancelled y nada se persiste.
+    [Fact]
+    public async Task Si_falla_la_cancelacion_de_la_retencion_el_gasto_no_queda_Cancelled()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        fx.SetupNoPayable(document.Id);
+        var retention = fx.SetupDraftRetention(document.Id);
 
         var result = await fx.Handler.Handle(
             new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
@@ -321,11 +363,98 @@ public sealed class CancelExpenseDocumentUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Contain("retención activa");
+        result.Error.Should().Contain("emitidas");
+        retention.Status.Should().Be(RetentionStatus.Draft);
         document.Status.Should().Be(ExpenseStatus.Confirmed);
         fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // 6) + 8) Si la CxP del gasto origen ya tiene pagos aplicados, revertir la retención dejaría
+    // el saldo inconsistente — se bloquea con mensaje claro, en vez de una reversa insegura. Ni el
+    // gasto ni la retención quedan Cancelled, nada persiste.
+    [Fact]
+    public async Task Cancelar_gasto_con_retencion_y_CxP_con_pagos_aplicados_bloquea_sin_reversa_insegura()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        var payable = fx.SetupPayable(document.Id, document.GrandTotal);
+        payable.ApplyRetention(4.50m, UserId);
+        payable.RegisterPayment(20m, UserId);
+        var retention = fx.SetupIssuedRetention(document.Id, totalRetained: 4.50m);
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("pagos aplicados");
+        retention.Status.Should().Be(RetentionStatus.Issued, "no debe anularse si la reversa de CxP no es segura");
+        document.Status.Should().Be(ExpenseStatus.Confirmed);
+        payable.RetainedAmount.Should().Be(4.50m, "no debe reversarse parcialmente/de forma insegura");
+        fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // 7) Si falla el reverso contable (posting estricto: SaveChangesAsync del gasto lanza), nada
+    // queda persistido a medias — ni el gasto ni la retención (en memoria, nunca llegó a
+    // flushearse porque el fallo ocurre en el único SaveChangesAsync compartido).
+    [Fact]
+    public async Task Si_falla_el_reverso_contable_con_retencion_activa_no_persiste_nada()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        fx.SetupDocument(document);
+        fx.SetupNoPayable(document.Id);
+        var retention = fx.SetupIssuedRetention(document.Id);
+        fx.Docs
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ExpensePostingFailedException("No se encontró el asiento a reversar.", "JOURNAL_ENTRY_NOT_FOUND"));
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Documento duplicado"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("JOURNAL_ENTRY_NOT_FOUND");
+        fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        // La mutación en memoria (retention.Cancel() ya ejecutado por el canceller) nunca se
+        // flushea a BD porque SaveChangesAsync lanzó — mismo criterio que el gasto/AP.
+        retention.Status.Should().Be(RetentionStatus.Cancelled, "mutado en memoria, pero nunca persistido (no hay SaveChanges exitoso)");
+    }
+
+    // 10) No permite cancelar dos veces: un gasto ya Cancelled se sigue bloqueando antes de tocar
+    // la retención (regresión del guard existente, ahora con retención en el escenario).
+    [Fact]
+    public async Task Cancelar_gasto_ya_Cancelled_con_retencion_se_bloquea_sin_tocar_la_retencion()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument();
+        document.Cancel("Primera anulación", UserId);
+        fx.SetupDocument(document);
+        var retention = fx.SetupIssuedRetention(document.Id);
+
+        var result = await fx.Handler.Handle(
+            new CancelExpenseDocumentCommand(document.Id, "Segunda anulación"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        retention.Status.Should().Be(RetentionStatus.Issued);
+        fx.RetentionRepo.Verify(
+            r => r.GetBySourceAsync(
+                TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
+                document.Id, It.IsAny<CancellationToken>()
+            ),
+            Times.Never
+        );
     }
 
     private sealed class Fixture
@@ -336,11 +465,18 @@ public sealed class CancelExpenseDocumentUseCasesTests
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
 
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — usa la implementación REAL de IRetentionCanceller
+        // (solo con PayableRepo mockeado por debajo), no un mock, para que estos tests verifiquen el
+        // efecto real de dominio (RetentionDocument.Cancel + AccountsPayable.ReverseRetention), no
+        // solo que el handler "llamó" a algo.
+        public IRetentionCanceller RetentionCanceller => new RetentionCanceller(PayableRepo.Object);
+
         public CancelExpenseDocumentHandler Handler =>
             new(
                 Docs.Object,
                 PayableRepo.Object,
                 RetentionRepo.Object,
+                RetentionCanceller,
                 Uow.Object,
                 WorkflowPolicy.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
@@ -462,6 +598,71 @@ public sealed class CancelExpenseDocumentUseCasesTests
                 .ReturnsAsync(payable);
 
             return payable;
+        }
+
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — retención emitida sobre el gasto, lista para
+        // devolver desde ExistsActiveBySourceAsync/GetBySourceAsync como "activa".
+        public RetentionDocument SetupIssuedRetention(Guid expenseDocumentId, decimal totalRetained = 4.50m)
+        {
+            var retention = RetentionDocument.Create(
+                TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
+                expenseDocumentId, SupplierId, Guid.NewGuid(), UserId
+            );
+            retention.AddLine(
+                RetentionDocumentLine.Create(
+                    retention.Id, TenantId, RetentionTaxType.Vat, "725", 100m, 30m, totalRetained
+                )
+            );
+            retention.Issue("001-001-000000001", new DateOnly(2026, 8, 27), UserId);
+            retention.ClearDomainEvents();
+
+            RetentionRepo
+                .Setup(r =>
+                    r.ExistsActiveBySourceAsync(
+                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId, It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(true);
+            RetentionRepo
+                .Setup(r =>
+                    r.GetBySourceAsync(
+                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId, It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(retention);
+
+            return retention;
+        }
+
+        // Retención en Draft — "activa" por el mismo criterio (Status != Cancelled), pero
+        // RetentionDocument.Cancel() la rechaza (solo se anulan retenciones Issued).
+        public RetentionDocument SetupDraftRetention(Guid expenseDocumentId)
+        {
+            var retention = RetentionDocument.Create(
+                TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
+                expenseDocumentId, SupplierId, Guid.NewGuid(), UserId
+            );
+
+            RetentionRepo
+                .Setup(r =>
+                    r.ExistsActiveBySourceAsync(
+                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId, It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(true);
+            RetentionRepo
+                .Setup(r =>
+                    r.GetBySourceAsync(
+                        TenantId, CompanyId, RetentionSourceDocumentType.ExpenseDocument,
+                        expenseDocumentId, It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(retention);
+
+            return retention;
         }
     }
 }

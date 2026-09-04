@@ -1,5 +1,7 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
@@ -171,14 +173,89 @@ public sealed class CancelRetentionHandlerTests
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
+    // ── 9) RETENTIONS-EXPENSES-INTEGRATION-01D-3 — CancelRetentionHandler (aislado) sigue
+    // funcionando tras el refactor a IRetentionCanceller, y ahora también reversa la CxP del gasto
+    // origen si tiene la retención aplicada (comportamiento nuevo, antes no existía integración).
+
+    [Fact]
+    public async Task Cancelar_retencion_aislada_revierte_tambien_la_CxP_del_gasto_origen()
+    {
+        var fx = new Fixture();
+        var document = IssuedDocument(BranchId, UserId);
+        fx.SetupDocument(document);
+        var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.ExpenseDocument, SourceDocumentId,
+            "01", "001-001-000000123", new DateOnly(2026, 9, 3), new DateOnly(2026, 9, 3), UserId
+        );
+        payable.AddInstallment(1, new DateOnly(2026, 9, 3), 100m);
+        payable.ApplyRetention(30m, UserId);
+        fx.PayableRepo
+            .Setup(r => r.GetByOriginAsync(
+                TenantId, CompanyId, ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.ExpenseDocument,
+                SourceDocumentId, It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(payable);
+
+        var result = await fx.Handler.Handle(
+            new CancelRetentionCommand(document.Id, "Error en el cálculo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        payable.RetainedAmount.Should().Be(0m);
+        payable.OutstandingAmount.Should().Be(100m);
+    }
+
+    [Fact]
+    public async Task Cancelar_retencion_aislada_bloquea_si_la_CxP_ya_tiene_pagos_aplicados()
+    {
+        var fx = new Fixture();
+        var document = IssuedDocument(BranchId, UserId);
+        fx.SetupDocument(document);
+        var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.ExpenseDocument, SourceDocumentId,
+            "01", "001-001-000000123", new DateOnly(2026, 9, 3), new DateOnly(2026, 9, 3), UserId
+        );
+        payable.AddInstallment(1, new DateOnly(2026, 9, 3), 100m);
+        payable.ApplyRetention(30m, UserId);
+        payable.RegisterPayment(10m, UserId);
+        fx.PayableRepo
+            .Setup(r => r.GetByOriginAsync(
+                TenantId, CompanyId, ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.ExpenseDocument,
+                SourceDocumentId, It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(payable);
+
+        var result = await fx.Handler.Handle(
+            new CancelRetentionCommand(document.Id, "Error en el cálculo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("pagos aplicados");
+        document.Status.Should().Be(RetentionStatus.Issued);
+        fx.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private sealed class Fixture
     {
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
+
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-3 — CancelRetentionHandler ahora delega en la
+        // implementación REAL de IRetentionCanceller (mismo refactor que 01D-1 hizo para
+        // IssueRetentionHandler con IRetentionIssuer). Sin AP configurada (PayableRepo.GetByOriginAsync
+        // devuelve null por default de Moq), su comportamiento observable para estos tests (que no
+        // configuran ninguna CxP) no cambia.
+        public IRetentionCanceller Canceller => new RetentionCanceller(PayableRepo.Object);
 
         public CancelRetentionHandler Handler =>
             new(
                 RetentionRepo.Object,
+                Canceller,
                 Uow.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

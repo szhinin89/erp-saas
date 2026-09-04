@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.Exceptions;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.DocTypes.Enums;
@@ -53,6 +54,7 @@ public sealed class CancelExpenseDocumentHandler
     private readonly IExpenseDocumentRepository _repo;
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IRetentionDocumentRepository _retentionRepo;
+    private readonly IRetentionCanceller _retentionCanceller;
     private readonly IUnitOfWork _uow;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
@@ -65,6 +67,7 @@ public sealed class CancelExpenseDocumentHandler
         IExpenseDocumentRepository repo,
         IAccountsPayableRepository payableRepo,
         IRetentionDocumentRepository retentionRepo,
+        IRetentionCanceller retentionCanceller,
         IUnitOfWork uow,
         IDocumentFlowPolicyService workflowPolicy,
         ICurrentTenant tenant,
@@ -77,6 +80,7 @@ public sealed class CancelExpenseDocumentHandler
         _repo = repo;
         _payableRepo = payableRepo;
         _retentionRepo = retentionRepo;
+        _retentionCanceller = retentionCanceller;
         _uow = uow;
         _workflowPolicy = workflowPolicy;
         _tenant = tenant;
@@ -133,12 +137,16 @@ public sealed class CancelExpenseDocumentHandler
                 );
             }
 
-            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: bloqueo mínimo aceptable (ver
-            // docs/decisions/RETENTIONS-MODULE-DESIGN-01.md, alcance de esta fase) — la reversa
-            // completa (anular RetentionDocument, ReverseRetention en AP, asiento de reverso) queda
-            // para RETENTIONS-EXPENSES-INTEGRATION-01D-3. "Activa" (Draft o Issued, nunca Cancelled)
-            // es el mismo criterio ya usado por IRetentionIssuer para la unicidad por origen — nunca
-            // se permite dejar una retención activa huérfana de un gasto anulado.
+            // RETENTIONS-EXPENSES-INTEGRATION-01D-3: si hay una retención "activa" (Draft o Issued,
+            // nunca Cancelled — mismo criterio que IRetentionIssuer usa para la unicidad por
+            // origen), se reversa COMPLETA en esta misma operación (RetentionDocument.Cancel() +
+            // AccountsPayable.ReverseRetention() si corresponde + reverso del asiento contable de la
+            // retención vía RetentionDocumentCancelledPostingTranslator) en vez de bloquear
+            // incondicionalmente (bloqueo mínimo de 01D-2, ya superado). Se invoca ANTES de tocar el
+            // gasto — si falla en cualquier punto (incluida la CxP con pagos aplicados, que
+            // IRetentionCanceller bloquea en vez de reversar de forma insegura), se retorna sin
+            // llamar SaveChangesAsync: el gasto NO debe quedar Cancelled si la retención no pudo
+            // reversarse limpiamente.
             var hasActiveRetention = await _retentionRepo.ExistsActiveBySourceAsync(
                 tid,
                 cid,
@@ -148,10 +156,37 @@ public sealed class CancelExpenseDocumentHandler
             );
             if (hasActiveRetention)
             {
-                await _uow.RollbackAsync(ct);
-                return Result<ExpenseDocumentDetailDto>.ValidationFailure(
-                    "No se puede anular un gasto con una retención activa — cancele primero la retención."
+                var retentionDocument = await _retentionRepo.GetBySourceAsync(
+                    tid,
+                    cid,
+                    RetentionSourceDocumentType.ExpenseDocument,
+                    document.Id,
+                    ct
                 );
+                if (retentionDocument is null)
+                {
+                    // Guarda de integridad — no debería pasar nunca dado que ExistsActiveBySourceAsync
+                    // ya confirmó que hay una retención activa sobre este mismo origen.
+                    await _uow.RollbackAsync(ct);
+                    return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                        "No se encontró la retención activa del gasto para anularla."
+                    );
+                }
+
+                var cancelRetentionResult = await _retentionCanceller.CancelAsync(
+                    retentionDocument,
+                    $"Cancelado junto con el gasto origen: {cmd.Reason}",
+                    uid,
+                    ct
+                );
+                if (!cancelRetentionResult.IsSuccess)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                        cancelRetentionResult.Error!,
+                        cancelRetentionResult.Code
+                    );
+                }
             }
 
             var payable =

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.DTOs;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
@@ -12,10 +13,12 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// <summary>
 /// RETENTIONS-APPLICATION-01C — anula una retención ya emitida. Las guardas de negocio (no
 /// cancelar <c>Draft</c>, no cancelar dos veces, motivo obligatorio) viven en
-/// <see cref="RetentionDocument.Cancel"/> — el handler no las reimplementa, solo traduce la
-/// excepción de dominio a <see cref="Result{T}"/>, mismo patrón que
-/// <c>CancelExpenseDocumentUseCases.cs</c>. No reversa CxP ni contabilidad — esta fase no crea
-/// esos efectos (la emisión es aislada), por lo que tampoco hay nada que reversar aquí.
+/// <see cref="RetentionDocument.Cancel"/> — el handler no las reimplementa, delega en
+/// <see cref="IRetentionCanceller"/> (RETENTIONS-EXPENSES-INTEGRATION-01D-3), mismo patrón que
+/// <c>CancelExpenseDocumentUseCases.cs</c> usa para anular el gasto. Desde 01D-3, la anulación SÍ
+/// reversa el impacto en CxP si el <c>ExpenseDocument</c> origen tiene una <c>AccountsPayable</c>
+/// con la retención aplicada (<see cref="IRetentionCanceller"/> lo detecta y revierte por su
+/// cuenta) — antes de esta fase no reversaba nada porque la integración con CxP no existía aún.
 /// </summary>
 public sealed record CancelRetentionCommand(Guid RetentionDocumentId, string Reason)
     : IRequest<Result<RetentionDocumentDto>>, IBranchScopedRequest;
@@ -36,6 +39,7 @@ public sealed class CancelRetentionValidator : AbstractValidator<CancelRetention
 public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionCommand, Result<RetentionDocumentDto>>
 {
     private readonly IRetentionDocumentRepository _repo;
+    private readonly IRetentionCanceller _canceller;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentBranch _branch;
@@ -43,6 +47,7 @@ public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionComm
 
     public CancelRetentionHandler(
         IRetentionDocumentRepository repo,
+        IRetentionCanceller canceller,
         IUnitOfWork uow,
         ICurrentTenant tenant,
         ICurrentBranch branch,
@@ -50,6 +55,7 @@ public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionComm
     )
     {
         _repo = repo;
+        _canceller = canceller;
         _uow = uow;
         _tenant = tenant;
         _branch = branch;
@@ -65,19 +71,13 @@ public sealed class CancelRetentionHandler : IRequestHandler<CancelRetentionComm
         if (document is null || document.BranchId != _branch.BranchId)
             return Result<RetentionDocumentDto>.NotFound("Retención no encontrada.");
 
-        try
-        {
-            // cancelledBy sale siempre de ICurrentUser — nunca del body.
-            document.Cancel(cmd.Reason, _user.UserId);
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<RetentionDocumentDto>.ValidationFailure(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<RetentionDocumentDto>.ValidationFailure(ex.Message);
-        }
+        // RETENTIONS-EXPENSES-INTEGRATION-01D-3: delega en la operación interna común (staged, sin
+        // SaveChanges) — cancelledBy sale siempre de ICurrentUser, nunca del body. Si la CxP del
+        // gasto origen ya tiene pagos aplicados, IRetentionCanceller bloquea con ValidationFailure
+        // en vez de reversar de forma insegura.
+        var result = await _canceller.CancelAsync(document, cmd.Reason, _user.UserId, ct);
+        if (!result.IsSuccess)
+            return Result<RetentionDocumentDto>.ValidationFailure(result.Error!, result.Code);
 
         await _uow.SaveChangesAsync(ct);
 
