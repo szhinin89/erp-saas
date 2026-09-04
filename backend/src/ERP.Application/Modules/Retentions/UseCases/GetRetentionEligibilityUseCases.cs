@@ -129,9 +129,19 @@ public sealed class GetRetentionEligibilityHandler
         if (document is null || document.BranchId != _branch.BranchId)
             return Result<RetentionEligibilityDto>.NotFound("Documento de gasto no encontrado.");
 
-        if (document.Status != ExpenseStatus.Confirmed)
+        // BUG REAL (RETENTIONS-EXPENSES-E2E-QA-01G): esta guarda exigía ExpenseStatus.Confirmed,
+        // pero el flujo documentado (RETENTIONS-MODULE-DESIGN-01.md § "Flujo funcional integrado de
+        // retenciones", punto 4-5) y el propio frontend (ExpenseRetentionSection.tsx —
+        // `isDraftDocument = !documentStatus || documentStatus === "Draft"`, único gate para llamar
+        // a este endpoint) evalúan elegibilidad ANTES de confirmar, sobre el borrador — nunca
+        // después. Con la condición original, este endpoint SIEMPRE fallaba en el único momento en
+        // que la UI lo invoca, y solo "funcionaba" para un gasto que ya no puede evaluar nada nuevo
+        // (Confirmed ya tiene su retención resuelta en la propia confirmación). Ningún test unitario
+        // cubría este branch (GetRetentionEligibilityHandlerTests no fija ExpenseStatus en ningún
+        // caso). Se corrige a exigir Draft, alineado con el diseño y con el único caller real.
+        if (document.Status != ExpenseStatus.Draft)
             return Result<RetentionEligibilityDto>.ValidationFailure(
-                "Solo se puede evaluar elegibilidad de retención sobre gastos confirmados."
+                "Solo se puede evaluar elegibilidad de retención sobre gastos en borrador."
             );
 
         var vatRetainableBase = document.TotalVat;

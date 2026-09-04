@@ -69,10 +69,18 @@ public sealed class GetRetentionEligibilityHandlerTests
     }
 
     [Fact]
-    public async Task ExpenseDocument_confirmado_de_la_sucursal_activa_evalua_elegibilidad()
+    public async Task ExpenseDocument_en_Draft_de_la_sucursal_activa_evalua_elegibilidad()
     {
+        // RETENTIONS-EXPENSES-E2E-QA-01G: este test antes construía un ConfirmedDocument y
+        // esperaba éxito — codificaba el mismo bug corregido en GetRetentionEligibilityUseCases.cs
+        // (la guarda exigía ExpenseStatus.Confirmed). El único caller real de este endpoint
+        // (ExpenseRetentionSection.tsx, `isDraftDocument` como único gate) y el propio diseño
+        // normativo (RETENTIONS-MODULE-DESIGN-01.md § "Flujo funcional integrado de retenciones",
+        // puntos 4-5: la elegibilidad se evalúa ANTES de confirmar) exigen lo contrario: elegibilidad
+        // se evalúa sobre el borrador, nunca sobre un documento ya confirmado. Se corrige aquí para
+        // no dejar el bug re-cubierto por un test que codificaba el comportamiento incorrecto.
         var fx = new Fixture();
-        var document = fx.ConfirmedDocument(BranchId);
+        var document = fx.DraftDocument(BranchId);
         fx.SetupDocument(document);
         fx.SetupEligibility(
             document.SupplierId,
@@ -142,10 +150,13 @@ public sealed class GetRetentionEligibilityHandlerTests
     }
 
     [Fact]
-    public async Task ExpenseDocument_en_Draft_se_bloquea_con_error_de_validacion_no_excepcion()
+    public async Task ExpenseDocument_confirmado_se_bloquea_con_error_de_validacion_no_excepcion()
     {
+        // Contraparte del fix de RETENTIONS-EXPENSES-E2E-QA-01G: un gasto ya Confirmed ya resolvió
+        // (o no) su retención en la propia confirmación (ConfirmExpenseDocumentHandler) — no hay
+        // nada nuevo que evaluar ahí, así que la guarda ahora bloquea Confirmed en vez de Draft.
         var fx = new Fixture();
-        var document = fx.DraftDocument(BranchId);
+        var document = fx.ConfirmedDocument(BranchId);
         fx.SetupDocument(document);
 
         var result = await fx.Handler.Handle(
@@ -155,7 +166,7 @@ public sealed class GetRetentionEligibilityHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        result.Error.Should().Contain("confirmados");
+        result.Error.Should().Contain("borrador");
     }
 
     private sealed class Fixture
