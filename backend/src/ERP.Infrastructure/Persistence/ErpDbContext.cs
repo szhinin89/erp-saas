@@ -360,6 +360,13 @@ public class ErpDbContext : DbContext
     public DbSet<ExpensePaymentSchedule> ExpensePaymentSchedules =>
         Set<ExpensePaymentSchedule>();
 
+    // ── Retentions BC (RETENTIONS-PERSISTENCE-01B — transversal, ver
+    //    docs/decisions/RETENTIONS-MODULE-DESIGN-01.md) ─────────────────────
+    public DbSet<ERP.Domain.Modules.Retentions.Entities.RetentionDocument> RetentionDocuments =>
+        Set<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>();
+    public DbSet<ERP.Domain.Modules.Retentions.Entities.RetentionDocumentLine> RetentionDocumentLines =>
+        Set<ERP.Domain.Modules.Retentions.Entities.RetentionDocumentLine>();
+
     // ── Payables BC (PAYABLES-GENERIC-FOUNDATION-09) ────────────────────────
     public DbSet<AccountsPayable> AccountsPayables => Set<AccountsPayable>();
     public DbSet<AccountsPayableInstallment> AccountsPayableInstallments =>

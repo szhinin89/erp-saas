@@ -728,6 +728,12 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Repositories.Expenses.ExpenseDocumentRepository
         >();
 
+        // ── Retentions BC (RETENTIONS-PERSISTENCE-01B) ───────────────────────────
+        services.AddScoped<
+            ERP.Domain.Modules.Retentions.Interfaces.IRetentionDocumentRepository,
+            ERP.Infrastructure.Persistence.Repositories.Retentions.RetentionDocumentRepository
+        >();
+
         // ── Payables BC (PAYABLES-GENERIC-FOUNDATION-09) ─────────────────────────
         services.AddScoped<
             ERP.Domain.Modules.Payables.Interfaces.IAccountsPayableRepository,
