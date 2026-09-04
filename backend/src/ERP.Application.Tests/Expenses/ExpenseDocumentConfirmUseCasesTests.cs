@@ -371,7 +371,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         );
         retention.AddLine(
             RetentionDocumentLine.Create(
-                retention.Id, TenantId, l.TaxType, l.RetentionCode, l.BaseAmount, l.RetentionRate, l.RetainedAmount
+                retention.Id, TenantId, l.TaxType, l.RetentionCode, l.RetentionCode, l.BaseAmount, l.RetentionRate, l.RetainedAmount
             )
         );
         retention.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);

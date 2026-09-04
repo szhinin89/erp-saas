@@ -25,7 +25,18 @@ public sealed record RetentionDocumentDto(
     string? CancelReason,
     DateTime? CancelledAt,
     Guid? CancelledBy,
-    IReadOnlyList<RetentionDocumentLineDto> Lines
+    IReadOnlyList<RetentionDocumentLineDto> Lines,
+    // RETENTIONS-TAX-COMPONENT-MODEL-02B — periodo fiscal (derivado, null en Draft) y snapshot del
+    // documento sustento, expuestos de lectura para que un futuro consumidor (XML/RIDE) no
+    // necesite volver a resolverlos contra el documento origen.
+    string? FiscalPeriod = null,
+    string? SourceDocumentSriTypeCode = null,
+    string? SourceDocumentNumber = null,
+    DateOnly? SourceDocumentIssueDate = null,
+    string? SourceDocumentAuthorizationNumber = null,
+    string? SourceDocumentTaxSupportCode = null,
+    decimal? SourceDocumentSubtotal = null,
+    decimal? SourceDocumentTotal = null
 );
 
 public sealed record RetentionDocumentLineDto(
@@ -35,5 +46,6 @@ public sealed record RetentionDocumentLineDto(
     decimal BaseAmount,
     decimal RetentionRate,
     decimal RetainedAmount,
-    string? Description
+    string? Description,
+    string? RetentionCodeDescription = null
 );

@@ -18,12 +18,23 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
 {
     public const int RetentionCodeMaxLen = 10;
     public const int DescriptionMaxLen = 300;
+    public const int RetentionCodeDescriptionMaxLen = 300;
 
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
     public Guid RetentionDocumentId { get; private set; }
     public RetentionTaxType TaxType { get; private set; }
     public string RetentionCode { get; private set; } = null!;
+
+    /// <summary>
+    /// Snapshot REQUERIDO del texto del código de retención (<c>SriRetentionCode.Name</c>) en el
+    /// momento de emitir la línea — nunca se resuelve dinámicamente contra el catálogo después,
+    /// para que una retención antigua pueda reconstruir el texto exacto que tenía al emitirse
+    /// aunque el catálogo cambie más adelante (requisito legal de reproducibilidad, ver
+    /// <c>IssuedWithholdingDetail.RetentionCodeDescription</c>, mismo patrón ya usado en Compras).
+    /// Distinto de <see cref="Description"/> (nota libre opcional del usuario) — ambos coexisten.
+    /// </summary>
+    public string RetentionCodeDescription { get; private set; } = null!;
     public decimal BaseAmount { get; private set; }
     public decimal RetentionRate { get; private set; }
     public decimal RetainedAmount { get; private set; }
@@ -36,6 +47,7 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
         Guid tenantId,
         RetentionTaxType taxType,
         string retentionCode,
+        string retentionCodeDescription,
         decimal baseAmount,
         decimal retentionRate,
         decimal retainedAmount,
@@ -55,6 +67,11 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
             throw new ArgumentException(
                 "El código de retención es obligatorio.",
                 nameof(retentionCode)
+            );
+        if (string.IsNullOrWhiteSpace(retentionCodeDescription))
+            throw new ArgumentException(
+                "La descripción del código de retención es obligatoria.",
+                nameof(retentionCodeDescription)
             );
         if (baseAmount <= 0)
             throw new ArgumentException(
@@ -84,6 +101,7 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
             RetentionDocumentId = retentionDocumentId,
             TaxType = taxType,
             RetentionCode = retentionCode.Trim(),
+            RetentionCodeDescription = retentionCodeDescription.Trim(),
             BaseAmount = Math.Round(baseAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero),
             RetentionRate = Math.Round(retentionRate, FiscalPrecision.Percentage, MidpointRounding.AwayFromZero),
             RetainedAmount = Math.Round(retainedAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero),

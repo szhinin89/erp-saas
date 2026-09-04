@@ -610,7 +610,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
             );
             retention.AddLine(
                 RetentionDocumentLine.Create(
-                    retention.Id, TenantId, RetentionTaxType.Vat, "725", 100m, 30m, totalRetained
+                    retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, totalRetained
                 )
             );
             retention.Issue("001-001-000000001", new DateOnly(2026, 8, 27), UserId);

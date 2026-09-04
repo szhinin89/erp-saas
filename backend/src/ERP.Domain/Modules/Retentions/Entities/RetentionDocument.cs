@@ -31,6 +31,48 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
     public DateOnly? IssueDate { get; private set; }
     public RetentionStatus Status { get; private set; } = RetentionStatus.Draft;
 
+    // ── Periodo fiscal (RETENTIONS-TAX-COMPONENT-MODEL-02B) ──────────────────
+    // Se deriva SIEMPRE de IssueDate en el momento de Issue() — nunca es un dato
+    // independiente que el usuario ingresa (ver docs/decisions/RETENTIONS-MODULE-DESIGN-01.md,
+    // el período fiscal de una retención es el mes/año de su fecha de emisión). Se persiste como
+    // dos componentes (Month/Year) en vez de un string libre "mm/aaaa" para evitar bugs de
+    // parsing/formato — FiscalPeriod expone el string compatible con el XML SRI solo cuando se
+    // necesita. Permanece null mientras el documento sigue en Draft (aún no tiene IssueDate).
+    public int? FiscalPeriodMonth { get; private set; }
+    public int? FiscalPeriodYear { get; private set; }
+
+    /// <summary>Formato SRI <c>mm/aaaa</c>, calculado — nunca almacenado como string suelto.</summary>
+    public string? FiscalPeriod =>
+        FiscalPeriodMonth is int month && FiscalPeriodYear is int year
+            ? $"{month:D2}/{year:D4}"
+            : null;
+
+    // ── Snapshot del documento sustento (RETENTIONS-TAX-COMPONENT-MODEL-02B) ─
+    // Datos del comprobante del proveedor que originó la retención, congelados en el momento de
+    // Create() — ADITIVO a SourceDocumentType/SourceDocumentId (vínculo técnico existente, no se
+    // quita). Se completan aquí porque un futuro mapper de XML/RIDE SRI necesita estos datos
+    // directamente, sin joins frágiles contra el documento origen (que puede cambiar después, ver
+    // ExpenseDocument.UpdateDraft — aunque en la práctica el origen ya está Confirmed/inmutable
+    // cuando se emite la retención). Quien construye el agregado (RetentionIssuer) es responsable
+    // de resolver estos valores desde el documento origen ya cargado — este agregado solo los
+    // recibe y los guarda, nunca los resuelve por su cuenta (sin dependencia a repositorios).
+    public string? SourceDocumentSriTypeCode { get; private set; }
+    public string? SourceDocumentNumber { get; private set; }
+    public DateOnly? SourceDocumentIssueDate { get; private set; }
+    public string? SourceDocumentAuthorizationNumber { get; private set; }
+
+    /// <summary>
+    /// Código SRI de sustento tributario (codSustento, 01-19, catálogo <c>SriTaxSupport</c>).
+    /// Ningún dato del ERP hoy lo trae ya resuelto hasta este punto de la cadena de emisión:
+    /// <c>ExpenseDocument</c> no lo captura (solo <c>PurchaseInvoice.TaxSupportCode</c> lo hace) y
+    /// <c>SupplierRoleConfig.DefaultTaxSupportCode</c> no está cargado en el handler que construye
+    /// esta retención. Queda como columna preparada (nullable) para cuando una fase futura
+    /// (XML/RIDE) resuelva y pase este dato — documentado como gap conocido, no como bug.
+    /// </summary>
+    public string? SourceDocumentTaxSupportCode { get; private set; }
+    public decimal? SourceDocumentSubtotal { get; private set; }
+    public decimal? SourceDocumentTotal { get; private set; }
+
     public decimal TotalRetainedVat { get; private set; }
     public decimal TotalRetainedIncome { get; private set; }
     public decimal TotalRetained { get; private set; }
@@ -44,6 +86,25 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
 
     private RetentionDocument() { }
 
+    /// <summary>
+    /// Snapshot inmutable del documento sustento (comprobante del proveedor) que originó la
+    /// retención, resuelto por quien construye el agregado (<c>RetentionIssuer</c>) a partir del
+    /// documento origen YA CARGADO — el agregado nunca lo resuelve por su cuenta (sin dependencia a
+    /// repositorios). Todos los campos son opcionales porque <c>SourceDocumentType</c> contempla
+    /// orígenes (<c>Manual</c>) que podrían no tener un comprobante sustento físico, y porque
+    /// <see cref="TaxSupportCode"/> (codSustento SRI) no está disponible hoy en la cadena de
+    /// creación de <c>ExpenseDocument</c> (ver comentario de <see cref="SourceDocumentTaxSupportCode"/>).
+    /// </summary>
+    public sealed record SourceDocumentSnapshot(
+        string? SriTypeCode,
+        string? DocumentNumber,
+        DateOnly? IssueDate,
+        string? AuthorizationNumber,
+        string? TaxSupportCode,
+        decimal? Subtotal,
+        decimal? Total
+    );
+
     public static RetentionDocument Create(
         Guid tenantId,
         Guid companyId,
@@ -52,7 +113,8 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
         Guid sourceDocumentId,
         Guid subjectBusinessPartnerId,
         Guid emissionPointId,
-        Guid createdBy
+        Guid createdBy,
+        SourceDocumentSnapshot? sourceDocumentSnapshot = null
     )
     {
         if (tenantId == Guid.Empty)
@@ -75,6 +137,16 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
             );
         if (emissionPointId == Guid.Empty)
             throw new ArgumentException("El punto de emisión es obligatorio.", nameof(emissionPointId));
+        if (sourceDocumentSnapshot?.Subtotal is < 0)
+            throw new ArgumentException(
+                "El subtotal del documento sustento no puede ser negativo.",
+                nameof(sourceDocumentSnapshot)
+            );
+        if (sourceDocumentSnapshot?.Total is < 0)
+            throw new ArgumentException(
+                "El total del documento sustento no puede ser negativo.",
+                nameof(sourceDocumentSnapshot)
+            );
 
         var document = new RetentionDocument
         {
@@ -90,10 +162,19 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
             TotalRetainedVat = 0m,
             TotalRetainedIncome = 0m,
             TotalRetained = 0m,
+            SourceDocumentSriTypeCode = Normalize(sourceDocumentSnapshot?.SriTypeCode),
+            SourceDocumentNumber = Normalize(sourceDocumentSnapshot?.DocumentNumber),
+            SourceDocumentIssueDate = sourceDocumentSnapshot?.IssueDate,
+            SourceDocumentAuthorizationNumber = Normalize(sourceDocumentSnapshot?.AuthorizationNumber),
+            SourceDocumentTaxSupportCode = Normalize(sourceDocumentSnapshot?.TaxSupportCode),
+            SourceDocumentSubtotal = sourceDocumentSnapshot?.Subtotal,
+            SourceDocumentTotal = sourceDocumentSnapshot?.Total,
         };
         document.SetCreated(createdBy);
         return document;
     }
+
+    private static string? Normalize(string? value) => value?.Trim() is { Length: > 0 } text ? text : null;
 
     /// <summary>
     /// Agrega una línea de retención al borrador y recalcula totales inmediatamente desde las
@@ -133,6 +214,10 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
 
         RetentionNumber = retentionNumber.Trim();
         IssueDate = issueDate;
+        // Periodo fiscal SIEMPRE derivado de la fecha de emisión real (nunca un input
+        // independiente) — evita que quede desincronizado del dato legal que representa.
+        FiscalPeriodMonth = issueDate.Month;
+        FiscalPeriodYear = issueDate.Year;
         Status = RetentionStatus.Issued;
         SetUpdated(issuedBy);
 

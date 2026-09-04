@@ -32,7 +32,7 @@ public sealed class GetRetentionBySourceHandlerTests
             SourceDocumentId, SupplierId, EmissionPointId, UserId
         );
         doc.AddLine(
-            RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", 100m, 30m, 30m)
+            RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, 30m)
         );
         doc.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);
         doc.ClearDomainEvents();

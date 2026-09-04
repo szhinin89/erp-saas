@@ -97,6 +97,7 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
                 tenantId,
                 RetentionTaxType.Vat,
                 "725",
+                "Retención IVA 725",
                 baseAmount: 100m,
                 retentionRate: vat,
                 retainedAmount: vat
@@ -306,6 +307,7 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
                 _tenantId,
                 RetentionTaxType.Vat,
                 "725",
+                "Retención IVA 725",
                 baseAmount: 100m,
                 retentionRate: 70m,
                 retainedAmount: 10.50m
@@ -317,6 +319,7 @@ public sealed class RetentionDocumentRepositoryTests : IAsyncLifetime
                 _tenantId,
                 RetentionTaxType.Income,
                 "312",
+                "Retención Renta 312",
                 baseAmount: 100m,
                 retentionRate: 2m,
                 retainedAmount: 2.00m

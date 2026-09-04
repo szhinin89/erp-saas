@@ -27,6 +27,16 @@ public sealed class RetentionDocumentLineConfiguration : IEntityTypeConfiguratio
             .HasColumnName("retention_code")
             .HasMaxLength(RetentionDocumentLine.RetentionCodeMaxLen)
             .IsRequired();
+        // RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot requerido a nivel de dominio (ver
+        // RetentionDocumentLine.RetentionCodeDescription), pero mapeado NULLABLE a nivel de columna
+        // por el mismo criterio conservador que el resto de columnas nuevas de esta fase: líneas
+        // emitidas ANTES de esta fase no tienen este dato y quedan en NULL, sin backfill. Las
+        // líneas nuevas siempre lo traen no-nulo porque el factory de dominio lo exige.
+        builder
+            .Property(x => x.RetentionCodeDescription)
+            .HasColumnName("retention_code_description")
+            .HasMaxLength(RetentionDocumentLine.RetentionCodeDescriptionMaxLen)
+            .IsRequired(false);
         builder
             .Property(x => x.BaseAmount)
             .HasColumnName("base_amount")

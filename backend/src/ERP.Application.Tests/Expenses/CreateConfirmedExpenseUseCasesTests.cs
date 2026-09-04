@@ -136,7 +136,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                         TenantId, CompanyId, doc.BranchId, RetentionSourceDocumentType.ExpenseDocument,
                         doc.Id, doc.SupplierId, req.EmissionPointId, req.UserId
                     );
-                    retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", 10m, 30m, 3m));
+                    retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 10m, 30m, 3m));
                     retention.Issue(req.RetentionNumber, req.IssueDate, req.UserId);
                     issuedRetention = retention;
                     return Result<RetentionDocument>.Success(retention);
@@ -188,7 +188,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                         TenantId, CompanyId, doc.BranchId, RetentionSourceDocumentType.ExpenseDocument,
                         doc.Id, doc.SupplierId, req.EmissionPointId, req.UserId
                     );
-                    retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", 10m, 30m, 3m));
+                    retention.AddLine(RetentionDocumentLine.Create(retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 10m, 30m, 3m));
                     retention.Issue(req.RetentionNumber, req.IssueDate, req.UserId);
                     return Result<RetentionDocument>.Success(retention);
                 }

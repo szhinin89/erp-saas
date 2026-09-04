@@ -41,6 +41,12 @@ export interface RetentionIntentLineRequest {
   retentionRate: number;
   retainedAmount: number;
   description?: string | null;
+  /**
+   * RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot opcional del texto del código de retención.
+   * Sin selector de catálogo real en este formulario todavía, se omite; el backend usa
+   * `retentionCode` como respaldo cuando no se envía (ver RetentionIssuer.cs).
+   */
+  retentionCodeDescription?: string | null;
 }
 
 export interface RetentionIntentRequest {
@@ -59,6 +65,8 @@ export interface RetentionDocumentLineDto {
   retentionRate: number;
   retainedAmount: number;
   description: string | null;
+  /** RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot del texto del código (nulo en líneas emitidas antes de esta fase). */
+  retentionCodeDescription?: string | null;
 }
 
 export interface RetentionDocumentDto {
@@ -79,6 +87,18 @@ export interface RetentionDocumentDto {
   cancelledAt: string | null;
   cancelledBy: string | null;
   lines: RetentionDocumentLineDto[];
+  /**
+   * RETENTIONS-TAX-COMPONENT-MODEL-02B — periodo fiscal `mm/aaaa` (derivado, nulo en Draft) y
+   * snapshot del documento sustento. Todos nulos en retenciones emitidas antes de esta fase.
+   */
+  fiscalPeriod?: string | null;
+  sourceDocumentSriTypeCode?: string | null;
+  sourceDocumentNumber?: string | null;
+  sourceDocumentIssueDate?: string | null;
+  sourceDocumentAuthorizationNumber?: string | null;
+  sourceDocumentTaxSupportCode?: string | null;
+  sourceDocumentSubtotal?: number | null;
+  sourceDocumentTotal?: number | null;
 }
 
 export interface ExpenseLineDto {

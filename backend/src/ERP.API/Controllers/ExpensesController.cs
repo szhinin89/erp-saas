@@ -224,7 +224,8 @@ public sealed class ExpensesController : ControllerBase
                         l.BaseAmount,
                         l.RetentionRate,
                         l.RetainedAmount,
-                        l.Description
+                        l.Description,
+                        l.RetentionCodeDescription
                     ))
                     .ToList()
             );

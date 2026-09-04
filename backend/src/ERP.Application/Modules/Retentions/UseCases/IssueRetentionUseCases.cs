@@ -23,7 +23,13 @@ public sealed record IssueRetentionLineInput(
     decimal BaseAmount,
     decimal RetentionRate,
     decimal RetainedAmount,
-    string? Description = null
+    string? Description = null,
+    // RETENTIONS-TAX-COMPONENT-MODEL-02B: snapshot requerido a nivel de dominio
+    // (RetentionDocumentLine.RetentionCodeDescription), pero OPCIONAL aquí para no romper el
+    // contrato de API/frontend actual — ExpenseRetentionSection.tsx no tiene todavía un selector
+    // de catálogo que resuelva este texto. Si viene null/vacío, RetentionIssuer usa RetentionCode
+    // como descripción de respaldo. Mejorar cuando exista ese selector real en frontend.
+    string? RetentionCodeDescription = null
 );
 
 // ── Command ─────────────────────────────────────────────────────────────
@@ -213,8 +219,17 @@ internal static class RetentionDocumentMapper
                     l.BaseAmount,
                     l.RetentionRate,
                     l.RetainedAmount,
-                    l.Description
+                    l.Description,
+                    l.RetentionCodeDescription
                 ))
-                .ToList()
+                .ToList(),
+            document.FiscalPeriod,
+            document.SourceDocumentSriTypeCode,
+            document.SourceDocumentNumber,
+            document.SourceDocumentIssueDate,
+            document.SourceDocumentAuthorizationNumber,
+            document.SourceDocumentTaxSupportCode,
+            document.SourceDocumentSubtotal,
+            document.SourceDocumentTotal
         );
 }

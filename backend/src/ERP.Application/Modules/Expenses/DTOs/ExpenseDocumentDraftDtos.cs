@@ -25,7 +25,11 @@ public sealed record RetentionIntentLineRequest(
     decimal BaseAmount,
     decimal RetentionRate,
     decimal RetainedAmount,
-    string? Description = null
+    string? Description = null,
+    // RETENTIONS-TAX-COMPONENT-MODEL-02B: opcional a nivel de contrato de API (mismo criterio que
+    // IssueRetentionLineInput) — sin selector de catálogo en frontend todavía, RetentionIssuer usa
+    // RetentionCode como respaldo cuando no llega.
+    string? RetentionCodeDescription = null
 );
 
 /// <summary>

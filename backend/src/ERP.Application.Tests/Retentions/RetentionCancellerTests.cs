@@ -31,7 +31,7 @@ public sealed class RetentionCancellerTests
             TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
             ExpenseDocumentId, SupplierId, Guid.NewGuid(), UserId
         );
-        doc.AddLine(RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", 100m, 30m, retained));
+        doc.AddLine(RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, retained));
         doc.Issue("001-001-000000001", new DateOnly(2026, 8, 27), UserId);
         doc.ClearDomainEvents();
         return doc;

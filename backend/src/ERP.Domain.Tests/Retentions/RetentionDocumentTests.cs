@@ -38,6 +38,7 @@ public sealed class RetentionDocumentTests
             TenantId,
             RetentionTaxType.Vat,
             "721",
+            "Honorarios profesionales",
             baseAmount,
             rate,
             retained
@@ -54,6 +55,7 @@ public sealed class RetentionDocumentTests
             TenantId,
             RetentionTaxType.Income,
             "303",
+            "Servicios predominantemente el intelecto",
             baseAmount,
             rate,
             retained
@@ -169,6 +171,7 @@ public sealed class RetentionDocumentTests
                 TenantId,
                 RetentionTaxType.Vat,
                 "   ",
+                "Descripción válida",
                 100m,
                 70m,
                 10m
@@ -189,6 +192,7 @@ public sealed class RetentionDocumentTests
                 TenantId,
                 RetentionTaxType.Vat,
                 "721",
+                "Descripción válida",
                 0m,
                 70m,
                 10m
@@ -209,6 +213,7 @@ public sealed class RetentionDocumentTests
                 TenantId,
                 RetentionTaxType.Vat,
                 "721",
+                "Descripción válida",
                 100m,
                 0m,
                 10m
@@ -229,6 +234,7 @@ public sealed class RetentionDocumentTests
                 TenantId,
                 RetentionTaxType.Vat,
                 "721",
+                "Descripción válida",
                 100m,
                 70m,
                 0m
@@ -249,6 +255,7 @@ public sealed class RetentionDocumentTests
                 TenantId,
                 RetentionTaxType.Vat,
                 "721",
+                "Descripción válida",
                 100m,
                 70m,
                 150m
@@ -411,5 +418,198 @@ public sealed class RetentionDocumentTests
         document.TotalRetainedVat.Should().Be(10.50m);
         document.TotalRetainedIncome.Should().Be(2m);
         document.TotalRetained.Should().Be(12.50m);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // RETENTIONS-TAX-COMPONENT-MODEL-02B — periodo fiscal, snapshot del documento
+    // sustento y snapshot del código de retención en la línea.
+    // ══════════════════════════════════════════════════════════════════════
+
+    // 23. FiscalPeriod es null mientras el documento sigue en Draft (aún sin IssueDate).
+    [Fact]
+    public void FiscalPeriod_es_null_en_Draft()
+    {
+        var document = CreateDraftDocument();
+
+        document.FiscalPeriodMonth.Should().BeNull();
+        document.FiscalPeriodYear.Should().BeNull();
+        document.FiscalPeriod.Should().BeNull();
+    }
+
+    // 24. Issue deriva FiscalPeriod (mm/aaaa) SIEMPRE de IssueDate — nunca es un input directo del
+    // caller (Issue(string retentionNumber, DateOnly issueDate, Guid issuedBy) no acepta un
+    // periodo fiscal independiente), así que no existe un caso de "periodo fiscal inválido
+    // recibido como input" que rechazar: la única fuente es una IssueDate ya validada (no default)
+    // por el propio Issue(). Este test confirma la derivación correcta, incluyendo el padding a 2
+    // dígitos del mes.
+    [Fact]
+    public void Issue_deriva_FiscalPeriod_desde_IssueDate()
+    {
+        var document = CreateDraftDocument();
+        document.AddLine(CreateVatLine(document));
+
+        document.Issue("001-001-000000001", new DateOnly(2026, 1, 15), UserId);
+
+        document.FiscalPeriodMonth.Should().Be(1);
+        document.FiscalPeriodYear.Should().Be(2026);
+        document.FiscalPeriod.Should().Be("01/2026");
+    }
+
+    // 25. Create con snapshot completo del documento sustento asigna todos los campos.
+    [Fact]
+    public void Create_con_snapshot_completo_del_documento_sustento_asigna_todos_los_campos()
+    {
+        var snapshot = new RetentionDocument.SourceDocumentSnapshot(
+            SriTypeCode: "01",
+            DocumentNumber: "001-001-000000123",
+            IssueDate: new DateOnly(2026, 8, 27),
+            AuthorizationNumber: "1234567890",
+            TaxSupportCode: "01",
+            Subtotal: 100m,
+            Total: 112m
+        );
+
+        var document = RetentionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            SourceDocumentId,
+            SubjectBusinessPartnerId,
+            EmissionPointId,
+            UserId,
+            snapshot
+        );
+
+        document.SourceDocumentSriTypeCode.Should().Be("01");
+        document.SourceDocumentNumber.Should().Be("001-001-000000123");
+        document.SourceDocumentIssueDate.Should().Be(new DateOnly(2026, 8, 27));
+        document.SourceDocumentAuthorizationNumber.Should().Be("1234567890");
+        document.SourceDocumentTaxSupportCode.Should().Be("01");
+        document.SourceDocumentSubtotal.Should().Be(100m);
+        document.SourceDocumentTotal.Should().Be(112m);
+        // Vínculo técnico existente (SourceDocumentType/SourceDocumentId) permanece — el snapshot
+        // es ADITIVO, nunca lo reemplaza.
+        document.SourceDocumentType.Should().Be(RetentionSourceDocumentType.ExpenseDocument);
+        document.SourceDocumentId.Should().Be(SourceDocumentId);
+    }
+
+    // 25b. Create sin snapshot (Manual/omitido) deja todos los campos en null — nunca falla, el
+    // snapshot es opcional (SourceDocumentType.Manual, reservado, podría no tener comprobante).
+    [Fact]
+    public void Create_sin_snapshot_deja_los_campos_del_documento_sustento_en_null()
+    {
+        var document = CreateDraftDocument();
+
+        document.SourceDocumentSriTypeCode.Should().BeNull();
+        document.SourceDocumentNumber.Should().BeNull();
+        document.SourceDocumentIssueDate.Should().BeNull();
+        document.SourceDocumentAuthorizationNumber.Should().BeNull();
+        document.SourceDocumentTaxSupportCode.Should().BeNull();
+        document.SourceDocumentSubtotal.Should().BeNull();
+        document.SourceDocumentTotal.Should().BeNull();
+    }
+
+    // 26. El snapshot del documento sustento permanece congelado durante todo el ciclo de vida del
+    // agregado (Draft → Issued → Cancelled) — ningún método público de RetentionDocument
+    // (AddLine/Issue/Cancel) toca estos campos, así que un cambio posterior en el documento origen
+    // real (fuera del alcance de este agregado, que ni siquiera guarda una referencia a él) nunca
+    // puede propagarse hacia una retención ya construida. Este es el equivalente, a nivel de
+    // dominio puro, de "cambios posteriores en el ExpenseDocument origen no afectan el snapshot ya
+    // guardado" — en la práctica, ExpenseDocument tampoco expone ninguna vía pública de mutación
+    // una vez Confirmed (ver ExpenseDocument.EnsureDraft), así que este test documenta la garantía
+    // real que el sistema ofrece hoy: ni por diseño del agregado, ni por el estado del origen.
+    [Fact]
+    public void Snapshot_del_documento_sustento_permanece_congelado_durante_todo_el_ciclo_de_vida()
+    {
+        var snapshot = new RetentionDocument.SourceDocumentSnapshot(
+            "01",
+            "001-001-000000123",
+            new DateOnly(2026, 8, 27),
+            "1234567890",
+            "01",
+            100m,
+            112m
+        );
+        var document = RetentionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.ExpenseDocument,
+            SourceDocumentId,
+            SubjectBusinessPartnerId,
+            EmissionPointId,
+            UserId,
+            snapshot
+        );
+
+        document.AddLine(CreateVatLine(document));
+        document.Issue("001-001-000000001", new DateOnly(2026, 9, 3), UserId);
+        document.Cancel("Error de digitación", UserId);
+
+        document.SourceDocumentSriTypeCode.Should().Be("01");
+        document.SourceDocumentNumber.Should().Be("001-001-000000123");
+        document.SourceDocumentIssueDate.Should().Be(new DateOnly(2026, 8, 27));
+        document.SourceDocumentAuthorizationNumber.Should().Be("1234567890");
+        document.SourceDocumentTaxSupportCode.Should().Be("01");
+        document.SourceDocumentSubtotal.Should().Be(100m);
+        document.SourceDocumentTotal.Should().Be(112m);
+    }
+
+    // 27. Create con snapshot de subtotal/total negativo falla (fail-closed, mismo criterio que el
+    // resto de montos del agregado).
+    [Fact]
+    public void Create_con_snapshot_de_subtotal_negativo_falla()
+    {
+        var snapshot = new RetentionDocument.SourceDocumentSnapshot(
+            "01", "001-001-000000123", new DateOnly(2026, 8, 27), null, null, -1m, 112m
+        );
+
+        var act = () =>
+            RetentionDocument.Create(
+                TenantId, CompanyId, BranchId, RetentionSourceDocumentType.ExpenseDocument,
+                SourceDocumentId, SubjectBusinessPartnerId, EmissionPointId, UserId, snapshot
+            );
+
+        act.Should().Throw<ArgumentException>().WithMessage("*subtotal*");
+    }
+
+    // 28. RetentionDocumentLine.Create con RetentionCodeDescription vacía falla — snapshot
+    // requerido, nunca queda un texto vacío guardado.
+    [Fact]
+    public void RetentionCodeDescription_vacia_falla()
+    {
+        var document = CreateDraftDocument();
+
+        var act = () =>
+            RetentionDocumentLine.Create(
+                document.Id, TenantId, RetentionTaxType.Vat, "721", "   ", 100m, 70m, 10m
+            );
+
+        act.Should().Throw<ArgumentException>().WithMessage("*descripción del código de retención*");
+    }
+
+    // 29. RetentionDocumentLine.Create con RetentionCodeDescription válida la guarda como snapshot,
+    // independiente de Description (nota libre opcional del usuario) — ambos coexisten.
+    [Fact]
+    public void RetentionCodeDescription_valida_se_guarda_como_snapshot_junto_a_Description_libre()
+    {
+        var document = CreateDraftDocument();
+
+        var line = RetentionDocumentLine.Create(
+            document.Id,
+            TenantId,
+            RetentionTaxType.Vat,
+            "721",
+            "Servicios profesionales",
+            100m,
+            70m,
+            10.50m,
+            description: "Nota interna del contador"
+        );
+
+        line.RetentionCodeDescription.Should().Be("Servicios profesionales");
+        line.Description.Should().Be("Nota interna del contador");
+        line.RetentionCode.Should().Be("721");
     }
 }

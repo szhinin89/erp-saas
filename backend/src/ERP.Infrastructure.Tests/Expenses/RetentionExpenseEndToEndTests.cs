@@ -502,6 +502,22 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         retention.TotalRetainedVat.Should().Be(10.5m);
         retention.RetentionNumber.Should().Be("001-001-000000001");
 
+        // RETENTIONS-TAX-COMPONENT-MODEL-02B: periodo fiscal derivado de la IssueDate de la
+        // retención (2026-08-15, ver BuildVatRetentionIntent) y snapshot del documento sustento
+        // resuelto contra Postgres real (sin mocks) — confirma que el flujo E2E existente sigue
+        // funcionando con los campos nuevos poblados correctamente, no solo con ellos en null.
+        retention.FiscalPeriod.Should().Be("08/2026");
+        retention.SourceDocumentSriTypeCode.Should().Be(document.DocumentType);
+        retention.SourceDocumentNumber.Should().Be(document.DocumentNumber);
+        retention.SourceDocumentIssueDate.Should().Be(document.IssueDate);
+        retention.SourceDocumentSubtotal.Should().Be(document.Subtotal);
+        retention.SourceDocumentTotal.Should().Be(document.GrandTotal);
+        // BuildVatRetentionIntent no envía RetentionCodeDescription (contrato opcional, ver
+        // IssueRetentionLineInput) — RetentionIssuer usa RetentionCode como respaldo, y "RETQA
+        // retencion IVA 70%" sigue siendo la nota libre en Description (parámetro sin cambios).
+        retention.Lines.Should().OnlyContain(l => l.RetentionCodeDescription == RetentionVatCode);
+        retention.Lines.Should().OnlyContain(l => l.Description == "RETQA retencion IVA 70%");
+
         var payable = await verifyDb.AccountsPayables.Include(x => x.Installments)
             .FirstAsync(x => x.OriginType == AccountsPayableOriginType.ExpenseDocument && x.OriginId == expenseId);
         payable.OutstandingAmount.Should().Be(104.5m, "neto = bruto (115) - retenido (10.5)");

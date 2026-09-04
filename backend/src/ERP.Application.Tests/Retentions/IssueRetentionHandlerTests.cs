@@ -468,6 +468,94 @@ public sealed class IssueRetentionHandlerTests
         fx.ExpenseRepo.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // ── RETENTIONS-TAX-COMPONENT-MODEL-02B: snapshot del documento sustento ──
+
+    [Fact]
+    public async Task Snapshot_del_documento_sustento_se_resuelve_desde_el_ExpenseDocument_real()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument(BranchId);
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        RetentionDocument? captured = null;
+        fx.RetentionRepo
+            .Setup(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()))
+            .Callback<RetentionDocument, CancellationToken>((d, _) => captured = d)
+            .Returns(Task.CompletedTask);
+
+        await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                "001-001-000000001",
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        captured.Should().NotBeNull();
+        // Los valores vienen del ExpenseDocument YA CARGADO — nunca resueltos por el propio
+        // agregado RetentionDocument (que no conoce ExpenseDocument, ver comentario de tipo de
+        // RetentionDocument.SourceDocumentSnapshot).
+        captured!.SourceDocumentSriTypeCode.Should().Be(document.DocumentType);
+        captured.SourceDocumentNumber.Should().Be(document.DocumentNumber);
+        captured.SourceDocumentIssueDate.Should().Be(document.IssueDate);
+        captured.SourceDocumentAuthorizationNumber.Should().Be(document.AuthorizationNumber);
+        captured.SourceDocumentSubtotal.Should().Be(document.Subtotal);
+        captured.SourceDocumentTotal.Should().Be(document.GrandTotal);
+        // codSustento: gap conocido, documentado — ExpenseDocument no lo captura hoy.
+        captured.SourceDocumentTaxSupportCode.Should().BeNull();
+        // Periodo fiscal derivado de la IssueDate DE LA RETENCIÓN (parámetro del command), no de
+        // la del documento sustento — son fechas distintas por diseño.
+        captured.FiscalPeriod.Should().Be("09/2026");
+    }
+
+    [Fact]
+    public async Task Snapshot_del_documento_sustento_permanece_congelado_aunque_el_ExpenseDocument_original_ya_no_este_disponible()
+    {
+        var fx = new Fixture();
+        var document = fx.ConfirmedDocument(BranchId);
+        fx.SetupDocument(document);
+        fx.SetupEligibility(document.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.ExpenseDocument,
+                document.Id,
+                EmissionPointId,
+                "001-001-000000001",
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+        result.IsSuccess.Should().BeTrue();
+
+        // Valores del snapshot capturados en el momento de emitir.
+        var originalNumber = result.Value!.SourceDocumentNumber;
+        var originalTotal = result.Value.SourceDocumentTotal;
+
+        // ExpenseDocument YA NO TIENE ninguna vía pública para mutar DocumentNumber/GrandTotal una
+        // vez Confirmed (EnsureDraft bloquea UpdateDraft/ReplaceLines) — la única forma de que
+        // "cambiara" sería que el repositorio devolviera una instancia distinta en una consulta
+        // futura (p. ej. tras una corrección manual en BD fuera del dominio). Simulamos justo eso:
+        // el mismo Id, pero una instancia de ExpenseDocument con datos distintos — la retención ya
+        // emitida (y su snapshot ya capturado) es completamente ajena a esa instancia nueva, porque
+        // RetentionDocument nunca guardó una referencia al agregado origen, solo copias de sus
+        // valores primitivos.
+        var laterDocument = fx.ConfirmedDocument(BranchId, documentNumber: "001-001-999999999");
+        laterDocument.Should().NotBeSameAs(document);
+
+        result.Value.SourceDocumentNumber.Should().Be(originalNumber);
+        result.Value.SourceDocumentTotal.Should().Be(originalTotal);
+        result.Value.SourceDocumentNumber.Should().NotBe(laterDocument.DocumentNumber);
+    }
+
     // ── Casos ya cubiertos indirectamente: NotFound / branch distinto / estado no confirmado ──
 
     [Fact]
@@ -560,16 +648,16 @@ public sealed class IssueRetentionHandlerTests
                 ))
                 .ReturnsAsync(false);
 
-        public ExpenseDocument DraftDocument(Guid branchId) =>
+        public ExpenseDocument DraftDocument(Guid branchId, string documentNumber = "001-001-000000123") =>
             ExpenseDocument.CreateDraft(
                 TenantId, CompanyId, branchId, SupplierId, "Proveedor Demo", "1791352688001",
-                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), "01", "001-001-000000123",
+                new DateOnly(2026, 8, 27), new DateOnly(2026, 8, 27), "01", documentNumber,
                 Guid.NewGuid(), "Contado", 1, 0, UserId
             );
 
-        public ExpenseDocument ConfirmedDocument(Guid branchId)
+        public ExpenseDocument ConfirmedDocument(Guid branchId, string documentNumber = "001-001-000000123")
         {
-            var document = DraftDocument(branchId);
+            var document = DraftDocument(branchId, documentNumber);
             var line = ExpenseLine.Create(
                 document.Id, TenantId, ExpenseSubcategoryId, ExpenseAccountId,
                 "Internet", 1m, 100m, "0"

@@ -41,6 +41,41 @@ public sealed class RetentionDocumentConfiguration : IEntityTypeConfiguration<Re
         builder.Property(x => x.IssueDate).HasColumnName("issue_date");
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
+        // RETENTIONS-TAX-COMPONENT-MODEL-02B — periodo fiscal (derivado de IssueDate en Issue(),
+        // ver comentario de la entidad) y snapshot del documento sustento. Todas las columnas
+        // nuevas son NULLABLE: documentos emitidos ANTES de esta fase quedan con estos campos en
+        // NULL, sin backfill retroactivo (no hay forma de reconstruir un snapshot histórico que
+        // nunca se capturó) — documentos nuevos siempre los completan porque Issue()/Create()
+        // los derivan/reciben de forma obligatoria en el flujo real (RetentionIssuer).
+        builder.Property(x => x.FiscalPeriodMonth).HasColumnName("fiscal_period_month");
+        builder.Property(x => x.FiscalPeriodYear).HasColumnName("fiscal_period_year");
+
+        builder
+            .Property(x => x.SourceDocumentSriTypeCode)
+            .HasColumnName("source_document_sri_type_code")
+            .HasMaxLength(5);
+        builder
+            .Property(x => x.SourceDocumentNumber)
+            .HasColumnName("source_document_number")
+            .HasMaxLength(30);
+        builder.Property(x => x.SourceDocumentIssueDate).HasColumnName("source_document_issue_date");
+        builder
+            .Property(x => x.SourceDocumentAuthorizationNumber)
+            .HasColumnName("source_document_authorization_number")
+            .HasMaxLength(49);
+        builder
+            .Property(x => x.SourceDocumentTaxSupportCode)
+            .HasColumnName("source_document_tax_support_code")
+            .HasMaxLength(2);
+        builder
+            .Property(x => x.SourceDocumentSubtotal)
+            .HasColumnName("source_document_subtotal")
+            .HasColumnType("numeric(18,2)");
+        builder
+            .Property(x => x.SourceDocumentTotal)
+            .HasColumnName("source_document_total")
+            .HasColumnType("numeric(18,2)");
+
         builder
             .Property(x => x.TotalRetainedVat)
             .HasColumnName("total_retained_vat")

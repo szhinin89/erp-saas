@@ -101,6 +101,22 @@ public sealed class RetentionIssuer : IRetentionIssuer
         RetentionDocument retention;
         try
         {
+            // RETENTIONS-TAX-COMPONENT-MODEL-02B — snapshot del documento sustento, resuelto AQUÍ
+            // (Application, con el ExpenseDocument ya cargado) y nunca por el propio agregado.
+            // TaxSupportCode (codSustento) queda null: ExpenseDocument no lo captura hoy (solo
+            // PurchaseInvoice.TaxSupportCode lo hace) y SupplierRoleConfig.DefaultTaxSupportCode no
+            // está cargado en este flujo — gap documentado, no un olvido (ver comentario del campo
+            // en RetentionDocument.SourceDocumentTaxSupportCode).
+            var sourceSnapshot = new RetentionDocument.SourceDocumentSnapshot(
+                document.DocumentType,
+                document.DocumentNumber,
+                document.IssueDate,
+                document.AuthorizationNumber,
+                null,
+                document.Subtotal,
+                document.GrandTotal
+            );
+
             retention = RetentionDocument.Create(
                 request.TenantId,
                 request.CompanyId,
@@ -109,7 +125,8 @@ public sealed class RetentionIssuer : IRetentionIssuer
                 document.Id,
                 document.SupplierId,
                 request.EmissionPointId,
-                request.UserId
+                request.UserId,
+                sourceSnapshot
             );
 
             foreach (var line in request.Lines)
@@ -120,6 +137,15 @@ public sealed class RetentionIssuer : IRetentionIssuer
                         request.TenantId,
                         line.TaxType,
                         line.RetentionCode,
+                        // RETENTIONS-TAX-COMPONENT-MODEL-02B: RetentionCodeDescription es requerido
+                        // a nivel de dominio, pero opcional en el contrato de entrada
+                        // (IssueRetentionLineInput) para no romper el frontend actual (que no
+                        // captura este dato todavía — no hay selector de catálogo real en UI). Si
+                        // no llega, se usa el propio código como descripción de respaldo — límite
+                        // temporal documentado, a mejorar cuando exista ese selector.
+                        line.RetentionCodeDescription is { Length: > 0 }
+                            ? line.RetentionCodeDescription
+                            : line.RetentionCode,
                         line.BaseAmount,
                         line.RetentionRate,
                         line.RetainedAmount,
