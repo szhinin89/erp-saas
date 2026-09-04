@@ -11,6 +11,7 @@ import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedVa
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
+import type { SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
 
 export interface ExpenseDocumentHeaderState {
   supplierId: string;
@@ -23,6 +24,12 @@ export interface ExpenseDocumentHeaderState {
   authorizationNumber: string;
   authorizationDate: string;
   notes: string;
+  /**
+   * RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — código de sustento tributario SRI (codSustento).
+   * Vacío es válido: el backend usa el default del proveedor cuando este campo no se especifica
+   * (ver `SupplierRoleConfig.DefaultTaxSupportCode`).
+   */
+  taxSupportCode: string;
 }
 
 export type ExpenseDocumentHeaderErrors = Partial<
@@ -33,6 +40,7 @@ interface Props {
   value: ExpenseDocumentHeaderState;
   supplier: SupplierPickerRow | null;
   paymentTerms: PaymentTermDto[];
+  sriTaxSupports: SriTaxSupportLookup[];
   disabled?: boolean;
   errors?: ExpenseDocumentHeaderErrors;
   onChange: (patch: Partial<ExpenseDocumentHeaderState>) => void;
@@ -43,6 +51,7 @@ export function ExpenseDocumentHeader({
   value,
   supplier,
   paymentTerms,
+  sriTaxSupports,
   disabled,
   errors,
   onChange,
@@ -65,6 +74,12 @@ export function ExpenseDocumentHeader({
               onChange({
                 supplierId: next?.id ?? "",
                 paymentTermId: value.paymentTermId || next?.supplierConfig?.paymentTermId || "",
+                // RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — mismo criterio que paymentTermId: si el
+                // usuario ya escribió algo, se preserva; si no, se sugiere el default del
+                // proveedor (solo pre-llenado en el cliente — el backend vuelve a aplicar el
+                // mismo fallback si este campo llega vacío).
+                taxSupportCode:
+                  value.taxSupportCode || next?.supplierConfig?.defaultTaxSupportCode || "",
               });
             }}
           />
@@ -147,6 +162,28 @@ export function ExpenseDocumentHeader({
             disabled={disabled}
             onChange={(event) => onChange({ authorizationDate: event.target.value })}
           />
+        </ZHField>
+
+        {/* RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — mismo catálogo/servicio real ya usado por
+            Compras (sriLookupFacade.taxSupportCodes → global.sri_tax_support), nunca una lista
+            hardcodeada aquí. */}
+        <ZHField
+          label="Código sustento tributario"
+          fieldError={errors?.taxSupportCode}
+          hint="Si se deja vacío, se usará el valor configurado para el proveedor cuando exista."
+        >
+          <ZhSelect
+            value={value.taxSupportCode}
+            disabled={disabled}
+            onChange={(event) => onChange({ taxSupportCode: event.target.value })}
+          >
+            <option value="">— Sin especificar —</option>
+            {sriTaxSupports.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </ZhSelect>
         </ZHField>
       </ZHGrid>
 

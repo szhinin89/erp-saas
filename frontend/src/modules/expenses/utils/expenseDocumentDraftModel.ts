@@ -1,4 +1,5 @@
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import type { AccountDto } from "../../accounting/api/accountingApi";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
@@ -115,6 +116,7 @@ export function documentToHeader(
     authorizationNumber: document.authorizationNumber ?? "",
     authorizationDate: toDateTimeLocalInputValue(document.authorizationDate),
     notes: document.notes ?? "",
+    taxSupportCode: document.taxSupportCode ?? "",
   };
 }
 
@@ -172,6 +174,7 @@ export function buildExpenseDraftPayload(
       ? new Date(header.authorizationDate).toISOString()
       : null,
     notes: header.notes.trim() || null,
+    taxSupportCode: normalizeOptionalCode(header.taxSupportCode),
     lines: lines.map((line) => ({
       expenseSubcategoryId: line.expenseSubcategoryId,
       description: line.description.trim() || null,

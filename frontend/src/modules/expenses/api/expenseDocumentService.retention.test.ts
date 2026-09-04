@@ -52,6 +52,7 @@ const PAYLOAD: CreateExpenseDraftPayload = {
   authorizationNumber: null,
   authorizationDate: null,
   notes: null,
+  taxSupportCode: "02",
 };
 
 const RETENTION_INTENT: RetentionIntentRequest = {
@@ -101,6 +102,34 @@ describe("expenseDocumentService — confirm (regresión + retención)", () => {
   });
 });
 
+describe("expenseDocumentService — create/update draft con taxSupportCode", () => {
+  it("create(payload) envía taxSupportCode tal cual en el body", async () => {
+    apiPostMock.mockResolvedValue({});
+    await expenseDocumentService.create(PAYLOAD);
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/api/v1/expenses/documents",
+      expect.objectContaining({ taxSupportCode: "02" }),
+    );
+  });
+
+  it("update(id, payload) envía taxSupportCode tal cual en el body", async () => {
+    apiPutMock.mockResolvedValue({});
+    await expenseDocumentService.update("exp-1", PAYLOAD);
+    expect(apiPutMock).toHaveBeenCalledWith(
+      "/api/v1/expenses/documents/exp-1",
+      expect.objectContaining({ taxSupportCode: "02" }),
+    );
+  });
+
+  it("create(payload) con taxSupportCode null no rompe el body", async () => {
+    apiPostMock.mockResolvedValue({});
+    await expenseDocumentService.create({ ...PAYLOAD, taxSupportCode: null });
+    const [, body] = apiPostMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body.taxSupportCode).toBeNull();
+    expect(body.supplierId).toBe("sup-1");
+  });
+});
+
 describe("expenseDocumentService.createConfirmedExpense", () => {
   it("sin retentionIntent, envía solo el payload del borrador (comportamiento por defecto)", async () => {
     apiPostMock.mockResolvedValue({});
@@ -140,6 +169,24 @@ describe("expenseDocumentService.createConfirmedExpense", () => {
     ];
     expect(body.retention).not.toHaveProperty("retentionNumber");
     expect(body.retention).toHaveProperty("emissionPointId", "ep-1");
+  });
+
+  it("RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H: el body incluye taxSupportCode del payload del borrador", async () => {
+    apiPostMock.mockResolvedValue({});
+    await expenseDocumentService.createConfirmedExpense(PAYLOAD);
+    const [, body] = apiPostMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body).toHaveProperty("taxSupportCode", "02");
+  });
+
+  it("RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H: taxSupportCode ausente/null no rompe el body", async () => {
+    apiPostMock.mockResolvedValue({});
+    await expenseDocumentService.createConfirmedExpense({
+      ...PAYLOAD,
+      taxSupportCode: null,
+    });
+    const [, body] = apiPostMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body.taxSupportCode).toBeNull();
+    expect(body.supplierId).toBe("sup-1");
   });
 });
 

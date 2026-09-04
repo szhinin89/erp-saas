@@ -173,6 +173,12 @@ export interface ExpenseDocumentDetailDto {
   totalTax: number;
   grandTotal: number;
   notes: string | null;
+  /**
+   * RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — código de sustento tributario SRI (codSustento,
+   * catálogo `global.sri_tax_support`). Espejo de `ExpenseDocument.TaxSupportCode` (backend,
+   * RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G) — se copia al snapshot de la retención al emitir.
+   */
+  taxSupportCode: string | null;
   status: ExpenseStatus;
   lines: ExpenseLineDto[];
   cancelReason: string | null;
@@ -202,6 +208,13 @@ export interface CreateExpenseDraftPayload {
   authorizationNumber?: string | null;
   authorizationDate?: string | null;
   notes?: string | null;
+  /**
+   * RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — opcional; si no se envía (o llega vacío/null), el
+   * backend usa el default configurable del proveedor (`SupplierRoleConfig.DefaultTaxSupportCode`)
+   * — ver `ExpenseDraftRules.ResolveTaxSupportCode`. Reutilizado tal cual por
+   * `CreateExpenseDraftPayload`/`UpdateExpenseDraftPayload`/`createConfirmedExpense`.
+   */
+  taxSupportCode?: string | null;
 }
 
 export type UpdateExpenseDraftPayload = CreateExpenseDraftPayload;

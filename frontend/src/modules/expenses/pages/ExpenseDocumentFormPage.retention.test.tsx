@@ -15,6 +15,7 @@ import { expenseCategoryService } from "../api/expenseCategoryService";
 import { accountingApi } from "../../accounting/api/accountingApi";
 import { paymentTermService } from "../../masterData/api/paymentTermService";
 import { emissionPointsService } from "../../emissionPoints/api/emissionPointsService";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 import type {
@@ -85,6 +86,14 @@ vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
   },
 }));
 
+// RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H: mismo catálogo real (global.sri_tax_support) ya usado
+// por Compras — mockeado aquí solo para aislar el test de la llamada de red real.
+vi.mock("../../items/facades/sriLookupFacade", () => ({
+  sriLookupFacade: {
+    taxSupportCodes: vi.fn(),
+  },
+}));
+
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
 }));
@@ -132,6 +141,7 @@ const DRAFT_DOCUMENT: ExpenseDocumentDetailDto = {
   totalTax: 15,
   grandTotal: 115,
   notes: null,
+  taxSupportCode: null,
   status: "Draft",
   lines: [
     {
@@ -255,6 +265,7 @@ beforeEach(() => {
   vi.mocked(paymentTermService.list).mockResolvedValue([]);
   vi.mocked(expenseCategoryService.getTree).mockResolvedValue([]);
   vi.mocked(emissionPointsService.list).mockResolvedValue([EMISSION_POINT]);
+  vi.mocked(sriLookupFacade.taxSupportCodes).mockResolvedValue([]);
   vi.mocked(expenseDocumentService.getExpenseRetention).mockResolvedValue(null);
 });
 

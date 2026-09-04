@@ -21,6 +21,10 @@ import {
   parseValidationErrors,
 } from "../../lib/apiError";
 import { accountingApi, type AccountDto } from "../../accounting/api/accountingApi";
+import {
+  sriLookupFacade,
+  type SriTaxSupportLookup,
+} from "../../items/facades/sriLookupFacade";
 import { paymentTermService, type PaymentTermDto } from "../../masterData/api/paymentTermService";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 import {
@@ -85,6 +89,7 @@ const EMPTY_HEADER: ExpenseDocumentHeaderState = {
   authorizationNumber: "",
   authorizationDate: "",
   notes: "",
+  taxSupportCode: "",
 };
 
 export function ExpenseDocumentFormPage() {
@@ -105,6 +110,7 @@ export function ExpenseDocumentFormPage() {
   const [tree, setTree] = useState<ExpenseCategoryTreeNodeDto[]>([]);
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
+  const [sriTaxSupports, setSriTaxSupports] = useState<SriTaxSupportLookup[]>([]);
   const [document, setDocument] = useState<ExpenseDocumentDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -145,14 +151,16 @@ export function ExpenseDocumentFormPage() {
         canReadCatalog ? expenseCategoryService.getTree(false) : Promise.resolve([]),
         accountingApi.listAccounts(),
         paymentTermService.list(),
+        sriLookupFacade.taxSupportCodes(),
         id ? expenseDocumentService.getById(id) : Promise.resolve(null),
       ] as const;
-      const [categoryTree, accountRows, paymentTermRows, expenseDocument] =
+      const [categoryTree, accountRows, paymentTermRows, sriTaxSupportRows, expenseDocument] =
         await Promise.all(requests);
 
       setTree(categoryTree);
       setAccounts(accountRows);
       setPaymentTerms(paymentTermRows);
+      setSriTaxSupports(sriTaxSupportRows);
       if (expenseDocument) {
         setDocument(expenseDocument);
         setHeader(documentToHeader(expenseDocument, toDateTimeLocalInputValue));
@@ -438,6 +446,7 @@ export function ExpenseDocumentFormPage() {
               value={header}
               supplier={supplier}
               paymentTerms={paymentTerms}
+              sriTaxSupports={sriTaxSupports}
               disabled={disabled || loading}
               errors={headerErrors}
               onChange={(patch) =>
@@ -554,6 +563,8 @@ function mapBackendErrors(
     PaymentTermId: "paymentTermId",
     dueDate: "dueDate",
     DueDate: "dueDate",
+    taxSupportCode: "taxSupportCode",
+    TaxSupportCode: "taxSupportCode",
   };
   Object.entries(validation).forEach(([field, messages]) => {
     const target = map[field];
