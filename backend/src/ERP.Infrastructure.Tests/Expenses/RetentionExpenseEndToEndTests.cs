@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.DocTypes.Services;
@@ -47,6 +48,7 @@ using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using ERP.Infrastructure.Persistence.Services;
+using ERP.Infrastructure.Seeding.Steps;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -65,9 +67,14 @@ namespace ERP.Infrastructure.Tests.Expenses;
 /// → posting de ambos hechos contables (Expenses/DocumentConfirmed + Retentions/DocumentIssued) →
 /// CancelExpenseDocumentCommand (reversa completa o bloqueo si hay pagos aplicados).
 ///
-/// Todos los datos (empresa, proveedores, códigos de retención, cuentas, PostingRule,
+/// Todos los datos (empresa, proveedores, códigos de retención, cuenta de gasto operativo,
 /// DocumentFlowPolicy) son fixtures mínimos creados y aislados dentro de este test — nunca seed
 /// global de producción/desarrollo. Nombres/IDs se identifican explícitamente como datos de prueba.
+///
+/// TECH-DEBT-RETENTION-E2E-POSTING-SEED-CLEANUP-01: el Plan de Cuentas y las PostingRule de
+/// "Expenses"/"DocumentConfirmed" y "Retentions"/"DocumentIssued" ya NO son fixture local — se
+/// siembran vía <see cref="AccountingBootstrapStep"/> real (ver <see cref="SeedAccountingChartAsync"/>),
+/// el mismo seed/backfill oficial que corre para toda Company nueva del ERP.
 /// Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
@@ -92,9 +99,6 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
 
     private Guid _subcategoryId;
     private Guid _expenseAccountId;
-    private Guid _vatAccountId;
-    private Guid _payablesAccountId;
-    private Guid _retentionPayableAccountId;
 
     private Guid _emissionPointId;
 
@@ -224,34 +228,23 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         // Deliberadamente NO se siembra un SriRetentionCode para MissingRetentionVatCode — ese es
         // precisamente el gap que el escenario 7 (MissingRetentionCode) necesita.
 
-        // ── Catálogo de gastos: Tipo → Categoría → Subcategoría con cuenta contable ─────
+        // TECH-DEBT-RETENTION-E2E-POSTING-SEED-CLEANUP-01: el Plan de Cuentas canónico (incluidas
+        // las cuentas fijas que "Expenses"/"DocumentConfirmed" y "Retentions"/"DocumentIssued"
+        // referencian — 1.1.05.001/2.1.01.001/2.1.02.002) y las PostingRule correspondientes ya no
+        // son un fixture local: se siembran vía AccountingBootstrapStep real (ver
+        // SeedAccountingChartAsync), el mismo mecanismo que corre para toda Company nueva del ERP.
+        // Solo queda como fixture local la cuenta de gasto operativo (Debe dinámico por
+        // categoría/subcategoría vía PostingFact.Allocations, no representable como PostingRuleLine
+        // fija — mismo criterio documentado en AccountingBootstrapStep/MinimalPostingRules).
         var expenseAccount = Account.Create(
             tenant.Id, company.Id, AccountCode.Create($"5.1.{Guid.NewGuid():N}"[..8]),
             "RETQA Gasto Operativo", null, AccountType.Expense, AccountNature.Debit,
             allowsPosting: true, createdBy: _createdBy
         );
-        var vatAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
-            "RETQA IVA Compras", null, AccountType.Asset, AccountNature.Debit,
-            allowsPosting: true, createdBy: _createdBy
-        );
-        var payablesAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
-            "RETQA CxP Proveedores", null, AccountType.Liability, AccountNature.Credit,
-            allowsPosting: true, createdBy: _createdBy
-        );
-        var retentionPayableAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
-            "RETQA Retencion IVA por Pagar", null, AccountType.Liability, AccountNature.Credit,
-            allowsPosting: true, createdBy: _createdBy
-        );
-        db.Accounts.AddRange(expenseAccount, vatAccount, payablesAccount, retentionPayableAccount);
+        db.Accounts.Add(expenseAccount);
         await db.SaveChangesAsync();
 
         _expenseAccountId = expenseAccount.Id;
-        _vatAccountId = vatAccount.Id;
-        _payablesAccountId = payablesAccount.Id;
-        _retentionPayableAccountId = retentionPayableAccount.Id;
 
         var type = ExpenseCategoryNode.CreateType(tenant.Id, company.Id, "RETQA-TIPO", "RETQA Tipo Gasto", _createdBy);
         db.ExpenseCategoryNodes.Add(type);
@@ -364,26 +357,22 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         return (db, deferred);
     }
 
-    private async Task SeedPostingRulesAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
+    /// <summary>
+    /// TECH-DEBT-RETENTION-E2E-POSTING-SEED-CLEANUP-01 — reemplaza el fixture local que este test
+    /// mantenía para "Expenses"/"DocumentConfirmed" y "Retentions"/"DocumentIssued" (PostingRule +
+    /// AccountingPeriod construidos a mano) por el seed/backfill oficial: el mismo
+    /// <see cref="AccountingBootstrapStep"/> que <c>CompanyBootstrapOrchestrator</c> corre para toda
+    /// Company nueva del ERP, y que <c>AccountingChartBackfillServicePostingRuleTests</c>/
+    /// <c>ExpensesPostingRuleSeedIntegrationTests</c>/<c>RetentionsPostingRuleSeedIntegrationTests</c>
+    /// ya verifican de forma aislada. Siembra el Plan de Cuentas retail completo, un
+    /// AccountingPeriod anual (cubre cualquier fecha del año en curso, incluidas las fechas fijas de
+    /// este archivo) y las 10 MinimalPostingRules — sin fixture de PostingRule/AccountingPeriod
+    /// propio de este test.
+    /// </summary>
+    private async Task SeedAccountingChartAsync(ErpDbContext db)
     {
-        var expenseRule = PostingRule.Create(_tenantId, _companyId, "Expenses", "DocumentConfirmed", null, null, null, _createdBy);
-        expenseRule.AddLine(_vatAccountId, AccountNature.Debit, PostingAmountKind.TaxVat);
-        expenseRule.AddLine(_payablesAccountId, AccountNature.Credit, PostingAmountKind.GrandTotal);
-
-        var retentionRule = PostingRule.Create(_tenantId, _companyId, "Retentions", "DocumentIssued", null, null, null, _createdBy);
-        retentionRule.AddLine(_payablesAccountId, AccountNature.Debit, PostingAmountKind.GrandTotal);
-        retentionRule.AddLine(_retentionPayableAccountId, AccountNature.Credit, PostingAmountKind.GrandTotal);
-
-        var period = AccountingPeriod.Create(
-            _tenantId, _companyId, entryDate.Year, entryDate.Month,
-            new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
-            _createdBy
-        );
-
-        db.PostingRules.AddRange(expenseRule, retentionRule);
-        db.AccountingPeriods.Add(period);
-        await db.SaveChangesAsync();
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
     }
 
     // ── Construcción de gasto Draft (bypassa CreateDraftCommand: fixture directo de dominio) ──
@@ -503,7 +492,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Flujo_feliz_confirma_gasto_con_retencion_neta_CxP_y_asiento_balanceado()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-001");
 
         // Paso 2: elegibilidad sobre el borrador (Draft) — debe dar elegible para IVA.
@@ -586,7 +575,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Bloqueo_empresa_no_retiene_IVA_impide_confirmar_con_retencion()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
 
         // Empresa deja de retener IVA — mutación directa (setter público en Company.cs).
         var company = await db.Companies.FirstAsync(x => x.Id == _companyId);
@@ -615,7 +604,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Bloqueo_proveedor_exento_impide_confirmar_con_retencion()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierExemptId, "RETQA-003");
 
         var eligibility = await BuildEligibilityHandler(db)
@@ -637,7 +626,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Bloqueo_sin_codigo_retencion_activo_impide_confirmar_con_retencion()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierMissingCodeId, "RETQA-004");
 
         var eligibility = await BuildEligibilityHandler(db)
@@ -683,7 +672,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Cancelar_gasto_confirmado_con_retencion_revierte_todo_sin_pagos_aplicados()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-005");
         var confirmResult = await BuildConfirmHandler(db)
             .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
@@ -724,7 +713,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Cancelar_gasto_con_retencion_bloquea_si_la_CxP_ya_tiene_pagos_aplicados()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-006");
         var confirmResult = await BuildConfirmHandler(db)
             .Handle(new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)), CancellationToken.None);
@@ -765,7 +754,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Confirmar_gasto_sin_retencion_sigue_funcionando_igual_que_antes()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "RETQA-007");
 
         var confirmResult = await BuildConfirmHandler(db)
@@ -812,7 +801,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Numero_inicial_configurado_en_850_hace_que_la_retencion_arranque_ahi_y_la_siguiente_incremente()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
 
         // DOCUMENT-SEQUENCES-CONFIG-03: configurar el número inicial ANTES de la primera captura
         // real — mismo mecanismo que expone PUT /api/v1/settings/document-sequences/configure,
@@ -865,7 +854,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         // existente.
         const int n = 10;
         var (seedDb, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(seedDb, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(seedDb);
 
         var expenseIds = new List<Guid>();
         for (var i = 0; i < n; i++)
@@ -900,7 +889,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Retencion_emitida_copia_TaxSupportCode_del_ExpenseDocument_real_contra_Postgres()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(
             db, _supplierNonExemptId, "RETQA-TAXSUP-001", taxSupportCode: "02"
         );
@@ -920,7 +909,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task TaxSupportCode_del_snapshot_no_cambia_si_el_ExpenseDocument_origen_se_edita_despues_de_emitir()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(
             db, _supplierNonExemptId, "RETQA-TAXSUP-002", taxSupportCode: "02"
         );
@@ -959,7 +948,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     public async Task Retencion_sigue_emitiendose_si_el_ExpenseDocument_no_tiene_TaxSupportCode()
     {
         var (db, _) = BuildWiredContext();
-        await SeedPostingRulesAndPeriodAsync(db, new DateOnly(2026, 8, 15));
+        await SeedAccountingChartAsync(db);
         var expenseId = await CreateDraftExpenseAsync(
             db, _supplierNonExemptId, "RETQA-TAXSUP-003", taxSupportCode: null
         );
