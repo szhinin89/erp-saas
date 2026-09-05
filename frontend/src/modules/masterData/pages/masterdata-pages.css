@@ -410,6 +410,15 @@
 /* .prd-quick-btn (+ :last-child / :hover / .material-symbols-outlined)
    ELIMINADOS (Bloque 13B) — sin consumidores. */
 
+/* ── ZH-MASTERDATA-PARTNER-FORM-UX-01 — card único por secciones (sin stepper) ── */
+.md-partner-intro {
+  margin-bottom: var(--space-5);
+}
+
+/* .md-partner-subsection + .md-partner-subsection / --divider ELIMINADOS
+   (ZH-MASTERDATA-PARTNER-FORM-UX-01B) — "Revisar antes de guardar" se quitó y ya no hay
+   más de una subsección por pantalla; sin consumidores TSX. */
+
 /* ── BP "Buscar o Crear" search flow ─────────────────────── */
 .md-search-results {
   list-style: none;

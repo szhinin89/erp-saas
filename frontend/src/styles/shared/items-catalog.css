@@ -378,74 +378,13 @@
   gap: var(--space-6);
 }
 
-/* Progress bar */
-.prd-wiz-progress {
-  display: flex;
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-4) var(--space-6);
-  gap: 0;
-  overflow-x: auto;
-}
-.prd-wiz-step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: none;
-  border: none;
-  cursor: not-allowed;
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  flex-shrink: 0;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-md);
-  transition: color 0.15s;
-}
-.prd-wiz-step:not([disabled]) {
-  cursor: pointer;
-}
-.prd-wiz-step:not([disabled]):hover {
-  color: var(--color-text-primary);
-}
-.prd-wiz-step__num {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--color-surface-container-high);
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-.prd-wiz-step--done .prd-wiz-step__num {
-  background: var(--color-success);
-  color: var(--color-on-primary);
-}
-/* .prd-wiz-step--current ELIMINADO (Bloque 12B) — sin consumidores (TSX solo aplica --active/--done). */
-.prd-wiz-step--done {
-  color: var(--color-text-primary);
-  cursor: pointer;
-}
-
-/* .prd-wiz-step__line ELIMINADO (Bloque 12B) — sin consumidores. */
-.prd-wiz-step__label {
-  white-space: nowrap;
-}
+/* .prd-wiz-progress / .prd-wiz-step* ELIMINADOS (ZH-MASTERDATA-PARTNER-FORM-UX-01) — stepper
+   numerado retirado a favor de un card único por secciones; sin consumidores TSX. */
 
 /* Panel */
 /* .prd-wiz-body ELIMINADO (Bloque 12B) — sin consumidores. */
-.prd-wiz-panel {
-  padding: var(--space-6);
-}
+/* .prd-wiz-panel ELIMINADO (ZH-MASTERDATA-PARTNER-FORM-UX-01) — el padding ahora lo da
+   .pg-section-body; sin consumidores TSX. */
 /* .prd-wiz-panel__head / .prd-wiz-panel__icon* ELIMINADOS (Bloque 12B) — sin consumidores. */
 .prd-wiz-panel__title {
   font-size: 15px;

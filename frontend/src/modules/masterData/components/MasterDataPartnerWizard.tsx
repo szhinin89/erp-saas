@@ -1,12 +1,18 @@
 /**
- * MasterDataPartnerWizard V2 — 3-step flow.
+ * MasterDataPartnerWizard V5 — pantalla única por secciones (ZH-MASTERDATA-PARTNER-FORM-UX-01/01B).
  *
- * STEPS: 1=Search, 2=Identity, 3=Review
- * ELIMINADO: step 4 (Contact/email/phone) — los contactos van en BusinessPartnerContact (POST /contacts).
+ * ETAPAS (sin stepper visual): 1=Buscar, 2=Identificación (única sección de datos).
+ * ELIMINADO (01): stepper numerado de 3 pasos — reemplazado por un solo card con secciones.
+ * ELIMINADO (01B): sección "Revisar antes de guardar" — al no haber wizard por pasos,
+ * repetía los datos recién ingresados en `MasterDataBpFormFields section="identity"` sin
+ * aportar valor (solo aumentaba scroll y confundía). El aviso informativo final ("Al guardar
+ * quedará disponible como {rol}") se conserva, ahora al pie de la sección de identificación.
+ * ELIMINADO (V2): step "Contact" (email/phone) — los contactos van en BusinessPartnerContact
+ * (POST /contacts), no en este formulario.
  *
  * V2 changes:
  *   - alreadyHasRole: simplificado — el backend devuelve 422 si el rol ya está activo.
- *   - legalEntityTypeCode: nuevo campo obligatorio en step 2.
+ *   - legalEntityTypeCode: campo obligatorio en la sección de identificación.
  *   - Sin email/phone/legalRepresentativeName.
  *   - onSubmitCreate: ya no incluye asCustomer/asSupplier — role se asigna por separado.
  *
@@ -34,7 +40,8 @@ import type {
 import { MasterDataBpFormFields } from "./MasterDataBpFormFields";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 
-type StepId = 1 | 2 | 3;
+/** 1 = Buscar y asignar; 2 = Identificación + Configuración comercial + Revisar (un solo tramo). */
+type StepId = 1 | 2;
 type Role = "customer" | "supplier";
 
 /** Solo aplica cuando role='supplier' — ver SupplierRoleConfig (backend). */
@@ -61,9 +68,8 @@ interface Props {
   editingPartner: BusinessPartnerSummaryDto | null;
   initialValues?: PartnerWizardInitialValues;
   /** Modo embebido en un modal ajeno a MasterData (p. ej. "Crear proveedor" desde Recepción
-   * electrónica): oculta el stepper de pasos y "Guardar borrador" — ese chrome multi-sesión no
-   * aporta en un formulario de una sola pasada con datos ya precargados, y el stepper deshabilitado
-   * (pasos futuros en gris, sin poder hacer clic) se lee como botones rotos en un modal chico.
+   * electrónica): oculta "Guardar borrador" — ese chrome multi-sesión no aporta en un formulario
+   * de una sola pasada con datos ya precargados en un modal chico.
    * El wizard normal de MasterData (`MasterDataSuppliersPage`/`MasterDataCustomersPage`) no pasa
    * esta prop y sigue exactamente igual. */
   embedded?: boolean;
@@ -76,12 +82,6 @@ interface Props {
   onCancel: () => void;
   onAssignSuccess?: () => void;
 }
-
-const STEPS = [
-  { id: 1 as StepId, icon: "search", labelFb: "Buscar y asignar" },
-  { id: 2 as StepId, icon: "badge", labelFb: "Identificación" },
-  { id: 3 as StepId, icon: "check_circle", labelFb: "Revisar y guardar" },
-];
 
 interface DraftSnapshot {
   identificationNumber: string;
@@ -146,6 +146,7 @@ export function MasterDataPartnerWizard({
   const queryRef = useRef<HTMLInputElement>(null);
 
   const roleLabel = role === "customer" ? "Cliente" : "Proveedor";
+  const roleLabelLower = role === "customer" ? "cliente" : "proveedor";
 
   const form = useForm<BusinessPartnerFormValues>({
     resolver: zodResolver(businessPartnerSchema(role)),
@@ -225,15 +226,13 @@ export function MasterDataPartnerWizard({
     }
   };
 
-  const goNext = async () => {
-    if (step === 2) {
-      const valid = await form.trigger();
-      if (!valid) return;
-    }
-    if (step < 3) setStep((step + 1) as StepId);
+  /** Avanza de "Buscar" a "Identificación + Revisar" — no valida (la validación real ocurre en
+   * el submit, ya que ambas secciones viven en la misma pantalla). */
+  const goNext = () => {
+    if (step === 1) setStep(2);
   };
   const goPrev = () => {
-    if (step > 1) setStep((step - 1) as StepId);
+    if (step === 2) setStep(1);
   };
 
   const buildCreateBody = (): CreateBusinessPartnerBody => {
@@ -293,315 +292,312 @@ export function MasterDataPartnerWizard({
   return (
     <FormProvider {...form}>
       <div className="prd-wizard prd-fadein">
-        {/* Progress — oculto en modo embebido (ver doc de `embedded` en Props): con solo 2 de los 3
-            pasos visibles (skipStep1), el paso actual queda deshabilitado (todavía no "done") y el
-            siguiente aparece en gris sin poder hacer clic — en un modal chico se lee como botones
-            rotos. El título de cada panel (`h3.prd-wiz-panel__title`) ya comunica en qué paso está. */}
-        {!embedded && (
-          <div className="prd-wiz-progress">
-            {STEPS.map((s) => {
-              if (skipStep1 && s.id === 1) return null;
-              const done = s.id < step;
-              const active = s.id === step;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`prd-wiz-step ${active ? "prd-wiz-step--active" : ""} ${done ? "prd-wiz-step--done" : ""}`}
-                  disabled={!done}
-                  onClick={() => done && setStep(s.id)}
-                >
-                  <span className="prd-wiz-step__num">
-                    {done ? (
-                      <span className="material-symbols-outlined zh-icon-md">
-                        check
-                      </span>
-                    ) : (
-                      s.id
-                    )}
-                  </span>
-                  <span className="material-symbols-outlined prd-wiz-step__icon">
-                    {s.icon}
-                  </span>
-                  <span className="prd-wiz-step__label">{s.labelFb}</span>
-                </button>
-              );
-            })}
+        {/* Card único con secciones (sin stepper) — ver B/C/D/E de ZH-MASTERDATA-PARTNER-FORM-UX-01. */}
+        <div className="pg-section">
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">
+                {role === "customer" ? "group" : "local_shipping"}
+              </span>
+              <span className="pg-section-label">
+                {isEdit ? `Editar ${roleLabel}` : `Nuevo ${roleLabel}`}
+              </span>
+            </div>
           </div>
-        )}
+          <div className="pg-section-body">
+            <p className="prd-wiz-panel__desc md-partner-intro">
+              {role === "customer"
+                ? t(
+                    "masterdata.wizard.intro.customer",
+                    "Crea o asigna una persona o empresa para ventas, facturación y cuentas por cobrar.",
+                  )
+                : t(
+                    "masterdata.wizard.intro.supplier",
+                    "Crea o asigna una persona o empresa para compras, gastos, retenciones y cuentas por pagar.",
+                  )}
+            </p>
 
-        {draftBanner && !isEdit && (
-          <div className="prd-draft-banner">
-            <span>
-              Borrador guardado:{" "}
-              <strong>
-                {draftBanner.legalName || draftBanner.identificationNumber}
-              </strong>
-            </span>
-            <ZHBtn
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const d = loadDraft(draftKey);
-                if (d) {
-                  form.setValue(
-                    "identificationNumber",
-                    d.identificationNumber,
-                    { shouldValidate: false },
-                  );
-                  form.setValue("legalName", d.legalName, {
-                    shouldValidate: false,
-                  });
-                  setDraftBanner(null);
-                  setStep(2);
-                }
-              }}
-            >
-              Restaurar
-            </ZHBtn>
-            <ZHBtn
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                clearDraft(draftKey);
-                setDraftBanner(null);
-              }}
-            >
-              Descartar
-            </ZHBtn>
-          </div>
-        )}
-
-        {bannerError && (
-          <div className="prd-wiz-error-banner" role="alert">
-            <span className="material-symbols-outlined">error</span>{" "}
-            {bannerError}
-          </div>
-        )}
-
-        <form
-          className="prd-wiz-form"
-          onSubmit={form.handleSubmit(onValidSubmit)}
-        >
-          {/* ── Step 1: Search ───────────────────────────────────────── */}
-          {step === 1 && !skipStep1 && (
-            <div className="prd-wiz-panel">
-              <h3 className="prd-wiz-panel__title">
-                ¿Ya existe en el sistema?
-              </h3>
-              <p className="prd-wiz-panel__desc">
-                Busca primero para evitar duplicados. Si ya existe, lo asignamos
-                como {roleLabel} directamente.
-              </p>
-              <div className="prd-search-box zh-mb-16">
-                <span className="material-symbols-outlined prd-search-icon">
-                  search
+            {draftBanner && !isEdit && (
+              <div className="prd-draft-banner">
+                <span>
+                  Borrador guardado:{" "}
+                  <strong>
+                    {draftBanner.legalName || draftBanner.identificationNumber}
+                  </strong>
                 </span>
-                <input
-                  ref={queryRef}
-                  className="prd-search-input"
-                  placeholder="RUC, cédula o razón social…"
-                  value={query}
-                  autoFocus
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void handleSearch();
+                <ZHBtn
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const d = loadDraft(draftKey);
+                    if (d) {
+                      form.setValue(
+                        "identificationNumber",
+                        d.identificationNumber,
+                        { shouldValidate: false },
+                      );
+                      form.setValue("legalName", d.legalName, {
+                        shouldValidate: false,
+                      });
+                      setDraftBanner(null);
+                      setStep(2);
                     }
                   }}
-                  disabled={searching}
-                />
+                >
+                  Restaurar
+                </ZHBtn>
                 <ZHBtn
                   type="button"
-                  variant="primary"
-                  size="md"
-                  disabled={searching || !query.trim()}
-                  onClick={() => void handleSearch()}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    clearDraft(draftKey);
+                    setDraftBanner(null);
+                  }}
                 >
-                  {searching ? "Buscando…" : "Buscar"}
+                  Descartar
                 </ZHBtn>
               </div>
-              {searchError && (
-                <span className="prd-wiz-error-msg">{searchError}</span>
-              )}
-              {hasSearched && results.length > 0 && (
-                <ul className="md-search-results">
-                  {results.map((bp) => {
-                    const busy = assigning === bp.id || submitting;
-                    return (
-                      <li key={bp.id} className="md-search-result-item">
-                        <div className="md-search-result-info">
-                          <span className="md-search-result-name">
-                            {bp.legalName}
-                          </span>
-                          <span className="md-search-result-id mono">
-                            {bp.identificationNumber}
-                          </span>
-                        </div>
-                        <ZHBtn
-                          type="button"
-                          variant="primary"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => void handleAssign(bp)}
-                        >
-                          {busy ? "Asignando…" : `+ ${roleLabel}`}
-                        </ZHBtn>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* ── Step 2: Identity ─────────────────────────────────────── */}
-          {step === 2 && (
-            <div className="prd-wiz-panel">
-              {notFound && !isEdit && (
-                <div className="prd-wiz-notfound-banner" role="status">
-                  <span className="material-symbols-outlined">search_off</span>
-                  <span>
-                    No se encontró <strong>"{notFound}"</strong> — completa los
-                    datos para crear nuevo {roleLabel}.
-                  </span>
+            {bannerError && (
+              <div className="prd-wiz-error-banner" role="alert">
+                <span className="material-symbols-outlined">error</span>{" "}
+                {bannerError}
+              </div>
+            )}
+
+            <form
+              className="prd-wiz-form"
+              onSubmit={form.handleSubmit(onValidSubmit)}
+            >
+              {/* ── Sección: ¿Ya existe en el sistema? (búsqueda) ─────────── */}
+              {step === 1 && !skipStep1 && (
+                <div className="md-partner-subsection">
+                  <h3 className="prd-wiz-panel__title">
+                    {t(
+                      "masterdata.wizard.search.title",
+                      "¿Ya existe en el sistema?",
+                    )}
+                  </h3>
+                  <p className="prd-wiz-panel__desc">
+                    Busca por RUC, cédula o razón social para evitar
+                    duplicados.
+                  </p>
+                  <div className="prd-search-box zh-mb-16">
+                    <span className="material-symbols-outlined prd-search-icon">
+                      search
+                    </span>
+                    <input
+                      ref={queryRef}
+                      className="prd-search-input"
+                      placeholder="RUC, cédula o razón social…"
+                      value={query}
+                      autoFocus
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleSearch();
+                        }
+                      }}
+                      disabled={searching}
+                    />
+                    <ZHBtn
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      disabled={searching || !query.trim()}
+                      onClick={() => void handleSearch()}
+                    >
+                      {searching ? "Buscando…" : "Buscar"}
+                    </ZHBtn>
+                  </div>
+                  {searchError && (
+                    <span className="prd-wiz-error-msg">{searchError}</span>
+                  )}
+                  {hasSearched && results.length > 0 && (
+                    <ul className="md-search-results">
+                      {results.map((bp) => {
+                        const busy = assigning === bp.id || submitting;
+                        return (
+                          <li key={bp.id} className="md-search-result-item">
+                            <div className="md-search-result-info">
+                              <span className="md-search-result-name">
+                                {bp.legalName}
+                              </span>
+                              <span className="md-search-result-id mono">
+                                {bp.identificationNumber}
+                              </span>
+                            </div>
+                            <ZHBtn
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              disabled={busy}
+                              onClick={() => void handleAssign(bp)}
+                            >
+                              {busy ? "Asignando…" : `+ ${roleLabel}`}
+                            </ZHBtn>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
               )}
-              <h3 className="prd-wiz-panel__title">
-                {isEdit ? "Editar identidad" : `Nuevo ${roleLabel}`}
-              </h3>
-              <p className="prd-wiz-panel__desc">
-                Email, teléfono y representante legal se agregan desde el
-                detalle del BP (pestaña Contactos).
-              </p>
-              <MasterDataBpFormFields
-                section="identity"
-                saving={submitting}
-                usage={role}
-              />
-            </div>
-          )}
 
-          {/* ── Step 3: Review ───────────────────────────────────────── */}
-          {step === 3 && (
-            <div className="prd-wiz-panel">
-              <h3 className="prd-wiz-panel__title">Revisar antes de guardar</h3>
-              <MasterDataBpFormFields
-                section="review"
-                saving={submitting}
-                usage={role}
-              />
-              <div className="prd-review-warning" role="note">
-                <span className="material-symbols-outlined zh-icon-lg">
-                  info
-                </span>
-                <span>
-                  Tras crear el BP, asignaremos el rol{" "}
-                  <strong>{roleLabel}</strong> automáticamente.
-                </span>
-              </div>
-            </div>
-          )}
+              {/* ── Sección: Identificación/Config. comercial (sin resumen repetido — ver
+                  ZH-MASTERDATA-PARTNER-FORM-UX-01B: "Revisar antes de guardar" duplicaba
+                  los datos recién ingresados sin aportar valor, ya que no hay wizard por
+                  pasos que justifique una revisión aparte). ── */}
+              {step === 2 && (
+                <div className="md-partner-subsection">
+                  {notFound && !isEdit && (
+                    <div className="prd-wiz-notfound-banner" role="status">
+                      <span className="material-symbols-outlined">
+                        search_off
+                      </span>
+                      <span>
+                        No se encontró <strong>"{notFound}"</strong> —
+                        completa los datos para registrar un nuevo{" "}
+                        {roleLabelLower}.
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="prd-wiz-panel__title">
+                    {isEdit
+                      ? "Editar datos principales"
+                      : `Datos principales del ${roleLabelLower}`}
+                  </h3>
+                  <p className="prd-wiz-panel__desc">
+                    Después de guardar podrás completar contactos, teléfonos y
+                    direcciones desde la ficha.
+                  </p>
+                  <MasterDataBpFormFields
+                    section="identity"
+                    saving={submitting}
+                    usage={role}
+                  />
+                  <div className="prd-review-warning" role="note">
+                    <span className="material-symbols-outlined zh-icon-lg">
+                      info
+                    </span>
+                    <span>
+                      Al guardar quedará disponible como{" "}
+                      <strong>{roleLabelLower}</strong>.
+                    </span>
+                  </div>
+                </div>
+              )}
 
-          {/* ── Footer ───────────────────────────────────────────────── */}
-          <div className="prd-wiz-footer">
-            <div className="prd-wiz-footer__left">
-              {((!skipStep1 && step > 1) || (skipStep1 && step > 2)) && (
-                <ZHBtn type="button" variant="ghost" size="md" onClick={goPrev}>
-                  <span className="material-symbols-outlined zh-icon-md">
-                    arrow_back
-                  </span>
-                  Anterior
-                </ZHBtn>
-              )}
-            </div>
-            <div className="prd-wiz-footer__right">
-              {(isEdit || step > 1) && (
-                <ZHBtn
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  onClick={onCancel}
-                >
-                  Cancelar
-                </ZHBtn>
-              )}
-              {!isEdit && step === 1 && (
-                <ZHBtn
-                  type="button"
-                  variant="secondary"
-                  size="md"
-                  onClick={() => {
-                    prefill(query);
-                    setStep(2);
-                  }}
-                >
-                  + Crear sin buscar
-                </ZHBtn>
-              )}
-              {step === 2 && !embedded && (
-                <ZHBtn
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  onClick={() => {
-                    const v = form.getValues();
-                    saveDraft(draftKey, v.identificationNumber, v.legalName);
-                    setDraftBanner(loadDraft(draftKey));
-                  }}
-                >
-                  <span className="material-symbols-outlined zh-icon-md">
-                    save
-                  </span>{" "}
-                  Guardar borrador
-                </ZHBtn>
-              )}
-              {step < 3 ? (
-                <ZHBtn
-                  type="button"
-                  variant="primary"
-                  size="md"
-                  onClick={() => void goNext()}
-                  disabled={step === 1 && !hasSearched && !notFound}
-                >
-                  {embedded ? (
-                    t("masterdata.wizard.btn.reviewAndCreate", "Revisar y crear")
-                  ) : (
-                    <>
-                      Siguiente{" "}
+              {/* ── Footer ───────────────────────────────────────────────── */}
+              <div className="prd-wiz-footer">
+                <div className="prd-wiz-footer__left">
+                  {!skipStep1 && step === 2 && (
+                    <ZHBtn
+                      type="button"
+                      variant="ghost"
+                      size="md"
+                      onClick={goPrev}
+                    >
+                      <span className="material-symbols-outlined zh-icon-md">
+                        arrow_back
+                      </span>
+                      {t("masterdata.wizard.btn.prev", "Anterior")}
+                    </ZHBtn>
+                  )}
+                </div>
+                <div className="prd-wiz-footer__right">
+                  {(isEdit || step === 2) && (
+                    <ZHBtn
+                      type="button"
+                      variant="ghost"
+                      size="md"
+                      onClick={onCancel}
+                    >
+                      Cancelar
+                    </ZHBtn>
+                  )}
+                  {!isEdit && step === 1 && (
+                    <ZHBtn
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      onClick={() => {
+                        prefill(query);
+                        setStep(2);
+                      }}
+                    >
+                      {t("masterdata.wizard.search.skip", "+ Crear sin buscar")}
+                    </ZHBtn>
+                  )}
+                  {step === 2 && !embedded && (
+                    <ZHBtn
+                      type="button"
+                      variant="ghost"
+                      size="md"
+                      onClick={() => {
+                        const v = form.getValues();
+                        saveDraft(
+                          draftKey,
+                          v.identificationNumber,
+                          v.legalName,
+                        );
+                        setDraftBanner(loadDraft(draftKey));
+                      }}
+                    >
+                      <span className="material-symbols-outlined zh-icon-md">
+                        save
+                      </span>{" "}
+                      Guardar borrador
+                    </ZHBtn>
+                  )}
+                  {step === 1 ? (
+                    <ZHBtn
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      onClick={goNext}
+                      disabled={!hasSearched && !notFound}
+                    >
+                      Continuar{" "}
                       <span className="material-symbols-outlined zh-icon-md">
                         arrow_forward
                       </span>
-                    </>
-                  )}
-                </ZHBtn>
-              ) : (
-                <ZHBtn
-                  type="submit"
-                  variant="success"
-                  size="md"
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <>
-                      <span className="prd-spinner" aria-hidden /> Guardando…
-                    </>
+                    </ZHBtn>
                   ) : (
-                    <>
-                      <span className="material-symbols-outlined zh-icon-md">
-                        check
-                      </span>
-                      {isEdit ? "Guardar cambios" : `Crear ${roleLabel}`}
-                    </>
+                    <ZHBtn
+                      type="submit"
+                      variant="success"
+                      size="md"
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <>
+                          <span className="prd-spinner" aria-hidden />{" "}
+                          {t("masterdata.wizard.btn.saving", "Guardando…")}
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined zh-icon-md">
+                            check
+                          </span>
+                          {isEdit
+                            ? t("masterdata.wizard.btn.update", "Guardar cambios")
+                            : t("masterdata.wizard.btn.create", {
+                                role: roleLabel,
+                              })}
+                        </>
+                      )}
+                    </ZHBtn>
                   )}
-                </ZHBtn>
-              )}
-            </div>
+                </div>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
     </FormProvider>
   );
