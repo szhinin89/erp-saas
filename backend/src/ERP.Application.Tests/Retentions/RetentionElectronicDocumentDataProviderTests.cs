@@ -202,6 +202,64 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         return retention;
     }
 
+    /// <summary>
+    /// PURCHASES-RETENTIONS-UI-MIGRATION-05C — mismo builder que <see cref="BuildIssuedRetention"/>
+    /// pero con <see cref="RetentionSourceDocumentType.PurchaseInvoice"/>, para probar que el
+    /// provider (y por lo tanto los endpoints de XML/RIDE/registro electrónico de
+    /// <c>RetentionsController</c>, que solo llaman a <c>GetDataAsync</c> por Id) no distinguen
+    /// origen — confirmado por diseño en PURCHASES-WITHHOLDING-RETENTIONS-AUDIT-05A.
+    /// </summary>
+    private static RetentionDocument BuildIssuedRetentionForPurchase()
+    {
+        var purchaseInvoiceId = Guid.NewGuid();
+        var retention = RetentionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.PurchaseInvoice,
+            purchaseInvoiceId,
+            SupplierId,
+            EmissionPointId,
+            UserId,
+            new RetentionDocument.SourceDocumentSnapshot(
+                SriTypeCode: "01",
+                DocumentNumber: "001-001-000000123",
+                IssueDate: new DateOnly(2026, 8, 27),
+                AuthorizationNumber: null,
+                TaxSupportCode: null,
+                Subtotal: 100m,
+                Total: 115m
+            )
+        );
+        retention.AddLine(
+            RetentionDocumentLine.Create(
+                retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 30% bienes",
+                100m, 30m, 30m
+            )
+        );
+        retention.Issue("001-001-000000005", new DateOnly(2026, 9, 3), UserId);
+        return retention;
+    }
+
+    // ── PURCHASES-RETENTIONS-UI-MIGRATION-05C: origen PurchaseInvoice ─────────────────────────
+
+    [Fact]
+    public async Task GetDataAsync_construye_el_modelo_igual_para_una_retencion_originada_en_PurchaseInvoice()
+    {
+        var retention = BuildIssuedRetentionForPurchase();
+        var m = new Mocks();
+        m.SeedHappyPath(retention);
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, retention.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Metadata.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
+        result.Value.Metadata.SourceDocumentId.Should().Be(retention.SourceDocumentId);
+        result.Value.NumeroCompleto.Should().Be("001-001-000000005");
+        result.Value.Emission.DocTypeCode.Should().Be("07");
+    }
+
     // ── 1/2/3/4: construcción del modelo, número completo, codDoc, período fiscal ────────────
 
     [Fact]

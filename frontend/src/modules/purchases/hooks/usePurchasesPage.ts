@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type {
@@ -6,10 +7,16 @@ import type {
   PurchaseInvoiceDto,
   PurchaseListItemDto,
   RetentionPreviewDto,
-  IssuedWithholdingDto,
   PurchaseCostDistributionType,
 } from "../api/purchaseService";
 import { purchaseService } from "../api/purchaseService";
+import {
+  retentionsService,
+  type RetentionDocumentDto,
+  type IssueRetentionLineRequest,
+} from "../../retentions/api/retentionsService";
+import { downloadBlob } from "../../ride/utils/downloadBlob";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
   purchaseReceptionService,
   type PurchaseDraftDto,
@@ -163,18 +170,26 @@ export function usePurchasesPage() {
   const [ptRows, setPtRows] = useState<ScheduleRow[]>([]);
   const [ptLoaded, setPtLoaded] = useState(false);
 
-  // ── Withholding ────────────────────────────────────────────────────
+  // ── Retención (PURCHASES-RETENTIONS-UI-MIGRATION-05C: RetentionDocument transversal,
+  // ya no IssuedWithholding — el preview de cálculo (whPreview) sigue viniendo de
+  // purchaseService.retentionPreview, sin cambios: es una calculadora pura reutilizada por ambos
+  // flujos, nunca persiste IssuedWithholding) ──────────────────────────────
   const [whPreview, setWhPreview] = useState<RetentionPreviewDto | null>(null);
-  const [withholding, setWithholding] = useState<IssuedWithholdingDto | null>(
+  const [retention, setRetention] = useState<RetentionDocumentDto | null>(
     null,
   );
   const [whLoading, setWhLoading] = useState(false);
+  const [electronicPending, setElectronicPending] = useState(false);
+  const { canShow } = usePermissionsUi();
+  const canRegisterElectronic = canShow("electronic-documents.retry");
 
   // ── Modals ─────────────────────────────────────────────────────────
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalDiscount, setModalDiscount] = useState(false);
   const [modalCancelReason, setModalCancelReason] = useState(false);
-  const [modalWhCancel, setModalWhCancel] = useState(false);
+  // PURCHASES-RETENTIONS-UI-MIGRATION-05C: la anulación de RetentionDocument todavía no está
+  // soportada para PurchaseInvoice (RetentionCanceller sigue hardcodeado a ExpenseDocument, ver
+  // PURCHASES-RETENTIONS-BRIDGE-05B) — no se expone ningún modal/acción de anular desde aquí.
   const [modalWhIssue, setModalWhIssue] = useState(false);
   // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
   const [modalDistributeCost, setModalDistributeCost] = useState(false);
@@ -1030,7 +1045,7 @@ export function usePurchasesPage() {
     setLineKey(1);
     setSupplierProfile(null);
     setWhPreview(null);
-    setWithholding(null);
+    setRetention(null);
     setPtInstallments(1);
     setPtDaysBetween(0);
     setPtRows([]);
@@ -1154,11 +1169,11 @@ export function usePurchasesPage() {
         setShowElectronic(!!(inv.accessKey || inv.authorizationNumber));
         setShowNotes(!!inv.notes);
         setWhPreview(null);
-        setWithholding(null);
+        setRetention(null);
         if (inv.status === "Confirmed") {
           try {
-            const wh = await purchaseService.getWithholding(inv.id);
-            setWithholding(wh);
+            const ret = await retentionsService.getForPurchase(inv.id);
+            setRetention(ret);
           } catch {
             /* */
           }
@@ -1289,7 +1304,7 @@ export function usePurchasesPage() {
         setPtRows([]);
         setPtLoaded(false);
         setWhPreview(null);
-        setWithholding(null);
+        setRetention(null);
         setTab("nuevo");
       } catch (err) {
         const backendMessage = readApiErrorMessage(err);
@@ -1670,7 +1685,7 @@ export function usePurchasesPage() {
     [getValues, setValue, t],
   );
 
-  // ── Withholding ────────────────────────────────────────────────────
+  // ── Retención (PURCHASES-RETENTIONS-UI-MIGRATION-05C) ───────────────
   const handleCalcRetention = useCallback(async () => {
     if (!editing) return;
     setWhLoading(true);
@@ -1684,62 +1699,118 @@ export function usePurchasesPage() {
     setWhLoading(false);
   }, [editing, showSaveError, t]);
 
-  const handleIssueWithholding = useCallback(
+  /** "IVA"/"RENTA" (RetentionCalculator, backend legacy) → "Vat"/"Income" (RetentionTaxType). */
+  function toRetentionTaxType(taxType: string): "Vat" | "Income" {
+    return taxType === "IVA" ? "Vat" : "Income";
+  }
+
+  const handleIssueRetention = useCallback(
     async (epId: string) => {
       setModalWhIssue(false);
-      if (!editing || whLoading) return;
+      if (!editing || whLoading || !whPreview) return;
       // todayIso() usa hora local del dispositivo, no UTC — evita el desfase que
       // causaba fecha futura y rechazo SRI [65] FECHA EMISIÓN EXTEMPORÁNEA.
       const date = todayIso();
+      // El backend (IssueRetentionCommand) no calcula por su cuenta — a diferencia del legacy
+      // IssueWithholdingCommand, necesita las líneas ya resueltas. Se reutiliza el mismo preview
+      // (RetentionCalculator, sin cambios) ya mostrado al usuario antes de confirmar.
+      const lines: IssueRetentionLineRequest[] = whPreview.lines
+        .filter((l) => l.amountRetained > 0)
+        .map((l) => ({
+          taxType: toRetentionTaxType(l.taxType),
+          retentionCode: l.retentionCode,
+          baseAmount: l.taxableBase,
+          retentionRate: l.retentionPct,
+          retainedAmount: l.amountRetained,
+          retentionCodeDescription: l.retentionCodeName,
+        }));
+      if (lines.length === 0) return;
       setWhLoading(true);
       try {
-        const wh = await purchaseService.issueWithholding(
-          editing.id,
-          epId,
-          date,
-        );
-        setWithholding(wh);
+        const ret = await retentionsService.issueForPurchase(editing.id, {
+          emissionPointId: epId,
+          issueDate: date,
+          lines,
+        });
+        setRetention(ret);
         setWhPreview(null);
         message.success(
           t("purchases.messages.withholdingIssued", "Retención emitida correctamente."),
         );
       } catch (err: unknown) {
-        showSaveError(
-          formatApiRequestError(err, {
-            generic: t("purchases.errors.withholdingIssueFailed", "Error al emitir retención."),
-          }),
-        );
+        if (axios.isAxiosError(err) && err.response?.status === 409) {
+          const backendMessage = readApiErrorMessage(err) ?? "";
+          showSaveError(
+            backendMessage.includes("IssuedWithholding")
+              ? t(
+                  "purchases.errors.retentionLegacyActive",
+                  "Esta compra ya tiene una retención legacy activa. No se puede emitir otra retención.",
+                )
+              : t(
+                  "purchases.errors.retentionAlreadyIssued",
+                  "Esta compra ya tiene una retención emitida.",
+                ),
+          );
+        } else {
+          showSaveError(
+            formatApiRequestError(err, {
+              generic: t("purchases.errors.withholdingIssueFailed", "Error al emitir retención."),
+            }),
+          );
+        }
       }
       setWhLoading(false);
     },
-    [editing, whLoading, showSaveError, t],
+    [editing, whLoading, whPreview, showSaveError, t],
   );
 
-  const handleCancelWithholding = useCallback(
-    async (reason: string) => {
-      setModalWhCancel(false);
-      if (!withholding) return;
-      setWhLoading(true);
-      try {
-        const wh = await purchaseService.cancelWithholding(
-          withholding.id,
-          reason,
-        );
-        setWithholding(wh);
-        message.success(
-          t("purchases.messages.withholdingCancelled", "Retención anulada correctamente."),
-        );
-      } catch (err: unknown) {
-        const e = err as ApiErrorLike;
-        showSaveError(
-          e?.response?.data?.message?.user ??
-            t("purchases.errors.withholdingCancelFailed", "Error al anular retención."),
-        );
-      }
-      setWhLoading(false);
-    },
-    [withholding, showSaveError, t],
-  );
+  // ── Documento electrónico de la retención (XML/RIDE preview, registro manual) ────
+  // PURCHASES-RETENTIONS-UI-MIGRATION-05C — nunca se genera/registra automáticamente al emitir;
+  // son acciones explícitas del usuario sobre una retención ya Issued (mismos endpoints que ya usa
+  // Gastos, RetentionsController — sin duplicar lógica ni crear pantalla propia de Retenciones).
+  const handleViewRetentionXml = useCallback(async () => {
+    if (!retention) return;
+    setElectronicPending(true);
+    try {
+      const blob = await retentionsService.getElectronicXmlBlob(retention.id);
+      downloadBlob(blob, `retencion-${retention.retentionNumber ?? retention.id}.xml`);
+    } catch (err: unknown) {
+      showSaveError(
+        formatApiRequestError(err, { generic: "No se pudo obtener el XML de la retención." }),
+      );
+    }
+    setElectronicPending(false);
+  }, [retention, showSaveError]);
+
+  const handleViewRetentionRidePdf = useCallback(async () => {
+    if (!retention) return;
+    setElectronicPending(true);
+    try {
+      const blob = await retentionsService.getRidePdfBlob(retention.id);
+      downloadBlob(blob, `retencion-${retention.retentionNumber ?? retention.id}.pdf`);
+    } catch (err: unknown) {
+      showSaveError(
+        formatApiRequestError(err, { generic: "No se pudo obtener el PDF (RIDE) de la retención." }),
+      );
+    }
+    setElectronicPending(false);
+  }, [retention, showSaveError]);
+
+  const handleRegisterRetentionElectronic = useCallback(async () => {
+    if (!retention || !canRegisterElectronic) return;
+    setElectronicPending(true);
+    try {
+      await retentionsService.registerElectronic(retention.id);
+      message.success("Registro electrónico enviado correctamente.");
+    } catch (err: unknown) {
+      showSaveError(
+        formatApiRequestError(err, {
+          generic: "No se pudo registrar electrónicamente la retención.",
+        }),
+      );
+    }
+    setElectronicPending(false);
+  }, [retention, canRegisterElectronic, showSaveError]);
 
   // ── Schedule operations ────────────────────────────────────────────
   const regenerateSchedule = useCallback(() => {
@@ -1927,13 +1998,17 @@ export function usePurchasesPage() {
     updateScheduleRow,
     handlePaymentTermChange,
 
-    // Withholding
+    // Retención (RetentionDocument transversal — PURCHASES-RETENTIONS-UI-MIGRATION-05C)
     whPreview,
-    withholding,
+    retention,
     whLoading,
     handleCalcRetention,
-    handleIssueWithholding,
-    handleCancelWithholding,
+    handleIssueRetention,
+    electronicPending,
+    canRegisterElectronic,
+    handleViewRetentionXml,
+    handleViewRetentionRidePdf,
+    handleRegisterRetentionElectronic,
 
     // Actions
     fetchList,
@@ -1956,8 +2031,6 @@ export function usePurchasesPage() {
     setModalDiscount,
     modalCancelReason,
     setModalCancelReason,
-    modalWhCancel,
-    setModalWhCancel,
     modalWhIssue,
     setModalWhIssue,
     modalDistributeCost,

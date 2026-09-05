@@ -6,6 +6,8 @@ using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Interfaces;
+using ERP.Domain.Modules.Payables.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Events;
@@ -36,6 +38,7 @@ public sealed class IssueRetentionHandlerTests
     private static readonly Guid EmissionPointId = Guid.NewGuid();
     private static readonly Guid ExpenseSubcategoryId = Guid.NewGuid();
     private static readonly Guid ExpenseAccountId = Guid.NewGuid();
+    private static readonly Guid PurchasePaymentTermId = Guid.NewGuid();
 
     private static readonly RetentionEligibilityResult FullyEligible = new(
         CanRetainVat: true,
@@ -294,34 +297,7 @@ public sealed class IssueRetentionHandlerTests
         result.Errors.Should().Contain(e => e.PropertyName == nameof(IssueRetentionCommand.SourceDocumentType));
     }
 
-    // ── 4/5) PurchaseInvoice/Manual: no soportado ───────────────────────
-
-    [Fact]
-    public async Task Rechaza_PurchaseInvoice_con_no_soportado_distinguible_de_no_elegible()
-    {
-        var fx = new Fixture();
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                Guid.NewGuid(),
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("NotSupportedInThisPhase");
-        fx.EligibilityService.Verify(
-            s => s.EvaluateAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
-            ),
-            Times.Never
-        );
-    }
+    // ── 4/5) Manual: no soportado ────────────────────────────────────────
 
     [Fact]
     public async Task Rechaza_Manual_con_no_soportado()
@@ -341,6 +317,370 @@ public sealed class IssueRetentionHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("NotSupportedInThisPhase");
+    }
+
+    // ── PURCHASES-RETENTIONS-BRIDGE-05B: PurchaseInvoice ya conectada a RetentionDocument ─────
+
+    [Fact]
+    public async Task Rechaza_PurchaseInvoice_inexistente_con_NotFound()
+    {
+        var fx = new Fixture();
+        fx.PurchaseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice?)null);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                Guid.NewGuid(),
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    [Fact]
+    public async Task Rechaza_PurchaseInvoice_no_confirmada_con_error_de_validacion()
+    {
+        var fx = new Fixture();
+        var invoice = fx.DraftInvoice();
+        fx.SetupInvoice(invoice);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("confirmada");
+    }
+
+    [Fact]
+    public async Task Emite_RetentionDocument_con_SourceDocumentType_PurchaseInvoice_para_compra_confirmada_elegible()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.SourceDocumentType.Should().Be(RetentionSourceDocumentType.PurchaseInvoice);
+        result.Value.SourceDocumentId.Should().Be(invoice.Id);
+        result.Value.Status.Should().Be(RetentionStatus.Issued);
+    }
+
+    [Fact]
+    public async Task Snapshot_de_PurchaseInvoice_se_resuelve_desde_la_compra_real()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice(taxSupportCode: "02");
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.SourceDocumentSriTypeCode.Should().Be(invoice.DocTypeCode);
+        result.Value.SourceDocumentNumber.Should().Be(invoice.InvoiceNumber);
+        result.Value.SourceDocumentIssueDate.Should().Be(invoice.IssueDate);
+        result.Value.SourceDocumentTaxSupportCode.Should().Be("02");
+        result.Value.SourceDocumentSubtotal.Should().Be(invoice.Subtotal);
+        result.Value.SourceDocumentTotal.Should().Be(invoice.GrandTotal);
+        result.Value.SubjectBusinessPartnerId.Should().Be(invoice.SupplierId);
+    }
+
+    [Fact]
+    public async Task Emision_desde_PurchaseInvoice_captura_secuencia_del_doc_type_07()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
+
+        await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        fx.SequenceRepo.Verify(
+            r => r.CaptureNextAsync(
+                TenantId, CompanyId, EmissionPointId, SriDocumentTypeCodes.Withholding,
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Aplica_AccountsPayable_ApplyRetention_sobre_la_CxP_existente_de_la_compra()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        var payable = fx.CreatePayableWithInstallment(invoice.Id, 300m);
+        fx.SetupPayable(invoice.Id, payable);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine(baseAmount: 100m, rate: 30m, retained: 30m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        payable.RetainedAmount.Should().Be(30m);
+        payable.OutstandingAmount.Should().Be(270m);
+        fx.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Sin_CxP_asociada_y_con_retencion_mayor_a_cero_rechaza_la_emision()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, null);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine(baseAmount: 100m, rate: 30m, retained: 30m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("cuenta por pagar");
+    }
+
+    [Fact]
+    public async Task Levanta_RetentionDocumentIssuedEvent_para_PurchaseInvoice_disparando_el_posting()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
+
+        RetentionDocument? captured = null;
+        fx.RetentionRepo
+            .Setup(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()))
+            .Callback<RetentionDocument, CancellationToken>((d, _) => captured = d)
+            .Returns(Task.CompletedTask);
+
+        await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        // RetentionDocumentIssuedPostingTranslator (SourceModule="Retentions", FactType="DocumentIssued")
+        // escucha este mismo evento sin distinguir SourceDocumentType — no se prueba el asiento en
+        // sí aquí (cubierto por RetentionDocumentIssuedPostingTranslatorTests), solo que el evento
+        // que lo dispara se levanta igual para Compras que para Gastos.
+        captured.Should().NotBeNull();
+        captured!.DomainEvents.Should().ContainSingle(e => e is RetentionDocumentIssuedEvent);
+    }
+
+    [Fact]
+    public async Task Bloquea_duplicado_si_ya_existe_RetentionDocument_activo_para_la_compra()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.RetentionRepo
+            .Setup(r => r.ExistsActiveBySourceAsync(
+                TenantId, CompanyId, RetentionSourceDocumentType.PurchaseInvoice, invoice.Id,
+                It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(true);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        fx.RetentionRepo.Verify(r => r.AddAsync(It.IsAny<RetentionDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+        fx.PayableRepo.Verify(
+            r => r.GetByOriginAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "no debe siquiera intentar resolver la CxP si la emisión ya se bloqueó por duplicado"
+        );
+    }
+
+    [Fact]
+    public async Task Bloquea_si_existe_IssuedWithholding_legacy_activo_para_la_compra()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        var legacy = ERP.Domain.Modules.Purchases.Entities.IssuedWithholding.CreateDraft(
+            TenantId, CompanyId, invoice.Id, invoice.SupplierId, EmissionPointId,
+            new DateOnly(2026, 9, 1), UserId
+        );
+        legacy.AddDetail(
+            ERP.Domain.Modules.Purchases.Entities.IssuedWithholdingDetail.Create(
+                legacy.Id, TenantId, "IVA", "725", "Retencion IVA 30%", 100m, 30m
+            )
+        );
+        legacy.Issue("001-001-000000005", UserId);
+        fx.PurchaseRepo
+            .Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(legacy);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        result.Error.Should().Contain("IssuedWithholding");
+        fx.EligibilityService.Verify(
+            s => s.EvaluateAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
+            ),
+            Times.Never,
+            "el bloqueo por legacy debe ocurrir antes de siquiera revalidar elegibilidad"
+        );
+    }
+
+    [Fact]
+    public async Task IssuedWithholding_legacy_cancelado_no_bloquea_la_emision_por_el_nuevo_flujo()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
+        var legacy = ERP.Domain.Modules.Purchases.Entities.IssuedWithholding.CreateDraft(
+            TenantId, CompanyId, invoice.Id, invoice.SupplierId, EmissionPointId,
+            new DateOnly(2026, 8, 1), UserId
+        );
+        legacy.AddDetail(
+            ERP.Domain.Modules.Purchases.Entities.IssuedWithholdingDetail.Create(
+                legacy.Id, TenantId, "IVA", "725", "Retencion IVA 30%", 100m, 30m
+            )
+        );
+        legacy.Issue("001-001-000000004", UserId);
+        legacy.Cancel("Emitida por error", UserId);
+        fx.PurchaseRepo
+            .Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(legacy);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+    }
+
+    [Fact]
+    public async Task PurchaseInvoice_de_otra_sucursal_falla_cerrado_con_NotFound()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice(branchId: OtherBranchId);
+        fx.SetupInvoice(invoice);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
     }
 
     // ── 6) Company no retiene IVA ────────────────────────────────────────
@@ -863,6 +1203,8 @@ public sealed class IssueRetentionHandlerTests
     private sealed class Fixture
     {
         public Mock<IExpenseDocumentRepository> ExpenseRepo { get; } = new();
+        public Mock<IPurchaseInvoiceRepository> PurchaseRepo { get; } = new();
+        public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IRetentionEligibilityService> EligibilityService { get; } = new();
         public Mock<IEmissionPointRepository> EmissionPointRepo { get; } = new();
@@ -925,6 +1267,12 @@ public sealed class IssueRetentionHandlerTests
         public IssueRetentionHandler Handler =>
             new(
                 ExpenseRepo.Object,
+                // PURCHASES-RETENTIONS-BRIDGE-05B: PurchaseRepo/PayableRepo se agregan para el
+                // camino de Compras — sin Setup, los mocks devuelven null por defecto, que es
+                // exactamente el comportamiento neutro que necesitan los tests de ExpenseDocument
+                // existentes (nunca se llaman en ese camino).
+                PurchaseRepo.Object,
+                PayableRepo.Object,
                 // RETENTIONS-EXPENSES-INTEGRATION-01D-1: IssueRetentionHandler ya no habla
                 // directamente con RetentionRepo/EligibilityService — delega en RetentionIssuer
                 // (mismo servicio que usa ConfirmExpenseDocumentHandler). Se construye con los
@@ -999,6 +1347,75 @@ public sealed class IssueRetentionHandlerTests
                 UserId
             );
             return document;
+        }
+
+        // ── PURCHASES-RETENTIONS-BRIDGE-05B: fixtures de PurchaseInvoice ──────────
+
+        public ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice DraftInvoice(
+            Guid? branchId = null,
+            string invoiceNumber = "001-001-000000123",
+            string? taxSupportCode = null
+        ) =>
+            ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice.CreateDraft(
+                TenantId, CompanyId, branchId ?? BranchId, SupplierId, "Proveedor Demo",
+                "1791352688001", "01", invoiceNumber, new DateOnly(2026, 8, 27), UserId,
+                PurchasePaymentTermId, "Contado", 1, 30,
+                taxSupportCode: taxSupportCode
+            );
+
+        public ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice ConfirmedInvoice(
+            Guid? branchId = null,
+            string invoiceNumber = "001-001-000000123",
+            string? taxSupportCode = null
+        )
+        {
+            var invoice = DraftInvoice(branchId, invoiceNumber, taxSupportCode);
+            var line = ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail.Create(
+                invoice.Id, TenantId, "Producto Demo", quantity: 1, unitPrice: 100m,
+                vatCode: "0", uomCode: "UNIT"
+            );
+            invoice.ReplaceLines(new[] { line }, UserId);
+            invoice.Confirm(UserId);
+            return invoice;
+        }
+
+        public void SetupInvoice(ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice invoice)
+        {
+            PurchaseRepo
+                .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(invoice);
+            // Sin legacy activo por defecto — los tests de bloqueo por IssuedWithholding
+            // sobreescriben este Setup explícitamente.
+            PurchaseRepo
+                .Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((ERP.Domain.Modules.Purchases.Entities.IssuedWithholding?)null);
+        }
+
+        public void SetupPayable(
+            Guid purchaseInvoiceId,
+            ERP.Domain.Modules.Payables.Entities.AccountsPayable? payable
+        ) =>
+            PayableRepo
+                .Setup(r => r.GetByOriginAsync(
+                    TenantId, CompanyId,
+                    ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
+                    purchaseInvoiceId, It.IsAny<CancellationToken>()
+                ))
+                .ReturnsAsync(payable);
+
+        public ERP.Domain.Modules.Payables.Entities.AccountsPayable CreatePayableWithInstallment(
+            Guid purchaseInvoiceId,
+            decimal total
+        )
+        {
+            var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
+                TenantId, CompanyId, BranchId, SupplierId,
+                ERP.Domain.Modules.Payables.Enums.AccountsPayableOriginType.PurchaseInvoice,
+                purchaseInvoiceId, "01", "001-001-000000123",
+                new DateOnly(2026, 8, 27), new DateOnly(2026, 9, 26), UserId
+            );
+            payable.AddInstallment(1, new DateOnly(2026, 9, 26), total);
+            return payable;
         }
     }
 }

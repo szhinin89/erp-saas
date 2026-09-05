@@ -1193,18 +1193,7 @@ export function PurchasesPage() {
         placeholder={t("purchases.withholding.emissionPointPlaceholder", "ID del punto de emisión")}
         confirmLabel={t("purchases.withholding.issue", "Emitir")}
         onCancel={() => ctx.setModalWhIssue(false)}
-        onConfirm={ctx.handleIssueWithholding}
-      />
-
-      <ZHPromptModal
-        open={ctx.modalWhCancel}
-        variant="danger"
-        title={t("purchases.withholding.cancelTitle", "Anular retención")}
-        label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
-        placeholder={t("purchases.cancel.reasonPlaceholder", "Ingrese el motivo...")}
-        confirmLabel={t("purchases.cancel.confirm", "Anular")}
-        onCancel={() => ctx.setModalWhCancel(false)}
-        onConfirm={ctx.handleCancelWithholding}
+        onConfirm={ctx.handleIssueRetention}
       />
     </ErpPageTemplate>
   );
@@ -3038,7 +3027,7 @@ function RetentionSection({
           <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_RETENTIONS} />
         </h4>
         <div className="pf-retention-actions">
-          {!ctx.withholding && (
+          {!ctx.retention && (
             <>
               <ZHBtn
                 type="button"
@@ -3072,26 +3061,61 @@ function RetentionSection({
               )}
             </>
           )}
-          {ctx.withholding && ctx.withholding.status === "Issued" && (
-            <ZHBtn
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => ctx.setModalWhCancel(true)}
-              disabled={ctx.whLoading}
-            >
-              <span
-                className="material-symbols-outlined pf-retention-action-icon"
+          {/* PURCHASES-RETENTIONS-UI-MIGRATION-05C: sin acción de anular todavía — RetentionCanceller
+              no soporta PurchaseInvoice (ver PURCHASES-RETENTIONS-BRIDGE-05B). Queda para
+              PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05D. */}
+          {ctx.retention && ctx.retention.status === "Issued" && (
+            <>
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => void ctx.handleViewRetentionXml()}
+                disabled={ctx.electronicPending}
+                title={t("purchases.retention.viewXml", "Ver XML")}
               >
-                cancel
-              </span>
-              {t("purchases.retention.cancel", "Anular")}
-            </ZHBtn>
+                <span className="material-symbols-outlined pf-retention-action-icon">
+                  code
+                </span>
+                {t("purchases.retention.viewXml", "XML")}
+              </ZHBtn>
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => void ctx.handleViewRetentionRidePdf()}
+                disabled={ctx.electronicPending}
+                title={t("purchases.retention.viewRide", "Ver RIDE (PDF)")}
+              >
+                <span className="material-symbols-outlined pf-retention-action-icon">
+                  picture_as_pdf
+                </span>
+                {t("purchases.retention.viewRide", "RIDE")}
+              </ZHBtn>
+              {ctx.canRegisterElectronic && (
+                <ZHBtn
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => void ctx.handleRegisterRetentionElectronic()}
+                  disabled={ctx.electronicPending}
+                  title={t(
+                    "purchases.retention.registerElectronic",
+                    "Registrar electrónicamente",
+                  )}
+                >
+                  <span className="material-symbols-outlined pf-retention-action-icon">
+                    verified
+                  </span>
+                  {t("purchases.retention.registerElectronic", "Registrar electrónicamente")}
+                </ZHBtn>
+              )}
+            </>
           )}
         </div>
       </div>
       <div className="pf-card__body">
-        {ctx.whPreview && !ctx.withholding && (
+        {ctx.whPreview && !ctx.retention && (
           <>
             {ctx.whPreview.skipReason && (
               <div className="pf-retention__skip">
@@ -3143,25 +3167,25 @@ function RetentionSection({
             )}
           </>
         )}
-        {ctx.withholding && (
+        {ctx.retention && (
           <>
             <div className="pf-retention__issued-meta">
               <span className="pf-retention__issued-item">
                 {t("purchases.retention.number", "Número")}:{" "}
-                <strong>{ctx.withholding.withholdingNumber}</strong>
+                <strong>{ctx.retention.retentionNumber}</strong>
               </span>
               <span className="pf-retention__issued-item">
                 {t("purchases.retention.status", "Estado")}:{" "}
                 <Badge
                   variant={
-                    ctx.withholding.status === "Issued" ? "success" : "error"
+                    ctx.retention.status === "Issued" ? "success" : "error"
                   }
-                  label={ctx.withholding.status}
+                  label={ctx.retention.status}
                 />
               </span>
               <span className="pf-retention__issued-item">
                 {t("purchases.retention.date", "Fecha")}:{" "}
-                <strong>{formatDate(ctx.withholding.issueDate)}</strong>
+                <strong>{formatDate(ctx.retention.issueDate)}</strong>
               </span>
             </div>
             <table className="table table--compact table--neutral">
@@ -3176,24 +3200,24 @@ function RetentionSection({
                 </tr>
               </thead>
               <tbody>
-                {ctx.withholding.details.map((d) => (
-                  <tr key={d.id}>
+                {ctx.retention.lines.map((l) => (
+                  <tr key={l.id}>
                     <td>
                       <Badge
-                        variant={d.taxType === "IVA" ? "info" : "warning"}
-                        label={d.taxType}
+                        variant={l.taxType === "Vat" ? "info" : "warning"}
+                        label={l.taxType === "Vat" ? "IVA" : "RENTA"}
                       />
                     </td>
                     <td className="zh-code-value">
-                      {d.retentionCode}
+                      {l.retentionCode}
                     </td>
-                    <td>{d.retentionCodeDescription}</td>
+                    <td>{l.retentionCodeDescription}</td>
                     <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={d.taxableBase} decimals={getDecimalConfig().totalAmount} />
+                      <ZHMoneyValue value={l.baseAmount} decimals={getDecimalConfig().totalAmount} />
                     </td>
-                    <td className="zh-table-cell--num">{d.retentionPct}%</td>
+                    <td className="zh-table-cell--num">{l.retentionRate}%</td>
                     <td className="zh-table-cell--num pf-retention-amount">
-                      <ZHMoneyValue value={d.amountRetained} decimals={getDecimalConfig().totalAmount} />
+                      <ZHMoneyValue value={l.retainedAmount} decimals={getDecimalConfig().totalAmount} />
                     </td>
                   </tr>
                 ))}
@@ -3202,17 +3226,17 @@ function RetentionSection({
             <div className="pf-retention__issued-totals">
               <TotalMiniCard
                 label={t("purchases.retention.vat", "Ret. IVA")}
-                value={ctx.withholding.totalRetainedVat}
+                value={ctx.retention.totalRetainedVat}
                 color="var(--color-primary)"
               />
               <TotalMiniCard
                 label={t("purchases.retention.income", "Ret. renta")}
-                value={ctx.withholding.totalRetainedIncome}
+                value={ctx.retention.totalRetainedIncome}
                 color="var(--color-warning)"
               />
               <TotalMiniCard
                 label={t("purchases.retention.totalWithheld", "TOTAL RETENIDO")}
-                value={ctx.withholding.totalRetained}
+                value={ctx.retention.totalRetained}
                 color="var(--color-error)"
                 highlight
               />

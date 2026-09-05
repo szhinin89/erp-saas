@@ -62,6 +62,7 @@
     "/api/org-config",
     "/api/payables",
     "/api/payment-methods",
+    "/api/retentions",
     "/api/ride",
     "/api/saas",
     "/api/security",
