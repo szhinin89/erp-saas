@@ -275,10 +275,9 @@ public sealed class PurchasesController : ControllerBase
     // autorización nueva ni crear un controller propio de Retenciones para Compras (la lógica de
     // negocio sigue siendo 100% transversal — ver IssueRetentionCommand/RetentionIssuer).
     //
-    // Cancelación deliberadamente NO expuesta aquí todavía: RetentionCanceller sigue hardcodeado a
-    // ExpenseDocument (ver docs de PURCHASES-RETENTIONS-BRIDGE-05B) — exponerla para Compras antes
-    // de generalizarlo revertiría CxP incorrectamente. Queda para
-    // PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05D.
+    // PURCHASES-RETENTIONS-CANCEL-05D — RetentionCanceller ya generaliza la resolución de CxP por
+    // origen (ExpenseDocument/PurchaseInvoice, ver RetentionCanceller.cs) — se agrega el endpoint
+    // de cancelación de abajo, reutilizando CancelRetentionCommand (transversal) tal cual.
 
     /// <summary>
     /// Retención transversal (<c>RetentionDocument</c>) activa sobre esta compra, si existe.
@@ -323,6 +322,39 @@ public sealed class PurchasesController : ControllerBase
             "OK"
         );
 
+    /// <summary>
+    /// PURCHASES-RETENTIONS-CANCEL-05D — anula la retención transversal (<c>RetentionDocument</c>)
+    /// de esta compra: reversa la <c>AccountsPayable</c> ya reducida al emitirla (si tenía monto
+    /// retenido real) y el asiento contable original (vía <c>RetentionDocumentCancelledPostingTranslator</c>,
+    /// genérico, sin cambios). Reutiliza <see cref="CancelRetentionCommand"/> tal cual — este
+    /// controller solo valida que <paramref name="retentionId"/> sea realmente la retención activa
+    /// de <paramref name="purchaseId"/> (nunca confía en que el cliente no se equivocó de Id) antes
+    /// de delegar. No cancela ni conoce <c>IssuedWithholding</c> (flujo legacy, sin cambios).
+    /// </summary>
+    [HttpPost("{purchaseId:guid}/retention/{retentionId:guid}/cancel")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
+    public async Task<IActionResult> CancelRetention(
+        Guid purchaseId,
+        Guid retentionId,
+        [FromBody] CancelPurchaseRetentionRequest request,
+        CancellationToken ct
+    )
+    {
+        var existing = await _mediator.Send(
+            new GetRetentionBySourceQuery(RetentionSourceDocumentType.PurchaseInvoice, purchaseId),
+            ct
+        );
+        if (!existing.IsSuccess)
+            return this.ToOkOrBadRequest(existing);
+        if (existing.Value is null || existing.Value.Id != retentionId)
+            return this.ApiNotFound("La retención no existe o no pertenece a esta compra.");
+
+        return this.ToOkOrBadRequest(
+            await _mediator.Send(new CancelRetentionCommand(retentionId, request.Reason), ct),
+            "OK"
+        );
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // RESUMEN FISCAL POR IMPUESTO (FLOW-READY-02D.1)
     // ══════════════════════════════════════════════════════════════════════
@@ -362,6 +394,9 @@ public record IssuePurchaseRetentionRequest(
     DateOnly IssueDate,
     IReadOnlyList<IssueRetentionLineInput> Lines
 );
+
+/// <summary>PURCHASES-RETENTIONS-CANCEL-05D.</summary>
+public record CancelPurchaseRetentionRequest(string Reason);
 
 public record CancelWithholdingRequest(string Reason);
 

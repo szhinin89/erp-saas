@@ -1195,6 +1195,23 @@ export function PurchasesPage() {
         onCancel={() => ctx.setModalWhIssue(false)}
         onConfirm={ctx.handleIssueRetention}
       />
+
+      {/* PURCHASES-RETENTIONS-CANCEL-05D — modal crítico: motivo obligatorio, mismo patrón que
+          "Anular compra" (modalCancelReason) arriba. */}
+      <ZHPromptModal
+        open={ctx.modalRetentionCancel}
+        variant="danger"
+        title={t("purchases.retention.cancelTitle", "Anular retención")}
+        message={t(
+          "purchases.retention.cancelMessage",
+          "Esta acción reversará la afectación a la cuenta por pagar del proveedor y el asiento contable de la retención. Esta operación no se puede deshacer.",
+        )}
+        label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
+        placeholder={t("purchases.cancel.reasonPlaceholder", "Ingrese el motivo...")}
+        confirmLabel={t("purchases.cancel.confirm", "Anular")}
+        onCancel={() => ctx.setModalRetentionCancel(false)}
+        onConfirm={ctx.handleCancelRetention}
+      />
     </ErpPageTemplate>
   );
 }
@@ -3061,9 +3078,6 @@ function RetentionSection({
               )}
             </>
           )}
-          {/* PURCHASES-RETENTIONS-UI-MIGRATION-05C: sin acción de anular todavía — RetentionCanceller
-              no soporta PurchaseInvoice (ver PURCHASES-RETENTIONS-BRIDGE-05B). Queda para
-              PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05D. */}
           {ctx.retention && ctx.retention.status === "Issued" && (
             <>
               <ZHBtn
@@ -3108,6 +3122,24 @@ function RetentionSection({
                     verified
                   </span>
                   {t("purchases.retention.registerElectronic", "Registrar electrónicamente")}
+                </ZHBtn>
+              )}
+              {/* PURCHASES-RETENTIONS-CANCEL-05D — RetentionCanceller ya generaliza la reversa de
+                  CxP por origen; visible solo con permiso de Compras (purchases.update, sin
+                  permiso nuevo de Retenciones) y retención Issued. */}
+              {ctx.canUpdatePurchase && (
+                <ZHBtn
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => ctx.setModalRetentionCancel(true)}
+                  disabled={ctx.whLoading}
+                  title={t("purchases.retention.cancelTitle", "Anular retención")}
+                >
+                  <span className="material-symbols-outlined pf-retention-action-icon">
+                    cancel
+                  </span>
+                  {t("purchases.retention.cancel", "Anular")}
                 </ZHBtn>
               )}
             </>

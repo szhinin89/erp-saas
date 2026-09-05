@@ -62,7 +62,7 @@ public sealed class CancelRetentionHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue(because: result.Error);
         result.Value!.Status.Should().Be(RetentionStatus.Cancelled);
         result.Value.CancelReason.Should().Be("Error en el cálculo");
         fx.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -133,7 +133,7 @@ public sealed class CancelRetentionHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue(because: result.Error);
         result.Value!.CancelledBy.Should().Be(UserId);
         result.Value.CancelledBy.Should().NotBe(OtherUserId);
     }

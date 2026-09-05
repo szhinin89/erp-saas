@@ -150,4 +150,107 @@ public sealed class RetentionCancellerTests
 
         retention.CancelledBy.Should().Be(UserId);
     }
+
+    // ── PURCHASES-RETENTIONS-CANCEL-05D: origen PurchaseInvoice ───────────────────────────────
+
+    private static RetentionDocument IssuedRetentionForPurchase(Guid purchaseInvoiceId, decimal retained = 30m)
+    {
+        var doc = RetentionDocument.Create(
+            TenantId, CompanyId, BranchId, RetentionSourceDocumentType.PurchaseInvoice,
+            purchaseInvoiceId, SupplierId, Guid.NewGuid(), UserId
+        );
+        doc.AddLine(RetentionDocumentLine.Create(doc.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA 725", 100m, 30m, retained));
+        doc.Issue("001-001-000000005", new DateOnly(2026, 9, 3), UserId);
+        doc.ClearDomainEvents();
+        return doc;
+    }
+
+    private static AccountsPayable PayableForPurchase(Guid purchaseInvoiceId, decimal grandTotal)
+    {
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, purchaseInvoiceId,
+            "01", "001-001-000000123",
+            new DateOnly(2026, 8, 27), new DateOnly(2026, 9, 26), UserId
+        );
+        payable.AddInstallment(1, new DateOnly(2026, 9, 26), grandTotal);
+        return payable;
+    }
+
+    [Fact]
+    public async Task PurchaseInvoice_con_CxP_sin_pagos_reversa_la_retencion_aplicada()
+    {
+        var purchaseInvoiceId = Guid.NewGuid();
+        var payableRepo = new Mock<IAccountsPayableRepository>();
+        var payable = PayableForPurchase(purchaseInvoiceId, 115m);
+        payable.ApplyRetention(30m, UserId);
+        payableRepo
+            .Setup(r => r.GetByOriginAsync(
+                TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice,
+                purchaseInvoiceId, It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(payable);
+        var canceller = new RetentionCanceller(payableRepo.Object);
+        var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
+
+        var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        payable.RetainedAmount.Should().Be(0m);
+        payable.OutstandingAmount.Should().Be(115m);
+    }
+
+    [Fact]
+    public async Task PurchaseInvoice_con_CxP_con_pagos_bloquea_sin_reversar_ni_cancelar()
+    {
+        var purchaseInvoiceId = Guid.NewGuid();
+        var payableRepo = new Mock<IAccountsPayableRepository>();
+        var payable = PayableForPurchase(purchaseInvoiceId, 115m);
+        payable.ApplyRetention(30m, UserId);
+        payable.RegisterPayment(20m, UserId);
+        payableRepo
+            .Setup(r => r.GetByOriginAsync(
+                TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice,
+                purchaseInvoiceId, It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync(payable);
+        var canceller = new RetentionCanceller(payableRepo.Object);
+        var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
+
+        var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("pagos aplicados");
+        retention.Status.Should().Be(RetentionStatus.Issued);
+        payable.RetainedAmount.Should().Be(30m);
+    }
+
+    /// <summary>
+    /// PURCHASES-RETENTIONS-CANCEL-05D — a diferencia de <see cref="Sin_CxP_asociada_solo_cancela_la_retencion"/>
+    /// (ExpenseDocument, comportamiento histórico tolerante mantenido a propósito), para
+    /// PurchaseInvoice la CxP siempre existe desde que se confirmó la compra — no encontrarla es
+    /// una inconsistencia de datos real, así que se rechaza en vez de anular dejando el pasivo sin
+    /// reversar.
+    /// </summary>
+    [Fact]
+    public async Task PurchaseInvoice_sin_CxP_asociada_y_con_monto_retenido_rechaza_la_anulacion()
+    {
+        var purchaseInvoiceId = Guid.NewGuid();
+        var payableRepo = new Mock<IAccountsPayableRepository>();
+        payableRepo
+            .Setup(r => r.GetByOriginAsync(
+                TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice,
+                purchaseInvoiceId, It.IsAny<CancellationToken>()
+            ))
+            .ReturnsAsync((AccountsPayable?)null);
+        var canceller = new RetentionCanceller(payableRepo.Object);
+        var retention = IssuedRetentionForPurchase(purchaseInvoiceId);
+
+        var result = await canceller.CancelAsync(retention, "Motivo", UserId, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("cuenta por pagar");
+        retention.Status.Should().Be(RetentionStatus.Issued, "no debe anular dejando el pasivo sin reversar");
+    }
 }

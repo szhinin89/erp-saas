@@ -99,6 +99,40 @@ public sealed class RetentionDocumentCancelledPostingTranslatorTests
         sent.Reason.Should().Contain("001-001-000000001").And.Contain("Cancelado junto con el gasto origen");
     }
 
+    /// <summary>
+    /// PURCHASES-RETENTIONS-CANCEL-05D — el translator localiza el asiento por
+    /// SourceModule="Retentions"+RetentionDocumentId únicamente; nunca inspecciona
+    /// <c>SourceDocumentType</c> del evento, así que reversa igual para una retención originada en
+    /// <c>PurchaseInvoice</c> que en <c>ExpenseDocument</c> — sin necesidad de un translator
+    /// separado para Compras (confirmado por diseño en PURCHASES-WITHHOLDING-RETENTIONS-AUDIT-05A).
+    /// </summary>
+    [Fact]
+    public async Task Reversa_igual_para_una_retencion_originada_en_PurchaseInvoice()
+    {
+        var m = new Mocks();
+        var retentionId = Guid.NewGuid();
+        var original = PostedEntry(retentionId);
+        m.JournalEntryRepo
+            .Setup(r => r.GetBySourceAsync(TenantId, CompanyId, "Retentions", retentionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<JournalEntry> { original });
+
+        ReverseJournalEntryCommand? sent = null;
+        m.Mediator
+            .Setup(x => x.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<JournalEntryDto>>, CancellationToken>((cmd, _) => sent = (ReverseJournalEntryCommand)cmd)
+            .ReturnsAsync(Result<JournalEntryDto>.Success(DummyDto(original.Id)));
+
+        var purchaseEvent = new RetentionDocumentCancelledEvent(
+            TenantId, retentionId, CompanyId, RetentionSourceDocumentType.PurchaseInvoice,
+            Guid.NewGuid(), SubjectId, "001-001-000000005", 30m, "Anulación de prueba"
+        );
+
+        await m.BuildTranslator().Handle(purchaseEvent, CancellationToken.None);
+
+        sent.Should().NotBeNull();
+        sent!.JournalEntryId.Should().Be(original.Id);
+    }
+
     [Fact]
     public async Task No_encontrar_el_asiento_original_lanza_en_vez_de_loguear()
     {
