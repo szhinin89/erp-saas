@@ -184,12 +184,35 @@ li{margin-bottom:4px}
 .page-btn{border:1px solid var(--border);border-radius:16px;background:var(--bg);color:var(--text);padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer}
 .page-btn:hover{border-color:var(--blue);color:var(--blue)}
 .layer-page-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:-6px;margin-bottom:14px}
+.page-summary{display:grid;grid-template-columns:minmax(160px,220px) 1fr;gap:18px;margin-bottom:18px}
+.page-score{border:1px solid var(--border);border-radius:var(--R);background:var(--bg);padding:18px;text-align:center}
+.page-score-value{font-size:42px;font-weight:900;line-height:1;color:var(--green)}
+.page-score-label{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;margin-top:4px}
+.page-notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.note-box{border:1px solid var(--border);border-radius:var(--R);background:var(--bg);padding:12px}
+.note-box h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;color:var(--muted)}
+.note-box ul{margin:0;padding-left:16px}
+.child-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.child-card{border:1px solid var(--border);border-radius:var(--R);background:var(--bg);padding:14px;cursor:pointer;transition:.15s;min-height:96px}
+.child-card:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:var(--shadow)}
+.child-card-title{font-size:13px;font-weight:800;margin:8px 0 4px}
+.child-card-sub{font-size:11px;color:var(--muted);line-height:1.35}
+.child-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.child-card-pct{font-size:18px;font-weight:900}
+.status-badge{font-size:9px;border-radius:999px;padding:3px 8px;font-weight:800;text-transform:uppercase;white-space:nowrap}
+.status-done{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.status-pilot{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.status-progress{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-bd)}
+.status-pending{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.page-section-title{font-size:12px;color:var(--muted);text-transform:uppercase;font-weight:900;letter-spacing:.4px;margin:18px 0 10px}
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 @media(max-width:900px){
   .diagram-wrap{padding:28px 16px}
   .architecture-live-title{font-size:16px}
   .live-intelligence,.live-core-box,.live-ai-advanced{width:min(100%,520px)}
   .live-ai-row .live-node,.live-data-row .live-node,.live-node{width:min(100%,280px)}
   .live-arrows{gap:26px}
+  .page-summary,.page-notes{grid-template-columns:1fr}
 }
 .module-panel h5{font-size:11.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 6px;letter-spacing:.3px}
 .module-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:14px}
@@ -3635,6 +3658,45 @@ var breadcrumbStack = [];
 var suppressHashRoute = false;
 
 var LEVEL_LABELS = { layer: 'Capa', domain: 'Dominio', module: 'Modulo', feature: 'Feature', process: 'Proceso', file: 'Archivo' };
+var CONCISE_NAV = {
+  layers: {
+    web: { title:'Web ERP', pct:88, status:'En piloto', subtitle:'React 19 + TypeScript + Vite 8', children:['Companies','Branches','Items','Pricing','MasterData','Sales','Purchases','Inventory','Caja','Finance','Accounting','Expenses','Retentions','ElectronicDocuments','Dashboard','Security','Session','Navigation'] },
+    mobile: { title:'Mobile App', pct:0, status:'Futuro', subtitle:'Sin modulo movil implementado', children:[] },
+    chat: { title:'Chat Interface', pct:0, status:'Futuro', subtitle:'Sin interfaz conversacional implementada', children:[] },
+    intelligence: { title:'ERP Intelligence Layer', pct:0, status:'Futuro', subtitle:'AI modules & services no iniciados como producto', children:['ai-assistant','ai-analyst','ai-automation'] },
+    'ai-assistant': { title:'User Assistant AI', pct:0, status:'Futuro', subtitle:'Consultas, reportes y acciones conversacionales', children:[] },
+    'ai-analyst': { title:'Business Analyst AI', pct:0, status:'Futuro', subtitle:'Analisis, predicciones y alertas futuras', children:[] },
+    'ai-automation': { title:'Process Automation AI', pct:0, status:'Futuro', subtitle:'Flujos, alertas y acciones automatizadas', children:[] },
+    core: { title:'ERP Core Services', pct:88, status:'En piloto', subtitle:'Nucleo operativo multi-tenant Ecuador/SRI', children:['Sales','Purchases','Inventory','Caja','Accounting','Finance','Expenses','Retentions','ElectronicDocuments'] },
+    db: { title:'Base de Datos', pct:93, status:'En piloto', subtitle:'PostgreSQL 16 + EF Core 10', children:['DbSchema','EfCore','MultiTenant','BackgroundJobs'] },
+    'data-warehouse': { title:'Data Warehouse', pct:0, status:'Futuro', subtitle:'Analitica avanzada fuera del MVP actual', children:[] },
+    'ai-advanced': { title:'IA Modelos Avanzados', pct:0, status:'Futuro', subtitle:'Prediccion, analisis y optimizacion futuros', children:[] }
+  },
+  modules: {
+    Companies:{ title:'Company Profile', pct:85, status:'En piloto', summary:'Perfil, branding, fiscal, decimal config y provisioning global.', done:['Perfil de empresa','Branding/logo','Configuracion fiscal','Provisioning global'], pending:['Cierre de gobernanza Frozen'] },
+    Branches:{ title:'Branches / Establishments / Emission Points', pct:90, status:'Completado', summary:'Sucursales, establecimientos SRI y puntos de emision.', done:['CRUD y soft-disable','Secuencias documentales','Datos fiscales SRI'], pending:[] },
+    Items:{ title:'Items', pct:90, status:'Completado', summary:'Items, variantes, atributos, empaques y catalogos base.', done:['Items y variantes','Atributos y marcas','Empaques y conversiones'], pending:[] },
+    Pricing:{ title:'Pricing Engine v2', pct:90, status:'Completado', summary:'PricingRule/Resolver como SSOT de precios.', done:['Price lists','Pricing rules','Simulacion de precios'], pending:[] },
+    MasterData:{ title:'MasterData / Business Partners', pct:85, status:'En piloto', summary:'Clientes/proveedores y catalogos maestros operativos.', done:['Business partners','Catalogos base','Datos fiscales'], pending:['CRM futuro'] },
+    Sales:{ title:'Ventas', pct:88, status:'En piloto', summary:'Ventas/POS, CxC, cobros, inventario, COGS, pricing y documento electronico base.', done:['Factura y anulacion','CxC y cobros','Pricing e inventario','Posting contable'], pending:['SRI produccion real','Bancos/conciliacion futuro'], features:['Sales::Authorize Sales','Sales::Cancel Sales','Sales::Sales Receivable','Sales::Payment Method'] },
+    Purchases:{ title:'Compras', pct:86, status:'En piloto', summary:'Compras, CxP, pagos proveedor, inventario y accounting.', done:['Draft/confirmacion','CxP','Pagos proveedor','Ingreso inventario'], pending:['Liquidacion compra SRI 03','Recepcion fisica sin factura'], features:['Purchases::Purchase Draft','Purchases::Confirm Purchase','Purchases::Cancel Purchase','Purchases::Purchase Cost'] },
+    Inventory:{ title:'Inventario / Kardex', pct:86, status:'En piloto', summary:'Stock, Kardex, costo promedio y reportes operativos.', done:['Bodegas','Movimientos stock','Kardex por producto/documento','Costo promedio'], pending:['Accounting completo de valoracion','Aprobaciones/reversos avanzados'], features:['Inventory::Get Stock','Inventory::Get Kardex By Product','Inventory::Create Stock Adjustment','Inventory::Confirm Stock Transfer'] },
+    Caja:{ title:'Caja', pct:85, status:'En piloto', summary:'Sesiones de caja, apertura, movimientos y cierre operativo.', done:['Apertura/cierre','Movimientos','Vinculo con ventas'], pending:['ADR/freeze propio','Posting directo de movimientos propios'], features:['Caja::Open Cash Session','Caja::Close Cash Session','Caja::Record Cash Movement'] },
+    Finance:{ title:'Finance / CxC / CxP', pct:86, status:'En piloto', summary:'CxC, CxP, cobros, pagos proveedor y destinos financieros.', done:['Collections','Supplier payments','Financial destinations'], pending:['Bancos y conciliacion'] },
+    Accounting:{ title:'Contabilidad', pct:88, status:'En piloto', summary:'Plan, periodos, reglas, asientos, reversos y reportes.', done:['Plan de cuentas','Posting engine','Reversos/numeracion','Libro mayor y reportes'], pending:['Cierre contable','Flujo de efectivo','Conciliacion bancaria'], features:['Accounting::Accounts','Accounting::Accounting Periods','Accounting::Posting Rules'] },
+    Expenses:{ title:'Gastos', pct:88, status:'En piloto', summary:'Catalogo jerarquico, documentos, confirmacion, posting y CxP.', done:['Catalogo jerarquico','Documentos de gasto','Posting contable','Cancelacion con reverso'], pending:['Commit de cancelacion si sigue local'] },
+    Retentions:{ title:'Retenciones', pct:80, status:'Implementado pendiente de commit', shortStatus:'Pendiente commit', summary:'Retenciones en gastos avanzadas con UI, QA, XML, RIDE y schema validator.', done:['Foundation/dominio','UI en gastos','QA E2E','XML/RIDE/schema validator'], pending:['Wiring local ElectronicDocuments pendiente de commit'] },
+    ElectronicDocuments:{ title:'Documentos Electronicos', pct:88, status:'En desarrollo', summary:'Factura/monitor/retry cerrados; NC y retenciones con avance real.', done:['Factura electronica','Monitor y retry','XML/RIDE retenciones','Schema validator'], pending:['Guia remision','Nota debito','Liquidacion compra 03'], features:['ElectronicDocuments::Get Electronic Documents Dashboard','ElectronicDocuments::Get Electronic Document Xml','ElectronicDocuments::Retry Electronic Document'] },
+    Dashboard:{ title:'Dashboard real', pct:85, status:'En piloto', summary:'KPIs reales y reportes minimos auditados.', done:['Dashboard KPI','Reportes ventas/compras/inventario','Monitor documentos'], pending:['BI/Data Warehouse futuro'] },
+    Security:{ title:'Seguridad / Permisos', pct:90, status:'Completado', summary:'Permisos jerarquicos backend SSOT y anti-escalamiento.', done:['Menu server-driven','Matriz de permisos','Anti-escalamiento','Entitlements NoOp seam'], pending:[] },
+    Session:{ title:'Auth / Sesion', pct:90, status:'Completado', summary:'Logout backend, expiracion absoluta, inactividad y reautenticacion.', done:['Logout backend','Expiracion 8h','Overlay 30 min','Header Empresa/Sucursal'], pending:[] },
+    Navigation:{ title:'Navegacion / UI', pct:90, status:'Completado', summary:'Design System ZH compacto, ZHDataTable y menu jerarquico.', done:['ZHDataTable','Menu jerarquico','Permisos jerarquicos','UI compacta'], pending:[] },
+    DbSchema:{ title:'Schema PostgreSQL', pct:93, status:'En piloto', summary:'Tablas y migraciones principales listas para piloto.', done:['PostgreSQL 16','Migraciones EF','Repositorios'], pending:['Backups productivos'] },
+    EfCore:{ title:'EF Core', pct:93, status:'Completado', summary:'EF Core 10 + Npgsql, filtros tenant y warnings sentinel cerrados.', done:['Query filters tenant','Npgsql','Enum sentinels cerrados'], pending:[] },
+    MultiTenant:{ title:'Multi-tenant', pct:90, status:'Completado', summary:'Aislamiento por tenant_id en backend y DbContext.', done:['Claim tenant_id','CurrentTenant','Query filters'], pending:['RLS PostgreSQL wave futura'] },
+    BackgroundJobs:{ title:'Background Jobs', pct:80, status:'En piloto', summary:'Hangfire con PostgreSQL para jobs tecnicos.', done:['Hangfire','Storage PostgreSQL'], pending:['Politica operativa produccion'] }
+  }
+};
 
 function resetBreadcrumb(){
   breadcrumbStack = [];
@@ -3644,9 +3706,18 @@ function resetBreadcrumb(){
   var panel = document.querySelector('.context-panel');
   if(panel) panel.style.display = 'none';
   document.querySelectorAll('.diagram-node').forEach(function(el){ el.classList.remove('selected'); });
-  if(!suppressHashRoute && location.hash.indexOf('page=') >= 0){
+  if(!suppressHashRoute && /#(page|module|feature)=/.test(location.hash)){
     history.replaceState(null, '', location.pathname + location.search);
   }
+}
+
+function setRouteForLevel(level, id){
+  if(suppressHashRoute) return;
+  var route = '';
+  if(level === 'layer') route = '#page=' + encodeURIComponent(id);
+  if(level === 'module') route = '#module=' + encodeURIComponent(id);
+  if(level === 'feature') route = '#feature=' + encodeURIComponent(id);
+  if(route && location.hash !== route) history.pushState(null, '', route);
 }
 
 function pushLevel(level, id, label){
@@ -3655,6 +3726,7 @@ function pushLevel(level, id, label){
   if(panel) panel.style.display = 'block';
   renderBreadcrumb();
   renderCurrentLevel();
+  setRouteForLevel(level, id);
 
   if(level === 'layer'){
     document.querySelectorAll('.diagram-node').forEach(function(el){ el.classList.remove('selected'); });
@@ -3670,6 +3742,10 @@ function popToIndex(i){
   breadcrumbStack = breadcrumbStack.slice(0, i + 1);
   renderBreadcrumb();
   renderCurrentLevel();
+  if(breadcrumbStack.length > 0){
+    var top = breadcrumbStack[breadcrumbStack.length - 1];
+    setRouteForLevel(top.level, top.id);
+  }
 }
 
 function renderBreadcrumb(){
@@ -3684,12 +3760,90 @@ function renderBreadcrumb(){
   bar.innerHTML = crumbs.join('');
 }
 
+function statusClass(status){
+  if(status === 'Completado') return 'status-done';
+  if(status === 'En piloto') return 'status-pilot';
+  if(status === 'Futuro' || status === 'Pendiente') return 'status-pending';
+  return 'status-progress';
+}
+
+function pctStyle(pct){
+  if(pct >= 85) return 'color:#16a34a';
+  if(pct >= 70) return 'color:#d97706';
+  return 'color:#dc2626';
+}
+
+function renderChildCard(id){
+  var child = CONCISE_NAV.modules[id] || CONCISE_NAV.layers[id];
+  if(!child) return '';
+  var type = CONCISE_NAV.modules[id] ? 'module' : 'layer';
+  var badgeText = child.shortStatus || child.status;
+  var onclick = type === 'module'
+    ? "pushLevel('module','" + id + "','" + child.title.replace(/'/g, "\\'") + "')"
+    : "selectLayer('" + id + "')";
+  return '<div class="child-card" onclick="' + onclick + '"><div class="child-card-top"><span class="status-badge ' + statusClass(child.status) + '">' + badgeText + '</span><span class="child-card-pct" style="' + pctStyle(child.pct) + '">' + child.pct + '%</span></div><div class="child-card-title">' + child.title + '</div><div class="child-card-sub">' + (child.summary || child.subtitle || '') + '</div></div>';
+}
+
+function listItems(items){
+  if(!items || items.length === 0) return '<p class="muted-note">Sin pendientes registrados para esta vista.</p>';
+  return '<ul>' + items.map(function(item){ return '<li>' + item + '</li>'; }).join('') + '</ul>';
+}
+
+function renderPageShell(entry, body, actions){
+  return '<div class="layer-page-toolbar"><div><div class="layer-page-title">' + entry.title + '</div><div class="muted-note">' + (entry.subtitle || entry.summary || '') + '</div></div><div class="layer-page-actions"><button class="page-btn" onclick="resetBreadcrumb()">Volver al mapa</button><button class="page-btn" onclick="showGroup(\'home\');showSubGroup(\'home\',\'estado-actual\')">Estado actualizado</button>' + (actions || '') + '</div></div>' + body;
+}
+
+function renderConciseLayer(id){
+  var layer = CONCISE_NAV.layers[id];
+  if(!layer) return null;
+  var children = layer.children || [];
+  var body = '<div class="page-summary"><div class="page-score"><div class="page-score-value" style="' + pctStyle(layer.pct) + '">' + layer.pct + '%</div><div class="page-score-label">' + layer.status + '</div></div><div class="note-box"><h4>Alcance</h4><p class="muted-note">Hijos directos de ' + layer.title + '. Detalle tecnico bajo demanda.</p></div></div>';
+  if(children.length > 0){
+    body += '<div class="page-section-title">Siguiente nivel</div><div class="child-grid">' + children.map(renderChildCard).join('') + '</div>';
+  } else {
+    body += '<div class="note-box"><h4>Estado</h4><p class="muted-note">No hay modulos implementados en esta capa. Se conserva como pagina futura para que la arquitectura mantenga su orden.</p></div>';
+  }
+  return renderPageShell(layer, body);
+}
+
+function renderFeatureCards(module){
+  var features = module.features || [];
+  if(features.length === 0) return '';
+  return '<div class="page-section-title">Features / procesos</div><div class="chip-row">' + features.map(function(featureId){
+    var label = featureId.split('::').pop();
+    return '<span class="chip" onclick="pushLevel(\'feature\',\'' + featureId + '\',\'' + label.replace(/'/g, "\\'") + '\')">' + label + '</span>';
+  }).join('') + '</div>';
+}
+
+function renderConciseModule(id){
+  var module = CONCISE_NAV.modules[id];
+  if(!module) return null;
+  var body = '<div class="page-summary"><div class="page-score"><div class="page-score-value" style="' + pctStyle(module.pct) + '">' + module.pct + '%</div><div class="page-score-label">' + module.status + '</div></div><div class="page-notes"><div class="note-box"><h4>Implementado</h4>' + listItems(module.done) + '</div><div class="note-box"><h4>Pendiente / futuro</h4>' + listItems(module.pending) + '</div></div></div>';
+  body += renderFeatureCards(module);
+  var actions = MODULE_SUMMARIES[id] ? '<button class="page-btn" onclick="showGeneratedDetail(\'' + id + '\')">Ficha tecnica generada</button>' : '';
+  return renderPageShell(module, body, actions);
+}
+
+function showGeneratedDetail(moduleId){
+  var content = document.getElementById('levelContent');
+  var module = CONCISE_NAV.modules[moduleId] || { title: moduleId };
+  if(!content || !MODULE_SUMMARIES[moduleId]) return;
+  var body = '<div class="note-box"><h4>Ficha tecnica generada</h4><p class="muted-note">Detalle largo del analizador historico. Se muestra solo bajo demanda para no mezclarlo con la navegacion jerarquica.</p></div>' + MODULE_SUMMARIES[moduleId];
+  content.innerHTML = renderPageShell(module, body, '<button class="page-btn" onclick="renderCurrentLevel()">Resumen</button>');
+}
+
 function renderCurrentLevel(){
   var content = document.getElementById('levelContent');
   if(!content) return;
   if(breadcrumbStack.length === 0){ content.innerHTML = ''; return; }
 
   var top = breadcrumbStack[breadcrumbStack.length - 1];
+  var concise = top.level === 'layer' ? renderConciseLayer(top.id) : (top.level === 'module' ? renderConciseModule(top.id) : null);
+  if(concise){
+    content.innerHTML = concise;
+    return;
+  }
+
   var html = '<p class="muted-note">No data available for this level.</p>';
 
   if(top.level === 'layer'){ html = LAYER_LEVELS[top.id] || html; }
@@ -3699,33 +3853,87 @@ function renderCurrentLevel(){
   else if(top.level === 'process'){ html = PROCESS_LEVELS[top.id] || html; }
   else if(top.level === 'file'){ html = FILE_PANELS[top.id] || html; }
 
-  if(top.level === 'layer'){
-    content.innerHTML = '<div class="layer-page-toolbar"><div><div class="layer-page-title">' + top.label + '</div><div class="muted-note">Pagina de arquitectura vinculada al bloque seleccionado. La informacion se reutiliza desde el explorador, sin duplicar tablas.</div></div><div class="layer-page-actions"><button class="page-btn" onclick="resetBreadcrumb()">Volver al mapa</button><button class="page-btn" onclick="showGroup(\'home\');showSubGroup(\'home\',\'estado-actual\')">Estado actualizado</button></div></div>' + html;
-  } else {
-    content.innerHTML = '<div class="level-heading">' + (LEVEL_LABELS[top.level] || '') + ': <b>' + top.label + '</b></div>' + html;
-  }
+  content.innerHTML = '<div class="level-heading">' + (LEVEL_LABELS[top.level] || '') + ': <b>' + top.label + '</b></div>' + html;
 }
 
 function selectLayer(layerId){
-  if(!suppressHashRoute && location.hash !== '#page=' + layerId){
-    history.pushState(null, '', '#page=' + layerId);
-  }
   var navLabelEl = document.getElementById('diagramnode-' + layerId);
   var label = navLabelEl ? navLabelEl.querySelector('.diagram-node-title').textContent : layerId;
+  var shouldRoute = !suppressHashRoute;
+  var previousSuppress = suppressHashRoute;
+  suppressHashRoute = true;
   resetBreadcrumb();
+  suppressHashRoute = previousSuppress;
+  if(shouldRoute && location.hash !== '#page=' + layerId){
+    history.pushState(null, '', '#page=' + layerId);
+  }
   pushLevel('layer', layerId, label);
 }
 
+function findParentLayerForModule(moduleId){
+  var preferred = ['core', 'web', 'db', 'intelligence'];
+  for(var i = 0; i < preferred.length; i++){
+    var layer = CONCISE_NAV.layers[preferred[i]];
+    if(layer && (layer.children || []).indexOf(moduleId) >= 0) return preferred[i];
+  }
+  return Object.keys(CONCISE_NAV.layers).find(function(layerId){
+    return (CONCISE_NAV.layers[layerId].children || []).indexOf(moduleId) >= 0;
+  });
+}
+
 function routeFromHash(){
-  var match = location.hash.match(/^#page=([a-z0-9-]+)$/);
-  if(!match) return false;
-  var layerId = match[1];
-  if(!document.getElementById('diagramnode-' + layerId)) return false;
+  var layerMatch = location.hash.match(/^#page=([^&]+)$/);
+  var moduleMatch = location.hash.match(/^#module=([^&]+)$/);
+  var featureMatch = location.hash.match(/^#feature=([^&]+)$/);
+  if(!layerMatch && !moduleMatch && !featureMatch) return false;
+
   suppressHashRoute = true;
   showGroup('architecture');
-  selectLayer(layerId);
+  resetBreadcrumb();
+
+  if(layerMatch){
+    var layerId = decodeURIComponent(layerMatch[1]);
+    if(!document.getElementById('diagramnode-' + layerId)){
+      suppressHashRoute = false;
+      return false;
+    }
+    selectLayer(layerId);
+    suppressHashRoute = false;
+    return true;
+  }
+
+  if(moduleMatch){
+    var moduleId = decodeURIComponent(moduleMatch[1]);
+    var module = CONCISE_NAV.modules[moduleId];
+    if(!module){
+      suppressHashRoute = false;
+      return false;
+    }
+    var parentLayer = findParentLayerForModule(moduleId);
+    if(parentLayer) pushLevel('layer', parentLayer, CONCISE_NAV.layers[parentLayer].title);
+    pushLevel('module', moduleId, module.title);
+    suppressHashRoute = false;
+    return true;
+  }
+
+  if(featureMatch){
+    var featureId = decodeURIComponent(featureMatch[1]);
+    var ownerModuleId = featureId.split('::')[0];
+    var ownerModule = CONCISE_NAV.modules[ownerModuleId];
+    if(!ownerModule){
+      suppressHashRoute = false;
+      return false;
+    }
+    var featureParentLayer = findParentLayerForModule(ownerModuleId);
+    if(featureParentLayer) pushLevel('layer', featureParentLayer, CONCISE_NAV.layers[featureParentLayer].title);
+    pushLevel('module', ownerModuleId, ownerModule.title);
+    pushLevel('feature', featureId, featureId.split('::').pop());
+    suppressHashRoute = false;
+    return true;
+  }
+
   suppressHashRoute = false;
-  return true;
+  return false;
 }
 
 function highlightDepNode(moduleId){
@@ -3739,7 +3947,9 @@ function highlightDepNode(moduleId){
   }
   showGroup('architecture');
   resetBreadcrumb();
-  pushLevel('module', moduleId, moduleId);
+  var parentLayer = findParentLayerForModule(moduleId);
+  if(parentLayer) pushLevel('layer', parentLayer, CONCISE_NAV.layers[parentLayer].title);
+  pushLevel('module', moduleId, (CONCISE_NAV.modules[moduleId] || {}).title || moduleId);
 }
 
 document.addEventListener('DOMContentLoaded', function(){
