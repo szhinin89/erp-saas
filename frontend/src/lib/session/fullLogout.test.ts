@@ -19,6 +19,7 @@ vi.stubGlobal("sessionStorage", createStorage());
 
 import { useAccessStore } from "../../store/accessStore";
 import { useAuthStore } from "../../store/authStore";
+import { useSessionIdleStore } from "../../store/sessionIdleStore";
 import { setAccessToken } from "./authTokenMemory";
 import {
   ACCESS_BOOTSTRAP_STORAGE_KEY,
@@ -92,5 +93,13 @@ describe("fullLogout", () => {
     expect(useAuthStore.getState().token).toBeNull();
     expect(useAccessStore.getState().bootstrapToken).toBeNull();
     expect(sessionStorage.getItem(AUTH_PROFILE_STORAGE_KEY)).toBeNull();
+  });
+
+  it("fullLogout limpia el candado por inactividad para que el siguiente usuario en la misma pestaña no lo herede", () => {
+    useSessionIdleStore.setState({ isLocked: true, lastActivityAt: 0 });
+
+    fullLogout();
+
+    expect(useSessionIdleStore.getState().isLocked).toBe(false);
   });
 });

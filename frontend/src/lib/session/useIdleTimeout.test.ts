@@ -9,7 +9,10 @@ const TIMEOUT_MS = 30 * 60_000;
 describe("useIdleTimeout", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    useSessionIdleStore.setState({ isLocked: false });
+    // lastActivityAt también se resetea "ahora" (bajo el reloj falso ya instalado): si no,
+    // un test anterior que avanzó el reloj falso deja lastActivityAt en el futuro respecto
+    // al "ahora" real con el que arranca el siguiente test, rompiendo el cálculo de elapsed.
+    useSessionIdleStore.setState({ isLocked: false, lastActivityAt: Date.now() });
   });
 
   afterEach(() => {
@@ -17,7 +20,7 @@ describe("useIdleTimeout", () => {
     // cualquier renderHook pendiente para no acumular listeners de un test al siguiente.
     cleanup();
     vi.useRealTimers();
-    useSessionIdleStore.setState({ isLocked: false });
+    useSessionIdleStore.setState({ isLocked: false, lastActivityAt: Date.now() });
   });
 
   it("bloquea la sesión tras el timeout configurado sin actividad", () => {
@@ -117,5 +120,45 @@ describe("useIdleTimeout", () => {
     window.dispatchEvent(new Event("keydown"));
 
     expect(useSessionIdleStore.getState().isLocked).toBe(true);
+  });
+
+  it("F5 (remount) durante una sesión ya inactiva más allá del timeout bloquea de inmediato", () => {
+    // Simula lo que persistió sessionStorage antes de recargar: última actividad hace más
+    // de TIMEOUT_MS. Sin retomar este valor, el hook reiniciaría el reloj y regalaría
+    // TIMEOUT_MS adicionales solo por haber recargado la página (ZH-AUTH-SESSION-PERSISTENCE-QA-11).
+    useSessionIdleStore.setState({
+      isLocked: false,
+      lastActivityAt: Date.now() - TIMEOUT_MS - 5_000,
+    });
+
+    renderHook(() => useIdleTimeout(TIMEOUT_MS));
+
+    expect(useSessionIdleStore.getState().isLocked).toBe(true);
+  });
+
+  it("F5 dentro del timeout retoma el conteo restante en vez de reiniciarlo completo", () => {
+    // Quedan ~5s de margen antes del timeout al momento de recargar.
+    useSessionIdleStore.setState({
+      isLocked: false,
+      lastActivityAt: Date.now() - (TIMEOUT_MS - 5_000),
+    });
+
+    renderHook(() => useIdleTimeout(TIMEOUT_MS));
+
+    vi.advanceTimersByTime(4_000);
+    expect(useSessionIdleStore.getState().isLocked).toBe(false);
+
+    vi.advanceTimersByTime(1_500);
+    expect(useSessionIdleStore.getState().isLocked).toBe(true);
+  });
+
+  it("la actividad persiste lastActivityAt para que un F5 posterior pueda retomar el conteo", () => {
+    renderHook(() => useIdleTimeout(TIMEOUT_MS));
+
+    const before = useSessionIdleStore.getState().lastActivityAt;
+    vi.advanceTimersByTime(10_000);
+    window.dispatchEvent(new Event("mousemove"));
+
+    expect(useSessionIdleStore.getState().lastActivityAt).toBeGreaterThan(before);
   });
 });

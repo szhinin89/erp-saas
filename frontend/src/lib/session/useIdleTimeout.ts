@@ -48,12 +48,17 @@ export function useIdleTimeout(timeoutMs: number = IDLE_TIMEOUT_MS): void {
   useEffect(() => {
     if (isLocked) return;
 
-    const resetTimer = () => {
+    const scheduleLock = (delayMs: number) => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         lock();
         broadcastIdleLock();
-      }, timeoutMs);
+      }, Math.max(delayMs, 0));
+    };
+
+    const resetTimer = () => {
+      useSessionIdleStore.getState().recordActivity();
+      scheduleLock(timeoutMs);
     };
 
     const handleVisibility = () => {
@@ -65,7 +70,17 @@ export function useIdleTimeout(timeoutMs: number = IDLE_TIMEOUT_MS): void {
     );
     document.addEventListener("visibilitychange", handleVisibility);
 
-    resetTimer();
+    // Retomar el conteo desde la última actividad persistida (sobrevive un F5) en vez de
+    // reiniciar siempre el reloj completo: si ya pasó más de timeoutMs desde esa actividad
+    // (p.ej. recargar la página durante una sesión ya inactiva), bloquear de inmediato en
+    // vez de regalar timeoutMs adicionales solo por haber recargado.
+    const elapsed = Date.now() - useSessionIdleStore.getState().lastActivityAt;
+    if (elapsed >= timeoutMs) {
+      lock();
+      broadcastIdleLock();
+    } else {
+      scheduleLock(timeoutMs - elapsed);
+    }
 
     return () => {
       ACTIVITY_EVENTS.forEach((eventName) =>

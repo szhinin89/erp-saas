@@ -4,6 +4,7 @@ import {
 } from "../../lib/session/authRefreshManager";
 import { useAccessStore } from "../../store/accessStore";
 import { useAuthStore } from "../../store/authStore";
+import { useSessionIdleStore } from "../../store/sessionIdleStore";
 import { clearAccessToken } from "./authTokenMemory";
 import {
   ACCESS_BOOTSTRAP_STORAGE_KEY,
@@ -57,6 +58,9 @@ export function fullLogout(options: FullLogoutOptions = {}): void {
   if (resetStores) {
     useAuthStore.getState().logout();
     useAccessStore.getState().clearBootstrap();
+    // Sin esto, un cambio de usuario en la misma pestaña (sin recargar) conservaría el
+    // candado/lastActivityAt en memoria del usuario anterior (ZH-AUTH-SESSION-PERSISTENCE-QA-11).
+    useSessionIdleStore.getState().reset();
   }
 
   clearPersistedSessionArtifacts();
