@@ -807,6 +807,99 @@ public sealed class InventoryAdjustmentsEndToEndTests : IClassFixture<InventoryA
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // ESCENARIO 3b — Egreso con costo manual "colado" en el request: se ignora
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// TECH-DEBT-API-INVENTORY-ADJUSTMENT-FAILURE-01A — a diferencia del Escenario3 (que envía
+    /// <c>unitCostBase: null</c> en la línea de Egreso), este escenario envía un costo manual
+    /// EXPLÍCITO y distinto del promedio corrido vigente, para probar la decisión de diseño ya
+    /// vigente en <c>ExecuteStockAdjustmentCommandHandler</c> (nunca reenvía
+    /// <c>line.UnitCostBase</c> para un Egreso): el costo manual del request se ignora por
+    /// completo, nunca contamina <c>StockMovement.UnitCost</c> ni el costo promedio corrido.
+    /// </summary>
+    [Fact]
+    public async Task Escenario3b_Egreso_con_costo_manual_en_el_request_lo_ignora_y_usa_costo_promedio()
+    {
+        var (ingresoReasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Ingreso,
+            codePrefix: "SOBRANTE3B"
+        );
+        var (egresoReasonId, _) = await CreateReasonAsync(
+            InventoryAdjustmentReason.Egreso,
+            requiresNotes: true,
+            codePrefix: "CADUCADO3B"
+        );
+
+        var ingreso = await CreateAdjustmentOkAsync(
+            InventoryAdjustmentReason.Ingreso,
+            ingresoReasonId,
+            notes: null,
+            lines: new object[]
+            {
+                new
+                {
+                    itemId = _f.ItemId,
+                    itemName = "Producto Ajustes E2E",
+                    packagingLevelId = (Guid?)null,
+                    quantity = 5m,
+                    unitCostBase = 10.00m,
+                    lineNotes = (string?)null,
+                },
+            }
+        );
+        (await ExecuteAdjustmentAsync(ingreso.Id)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        decimal avgCostBeforeEgreso;
+        using (var preScope = _f.CreateDbScope())
+        {
+            var preDb = preScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var lastMovement = await preDb
+                .StockMovements.AsNoTracking()
+                .Where(m => m.ProductId == _f.ItemId && m.WarehouseId == _f.WarehouseId)
+                .OrderByDescending(m => m.SequenceNumber)
+                .FirstAsync();
+            avgCostBeforeEgreso = lastMovement.RunningAverageCost;
+        }
+
+        // Costo manual deliberadamente DISTINTO del promedio corrido (999 vs ~6.18/10) — si el
+        // bug reapareciera, este valor "contaminaría" UnitCost/RunningAverageCost de forma
+        // inconfundible (no podría confundirse con una coincidencia numérica).
+        var egresoDraft = await CreateAdjustmentOkAsync(
+            InventoryAdjustmentReason.Egreso,
+            egresoReasonId,
+            notes: "Vencido lote 999",
+            lines: new object[]
+            {
+                new
+                {
+                    itemId = _f.ItemId,
+                    itemName = "Producto Ajustes E2E",
+                    packagingLevelId = (Guid?)null,
+                    quantity = 2m,
+                    unitCostBase = 999m,
+                    lineNotes = (string?)null,
+                },
+            }
+        );
+
+        var executeResponse = await ExecuteAdjustmentAsync(egresoDraft.Id);
+        executeResponse
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK, await executeResponse.Content.ReadAsStringAsync());
+
+        using var scope = _f.CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var movement = await db
+            .StockMovements.AsNoTracking()
+            .SingleAsync(m => m.SourceDocId == egresoDraft.Id);
+
+        movement.UnitCost.Should().BeNull("el costo manual del request nunca debe llegar al Kardex de un Egreso");
+        movement.TotalCost.Should().Be(2m * avgCostBeforeEgreso, "TotalCost se calcula desde el costo promedio vigente, no desde el costo manual del request (999)");
+        movement.RunningAverageCost.Should().Be(avgCostBeforeEgreso, "un Egreso no cambia el costo promedio, ni siquiera con un costo manual distinto en el request");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // ESCENARIO 4 — Stock insuficiente
     // ══════════════════════════════════════════════════════════════════════
 

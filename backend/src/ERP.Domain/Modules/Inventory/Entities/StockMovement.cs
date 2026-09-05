@@ -57,6 +57,20 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     /// y <see cref="RunningStockValue"/> es responsabilidad exclusiva de
     /// <c>IStockRepository.AppendMovementAsync</c> — nunca se recalculan a partir de CurrentStock.
     /// </summary>
+    /// <param name="unitCost">
+    /// Costo unitario CAPTURADO (manual/de compra) para este movimiento — solo tiene valor cuando
+    /// el caller efectivamente lo provee (p. ej. una entrada). Nunca se infiere de un promedio;
+    /// una salida (venta, ajuste negativo) SIEMPRE lo deja en <c>null</c> — es la semántica que
+    /// distingue "costo tecleado" de "costo de valuación resuelto internamente".
+    /// </param>
+    /// <param name="valuationUnitCost">
+    /// ACCOUNTING-INVENTORY-COGS-07 / TECH-DEBT-API-INVENTORY-ADJUSTMENT-FAILURE-01A — costo de
+    /// valuación ya resuelto por el caller (típicamente el costo promedio corrido vigente ANTES
+    /// del movimiento) usado ÚNICAMENTE para calcular <see cref="TotalCost"/> cuando
+    /// <paramref name="unitCost"/> es <c>null</c> — nunca sobrescribe <see cref="UnitCost"/>. Así
+    /// una salida puede tener <c>TotalCost</c> (necesario para costear COGS en Accounting) sin que
+    /// eso implique que capturó un costo manual.
+    /// </param>
     public static StockMovement Create(
         Guid tenantId,
         Guid branchId,
@@ -78,7 +92,8 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
         decimal? unitCost = null,
         Guid? lotId = null,
         Guid? serialId = null,
-        Guid? sourceDocLineId = null
+        Guid? sourceDocLineId = null,
+        decimal? valuationUnitCost = null
     )
     {
         if (branchId == Guid.Empty)
@@ -93,6 +108,8 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
             throw new InvalidOperationException(
                 "UomCode es obligatorio para un movimiento de Kardex."
             );
+
+        var costForTotal = unitCost ?? valuationUnitCost;
 
         var m = new StockMovement
         {
@@ -116,7 +133,7 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
             SourceDocType = string.IsNullOrWhiteSpace(sourceDocType) ? null : sourceDocType.Trim(),
             SourceDocLineId = sourceDocLineId,
             UnitCost = unitCost,
-            TotalCost = unitCost.HasValue ? Math.Abs(quantity) * unitCost.Value : null,
+            TotalCost = costForTotal.HasValue ? Math.Abs(quantity) * costForTotal.Value : null,
             LotId = lotId,
             SerialId = serialId,
         };

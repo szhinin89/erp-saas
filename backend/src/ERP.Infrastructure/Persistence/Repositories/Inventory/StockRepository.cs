@@ -236,18 +236,20 @@ public sealed class StockRepository : IStockRepository
             r.SourceDocType,
             r.ActorId,
             r.CompanyId,
-            // ACCOUNTING-INVENTORY-COGS-07: usar el costo ya resuelto (resolvedUnitCost), no el
-            // r.UnitCost crudo del caller — para una salida (venta/ajuste) el caller nunca pasa
-            // unitCost explícito (se resuelve del costo promedio corrido del Kardex, ver arriba),
-            // así que StockMovement.UnitCost/TotalCost quedaban en null aunque el costo SÍ se
-            // usó para actualizar RunningStockValue. Sin este fix, "costo total de salida" (el
-            // campo que Accounting necesita para contabilizar el costo de ventas) no existía en
-            // ningún movimiento de salida — TotalCost es justamente el campo diseñado para esto
-            // (ver StockMovement.Create: TotalCost = unitCost.HasValue ? |quantity| * unitCost : null).
-            resolvedUnitCost,
+            // TECH-DEBT-API-INVENTORY-ADJUSTMENT-FAILURE-01A: r.UnitCost crudo (nunca resolvedUnitCost)
+            // — UnitCost debe reflejar SOLO el costo capturado/manual del caller (no nulo únicamente
+            // en entradas). Para una salida (venta/ajuste negativo) el caller nunca pasa unitCost
+            // explícito, así que este campo queda null — esa es la semántica que
+            // InventoryAdjustmentsEndToEndTests.Escenario3 verifica.
+            r.UnitCost,
             r.LotId,
             r.SerialId,
-            r.SourceDocLineId
+            r.SourceDocLineId,
+            // ACCOUNTING-INVENTORY-COGS-07: resolvedUnitCost (costo promedio corrido vigente cuando
+            // no hay costo manual) sigue alimentando SOLO TotalCost — vía el parámetro dedicado
+            // valuationUnitCost, nunca UnitCost — para que Accounting pueda costear salidas sin que
+            // eso se confunda con "esta salida capturó un costo manual".
+            valuationUnitCost: resolvedUnitCost
         );
 
         await _db.Set<StockMovement>().AddAsync(movement, ct);
