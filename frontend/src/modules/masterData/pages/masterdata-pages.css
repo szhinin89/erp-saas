@@ -324,24 +324,9 @@
   border-top: 1px solid var(--color-surface-container);
 }
 
-/* ── Wizard: banner "no encontrado" ──────────────────────── */
-.prd-wiz-notfound-banner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-4);
-  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
-  border: 1px solid var(--color-warning);
-  border-radius: 6px;
-  font-size: var(--text-body-md-size);
-  color: var(--color-warning);
-}
-.prd-wiz-notfound-banner .material-symbols-outlined {
-  font-size: 18px;
-  flex-shrink: 0;
-  color: var(--color-warning);
-}
+/* .prd-wiz-notfound-banner ELIMINADO (ZH-MASTERDATA-PARTNER-COMPACT-FORM-UX-04) — el aviso
+   "no encontrado" ahora usa <ZHPageNotice variant="info"> (arquitectura de notices existente,
+   ver zh-ui.css § 5 Alertas/Notices); sin consumidores TSX. */
 
 /* ── Resumen tab: override KPI grid a 4 columnas ─────────── */
 .prd-resumen .prd-kpi-grid {
@@ -410,14 +395,167 @@
 /* .prd-quick-btn (+ :last-child / :hover / .material-symbols-outlined)
    ELIMINADOS (Bloque 13B) — sin consumidores. */
 
-/* ── ZH-MASTERDATA-PARTNER-FORM-UX-01 — card único por secciones (sin stepper) ── */
-.md-partner-intro {
-  margin-bottom: var(--space-5);
+/* .md-partner-intro ELIMINADO (ZH-MASTERDATA-PARTNER-HEADER-MESSAGE-ALIGNMENT-04F) — la
+   descripción pasó a `.md-partner-card-description` en la cabecera; sin consumidores TSX. */
+
+/* ── ZH-MASTERDATA-PARTNER-FORM-DENSITY-FIX-04C — card scoped más compacto (no toca
+   .pg-section/.pg-section-header/.pg-section-body/.prd-wiz-footer globales) ────────── */
+/* Padding vertical de header ajustado en ZH-MASTERDATA-PARTNER-HEADER-DENSITY-FINAL-04G:
+   var(--space-2) en vez de var(--space-3) — cabecera de 2 filas compactas. */
+.md-partner-card .pg-section-header {
+  padding: var(--space-2) var(--space-4);
+}
+.md-partner-card .pg-section-body {
+  padding: var(--space-4);
+  padding-top: var(--space-3);
+}
+.md-partner-card .prd-wiz-footer {
+  padding: var(--space-3) var(--space-4);
 }
 
 /* .md-partner-subsection + .md-partner-subsection / --divider ELIMINADOS
    (ZH-MASTERDATA-PARTNER-FORM-UX-01B) — "Revisar antes de guardar" se quitó y ya no hay
    más de una subsección por pantalla; sin consumidores TSX. */
+
+/* ── ZH-MASTERDATA-PARTNER-PROGRESSIVE-FORM-UX-02 — formulario visible desde el inicio,
+   habilitación progresiva de campos ────────────────────────────────────────── */
+/* .md-partner-crossrole-hint / .md-partner-guidance ELIMINADOS
+   (ZH-MASTERDATA-PARTNER-COMPACT-FORM-UX-04) — la ayuda de duplicados y el mensaje inicial
+   se unificaron en un único <ZHPageNotice variant="info">; sin consumidores TSX. */
+
+/* .md-partner-search-wrap / .md-partner-search / .md-partner-search-main /
+   .md-partner-search-row ELIMINADOS (ZH-MASTERDATA-PARTNER-HEADER-SEARCH-UX-04E) — la caja de
+   búsqueda independiente desapareció: el buscador ahora vive en la cabecera del card
+   (.md-partner-card-header / .md-partner-header-search); sin consumidores TSX. */
+/* ── ZH-MASTERDATA-PARTNER-HEADER-SEARCH-UX-04E / -MESSAGE-ALIGNMENT-04F /
+   -HEADER-DENSITY-FINAL-04G — cabecera de 2 filas compactas en grid de 2 columnas:
+   fila 1 = título ↔ buscador; fila 2 = descripción ↔ mensaje de búsqueda. Cada mensaje vive
+   junto al elemento al que pertenece; el body ya no tiene notices sueltos. ───────────────── */
+.md-partner-card-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+  align-items: start;
+}
+.md-partner-card-title-block {
+  min-width: 0;
+}
+.md-partner-card-description {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-help-size);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+.md-partner-header-search {
+  min-width: 0;
+}
+.md-partner-header-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+.md-partner-header-search-row .prd-search-box {
+  min-width: 0;
+}
+
+.md-partner-search-notice {
+  margin-top: var(--space-1);
+}
+.md-partner-search-notice:empty {
+  margin: 0;
+}
+.md-partner-search-notice .zh-page-notice {
+  width: 100%;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .md-partner-card-header {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .md-partner-header-search-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Notice compacto (aviso final del formulario) — no crea variante nueva en ZHPageNotice, solo
+   ajusta densidad visual scoped vía className local (ZH-MASTERDATA-PARTNER-FORM-DENSITY-FIX-04C).
+   No es una alerta crítica: por eso se reduce padding/tamaño respecto al zh-form-alert por defecto. */
+.md-partner-notice-compact.zh-page-notice .zh-form-alert {
+  padding: var(--space-2) var(--space-3);
+  align-items: center;
+}
+.md-partner-notice-compact .zh-form-alert-message {
+  font-size: var(--text-help-size);
+  font-weight: 500;
+}
+.md-partner-notice-compact .zh-form-alert-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Mensaje de búsqueda: helper inline compacto, NO notice tipo caja pesada
+   (ZH-MASTERDATA-PARTNER-HEADER-DENSITY-FINAL-04G). Sigue usando ZHPageNotice/zh-form-alert
+   (arquitectura existente) pero, solo dentro de .md-partner-search-notice, sin fondo/borde/
+   padding de caja — icono + texto en línea, conservando el color de variante (info/error). El
+   aviso final del formulario (.md-partner-final-notice) no está dentro de este contenedor y
+   conserva el estilo de caja compacta de arriba. */
+.md-partner-search-notice .md-partner-notice-compact.zh-page-notice .zh-form-alert {
+  padding: 0;
+  background: transparent;
+  border: none;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.md-partner-search-notice .md-partner-notice-compact .zh-form-alert-message {
+  font-weight: 400;
+  line-height: 1.3;
+}
+.md-partner-search-notice .md-partner-notice-compact .zh-form-alert-icon {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+
+.md-partner-final-notice {
+  margin-top: var(--space-3);
+}
+
+/* Envuelve las secciones de MasterDataBpFormFields — reset del <fieldset> nativo para que
+   se comporte como un contenedor de layout, no como un campo con borde propio. El estado
+   disabled se refleja con opacidad (no con estilo de error). */
+.md-partner-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.md-partner-fieldset:disabled {
+  opacity: 0.55;
+}
+.md-partner-fieldset:disabled * {
+  cursor: not-allowed;
+}
+
+.md-partner-group {
+  margin-bottom: var(--space-4);
+}
+.md-partner-group:last-child {
+  margin-bottom: 0;
+}
+.md-partner-group__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
 
 /* ── BP "Buscar o Crear" search flow ─────────────────────── */
 .md-search-results {

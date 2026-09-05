@@ -1,25 +1,22 @@
 /**
- * MasterDataPartnerWizard V5 — pantalla única por secciones (ZH-MASTERDATA-PARTNER-FORM-UX-01/01B).
+ * MasterDataPartnerWizard V6 — formulario único visible desde el inicio, con habilitación
+ * progresiva de campos (ZH-MASTERDATA-PARTNER-PROGRESSIVE-FORM-UX-02).
  *
- * ETAPAS (sin stepper visual): 1=Buscar, 2=Identificación (única sección de datos).
- * ELIMINADO (01): stepper numerado de 3 pasos — reemplazado por un solo card con secciones.
- * ELIMINADO (01B): sección "Revisar antes de guardar" — al no haber wizard por pasos,
- * repetía los datos recién ingresados en `MasterDataBpFormFields section="identity"` sin
- * aportar valor (solo aumentaba scroll y confundía). El aviso informativo final ("Al guardar
- * quedará disponible como {rol}") se conserva, ahora al pie de la sección de identificación.
- * ELIMINADO (V2): step "Contact" (email/phone) — los contactos van en BusinessPartnerContact
- * (POST /contacts), no en este formulario.
+ * V6: se elimina el último resto de wizard por pasos (paso 1 "Buscar" / paso 2
+ * "Identificación"):
+ *   - La búsqueda y el formulario conviven siempre en la misma pantalla — el formulario se
+ *     renderiza desde el inicio, con los campos deshabilitados (<fieldset disabled>) hasta
+ *     que el usuario busca sin encontrar resultados o elige "Crear nuevo registro".
+ *   - Sin botones "Anterior"/"Continuar": la única navegación adicional es "Cambiar
+ *     búsqueda" (vuelve a bloquear el formulario), visible solo cuando ya se habilitó a
+ *     partir de una búsqueda.
+ *   - Si la búsqueda encuentra resultados, se ofrece "Asignar como {rol}" como acción
+ *     principal; "Crear nuevo registro" sigue disponible como acción secundaria.
+ *   - En edición (o cuando el caller precarga `initialValues`, p. ej. desde Compras) el
+ *     formulario sigue arrancando habilitado y sin bloque de búsqueda, igual que antes.
  *
- * V2 changes:
- *   - alreadyHasRole: simplificado — el backend devuelve 422 si el rol ya está activo.
- *   - legalEntityTypeCode: campo obligatorio en la sección de identificación.
- *   - Sin email/phone/legalRepresentativeName.
- *   - onSubmitCreate: ya no incluye asCustomer/asSupplier — role se asigna por separado.
- *
- * V3 (RHF migration):
- *   - useForm<BusinessPartnerFormValues> con zodResolver — fuente de verdad del formulario.
- *   - FormProvider — MasterDataBpFormFields consume useFormContext().
- *   - applyServerErrors — errores 422 aparecen bajo el campo correspondiente.
+ * Historial previo (ver git log para detalle de V2 a V5): eliminación del stepper numerado
+ * (01), de la sección "Revisar antes de guardar" (01B), migración a RHF+zod (V3).
  */
 import { useEffect, useRef, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
@@ -39,9 +36,8 @@ import type {
 } from "../types/businessPartner.types";
 import { MasterDataBpFormFields } from "./MasterDataBpFormFields";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 
-/** 1 = Buscar y asignar; 2 = Identificación + Configuración comercial + Revisar (un solo tramo). */
-type StepId = 1 | 2;
 type Role = "customer" | "supplier";
 
 /** Solo aplica cuando role='supplier' — ver SupplierRoleConfig (backend). */
@@ -50,9 +46,9 @@ export type SupplierConfigAtCreation = {
   paymentTermId: string;
 };
 
-/** Precarga del paso 2 (Identidad) saltando el paso 1 (Buscar) — para flujos que ya saben que el
- * BP no existe (p.ej. crear proveedor desde un documento de recepción SRI con RUC/razón social
- * ya conocidos). No confundir con `editingPartner`: aquí seguimos creando, no editando. */
+/** Precarga del formulario saltando la búsqueda — para flujos que ya saben que el BP no
+ * existe (p.ej. crear proveedor desde un documento de recepción SRI con RUC/razón social ya
+ * conocidos). No confundir con `editingPartner`: aquí seguimos creando, no editando. */
 export type PartnerWizardInitialValues = {
   identificationType?: string;
   identificationNumber?: string;
@@ -129,10 +125,10 @@ export function MasterDataPartnerWizard({
 }: Props) {
   const { t } = useI18n();
   const isEdit = !!editingPartner;
-  // Salta el paso 1 (Buscar) tanto al editar como cuando el caller ya sabe que el BP no existe y
-  // trae datos precargados (`initialValues`) — en ambos casos el paso 2 arranca con datos.
-  const skipStep1 = isEdit || !!initialValues;
-  const [step, setStep] = useState<StepId>(skipStep1 ? 2 : 1);
+  // Oculta la búsqueda y arranca con el formulario habilitado tanto al editar como cuando el
+  // caller ya sabe que el BP no existe y trae datos precargados (`initialValues`).
+  const skipSearch = isEdit || !!initialValues;
+  const [formEnabled, setFormEnabled] = useState(skipSearch);
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -190,6 +186,8 @@ export function MasterDataPartnerWizard({
     if (!q) return;
     setSearching(true);
     setSearchError("");
+    setNotFound(null);
+    setResults([]);
     try {
       const rows = await businessPartnerService.search({ q, take: 10 });
       setResults(rows);
@@ -197,14 +195,16 @@ export function MasterDataPartnerWizard({
       if (rows.length === 0) {
         prefill(q);
         setNotFound(q);
-        setStep(2);
+        setFormEnabled(true);
       }
-    } catch {
+    } catch (err) {
       setSearchError(
-        t(
-          "masterdata.wizard.search.error",
-          "Error al buscar. Intente de nuevo.",
-        ),
+        formatApiRequestError(err, {
+          generic: t(
+            "masterdata.wizard.search.error",
+            "Error al buscar. Intente de nuevo.",
+          ),
+        }),
       );
     } finally {
       setSearching(false);
@@ -219,20 +219,31 @@ export function MasterDataPartnerWizard({
       onAssignSuccess?.();
     } catch (err) {
       setSearchError(
-        formatApiRequestError(err, { generic: "Error al asignar el rol." }),
+        formatApiRequestError(err, {
+          generic: t(
+            "masterdata.wizard.search.assignError",
+            "Error al asignar el rol.",
+          ),
+        }),
       );
     } finally {
       setAssigning(null);
     }
   };
 
-  /** Avanza de "Buscar" a "Identificación + Revisar" — no valida (la validación real ocurre en
-   * el submit, ya que ambas secciones viven en la misma pantalla). */
-  const goNext = () => {
-    if (step === 1) setStep(2);
+  const handleCreateNew = () => {
+    prefill(query);
+    setSearchError("");
+    setFormEnabled(true);
   };
-  const goPrev = () => {
-    if (step === 2) setStep(1);
+
+  const handleChangeSearch = () => {
+    setFormEnabled(false);
+    setNotFound(null);
+    setResults([]);
+    setHasSearched(false);
+    setSearchError("");
+    queryRef.current?.focus();
   };
 
   const buildCreateBody = (): CreateBusinessPartnerBody => {
@@ -282,40 +293,170 @@ export function MasterDataPartnerWizard({
       if (!applied)
         setBannerError(
           formatApiRequestError(err, {
-            generic: "Error al guardar. Revisa los datos.",
+            generic: t(
+              "masterdata.wizard.submit.error",
+              "Error al guardar. Revisa los datos.",
+            ),
           }),
         );
-      if (applied) setStep(2);
     }
   };
 
   return (
     <FormProvider {...form}>
       <div className="prd-wizard prd-fadein">
-        {/* Card único con secciones (sin stepper) — ver B/C/D/E de ZH-MASTERDATA-PARTNER-FORM-UX-01. */}
-        <div className="pg-section">
-          <div className="pg-section-header">
-            <div className="pg-section-header-left">
-              <span className="material-symbols-outlined pg-section-icon">
-                {role === "customer" ? "group" : "local_shipping"}
-              </span>
-              <span className="pg-section-label">
-                {isEdit ? `Editar ${roleLabel}` : `Nuevo ${roleLabel}`}
-              </span>
+        {/* Card único con secciones (sin stepper) — ver ZH-MASTERDATA-PARTNER-PROGRESSIVE-FORM-UX-02. */}
+        <div className="pg-section md-partner-card">
+          <div className="pg-section-header md-partner-card-header">
+            <div className="md-partner-card-title-block">
+              <div className="pg-section-header-left">
+                <span className="material-symbols-outlined pg-section-icon">
+                  {role === "customer" ? "group" : "local_shipping"}
+                </span>
+                <span className="pg-section-label">
+                  {isEdit ? `Editar ${roleLabel}` : `Nuevo ${roleLabel}`}
+                </span>
+              </div>
+              {/* Descripción general — pertenece al título, no al body
+                  (ZH-MASTERDATA-PARTNER-HEADER-MESSAGE-ALIGNMENT-04F). */}
+              <p className="md-partner-card-description">
+                {role === "customer"
+                  ? t(
+                      "masterdata.wizard.intro.customer",
+                      "Crea o asigna una persona o empresa para ventas, facturación y cuentas por cobrar.",
+                    )
+                  : t(
+                      "masterdata.wizard.intro.supplier",
+                      "Crea o asigna una persona o empresa para compras, gastos, retenciones y cuentas por pagar.",
+                    )}
+              </p>
             </div>
+
+            {/* Buscador integrado en la cabecera del card — ver
+                ZH-MASTERDATA-PARTNER-HEADER-SEARCH-UX-04E. Ya no es una caja/sección aparte.
+                El mensaje de ayuda/no-encontrado/error vive junto al input, no en el body
+                (ZH-MASTERDATA-PARTNER-HEADER-MESSAGE-ALIGNMENT-04F). */}
+            {!skipSearch && (
+              <div className="md-partner-header-search">
+                <div className="md-partner-header-search-row">
+                  <div className="prd-search-box">
+                    <span className="material-symbols-outlined prd-search-icon">
+                      search
+                    </span>
+                    <input
+                      ref={queryRef}
+                      className="prd-search-input"
+                      placeholder="RUC, cédula o razón social…"
+                      value={query}
+                      autoFocus
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleSearch();
+                        }
+                      }}
+                      disabled={searching}
+                    />
+                  </div>
+                  <ZHBtn
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    disabled={searching || !query.trim()}
+                    onClick={() => void handleSearch()}
+                  >
+                    {searching ? "Buscando…" : "Buscar"}
+                  </ZHBtn>
+                  {!formEnabled && (
+                    <ZHBtn
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      onClick={handleCreateNew}
+                    >
+                      {t(
+                        "masterdata.wizard.search.skip",
+                        "Crear nuevo registro",
+                      )}
+                    </ZHBtn>
+                  )}
+                </div>
+
+                <div className="md-partner-search-notice">
+                  {searchError && (
+                    <ZHPageNotice
+                      variant="error"
+                      message={searchError}
+                      className="md-partner-notice-compact"
+                    />
+                  )}
+
+                  {!searchError && !formEnabled && !hasSearched && !notFound && (
+                    <ZHPageNotice
+                      variant="info"
+                      className="md-partner-notice-compact"
+                      message={
+                        role === "customer"
+                          ? t(
+                              "masterdata.wizard.search.crossRoleHint.customer",
+                              "Busca primero para evitar duplicados. Si ya existe como proveedor, puedes asignarlo también como cliente sin duplicarlo.",
+                            )
+                          : t(
+                              "masterdata.wizard.search.crossRoleHint.supplier",
+                              "Busca primero para evitar duplicados. Si ya existe como cliente, puedes asignarlo también como proveedor sin duplicarlo.",
+                            )
+                      }
+                    />
+                  )}
+
+                  {!searchError && notFound && (
+                    <ZHPageNotice
+                      variant="info"
+                      className="md-partner-notice-compact"
+                      message={t("masterdata.wizard.search.notFound", {
+                        query: notFound,
+                        role: roleLabelLower,
+                      })}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div className="pg-section-body">
-            <p className="prd-wiz-panel__desc md-partner-intro">
-              {role === "customer"
-                ? t(
-                    "masterdata.wizard.intro.customer",
-                    "Crea o asigna una persona o empresa para ventas, facturación y cuentas por cobrar.",
-                  )
-                : t(
-                    "masterdata.wizard.intro.supplier",
-                    "Crea o asigna una persona o empresa para compras, gastos, retenciones y cuentas por pagar.",
-                  )}
-            </p>
+            {!skipSearch && hasSearched && results.length > 0 && (
+              <ul className="md-search-results">
+                {results.map((bp) => {
+                  const busy = assigning === bp.id || submitting;
+                  return (
+                    <li key={bp.id} className="md-search-result-item">
+                      <div className="md-search-result-info">
+                        <span className="md-search-result-name">
+                          {bp.legalName}
+                        </span>
+                        <span className="md-search-result-id mono">
+                          {bp.identificationNumber}
+                        </span>
+                      </div>
+                      <ZHBtn
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => void handleAssign(bp)}
+                      >
+                        {busy
+                          ? t("masterdata.wizard.search.assigning", "Asignando…")
+                          : t("masterdata.wizard.search.assign", {
+                              role: roleLabel,
+                            })}
+                      </ZHBtn>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
 
             {draftBanner && !isEdit && (
               <div className="prd-draft-banner">
@@ -341,7 +482,7 @@ export function MasterDataPartnerWizard({
                         shouldValidate: false,
                       });
                       setDraftBanner(null);
-                      setStep(2);
+                      setFormEnabled(true);
                     }
                   }}
                 >
@@ -362,182 +503,79 @@ export function MasterDataPartnerWizard({
             )}
 
             {bannerError && (
-              <div className="prd-wiz-error-banner" role="alert">
-                <span className="material-symbols-outlined">error</span>{" "}
-                {bannerError}
-              </div>
+              <ZHPageNotice variant="error" message={bannerError} />
             )}
 
             <form
               className="prd-wiz-form"
               onSubmit={form.handleSubmit(onValidSubmit)}
             >
-              {/* ── Sección: ¿Ya existe en el sistema? (búsqueda) ─────────── */}
-              {step === 1 && !skipStep1 && (
-                <div className="md-partner-subsection">
-                  <h3 className="prd-wiz-panel__title">
-                    {t(
-                      "masterdata.wizard.search.title",
-                      "¿Ya existe en el sistema?",
-                    )}
-                  </h3>
-                  <p className="prd-wiz-panel__desc">
-                    Busca por RUC, cédula o razón social para evitar
-                    duplicados.
-                  </p>
-                  <div className="prd-search-box zh-mb-16">
-                    <span className="material-symbols-outlined prd-search-icon">
-                      search
-                    </span>
-                    <input
-                      ref={queryRef}
-                      className="prd-search-input"
-                      placeholder="RUC, cédula o razón social…"
-                      value={query}
-                      autoFocus
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void handleSearch();
-                        }
-                      }}
-                      disabled={searching}
-                    />
-                    <ZHBtn
-                      type="button"
-                      variant="primary"
-                      size="md"
-                      disabled={searching || !query.trim()}
-                      onClick={() => void handleSearch()}
-                    >
-                      {searching ? "Buscando…" : "Buscar"}
-                    </ZHBtn>
-                  </div>
-                  {searchError && (
-                    <span className="prd-wiz-error-msg">{searchError}</span>
-                  )}
-                  {hasSearched && results.length > 0 && (
-                    <ul className="md-search-results">
-                      {results.map((bp) => {
-                        const busy = assigning === bp.id || submitting;
-                        return (
-                          <li key={bp.id} className="md-search-result-item">
-                            <div className="md-search-result-info">
-                              <span className="md-search-result-name">
-                                {bp.legalName}
-                              </span>
-                              <span className="md-search-result-id mono">
-                                {bp.identificationNumber}
-                              </span>
-                            </div>
-                            <ZHBtn
-                              type="button"
-                              variant="primary"
-                              size="sm"
-                              disabled={busy}
-                              onClick={() => void handleAssign(bp)}
-                            >
-                              {busy ? "Asignando…" : `+ ${roleLabel}`}
-                            </ZHBtn>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              {/* ── Sección: Identificación/Config. comercial (sin resumen repetido — ver
-                  ZH-MASTERDATA-PARTNER-FORM-UX-01B: "Revisar antes de guardar" duplicaba
-                  los datos recién ingresados sin aportar valor, ya que no hay wizard por
-                  pasos que justifique una revisión aparte). ── */}
-              {step === 2 && (
-                <div className="md-partner-subsection">
-                  {notFound && !isEdit && (
-                    <div className="prd-wiz-notfound-banner" role="status">
-                      <span className="material-symbols-outlined">
-                        search_off
-                      </span>
-                      <span>
-                        No se encontró <strong>"{notFound}"</strong> —
-                        completa los datos para registrar un nuevo{" "}
-                        {roleLabelLower}.
-                      </span>
-                    </div>
-                  )}
-                  <h3 className="prd-wiz-panel__title">
-                    {isEdit
-                      ? "Editar datos principales"
-                      : `Datos principales del ${roleLabelLower}`}
-                  </h3>
-                  <p className="prd-wiz-panel__desc">
-                    Después de guardar podrás completar contactos, teléfonos y
-                    direcciones desde la ficha.
-                  </p>
+              {/* ── Formulario (visible desde el inicio, habilitado progresivamente) ── */}
+              <div className="md-partner-subsection">
+                <h3 className="prd-wiz-panel__title">
+                  {isEdit
+                    ? "Editar datos principales"
+                    : `Datos principales del ${roleLabelLower}`}
+                </h3>
+                <fieldset
+                  className="md-partner-fieldset"
+                  disabled={!formEnabled}
+                >
                   <MasterDataBpFormFields
                     section="identity"
                     saving={submitting}
                     usage={role}
                   />
-                  <div className="prd-review-warning" role="note">
-                    <span className="material-symbols-outlined zh-icon-lg">
-                      info
-                    </span>
-                    <span>
-                      Al guardar quedará disponible como{" "}
-                      <strong>{roleLabelLower}</strong>.
-                    </span>
-                  </div>
-                </div>
-              )}
+                </fieldset>
+                <ZHPageNotice
+                  variant="info"
+                  className="md-partner-final-notice md-partner-notice-compact"
+                  message={
+                    role === "customer"
+                      ? t(
+                          "masterdata.wizard.finalNotice.customer",
+                          "Quedará disponible para ventas, facturación y cuentas por cobrar.",
+                        )
+                      : t(
+                          "masterdata.wizard.finalNotice.supplier",
+                          "Quedará disponible para compras, gastos, retenciones y cuentas por pagar.",
+                        )
+                  }
+                />
+              </div>
 
               {/* ── Footer ───────────────────────────────────────────────── */}
               <div className="prd-wiz-footer">
                 <div className="prd-wiz-footer__left">
-                  {!skipStep1 && step === 2 && (
-                    <ZHBtn
-                      type="button"
-                      variant="ghost"
-                      size="md"
-                      onClick={goPrev}
-                    >
-                      <span className="material-symbols-outlined zh-icon-md">
-                        arrow_back
-                      </span>
-                      {t("masterdata.wizard.btn.prev", "Anterior")}
-                    </ZHBtn>
-                  )}
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    size="md"
+                    onClick={onCancel}
+                  >
+                    Cancelar
+                  </ZHBtn>
                 </div>
                 <div className="prd-wiz-footer__right">
-                  {(isEdit || step === 2) && (
+                  {!isEdit && !skipSearch && formEnabled && (
                     <ZHBtn
                       type="button"
                       variant="ghost"
                       size="md"
-                      onClick={onCancel}
+                      onClick={handleChangeSearch}
                     >
-                      Cancelar
+                      {t(
+                        "masterdata.wizard.search.changeSearch",
+                        "Cambiar búsqueda",
+                      )}
                     </ZHBtn>
                   )}
-                  {!isEdit && step === 1 && (
-                    <ZHBtn
-                      type="button"
-                      variant="secondary"
-                      size="md"
-                      onClick={() => {
-                        prefill(query);
-                        setStep(2);
-                      }}
-                    >
-                      {t("masterdata.wizard.search.skip", "+ Crear sin buscar")}
-                    </ZHBtn>
-                  )}
-                  {step === 2 && !embedded && (
+                  {!isEdit && !embedded && (
                     <ZHBtn
                       type="button"
                       variant="ghost"
                       size="md"
+                      disabled={!formEnabled}
                       onClick={() => {
                         const v = form.getValues();
                         saveDraft(
@@ -554,45 +592,30 @@ export function MasterDataPartnerWizard({
                       Guardar borrador
                     </ZHBtn>
                   )}
-                  {step === 1 ? (
-                    <ZHBtn
-                      type="button"
-                      variant="primary"
-                      size="md"
-                      onClick={goNext}
-                      disabled={!hasSearched && !notFound}
-                    >
-                      Continuar{" "}
-                      <span className="material-symbols-outlined zh-icon-md">
-                        arrow_forward
-                      </span>
-                    </ZHBtn>
-                  ) : (
-                    <ZHBtn
-                      type="submit"
-                      variant="success"
-                      size="md"
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <span className="prd-spinner" aria-hidden />{" "}
-                          {t("masterdata.wizard.btn.saving", "Guardando…")}
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-symbols-outlined zh-icon-md">
-                            check
-                          </span>
-                          {isEdit
-                            ? t("masterdata.wizard.btn.update", "Guardar cambios")
-                            : t("masterdata.wizard.btn.create", {
-                                role: roleLabel,
-                              })}
-                        </>
-                      )}
-                    </ZHBtn>
-                  )}
+                  <ZHBtn
+                    type="submit"
+                    variant="success"
+                    size="md"
+                    disabled={submitting || (!isEdit && !formEnabled)}
+                  >
+                    {submitting ? (
+                      <>
+                        <span className="prd-spinner" aria-hidden />{" "}
+                        {t("masterdata.wizard.btn.saving", "Guardando…")}
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined zh-icon-md">
+                          check
+                        </span>
+                        {isEdit
+                          ? t("masterdata.wizard.btn.update", "Guardar cambios")
+                          : t("masterdata.wizard.btn.create", {
+                              role: roleLabel,
+                            })}
+                      </>
+                    )}
+                  </ZHBtn>
                 </div>
               </div>
             </form>
