@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang='es'>
 <head>
 <meta charset='utf-8'/>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
-<title>ZH Technologies ERP Engineering Dashboard</title>
+<title>ZH Technologies - Dashboard de Ingenieria ERP</title>
 <style>
 :root{
   --bg:#f0f2f5;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;
@@ -66,6 +66,13 @@ a{color:var(--blue)}
 .panel-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .sub-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--R);padding:14px}
 .sub-card.center{text-align:center}
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px}
+.guide-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--R);padding:16px;min-height:150px}
+.guide-step{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-weight:900;font-size:12px;margin-bottom:10px}
+.guide-card h3{margin:0 0 8px!important;color:var(--text)!important;text-transform:none!important;font-size:14px!important;letter-spacing:0!important}
+.guide-card p{font-size:12px;line-height:1.45;margin:0 0 12px;color:var(--muted)}
+.guide-card button{border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer}
+.guide-card button:hover{border-color:var(--blue);color:var(--blue)}
 .big-status{font-size:26px;font-weight:800;margin:4px 0}
 .muted-note{color:var(--muted);font-size:11.5px}
 table{width:100%;border-collapse:collapse;margin-top:6px}
@@ -177,6 +184,9 @@ li{margin-bottom:4px}
 .live-data-row .diagram-node-title{color:#48556a}
 .live-data-row .diagram-node-sub{color:#818b9a}
 .live-ai-advanced{width:500px;min-height:70px;border:2px dashed #536179;background:#182640;border-radius:12px}
+.architecture-quick-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;max-width:1180px;margin:-6px auto 22px}
+.quick-action-btn{border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--muted);padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer}
+.quick-action-btn:hover{border-color:var(--blue);color:var(--blue)}
 .context-panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--RL);box-shadow:var(--shadow-md);padding:22px;min-height:180px;max-height:60vh;overflow-y:auto;max-width:1180px;margin:0 auto 26px}
 .layer-page-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
 .layer-page-title{font-size:18px;font-weight:900;color:var(--text)}
@@ -218,7 +228,7 @@ li{margin-bottom:4px}
 .module-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:14px}
 
 /* ===== Breadcrumb + hierarchical level cards (Arquitectura -> Capa ->
-   Dominio -> Modulo -> Feature/Proceso -> Archivo). Detalle solo aparece al
+   Dominio -> Modulo -> Funcionalidad/Proceso -> Archivo). Detalle solo aparece al
    seguir navegando -- cada nivel muestra tarjetas resumen (id + %), nunca
    el detalle completo del siguiente nivel. ===== */
 .breadcrumb-bar{font-size:12px;margin-bottom:18px;min-height:18px;color:var(--muted)}
@@ -256,32 +266,28 @@ li{margin-bottom:4px}
 </head>
 <body>
 <header class='topbar'>
-<div class='topbar-title'>ZH Technologies &mdash; ERP Engineering Dashboard</div>
+<div class='topbar-title'>ZH Technologies &mdash; Dashboard de Ingenieria ERP</div>
 <div class='topbar-search'>
-<input type='text' id='searchBox' placeholder='Buscar modulo, feature, proceso o tarea...' autocomplete='off'/>
+<input type='text' id='searchBox' placeholder='Buscar modulo, funcionalidad, proceso o tarea...' autocomplete='off'/>
 <div id='searchResults' class='search-results'></div>
 </div>
 <div class='topbar-actions'>
 <span class='topbar-status' style='color:#16a34a'>EN PILOTO</span>
-<button id='themeToggle' class='theme-toggle' title='Toggle light/dark theme'>&#9788;/&#9790;</button>
+<button id='themeToggle' class='theme-toggle' title='Cambiar tema claro/oscuro'>&#9788;/&#9790;</button>
 </div>
 </header>
 <div class='layout'>
 <nav class='sidebar' id='sidebar'>
-<div class='brand'>ZH ERP<br/><small>Architecture Explorer</small></div>
-<a href='#' class='nav-link' data-nav='home' onclick="showGroup('home');return false;">Estado General</a>
-<a href='#' class='nav-link' data-nav='business' onclick="showGroup('business');return false;">Modulos y Negocio</a>
+<div class='brand'>ZH ERP<br/><small>Explorador de Arquitectura</small></div>
+<a href='#' class='nav-link' data-nav='home' onclick="showGroup('home');return false;">Inicio</a>
+<a href='#' class='nav-link' data-nav='business' onclick="showGroup('business');return false;">Modulos</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');return false;">Arquitectura</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('core');return false;">ERP Core</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('web');return false;">Frontend</a>
-<a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('db');return false;">Database</a>
-<a href='#' class='nav-link' data-nav='engineering' onclick="showGroup('engineering');return false;">Calidad e Ingenieria</a>
-<a href='#' class='nav-link' data-nav='security' onclick="showGroup('security');return false;">Seguridad y Riesgos</a>
+<a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('db');return false;">Base de Datos</a>
+<a href='#' class='nav-link' data-nav='engineering' onclick="showGroup('engineering');return false;">Calidad</a>
+<a href='#' class='nav-link' data-nav='security' onclick="showGroup('security');return false;">Riesgos</a>
 <a href='#' class='nav-link' data-nav='roadmap' onclick="showGroup('roadmap');return false;">Roadmap</a>
-<div class='sidebar-footer'>
-<a href='#' class='ext-link' onclick="showGroup('architecture');resetBreadcrumb();return false;">&#8599; Mapa arquitectura</a>
-<a href='DASHBOARD-CONTRACT.md' class='ext-link'>&#8599; DASHBOARD-CONTRACT</a>
-</div>
 </nav>
 <main class='main'>
 <div class='kpi-strip'>
@@ -303,15 +309,15 @@ li{margin-bottom:4px}
 </div>
 <div class='kpi-tile'>
 <div class='kpi-top'>
-<span class='kpi-label'>Architecture Health</span>
-<span class='badge' style='background:#16a34a;color:#fff'>Stable</span>
+<span class='kpi-label'>Salud arquitectura</span>
+<span class='badge' style='background:#16a34a;color:#fff'>Estable</span>
 </div>
 <div class='kpi-value' style='color:#16a34a'>100%</div>
 <div class='kpi-bar'><div class='kpi-bar-fill' style='width:100%;background:#16a34a'></div></div>
 </div>
 <div class='kpi-tile'>
 <div class='kpi-top'>
-<span class='kpi-label'>Production Readiness</span>
+<span class='kpi-label'>Preparacion piloto</span>
 <span class='badge' style='background:#d97706;color:#fff'>Piloto tecnico</span>
 </div>
 <div class='kpi-value' style='color:#d97706'>85%</div>
@@ -319,23 +325,23 @@ li{margin-bottom:4px}
 </div>
 <div class='kpi-tile'>
 <div class='kpi-top'>
-<span class='kpi-label'>Overall Risk</span>
-<span class='badge' style='background:#d97706;color:#fff'>MEDIUM</span>
+<span class='kpi-label'>Riesgo global</span>
+<span class='badge' style='background:#d97706;color:#fff'>MEDIO</span>
 </div>
-<div class='kpi-value' style='color:#d97706'>MEDIUM</div>
+<div class='kpi-value' style='color:#d97706'>MEDIO</div>
 <div class='kpi-bar'><div class='kpi-bar-fill' style='width:60%;background:#d97706'></div></div>
 </div>
 <div class='kpi-tile'>
 <div class='kpi-top'>
-<span class='kpi-label'>Model Integrity</span>
-<span class='badge' style='background:#16a34a;color:#fff'>GREEN</span>
+<span class='kpi-label'>Integridad modelo</span>
+<span class='badge' style='background:#16a34a;color:#fff'>OK</span>
 </div>
 <div class='kpi-value' style='color:#16a34a'>100%</div>
 <div class='kpi-bar'><div class='kpi-bar-fill' style='width:100%;background:#16a34a'></div></div>
 </div>
 <div class='kpi-tile'>
 <div class='kpi-top'>
-<span class='kpi-label'>Business Capability</span>
+<span class='kpi-label'>Capacidad negocio</span>
 <span class='badge' style='background:#16a34a;color:#fff'>Operativo</span>
 </div>
 <div class='kpi-value' style='color:#16a34a'>Core</div>
@@ -357,13 +363,13 @@ li{margin-bottom:4px}
 <div class='diagram-node live-node live-node-muted diagram-node-dim' id='diagramnode-mobile' onclick="selectLayer('mobile')">
 <span class='pct-badge'>0%</span>
 <div class='live-node-icon'>&#9638;</div>
-<span class='diagram-node-title'>Mobile App</span>
+<span class='diagram-node-title'>App Movil</span>
 <span class='diagram-node-sub'>Futuro</span>
 </div>
 <div class='diagram-node live-node live-node-muted diagram-node-dim' id='diagramnode-chat' onclick="selectLayer('chat')">
 <span class='pct-badge'>0%</span>
 <div class='live-node-icon'>&#9679;</div>
-<span class='diagram-node-title'>Chat Interface</span>
+<span class='diagram-node-title'>Interfaz Chat</span>
 <span class='diagram-node-sub'>Futuro</span>
 </div>
 </div>
@@ -371,27 +377,27 @@ li{margin-bottom:4px}
 <div class='diagram-row'>
 <div class='diagram-node diagram-node-wide live-node live-intelligence' id='diagramnode-intelligence' onclick="selectLayer('intelligence')">
 <span class='pct-badge'>0%</span>
-<span class='diagram-node-title'>ERP Intelligence Layer</span>
-<span class='diagram-node-sub'>AI Modules &amp; Services</span>
+<span class='diagram-node-title'>Capa Inteligencia ERP</span>
+<span class='diagram-node-sub'>Modulos y servicios IA</span>
 </div>
 </div>
 <div class='live-arrows live-arrows-tight'><span>&#9660;</span><span>&#9660;</span><span>&#9660;</span></div>
 <div class='diagram-row live-ai-row'>
 <div class='diagram-node live-node live-node-dark diagram-node-dim' id='diagramnode-ai-assistant' onclick="selectLayer('ai-assistant')">
 <span class='pct-badge'>0%</span>
-<span class='diagram-node-title'>User Assistant AI</span>
-<span class='diagram-node-sub'>Conversational Interface</span>
+<span class='diagram-node-title'>Asistente IA</span>
+<span class='diagram-node-sub'>Interfaz conversacional</span>
 <ul><li>Consultas</li><li>Reportes</li><li>Acciones</li></ul>
 </div>
 <div class='diagram-node live-node live-node-teal diagram-node-dim' id='diagramnode-ai-analyst' onclick="selectLayer('ai-analyst')">
 <span class='pct-badge'>0%</span>
-<span class='diagram-node-title'>Business Analyst AI</span>
-<span class='diagram-node-sub'>Data Insights &amp; Predictions</span>
+<span class='diagram-node-title'>Analista IA</span>
+<span class='diagram-node-sub'>Analisis y predicciones</span>
 <ul><li>Analisis</li><li>Predicciones</li><li>Alertas</li></ul>
 </div>
 <div class='diagram-node live-node live-node-muted diagram-node-dim' id='diagramnode-ai-automation' onclick="selectLayer('ai-automation')">
 <span class='pct-badge'>0%</span>
-<span class='diagram-node-title'>Process Automation AI</span>
+<span class='diagram-node-title'>Automatizacion IA</span>
 <span class='diagram-node-sub'>Automatizacion de tareas</span>
 <ul><li>Flujos</li><li>Alertas</li><li>Acciones</li></ul>
 </div>
@@ -400,7 +406,7 @@ li{margin-bottom:4px}
 <div class='diagram-row'>
 <div class='diagram-node diagram-node-wide live-core-box' id='diagramnode-core' onclick="selectLayer('core')">
 <span class='pct-badge warn'>88%</span>
-<span class='diagram-node-title'>ERP Core Services</span>
+<span class='diagram-node-title'>Servicios Core ERP</span>
 <div class='core-chip-row'>
 <span class='core-chip'>Ventas <b>88%</b></span>
 <span class='core-chip'>Compras <b>86%</b></span>
@@ -423,7 +429,7 @@ li{margin-bottom:4px}
 <div class='diagram-node live-node diagram-node-dim' id='diagramnode-data-warehouse' onclick="selectLayer('data-warehouse')">
 <span class='pct-badge'>0%</span>
 <div class='live-node-icon'>&#9726;</div>
-<span class='diagram-node-title'>Data Warehouse</span>
+<span class='diagram-node-title'>Almacen Analitico</span>
 <span class='diagram-node-sub'>Futuro</span>
 </div>
 </div>
@@ -436,41 +442,90 @@ li{margin-bottom:4px}
 </div>
 </div>
 </div>
+<div class='architecture-quick-actions' aria-label='Vistas tecnicas de arquitectura'>
+<button type='button' class='quick-action-btn' onclick="showArchitectureDetails('resumen');return false;">Auditoria tecnica</button>
+<button type='button' class='quick-action-btn' onclick="showArchitectureDetails('dependencias');return false;">Dependencias</button>
+<button type='button' class='quick-action-btn' onclick="showArchitectureDetails('explorer');return false;">Explorador</button>
+<button type='button' class='quick-action-btn' onclick="showArchitectureDetails('adr');return false;">ADR</button>
+<button type='button' class='quick-action-btn' onclick="showArchitectureDetails('progreso');return false;">Progreso</button>
+</div>
 <div class='context-panel'>
 <div id='breadcrumbBar' class='breadcrumb-bar'></div>
-<div id='levelContent' class='level-content'><p class='muted-note'>Selecciona un bloque del diagrama para explorar: Arquitectura &rarr; Capa &rarr; Dominio &rarr; Modulo &rarr; Feature/Proceso &rarr; Archivo.</p></div>
+<div id='levelContent' class='level-content'><p class='muted-note'>Selecciona un bloque del diagrama para explorar: Arquitectura &rarr; Capa &rarr; Dominio &rarr; Modulo &rarr; Funcionalidad/Proceso &rarr; Archivo.</p></div>
 </div>
 </div>
 </div>
 <div class='groups-view' data-group-view='home'>
-<div class='subnav' data-subnav-for='home'><button type='button' class='subnav-btn' data-sub='kpis' onclick="showSubGroup('home','kpis');return false;">KPIs</button><button type='button' class='subnav-btn' data-sub='estado-actual' onclick="showSubGroup('home','estado-actual');return false;">Estado actualizado</button><button type='button' class='subnav-btn' data-sub='executive-dashboard' onclick="showSubGroup('home','executive-dashboard');return false;">Executive Dashboard</button><button type='button' class='subnav-btn' data-sub='global-status' onclick="showSubGroup('home','global-status');return false;">Global Status</button><button type='button' class='subnav-btn' data-sub='production-decision' onclick="showSubGroup('home','production-decision');return false;">Production Decision</button></div>
+<div class='subnav' data-subnav-for='home'><button type='button' class='subnav-btn' data-sub='guia' onclick="showSubGroup('home','guia');return false;">Guia</button><button type='button' class='subnav-btn' data-sub='kpis' onclick="showSubGroup('home','kpis');return false;">KPIs</button><button type='button' class='subnav-btn' data-sub='estado-actual' onclick="showSubGroup('home','estado-actual');return false;">Estado actualizado</button><button type='button' class='subnav-btn' data-sub='executive-dashboard' onclick="showSubGroup('home','executive-dashboard');return false;">Vista Ejecutiva</button><button type='button' class='subnav-btn' data-sub='global-status' onclick="showSubGroup('home','global-status');return false;">Estado Global</button><button type='button' class='subnav-btn' data-sub='production-decision' onclick="showSubGroup('home','production-decision');return false;">Decision de Produccion</button></div>
+<section id='guia-lectura' class='panel' data-group='home' data-subgroup='guia'>
+<h2>Guia de lectura</h2>
+<p class='muted-note'>Este dashboard esta ordenado para leer primero el estado del ERP y despues entrar al detalle. La auditoria tecnica queda al final porque es informacion extensa generada para ingenieria.</p>
+<div class='guide-grid'>
+<div class='guide-card'>
+<span class='guide-step'>1</span>
+<h3>Arquitectura</h3>
+<p>Es la portada visual. Muestra capas, porcentajes reales y que partes estan en piloto, futuras o pendientes.</p>
+<button type='button' onclick="showGroup('architecture');return false;">Ver mapa</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>2</span>
+<h3>Modulos</h3>
+<p>Sirve para revisar cada modulo por familia: core, finanzas, fiscal, seguridad, datos y futuros.</p>
+<button type='button' onclick="showGroup('business');return false;">Ver modulos</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>3</span>
+<h3>Estado real</h3>
+<p>Resume lo completado, en piloto, en desarrollo, pendiente de commit, pendiente y futuro.</p>
+<button type='button' onclick="showSubGroup('home','estado-actual');return false;">Ver estado</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>4</span>
+<h3>Riesgos</h3>
+<p>Concentra bloqueadores, brechas de produccion y puntos que requieren decision antes del cierre general.</p>
+<button type='button' onclick="showGroup('security');return false;">Ver riesgos</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>5</span>
+<h3>Roadmap</h3>
+<p>Ordena que sigue despues: fases, hitos, ruta recomendada y pendientes para completar el ERP.</p>
+<button type='button' onclick="showGroup('roadmap');return false;">Ver roadmap</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>6</span>
+<h3>Auditoria tecnica</h3>
+<p>Contiene dependencias, explorer, ADR, calidad, deuda y datos generados. Es util para desarrollo, no para lectura rapida.</p>
+<button type='button' onclick="showArchitectureDetails('dependencias');return false;">Ver auditoria</button>
+</div>
+</div>
+</section>
 <section id='exec-summary' class='panel' data-group='home' data-subgroup='executive-dashboard'>
-<h2>Executive Summary</h2>
+<h2>Resumen Ejecutivo</h2>
 <div class='panel-grid-2'>
 <div class='sub-card'>
-<h3>Status</h3>
+<h3>Estado</h3>
 <p class='big-status' style='color:#16a34a'>EN PILOTO TECNICO</p>
-<p>ERP Core: <b>85-90%</b> &middot; Maturity: <b>Operativo con brechas controladas</b></p>
+<p>ERP Core: <b>85-90%</b> &middot; Madurez: <b>Operativo con brechas controladas</b></p>
 <p>Seguridad/permisos: <span class='pill pill-d'>COMPLETADO</span>
 Retenciones: <span class='pill pill-p'>EN DESARROLLO</span>
 Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <p>Confianza funcional: <b>Alta para piloto</b> &middot; Riesgo global: <b style='color:#d97706'>MEDIO</b></p>
 </div>
 <div class='sub-card'>
-<h3>Production Decision</h3>
+<h3>Decision de Produccion</h3>
 <p class='big-status' style='color:#d97706'>PILOTO, NO PRODUCCION FINAL</p>
-<h4>Blockers</h4>
+<h4>Bloqueadores</h4>
 <ul><li>Retenciones: base funcional, UI, QA, XML, RIDE y validador SRI ya committeados; wiring adicional del issuer/validadores esta en cambios locales sin commit.</li>
 <li>ElectronicDocuments: factura y nota de credito operativas; guia de remision, nota de debito y liquidacion de compra siguen pendientes.</li>
 <li>Piloto productivo depende de insumos externos: certificado SRI real por empresa, SMTP real, impresora fisica y agenda operativa de backups.</li></ul>
-<h4>Gate checks</h4>
+<h4>Controles de salida</h4>
 <ul><li>[OK] Permisos jerarquicos backend SSOT + anti-escalamiento implementado.</li>
 <li>[OK] Auth/sesion endurecido: logout backend, expiracion absoluta, inactividad y reautenticacion.</li>
 <li>[PENDING] Certificacion SRI produccion y cierre formal de algunos modulos antes de produccion general.</li></ul>
 </div>
 </div>
 <details class='card-section'>
-<summary>Recommended Next Actions (4)</summary>
+<summary>Acciones recomendadas (4)</summary>
 <ul><li>1. Commit o descartar el wiring local pendiente de ElectronicDocuments/retenciones.</li>
 <li>2. Cerrar liquidacion de compra SRI 03 y recepcion fisica sin factura.</li>
 <li>3. Ejecutar smoke SRI con certificado real de la empresa piloto.</li>
@@ -478,46 +533,46 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </details>
 </section>
 <section id='production-decision' class='panel' data-group='home' data-subgroup='production-decision'>
-<h2>Production Decision</h2>
+<h2>Decision de Produccion</h2>
 <p class='big-status' style='color:#d97706'>PILOTO TECNICO</p>
-<p>Production Readiness: <b>85%</b> (listo para piloto controlado; no cierre productivo general)</p>
-<h4>Blockers</h4>
+<p>Preparacion para produccion: <b>85%</b> (listo para piloto controlado; no cierre productivo general)</p>
+<h4>Bloqueadores</h4>
 <ul><li>Retenciones: wiring adicional del issuer/validadores esta modificado localmente y pendiente de commit.</li>
 <li>Liquidacion de compra tipo SRI 03, guia de remision y nota de debito siguen pendientes.</li>
 <li>Produccion real requiere certificado SRI, SMTP, impresora y backups agendados en el entorno del cliente.</li></ul>
-<h4>Gate checks</h4>
+<h4>Controles de salida</h4>
 <ul><li>[OK] ERP Core operativo: ventas, compras, inventario, caja, dashboard, reportes y documentos electronicos base.</li>
 <li>[OK] Seguridad/permisos: jerarquia backend SSOT, anti-escalamiento y seam NoOp de entitlements externo.</li>
 <li>[REVIEW] Datos SRI reales y cierre contable/legal antes de produccion general.</li></ul>
 </section>
 <section id='executive-dashboard' class='panel' data-group='home' data-subgroup='executive-dashboard'>
-<h2>Executive Dashboard (Vista Ejecutiva)</h2>
+<h2>Vista Ejecutiva</h2>
 <p class='muted-note'>Fuente base: explorer-index.json.executive (analyze-explorer-index.ps1). Ajuste manual 2026-09-04 con evidencia de STATUS.md, FEATURES.md, git log y worktree actual.</p>
 <div class='panel-grid-2'>
 <div class='sub-card'>
 <h4>Estado funcional</h4><p class='big-status' style='color:#16a34a'>EN PILOTO</p>
 <h4>ERP Core</h4><p>85-90% (rango documentado; valor de tablero: 88%)</p>
-<h4>Production Decision</h4><p>Piloto tecnico; produccion general pendiente de validaciones externas</p>
-<h4>Overall Risk</h4><p style='color:#d97706'>MEDIUM</p>
-<h4>Next milestone</h4><p>Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)</p>
-<h4>Estimated remaining time</h4>
-<p class='muted-note'>Not computable -- this pipeline has no velocity/effort/time-tracking data. Showing a duration here would be invented, not derived.</p>
-<h4>Current blockers</h4><ul><li>Retenciones: commits 2026-09-03/04 cubren dominio, persistencia, API, UI de gastos, posting, XML, RIDE y schema validator; queda wiring local sin commit en ElectronicDocuments.</li>
+<h4>Decision de Produccion</h4><p>Piloto tecnico; produccion general pendiente de validaciones externas</p>
+<h4>Riesgo global</h4><p style='color:#d97706'>MEDIO</p>
+<h4>Siguiente hito</h4><p>Completar fases restantes Fiscal / SRI (75% completado, 80 / 106 tareas)</p>
+<h4>Tiempo restante estimado</h4>
+<p class='muted-note'>No calculable: el pipeline no tiene datos de velocidad, esfuerzo o tiempos. Mostrar una duracion seria inventado.</p>
+<h4>Bloqueadores actuales</h4><ul><li>Retenciones: commits 2026-09-03/04 cubren dominio, persistencia, API, UI de gastos, posting, XML, RIDE y schema validator; queda wiring local sin commit en ElectronicDocuments.</li>
 <li>Fiscal / SRI: guia de remision, nota de debito y liquidacion de compra tipo 03 siguen pendientes.</li>
 <li>Accounting: operativo con asientos/reportes/reversos; cierre contable, flujo de efectivo y conciliacion bancaria siguen fuera del alcance implementado.</li>
 <li>Caja: sesiones y movimientos operativos; movimientos propios de caja aun no levantan evento contable directo.</li>
 <li>Dependencias externas de piloto: certificado SRI real, SMTP real, impresora fisica y backups agendados.</li></ul>
 </div>
 <div class='sub-card'>
-<h4>Top 10 modules by change risk</h4>
-<table class='sortable'><tr><th>Module</th><th>Risk Score</th><th>Band</th></tr><tr><td>Common</td><td>52.06</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Access</td><td>51.12</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Sales</td><td>45.12</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Configuration</td><td>45.06</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>ElectronicDocuments</td><td>44.62</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Auth</td><td>44.12</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Company</td><td>43.56</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Purchases</td><td>41.62</td><td style='color:#d97706'>Medium Risk</td></tr><tr><td>Inventory</td><td>39.62</td><td style='color:#2563eb'>Low Risk</td></tr><tr><td>Items</td><td>39.62</td><td style='color:#2563eb'>Low Risk</td></tr></table>
-<h4>Top 10 modules by technical debt (large files)</h4>
-<table class='sortable'><tr><th>Module</th><th>Large Files</th></tr><tr><td>Sales</td><td>3</td></tr><tr><td>Access</td><td>2</td></tr><tr><td>Purchases</td><td>2</td></tr><tr><td>ElectronicDocuments</td><td>1</td></tr><tr><td>Common</td><td>1</td></tr><tr><td>Audit</td><td>0</td></tr><tr><td>ElectronicInvoicing</td><td>0</td></tr><tr><td>Caja</td><td>0</td></tr><tr><td>Configuration</td><td>0</td></tr><tr><td>Security</td><td>0</td></tr></table>
-<h4>Top 10 modules by lowest score</h4>
-<table class='sortable'><tr><th>Module</th><th>Score</th></tr><tr><td>ElectronicInvoicing</td><td>77.75%</td></tr><tr><td>Configuration</td><td>77.75%</td></tr><tr><td>Media</td><td>77.75%</td></tr><tr><td>Common</td><td>77.75%</td></tr><tr><td>Navigation</td><td>77.75%</td></tr><tr><td>Audit</td><td>77.75%</td></tr><tr><td>SriCatalogs</td><td>77.75%</td></tr><tr><td>OrgConfig</td><td>77.75%</td></tr><tr><td>Accounting</td><td>77.75%</td></tr><tr><td>Catalog</td><td>77.75%</td></tr></table>
+<h4>Top 10 modulos por riesgo de cambio</h4>
+<table class='sortable'><tr><th>Modulo</th><th>Puntaje riesgo</th><th>Banda</th></tr><tr><td>Common</td><td>52.06</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Access</td><td>51.12</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Sales</td><td>45.12</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Configuration</td><td>45.06</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>ElectronicDocuments</td><td>44.62</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Auth</td><td>44.12</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Company</td><td>43.56</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Purchases</td><td>41.62</td><td style='color:#d97706'>Riesgo medio</td></tr><tr><td>Inventory</td><td>39.62</td><td style='color:#2563eb'>Riesgo bajo</td></tr><tr><td>Items</td><td>39.62</td><td style='color:#2563eb'>Riesgo bajo</td></tr></table>
+<h4>Top 10 modulos por deuda tecnica</h4>
+<table class='sortable'><tr><th>Modulo</th><th>Archivos grandes</th></tr><tr><td>Sales</td><td>3</td></tr><tr><td>Access</td><td>2</td></tr><tr><td>Purchases</td><td>2</td></tr><tr><td>ElectronicDocuments</td><td>1</td></tr><tr><td>Common</td><td>1</td></tr><tr><td>Audit</td><td>0</td></tr><tr><td>ElectronicInvoicing</td><td>0</td></tr><tr><td>Caja</td><td>0</td></tr><tr><td>Configuration</td><td>0</td></tr><tr><td>Security</td><td>0</td></tr></table>
+<h4>Top 10 modulos con menor puntaje</h4>
+<table class='sortable'><tr><th>Modulo</th><th>Puntaje</th></tr><tr><td>ElectronicInvoicing</td><td>77.75%</td></tr><tr><td>Configuration</td><td>77.75%</td></tr><tr><td>Media</td><td>77.75%</td></tr><tr><td>Common</td><td>77.75%</td></tr><tr><td>Navigation</td><td>77.75%</td></tr><tr><td>Audit</td><td>77.75%</td></tr><tr><td>SriCatalogs</td><td>77.75%</td></tr><tr><td>OrgConfig</td><td>77.75%</td></tr><tr><td>Accounting</td><td>77.75%</td></tr><tr><td>Catalog</td><td>77.75%</td></tr></table>
 </div>
 </div>
-<p class='muted-note'>Biggest opportunity: completing '<b>Common</b>' unblocks 28 module(s) transitively (critical-path.json) &middot; best simulated gain: 'Security 80% + Quality 85% combined' (+13.99 pts Production Readiness)</p>
+<p class='muted-note'>Mayor oportunidad tecnica: completar '<b>Common</b>' desbloquea 28 modulo(s) de forma transitiva (critical-path.json). Mejor mejora simulada: 'Security 80% + Quality 85% combined' (+13.99 pts de preparacion).</p>
 </section>
 <section id='global-status' class='panel' data-group='home' data-subgroup='global-status'>
 <h2>Estado Global</h2>
@@ -621,22 +676,64 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </section>
 </div>
 <div class='groups-view' data-group-view='business'>
-<div class='subnav' data-subnav-for='business'><button type='button' class='subnav-btn' data-sub='business-capability' onclick="showSubGroup('business','business-capability');return false;">Business Capability</button><button type='button' class='subnav-btn' data-sub='madurez' onclick="showSubGroup('business','madurez');return false;">Madurez</button><button type='button' class='subnav-btn' data-sub='cierre-erp' onclick="showSubGroup('business','cierre-erp');return false;">Cierre ERP</button></div>
+<div class='subnav' data-subnav-for='business'><button type='button' class='subnav-btn' data-sub='familias' onclick="showSubGroup('business','familias');return false;">Familias</button><button type='button' class='subnav-btn' data-sub='business-capability' onclick="showSubGroup('business','business-capability');return false;">Capacidad de Negocio</button><button type='button' class='subnav-btn' data-sub='madurez' onclick="showSubGroup('business','madurez');return false;">Madurez</button><button type='button' class='subnav-btn' data-sub='cierre-erp' onclick="showSubGroup('business','cierre-erp');return false;">Cierre ERP</button></div>
+<section id='module-families' class='panel' data-group='business' data-subgroup='familias'>
+<h2>Modulos por familia</h2>
+<p class='muted-note'>Lectura recomendada antes de entrar a las tablas tecnicas. Cada familia agrupa modulos relacionados y enlaza al detalle jerarquico.</p>
+<div class='guide-grid'>
+<div class='guide-card'>
+<span class='guide-step'>1</span>
+<h3>Core operativo</h3>
+<p>Ventas, compras, inventario, caja, gastos, dashboard y documentos electronicos base. Es el bloque principal del piloto.</p>
+<button type='button' onclick="location.hash='#page=core';return false;">Abrir Core</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>2</span>
+<h3>Finanzas y contabilidad</h3>
+<p>Contabilidad, CxC, CxP, cobros, pagos proveedor y destinos financieros. Falta cierre contable y bancos.</p>
+<button type='button' onclick="location.hash='#module=Accounting';return false;">Abrir Contabilidad</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>3</span>
+<h3>Fiscal / SRI</h3>
+<p>Facturacion electronica, monitor, XML, RIDE, retenciones y catalogos tributarios. Hay brechas SRI futuras.</p>
+<button type='button' onclick="location.hash='#module=ElectronicDocuments';return false;">Abrir SRI</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>4</span>
+<h3>Configuracion y maestros</h3>
+<p>Empresa, sucursales, establecimientos, puntos de emision, bodegas, items, precios y datos maestros.</p>
+<button type='button' onclick="location.hash='#page=web';return false;">Abrir Web ERP</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>5</span>
+<h3>Seguridad y sesion</h3>
+<p>Permisos jerarquicos, menu server-driven, logout, expiracion, reautenticacion y contexto empresa/sucursal.</p>
+<button type='button' onclick="location.hash='#module=Security';return false;">Abrir Seguridad</button>
+</div>
+<div class='guide-card'>
+<span class='guide-step'>6</span>
+<h3>Futuro</h3>
+<p>App movil, chat, IA, data warehouse, modelos avanzados, BI extendido, bancos y produccion/manufactura.</p>
+<button type='button' onclick="location.hash='#page=intelligence';return false;">Abrir Futuro</button>
+</div>
+</div>
+</section>
 <section id='business-capability' class='panel' data-group='business' data-subgroup='business-capability'>
-<h2>Business Capability</h2>
-<p>Domain &rarr; Modules &rarr; Features &rarr; Processes. Snapshot tecnico historico del analizador: <b>11.89%</b> (22 / 185 capability points mapeados a procesos verificados). El estado funcional vigente se resume en "Estado actualizado".</p>
+<h2>Capacidad de Negocio</h2>
+<p>Dominio &rarr; Modulos &rarr; Funcionalidades &rarr; Procesos. Snapshot tecnico historico del analizador: <b>11.89%</b> (22 / 185 puntos de capacidad mapeados a procesos verificados). El estado funcional vigente se resume en "Estado actualizado".</p>
 <table class='sortable'>
-<tr><th>Domain</th><th>Modules</th><th>Features</th><th>Processes</th></tr>
+<tr><th>Dominio</th><th>Modulos</th><th>Funcionalidades</th><th>Procesos</th></tr>
 <tr><td>Configuration</td><td>Company, Companies, Tenants, Branches, Configuration, OrgConfig</td><td>Create Emission Point, Create Establishment, Disable Emission Point, Disable Establishment, Enable Emission Point, Enable Establishment, Get Emission Points, Get Establishments, Update Emission Point, Update Establishment, Create Company, Decimal Config, Get Company By Id, Get Company Logo Alt Content, Get Company Logo Content, Get Company Profile, Get Current Company, List Companies, Update Company, Update Company Branding, Update Company Documents, Update Company Fiscal, Update Company Operation, Update Company Profile, Upload Company Logo, Upload Company Logo Alt, Create Branch, Disable Branch, Enable Branch, Get Branch By Id, Get Branches, Get Geo Cantons, Get Geo Countries, Get Geo Parishes, Get Geo Provinces, Update Branch, Get Branch Invoice Org Settings, Get Company Invoice Org Settings, Upsert Branch Invoice Org Settings, Upsert Company Invoice Org Settings</td><td>No processes mapped yet</td></tr>
 <tr><td>Security</td><td>Auth, Access, Session, Security, Audit</td><td>Change My Password, Complete Password Reset, List My Companies, Login, Logout, Password Reset, Refresh Token, Switch Company, Company User Preferences Login Resolver, Password Reset Token Consumer, Password Reset Token Issuer, Assign Temporary Password Admin, Close User Session Admin, Create Authenticated Session, Create Company User Preferences, Create System User, Create System User Admin, Expire User Sessions, Get Company User Branches Admin, Get Company User Memberships Admin, Get Company User Preferences, Get Company User Preferences Admin, Get Session Statistics, Get User Sessions Paged, Lookup User By Username Admin, Permissions, Profiles, Revoke Company User Membership, Revoke Company User Membership Admin, Update Company User Branches Admin, Update Company User Preferences, Update Company User Preferences Admin, Upsert Company User Membership, Upsert Company User Membership Admin, Company Administrator Invariant, Company User Preferences Default Branch Validation, Get My Available Branches, Get Session Context, Switch Branch, Get Security Admin Matrix, Upsert Security Admin Scopes, Get Entity Activity, Get My Activity</td><td>No processes mapped yet</td></tr>
-<tr><td>Business Partners</td><td>No modules mapped yet</td><td>-</td><td>-</td></tr>
-<tr><td>CRM</td><td>No modules mapped yet</td><td>-</td><td>-</td></tr>
+<tr><td>Business Partners</td><td>Sin modulos mapeados</td><td>-</td><td>-</td></tr>
+<tr><td>CRM</td><td>Sin modulos mapeados</td><td>-</td><td>-</td></tr>
 <tr><td>Purchases</td><td>Purchases</td><td>Get Purchase Item Context, Calculate Retention, Cancel Purchase, Cancel Withholding, Confirm Purchase, Get Withholding, Issue Withholding, Purchase Cost, Purchase Draft, Purchase Margin, Create Purchase Reception Draft, Download Purchase Reception Xml, Import Purchase Reception</td><td>Compra</td></tr>
 <tr><td>Inventory</td><td>Items, Inventory</td><td>Add Item Variant, Attribute Definitions, Attribute Groups, Barcodes, Brands, Category Nodes, Create Item, Disable Item, Disable Item Variant, Enable Item, Enable Item Variant, Get Item By Id, Get Item Report, Get Items, Item Images, Item Packaging Levels, Item Substitutes, Item Unit Conversions, Profitability, Resolve Item, Update Item, Update Item Variant, Item Type, Confirm Stock Transfer, Create Stock Adjustment, Create Stock Transfer, Execute Stock Adjustment, Get Aggregated Stock, Get Item Warehouse Availability, Get Kardex By Document, Get Kardex By Product, Get Kardex Movement Detail, Get Stock, Get Stock Movements, Create Warehouse, Disable Warehouse, Enable Warehouse, Get Warehouse By Id, Get Warehouses, Update Warehouse</td><td>No processes mapped yet</td></tr>
 <tr><td>Sales</td><td>Sales, Pricing</td><td>Get Sales Invoice Defaults, Get Sales Item Pricing, Authorize Sales, Cancel Sales, Invoice Item Search, Payment Method, Sales Discount, Sales Draft, Sales Receivable, Item Pricing Simulation, Price List Items, Price Lists, Pricing Rules</td><td>Venta</td></tr>
 <tr><td>Cash</td><td>Caja</td><td>Cash Register, Cash Session, Close Cash Session, Create Cash Register, Disable Cash Register, Enable Cash Register, Open Cash Session, Record Cash Movement, Sales Invoice Authorized, Update Cash Register</td><td>No processes mapped yet</td></tr>
 <tr><td>Accounting</td><td>Accounting, Finance</td><td>Accounts, Accounting Periods, Posting Rules, Journal Entries, General Journal, General Ledger, Trial Balance, Income Statement, Balance Sheet, Collections, Supplier Payments, Financial Destinations</td><td>Posting contable, reportes, CxC/CxP y pagos/cobros</td></tr>
-<tr><td>Reports</td><td>No modules mapped yet</td><td>-</td><td>-</td></tr>
+<tr><td>Reports</td><td>Sin modulos mapeados</td><td>-</td><td>-</td></tr>
 <tr><td>Electronic Documents</td><td>ElectronicInvoicing, Ride, ElectronicDocuments, SriCatalogs</td><td>Get Electronic Invoicing Status, Get Sri Configuration, Inspect Sri Certificate, Upload Sri Certificate, Upsert Sri Configuration, Validate Sri Configuration, Get Or Generate Ride, Regenerate Ride, Create Electronic Document, Get Electronic Document, Get Electronic Document Detail, Get Electronic Document Diagnostic By Source, Get Electronic Documents Dashboard, Get Electronic Documents List, Get Electronic Document Timeline, Get Electronic Document Xml, Retry Electronic Document</td><td>No processes mapped yet</td></tr>
 </table>
 <details class='card-section'>
@@ -775,13 +872,13 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </section>
 </div>
 <div class='groups-view' data-group-view='architecture'>
-<div class='subnav' data-subnav-for='architecture'><button type='button' class='subnav-btn' data-sub='resumen' onclick="showSubGroup('architecture','resumen');return false;">Resumen</button><button type='button' class='subnav-btn' data-sub='dependencias' onclick="showSubGroup('architecture','dependencias');return false;">Dependencias</button><button type='button' class='subnav-btn' data-sub='explorer' onclick="showSubGroup('architecture','explorer');return false;">Explorer</button><button type='button' class='subnav-btn' data-sub='adr' onclick="showSubGroup('architecture','adr');return false;">ADR</button><button type='button' class='subnav-btn' data-sub='progreso' onclick="showSubGroup('architecture','progreso');return false;">Progreso</button></div>
+<div class='subnav' data-subnav-for='architecture'><button type='button' class='subnav-btn' data-sub='resumen' onclick="showSubGroup('architecture','resumen');return false;">Resumen tecnico</button><button type='button' class='subnav-btn' data-sub='dependencias' onclick="showSubGroup('architecture','dependencias');return false;">Dependencias</button><button type='button' class='subnav-btn' data-sub='explorer' onclick="showSubGroup('architecture','explorer');return false;">Explorador</button><button type='button' class='subnav-btn' data-sub='adr' onclick="showSubGroup('architecture','adr');return false;">ADR</button><button type='button' class='subnav-btn' data-sub='progreso' onclick="showSubGroup('architecture','progreso');return false;">Progreso</button></div>
 <section id='architecture' class='panel' data-group='architecture' data-subgroup='resumen'>
-<h2>Architecture</h2>
+<h2>Auditoria tecnica de arquitectura</h2>
 <p><a href='#' class='ext-link' onclick="showGroup('architecture');resetBreadcrumb();return false;">&#9664; Ver Mapa Maestro de Arquitectura</a> &middot; ERP: ZH ERP SaaS v4.0 - Development</p>
 
-<h3>Architecture Map</h3>
-<p class='muted-note'>Click a stage to jump to its phase detail.</p>
+<h3>Mapa de fases</h3>
+<p class='muted-note'>Vista tecnica heredada del generador. Sirve para auditoria; la portada normal es el diagrama superior.</p>
 <svg viewBox='0 0 1126 84' width='100%' height='84' class='arch-map-svg'><g class='arch-map-node' onclick="document.getElementById('stagedetail-infraestructura').open=true;document.getElementById('stagedetail-infraestructura').scrollIntoView({behavior:'smooth'});">
 <rect x='10' y='10' width='170' height='64' rx='10' fill='#16a34a' fill-opacity='0.15' stroke='#16a34a' stroke-width='2'/>
 <text x='95' y='34' text-anchor='middle' font-size='12' font-weight='700' fill='var(--text)'>Infraestructura</text>
@@ -1215,7 +1312,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </div>
 </details>
 
-<h3>Architecture Layers</h3>
+<h3>Capas de arquitectura</h3>
 <div class='heat-row'><div class='heat-cell' style='background:#16a34a' title='Web ERP: 84'>
 <div class='heat-v'>84</div>
 <div class='heat-l'>Web ERP</div>
@@ -1261,7 +1358,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='heat-l'>IA Modelos Avanzados</div>
 </div></div>
 
-<h3>Domains &rarr; Modules</h3>
+<h3>Dominios &rarr; Modulos</h3>
 <table class='sortable'>
 <tr><th>Domain</th><th>Modules</th><th>Avg Score</th><th>Module List</th></tr>
 <tr><td>Configuration</td><td>6</td><td>78.38%</td><td>Company, Companies, Tenants, Branches, Configuration, OrgConfig</td></tr>
@@ -1278,8 +1375,8 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </table>
 <p>Unmapped Modules: Dashboard, Menu, Integration, Common, Media, Catalog, Auxiliary, Accounting, Navigation</p>
 
-<h3>Architecture Explorer (Domain &rarr; Module &rarr; Feature &rarr; Process &rarr; Task &rarr; File)</h3>
-<p class='muted-note'>Tree built exclusively from modules.json / features.json / processes.json / tasks.json. No relation is invented â€” collapsed nodes with no evidence say so explicitly.</p>
+<h3>Explorador tecnico (Dominio &rarr; Modulo &rarr; Funcionalidad &rarr; Proceso &rarr; Tarea &rarr; Archivo)</h3>
+<p class='muted-note'>Arbol construido desde modules.json / features.json / processes.json / tasks.json. Las relaciones sin evidencia se muestran como vacias.</p>
 <div class='explorer-tree'><details class='tree-node' open><summary>ERP</summary><details class='tree-node'><summary>Configuration <span class='tree-count'>6 modules</span></summary><details class='tree-node' id='mod-company'>
 <summary>Company <span class='pill' style='background:#d97706;color:#fff'>77.75%</span></summary>
 <div class='tree-group-label'>Features</div>
@@ -1650,7 +1747,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </details></details></details></div>
 </section>
 <section id='architecture-progress' class='panel' data-group='architecture' data-subgroup='progreso'>
-<h2>Architecture Progress</h2>
+<h2>Progreso de arquitectura</h2>
 <p><a href='data/architecture-progress-source.json' class='ext-link'>&#9664; Ver fuente historica de progreso</a></p>
 <p>Global historico: <b>84%</b> (324.5 / 387 tareas ponderadas) &mdash; extraido de docs/ProgressDashboard/data/architecture-progress-source.json</p>
 <div class='timeline'><div class='tl-node' onclick="document.getElementById('stagedetail-infraestructura').open=true;document.getElementById('stagedetail-infraestructura').scrollIntoView({behavior:'smooth'});">
@@ -1768,7 +1865,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </details>
 </section>
 <section id='dependency-explorer' class='panel' data-group='architecture' data-subgroup='explorer'>
-<h2>Dependency Explorer</h2>
+<h2>Explorador de dependencias</h2>
 <p class='muted-note'>Module &rarr; Dependencies &rarr; Dependents &rarr; Impact &rarr; Risk &rarr; Evidence. Built exclusively from dependencies.json and critical-path.json.</p>
 <div class='explorer-tree'>
 <details class='tree-node' id='depmod-access'>
@@ -2468,7 +2565,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </details>
 </section>
 <section id='critical-path' class='panel' data-group='architecture' data-subgroup='dependencias'>
-<h2>Critical Path &amp; Impact Analysis</h2>
+<h2>Ruta critica y analisis de impacto</h2>
 <p class='muted-note'>No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).</p>
 <p class='muted-note'>Completion proxy: A module is considered 'incomplete' when modules.json score < 100. This score is the existing composite (architecture/tests/documentation/backend/frontend) quality score -- not a literal feature-completion percentage.</p>
 <table class='sortable'>
@@ -2525,7 +2622,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </details>
 </section>
 <section id='erp-core-overview' class='panel' data-group='architecture' data-subgroup='resumen'>
-<h2>ERP Core Overview &mdash; Arquitectura</h2>
+<h2>Resumen tecnico del ERP Core</h2>
 <p class='muted-note'>Distribucion de los 29 modulos del ERP por estado arquitectonico (architecture-governance.json, derivado de freezeStatus/functionalStatus de modules-status.json -- nunca de una heuristica de score).</p>
 <div class='panel-grid-2'>
 <div class='sub-card'>
@@ -2678,7 +2775,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <h2>Consistencia Arquitectonica</h2>
 <p class='muted-note'>Calculado en vivo, sin datos manuales: modules-status.json + architecture-governance.json + roadmap.json + blockers.json + explorer-index.json (ya cargados por fases anteriores) + una busqueda de presencia por alias en FEATURES.md y docs/STATUS.md (aproximada, string search -- no comprension semantica). Limite honesto: esta maquina de reglas no reemplaza una auditoria de codigo real -- casos de drift sutiles (ver Fase ERP Core 1.0, hallazgo de Ride) requieren lectura de codigo, no solo cruce de documentos.</p>
 
-<h3>Architecture Consistency Score</h3>
+<h3>Puntaje de consistencia arquitectonica</h3>
 <p class='big-status' style='color:#d97706'>66%</p>
 <p class='muted-note'>Formula: 100 - Σ(peso por severidad), piso en 0. Pesos: Critica=10, Alta=5, Media=2, Informativa=0.5. 23 hallazgo(s) totales -- penalizacion acumulada 34.5 puntos. Ningun umbral fue elegido para que el numero "se vea bien"; es la aplicacion literal de esta formula a los hallazgos reales de abajo.</p>
 
@@ -2738,9 +2835,9 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 </section>
 </div>
 <div class='groups-view' data-group-view='engineering'>
-<div class='subnav' data-subnav-for='engineering'><button type='button' class='subnav-btn' data-sub='resumen' onclick="showSubGroup('engineering','resumen');return false;">Resumen</button><button type='button' class='subnav-btn' data-sub='quality-gate' onclick="showSubGroup('engineering','quality-gate');return false;">Quality Gate</button><button type='button' class='subnav-btn' data-sub='coverage' onclick="showSubGroup('engineering','coverage');return false;">Coverage</button><button type='button' class='subnav-btn' data-sub='technical-debt' onclick="showSubGroup('engineering','technical-debt');return false;">Technical Debt</button></div>
+<div class='subnav' data-subnav-for='engineering'><button type='button' class='subnav-btn' data-sub='resumen' onclick="showSubGroup('engineering','resumen');return false;">Resumen</button><button type='button' class='subnav-btn' data-sub='quality-gate' onclick="showSubGroup('engineering','quality-gate');return false;">Puerta de calidad</button><button type='button' class='subnav-btn' data-sub='coverage' onclick="showSubGroup('engineering','coverage');return false;">Cobertura</button><button type='button' class='subnav-btn' data-sub='technical-debt' onclick="showSubGroup('engineering','technical-debt');return false;">Deuda tecnica</button></div>
 <section id='engineering-score' class='panel' data-group='engineering' data-subgroup='quality-gate'>
-<h2>Engineering Score</h2>
+<h2>Puntaje de ingenieria</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
 <svg viewBox='0 0 260 260' width='100%' height='260' class='radar-svg'>
@@ -2876,7 +2973,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 </details>
 </section>
 <section id='technical-debt' class='panel' data-group='engineering' data-subgroup='technical-debt'>
-<h2>Technical Debt</h2>
+<h2>Deuda tecnica</h2>
 <div class='heat-row'><div class='heat-cell' style='background:#dc2626' title='TODO: 687'>
 <div class='heat-v'>687</div>
 <div class='heat-l'>TODO</div>
@@ -2918,7 +3015,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 </details>
 </section>
 <section id='trend' class='panel' data-group='engineering' data-subgroup='resumen'>
-<h2>Engineering Trend</h2>
+<h2>Tendencia de ingenieria</h2>
 <svg viewBox='0 0 320 60' width='100%' height='60' class='sparkline-svg'>
 <polyline points='0,0 26.7,0 53.3,0 80,0 106.7,0 133.3,0 160,0 186.7,0 213.3,60 240,45.9 266.7,45.9 293.3,45.9 320,45.9' fill='none' stroke='#2563eb' stroke-width='2'/>
 </svg>
@@ -2941,7 +3038,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 </details>
 </section>
 <section id='model-health' class='panel' data-group='engineering' data-subgroup='resumen'>
-<h2>Model Health</h2>
+<h2>Salud del modelo</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
 <div class='gauge' style='width:140px;height:140px'>
@@ -3090,9 +3187,9 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 </section>
 </div>
 <div class='groups-view' data-group-view='security'>
-<div class='subnav' data-subnav-for='security'><button type='button' class='subnav-btn' data-sub='riesgos' onclick="showSubGroup('security','riesgos');return false;">Riesgos</button><button type='button' class='subnav-btn' data-sub='release' onclick="showSubGroup('security','release');return false;">Release</button><button type='button' class='subnav-btn' data-sub='seguridad' onclick="showSubGroup('security','seguridad');return false;">Seguridad</button></div>
+<div class='subnav' data-subnav-for='security'><button type='button' class='subnav-btn' data-sub='riesgos' onclick="showSubGroup('security','riesgos');return false;">Riesgos</button><button type='button' class='subnav-btn' data-sub='release' onclick="showSubGroup('security','release');return false;">Simulacion release</button><button type='button' class='subnav-btn' data-sub='seguridad' onclick="showSubGroup('security','seguridad');return false;">Seguridad</button></div>
 <section id='security' class='panel' data-group='security' data-subgroup='seguridad'>
-<h2>Security</h2>
+<h2>Seguridad</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
 <div class='gauge' style='width:140px;height:140px'>
@@ -3102,7 +3199,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 </svg>
 <div class='gpct'>40.2<small>%</small></div>
 </div>
-<p>Level 2 &mdash; Developing</p>
+<p>Nivel 2 &mdash; En desarrollo</p>
 </div>
 <div class='sub-card'>
 <div class='heat-row'><div class='heat-cell' style='background:#dc2626' title='Secrets: 149'>
@@ -3117,15 +3214,15 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <div class='heat-v'>6</div>
 <div class='heat-l'>ConnStrings</div>
 </div></div>
-<p>Files analyzed: 9571</p>
-<p>Secrets detected: 149 &middot; Anonymous findings: 9 &middot; Connection Strings: 6</p>
-<p>Security Risk: <b style='color:#2563eb'>RED</b></p>
+<p>Archivos analizados: 9571</p>
+<p>Secretos detectados: 149 &middot; hallazgos anonimos: 9 &middot; cadenas de conexion: 6</p>
+<p>Riesgo de seguridad: <b style='color:#2563eb'>ROJO</b></p>
 </div>
 </div>
 </section>
 <section id='release-simulation' class='panel' data-group='security' data-subgroup='release'>
-<h2>Release Simulation</h2>
-<p class='muted-note'>This is a read-only historical simulation from generated JSON. No real JSON file is modified. Current functional status is updated manually in the executive and module sections above.</p>
+<h2>Simulacion de release</h2>
+<p class='muted-note'>Simulacion historica de solo lectura desde JSON generado. No modifica archivos reales. El estado funcional vigente esta actualizado manualmente en las secciones ejecutivas y de modulos.</p>
 <table class='sortable'>
 <tr><th>Scenario</th><th>Metric family</th><th>Baseline</th><th>Simulated</th><th>Delta</th><th>Status change / scope</th></tr>
 <tr><td>Security reaches 80%</td><td>Engineering</td><td>Snapshot readiness: 74.92%</td><td>82.88%</td><td>7.96</td><td>historical generator scenario</td></tr>
@@ -3138,7 +3235,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <p class='muted-note'>Formulas (verbatim from calculate-engineering-score.ps1 / render-dashboard.ps1): ModuleHealth*0.30 + Architecture*0.20 + Quality*0.20 + Security*0.20 + Dependencies*0.10 (tools/dashboard/calculate-engineering-score.ps1)</p>
 </section>
 <section id='risk-assessment' class='panel' data-group='security' data-subgroup='riesgos'>
-<h2>Risk Assessment</h2>
+<h2>Evaluacion de riesgos</h2>
 <div class='module-heatmap'>
 <div class='mh-row mh-head'><div class='mh-name'></div><div class='mh-col-h'>LOW</div><div class='mh-col-h'>MEDIUM</div><div class='mh-col-h'>HIGH</div><div class='mh-col-h'>CRITICAL</div></div>
 <div class='mh-row'><div class='mh-name'>Configuration</div><div class='heat-mini' style='background:#eef2f6' title='Configuration - LOW : 0 module(s)'></div><div class='heat-mini' style='background:#d97706' title='Configuration - MEDIUM : 5 module(s)'>5</div><div class='heat-mini' style='background:#dc2626' title='Configuration - HIGH : 1 module(s)'>1</div><div class='heat-mini' style='background:#eef2f6' title='Configuration - CRITICAL : 0 module(s)'></div></div>
@@ -3200,7 +3297,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <div class='groups-view' data-group-view='roadmap'>
 <div class='subnav' data-subnav-for='roadmap'><button type='button' class='subnav-btn' data-sub='roadmap' onclick="showSubGroup('roadmap','roadmap');return false;">Roadmap</button><button type='button' class='subnav-btn' data-sub='hitos' onclick="showSubGroup('roadmap','hitos');return false;">Hitos</button><button type='button' class='subnav-btn' data-sub='ruta' onclick="showSubGroup('roadmap','ruta');return false;">Ruta</button><button type='button' class='subnav-btn subnav-shortcut' onclick="showGroup('business');showSubGroup('business','cierre-erp');return false;">Cierre ERP &#8599;</button></div>
 <section id='erp-completion' class='panel' data-group='roadmap' data-subgroup='roadmap'>
-<h2>ERP Completion Intelligence</h2>
+<h2>Inteligencia de cierre ERP</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
 <div class='gauge' style='width:160px;height:160px'>
@@ -3210,11 +3307,11 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 </svg>
 <div class='gpct'>84<small>%</small></div>
 </div>
-<p>ERP Completion &mdash; fuente historica: architecture-progress.json</p>
-<p>Overall Status vigente: <b>EN PILOTO TECNICO</b> &middot; Production Readiness estimado: <b>85%</b></p>
+<p>Cierre ERP &mdash; fuente historica: architecture-progress.json</p>
+<p>Estado general vigente: <b>EN PILOTO TECNICO</b> &middot; preparacion estimada: <b>85%</b></p>
 <p>Architecture Health: 100% &middot; Engineering Health snapshot: 72.88% (historico)</p>
 <p>Estimated Remaining Areas: <b>16</b></p>
-<h4>Next Milestone</h4>
+<h4>Siguiente hito</h4>
 <p>Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)</p>
 </div>
 <div class='sub-card'>
@@ -3228,7 +3325,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <li>Contabilidad: falta cierre contable, flujo de efectivo, conciliacion bancaria y bancos</li>
 <li>Caja: movimientos propios aun no postean directo a Accounting</li>
 <li>Inventario: Kardex/costo promedio operativo, pero accounting completo de valoracion queda parcial</li></ul></details>
-<h3>Recommended Order</h3>
+<h3>Orden recomendado</h3>
 <ol><li>1. Commit o descarte de los cambios locales de retenciones/ElectronicDocuments pendientes</li>
 <li>2. Cerrar liquidacion de compra SRI 03 y recepcion fisica sin factura</li>
 <li>3. Completar guia de remision y nota de debito si el piloto lo necesita</li>
@@ -3254,19 +3351,19 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <p class='muted-note'>Fuente: tools/dashboard/analyze-completion.ps1 -&gt; completion-intelligence.json. Ninguna conclusion se recalcula en el renderer.</p>
 </section>
 <section id='roadmap' class='panel' data-group='roadmap' data-subgroup='roadmap'>
-<h2>Engineering Roadmap</h2>
+<h2>Roadmap de ingenieria</h2>
 <ul><li><b>1. Retenciones / ElectronicDocuments</b><br/>Estado: implementado avanzado, pendiente de commit local<br/>Priority: HIGH</li>
 <li><b>2. Cierre Fiscal SRI</b><br/>Pendiente: liquidacion compra 03, guia remision, nota debito y produccion SRI real<br/>Priority: HIGH</li>
 <li><b>3. Cierre financiero</b><br/>Pendiente: bancos, conciliacion, flujo efectivo, cierre contable y movimientos propios de Caja<br/>Priority: MEDIUM-HIGH</li></ul>
-<h3>Release Recommendation</h3>
+<h3>Recomendacion de release</h3>
 <p class='big-status' style='color:#d97706'>Piloto tecnico controlado</p>
-<p>Based on Production Decision: PILOTO, no produccion general todavia</p>
+<p>Basado en decision de produccion: PILOTO, no produccion general todavia</p>
 <h4>Required Actions</h4>
 <ul><li>Resolver/commitear cambios locales de retenciones antes de congelar una entrega.</li>
 <li>Revalidar SRI real y dependencias externas antes de produccion final.</li></ul>
 </section>
 <section id='recommendations' class='panel' data-group='roadmap' data-subgroup='roadmap'>
-<h2>Architecture Recommendations</h2>
+<h2>Recomendaciones de arquitectura</h2>
 <p class='muted-note'>Deterministic rule engine -- every recommendation cites the exact JSON field(s) that triggered it in 'justifiedBy'. No generic text, no invented relationships. A rule that finds no matching condition produces zero recommendations for that rule.</p>
 <div class='sub-card'>
 <h4>Revisar deuda tecnica antes de produccion final</h4>
@@ -3580,7 +3677,14 @@ var SEARCH_INDEX = [{"type":"Module","label":"Company","target":"Company","kind"
       var el = document.getElementById(target);
       if(el){
         var groupAncestor = el.closest('.groups-view');
-        if(groupAncestor){ showGroup(groupAncestor.getAttribute('data-group-view')); }
+        if(groupAncestor){
+          var groupName = groupAncestor.getAttribute('data-group-view');
+          if(groupName === 'architecture'){
+            showArchitectureDetails(el.getAttribute('data-subgroup') || ACTIVE_SUBGROUP.architecture || DEFAULT_SUBGROUP.architecture);
+          } else {
+            showGroup(groupName);
+          }
+        }
         if(el.tagName === 'DETAILS') el.open = true;
         el.scrollIntoView({behavior:'smooth', block:'center'});
       }
@@ -3593,8 +3697,9 @@ var SEARCH_INDEX = [{"type":"Module","label":"Company","target":"Company","kind"
   });
 })();
 
-var DEFAULT_SUBGROUP = {"home":"kpis","business":"business-capability","architecture":"resumen","engineering":"resumen","security":"riesgos","roadmap":"roadmap"};
+var DEFAULT_SUBGROUP = {"home":"guia","business":"familias","architecture":"resumen","engineering":"resumen","security":"riesgos","roadmap":"roadmap"};
 var ACTIVE_SUBGROUP = {};
+var architectureDetailsVisible = false;
 
 function showSubGroup(group, sub){
   var view = document.querySelector(".groups-view[data-group-view='" + group + "']");
@@ -3630,24 +3735,41 @@ function showGroup(name){
   var groupViews = document.querySelectorAll('.groups-view');
 
   if(name === 'architecture'){
+    architectureDetailsVisible = false;
     archView.classList.remove('hidden');
     resetBreadcrumb();
   } else {
     archView.classList.add('hidden');
   }
   groupViews.forEach(function(g){
-    if(g.getAttribute('data-group-view') === name) g.classList.add('active');
+    if(g.getAttribute('data-group-view') === name && (name !== 'architecture' || architectureDetailsVisible)) g.classList.add('active');
     else g.classList.remove('active');
   });
 
-  if(DEFAULT_SUBGROUP[name]){
+  if(DEFAULT_SUBGROUP[name] && (name !== 'architecture' || architectureDetailsVisible)){
     showSubGroup(name, ACTIVE_SUBGROUP[name] || DEFAULT_SUBGROUP[name]);
   }
 }
 
+function showArchitectureDetails(sub){
+  var links = document.querySelectorAll('.nav-link');
+  links.forEach(function(l){ l.classList.remove('active'); });
+  document.querySelectorAll('.nav-link[data-nav="architecture"]').forEach(function(l){ l.classList.add('active'); });
+
+  architectureDetailsVisible = true;
+  var archView = document.getElementById('view-architecture');
+  if(archView) archView.classList.add('hidden');
+
+  document.querySelectorAll('.groups-view').forEach(function(g){
+    g.classList.toggle('active', g.getAttribute('data-group-view') === 'architecture');
+  });
+  showSubGroup('architecture', sub || ACTIVE_SUBGROUP.architecture || DEFAULT_SUBGROUP.architecture);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
 // ============================================================================
 // BREADCRUMB-DRIVEN HIERARCHICAL NAVIGATION
-// Arquitectura -> Capa -> Dominio -> Modulo -> Feature/Proceso -> Archivo
+// Arquitectura -> Capa -> Dominio -> Modulo -> Funcionalidad/Proceso -> Archivo
 // El diagrama principal (11 nodos) permanece SIEMPRE visible y persistente;
 // solo el panel lateral cambia de nivel. Ningun nivel muestra el detalle
 // completo del siguiente -- solo tarjetas resumen con % hasta que el usuario
@@ -3657,32 +3779,32 @@ function showGroup(name){
 var breadcrumbStack = [];
 var suppressHashRoute = false;
 
-var LEVEL_LABELS = { layer: 'Capa', domain: 'Dominio', module: 'Modulo', feature: 'Feature', process: 'Proceso', file: 'Archivo' };
+var LEVEL_LABELS = { layer: 'Capa', domain: 'Dominio', module: 'Modulo', feature: 'Funcionalidad', process: 'Proceso', file: 'Archivo' };
 var CONCISE_NAV = {
   layers: {
     web: { title:'Web ERP', pct:88, status:'En piloto', subtitle:'React 19 + TypeScript + Vite 8', children:['Companies','Branches','Items','Pricing','MasterData','Sales','Purchases','Inventory','Caja','Finance','Accounting','Expenses','Retentions','ElectronicDocuments','Dashboard','Security','Session','Navigation'] },
-    mobile: { title:'Mobile App', pct:0, status:'Futuro', subtitle:'Sin modulo movil implementado', children:[] },
-    chat: { title:'Chat Interface', pct:0, status:'Futuro', subtitle:'Sin interfaz conversacional implementada', children:[] },
-    intelligence: { title:'ERP Intelligence Layer', pct:0, status:'Futuro', subtitle:'AI modules & services no iniciados como producto', children:['ai-assistant','ai-analyst','ai-automation'] },
-    'ai-assistant': { title:'User Assistant AI', pct:0, status:'Futuro', subtitle:'Consultas, reportes y acciones conversacionales', children:[] },
-    'ai-analyst': { title:'Business Analyst AI', pct:0, status:'Futuro', subtitle:'Analisis, predicciones y alertas futuras', children:[] },
-    'ai-automation': { title:'Process Automation AI', pct:0, status:'Futuro', subtitle:'Flujos, alertas y acciones automatizadas', children:[] },
-    core: { title:'ERP Core Services', pct:88, status:'En piloto', subtitle:'Nucleo operativo multi-tenant Ecuador/SRI', children:['Sales','Purchases','Inventory','Caja','Accounting','Finance','Expenses','Retentions','ElectronicDocuments'] },
+    mobile: { title:'App Movil', pct:0, status:'Futuro', subtitle:'Sin modulo movil implementado', children:[] },
+    chat: { title:'Interfaz Chat', pct:0, status:'Futuro', subtitle:'Sin interfaz conversacional implementada', children:[] },
+    intelligence: { title:'Capa Inteligencia ERP', pct:0, status:'Futuro', subtitle:'Modulos y servicios IA no iniciados como producto', children:['ai-assistant','ai-analyst','ai-automation'] },
+    'ai-assistant': { title:'Asistente IA', pct:0, status:'Futuro', subtitle:'Consultas, reportes y acciones conversacionales', children:[] },
+    'ai-analyst': { title:'Analista IA', pct:0, status:'Futuro', subtitle:'Analisis, predicciones y alertas futuras', children:[] },
+    'ai-automation': { title:'Automatizacion IA', pct:0, status:'Futuro', subtitle:'Flujos, alertas y acciones automatizadas', children:[] },
+    core: { title:'Servicios Core ERP', pct:88, status:'En piloto', subtitle:'Nucleo operativo multi-tenant Ecuador/SRI', children:['Sales','Purchases','Inventory','Caja','Accounting','Finance','Expenses','Retentions','ElectronicDocuments'] },
     db: { title:'Base de Datos', pct:93, status:'En piloto', subtitle:'PostgreSQL 16 + EF Core 10', children:['DbSchema','EfCore','MultiTenant','BackgroundJobs'] },
-    'data-warehouse': { title:'Data Warehouse', pct:0, status:'Futuro', subtitle:'Analitica avanzada fuera del MVP actual', children:[] },
+    'data-warehouse': { title:'Almacen Analitico', pct:0, status:'Futuro', subtitle:'Analitica avanzada fuera del MVP actual', children:[] },
     'ai-advanced': { title:'IA Modelos Avanzados', pct:0, status:'Futuro', subtitle:'Prediccion, analisis y optimizacion futuros', children:[] }
   },
   modules: {
-    Companies:{ title:'Company Profile', pct:85, status:'En piloto', summary:'Perfil, branding, fiscal, decimal config y provisioning global.', done:['Perfil de empresa','Branding/logo','Configuracion fiscal','Provisioning global'], pending:['Cierre de gobernanza Frozen'] },
-    Branches:{ title:'Branches / Establishments / Emission Points', pct:90, status:'Completado', summary:'Sucursales, establecimientos SRI y puntos de emision.', done:['CRUD y soft-disable','Secuencias documentales','Datos fiscales SRI'], pending:[] },
-    Items:{ title:'Items', pct:90, status:'Completado', summary:'Items, variantes, atributos, empaques y catalogos base.', done:['Items y variantes','Atributos y marcas','Empaques y conversiones'], pending:[] },
-    Pricing:{ title:'Pricing Engine v2', pct:90, status:'Completado', summary:'PricingRule/Resolver como SSOT de precios.', done:['Price lists','Pricing rules','Simulacion de precios'], pending:[] },
-    MasterData:{ title:'MasterData / Business Partners', pct:85, status:'En piloto', summary:'Clientes/proveedores y catalogos maestros operativos.', done:['Business partners','Catalogos base','Datos fiscales'], pending:['CRM futuro'] },
+    Companies:{ title:'Perfil de Empresa', pct:85, status:'En piloto', summary:'Perfil, branding, fiscal, decimal config y provisioning global.', done:['Perfil de empresa','Branding/logo','Configuracion fiscal','Provisioning global'], pending:['Cierre de gobernanza Frozen'] },
+    Branches:{ title:'Sucursales / Establecimientos / Puntos de Emision', pct:90, status:'Completado', summary:'Sucursales, establecimientos SRI y puntos de emision.', done:['CRUD y soft-disable','Secuencias documentales','Datos fiscales SRI'], pending:[] },
+    Items:{ title:'Productos / Items', pct:90, status:'Completado', summary:'Items, variantes, atributos, empaques y catalogos base.', done:['Items y variantes','Atributos y marcas','Empaques y conversiones'], pending:[] },
+    Pricing:{ title:'Motor de Precios v2', pct:90, status:'Completado', summary:'PricingRule/Resolver como SSOT de precios.', done:['Price lists','Pricing rules','Simulacion de precios'], pending:[] },
+    MasterData:{ title:'Datos Maestros / Socios de Negocio', pct:85, status:'En piloto', summary:'Clientes/proveedores y catalogos maestros operativos.', done:['Business partners','Catalogos base','Datos fiscales'], pending:['CRM futuro'] },
     Sales:{ title:'Ventas', pct:88, status:'En piloto', summary:'Ventas/POS, CxC, cobros, inventario, COGS, pricing y documento electronico base.', done:['Factura y anulacion','CxC y cobros','Pricing e inventario','Posting contable'], pending:['SRI produccion real','Bancos/conciliacion futuro'], features:['Sales::Authorize Sales','Sales::Cancel Sales','Sales::Sales Receivable','Sales::Payment Method'] },
     Purchases:{ title:'Compras', pct:86, status:'En piloto', summary:'Compras, CxP, pagos proveedor, inventario y accounting.', done:['Draft/confirmacion','CxP','Pagos proveedor','Ingreso inventario'], pending:['Liquidacion compra SRI 03','Recepcion fisica sin factura'], features:['Purchases::Purchase Draft','Purchases::Confirm Purchase','Purchases::Cancel Purchase','Purchases::Purchase Cost'] },
     Inventory:{ title:'Inventario / Kardex', pct:86, status:'En piloto', summary:'Stock, Kardex, costo promedio y reportes operativos.', done:['Bodegas','Movimientos stock','Kardex por producto/documento','Costo promedio'], pending:['Accounting completo de valoracion','Aprobaciones/reversos avanzados'], features:['Inventory::Get Stock','Inventory::Get Kardex By Product','Inventory::Create Stock Adjustment','Inventory::Confirm Stock Transfer'] },
     Caja:{ title:'Caja', pct:85, status:'En piloto', summary:'Sesiones de caja, apertura, movimientos y cierre operativo.', done:['Apertura/cierre','Movimientos','Vinculo con ventas'], pending:['ADR/freeze propio','Posting directo de movimientos propios'], features:['Caja::Open Cash Session','Caja::Close Cash Session','Caja::Record Cash Movement'] },
-    Finance:{ title:'Finance / CxC / CxP', pct:86, status:'En piloto', summary:'CxC, CxP, cobros, pagos proveedor y destinos financieros.', done:['Collections','Supplier payments','Financial destinations'], pending:['Bancos y conciliacion'] },
+    Finance:{ title:'Finanzas / CxC / CxP', pct:86, status:'En piloto', summary:'CxC, CxP, cobros, pagos proveedor y destinos financieros.', done:['Collections','Supplier payments','Financial destinations'], pending:['Bancos y conciliacion'] },
     Accounting:{ title:'Contabilidad', pct:88, status:'En piloto', summary:'Plan, periodos, reglas, asientos, reversos y reportes.', done:['Plan de cuentas','Posting engine','Reversos/numeracion','Libro mayor y reportes'], pending:['Cierre contable','Flujo de efectivo','Conciliacion bancaria'], features:['Accounting::Accounts','Accounting::Accounting Periods','Accounting::Posting Rules'] },
     Expenses:{ title:'Gastos', pct:88, status:'En piloto', summary:'Catalogo jerarquico, documentos, confirmacion, posting y CxP.', done:['Catalogo jerarquico','Documentos de gasto','Posting contable','Cancelacion con reverso'], pending:['Commit de cancelacion si sigue local'] },
     Retentions:{ title:'Retenciones', pct:80, status:'Implementado pendiente de commit', shortStatus:'Pendiente commit', summary:'Retenciones en gastos avanzadas con UI, QA, XML, RIDE y schema validator.', done:['Foundation/dominio','UI en gastos','QA E2E','XML/RIDE/schema validator'], pending:['Wiring local ElectronicDocuments pendiente de commit'] },
@@ -3691,10 +3813,10 @@ var CONCISE_NAV = {
     Security:{ title:'Seguridad / Permisos', pct:90, status:'Completado', summary:'Permisos jerarquicos backend SSOT y anti-escalamiento.', done:['Menu server-driven','Matriz de permisos','Anti-escalamiento','Entitlements NoOp seam'], pending:[] },
     Session:{ title:'Auth / Sesion', pct:90, status:'Completado', summary:'Logout backend, expiracion absoluta, inactividad y reautenticacion.', done:['Logout backend','Expiracion 8h','Overlay 30 min','Header Empresa/Sucursal'], pending:[] },
     Navigation:{ title:'Navegacion / UI', pct:90, status:'Completado', summary:'Design System ZH compacto, ZHDataTable y menu jerarquico.', done:['ZHDataTable','Menu jerarquico','Permisos jerarquicos','UI compacta'], pending:[] },
-    DbSchema:{ title:'Schema PostgreSQL', pct:93, status:'En piloto', summary:'Tablas y migraciones principales listas para piloto.', done:['PostgreSQL 16','Migraciones EF','Repositorios'], pending:['Backups productivos'] },
+    DbSchema:{ title:'Esquema PostgreSQL', pct:93, status:'En piloto', summary:'Tablas y migraciones principales listas para piloto.', done:['PostgreSQL 16','Migraciones EF','Repositorios'], pending:['Backups productivos'] },
     EfCore:{ title:'EF Core', pct:93, status:'Completado', summary:'EF Core 10 + Npgsql, filtros tenant y warnings sentinel cerrados.', done:['Query filters tenant','Npgsql','Enum sentinels cerrados'], pending:[] },
     MultiTenant:{ title:'Multi-tenant', pct:90, status:'Completado', summary:'Aislamiento por tenant_id en backend y DbContext.', done:['Claim tenant_id','CurrentTenant','Query filters'], pending:['RLS PostgreSQL wave futura'] },
-    BackgroundJobs:{ title:'Background Jobs', pct:80, status:'En piloto', summary:'Hangfire con PostgreSQL para jobs tecnicos.', done:['Hangfire','Storage PostgreSQL'], pending:['Politica operativa produccion'] }
+    BackgroundJobs:{ title:'Jobs en Segundo Plano', pct:80, status:'En piloto', summary:'Hangfire con PostgreSQL para jobs tecnicos.', done:['Hangfire','Storage PostgreSQL'], pending:['Politica operativa produccion'] }
   }
 };
 
@@ -3809,7 +3931,7 @@ function renderConciseLayer(id){
 function renderFeatureCards(module){
   var features = module.features || [];
   if(features.length === 0) return '';
-  return '<div class="page-section-title">Features / procesos</div><div class="chip-row">' + features.map(function(featureId){
+  return '<div class="page-section-title">Funcionalidades / procesos</div><div class="chip-row">' + features.map(function(featureId){
     var label = featureId.split('::').pop();
     return '<span class="chip" onclick="pushLevel(\'feature\',\'' + featureId + '\',\'' + label.replace(/'/g, "\\'") + '\')">' + label + '</span>';
   }).join('') + '</div>';
@@ -3844,7 +3966,7 @@ function renderCurrentLevel(){
     return;
   }
 
-  var html = '<p class="muted-note">No data available for this level.</p>';
+  var html = '<p class="muted-note">No hay datos disponibles para este nivel.</p>';
 
   if(top.level === 'layer'){ html = LAYER_LEVELS[top.id] || html; }
   else if(top.level === 'domain'){ html = DOMAIN_LEVELS[top.id] || html; }
