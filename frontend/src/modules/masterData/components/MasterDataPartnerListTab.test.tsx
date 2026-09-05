@@ -24,6 +24,10 @@ function buildPartner(id: string, name: string): BusinessPartnerSummaryDto {
     countryCode: "EC",
     isActive: true,
     createdAt: "2026-08-01T00:00:00Z",
+    isCustomer: false,
+    isSupplier: false,
+    canAssignAsCustomer: true,
+    canAssignAsSupplier: true,
   };
 }
 

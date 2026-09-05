@@ -71,6 +71,10 @@ const BP = {
   countryCode: "EC",
   isActive: true,
   createdAt: "2026-08-01T00:00:00Z",
+  isCustomer: true,
+  isSupplier: false,
+  canAssignAsCustomer: false,
+  canAssignAsSupplier: true,
   roles: [
     {
       id: "role-1",

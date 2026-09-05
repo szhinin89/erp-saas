@@ -9,7 +9,12 @@ namespace ERP.Application.MasterData.DTOs;
 
 /// <summary>
 /// DTO para listas y resultados de búsqueda.
-/// No incluye roles (evita N+1). El cliente usa el filtro roles[] para acotar resultados.
+/// No incluye el detalle de roles (evita N+1) — el cliente usa el filtro roles[] para acotar
+/// resultados. Sí incluye IsCustomer/IsSupplier (roles activos) y los CanAssignAs* derivados,
+/// para que el buscador de MasterData (alta de cliente/proveedor) pueda decidir sin llamadas
+/// adicionales si un resultado ya tiene el rol o puede asignarse
+/// (ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07). IsCustomer/IsSupplier reflejan solo roles
+/// ACTIVOS — un rol revocado no cuenta como "ya es cliente/proveedor" (ver ADR-BP-12).
 /// </summary>
 public sealed record BusinessPartnerSummaryDto(
     Guid Id,
@@ -20,10 +25,22 @@ public sealed record BusinessPartnerSummaryDto(
     int LegalEntityTypeCode,
     string? CountryCode,
     bool IsActive,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool IsCustomer = false,
+    bool IsSupplier = false
 )
 {
-    public static BusinessPartnerSummaryDto From(BusinessPartner bp) =>
+    /// <summary>Espeja la regla real de AssignBusinessPartnerRoleHandler: BP activo + sin el rol.</summary>
+    public bool CanAssignAsCustomer => IsActive && !IsCustomer;
+
+    /// <summary>Espeja la regla real de AssignBusinessPartnerRoleHandler: BP activo + sin el rol.</summary>
+    public bool CanAssignAsSupplier => IsActive && !IsSupplier;
+
+    public static BusinessPartnerSummaryDto From(
+        BusinessPartner bp,
+        bool isCustomer = false,
+        bool isSupplier = false
+    ) =>
         new(
             bp.Id,
             bp.Identification.Type,
@@ -33,7 +50,9 @@ public sealed record BusinessPartnerSummaryDto(
             bp.LegalEntityTypeCode,
             bp.CountryCode,
             bp.IsActive,
-            bp.CreatedAt
+            bp.CreatedAt,
+            isCustomer,
+            isSupplier
         );
 }
 

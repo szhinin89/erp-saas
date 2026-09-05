@@ -9,7 +9,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
-import { MasterDataPartnerWizard } from "./MasterDataPartnerWizard";
+import {
+  MasterDataPartnerWizard,
+  getPartnerSearchResultState,
+} from "./MasterDataPartnerWizard";
 import { businessPartnerService } from "../api/businessPartnerService";
 import { paymentTermService } from "../api/paymentTermService";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
@@ -39,6 +42,11 @@ vi.mock("../api/paymentTermService", () => ({
   },
 }));
 
+/**
+ * ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07: el backend expone isCustomer/isSupplier
+ * (roles activos) y los CanAssignAs* derivados directamente en BusinessPartnerSummaryDto —
+ * el fixture base ya no tiene ningún rol; los otros fixtures ajustan flags puntuales.
+ */
 const FOUND_BP: BusinessPartnerSummaryDto = {
   id: "bp-1",
   identificationType: "05",
@@ -49,6 +57,44 @@ const FOUND_BP: BusinessPartnerSummaryDto = {
   countryCode: "EC",
   isActive: true,
   createdAt: "2026-08-01T00:00:00Z",
+  isCustomer: false,
+  isSupplier: false,
+  canAssignAsCustomer: true,
+  canAssignAsSupplier: true,
+};
+
+/** ZH-MASTERDATA-PARTNER-FUNCTIONAL-CASE-MATRIX-06 — variantes por estado de rol. */
+const CUSTOMER_ONLY_BP: BusinessPartnerSummaryDto = {
+  ...FOUND_BP,
+  id: "bp-customer-only",
+  legalName: "Consumidor Final",
+  isCustomer: true,
+  isSupplier: false,
+  canAssignAsCustomer: false,
+  canAssignAsSupplier: true,
+};
+const SUPPLIER_ONLY_BP: BusinessPartnerSummaryDto = {
+  ...FOUND_BP,
+  id: "bp-supplier-only",
+  legalName: "Proveedor Existente",
+  isCustomer: false,
+  isSupplier: true,
+  canAssignAsCustomer: true,
+  canAssignAsSupplier: false,
+};
+const BOTH_ROLES_BP: BusinessPartnerSummaryDto = {
+  ...FOUND_BP,
+  id: "bp-both-roles",
+  legalName: "Tercero Mixto",
+  isCustomer: true,
+  isSupplier: true,
+  canAssignAsCustomer: false,
+  canAssignAsSupplier: false,
+};
+const NO_ROLE_BP: BusinessPartnerSummaryDto = {
+  ...FOUND_BP,
+  id: "bp-no-role",
+  legalName: "Tercero Sin Rol",
 };
 
 function baseProps(overrides: Partial<Parameters<typeof MasterDataPartnerWizard>[0]> = {}) {
@@ -754,5 +800,187 @@ describe("MasterDataPartnerWizard — edición y modo embebido no bloqueados por
     ) as HTMLFieldSetElement;
     expect(fieldset.disabled).toBe(false);
     expect(screen.queryByText(/Guardar borrador/i)).toBeNull();
+  });
+});
+
+describe("getPartnerSearchResultState — helper puro (ZH-MASTERDATA-PARTNER-FUNCTIONAL-CASE-MATRIX-06 §9)", () => {
+  function bpWithFlags(isCustomer: boolean, isSupplier: boolean): BusinessPartnerSummaryDto {
+    return { ...FOUND_BP, isCustomer, isSupplier };
+  }
+
+  it("sin ningún rol → canAssignNoRole", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(false, false), "customer"),
+    ).toBe("canAssignNoRole");
+  });
+
+  it("target=customer, solo tiene supplier → canAssignOtherRole", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(false, true), "customer"),
+    ).toBe("canAssignOtherRole");
+  });
+
+  it("target=customer, ya tiene customer → alreadyTarget", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(true, false), "customer"),
+    ).toBe("alreadyTarget");
+  });
+
+  it("target=customer, tiene ambos roles → alreadyBoth", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(true, true), "customer"),
+    ).toBe("alreadyBoth");
+  });
+
+  it("target=supplier, solo tiene customer → canAssignOtherRole", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(true, false), "supplier"),
+    ).toBe("canAssignOtherRole");
+  });
+
+  it("target=supplier, ya tiene supplier → alreadyTarget", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(false, true), "supplier"),
+    ).toBe("alreadyTarget");
+  });
+
+  it("target=supplier, tiene ambos roles → alreadyBoth", () => {
+    expect(
+      getPartnerSearchResultState(bpWithFlags(true, true), "supplier"),
+    ).toBe("alreadyBoth");
+  });
+});
+
+describe("MasterDataPartnerWizard — matriz de casos por rol del resultado (ZH-MASTERDATA-PARTNER-FUNCTIONAL-CASE-MATRIX-06)", () => {
+  async function search(role: "customer" | "supplier", query = "0999999999") {
+    renderWizard({ role });
+    fireEvent.change(screen.getByPlaceholderText(/RUC, cédula o razón social/i), {
+      target: { value: query },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    await waitFor(() => expect(document.querySelector(".md-search-results")).toBeTruthy());
+  }
+
+  it("Nuevo Cliente + resultado ya cliente (caso Consumidor Final): NO muestra 'Asignar como Cliente' y muestra 'Ya está registrado como cliente'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([CUSTOMER_ONLY_BP]);
+    await search("customer");
+
+    expect(screen.getByText("Consumidor Final")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: /Asignar como Cliente/i }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Ya está registrado como cliente."),
+    ).toBeTruthy();
+  });
+
+  it("Nuevo Cliente + resultado solo proveedor: muestra 'Asignar como Cliente' y 'Existe como proveedor'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([SUPPLIER_ONLY_BP]);
+    await search("customer");
+
+    expect(
+      screen.getByRole("button", { name: /Asignar como Cliente/i }),
+    ).toBeTruthy();
+    expect(screen.getByText("Existe como proveedor.")).toBeTruthy();
+  });
+
+  it("Nuevo Cliente + resultado cliente+proveedor: NO muestra 'Asignar como Cliente' y muestra 'cliente y proveedor'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([BOTH_ROLES_BP]);
+    await search("customer");
+
+    expect(
+      screen.queryByRole("button", { name: /Asignar como Cliente/i }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Ya está registrado como cliente y proveedor."),
+    ).toBeTruthy();
+  });
+
+  it("Nuevo Cliente + resultado sin ningún rol: muestra 'Asignar como Cliente' y 'sin rol cliente'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([NO_ROLE_BP]);
+    await search("customer");
+
+    expect(
+      screen.getByRole("button", { name: /Asignar como Cliente/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Registro encontrado sin rol cliente."),
+    ).toBeTruthy();
+  });
+
+  it("Nuevo Proveedor + resultado ya proveedor: NO muestra 'Asignar como Proveedor' y muestra 'Ya está registrado como proveedor'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([SUPPLIER_ONLY_BP]);
+    await search("supplier");
+
+    expect(
+      screen.queryByRole("button", { name: /Asignar como Proveedor/i }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Ya está registrado como proveedor."),
+    ).toBeTruthy();
+  });
+
+  it("Nuevo Proveedor + resultado solo cliente: muestra 'Asignar como Proveedor' y 'Existe como cliente'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([CUSTOMER_ONLY_BP]);
+    await search("supplier");
+
+    expect(
+      screen.getByRole("button", { name: /Asignar como Proveedor/i }),
+    ).toBeTruthy();
+    expect(screen.getByText("Existe como cliente.")).toBeTruthy();
+  });
+
+  it("Nuevo Proveedor + resultado cliente+proveedor: NO muestra 'Asignar como Proveedor'", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([BOTH_ROLES_BP]);
+    await search("supplier");
+
+    expect(
+      screen.queryByRole("button", { name: /Asignar como Proveedor/i }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Ya está registrado como cliente y proveedor."),
+    ).toBeTruthy();
+  });
+
+  it("click en resultado ya cliente no puede llamar onAssignRole (no hay botón para ese resultado)", async () => {
+    const onAssignRole = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(businessPartnerService.search).mockResolvedValue([CUSTOMER_ONLY_BP]);
+    renderWizard({ role: "customer", onAssignRole });
+    fireEvent.change(screen.getByPlaceholderText(/RUC, cédula o razón social/i), {
+      target: { value: "0999999999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    await waitFor(() => expect(screen.getByText("Consumidor Final")).toBeTruthy());
+
+    expect(onAssignRole).not.toHaveBeenCalled();
+  });
+
+  it("click en resultado con rol faltante sí llama onAssignRole", async () => {
+    const onAssignRole = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(businessPartnerService.search).mockResolvedValue([SUPPLIER_ONLY_BP]);
+    renderWizard({ role: "customer", onAssignRole });
+    fireEvent.change(screen.getByPlaceholderText(/RUC, cédula o razón social/i), {
+      target: { value: "0999999999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Asignar como Cliente/i }),
+    );
+
+    await waitFor(() => expect(onAssignRole).toHaveBeenCalledWith(SUPPLIER_ONLY_BP.id));
+  });
+
+  it("resultados múltiples se evalúan de forma independiente (uno ya cliente, otro sin rol)", async () => {
+    vi.mocked(businessPartnerService.search).mockResolvedValue([
+      CUSTOMER_ONLY_BP,
+      NO_ROLE_BP,
+    ]);
+    await search("customer");
+
+    expect(screen.getByText("Ya está registrado como cliente.")).toBeTruthy();
+    expect(screen.getByText("Registro encontrado sin rol cliente.")).toBeTruthy();
+    expect(
+      screen.getAllByRole("button", { name: /Asignar como Cliente/i }),
+    ).toHaveLength(1);
   });
 });

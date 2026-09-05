@@ -36,6 +36,17 @@ public interface IBusinessPartnerRoleRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Flags Customer/Supplier activos para un lote de BPs, en una sola query (evita N+1).
+    /// Usado por SearchBusinessPartnersHandler para exponer isCustomer/isSupplier en los
+    /// resultados de búsqueda sin requerir llamadas adicionales por fila
+    /// (ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, (bool IsCustomer, bool IsSupplier)>> GetActiveRoleFlagsByBpIdsAsync(
+        IEnumerable<Guid> businessPartnerIds,
+        CancellationToken cancellationToken = default
+    );
+
     Task AddAsync(BusinessPartnerRole role, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

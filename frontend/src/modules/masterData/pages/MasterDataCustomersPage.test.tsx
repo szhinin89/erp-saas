@@ -48,6 +48,10 @@ const CUSTOMER: BusinessPartnerSummaryDto = {
   countryCode: "EC",
   isActive: true,
   createdAt: "2026-08-01T00:00:00Z",
+  isCustomer: true,
+  isSupplier: false,
+  canAssignAsCustomer: false,
+  canAssignAsSupplier: true,
 };
 
 /** MasterDataCustomersPage resetea el store (incluida activeTab) al montar — se preseleccionaba

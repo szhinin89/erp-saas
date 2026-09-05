@@ -13,6 +13,10 @@ describe("businessPartnerCustomerAdapter V2", () => {
     countryCode: "EC",
     isActive: true,
     createdAt: "2024-01-01T00:00:00Z",
+    isCustomer: false,
+    isSupplier: false,
+    canAssignAsCustomer: true,
+    canAssignAsSupplier: true,
   };
 
   it("uses businessPartnerId as the operational id (no legacy bridge)", () => {

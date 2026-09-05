@@ -89,6 +89,41 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
             cancellationToken
         );
 
+    /// <summary>
+    /// Una sola query agrupada para el lote — evita 1 query por BP (N+1) al construir
+    /// resultados de búsqueda. Solo mira roles activos: un rol revocado no cuenta como
+    /// "ya es cliente/proveedor" (ver ADR-BP-12, semántica UPSERT de AssignRole).
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, (bool IsCustomer, bool IsSupplier)>> GetActiveRoleFlagsByBpIdsAsync(
+        IEnumerable<Guid> businessPartnerIds,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var idList = businessPartnerIds.Distinct().ToList();
+        if (idList.Count == 0)
+            return new Dictionary<Guid, (bool, bool)>();
+
+        var rows = await _db
+            .BusinessPartnerRoles.AsNoTracking()
+            .Where(r =>
+                idList.Contains(r.BusinessPartnerId)
+                && r.IsActive
+                && (r.RoleType == RoleType.Customer || r.RoleType == RoleType.Supplier)
+            )
+            .Select(r => new { r.BusinessPartnerId, r.RoleType })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.BusinessPartnerId)
+            .ToDictionary(
+                g => g.Key,
+                g => (
+                    IsCustomer: g.Any(x => x.RoleType == RoleType.Customer),
+                    IsSupplier: g.Any(x => x.RoleType == RoleType.Supplier)
+                )
+            );
+    }
+
     public async Task AddAsync(
         BusinessPartnerRole role,
         CancellationToken cancellationToken = default

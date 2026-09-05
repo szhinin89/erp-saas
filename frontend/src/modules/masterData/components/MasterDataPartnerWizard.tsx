@@ -40,6 +40,31 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 
 type Role = "customer" | "supplier";
 
+/**
+ * Estado de un resultado de búsqueda respecto al rol que se está creando/asignando
+ * (ZH-MASTERDATA-PARTNER-FUNCTIONAL-CASE-MATRIX-06). El backend expone isCustomer/isSupplier
+ * directamente en `BusinessPartnerSummaryDto` (ver ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07)
+ * — una sola llamada de búsqueda trae todo lo necesario, sin inferencias ni llamadas extra.
+ */
+export type PartnerSearchResultState =
+  | "canAssignNoRole"
+  | "canAssignOtherRole"
+  | "alreadyTarget"
+  | "alreadyBoth";
+
+/** Pura y testeable sin mocks de API — ver ZH-MASTERDATA-PARTNER-FUNCTIONAL-CASE-MATRIX-06 §9. */
+export function getPartnerSearchResultState(
+  bp: BusinessPartnerSummaryDto,
+  targetRole: Role,
+): PartnerSearchResultState {
+  const hasTarget = targetRole === "customer" ? bp.isCustomer : bp.isSupplier;
+  const hasOther = targetRole === "customer" ? bp.isSupplier : bp.isCustomer;
+  if (hasTarget && hasOther) return "alreadyBoth";
+  if (hasTarget) return "alreadyTarget";
+  if (hasOther) return "canAssignOtherRole";
+  return "canAssignNoRole";
+}
+
 /** Solo aplica cuando role='supplier' — ver SupplierRoleConfig (backend). */
 export type SupplierConfigAtCreation = {
   refundProviderTypeCode: string;
@@ -429,6 +454,9 @@ export function MasterDataPartnerWizard({
               <ul className="md-search-results">
                 {results.map((bp) => {
                   const busy = assigning === bp.id || submitting;
+                  const resultState = getPartnerSearchResultState(bp, role);
+                  const otherRoleLabelLower =
+                    role === "customer" ? "proveedor" : "cliente";
                   return (
                     <li key={bp.id} className="md-search-result-item">
                       <div className="md-search-result-info">
@@ -438,20 +466,45 @@ export function MasterDataPartnerWizard({
                         <span className="md-search-result-id mono">
                           {bp.identificationNumber}
                         </span>
-                      </div>
-                      <ZHBtn
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => void handleAssign(bp)}
-                      >
-                        {busy
-                          ? t("masterdata.wizard.search.assigning", "Asignando…")
-                          : t("masterdata.wizard.search.assign", {
-                              role: roleLabel,
+                        <span className="md-search-result-status">
+                          {resultState === "alreadyBoth" &&
+                            t(
+                              "masterdata.wizard.search.alreadyBoth",
+                              "Ya está registrado como cliente y proveedor.",
+                            )}
+                          {resultState === "alreadyTarget" &&
+                            t("masterdata.wizard.search.alreadyTarget", {
+                              role: roleLabelLower,
                             })}
-                      </ZHBtn>
+                          {resultState === "canAssignOtherRole" &&
+                            t("masterdata.wizard.search.existsAsOtherRole", {
+                              role: otherRoleLabelLower,
+                            })}
+                          {resultState === "canAssignNoRole" &&
+                            t("masterdata.wizard.search.noRoleYet", {
+                              role: roleLabelLower,
+                            })}
+                        </span>
+                      </div>
+                      {(resultState === "canAssignNoRole" ||
+                        resultState === "canAssignOtherRole") && (
+                        <ZHBtn
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => void handleAssign(bp)}
+                        >
+                          {busy
+                            ? t(
+                                "masterdata.wizard.search.assigning",
+                                "Asignando…",
+                              )
+                            : t("masterdata.wizard.search.assign", {
+                                role: roleLabel,
+                              })}
+                        </ZHBtn>
+                      )}
                     </li>
                   );
                 })}

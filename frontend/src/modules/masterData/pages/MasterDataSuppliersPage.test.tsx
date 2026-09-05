@@ -47,6 +47,10 @@ const SUPPLIER: BusinessPartnerSummaryDto = {
   countryCode: "EC",
   isActive: true,
   createdAt: "2026-08-01T00:00:00Z",
+  isCustomer: false,
+  isSupplier: true,
+  canAssignAsCustomer: true,
+  canAssignAsSupplier: false,
 };
 
 function renderPage() {

@@ -33,6 +33,10 @@ const PARTNER: BusinessPartnerSummaryDto = {
   countryCode: "EC",
   isActive: true,
   createdAt: "2026-08-01T00:00:00Z",
+  isCustomer: true,
+  isSupplier: false,
+  canAssignAsCustomer: false,
+  canAssignAsSupplier: true,
 };
 
 const BLOCKED_SETTINGS: CompanyBpTradingSettingsDto = {

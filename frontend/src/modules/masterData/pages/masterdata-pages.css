@@ -601,6 +601,11 @@
   color: var(--color-text-secondary);
 }
 
+.md-search-result-status {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
 .prd-list-toolbar {
   display: flex;
   justify-content: flex-end;

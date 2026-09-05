@@ -86,6 +86,14 @@ export type BusinessPartnerSummaryDto = {
   countryCode: string | null;
   isActive: boolean;
   createdAt: string; // ISO 8601
+  /** Rol Customer activo — ver ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07. */
+  isCustomer: boolean;
+  /** Rol Supplier activo — ver ZH-MASTERDATA-PARTNER-SEARCH-ROLE-FLAGS-API-07. */
+  isSupplier: boolean;
+  /** Derivado en backend: isActive && !isCustomer (espeja AssignBusinessPartnerRoleHandler). */
+  canAssignAsCustomer: boolean;
+  /** Derivado en backend: isActive && !isSupplier (espeja AssignBusinessPartnerRoleHandler). */
+  canAssignAsSupplier: boolean;
 };
 
 /**
