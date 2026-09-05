@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, waitFor, act, cleanup } from "@testing-library/react";
 import { useAuthStore } from "../store/authStore";
 import { useActiveBranchStore } from "../store/activeBranchStore";
+import { useSessionStore } from "../store/sessionStore";
 import { sessionService } from "../modules/session/api/sessionService";
 import { useBranchGate } from "./useBranchGate";
 
@@ -41,12 +42,18 @@ function setCompany(companyId: string | null) {
 beforeEach(() => {
   vi.clearAllMocks();
   useActiveBranchStore.setState({ branch: null });
+  useSessionStore.setState({ isLoading: false, isLoaded: false });
   setCompany(null);
 });
 
 afterEach(() => {
+  // Sin esto, instancias de renderHook de tests previos siguen suscritas a los stores
+  // globales (zustand) y vuelven a disparar su propio efecto cuando un test posterior
+  // muta isLoading/branch, contaminando los conteos de llamadas entre tests.
+  cleanup();
   useActiveBranchStore.setState({ branch: null });
   useAuthStore.setState({ user: null, isAuthenticated: false });
+  useSessionStore.setState({ isLoading: false, isLoaded: false });
 });
 
 describe("useBranchGate", () => {
@@ -128,6 +135,63 @@ describe("useBranchGate", () => {
     });
 
     expect(result.current.error).toBeTruthy();
+    expect(result.current.gateOpen).toBe(true);
+  });
+
+  it("mientras session/context está cargando no consulta available-branches ni muestra 'sin sucursales'", () => {
+    setCompany("company-1");
+    useSessionStore.setState({ isLoading: true });
+
+    const { result } = renderHook(() => useBranchGate());
+
+    expect(result.current.gateOpen).toBe(true);
+    expect(result.current.contextLoading).toBe(true);
+    expect(result.current.loading).toBe(true);
+    expect(result.current.options).toEqual([]);
+    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
+  });
+
+  it("si session/context resuelve una sucursal mientras carga, el gate se cierra sin consultar available-branches", async () => {
+    setCompany("company-1");
+    useSessionStore.setState({ isLoading: true });
+
+    const { result } = renderHook(() => useBranchGate());
+    expect(result.current.gateOpen).toBe(true);
+
+    act(() => {
+      useActiveBranchStore.getState().setBranch({
+        id: "branch-1",
+        name: "Matriz",
+        isMainBranch: true,
+      });
+      useSessionStore.setState({ isLoading: false, isLoaded: true });
+    });
+
+    await waitFor(() => expect(result.current.gateOpen).toBe(false));
+    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
+  });
+
+  it("cuando session/context termina sin resolver sucursal, recién ahí consulta available-branches", async () => {
+    vi.mocked(sessionService.getAvailableBranches).mockResolvedValue({
+      branches: branchOptions,
+      loginMode: "AskBranch",
+      defaultBranchId: null,
+    });
+
+    setCompany("company-1");
+    useSessionStore.setState({ isLoading: true });
+
+    const { result } = renderHook(() => useBranchGate());
+    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
+
+    act(() => {
+      useSessionStore.setState({ isLoading: false });
+    });
+
+    await waitFor(() =>
+      expect(sessionService.getAvailableBranches).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() => expect(result.current.options).toEqual(branchOptions));
     expect(result.current.gateOpen).toBe(true);
   });
 });

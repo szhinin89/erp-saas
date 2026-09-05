@@ -23,6 +23,7 @@ function renderModal(
       <BranchSelectorModal
         open={props.open ?? true}
         loading={props.loading ?? false}
+        contextLoading={props.contextLoading ?? false}
         options={props.options ?? branchOptions}
         error={props.error ?? ""}
         switching={props.switching ?? false}
@@ -57,6 +58,35 @@ describe("BranchSelectorModal", () => {
 
     expect(screen.getByText("Cargando sucursales disponibles…")).toBeTruthy();
     expect(screen.queryByText("Matriz")).toBeNull();
+  });
+
+  it("muestra el mensaje de contexto cargando en vez del de sucursales cuando session/context aún resuelve", () => {
+    renderModal({ loading: true, contextLoading: true });
+
+    expect(screen.getByText("Cargando contexto operativo…")).toBeTruthy();
+    expect(
+      screen.queryByText("Cargando sucursales disponibles…"),
+    ).toBeNull();
+  });
+
+  it("no muestra 'sin sucursales asignadas' mientras loading es true", () => {
+    renderModal({ loading: true, options: [] });
+
+    expect(
+      screen.queryByText(
+        "No tiene sucursales asignadas. Contacte a un administrador.",
+      ),
+    ).toBeNull();
+  });
+
+  it("muestra 'sin sucursales asignadas' solo cuando terminó de cargar y la lista real está vacía", () => {
+    renderModal({ loading: false, options: [] });
+
+    expect(
+      screen.getByText(
+        "No tiene sucursales asignadas. Contacte a un administrador.",
+      ),
+    ).toBeTruthy();
   });
 
   it("muestra el mensaje de error y permite reintentar", () => {

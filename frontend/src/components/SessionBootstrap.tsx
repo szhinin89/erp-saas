@@ -34,7 +34,15 @@ export function SessionBootstrap({ children }: Props) {
       if (!getAccessToken()) {
         await restoreSessionFromCookie();
       }
-      if (!cancelled) setReady(true);
+      if (cancelled) return;
+      // Marca sessionStore como "cargando" ANTES de desbloquear el render de rutas
+      // protegidas: para cuando AppLayout monte useBranchGate en este mismo commit,
+      // isLoading ya está en true, evitando que decida "sin sucursales" con el
+      // GET /session/context todavía sin resolver (ZH-AUTH-SESSION-HYDRATION-BRANCH-MODAL-10).
+      if (useAuthStore.getState().isAuthenticated) {
+        useSessionStore.setState({ isLoading: true });
+      }
+      setReady(true);
     })();
 
     return () => {

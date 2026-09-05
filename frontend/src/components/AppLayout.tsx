@@ -101,6 +101,7 @@ export function AppLayout() {
         <BranchSelectorModal
           open
           loading={branchGate.loading}
+          contextLoading={branchGate.contextLoading}
           options={branchGate.options}
           error={branchGate.error}
           switching={branchGate.switching}

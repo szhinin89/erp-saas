@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useActiveBranchStore } from "../store/activeBranchStore";
+import { useSessionStore } from "../store/sessionStore";
 import { sessionService } from "../modules/session/api/sessionService";
 import { formatApiRequestError } from "../modules/lib/apiError";
 import type { SessionBranchDto } from "../types/session";
@@ -20,6 +21,10 @@ export function useBranchGate() {
   const companyId = useAuthStore((s) => s.user?.companyId);
   const branch = useActiveBranchStore((s) => s.branch);
   const setBranch = useActiveBranchStore((s) => s.setBranch);
+  // GET /session/context en vuelo — mientras es true, no decidimos "sin sucursales" ni
+  // abrimos el selector: esperamos a que sessionStore resuelva (o falle) la sucursal
+  // activa real antes de recurrir a GET /session/available-branches como fallback.
+  const sessionContextLoading = useSessionStore((s) => s.isLoading);
 
   const [status, setStatus] = useState<BranchGateStatus>("ready");
   const [options, setOptions] = useState<SessionBranchDto[]>([]);
@@ -72,10 +77,13 @@ export function useBranchGate() {
       setStatus("ready");
       return;
     }
+    // No decidir todavía: session/context puede resolver la sucursal activa apenas
+    // termine, sin necesidad de consultar available-branches.
+    if (sessionContextLoading) return;
     if (checkedForCompanyRef.current === companyId) return;
     checkedForCompanyRef.current = companyId;
     void loadOptions();
-  }, [companyId, branch, loadOptions]);
+  }, [companyId, branch, sessionContextLoading, loadOptions]);
 
   const selectBranch = useCallback(
     async (branchId: string) => {
@@ -98,11 +106,15 @@ export function useBranchGate() {
     [setBranch],
   );
 
-  const gateOpen = !!companyId && status !== "ready";
+  // Abrimos también mientras sessionContextLoading es true: evita el parpadeo del
+  // contenido protegido (o del mensaje "sin sucursales") antes de conocer la sucursal
+  // real resuelta por GET /session/context.
+  const gateOpen = !!companyId && (sessionContextLoading || status !== "ready");
 
   return {
     gateOpen,
-    loading: status === "checking",
+    loading: sessionContextLoading || status === "checking",
+    contextLoading: sessionContextLoading,
     options,
     error,
     switching,

@@ -7,6 +7,8 @@ import type { SessionBranchDto } from "../types/session";
 interface Props {
   open: boolean;
   loading: boolean;
+  /** GET /session/context todavía en vuelo — antes de saber si hace falta elegir sucursal. */
+  contextLoading?: boolean;
   options: SessionBranchDto[];
   error: string;
   switching: boolean;
@@ -23,6 +25,7 @@ interface Props {
 export function BranchSelectorModal({
   open,
   loading,
+  contextLoading = false,
   options,
   error,
   switching,
@@ -45,10 +48,15 @@ export function BranchSelectorModal({
     >
       {loading ? (
         <p className="ts-empty">
-          {t(
-            "session.branchSelector.loading",
-            "Cargando sucursales disponibles…",
-          )}
+          {contextLoading
+            ? t(
+                "session.branchSelector.loadingContext",
+                "Cargando contexto operativo…",
+              )
+            : t(
+                "session.branchSelector.loading",
+                "Cargando sucursales disponibles…",
+              )}
         </p>
       ) : (
         <div className="ts-list" role="list">
