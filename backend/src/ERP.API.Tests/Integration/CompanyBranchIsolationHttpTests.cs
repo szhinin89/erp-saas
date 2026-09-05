@@ -263,6 +263,35 @@ public sealed class CompanyBranchIsolationHttpTests : IClassFixture<CompanyBranc
         okAfter.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task Endpoint_branch_scoped_sin_header_X_Branch_Id_falla_403()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
+        request.Headers.Add("X-Company-Id", _f.CompanyAId.ToString());
+        // Sin X-Branch-Id: el endpoint es IBranchScopedRequest y debe rechazar,
+        // nunca elegir una sucursal arbitraria por su cuenta.
+
+        using var response = await _f.Client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Endpoint_company_scoped_sin_branch_es_aceptado_200()
+    {
+        // GetBranchesQuery es ICompanyScopedRequest pero no IBranchScopedRequest —
+        // debe funcionar solo con X-Company-Id, sin exigir sucursal.
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/api/v1/settings/branches"
+        );
+        request.Headers.Add("X-Company-Id", _f.CompanyAId.ToString());
+
+        using var response = await _f.Client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     private Task<HttpResponseMessage> SendAsync(Guid companyId, Guid branchId) =>
         SendAsync(companyId.ToString(), branchId.ToString());
 

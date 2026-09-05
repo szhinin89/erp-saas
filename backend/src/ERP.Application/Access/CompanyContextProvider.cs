@@ -99,7 +99,15 @@ public sealed class CompanyContextProvider : ICompanyContextProvider
     )
     {
         if (_currentCompany.HasCompanyContext && _currentCompany.CompanyId != Guid.Empty)
-            return _currentCompany.CompanyId;
+        {
+            var headerMembership = await _repo.GetCompanyUserMembershipAsync(
+                _currentCompany.CompanyId,
+                userId,
+                cancellationToken
+            );
+            if (headerMembership is not null && headerMembership.IsActive)
+                return _currentCompany.CompanyId;
+        }
 
         var memberships = await _repo.GetActiveCompanyUserMembershipsForUserSystemAsync(
             userId,
