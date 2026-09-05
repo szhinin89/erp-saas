@@ -41,8 +41,14 @@ public interface IDocumentSequenceRepository
     /// <summary>
     /// Obtiene el DocumentSequence con bloqueo pesimista (SELECT FOR UPDATE).
     /// Llamar siempre dentro de una transacción activa. Preferir <see cref="CaptureNextAsync"/>.
+    /// ZH-AUTH-DOCUMENT-SEQUENCE-COMPANY-SQL-SCOPE-09 — recibe la clave lógica completa
+    /// (TenantId + CompanyId + EmissionPointId + DocTypeCode) explícita en el SQL raw, igual que
+    /// <see cref="CaptureNextAsync"/>, para no depender únicamente del ownership validado por el
+    /// caller.
     /// </summary>
     Task<DocumentSequence?> GetForUpdateAsync(
+        Guid tenantId,
+        Guid companyId,
         Guid emissionPointId,
         string docTypeCode,
         CancellationToken cancellationToken = default

@@ -50,18 +50,52 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
                 ct
             );
 
-            // Buscar fila existente SIN aplicar QueryFilters globales para evitar
-            // interferencia con interceptores de tenant en esta transacción dedicada.
+            // ZH-AUTH-DOCUMENT-SEQUENCE-COMPANY-SQL-SCOPE-09 — clave lógica completa
+            // (TenantId + CompanyId + EmissionPointId + DocTypeCode) en el propio predicado, no
+            // solo (EmissionPointId, DocTypeCode): defensa adicional a AsPlatformQuery() para que
+            // un tenantId/companyId inconsistente con el dueño real de la secuencia nunca
+            // encuentre por accidente una fila de otro scope.
             var existing = await _db
                 .DocumentSequences.AsPlatformQuery()
                 .FirstOrDefaultAsync(
-                    s => s.EmissionPointId == emissionPointId && s.DocTypeCode == docTypeCode,
+                    s =>
+                        s.TenantId == tenantId
+                        && s.CompanyId == companyId
+                        && s.EmissionPointId == emissionPointId
+                        && s.DocTypeCode == docTypeCode,
                     ct
                 );
 
             int seqValue;
             if (existing is null)
             {
+                // Antes de crear una secuencia nueva, verificar que no exista ya una bajo OTRO
+                // tenant/company para este mismo EmissionPointId+DocTypeCode: EmissionPointId es
+                // único globalmente (un punto de emisión pertenece a una sola empresa para
+                // siempre — ver EmissionPoint), así que cualquier fila preexistente con este
+                // mismo EmissionPointId+DocTypeCode pertenece necesariamente al dueño real. Sin
+                // este chequeo, un tenantId/companyId inconsistente pasado por el caller crearía
+                // una segunda fila fantasma (uq_doc_seq no lo impide, porque el scope declarado
+                // es distinto) y esa numeración SRI quedaría duplicada/dividida en silencio. No
+                // requiere JOIN a emission_points — sigue siendo una consulta sobre la propia
+                // tabla document_sequence.
+                var ownedByAnotherScope = await _db
+                    .DocumentSequences.AsPlatformQuery()
+                    .AnyAsync(
+                        s =>
+                            s.EmissionPointId == emissionPointId
+                            && s.DocTypeCode == docTypeCode
+                            && (s.TenantId != tenantId || s.CompanyId != companyId),
+                        ct
+                    );
+                if (ownedByAnotherScope)
+                    throw new InvalidOperationException(
+                        $"No se puede capturar el secuencial: ya existe una secuencia para el punto "
+                            + $"de emisión '{emissionPointId}' y tipo documental '{docTypeCode}' bajo "
+                            + "otra empresa/tenant. El tenantId/companyId recibido es inconsistente con "
+                            + "el dueño real de esa secuencia."
+                    );
+
                 // Crear secuencia on-demand; primer valor de CurrentSeq es 1 → primer documento = "000000001".
                 var newId = Guid.NewGuid();
                 var now = DateTime.UtcNow;
@@ -87,8 +121,19 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
                 // esta es la única vía real de captura (CaptureNextAsync), así que a partir de esta
                 // línea la fila queda marcada como "usada" y ConfigureDocumentSequenceCommand ya no
                 // puede reconfigurar su número inicial libremente.
+                // La condición completa de scope en el WHERE (además de id, que ya es único) es
+                // defensa en profundidad explícita, redundante con el SELECT que cargó `existing`
+                // bajo el mismo scope — no cambia el comportamiento, documenta la garantía.
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"UPDATE document_sequence SET current_seq = {nextSeq}, has_been_used = TRUE, updated_at = {now} WHERE id = {existing.Id}",
+                    $"""
+                    UPDATE document_sequence
+                    SET current_seq = {nextSeq}, has_been_used = TRUE, updated_at = {now}
+                    WHERE id = {existing.Id}
+                        AND tenant_id = {tenantId}
+                        AND company_id = {companyId}
+                        AND emission_point_id = {emissionPointId}
+                        AND doc_type_code = {docTypeCode}
+                    """,
                     ct
                 );
             }
@@ -129,6 +174,8 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
             .ToListAsync(cancellationToken);
 
     public async Task<DocumentSequence?> GetForUpdateAsync(
+        Guid tenantId,
+        Guid companyId,
         Guid emissionPointId,
         string docTypeCode,
         CancellationToken cancellationToken = default
@@ -136,7 +183,14 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
     {
         return await _db
             .DocumentSequences.FromSqlInterpolated(
-                $"SELECT * FROM document_sequence WHERE emission_point_id = {emissionPointId} AND doc_type_code = {docTypeCode} FOR UPDATE"
+                $"""
+                SELECT * FROM document_sequence
+                WHERE tenant_id = {tenantId}
+                    AND company_id = {companyId}
+                    AND emission_point_id = {emissionPointId}
+                    AND doc_type_code = {docTypeCode}
+                FOR UPDATE
+                """
             )
             .FirstOrDefaultAsync(cancellationToken);
     }
