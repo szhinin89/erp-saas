@@ -3,6 +3,7 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Exceptions;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Configuration;
@@ -33,7 +34,7 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
         CancellationToken ct = default
     ) =>
         _db
-            .OrgSettings.IgnoreQueryFilters()
+            .OrgSettings.AsPlatformQuery()
             .FirstOrDefaultAsync(
                 s =>
                     s.TenantId == tenantId
@@ -53,7 +54,7 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
     )
     {
         var list = await _db
-            .OrgSettings.IgnoreQueryFilters()
+            .OrgSettings.AsPlatformQuery()
             .Where(s =>
                 s.TenantId == tenantId
                 && s.CompanyId == companyId

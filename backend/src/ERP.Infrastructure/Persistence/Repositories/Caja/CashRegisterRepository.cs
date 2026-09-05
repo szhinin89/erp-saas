@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Caja;
@@ -88,7 +89,7 @@ public sealed class CashRegisterRepository : ICashRegisterRepository
     )
     {
         var q = _db
-            .CashRegisters.IgnoreQueryFilters()
+            .CashRegisters.AsPlatformQuery()
             .Where(x => x.TenantId == tenantId && x.BranchId == branchId && x.Code == code);
 
         if (exceptId.HasValue)

@@ -30,6 +30,20 @@ public interface IEstablishmentRepository
         Guid id,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// ZH-AUTH-MASTERDATA-REPOSITORY-COMPANY-SCOPE-07A — defensa en profundidad explícita: además
+    /// del filtro global de EF (<c>ICompanyScopedEntity</c>, ya fail-closed), valida <paramref
+    /// name="companyId"/> en el propio predicado de la consulta, para no depender únicamente del
+    /// filtro global como única barrera. Preferir este método sobre <see cref="GetByIdAsync"/> en
+    /// todo caller que ya tenga <c>ICurrentCompany.CompanyId</c> disponible.
+    /// </summary>
+    Task<Establishment?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
     Task<Establishment?> GetMainByBranchAsync(
         Guid tenantId,
         Guid branchId,

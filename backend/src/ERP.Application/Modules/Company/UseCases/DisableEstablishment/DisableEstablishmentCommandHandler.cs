@@ -9,16 +9,19 @@ public sealed class DisableEstablishmentCommandHandler
 {
     private readonly IEstablishmentRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _user;
 
     public DisableEstablishmentCommandHandler(
         IEstablishmentRepository repo,
         ICurrentTenant tenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = company;
         _user = user;
     }
 
@@ -27,8 +30,9 @@ public sealed class DisableEstablishmentCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var entity = await _repo.GetByIdAsync(
+        var entity = await _repo.GetByIdForCompanyAsync(
             _currentTenant.TenantId,
+            _currentCompany.CompanyId,
             command.Id,
             cancellationToken
         );

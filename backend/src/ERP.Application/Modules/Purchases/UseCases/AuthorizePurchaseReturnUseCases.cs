@@ -61,6 +61,7 @@ public sealed class AuthorizePurchaseReturnHandler
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly IPostingEngine _postingEngine;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public AuthorizePurchaseReturnHandler(
@@ -75,6 +76,7 @@ public sealed class AuthorizePurchaseReturnHandler
         IDatabaseExceptionTranslator dbEx,
         IPostingEngine postingEngine,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
@@ -89,6 +91,7 @@ public sealed class AuthorizePurchaseReturnHandler
         _dbEx = dbEx;
         _postingEngine = postingEngine;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -121,7 +124,7 @@ public sealed class AuthorizePurchaseReturnHandler
             await _returnRepo.AcquireFinancialLockAsync(tid, purchaseInvoiceId.Value, ct);
 
             var purchaseReturn = await _returnRepo.GetByIdAsync(tid, cmd.PurchaseReturnId, ct);
-            if (purchaseReturn is null)
+            if (purchaseReturn is null || purchaseReturn.BranchId != _b.BranchId)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<PurchaseReturnDto>.NotFound("Devolución no encontrada.");

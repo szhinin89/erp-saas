@@ -394,6 +394,7 @@ public sealed class SalesReturnRefundHandlerTests
 
         var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
         var company = Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
+        var branch = Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
         var user = Mock.Of<ICurrentUser>(u => u.UserId == UserId);
 
         var handler = new AuthorizeSalesReturnHandler(
@@ -409,6 +410,7 @@ public sealed class SalesReturnRefundHandlerTests
             Mock.Of<IPostingEngine>(),
             tenant,
             company,
+            branch,
             user,
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
         );

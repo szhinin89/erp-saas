@@ -28,6 +28,16 @@ public sealed class WarehouseRepository : IWarehouseRepository
         CancellationToken cancellationToken = default
     ) => Scoped(tenantId).FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
 
+    public Task<Warehouse?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        Scoped(tenantId)
+            .Where(w => w.CompanyId == companyId)
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
+
     public async Task<bool> ExistsCodeAsync(
         Guid tenantId,
         Guid branchId,

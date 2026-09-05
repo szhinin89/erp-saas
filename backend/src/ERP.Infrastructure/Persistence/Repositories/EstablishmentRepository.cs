@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
@@ -80,6 +81,19 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
             .Establishments.Include(e => e.Branch)
             .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.Id == id, cancellationToken);
 
+    public Task<Establishment?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .Establishments.Include(e => e.Branch)
+            .FirstOrDefaultAsync(
+                e => e.TenantId == tenantId && e.CompanyId == companyId && e.Id == id,
+                cancellationToken
+            );
+
     public Task<Establishment?> GetMainByBranchAsync(
         Guid tenantId,
         Guid branchId,
@@ -111,7 +125,7 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .Establishments.IgnoreQueryFilters()
+            .Establishments.AsPlatformQuery()
             .AnyAsync(
                 e => e.TenantId == tenantId && e.CompanyId == companyId && e.Code == code,
                 cancellationToken

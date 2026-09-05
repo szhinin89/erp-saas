@@ -11,12 +11,21 @@ public sealed class GetStockMovementsQueryHandler
     : IRequestHandler<GetStockMovementsQuery, Result<IReadOnlyList<StockMovementDto>>>
 {
     private readonly IStockRepository _repo;
+    private readonly IWarehouseRepository _warehouseRepo;
     private readonly ICurrentTenant _tenant;
+    private readonly ICurrentBranch _branch;
 
-    public GetStockMovementsQueryHandler(IStockRepository repo, ICurrentTenant tenant)
+    public GetStockMovementsQueryHandler(
+        IStockRepository repo,
+        IWarehouseRepository warehouseRepo,
+        ICurrentTenant tenant,
+        ICurrentBranch branch
+    )
     {
         _repo = repo;
+        _warehouseRepo = warehouseRepo;
         _tenant = tenant;
+        _branch = branch;
     }
 
     public async Task<Result<IReadOnlyList<StockMovementDto>>> Handle(
@@ -24,6 +33,16 @@ public sealed class GetStockMovementsQueryHandler
         CancellationToken ct
     )
     {
+        var warehouse = await _warehouseRepo.GetByIdAsync(
+            _tenant.TenantId,
+            request.WarehouseId,
+            ct
+        );
+        if (warehouse is null || warehouse.BranchId != _branch.BranchId)
+            return Result<IReadOnlyList<StockMovementDto>>.ValidationFailure(
+                "La bodega seleccionada no pertenece a la sucursal activa."
+            );
+
         var movements = await _repo.GetMovementsAsync(
             _tenant.TenantId,
             request.ItemId,

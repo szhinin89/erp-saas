@@ -404,6 +404,7 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             new RealDatabaseExceptionTranslator(),
             Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
+            new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId)
         );
 

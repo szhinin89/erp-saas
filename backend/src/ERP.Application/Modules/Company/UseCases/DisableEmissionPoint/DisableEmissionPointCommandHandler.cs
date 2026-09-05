@@ -9,16 +9,19 @@ public sealed class DisableEmissionPointCommandHandler
 {
     private readonly IEmissionPointRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _user;
 
     public DisableEmissionPointCommandHandler(
         IEmissionPointRepository repo,
         ICurrentTenant tenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = company;
         _user = user;
     }
 
@@ -27,9 +30,10 @@ public sealed class DisableEmissionPointCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var entity = await _repo.GetByIdAsync(
-            command.Id,
+        var entity = await _repo.GetByIdForCompanyAsync(
             _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            command.Id,
             cancellationToken
         );
         if (entity is null)

@@ -84,6 +84,7 @@ public sealed class AuthorizeSalesReturnHandler
     private readonly IPostingEngine _postingEngine;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly ILogger<AuthorizeSalesReturnHandler> _logger;
 
@@ -100,6 +101,7 @@ public sealed class AuthorizeSalesReturnHandler
         IPostingEngine postingEngine,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u,
         ILogger<AuthorizeSalesReturnHandler> logger
     )
@@ -116,6 +118,7 @@ public sealed class AuthorizeSalesReturnHandler
         _postingEngine = postingEngine;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
         _logger = logger;
     }
@@ -152,7 +155,7 @@ public sealed class AuthorizeSalesReturnHandler
             // 4. Revalidar remanente bajo lock — la validación al crear/editar el Draft (Fase 4)
             // es solo preventiva (UX temprana); esta es la que garantiza consistencia real.
             var invoice = await _invoiceRepo.GetByIdAsync(tid, salesReturn.SalesInvoiceId, ct);
-            if (invoice is null)
+            if (invoice is null || invoice.BranchId != _b.BranchId)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<SalesReturnDto>.NotFound("Factura no encontrada.");
@@ -272,10 +275,10 @@ public sealed class AuthorizeSalesReturnHandler
             string? creditNoteNumber = null;
             if (invoice.EmissionPointId is { } emissionPointId)
             {
-                var ep = await _epRepo.GetByIdAsync(emissionPointId, tid, ct);
+                var ep = await _epRepo.GetByIdForCompanyAsync(tid, cid, emissionPointId, ct);
                 var est = ep is null
                     ? null
-                    : await _estRepo.GetByIdAsync(tid, ep.EstablishmentId, ct);
+                    : await _estRepo.GetByIdForCompanyAsync(tid, cid, ep.EstablishmentId, ct);
                 if (ep is not null && est is not null)
                 {
                     var sequential = await _seqRepo.CaptureNextAsync(

@@ -44,7 +44,12 @@ public sealed class UpdateWarehouseCommandHandler
         var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
 
-        var entity = await _repo.GetByIdAsync(tenantId, command.Id, cancellationToken);
+        var entity = await _repo.GetByIdForCompanyAsync(
+            tenantId,
+            companyId,
+            command.Id,
+            cancellationToken
+        );
         if (entity is null)
             return Result<WarehouseListItemDto>.NotFound("Bodega no encontrada.");
 

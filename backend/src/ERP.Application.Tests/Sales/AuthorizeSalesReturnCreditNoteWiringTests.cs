@@ -192,13 +192,23 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
             if (emissionPoint is not null)
                 EpRepo
                     .Setup(r =>
-                        r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                        r.GetByIdForCompanyAsync(
+                            TenantId,
+                            CompanyId,
+                            EmissionPointId,
+                            It.IsAny<CancellationToken>()
+                        )
                     )
                     .ReturnsAsync(emissionPoint);
             if (establishment is not null)
                 EstRepo
                     .Setup(r =>
-                        r.GetByIdAsync(TenantId, EstablishmentId, It.IsAny<CancellationToken>())
+                        r.GetByIdForCompanyAsync(
+                            TenantId,
+                            CompanyId,
+                            EstablishmentId,
+                            It.IsAny<CancellationToken>()
+                        )
                     )
                     .ReturnsAsync(establishment);
 
@@ -238,6 +248,7 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
                 Mock.Of<IPostingEngine>(),
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
+                Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId),
                 Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
             );

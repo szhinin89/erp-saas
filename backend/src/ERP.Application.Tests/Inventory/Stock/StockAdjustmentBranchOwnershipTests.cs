@@ -2,6 +2,8 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
+using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockAdjustment;
+using ERP.Application.Modules.Inventory.Stock.UseCases.ListStockAdjustments;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
@@ -441,5 +443,200 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 ),
             Times.Never
         );
+    }
+
+    // ── GetStockAdjustmentByIdQueryHandler ───────────────────────────────
+    // ZH-AUTH-INVENTORY-BRANCH-READ-SCOPE-06 — la lectura por Id, igual que Execute/Cancel, debe
+    // rechazar un ajuste cuya bodega pertenece a otra sucursal de la misma empresa.
+
+    private sealed class GetByIdFixture
+    {
+        public Mock<IStockAdjustmentRepository> AdjRepo { get; } = new();
+        public Mock<IInventoryAdjustmentReasonRepository> ReasonRepo { get; } = new();
+        public Mock<IWarehouseRepository> WarehouseRepo { get; } = new();
+        public Mock<ICurrentTenant> Tenant { get; } = new();
+        public Mock<ICurrentBranch> Branch { get; } = new();
+
+        public GetByIdFixture(Guid activeBranchId)
+        {
+            Tenant.Setup(t => t.TenantId).Returns(TenantId);
+            Branch.Setup(b => b.BranchId).Returns(activeBranchId);
+        }
+
+        public GetStockAdjustmentByIdQueryHandler BuildHandler() =>
+            new(AdjRepo.Object, ReasonRepo.Object, WarehouseRepo.Object, Tenant.Object, Branch.Object);
+    }
+
+    [Fact]
+    public async Task Leer_ajuste_de_bodega_de_otra_sucursal_devuelve_NotFound()
+    {
+        var warehouseOfBranchB = CreateWarehouse(BranchBId);
+        var adj = CreateDraftAdjustmentWithLine(warehouseOfBranchB.Id);
+        var f = new GetByIdFixture(activeBranchId: BranchAId);
+        f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adj);
+        f.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouseOfBranchB);
+
+        var result = await f.BuildHandler()
+            .Handle(new GetStockAdjustmentByIdQuery(adj.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    [Fact]
+    public async Task Leer_ajuste_de_la_sucursal_activa_funciona()
+    {
+        var warehouseOfBranchA = CreateWarehouse(BranchAId);
+        var adj = CreateDraftAdjustmentWithLine(warehouseOfBranchA.Id);
+        var f = new GetByIdFixture(activeBranchId: BranchAId);
+        f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adj);
+        f.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouseOfBranchA);
+        f.ReasonRepo
+            .Setup(r => r.GetByIdAsync(TenantId, ReasonId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateReason());
+
+        var result = await f.BuildHandler()
+            .Handle(new GetStockAdjustmentByIdQuery(adj.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Id.Should().Be(adj.Id);
+    }
+
+    // ── ListStockAdjustmentsQueryHandler ─────────────────────────────────
+    // Sin filtro de bodega, el listado debe restringirse a las bodegas de la sucursal activa
+    // (nunca "todas las bodegas de la empresa", que filtraría ajustes de otras sucursales); si el
+    // caller filtra por una bodega puntual, esa bodega debe pertenecer a la sucursal activa.
+
+    private sealed class ListFixture
+    {
+        public Mock<IStockAdjustmentRepository> AdjRepo { get; } = new();
+        public Mock<IInventoryAdjustmentReasonRepository> ReasonRepo { get; } = new();
+        public Mock<IWarehouseRepository> WarehouseRepo { get; } = new();
+        public Mock<ICurrentTenant> Tenant { get; } = new();
+        public Mock<ICurrentBranch> Branch { get; } = new();
+
+        public ListFixture(Guid activeBranchId)
+        {
+            Tenant.Setup(t => t.TenantId).Returns(TenantId);
+            Branch.Setup(b => b.BranchId).Returns(activeBranchId);
+            ReasonRepo
+                .Setup(r =>
+                    r.ListAsync(TenantId, null, true, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(Array.Empty<InventoryAdjustmentReason>());
+        }
+
+        public ListStockAdjustmentsQueryHandler BuildHandler() =>
+            new(AdjRepo.Object, ReasonRepo.Object, WarehouseRepo.Object, Tenant.Object, Branch.Object);
+    }
+
+    private static ListStockAdjustmentsQuery BuildListQuery(Guid? warehouseId = null) =>
+        new(warehouseId, null, null, null, null, null, 1, 20);
+
+    [Fact]
+    public async Task Listar_con_bodega_de_otra_sucursal_es_rechazado()
+    {
+        var warehouseOfBranchB = CreateWarehouse(BranchBId);
+        var f = new ListFixture(activeBranchId: BranchAId);
+        f.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouseOfBranchB);
+
+        var result = await f.BuildHandler()
+            .Handle(BuildListQuery(warehouseOfBranchB.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        f.AdjRepo.Verify(
+            r =>
+                r.GetPagedAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IReadOnlyCollection<Guid>?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Listar_sin_filtro_de_bodega_restringe_a_bodegas_de_la_sucursal_activa()
+    {
+        var warehouseOfBranchA = CreateWarehouse(BranchAId);
+        var f = new ListFixture(activeBranchId: BranchAId);
+        f.WarehouseRepo
+            .Setup(r =>
+                r.GetAsync(TenantId, null, null, BranchAId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new[] { warehouseOfBranchA });
+        f.AdjRepo
+            .Setup(r =>
+                r.GetPagedAsync(
+                    TenantId,
+                    1,
+                    20,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    It.Is<IReadOnlyCollection<Guid>?>(ids =>
+                        ids != null && ids.Count == 1 && ids.Contains(warehouseOfBranchA.Id)
+                    ),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Array.Empty<StockAdjustment>(), 0));
+
+        var result = await f.BuildHandler().Handle(BuildListQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.AdjRepo.VerifyAll();
+    }
+
+    [Fact]
+    public async Task Listar_con_bodega_de_la_sucursal_activa_funciona()
+    {
+        var warehouseOfBranchA = CreateWarehouse(BranchAId);
+        var f = new ListFixture(activeBranchId: BranchAId);
+        f.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouseOfBranchA);
+        f.AdjRepo
+            .Setup(r =>
+                r.GetPagedAsync(
+                    TenantId,
+                    1,
+                    20,
+                    warehouseOfBranchA.Id,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Array.Empty<StockAdjustment>(), 0));
+
+        var result = await f.BuildHandler()
+            .Handle(BuildListQuery(warehouseOfBranchA.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.AdjRepo.VerifyAll();
     }
 }

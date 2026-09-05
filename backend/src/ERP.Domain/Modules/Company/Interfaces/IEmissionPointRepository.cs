@@ -30,6 +30,20 @@ public interface IEmissionPointRepository
         Guid tenantId,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// ZH-AUTH-MASTERDATA-REPOSITORY-COMPANY-SCOPE-07A — defensa en profundidad explícita para el
+    /// punto de emisión que autoriza cada documento electrónico (secuencia SRI): valida <paramref
+    /// name="companyId"/> en el propio predicado, además del filtro global de EF
+    /// (<c>ICompanyScopedEntity</c>, ya fail-closed). Preferir sobre <see cref="GetByIdAsync"/> en
+    /// todo caller que ya tenga <c>ICurrentCompany.CompanyId</c> disponible.
+    /// </summary>
+    Task<EmissionPoint?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
     Task<EmissionPoint?> GetDefaultForBranchAsync(
         Guid tenantId,
         Guid branchId,

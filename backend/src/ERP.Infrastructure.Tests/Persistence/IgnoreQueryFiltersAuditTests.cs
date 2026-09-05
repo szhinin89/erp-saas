@@ -7,18 +7,23 @@ namespace ERP.Infrastructure.Tests.Persistence;
 /// </summary>
 public sealed class IgnoreQueryFiltersAuditTests
 {
+    // ZH-AUTH-IGNORE-QUERY-FILTERS-GOVERNANCE-08 — los repositorios que antes aparecían aquí
+    // (AccessRepository, UserSessionRepository, CompanyUserBranchRepository,
+    // CompanyUserPreferencesRepository, EmissionPointRepository, EstablishmentRepository,
+    // DocumentSequenceRepository, CashRegisterRepository, CashSessionRepository,
+    // OrgSettingsRepository, ClassificationCatalogRepositoryBase) migraron de
+    // `.IgnoreQueryFilters()` directo a `.AsPlatformQuery()` (mismo bypass, mismos predicados
+    // manuales de tenant/company/membership ya verificados — cero cambio de comportamiento) y ya
+    // no necesitan estar en esta lista. Quedan aquí únicamente los archivos que genuinamente
+    // llaman `.IgnoreQueryFilters()` sin pasar por el wrapper: bootstrap/seeding/backfill
+    // (cross-tenant por diseño, fuera del ciclo de vida de un repositorio request-scoped) y
+    // health checks de plataforma.
     private static readonly HashSet<string> AllowedRelativePaths = new(
         StringComparer.OrdinalIgnoreCase
     )
     {
         "src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
         "src/ERP.Infrastructure/MasterData/Reconciliation/BusinessPartnerReconciliationService.cs", // platform-level reconciliation
-        "src/ERP.Infrastructure/Persistence/Repositories/AccessRepository.cs", // access checks need cross-tenant visibility
-        "src/ERP.Infrastructure/Persistence/Repositories/UserSessionRepository.cs", // login flow: se invoca antes de que exista ICurrentCompany ambiente confiable, misma razón que AccessRepository
-        "src/ERP.Infrastructure/Persistence/Repositories/CompanyUserBranchRepository.cs", // idem — selección de sucursal ocurre durante el propio login
-        "src/ERP.Infrastructure/Persistence/Repositories/EmissionPointRepository.cs",
-        "src/ERP.Infrastructure/Persistence/Repositories/EstablishmentRepository.cs",
-        "src/ERP.Infrastructure/Persistence/Repositories/DocumentSequenceRepository.cs", // advisory lock + transaction propia: bypass intencional para find-or-create atómico
         "src/ERP.Infrastructure/Seeding/Steps/OrganizationBootstrapStep.cs", // bootstrap needs cross-tenant visibility
         "src/ERP.Infrastructure/Seeding/Steps/ElectronicDocumentsBootstrapStep.cs", // idem
         "src/ERP.Infrastructure/Seeding/Steps/InventoryBootstrapStep.cs", // idem
@@ -28,16 +33,11 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/AccountingChartBackfillService.cs", // backfill dev-only de companies ya existentes — mismo motivo que MasterDataClassificationBackfillService (hallazgo pre-existente, corregido en ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14)
         "src/ERP.Infrastructure/Seeding/ExpensesCatalogBackfillService.cs", // EXPENSES-CATALOG-BOOTSTRAP-09-FIX: backfill dev-only de companies ya existentes — mismo motivo que AccountingChartBackfillService
         "src/ERP.Infrastructure/Seeding/DefaultProfileSeeder.cs", // seeder needs cross-tenant visibility
-        "src/ERP.Infrastructure/Persistence/Repositories/Caja/CashRegisterRepository.cs", // uniqueness check por código explícito con tenantId/branchId, incluye deshabilitados
-        "src/ERP.Infrastructure/Persistence/Repositories/Caja/CashSessionRepository.cs", // filtros explícitos por tenantId; existencia/lookup independiente del query filter ambiental
         "src/ERP.Infrastructure/Seeding/Steps/CajaBootstrapStep.cs", // bootstrap needs cross-tenant visibility
-        "src/ERP.Infrastructure/Persistence/Repositories/CompanyUserPreferencesRepository.cs", // login flow: se resuelve antes de ICurrentCompany ambiente confiable
-        "src/ERP.Infrastructure/Persistence/Repositories/Configuration/OrgSettingsRepository.cs", // filtros explícitos por tenantId/companyId; jerarquía de scope no depende del query filter ambiental
         "src/ERP.Infrastructure/Seeding/E2E/E2ESeedService.cs", // provisioning E2E fuera de Production, bajo bandera explícita: mismo motivo que los *BootstrapStep (bootstrap needs cross-tenant visibility)
         "src/ERP.API/Health/MembershipConsistencyHealthCheck.cs", // health check sin contexto de tenant: mismo motivo que BusinessPartnerReconciliationService (chequeo de integridad cross-tenant de solo lectura)
         "src/ERP.Infrastructure/Seeding/MasterDataClassificationSeeder.cs", // CLASS-BP-CATALOGS-01: reutilizado por bootstrap step (request-scoped) y backfill (multi-tenant, sin contexto HTTP ambiente); filtro explícito TenantId+CompanyId, fail-closed
         "src/ERP.Infrastructure/Seeding/MasterDataClassificationBackfillService.cs", // CLASS-BP-CATALOGS-01: itera todas las (TenantId, CompanyId) existentes para el backfill de empresas ya creadas — mismo motivo que los *BootstrapStep
-        "src/ERP.Infrastructure/Persistence/Repositories/MasterData/ClassificationCatalogRepositoryBase.cs", // CLASS-BP-CATALOGS-01: base compartida de los 12 repos de catálogo, consumida también desde el bootstrap step/backfill sin ICurrentTenant/ICurrentCompany ambiente; filtro explícito TenantId+CompanyId, fail-closed
         "src/ERP.Infrastructure/Seeding/Steps/DocumentFlowPolicyBootstrapStep.cs", // DOCUMENT-FLOW-POLICY-01: bootstrap needs cross-tenant visibility, mismo motivo que ExpensesCatalogBootstrapStep; filtro explícito TenantId+CompanyId reaplicado en la query
         "src/ERP.Infrastructure/Seeding/DocumentFlowPolicyBackfillService.cs", // DOCUMENT-FLOW-POLICY-01: backfill dev-only de companies ya existentes — mismo motivo que ExpensesCatalogBackfillService
     };

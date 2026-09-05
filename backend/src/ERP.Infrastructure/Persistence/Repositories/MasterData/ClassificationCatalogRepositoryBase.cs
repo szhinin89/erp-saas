@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.MasterData;
@@ -25,7 +26,7 @@ public abstract class ClassificationCatalogRepositoryBase<TEntity>
 
     protected IQueryable<TEntity> Scoped(Guid tenantId, Guid companyId) =>
         Db.Set<TEntity>()
-            .IgnoreQueryFilters()
+            .AsPlatformQuery()
             .Where(e => e.TenantId == tenantId && e.CompanyId == companyId);
 
     public async Task<IReadOnlyList<TEntity>> GetActiveAsync(

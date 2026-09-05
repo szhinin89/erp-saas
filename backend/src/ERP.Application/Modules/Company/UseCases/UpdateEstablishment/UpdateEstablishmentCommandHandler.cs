@@ -23,18 +23,21 @@ public sealed class UpdateEstablishmentCommandHandler
     private readonly IEstablishmentRepository _repo;
     private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _user;
 
     public UpdateEstablishmentCommandHandler(
         IEstablishmentRepository repo,
         IConfigurationChangeLogger changeLogger,
         ICurrentTenant tenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
         _changeLogger = changeLogger;
         _currentTenant = tenant;
+        _currentCompany = company;
         _user = user;
     }
 
@@ -44,7 +47,12 @@ public sealed class UpdateEstablishmentCommandHandler
     )
     {
         var tenantId = _currentTenant.TenantId;
-        var entity = await _repo.GetByIdAsync(tenantId, command.Id, cancellationToken);
+        var entity = await _repo.GetByIdForCompanyAsync(
+            tenantId,
+            _currentCompany.CompanyId,
+            command.Id,
+            cancellationToken
+        );
         if (entity is null)
             return Result<EstablishmentDto>.Failure("Establecimiento no encontrado.");
 

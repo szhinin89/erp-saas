@@ -14,18 +14,24 @@ public sealed class EnableWarehouseCommandHandler
     private readonly IWarehouseRepository _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
+    private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
 
     public EnableWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany,
+        ICurrentBranch branch,
         ICurrentUser user
     )
     {
         _repo = repo;
         _activity = activity;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
+        _branch = branch;
         _user = user;
     }
 
@@ -36,8 +42,13 @@ public sealed class EnableWarehouseCommandHandler
     {
         var tenantId = _currentTenant.TenantId;
 
-        var entity = await _repo.GetByIdAsync(tenantId, request.Id, cancellationToken);
-        if (entity is null)
+        var entity = await _repo.GetByIdForCompanyAsync(
+            tenantId,
+            _currentCompany.CompanyId,
+            request.Id,
+            cancellationToken
+        );
+        if (entity is null || entity.BranchId != _branch.BranchId)
             return Result<WarehouseListItemDto>.NotFound("Bodega no encontrada.");
 
         entity.Enable(_user.UserId);

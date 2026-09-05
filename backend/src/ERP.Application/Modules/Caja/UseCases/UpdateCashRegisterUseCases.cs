@@ -57,6 +57,7 @@ public sealed class UpdateCashRegisterHandler
     private readonly IBusinessPartnerRepository _customerRepo;
     private readonly ICashRegisterUsageGuard _usageGuard;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public UpdateCashRegisterHandler(
@@ -66,6 +67,7 @@ public sealed class UpdateCashRegisterHandler
         IBusinessPartnerRepository customerRepo,
         ICashRegisterUsageGuard usageGuard,
         ICurrentTenant t,
+        ICurrentCompany c,
         ICurrentUser u
     )
     {
@@ -75,6 +77,7 @@ public sealed class UpdateCashRegisterHandler
         _customerRepo = customerRepo;
         _usageGuard = usageGuard;
         _t = t;
+        _c = c;
         _u = u;
     }
 
@@ -104,9 +107,10 @@ public sealed class UpdateCashRegisterHandler
 
         if (changesEmissionPoint && cmd.EmissionPointId.HasValue)
         {
-            var emissionPoint = await _emissionPointRepo.GetByIdAsync(
-                cmd.EmissionPointId.Value,
+            var emissionPoint = await _emissionPointRepo.GetByIdForCompanyAsync(
                 tid,
+                _c.CompanyId,
+                cmd.EmissionPointId.Value,
                 ct
             );
             if (emissionPoint is null)

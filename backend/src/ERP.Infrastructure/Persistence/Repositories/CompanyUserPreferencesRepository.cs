@@ -1,5 +1,6 @@
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
@@ -21,7 +22,7 @@ public sealed class CompanyUserPreferencesRepository : ICompanyUserPreferencesRe
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .CompanyUserPreferences.IgnoreQueryFilters()
+            .CompanyUserPreferences.AsPlatformQuery()
             .SingleOrDefaultAsync(
                 x => x.CompanyUserMembershipId == companyUserMembershipId,
                 cancellationToken
@@ -32,7 +33,7 @@ public sealed class CompanyUserPreferencesRepository : ICompanyUserPreferencesRe
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .CompanyUserPreferences.IgnoreQueryFilters()
+            .CompanyUserPreferences.AsPlatformQuery()
             .AnyAsync(x => x.CompanyUserMembershipId == companyUserMembershipId, cancellationToken);
 
     public Task AddAsync(

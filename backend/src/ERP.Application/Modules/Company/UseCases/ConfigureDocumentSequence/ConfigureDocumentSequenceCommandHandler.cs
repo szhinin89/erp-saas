@@ -40,12 +40,15 @@ public sealed class ConfigureDocumentSequenceCommandHandler
         var companyId = _currentCompany.CompanyId;
         var docTypeCode = command.DocTypeCode.Trim();
 
-        // Carga con query filters globales activos (tenant + empresa ambiente) — un punto de
-        // emisión de otra empresa/tenant nunca es visible aquí, sin necesidad de comparar
-        // manualmente CompanyId (mismo criterio que AuthorizeSalesUseCases/IssueRetentionUseCases).
-        var emissionPoint = await _emissionPointRepo.GetByIdAsync(
-            command.EmissionPointId,
+        // ZH-AUTH-MASTERDATA-REPOSITORY-COMPANY-SCOPE-07A — GetByIdForCompanyAsync valida CompanyId
+        // explícitamente en el predicado (defensa adicional a los query filters globales, no
+        // reemplazo): esta secuencia gobierna la numeración SRI de cada documento emitido por este
+        // punto de emisión, así que confiar únicamente en el filtro global sería un único punto de
+        // falla para un flujo crítico.
+        var emissionPoint = await _emissionPointRepo.GetByIdForCompanyAsync(
             tenantId,
+            companyId,
+            command.EmissionPointId,
             cancellationToken
         );
         if (emissionPoint is null)

@@ -47,12 +47,15 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         string? movementType,
         DateTime? startDate,
         DateTime? endDate,
+        IReadOnlyCollection<Guid>? branchWarehouseIds = null,
         CancellationToken ct = default
     )
     {
         var q = _db.Set<StockAdjustment>().Where(a => a.TenantId == tenantId);
         if (warehouseId.HasValue)
             q = q.Where(a => a.WarehouseId == warehouseId.Value);
+        else if (branchWarehouseIds is not null)
+            q = q.Where(a => branchWarehouseIds.Contains(a.WarehouseId));
         if (!string.IsNullOrWhiteSpace(status))
             q = q.Where(a => a.Status == status);
         if (reasonId.HasValue)

@@ -60,6 +60,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly IPostingEngine _postingEngine;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public AuthorizePurchaseCreditNoteHandler(
@@ -72,6 +73,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         IDatabaseExceptionTranslator dbEx,
         IPostingEngine postingEngine,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
@@ -84,6 +86,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         _dbEx = dbEx;
         _postingEngine = postingEngine;
         _t = t;
+        _b = b;
         _u = u;
     }
 

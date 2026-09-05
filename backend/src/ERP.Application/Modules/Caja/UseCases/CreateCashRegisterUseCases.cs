@@ -108,9 +108,10 @@ public sealed class CreateCashRegisterHandler
 
         if (cmd.EmissionPointId.HasValue)
         {
-            var emissionPoint = await _emissionPointRepo.GetByIdAsync(
-                cmd.EmissionPointId.Value,
+            var emissionPoint = await _emissionPointRepo.GetByIdForCompanyAsync(
                 tid,
+                _c.CompanyId,
+                cmd.EmissionPointId.Value,
                 ct
             );
             if (emissionPoint is null)

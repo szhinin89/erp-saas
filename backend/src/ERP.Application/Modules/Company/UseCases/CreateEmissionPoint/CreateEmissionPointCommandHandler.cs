@@ -39,8 +39,9 @@ public sealed class CreateEmissionPointCommandHandler
         var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
 
-        var estab = await _establishments.GetByIdAsync(
+        var estab = await _establishments.GetByIdForCompanyAsync(
             tenantId,
+            companyId,
             command.EstablishmentId,
             cancellationToken
         );

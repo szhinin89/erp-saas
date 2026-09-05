@@ -14,18 +14,21 @@ public sealed class UpdateEmissionPointCommandHandler
     private readonly IEmissionPointRepository _repo;
     private readonly IConfigurationChangeLogger _changeLogger;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _user;
 
     public UpdateEmissionPointCommandHandler(
         IEmissionPointRepository repo,
         IConfigurationChangeLogger changeLogger,
         ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany,
         ICurrentUser user
     )
     {
         _repo = repo;
         _changeLogger = changeLogger;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
         _user = user;
     }
 
@@ -35,7 +38,12 @@ public sealed class UpdateEmissionPointCommandHandler
     )
     {
         var tenantId = _currentTenant.TenantId;
-        var entity = await _repo.GetByIdAsync(command.Id, tenantId, cancellationToken);
+        var entity = await _repo.GetByIdForCompanyAsync(
+            tenantId,
+            _currentCompany.CompanyId,
+            command.Id,
+            cancellationToken
+        );
         if (entity is null)
             return Result<EmissionPointDto>.Failure("Punto de emisión no encontrado.");
 

@@ -1,6 +1,7 @@
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
@@ -24,7 +25,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
         CancellationToken cancellationToken = default
     ) =>
         await _db
-            .UserSessions.IgnoreQueryFilters()
+            .UserSessions.AsPlatformQuery()
             .Where(x =>
                 x.TenantId == tenantId
                 && x.IdentityUserId == identityUserId
@@ -39,7 +40,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
         CancellationToken cancellationToken = default
     ) =>
         await _db
-            .UserSessions.IgnoreQueryFilters()
+            .UserSessions.AsPlatformQuery()
             .Where(x => x.Status == UserSessionStatus.Active && x.StartedAt < olderThanUtc)
             .ToListAsync(cancellationToken);
 
@@ -58,7 +59,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
         CancellationToken cancellationToken = default
     )
     {
-        var query = _db.UserSessions.IgnoreQueryFilters().Where(x => x.TenantId == tenantId);
+        var query = _db.UserSessions.AsPlatformQuery().Where(x => x.TenantId == tenantId);
 
         if (identityUserId is Guid uid)
             query = query.Where(x => x.IdentityUserId == uid);
@@ -89,7 +90,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
         CancellationToken cancellationToken = default
     )
     {
-        var query = _db.UserSessions.IgnoreQueryFilters().Where(x => x.TenantId == tenantId);
+        var query = _db.UserSessions.AsPlatformQuery().Where(x => x.TenantId == tenantId);
 
         if (companyId is Guid cid)
             query = query.Where(x => x.CompanyId == cid);
@@ -116,7 +117,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .UserSessions.IgnoreQueryFilters()
+            .UserSessions.AsPlatformQuery()
             .FirstOrDefaultAsync(x => x.RefreshTokenId == refreshTokenId, cancellationToken);
 
     public Task AddAsync(UserSession session, CancellationToken cancellationToken = default) =>

@@ -10,11 +10,17 @@ public sealed class GetWarehouseByIdQueryHandler
 {
     private readonly IWarehouseRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public GetWarehouseByIdQueryHandler(IWarehouseRepository repo, ICurrentTenant currentTenant)
+    public GetWarehouseByIdQueryHandler(
+        IWarehouseRepository repo,
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<WarehouseDetailDto>> Handle(
@@ -22,7 +28,12 @@ public sealed class GetWarehouseByIdQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var w = await _repo.GetByIdAsync(_currentTenant.TenantId, request.Id, cancellationToken);
+        var w = await _repo.GetByIdForCompanyAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            request.Id,
+            cancellationToken
+        );
         if (w is null)
             return Result<WarehouseDetailDto>.NotFound("Bodega no encontrada.");
 

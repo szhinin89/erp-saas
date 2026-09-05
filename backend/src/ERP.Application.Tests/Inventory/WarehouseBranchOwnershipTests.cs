@@ -234,7 +234,7 @@ public sealed class WarehouseBranchOwnershipTests
         var branchOfCompanyB = CreateBranch(CompanyBId);
 
         var f = new UpdateFixture();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyAId, warehouse.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(warehouse);
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(
@@ -261,7 +261,7 @@ public sealed class WarehouseBranchOwnershipTests
         var otherOwnBranch = CreateBranch(CompanyAId);
 
         var f = new UpdateFixture();
-        f.Repo.Setup(r => r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyAId, warehouse.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(warehouse);
         f.BranchRepo.Setup(r =>
                 r.GetByIdForCompanyAsync(

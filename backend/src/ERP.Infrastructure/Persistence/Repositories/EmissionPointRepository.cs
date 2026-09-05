@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
@@ -68,6 +69,23 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
             .EmissionPoints.Include(ep => ep.Establishment)
             .FirstOrDefaultAsync(
                 ep => ep.Id == id && ep.TenantId == tenantId && ep.IsActive,
+                cancellationToken
+            );
+
+    public Task<EmissionPoint?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .EmissionPoints.Include(ep => ep.Establishment)
+            .FirstOrDefaultAsync(
+                ep =>
+                    ep.Id == id
+                    && ep.TenantId == tenantId
+                    && ep.CompanyId == companyId
+                    && ep.IsActive,
                 cancellationToken
             );
 
@@ -166,7 +184,7 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .EmissionPoints.IgnoreQueryFilters()
+            .EmissionPoints.AsPlatformQuery()
             .AnyAsync(
                 ep =>
                     ep.TenantId == tenantId

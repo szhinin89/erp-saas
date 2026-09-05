@@ -105,6 +105,7 @@ public sealed class CreateSalesReturnDraftHandler
     private readonly ISalesInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public CreateSalesReturnDraftHandler(
@@ -112,6 +113,7 @@ public sealed class CreateSalesReturnDraftHandler
         ISalesInvoiceRepository invoiceRepo,
         ICurrentTenant t,
         ICurrentCompany c,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
@@ -119,6 +121,7 @@ public sealed class CreateSalesReturnDraftHandler
         _invoiceRepo = invoiceRepo;
         _t = t;
         _c = c;
+        _b = b;
         _u = u;
     }
 
@@ -128,7 +131,7 @@ public sealed class CreateSalesReturnDraftHandler
     )
     {
         var invoice = await _invoiceRepo.GetByIdAsync(_t.TenantId, cmd.SalesInvoiceId, ct);
-        if (invoice is null)
+        if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<SalesReturnDto>.NotFound("Factura no encontrada.");
         if (invoice.Status != SalesInvoiceStatus.Authorized)
             return Result<SalesReturnDto>.ValidationFailure(
@@ -172,18 +175,21 @@ public sealed class UpdateSalesReturnDraftHandler
     private readonly ISalesReturnRepository _returnRepo;
     private readonly ISalesInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public UpdateSalesReturnDraftHandler(
         ISalesReturnRepository returnRepo,
         ISalesInvoiceRepository invoiceRepo,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -197,7 +203,7 @@ public sealed class UpdateSalesReturnDraftHandler
             return Result<SalesReturnDto>.NotFound("Devolución no encontrada.");
 
         var invoice = await _invoiceRepo.GetByIdAsync(_t.TenantId, salesReturn.SalesInvoiceId, ct);
-        if (invoice is null)
+        if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<SalesReturnDto>.NotFound("Factura no encontrada.");
 
         var linesResult = await SalesReturnLineBuilder.BuildAsync(
@@ -232,17 +238,23 @@ public sealed class CancelSalesReturnDraftHandler
     : IRequestHandler<CancelSalesReturnDraftCommand, Result<SalesReturnDto>>
 {
     private readonly ISalesReturnRepository _repo;
+    private readonly ISalesInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
 
     public CancelSalesReturnDraftHandler(
         ISalesReturnRepository repo,
+        ISalesInvoiceRepository invoiceRepo,
         ICurrentTenant t,
+        ICurrentBranch b,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _invoiceRepo = invoiceRepo;
         _t = t;
+        _b = b;
         _u = u;
     }
 
@@ -253,6 +265,10 @@ public sealed class CancelSalesReturnDraftHandler
     {
         var salesReturn = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (salesReturn is null)
+            return Result<SalesReturnDto>.NotFound("Devolución no encontrada.");
+
+        var invoice = await _invoiceRepo.GetByIdAsync(_t.TenantId, salesReturn.SalesInvoiceId, ct);
+        if (invoice is null || invoice.BranchId != _b.BranchId)
             return Result<SalesReturnDto>.NotFound("Devolución no encontrada.");
 
         try

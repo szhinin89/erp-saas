@@ -305,6 +305,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
             postingEngine.Object,
             TenantCtx(),
             CompanyCtx(),
+            BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
         );
@@ -317,6 +318,9 @@ public sealed class AuthorizeSalesReturnHandlerTests
 
     private static ICurrentCompany CompanyCtx() =>
         Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
+
+    private static ICurrentBranch BranchCtx() =>
+        Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
 
     private static ICurrentUser UserCtx() => Mock.Of<ICurrentUser>(u => u.UserId == UserId);
 
@@ -693,6 +697,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
             Mock.Of<IPostingEngine>(),
             TenantCtx(),
             CompanyCtx(),
+            BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
         );
@@ -1093,6 +1098,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 Mock.Of<IPostingEngine>(),
                 new FixedCurrentTenant(_tenantId),
                 new FixedCurrentCompany(_companyId),
+                new FixedCurrentBranch(_branchId),
                 new FixedCurrentUser(_createdBy),
                 Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
             );
@@ -1168,6 +1174,13 @@ public sealed class AuthorizeSalesReturnHandlerTests
             public Guid CompanyId => companyId;
             public bool IsAuthenticated => true;
             public bool HasCompanyContext => companyId != Guid.Empty;
+        }
+
+        private sealed class FixedCurrentBranch(Guid branchId) : ICurrentBranch
+        {
+            public Guid BranchId => branchId;
+            public bool IsAuthenticated => true;
+            public bool HasBranchContext => branchId != Guid.Empty;
         }
 
         private sealed class FixedCurrentUser(Guid userId) : ICurrentUser

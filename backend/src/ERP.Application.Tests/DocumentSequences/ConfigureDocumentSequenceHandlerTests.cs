@@ -63,9 +63,13 @@ public sealed class ConfigureDocumentSequenceHandlerTests
     [Fact]
     public async Task Punto_de_emision_inexistente_o_de_otra_empresa_devuelve_NotFound()
     {
+        // ZH-AUTH-MASTERDATA-REPOSITORY-COMPANY-SCOPE-07A — el handler ahora llama
+        // GetByIdForCompanyAsync(tenantId, companyId, id): un punto de emisión de otra empresa del
+        // mismo tenant nunca matchea ese predicado y el repo real devuelve null, exactamente como
+        // uno inexistente — mismo resultado NotFound en ambos casos.
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((EmissionPoint?)null);
 
@@ -84,11 +88,45 @@ public sealed class ConfigureDocumentSequenceHandlerTests
     }
 
     [Fact]
+    public async Task Punto_de_emision_de_otra_empresa_nunca_se_resuelve_aunque_exista_con_ese_Id_en_el_tenant()
+    {
+        // Explícito: EmissionPointId SÍ existe en el tenant, pero pertenece a OtherCompanyId — el
+        // handler pide GetByIdForCompanyAsync(TenantId, CompanyId, ...) con la empresa activa, así
+        // que el repo (defensa en profundidad, filtra por CompanyId en el propio predicado) nunca
+        // lo devuelve por esa vía, sin importar que exista bajo otro Id de empresa.
+        var otherCompanyId = Guid.NewGuid();
+        _emissionPointRepo
+            .Setup(r =>
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((EmissionPoint?)null);
+        _emissionPointRepo
+            .Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    TenantId,
+                    otherCompanyId,
+                    EmissionPointId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(CreateEmissionPoint());
+
+        var handler = CreateHandler();
+        var result = await handler.Handle(
+            new ConfigureDocumentSequenceCommand(EmissionPointId, "07", 850),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    [Fact]
     public async Task DocTypeCode_no_activo_en_catalogo_devuelve_ValidationFailure()
     {
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(CreateEmissionPoint());
         _docTypeResolver
@@ -110,7 +148,7 @@ public sealed class ConfigureDocumentSequenceHandlerTests
     {
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(CreateEmissionPoint());
         _sequenceRepo
@@ -150,7 +188,7 @@ public sealed class ConfigureDocumentSequenceHandlerTests
 
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(CreateEmissionPoint());
         _sequenceRepo
@@ -187,7 +225,7 @@ public sealed class ConfigureDocumentSequenceHandlerTests
 
         _emissionPointRepo
             .Setup(r =>
-                r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, EmissionPointId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(CreateEmissionPoint());
         _sequenceRepo

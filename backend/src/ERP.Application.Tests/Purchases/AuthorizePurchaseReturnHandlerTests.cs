@@ -300,6 +300,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         {
             var t = new Mock<ICurrentTenant>();
             t.SetupGet(x => x.TenantId).Returns(TenantId);
+            var b = new Mock<ICurrentBranch>();
+            b.SetupGet(x => x.BranchId).Returns(BranchId);
             var u = new Mock<ICurrentUser>();
             u.SetupGet(x => x.UserId).Returns(UserId);
 
@@ -315,6 +317,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 DbEx.Object,
                 PostingEngine.Object,
                 t.Object,
+                b.Object,
                 user ?? u.Object
             );
         }

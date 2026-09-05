@@ -441,6 +441,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new RealDatabaseExceptionTranslator(),
             BuildPostingEngine(db),
             new FixedCurrentTenant(() => _tenantId),
+            new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId)
         );
 

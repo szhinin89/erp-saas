@@ -1,5 +1,6 @@
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
@@ -106,7 +107,7 @@ public class AccessRepository : IAccessRepository
         CancellationToken cancellationToken = default
     ) =>
         await _db
-            .CompanyUserMemberships.IgnoreQueryFilters()
+            .CompanyUserMemberships.AsPlatformQuery()
             .Where(m => m.IdentityUserId == identityUserId && m.IsActive)
             .ToListAsync(cancellationToken);
 
@@ -116,7 +117,7 @@ public class AccessRepository : IAccessRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .CompanyUserMemberships.IgnoreQueryFilters()
+            .CompanyUserMemberships.AsPlatformQuery()
             .FirstOrDefaultAsync(
                 m => m.CompanyId == companyId && m.IdentityUserId == identityUserId,
                 cancellationToken
@@ -127,7 +128,7 @@ public class AccessRepository : IAccessRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .CompanyUserMemberships.IgnoreQueryFilters()
+            .CompanyUserMemberships.AsPlatformQuery()
             .FirstOrDefaultAsync(m => m.Id == companyUserMembershipId, cancellationToken);
 
     public Task AddCompanyUserMembershipAsync(
@@ -142,7 +143,7 @@ public class AccessRepository : IAccessRepository
     )
     {
         var q = _db
-            .CompanyUserMemberships.IgnoreQueryFilters()
+            .CompanyUserMemberships.AsPlatformQuery()
             .Where(m => m.CompanyId == companyId);
         if (onlyActive)
             q = q.Where(m => m.IsActive);
@@ -156,7 +157,7 @@ public class AccessRepository : IAccessRepository
     )
     {
         var q =
-            from m in _db.CompanyUserMemberships.IgnoreQueryFilters()
+            from m in _db.CompanyUserMemberships.AsPlatformQuery()
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.TenantId == tenantId
             select m;
@@ -172,7 +173,7 @@ public class AccessRepository : IAccessRepository
         CancellationToken cancellationToken = default
     ) =>
         _db
-            .CompanyUserMemberships.IgnoreQueryFilters()
+            .CompanyUserMemberships.AsPlatformQuery()
             .CountAsync(m => m.CompanyId == companyId && m.IsActive, cancellationToken);
 
     public Task<int> CountActiveCompanyUserMembershipsByTenantAsync(
@@ -180,7 +181,7 @@ public class AccessRepository : IAccessRepository
         CancellationToken cancellationToken = default
     ) =>
         (
-            from m in _db.CompanyUserMemberships.IgnoreQueryFilters()
+            from m in _db.CompanyUserMemberships.AsPlatformQuery()
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.TenantId == tenantId && m.IsActive
             select m
@@ -248,7 +249,7 @@ public class AccessRepository : IAccessRepository
     )
     {
         var userIds = await (
-            from m in _db.CompanyUserMemberships.IgnoreQueryFilters()
+            from m in _db.CompanyUserMemberships.AsPlatformQuery()
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.TenantId == tenantId
             select m.IdentityUserId
@@ -265,7 +266,7 @@ public class AccessRepository : IAccessRepository
             .ToListAsync(cancellationToken);
 
         var activeMembershipUserIds = await (
-            from m in _db.CompanyUserMemberships.IgnoreQueryFilters()
+            from m in _db.CompanyUserMemberships.AsPlatformQuery()
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.TenantId == tenantId && m.IsActive
             select m.IdentityUserId
@@ -284,7 +285,7 @@ public class AccessRepository : IAccessRepository
     )
     {
         var userIds = await (
-            from m in _db.CompanyUserMemberships.IgnoreQueryFilters()
+            from m in _db.CompanyUserMemberships.AsPlatformQuery()
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.TenantId == tenantId && m.IsActive
             select m.IdentityUserId

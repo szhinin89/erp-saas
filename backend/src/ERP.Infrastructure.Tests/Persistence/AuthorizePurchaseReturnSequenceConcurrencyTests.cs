@@ -336,6 +336,7 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
             new RealDatabaseExceptionTranslator(),
             Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
+            new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId)
         );
 

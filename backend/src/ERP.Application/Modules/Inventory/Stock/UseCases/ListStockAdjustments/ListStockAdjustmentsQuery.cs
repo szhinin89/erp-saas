@@ -13,4 +13,4 @@ public sealed record ListStockAdjustmentsQuery(
     DateTime? EndDate,
     int PageNumber = 1,
     int PageSize = 20
-) : IRequest<Result<PagedResult<StockAdjustmentDto>>>, ICompanyScopedRequest;
+) : IRequest<Result<PagedResult<StockAdjustmentDto>>>, IBranchScopedRequest;

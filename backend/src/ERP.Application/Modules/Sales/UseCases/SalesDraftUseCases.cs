@@ -309,7 +309,7 @@ public sealed class CreateSalesDraftHandler
         // no puede abrir sesión sin EmissionPointId asignado).
         var emissionPointId = _cashSession.EmissionPointId!.Value;
         var emissionType = EmissionType.Electronic;
-        var ep = await _epRepo.GetByIdAsync(emissionPointId, tid, ct);
+        var ep = await _epRepo.GetByIdForCompanyAsync(tid, _c.CompanyId, emissionPointId, ct);
         if (ep is not null)
             emissionType = ep.EmissionType;
 

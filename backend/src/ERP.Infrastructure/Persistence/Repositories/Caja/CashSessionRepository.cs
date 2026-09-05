@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Caja;
@@ -73,7 +74,7 @@ public sealed class CashSessionRepository : ICashSessionRepository
         CancellationToken ct = default
     ) =>
         _db
-            .CashSessions.IgnoreQueryFilters()
+            .CashSessions.AsPlatformQuery()
             .AnyAsync(x => x.TenantId == tenantId && x.CashRegisterId == cashRegisterId, ct);
 
     public async Task<IReadOnlyCollection<Guid>> GetUsedCashRegisterIdsAsync(
@@ -86,7 +87,7 @@ public sealed class CashSessionRepository : ICashSessionRepository
             return Array.Empty<Guid>();
 
         return await _db
-            .CashSessions.IgnoreQueryFilters()
+            .CashSessions.AsPlatformQuery()
             .Where(x => x.TenantId == tenantId && cashRegisterIds.Contains(x.CashRegisterId))
             .Select(x => x.CashRegisterId)
             .Distinct()

@@ -182,6 +182,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
                 DbEx.Object,
                 PostingEngine.Object,
                 FixedTenant(),
+                FixedBranch(),
                 FixedUser()
             );
     }
@@ -190,6 +191,13 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
     {
         var m = new Mock<ICurrentTenant>();
         m.SetupGet(x => x.TenantId).Returns(TenantId);
+        return m.Object;
+    }
+
+    private static ICurrentBranch FixedBranch()
+    {
+        var m = new Mock<ICurrentBranch>();
+        m.SetupGet(x => x.BranchId).Returns(BranchId);
         return m.Object;
     }
 

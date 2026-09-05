@@ -306,11 +306,11 @@ public sealed class AuthorizeSalesInvoiceHandler
         EmissionType? emissionPointType = null;
         if (epId.HasValue)
         {
-            var ep = await _epRepo.GetByIdAsync(epId.Value, tid, ct);
+            var ep = await _epRepo.GetByIdForCompanyAsync(tid, cid, epId.Value, ct);
             if (ep is null)
                 return Result<SalesInvoiceDto>.ValidationFailure("Punto de emisión no encontrado.");
 
-            var est = await _estRepo.GetByIdAsync(tid, ep.EstablishmentId, ct);
+            var est = await _estRepo.GetByIdForCompanyAsync(tid, cid, ep.EstablishmentId, ct);
             if (est is null)
                 return Result<SalesInvoiceDto>.ValidationFailure("Establecimiento no encontrado.");
 

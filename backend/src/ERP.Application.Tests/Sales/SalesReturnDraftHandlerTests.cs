@@ -131,6 +131,9 @@ public sealed class SalesReturnDraftHandlerTests
     private static ICurrentCompany Company() =>
         Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
 
+    private static ICurrentBranch Branch() =>
+        Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
+
     private static ICurrentUser User() => Mock.Of<ICurrentUser>(u => u.UserId == UserId);
 
     // ══════════════════════════════ CreateSalesReturnDraft ══════════════════════════════
@@ -147,6 +150,7 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Company(),
+            Branch(),
             User()
         );
 
@@ -185,6 +189,7 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Company(),
+            Branch(),
             User()
         );
 
@@ -215,6 +220,7 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Company(),
+            Branch(),
             User()
         );
 
@@ -256,6 +262,7 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Company(),
+            Branch(),
             User()
         );
 
@@ -285,6 +292,7 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Company(),
+            Branch(),
             User()
         );
 
@@ -313,6 +321,7 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Company(),
+            Branch(),
             User()
         );
 
@@ -385,6 +394,7 @@ public sealed class SalesReturnDraftHandlerTests
             returnRepo.Object,
             invoiceRepo.Object,
             Tenant(),
+            Branch(),
             User()
         );
 
@@ -440,6 +450,7 @@ public sealed class SalesReturnDraftHandlerTests
             returnRepo.Object,
             invoiceRepo.Object,
             Tenant(),
+            Branch(),
             User()
         );
 
@@ -469,6 +480,7 @@ public sealed class SalesReturnDraftHandlerTests
             returnRepo.Object,
             invoiceRepo.Object,
             Tenant(),
+            Branch(),
             User()
         );
 
@@ -489,10 +501,18 @@ public sealed class SalesReturnDraftHandlerTests
     [Fact]
     public async Task Cancel_cancela_un_borrador()
     {
-        var salesReturn = BuildDraftReturn(Guid.NewGuid());
+        var (invoice, _) = BuildAuthorizedInvoice(("Producto A", 10m, 5m));
+        var salesReturn = BuildDraftReturn(invoice.Id);
+        var invoiceRepo = MockInvoiceRepo(invoice);
         var returnRepo = MockReturnRepo(existing: salesReturn);
 
-        var handler = new CancelSalesReturnDraftHandler(returnRepo.Object, Tenant(), User());
+        var handler = new CancelSalesReturnDraftHandler(
+            returnRepo.Object,
+            invoiceRepo.Object,
+            Tenant(),
+            Branch(),
+            User()
+        );
 
         var result = await handler.Handle(
             new CancelSalesReturnDraftCommand(salesReturn.Id),
@@ -535,8 +555,15 @@ public sealed class SalesReturnDraftHandlerTests
         );
         salesReturn.Authorize(UserId);
 
+        var invoiceRepo = MockInvoiceRepo(invoice);
         var returnRepo = MockReturnRepo(existing: salesReturn);
-        var handler = new CancelSalesReturnDraftHandler(returnRepo.Object, Tenant(), User());
+        var handler = new CancelSalesReturnDraftHandler(
+            returnRepo.Object,
+            invoiceRepo.Object,
+            Tenant(),
+            Branch(),
+            User()
+        );
 
         var result = await handler.Handle(
             new CancelSalesReturnDraftCommand(salesReturn.Id),
@@ -550,11 +577,19 @@ public sealed class SalesReturnDraftHandlerTests
     [Fact]
     public async Task Cancel_rechaza_devolucion_ya_cancelada()
     {
-        var salesReturn = BuildDraftReturn(Guid.NewGuid());
+        var (invoice, _) = BuildAuthorizedInvoice(("Producto A", 10m, 5m));
+        var salesReturn = BuildDraftReturn(invoice.Id);
         salesReturn.Cancel(UserId);
 
+        var invoiceRepo = MockInvoiceRepo(invoice);
         var returnRepo = MockReturnRepo(existing: salesReturn);
-        var handler = new CancelSalesReturnDraftHandler(returnRepo.Object, Tenant(), User());
+        var handler = new CancelSalesReturnDraftHandler(
+            returnRepo.Object,
+            invoiceRepo.Object,
+            Tenant(),
+            Branch(),
+            User()
+        );
 
         var result = await handler.Handle(
             new CancelSalesReturnDraftCommand(salesReturn.Id),
