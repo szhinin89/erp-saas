@@ -258,7 +258,7 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
             snapshot,
             balanceDueBeforeApplication: grandTotal,
             inv.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             _userId,
             Guid.NewGuid(),
             "hash-authorize"

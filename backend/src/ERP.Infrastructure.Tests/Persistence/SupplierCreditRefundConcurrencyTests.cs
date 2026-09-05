@@ -392,7 +392,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             snapshot,
             balanceDueBeforeApplication: 0m,
             sourceInv.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             _userId,
             Guid.NewGuid(),
             "hash-authorize"

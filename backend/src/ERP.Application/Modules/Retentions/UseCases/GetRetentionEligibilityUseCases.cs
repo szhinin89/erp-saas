@@ -89,8 +89,9 @@ public sealed class GetRetentionEligibilityHandler
     )
     {
         // PurchaseInvoice/Manual: fuera de alcance de RETENTIONS-ELIGIBILITY-01 (ver
-        // RETENTIONS-MODULE-DESIGN-01.md — Compras sigue usando IssuedWithholding sin cambios en
-        // E1, y Manual está reservado sin implementación). Resultado explícito de "no soportado",
+        // RETENTIONS-MODULE-DESIGN-01.md — Compras arma sus líneas vía retention-preview/
+        // CalculateRetentionQuery en vez de este preview de elegibilidad, y Manual está reservado
+        // sin implementación). Resultado explícito de "no soportado",
         // nunca confundido con "no elegible por regla fiscal": ningún campo de elegibilidad se
         // evalúa (todos quedan en su valor neutro/false) y la única señal es
         // IsSupportedInThisPhase=false + la razón en Reasons.

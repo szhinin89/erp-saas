@@ -170,10 +170,9 @@ export function usePurchasesPage() {
   const [ptRows, setPtRows] = useState<ScheduleRow[]>([]);
   const [ptLoaded, setPtLoaded] = useState(false);
 
-  // ── Retención (PURCHASES-RETENTIONS-UI-MIGRATION-05C: RetentionDocument transversal,
-  // ya no IssuedWithholding — el preview de cálculo (whPreview) sigue viniendo de
-  // purchaseService.retentionPreview, sin cambios: es una calculadora pura reutilizada por ambos
-  // flujos, nunca persiste IssuedWithholding) ──────────────────────────────
+  // ── Retención (PURCHASES-RETENTIONS-UI-MIGRATION-05C: RetentionDocument transversal —
+  // el preview de cálculo (whPreview) viene de purchaseService.retentionPreview, una
+  // calculadora pura sin persistencia) ──────────────────────────────
   const [whPreview, setWhPreview] = useState<RetentionPreviewDto | null>(null);
   const [retention, setRetention] = useState<RetentionDocumentDto | null>(
     null,
@@ -1713,9 +1712,9 @@ export function usePurchasesPage() {
       // todayIso() usa hora local del dispositivo, no UTC — evita el desfase que
       // causaba fecha futura y rechazo SRI [65] FECHA EMISIÓN EXTEMPORÁNEA.
       const date = todayIso();
-      // El backend (IssueRetentionCommand) no calcula por su cuenta — a diferencia del legacy
-      // IssueWithholdingCommand, necesita las líneas ya resueltas. Se reutiliza el mismo preview
-      // (RetentionCalculator, sin cambios) ya mostrado al usuario antes de confirmar.
+      // El backend (IssueRetentionCommand) no calcula por su cuenta — necesita las líneas ya
+      // resueltas. Se reutiliza el mismo preview (RetentionCalculator, sin cambios) ya mostrado
+      // al usuario antes de confirmar.
       const lines: IssueRetentionLineRequest[] = whPreview.lines
         .filter((l) => l.amountRetained > 0)
         .map((l) => ({
@@ -1741,17 +1740,11 @@ export function usePurchasesPage() {
         );
       } catch (err: unknown) {
         if (axios.isAxiosError(err) && err.response?.status === 409) {
-          const backendMessage = readApiErrorMessage(err) ?? "";
           showSaveError(
-            backendMessage.includes("IssuedWithholding")
-              ? t(
-                  "purchases.errors.retentionLegacyActive",
-                  "Esta compra ya tiene una retención legacy activa. No se puede emitir otra retención.",
-                )
-              : t(
-                  "purchases.errors.retentionAlreadyIssued",
-                  "Esta compra ya tiene una retención emitida.",
-                ),
+            t(
+              "purchases.errors.retentionAlreadyIssued",
+              "Esta compra ya tiene una retención emitida.",
+            ),
           );
         } else {
           showSaveError(
@@ -1768,8 +1761,7 @@ export function usePurchasesPage() {
 
   // ── Anular retención (PURCHASES-RETENTIONS-CANCEL-05D) ──────────────
   // Reversa la CxP (AccountsPayable.ReverseRetention) y el asiento contable original — ambos vía
-  // el mismo CancelRetentionCommand/RetentionCanceller transversal que ya usa Gastos, nunca
-  // purchaseService.cancelWithholding (legacy, IssuedWithholding es una entidad distinta).
+  // el mismo CancelRetentionCommand/RetentionCanceller transversal que ya usa Gastos.
   const handleCancelRetention = useCallback(
     async (reason: string) => {
       setModalRetentionCancel(false);

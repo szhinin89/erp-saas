@@ -141,7 +141,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
             snapshot,
             balanceDueBeforeApplication: f.Payable.OutstandingAmount,
             f.Invoice.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "authorize-hash"

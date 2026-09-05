@@ -14,13 +14,11 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 
 /**
- * PURCHASES-RETENTIONS-UI-MIGRATION-05C — reemplaza usePurchasesPage.withholding.test.ts: la
- * emisión de retención desde Compras ya no usa `purchaseService.issueWithholding`/`getWithholding`
- * (flujo legacy `IssuedWithholding`), sino el modelo transversal `RetentionDocument` vía
+ * PURCHASES-RETENTIONS-UI-MIGRATION-05C / PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — la emisión
+ * de retención desde Compras usa el modelo transversal `RetentionDocument` vía
  * `retentionsService` (`POST/GET /api/v1/purchases/{id}/retention`, que internamente reutilizan
  * `IssueRetentionCommand`/`GetRetentionBySourceQuery`). Cubre: carga de la retención asociada,
- * payload exacto del nuevo endpoint, ausencia de llamadas legacy, y el manejo de los dos tipos de
- * conflicto (RetentionDocument ya emitido vs. IssuedWithholding legacy activo).
+ * payload exacto del endpoint, y el manejo de conflicto (RetentionDocument ya emitido).
  */
 
 vi.mock("../api/purchaseService", () => ({
@@ -351,29 +349,6 @@ describe("usePurchasesPage — emitir retención vía el modelo transversal Rete
 
     expect(result.current.saveError).toBe("Esta compra ya tiene una retención emitida.");
     expect(message.success).not.toHaveBeenCalled();
-  });
-
-  it("409 por IssuedWithholding legacy activo muestra el mensaje claro de bloqueo legacy", async () => {
-    vi.mocked(retentionsService.issueForPurchase).mockRejectedValue({
-      isAxiosError: true,
-      response: {
-        status: 409,
-        data: {
-          message: {
-            user: "Esta compra ya tiene una retención emitida por el flujo anterior (IssuedWithholding).",
-          },
-        },
-      },
-    });
-    const result = await setupWithPreview();
-
-    await act(async () => {
-      await result.current.handleIssueRetention("ep-1");
-    });
-
-    expect(result.current.saveError).toBe(
-      "Esta compra ya tiene una retención legacy activa. No se puede emitir otra retención.",
-    );
   });
 });
 

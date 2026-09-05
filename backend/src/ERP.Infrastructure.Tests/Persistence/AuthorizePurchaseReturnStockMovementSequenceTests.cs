@@ -15,6 +15,7 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -331,6 +332,7 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
             returnRepo,
             invoiceRepo,
             new AccountsPayableRepository(db),
+            new RetentionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
             sequenceRepo,
             stockRepo,
             creditRepo,

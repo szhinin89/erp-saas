@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Finance.UseCases;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
@@ -14,6 +15,7 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -349,7 +351,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             snapshot,
             balanceDueBeforeApplication: payable.OutstandingAmount,
             inv.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             _userId,
             Guid.NewGuid(),
             "hash-authorize"
@@ -379,6 +381,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
                 new RealDatabaseExceptionTranslator()
             ),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new RetentionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new RetentionCanceller(new AccountsPayableRepository(db)),
             new UnitOfWork(db),
             NullLogger<CancelPurchaseHandler>.Instance,
             new FixedCurrentTenant(() => _tenantId),

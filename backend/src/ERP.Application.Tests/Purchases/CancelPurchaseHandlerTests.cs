@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
@@ -7,6 +8,9 @@ using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Retentions.Entities;
+using ERP.Domain.Modules.Retentions.Enums;
+using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -124,7 +128,9 @@ public sealed class CancelPurchaseHandlerTests
         Mock<IStockRepository> stockRepo,
         Mock<IPurchaseReturnRepository> purchaseReturnRepo,
         Mock<IUnitOfWork> uow,
-        Guid? activeBranchId = null
+        Guid? activeBranchId = null,
+        Mock<IRetentionDocumentRepository>? retentionRepo = null,
+        IRetentionCanceller? retentionCanceller = null
     )
     {
         var tenant = new Mock<ICurrentTenant>();
@@ -136,11 +142,32 @@ public sealed class CancelPurchaseHandlerTests
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
+        // Sin override explícito, ninguna compra tiene retención emitida — solo el escenario
+        // dedicado de cascada sobreescribe este mock.
+        var effectiveRetentionRepo = retentionRepo ?? new Mock<IRetentionDocumentRepository>();
+        if (retentionRepo is null)
+        {
+            effectiveRetentionRepo
+                .Setup(r =>
+                    r.GetBySourceAsync(
+                        TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.PurchaseInvoice,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync((RetentionDocument?)null);
+        }
+        var effectiveRetentionCanceller = retentionCanceller ?? new RetentionCanceller(payableRepo.Object);
+
         return new CancelPurchaseHandler(
             repo.Object,
             payableRepo.Object,
             stockRepo.Object,
             purchaseReturnRepo.Object,
+            effectiveRetentionRepo.Object,
+            effectiveRetentionCanceller,
             uow.Object,
             Mock.Of<ILogger<CancelPurchaseHandler>>(),
             tenant.Object,
@@ -161,11 +188,6 @@ public sealed class CancelPurchaseHandlerTests
                 r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((AccountsPayable?)null);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
-
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
@@ -191,11 +213,6 @@ public sealed class CancelPurchaseHandlerTests
                 r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((AccountsPayable?)null);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
-
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
@@ -238,11 +255,6 @@ public sealed class CancelPurchaseHandlerTests
                 r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((AccountsPayable?)null);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
-
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
@@ -462,10 +474,6 @@ public sealed class CancelPurchaseHandlerTests
                 r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(payable);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
         purchaseReturnRepo
             .Setup(r =>
                 r.ExistsAuthorizedByPurchaseInvoiceIdAsync(
@@ -511,11 +519,6 @@ public sealed class CancelPurchaseHandlerTests
                 r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((AccountsPayable?)null);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
-
         using var cts = new CancellationTokenSource();
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         await handler.Handle(new CancelPurchaseCommand(inv.Id, "Motivo"), cts.Token);
@@ -536,11 +539,6 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
-
         var sequence = new MockSequence();
         uow.InSequence(sequence)
             .Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
@@ -636,11 +634,6 @@ public sealed class CancelPurchaseHandlerTests
                 )
             )
             .ReturnsAsync((AccountsPayable?)null);
-        repo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync((IssuedWithholding?)null);
-
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Motivo"),
@@ -649,5 +642,67 @@ public sealed class CancelPurchaseHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
+    }
+
+    /// <summary>PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — reemplaza la cobertura del legacy
+    /// "cascada IssuedWithholding.Cancel() al anular la compra origen" (nunca ejercida de verdad:
+    /// los tests legacy siempre mockeaban la búsqueda para devolver null). Prueba end-to-end (con
+    /// el RetentionCanceller real, no mockeado) que al anular una compra con un RetentionDocument
+    /// Issued asociado, la retención se cancela y la CxP reversa el monto retenido.</summary>
+    [Fact]
+    public async Task Anulacion_de_compra_con_RetentionDocument_activo_lo_cancela_y_reversa_CxP()
+    {
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var inv = CreateConfirmedInvoice();
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, inv.Id,
+            "01", "001-001-000000001", inv.IssueDate, inv.IssueDate, UserId
+        );
+        payable.AddInstallment(1, inv.IssueDate.AddDays(30), 100m);
+        payable.ApplyRetention(30m, UserId);
+
+        var retention = RetentionDocument.Create(
+            TenantId, CompanyId, BranchId,
+            RetentionSourceDocumentType.PurchaseInvoice, inv.Id, SupplierId,
+            Guid.NewGuid(), UserId
+        );
+        retention.AddLine(
+            RetentionDocumentLine.Create(
+                retention.Id, TenantId, RetentionTaxType.Vat, "725", "Retención IVA", 100m, 30m, 30m
+            )
+        );
+        retention.Issue("001-001-000000001", inv.IssueDate, UserId);
+
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        payableRepo
+            .Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(payable);
+        purchaseReturnRepo
+            .Setup(r => r.ExistsAuthorizedByPurchaseInvoiceIdAsync(TenantId, CompanyId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        var retentionRepo = new Mock<IRetentionDocumentRepository>();
+        retentionRepo
+            .Setup(r =>
+                r.GetBySourceAsync(TenantId, CompanyId, RetentionSourceDocumentType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(retention);
+
+        var handler = BuildHandler(
+            repo, payableRepo, stockRepo, purchaseReturnRepo, uow,
+            retentionRepo: retentionRepo
+        );
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Compra anulada"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        payable.RetainedAmount.Should().Be(0m);
     }
 }

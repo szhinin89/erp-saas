@@ -11,8 +11,7 @@ namespace ERP.Application.Tests.Retentions;
 /// <summary>
 /// RETENTIONS-APPLICATION-01C — cubre <see cref="GetRetentionBySourceHandler"/>. "No encontrada"
 /// es un estado normal (no hay retención activa para ese origen todavía), por eso se modela como
-/// <c>Result&lt;RetentionDocumentDto?&gt;.Success(null)</c>, mismo criterio que
-/// <c>GetWithholdingByPurchaseQuery</c> de Purchases.
+/// <c>Result&lt;RetentionDocumentDto?&gt;.Success(null)</c>.
 /// </summary>
 public sealed class GetRetentionBySourceHandlerTests
 {

@@ -242,7 +242,7 @@ public sealed class PurchaseReturnTests
             original,
             balanceDueBeforeApplication: 1120m,
             currencyCode: "USD",
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             authorizeClientRequestId,
             "hash-authorize-001"
@@ -314,7 +314,7 @@ public sealed class PurchaseReturnTests
             original,
             balanceDueBeforeApplication: 1120m,
             currencyCode: "USD",
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "hash-authorize-irbpnr"
@@ -367,7 +367,7 @@ public sealed class PurchaseReturnTests
             original,
             balanceDueBeforeApplication: 1120m,
             currencyCode: "USD",
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "hash-authorize-no-irbpnr"
@@ -392,7 +392,7 @@ public sealed class PurchaseReturnTests
             original,
             balanceDueBeforeApplication: 0m,
             currencyCode: "USD",
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "hash-authorize-002"
@@ -417,7 +417,7 @@ public sealed class PurchaseReturnTests
                 original,
                 balanceDueBeforeApplication: 1120m,
                 currencyCode: "USD",
-                hasIssuedWithholding: true,
+                hasIssuedRetention: true,
                 UserId,
                 Guid.NewGuid(),
                 "hash-authorize-003"

@@ -394,6 +394,58 @@ public sealed class IssueRetentionHandlerTests
         result.Value.Status.Should().Be(RetentionStatus.Issued);
     }
 
+    /// <summary>PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — reemplaza la cobertura del legacy
+    /// (AuthorizePurchaseReturnLockAConcurrencyTests, ejercida solo por inspección de código sobre
+    /// IssueWithholdingHandler): al emitir una retención sobre una PurchaseInvoice, el handler debe
+    /// adquirir el mismo Lock A ("PurchaseInvoice.FinancialLock") que CancelPurchaseHandler y
+    /// AuthorizePurchaseReturnHandler, dentro de una transacción explícita con Commit al final —
+    /// así ninguna otra mutación financiera concurrente sobre la misma factura (pago, devolución,
+    /// anulación) puede intercalarse con esta emisión.
+    /// </summary>
+    [Fact]
+    public async Task Emision_de_retencion_para_PurchaseInvoice_adquiere_Lock_A_dentro_de_una_transaccion()
+    {
+        var fx = new Fixture();
+        var invoice = fx.ConfirmedInvoice();
+        fx.SetupInvoice(invoice);
+        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
+        fx.SetupNotExisting();
+        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
+        var sequence = new MockSequence();
+        fx.Uow.InSequence(sequence)
+            .Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fx.PurchaseReturnRepo
+            .InSequence(sequence)
+            .Setup(r => r.AcquireFinancialLockAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fx.Uow.InSequence(sequence)
+            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        fx.Uow.InSequence(sequence)
+            .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await fx.Handler.Handle(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
+                invoice.Id,
+                EmissionPointId,
+                new DateOnly(2026, 9, 3),
+                new[] { VatLine() }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        fx.PurchaseReturnRepo.Verify(
+            r => r.AcquireFinancialLockAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        fx.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        fx.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task Snapshot_de_PurchaseInvoice_se_resuelve_desde_la_compra_real()
     {
@@ -577,88 +629,6 @@ public sealed class IssueRetentionHandlerTests
             Times.Never,
             "no debe siquiera intentar resolver la CxP si la emisión ya se bloqueó por duplicado"
         );
-    }
-
-    [Fact]
-    public async Task Bloquea_si_existe_IssuedWithholding_legacy_activo_para_la_compra()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        var legacy = ERP.Domain.Modules.Purchases.Entities.IssuedWithholding.CreateDraft(
-            TenantId, CompanyId, invoice.Id, invoice.SupplierId, EmissionPointId,
-            new DateOnly(2026, 9, 1), UserId
-        );
-        legacy.AddDetail(
-            ERP.Domain.Modules.Purchases.Entities.IssuedWithholdingDetail.Create(
-                legacy.Id, TenantId, "IVA", "725", "Retencion IVA 30%", 100m, 30m
-            )
-        );
-        legacy.Issue("001-001-000000005", UserId);
-        fx.PurchaseRepo
-            .Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(legacy);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        result.Error.Should().Contain("IssuedWithholding");
-        fx.EligibilityService.Verify(
-            s => s.EvaluateAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()
-            ),
-            Times.Never,
-            "el bloqueo por legacy debe ocurrir antes de siquiera revalidar elegibilidad"
-        );
-    }
-
-    [Fact]
-    public async Task IssuedWithholding_legacy_cancelado_no_bloquea_la_emision_por_el_nuevo_flujo()
-    {
-        var fx = new Fixture();
-        var invoice = fx.ConfirmedInvoice();
-        fx.SetupInvoice(invoice);
-        fx.SetupEligibility(invoice.SupplierId, FullyEligible);
-        fx.SetupNotExisting();
-        fx.SetupPayable(invoice.Id, fx.CreatePayableWithInstallment(invoice.Id, 300m));
-        var legacy = ERP.Domain.Modules.Purchases.Entities.IssuedWithholding.CreateDraft(
-            TenantId, CompanyId, invoice.Id, invoice.SupplierId, EmissionPointId,
-            new DateOnly(2026, 8, 1), UserId
-        );
-        legacy.AddDetail(
-            ERP.Domain.Modules.Purchases.Entities.IssuedWithholdingDetail.Create(
-                legacy.Id, TenantId, "IVA", "725", "Retencion IVA 30%", 100m, 30m
-            )
-        );
-        legacy.Issue("001-001-000000004", UserId);
-        legacy.Cancel("Emitida por error", UserId);
-        fx.PurchaseRepo
-            .Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(legacy);
-
-        var result = await fx.Handler.Handle(
-            new IssueRetentionCommand(
-                RetentionSourceDocumentType.PurchaseInvoice,
-                invoice.Id,
-                EmissionPointId,
-                new DateOnly(2026, 9, 3),
-                new[] { VatLine() }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue(because: result.Error);
     }
 
     [Fact]
@@ -1204,6 +1174,7 @@ public sealed class IssueRetentionHandlerTests
     {
         public Mock<IExpenseDocumentRepository> ExpenseRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> PurchaseRepo { get; } = new();
+        public Mock<IPurchaseReturnRepository> PurchaseReturnRepo { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IRetentionEligibilityService> EligibilityService { get; } = new();
@@ -1272,6 +1243,11 @@ public sealed class IssueRetentionHandlerTests
                 // exactamente el comportamiento neutro que necesitan los tests de ExpenseDocument
                 // existentes (nunca se llaman en ese camino).
                 PurchaseRepo.Object,
+                // PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E: HandlePurchaseAsync ahora adquiere el
+                // mismo Lock A ("PurchaseInvoice.FinancialLock") que CancelPurchaseHandler — sin
+                // Setup, el mock de Task devuelve Task.CompletedTask por defecto (comportamiento
+                // neutro, no interfiere con ningún [Fact] existente).
+                PurchaseReturnRepo.Object,
                 PayableRepo.Object,
                 // RETENTIONS-EXPENSES-INTEGRATION-01D-1: IssueRetentionHandler ya no habla
                 // directamente con RetentionRepo/EligibilityService — delega en RetentionIssuer
@@ -1379,17 +1355,10 @@ public sealed class IssueRetentionHandlerTests
             return invoice;
         }
 
-        public void SetupInvoice(ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice invoice)
-        {
+        public void SetupInvoice(ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice invoice) =>
             PurchaseRepo
                 .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(invoice);
-            // Sin legacy activo por defecto — los tests de bloqueo por IssuedWithholding
-            // sobreescriben este Setup explícitamente.
-            PurchaseRepo
-                .Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((ERP.Domain.Modules.Purchases.Entities.IssuedWithholding?)null);
-        }
 
         public void SetupPayable(
             Guid purchaseInvoiceId,

@@ -25,6 +25,7 @@ using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -55,13 +56,15 @@ namespace ERP.API.Tests.Integration;
 /// <c>PurchaseReturnCrossInvariantTests.cs</c> (9/9 verde) como parte del mismo comando de
 /// regresión de <c>ERP.Infrastructure.Tests</c>, sin duplicar aquí.
 ///
-/// Escenario 12 (devolución y retención simultáneas) — <c>IssueWithholdingHandler</c> depende de
-/// <c>IRetentionCodeResolver</c>/<c>IDocumentSequenceRepository</c>/reloj de compañía (cadena SRI
-/// completa, fuera del alcance de este módulo). En vez de duplicar esa orquestación solo para
-/// probar el lock, se verifica por inspección de código que <c>IssueWithholdingHandler</c> adquiere
-/// el mismo Lock A (<c>IPurchaseReturnRepository.AcquireFinancialLockAsync</c>, namespace
-/// "PurchaseInvoice.FinancialLock") ya demostrado serializando correctamente en los escenarios 10 y
-/// 11 de esta misma suite — mismo mecanismo, misma garantía, sin duplicar el test de concurrencia.
+/// Escenario 12 (devolución y retención simultáneas) — PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E:
+/// <c>IssueRetentionHandler.HandlePurchaseAsync</c> ahora adquiere el mismo Lock A
+/// (<c>IPurchaseReturnRepository.AcquireFinancialLockAsync</c>, namespace
+/// "PurchaseInvoice.FinancialLock") que <c>AuthorizePurchaseReturnHandler</c>/
+/// <c>CancelPurchaseHandler</c> — cubierto contra PostgreSQL real por
+/// <c>AuthorizePurchaseReturnLockAConcurrencyTests.Punto6_Devolucion_y_emision_de_retencion_simultaneas_quedan_serializadas_por_LockA</c>
+/// (ERP.Infrastructure.Tests) y a nivel unitario por
+/// <c>IssueRetentionHandlerTests.Emision_de_retencion_para_PurchaseInvoice_adquiere_Lock_A_dentro_de_una_transaccion</c> —
+/// sin duplicar aquí esa cadena de emisión SRI completa.
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
@@ -426,6 +429,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new AccountsPayableRepository(db),
+            new RetentionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnSequenceRepository(db),
             new StockRepository(
                 db,
@@ -925,28 +929,30 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var withholding = ERP.Domain.Modules.Purchases.Entities.IssuedWithholding.CreateDraft(
+            var retention = ERP.Domain.Modules.Retentions.Entities.RetentionDocument.Create(
                 _tenantId,
                 _companyId,
+                _branchId,
+                ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.PurchaseInvoice,
                 inv.InvoiceId,
                 _supplierId,
                 _emissionPointId,
-                DateOnly.FromDateTime(DateTime.UtcNow),
                 _userId
             );
-            withholding.AddDetail(
-                ERP.Domain.Modules.Purchases.Entities.IssuedWithholdingDetail.Create(
-                    withholding.Id,
+            retention.AddLine(
+                ERP.Domain.Modules.Retentions.Entities.RetentionDocumentLine.Create(
+                    retention.Id,
                     _tenantId,
-                    "IVA",
+                    ERP.Domain.Modules.Retentions.Enums.RetentionTaxType.Vat,
                     "1",
                     "Retención IVA",
                     100m,
+                    30m,
                     30m
                 )
             );
-            withholding.Issue("001-001-000000001", _userId);
-            db.Set<ERP.Domain.Modules.Purchases.Entities.IssuedWithholding>().Add(withholding);
+            retention.Issue("001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), _userId);
+            db.Set<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>().Add(retention);
             await db.SaveChangesAsync();
         }
 

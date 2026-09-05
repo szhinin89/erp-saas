@@ -14,8 +14,7 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// documento origen dado. Solo lectura, respeta scope tenant/company/branch vía el repositorio
 /// (nunca <c>IgnoreQueryFilters</c>). "No encontrada" no es un error de negocio — es un estado
 /// normal (el documento origen simplemente no tiene retención activa todavía) — por eso devuelve
-/// <c>Result&lt;RetentionDocumentDto?&gt;.Success(null)</c> en vez de <c>NotFound</c>, mismo
-/// criterio que <c>GetWithholdingByPurchaseQuery</c> de Purchases (el análogo más cercano: "get by
+/// <c>Result&lt;RetentionDocumentDto?&gt;.Success(null)</c> en vez de <c>NotFound</c> ("get by
 /// origin, puede no existir").
 /// </summary>
 public sealed record GetRetentionBySourceQuery(

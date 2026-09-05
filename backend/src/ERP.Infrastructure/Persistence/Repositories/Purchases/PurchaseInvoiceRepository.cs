@@ -230,44 +230,8 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             _db.Set<PurchasePaymentSchedule>().Add(schedule);
     }
 
-    public Task<IssuedWithholding?> GetWithholdingByIdAsync(
-        Guid tenantId,
-        Guid id,
-        CancellationToken ct = default
-    ) =>
-        _db
-            .IssuedWithholdings.Include(w => w.Details)
-            .FirstOrDefaultAsync(w => w.TenantId == tenantId && w.Id == id, ct);
-
-    public Task<IssuedWithholding?> GetWithholdingByPurchaseIdAsync(
-        Guid tenantId,
-        Guid purchaseId,
-        CancellationToken ct = default
-    ) =>
-        _db
-            .IssuedWithholdings.Include(w => w.Details)
-            .FirstOrDefaultAsync(
-                w => w.TenantId == tenantId && w.PurchaseInvoiceId == purchaseId,
-                ct
-            );
-
-    /// <inheritdoc/>
-    public Task<Guid?> GetWithholdingPurchaseInvoiceIdAsync(
-        Guid tenantId,
-        Guid withholdingId,
-        CancellationToken ct = default
-    ) =>
-        _db
-            .IssuedWithholdings.AsNoTracking()
-            .Where(w => w.TenantId == tenantId && w.Id == withholdingId)
-            .Select(w => (Guid?)w.PurchaseInvoiceId)
-            .FirstOrDefaultAsync(ct);
-
     public void TrackCommunication(PurchaseCommunication communication) =>
         _db.PurchaseCommunications.Add(communication);
-
-    public void TrackWithholding(IssuedWithholding withholding) =>
-        _db.IssuedWithholdings.Add(withholding);
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

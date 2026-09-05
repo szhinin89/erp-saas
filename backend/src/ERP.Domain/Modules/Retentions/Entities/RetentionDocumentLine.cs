@@ -5,10 +5,8 @@ namespace ERP.Domain.Modules.Retentions.Entities;
 
 /// <summary>
 /// Línea hija de <c>RetentionDocument</c> — un rubro retenido (IVA o Renta) sobre el documento
-/// origen. Estructura calcada de <c>IssuedWithholdingDetail</c> (ya validada en producción para
-/// Compras, ver <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c>), con <c>TaxType</c> como
-/// enum (<see cref="RetentionTaxType"/>) en vez de <c>string</c> porque este módulo es nuevo y no
-/// arrastra la representación textual heredada de <c>IssuedWithholdingDetail.TaxType</c>.
+/// origen (ver <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c>), con <c>TaxType</c> como
+/// enum (<see cref="RetentionTaxType"/>) en vez de <c>string</c>.
 ///
 /// No hardcodea ningún código/porcentaje SRI — <c>RetentionCode</c>/<c>RetentionRate</c> llegan
 /// siempre como parámetros desde quien construye la línea (fase de integración futura vía
@@ -30,8 +28,7 @@ public sealed class RetentionDocumentLine : IMustHaveTenant
     /// Snapshot REQUERIDO del texto del código de retención (<c>SriRetentionCode.Name</c>) en el
     /// momento de emitir la línea — nunca se resuelve dinámicamente contra el catálogo después,
     /// para que una retención antigua pueda reconstruir el texto exacto que tenía al emitirse
-    /// aunque el catálogo cambie más adelante (requisito legal de reproducibilidad, ver
-    /// <c>IssuedWithholdingDetail.RetentionCodeDescription</c>, mismo patrón ya usado en Compras).
+    /// aunque el catálogo cambie más adelante (requisito legal de reproducibilidad).
     /// Distinto de <see cref="Description"/> (nota libre opcional del usuario) — ambos coexisten.
     /// </summary>
     public string RetentionCodeDescription { get; private set; } = null!;

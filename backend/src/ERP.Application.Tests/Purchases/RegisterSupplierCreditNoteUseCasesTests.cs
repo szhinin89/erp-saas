@@ -97,7 +97,7 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
             snapshot,
             balanceDueBeforeApplication: grandTotal,
             inv.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "hash-authorize"

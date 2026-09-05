@@ -12,6 +12,9 @@ using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Retentions.Entities;
+using ERP.Domain.Modules.Retentions.Enums;
+using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -130,6 +133,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
+        public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IPurchaseReturnSequenceRepository> SequenceRepo { get; } = new();
         public Mock<IStockRepository> StockRepo { get; } = new();
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
@@ -176,15 +180,17 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                     )
                 )
                 .ReturnsAsync(f.Payable);
-            InvoiceRepo
+            RetentionRepo
                 .Setup(r =>
-                    r.GetWithholdingByPurchaseIdAsync(
+                    r.GetBySourceAsync(
                         TenantId,
+                        CompanyId,
+                        RetentionSourceDocumentType.PurchaseInvoice,
                         f.Invoice.Id,
                         It.IsAny<CancellationToken>()
                     )
                 )
-                .ReturnsAsync((IssuedWithholding?)null);
+                .ReturnsAsync((RetentionDocument?)null);
 
             if (returnNumber is not null)
                 SequenceRepo
@@ -301,6 +307,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 ReturnRepo.Object,
                 InvoiceRepo.Object,
                 PayableRepo.Object,
+                RetentionRepo.Object,
                 SequenceRepo.Object,
                 StockRepo.Object,
                 CreditRepo.Object,
@@ -603,35 +610,40 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     {
         var f = BuildFixture();
         var m = new Mocks(f);
-        var withholding = IssuedWithholding.CreateDraft(
+        var retention = RetentionDocument.Create(
             TenantId,
             CompanyId,
+            BranchId,
+            RetentionSourceDocumentType.PurchaseInvoice,
             f.Invoice.Id,
             SupplierId,
             Guid.NewGuid(),
-            DateOnly.FromDateTime(DateTime.UtcNow),
             UserId
         );
-        withholding.AddDetail(
-            IssuedWithholdingDetail.Create(
-                withholding.Id,
+        retention.AddLine(
+            RetentionDocumentLine.Create(
+                retention.Id,
                 TenantId,
-                "IVA",
+                RetentionTaxType.Vat,
                 "1",
                 "Retención IVA",
                 100m,
+                30m,
                 30m
             )
         );
-        withholding.Issue("001-001-000000001", UserId);
-        m.InvoiceRepo.Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(
+        retention.Issue("001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), UserId);
+        m.RetentionRepo
+            .Setup(r =>
+                r.GetBySourceAsync(
                     TenantId,
+                    CompanyId,
+                    RetentionSourceDocumentType.PurchaseInvoice,
                     f.Invoice.Id,
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(withholding);
+            .ReturnsAsync(retention);
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
@@ -750,7 +762,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot> { [detailId] = original },
             balanceDueBeforeApplication: 1120m,
             currencyCode: "USD",
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "authorize-hash"

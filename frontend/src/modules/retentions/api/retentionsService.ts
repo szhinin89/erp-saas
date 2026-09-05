@@ -90,17 +90,16 @@ const RETENTIONS_BASE = "/api/v1/retentions";
 
 export const retentionsService = {
   /**
-   * Retención transversal activa de una compra, si existe — reemplaza
-   * `purchaseService.getWithholding` para el flujo nuevo. `null` es un estado normal (todavía no
-   * se emitió ninguna), nunca un error.
+   * Retención transversal activa de una compra, si existe. `null` es un estado normal (todavía
+   * no se emitió ninguna), nunca un error.
    */
   getForPurchase: (purchaseInvoiceId: string) =>
     apiGet<RetentionDocumentDto | null>(`${PURCHASES_BASE}/${purchaseInvoiceId}/retention`),
 
   /**
-   * Emite la retención vía el modelo transversal `RetentionDocument` — reemplaza
-   * `purchaseService.issueWithholding`. Nunca envía `retentionNumber`/`sourceDocumentType`/
-   * `sourceDocumentId` (el backend los fija: número server-side, origen por la ruta).
+   * Emite la retención vía el modelo transversal `RetentionDocument`. Nunca envía
+   * `retentionNumber`/`sourceDocumentType`/`sourceDocumentId` (el backend los fija: número
+   * server-side, origen por la ruta).
    */
   issueForPurchase: (purchaseInvoiceId: string, payload: IssuePurchaseRetentionPayload) =>
     apiPost<RetentionDocumentDto>(`${PURCHASES_BASE}/${purchaseInvoiceId}/retention`, payload),
@@ -123,8 +122,7 @@ export const retentionsService = {
 
   /**
    * PURCHASES-RETENTIONS-CANCEL-05D — anula la retención (reversa CxP + asiento contable
-   * original). Nunca `purchaseService.cancelWithholding` (legacy) — ese sigue existiendo solo
-   * para `IssuedWithholding`, una entidad distinta.
+   * original).
    */
   cancelForPurchase: (purchaseInvoiceId: string, retentionId: string, reason: string) =>
     apiPost<RetentionDocumentDto>(

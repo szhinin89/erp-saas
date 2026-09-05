@@ -11,6 +11,8 @@ using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Retentions.Enums;
+using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
 using MediatR;
 using System.Security.Cryptography;
@@ -51,6 +53,7 @@ public sealed class AuthorizePurchaseReturnHandler
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IAccountsPayableRepository _payableRepo;
+    private readonly IRetentionDocumentRepository _retentionRepo;
     private readonly IPurchaseReturnSequenceRepository _sequenceRepo;
     private readonly IStockRepository _stockRepo;
     private readonly ISupplierCreditRepository _creditRepo;
@@ -64,6 +67,7 @@ public sealed class AuthorizePurchaseReturnHandler
         IPurchaseReturnRepository returnRepo,
         IPurchaseInvoiceRepository invoiceRepo,
         IAccountsPayableRepository payableRepo,
+        IRetentionDocumentRepository retentionRepo,
         IPurchaseReturnSequenceRepository sequenceRepo,
         IStockRepository stockRepo,
         ISupplierCreditRepository creditRepo,
@@ -77,6 +81,7 @@ public sealed class AuthorizePurchaseReturnHandler
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _payableRepo = payableRepo;
+        _retentionRepo = retentionRepo;
         _sequenceRepo = sequenceRepo;
         _stockRepo = stockRepo;
         _creditRepo = creditRepo;
@@ -176,13 +181,14 @@ public sealed class AuthorizePurchaseReturnHandler
                 );
             }
 
-            var withholding = await _invoiceRepo.GetWithholdingByPurchaseIdAsync(
+            var retention = await _retentionRepo.GetBySourceAsync(
                 tid,
+                invoice.CompanyId,
+                RetentionSourceDocumentType.PurchaseInvoice,
                 invoice.Id,
                 ct
             );
-            var hasIssuedWithholding =
-                withholding is not null && withholding.Status == WithholdingStatus.Issued;
+            var hasIssuedRetention = retention is not null && retention.Status == RetentionStatus.Issued;
 
             // ── PR-004 revalidado bajo lock (§10.2) + snapshot de línea original para Authorize() ──
             var detailIds = purchaseReturn.Lines.Select(l => l.OriginalInvoiceDetailId).ToList();
@@ -327,7 +333,7 @@ public sealed class AuthorizePurchaseReturnHandler
                     originalLinesByDetailId,
                     balanceDueBeforeApplication,
                     invoice.CurrencyCode,
-                    hasIssuedWithholding,
+                    hasIssuedRetention,
                     uid,
                     cmd.ClientRequestId,
                     authorizeHash

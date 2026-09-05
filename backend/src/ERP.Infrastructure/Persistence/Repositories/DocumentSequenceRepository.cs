@@ -29,7 +29,7 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
         // "la transacción actualmente activa en la conexión" sea cual sea su dueño, así que la
         // garantía de exclusión mutua es idéntica en ambos casos — solo cambia quién hace
         // commit/rollback. Cuando no hay transacción ambiente (todos los callers existentes hoy:
-        // AuthorizeSalesInvoiceHandler, IssueWithholdingUseCases), el comportamiento es exactamente
+        // AuthorizeSalesInvoiceHandler, IssueRetentionUseCases), el comportamiento es exactamente
         // el de antes: transacción propia, commit inmediato aquí mismo.
         var ownsTransaction = _db.Database.CurrentTransaction is null;
         IDbContextTransaction? tx = ownsTransaction

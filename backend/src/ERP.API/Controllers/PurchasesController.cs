@@ -216,73 +216,26 @@ public sealed class PurchasesController : ControllerBase
     public async Task<IActionResult> GetRetentionPreview(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new CalculateRetentionQuery(id), ct));
 
-    [HttpGet("{id:guid}/withholding")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    public async Task<IActionResult> GetWithholdingByPurchase(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetWithholdingByPurchaseQuery(id), ct));
-
-    [HttpPost("{id:guid}/withholding")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
-    public async Task<IActionResult> IssueWithholding(
-        Guid id,
-        [FromBody] IssueWithholdingRequest request,
-        CancellationToken ct
-    ) =>
-        this.ToCreatedOrBadRequest(
-            await _mediator.Send(
-                new IssueWithholdingCommand(id, request.EmissionPointId, request.IssueDate),
-                ct
-            )
-        );
-
-    [HttpGet("withholdings/{whId:guid}")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    public async Task<IActionResult> GetWithholdingById(Guid whId, CancellationToken ct) =>
-        this.ToOkOrNotFound(await _mediator.Send(new GetWithholdingByIdQuery(whId), ct));
-
-    [HttpPost("withholdings/{whId:guid}/cancel")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
-    public async Task<IActionResult> CancelWithholding(
-        Guid whId,
-        [FromBody] CancelWithholdingRequest request,
-        CancellationToken ct
-    ) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(new CancelWithholdingCommand(whId, request.Reason), ct)
-        );
-
     // ══════════════════════════════════════════════════════════════════════
-    // PURCHASES-RETENTIONS-UI-MIGRATION-05C — retención transversal (RetentionDocument)
-    // ══════════════════════════════════════════════════════════════════════
-    //
-    // Los dos endpoints de arriba (IssueWithholding/CancelWithholding/GetWithholding*) siguen
-    // existiendo sin cambios — flujo legacy IssuedWithholding, solo compatibilidad temporal, sin
-    // tráfico nuevo desde la UI a partir de esta fase (ver PURCHASES-WITHHOLDING-RETENTIONS-AUDIT-05A).
-    //
-    // Los dos endpoints de abajo reemplazan ese flujo para NUEVAS emisiones: reutilizan
-    // IssueRetentionCommand/GetRetentionBySourceQuery (transversales, Modules/Retentions, ya
-    // generalizados en PURCHASES-RETENTIONS-BRIDGE-05B) — este controller no duplica ninguna lógica
-    // de emisión/elegibilidad/CxP, solo fija SourceDocumentType=PurchaseInvoice y
-    // SourceDocumentId=id desde la RUTA (nunca desde el body, mismo criterio de seguridad que el
-    // resto del ERP: el body es un hint de UX, nunca autoridad).
+    // RetentionDocument transversal (Modules/Retentions) — única vía de retenciones para Compras
+    // desde PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E. Reutiliza IssueRetentionCommand/
+    // GetRetentionBySourceQuery/CancelRetentionCommand (transversales, ya generalizados en
+    // PURCHASES-RETENTIONS-BRIDGE-05B/PURCHASES-RETENTIONS-CANCEL-05D) — este controller no
+    // duplica ninguna lógica de emisión/elegibilidad/CxP, solo fija SourceDocumentType=
+    // PurchaseInvoice y SourceDocumentId=id desde la RUTA (nunca desde el body, mismo criterio de
+    // seguridad que el resto del ERP: el body es un hint de UX, nunca autoridad).
     //
     // Se decidió NO crear un endpoint transversal en RetentionsController (p. ej.
-    // "POST /api/v1/retentions/issue") en esta fase: el permiso requerido difiere por
-    // SourceDocumentType (PurchasePermissions.Update para Compras) y este ERP no tiene todavía un
-    // mecanismo de policy dinámica por contenido del body — [Authorize(Policy=...)] se resuelve
-    // antes del binding del command. Mantener el endpoint aquí, en PurchasesController, reutiliza
-    // exactamente la misma policy que ya protege IssueWithholding/CancelWithholding, sin inventar
-    // autorización nueva ni crear un controller propio de Retenciones para Compras (la lógica de
-    // negocio sigue siendo 100% transversal — ver IssueRetentionCommand/RetentionIssuer).
-    //
-    // PURCHASES-RETENTIONS-CANCEL-05D — RetentionCanceller ya generaliza la resolución de CxP por
-    // origen (ExpenseDocument/PurchaseInvoice, ver RetentionCanceller.cs) — se agrega el endpoint
-    // de cancelación de abajo, reutilizando CancelRetentionCommand (transversal) tal cual.
+    // "POST /api/v1/retentions/issue"): el permiso requerido difiere por SourceDocumentType
+    // (PurchasePermissions.Update para Compras) y este ERP no tiene todavía un mecanismo de policy
+    // dinámica por contenido del body — [Authorize(Policy=...)] se resuelve antes del binding del
+    // command. Mantener el endpoint aquí, en PurchasesController, reutiliza la misma policy sin
+    // crear un controller propio de Retenciones para Compras (la lógica de negocio sigue siendo
+    // 100% transversal — ver IssueRetentionCommand/RetentionIssuer).
 
     /// <summary>
     /// Retención transversal (<c>RetentionDocument</c>) activa sobre esta compra, si existe.
-    /// <c>Success(null)</c> es un estado normal (todavía no se emitió ninguna), nunca un error —
-    /// mismo criterio que <see cref="GetWithholdingByPurchase"/> para el flujo legacy.
+    /// <c>Success(null)</c> es un estado normal (todavía no se emitió ninguna), nunca un error.
     /// </summary>
     [HttpGet("{id:guid}/retention")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
@@ -295,11 +248,10 @@ public sealed class PurchasesController : ControllerBase
         );
 
     /// <summary>
-    /// Emite una retención transversal (<c>RetentionDocument</c>) sobre esta compra confirmada —
-    /// reemplaza <see cref="IssueWithholding"/> para nuevas emisiones. El número de retención NUNCA
-    /// viaja en el body (se genera server-side vía <c>DocumentSequence.CaptureNextAsync</c>, mismo
-    /// criterio que el resto del ERP) y <c>SourceDocumentId</c> siempre es <paramref name="id"/> de
-    /// la ruta, nunca un valor del body.
+    /// Emite una retención transversal (<c>RetentionDocument</c>) sobre esta compra confirmada. El
+    /// número de retención NUNCA viaja en el body (se genera server-side vía
+    /// <c>DocumentSequence.CaptureNextAsync</c>, mismo criterio que el resto del ERP) y
+    /// <c>SourceDocumentId</c> siempre es <paramref name="id"/> de la ruta, nunca un valor del body.
     /// </summary>
     [HttpPost("{id:guid}/retention")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
@@ -329,7 +281,7 @@ public sealed class PurchasesController : ControllerBase
     /// genérico, sin cambios). Reutiliza <see cref="CancelRetentionCommand"/> tal cual — este
     /// controller solo valida que <paramref name="retentionId"/> sea realmente la retención activa
     /// de <paramref name="purchaseId"/> (nunca confía en que el cliente no se equivocó de Id) antes
-    /// de delegar. No cancela ni conoce <c>IssuedWithholding</c> (flujo legacy, sin cambios).
+    /// de delegar.
     /// </summary>
     [HttpPost("{purchaseId:guid}/retention/{retentionId:guid}/cancel")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
@@ -386,8 +338,6 @@ public record ApplyDiscountRequest(decimal DiscountPct);
 
 public record DistributeCostRequest(string CostType, decimal Amount, List<Guid> IncludedLineIds);
 
-public record IssueWithholdingRequest(Guid EmissionPointId, DateOnly IssueDate);
-
 /// <summary>PURCHASES-RETENTIONS-UI-MIGRATION-05C — nunca incluye SourceDocumentType/SourceDocumentId (fijos por la ruta) ni un número de retención manual.</summary>
 public record IssuePurchaseRetentionRequest(
     Guid EmissionPointId,
@@ -397,8 +347,6 @@ public record IssuePurchaseRetentionRequest(
 
 /// <summary>PURCHASES-RETENTIONS-CANCEL-05D.</summary>
 public record CancelPurchaseRetentionRequest(string Reason);
-
-public record CancelWithholdingRequest(string Reason);
 
 public record CancelPurchaseRequest(string Reason);
 

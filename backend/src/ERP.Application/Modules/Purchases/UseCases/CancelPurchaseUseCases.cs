@@ -1,11 +1,14 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Retentions.Enums;
+using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -41,6 +44,8 @@ public sealed class CancelPurchaseHandler
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IStockRepository _stockRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly IRetentionDocumentRepository _retentionRepo;
+    private readonly IRetentionCanceller _retentionCanceller;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<CancelPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
@@ -53,6 +58,8 @@ public sealed class CancelPurchaseHandler
         IAccountsPayableRepository payableRepo,
         IStockRepository stockRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
+        IRetentionDocumentRepository retentionRepo,
+        IRetentionCanceller retentionCanceller,
         IUnitOfWork uow,
         ILogger<CancelPurchaseHandler> logger,
         ICurrentTenant t,
@@ -65,6 +72,8 @@ public sealed class CancelPurchaseHandler
         _payableRepo = payableRepo;
         _stockRepo = stockRepo;
         _purchaseReturnRepo = purchaseReturnRepo;
+        _retentionRepo = retentionRepo;
+        _retentionCanceller = retentionCanceller;
         _uow = uow;
         _logger = logger;
         _t = t;
@@ -86,7 +95,7 @@ public sealed class CancelPurchaseHandler
         // directamente qué Lock A adquirir: no se requiere ninguna carga de descubrimiento.
         // PurchaseInvoice se carga por primera vez YA BAJO el lock (recarga autoritativa real,
         // nunca la misma instancia servida por el identity map de EF Core) — mismo mecanismo que
-        // IssueWithholdingHandler.
+        // IssueRetentionHandler.
         await _uow.BeginTransactionAsync(ct);
         try
         {
@@ -159,16 +168,34 @@ public sealed class CancelPurchaseHandler
             }
 
             // ── 2. Anular retención (si existe) ───────────────────────────
-            var wh = await _repo.GetWithholdingByPurchaseIdAsync(tid, inv.Id, ct);
-            if (
-                wh is not null
-                && wh.Status == ERP.Domain.Modules.Purchases.Enums.WithholdingStatus.Issued
-            )
+            // Cascada automática al anular la compra origen, vía IRetentionCanceller (generalizado
+            // para PurchaseInvoice en PURCHASES-RETENTIONS-CANCEL-05D): resuelve la MISMA
+            // AccountsPayable ya cargada arriba (identity map de EF Core sobre este mismo
+            // DbContext) y le aplica ReverseRetention() antes de que payable.Cancel() se ejecute
+            // más abajo.
+            var retention = await _retentionRepo.GetBySourceAsync(
+                tid,
+                cid,
+                RetentionSourceDocumentType.PurchaseInvoice,
+                inv.Id,
+                ct
+            );
+            if (retention is not null && retention.Status == RetentionStatus.Issued)
             {
-                wh.Cancel("Anulación automática por anulación de compra.", uid);
-
-                if (payable is not null)
-                    payable.ReverseRetention(uid);
+                var cancelRetentionResult = await _retentionCanceller.CancelAsync(
+                    retention,
+                    "Anulación automática por anulación de compra.",
+                    uid,
+                    ct
+                );
+                if (!cancelRetentionResult.IsSuccess)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<PurchaseInvoiceDto>.ValidationFailure(
+                        cancelRetentionResult.Error!,
+                        cancelRetentionResult.Code
+                    );
+                }
             }
             if (payable is not null)
             {
@@ -232,9 +259,10 @@ public sealed class CancelPurchaseHandler
             }
 
             // ── 6. Persistir (misma transacción explícita abierta arriba) ──
-            // La auditoría de "purchase.cancelled" (y la de la retención anulada en cascada,
-            // si existía) se registra automáticamente vía *AuditHandler, disparada por los
-            // domain events levantados en inv.Cancel() / wh.Cancel() dentro de este SaveChangesAsync.
+            // La auditoría de "purchase.cancelled" se registra vía el domain event de inv.Cancel().
+            // La retención (si existía) ya quedó anulada en memoria arriba, junto con la reversa de
+            // asiento contable (RetentionDocumentCancelledPostingTranslator, disparado por
+            // RetentionDocumentCancelledEvent) — todo dentro de este mismo SaveChangesAsync.
             await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
             await _uow.CommitAsync(ct);
 

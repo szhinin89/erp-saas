@@ -641,7 +641,7 @@ public sealed class PurchaseReturnDraftUseCasesTests
             new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot> { [line.Id] = originalLine },
             balanceDueBeforeApplication: 1000m,
             currencyCode: "USD",
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
             "hash-authorize"

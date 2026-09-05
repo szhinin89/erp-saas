@@ -278,7 +278,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     /// agregado distinto (§6, §11.2).
     /// </param>
     /// <param name="currencyCode">Snapshot de <c>PurchaseInvoice.CurrencyCode</c> — solo se usa para fijar <c>SupplierCredit.CurrencyCode</c> si se crea crédito.</param>
-    /// <param name="hasIssuedWithholding">Resuelto por Application desde <c>IssuedWithholding.Status</c> bajo lock — si es <c>true</c>, rechaza (§17, §21 <c>PR-006</c>).</param>
+    /// <param name="hasIssuedRetention">Resuelto por Application desde <c>RetentionDocument.Status</c> (origen <c>PurchaseInvoice</c>) bajo lock — si es <c>true</c>, rechaza (§17, §21 <c>PR-006</c>).</param>
     /// <param name="updatedBy">Actor que ejecuta la autorización.</param>
     /// <param name="authorizeClientRequestId">Idempotencia obligatoria de autorización (§16.2).</param>
     /// <param name="authorizeRequestPayloadHash">Huella determinista del payload de autorización (§16.2).</param>
@@ -287,7 +287,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
         IReadOnlyDictionary<Guid, OriginalLineSnapshot> originalLinesByDetailId,
         decimal balanceDueBeforeApplication,
         string currencyCode,
-        bool hasIssuedWithholding,
+        bool hasIssuedRetention,
         Guid updatedBy,
         Guid authorizeClientRequestId,
         string authorizeRequestPayloadHash
@@ -303,7 +303,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
             throw new InvalidOperationException(
                 "No puedes autorizar esta devolución porque no tiene líneas agregadas."
             );
-        if (hasIssuedWithholding)
+        if (hasIssuedRetention)
             throw new InvalidOperationException(
                 "No puedes autorizar esta devolución porque la factura de compra tiene una retención emitida."
             );

@@ -2,23 +2,30 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Application.Modules.Retentions.DTOs;
+using ERP.Application.Modules.Retentions.Services;
+using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
+using ERP.Infrastructure.Persistence.Repositories.Expenses;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Persistence.Repositories.Retentions;
 using ERP.Infrastructure.Persistence.Services;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -389,6 +396,7 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             returnRepo,
             invoiceRepo,
             new AccountsPayableRepository(db),
+            new RetentionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
             sequenceRepo,
             stockRepo,
             creditRepo,
@@ -418,47 +426,71 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
 
     private async Task<(
         bool Success,
-        IssuedWithholdingDto? Value,
+        RetentionDocumentDto? Value,
         string? Error
-    )> ExecuteIssueWithholdingAsync(Guid invoiceId)
+    )> ExecuteIssueRetentionAsync(Guid invoiceId)
     {
         await using var db = CreateContext();
         var purchaseRepo = new PurchaseInvoiceRepository(
             db,
             new FixedCurrentCompany(() => _companyId)
         );
-        var roleRepo = new BusinessPartnerRoleRepository(db);
-        var retResolver = new RetentionCodeResolver(db);
-        var epRepo = new EmissionPointRepository(db);
-        var estRepo = new EstablishmentRepository(db);
-        var seqRepo = new DocumentSequenceRepository(db);
+        var expenseRepo = new ExpenseDocumentRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var purchaseReturnRepo = new PurchaseReturnRepository(
             db,
             new FixedCurrentCompany(() => _companyId)
         );
+        var payableRepo = new AccountsPayableRepository(db);
+        var retentionRepo = new RetentionDocumentRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var eligibilityService = new RetentionEligibilityService(
+            new CompanyRepository(db),
+            new BusinessPartnerRoleRepository(db),
+            new RetentionCodeResolver(db)
+        );
+        var issuer = new RetentionIssuer(
+            retentionRepo,
+            eligibilityService,
+            new EmissionPointRepository(db),
+            new EstablishmentRepository(db),
+            new DocumentSequenceRepository(db)
+        );
         var uow = new UnitOfWork(db);
 
-        var handler = new IssueWithholdingHandler(
+        var handler = new IssueRetentionHandler(
+            expenseRepo,
             purchaseRepo,
-            new AccountsPayableRepository(db),
-            roleRepo,
-            retResolver,
-            epRepo,
-            estRepo,
-            seqRepo,
             purchaseReturnRepo,
+            payableRepo,
+            issuer,
             uow,
-            new FixedCompanyClock(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentCompany(() => _companyId),
+            new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId)
         );
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(
+            new IssueRetentionCommand(
+                RetentionSourceDocumentType.PurchaseInvoice,
                 invoiceId,
                 _emissionPointId,
-                DateOnly.FromDateTime(DateTime.UtcNow)
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                new[]
+                {
+                    new IssueRetentionLineInput(
+                        ERP.Domain.Modules.Retentions.Enums.RetentionTaxType.Vat,
+                        "725",
+                        100m,
+                        30m,
+                        30m
+                    ),
+                }
             ),
             CancellationToken.None
         );
@@ -526,20 +558,23 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         var returnId = await CreateDraftReturnAsync(invoiceId, lineId, quantity: 2);
 
         var tReturn = ExecuteAuthorizeAsync(returnId, Guid.NewGuid());
-        var tWithholding = ExecuteIssueWithholdingAsync(invoiceId);
-        await Task.WhenAll(tReturn, tWithholding);
+        var tRetention = ExecuteIssueRetentionAsync(invoiceId);
+        await Task.WhenAll(tReturn, tRetention);
 
         var returnResult = await tReturn;
-        var withholdingResult = await tWithholding;
+        var retentionResult = await tRetention;
 
         await using var verify = CreateContext();
         var persistedReturn = await verify
             .PurchaseReturns.AsNoTracking()
             .FirstAsync(r => r.Id == returnId);
-        var persistedWithholding = await verify
-            .Set<Domain.Modules.Purchases.Entities.IssuedWithholding>()
+        var persistedRetention = await verify
+            .Set<Domain.Modules.Retentions.Entities.RetentionDocument>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.PurchaseInvoiceId == invoiceId);
+            .FirstOrDefaultAsync(r =>
+                r.SourceDocumentType == RetentionSourceDocumentType.PurchaseInvoice
+                && r.SourceDocumentId == invoiceId
+            );
 
         // Lock A serializa ambas operaciones sobre la MISMA PurchaseInvoiceId — nunca corren de
         // verdad en paralelo, una completa (commit) antes de que la otra adquiera el lock. Dos
@@ -554,11 +589,11 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             persistedReturn
                 .Status.Should()
                 .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Draft);
-            withholdingResult.Success.Should().BeTrue(withholdingResult.Error);
-            persistedWithholding.Should().NotBeNull();
-            persistedWithholding!
+            retentionResult.Success.Should().BeTrue(retentionResult.Error);
+            persistedRetention.Should().NotBeNull();
+            persistedRetention!
                 .Status.Should()
-                .Be(Domain.Modules.Purchases.Enums.WithholdingStatus.Issued);
+                .Be(Domain.Modules.Retentions.Enums.RetentionStatus.Issued);
         }
         else
         {
@@ -569,11 +604,11 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             persistedReturn
                 .Status.Should()
                 .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized);
-            withholdingResult.Success.Should().BeTrue(withholdingResult.Error);
+            retentionResult.Success.Should().BeTrue(retentionResult.Error);
         }
 
         // Sin lost update: ambas mutaciones culminan siempre (Lock A serializa, no descarta).
-        withholdingResult.Success.Should().BeTrue();
+        retentionResult.Success.Should().BeTrue();
     }
 
     // ── Test doubles mínimos ─────────────────────────────────────────────

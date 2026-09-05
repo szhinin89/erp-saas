@@ -493,7 +493,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             originalLinesByDetailId,
             payable.OutstandingAmount,
             inv.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             _createdBy,
             Guid.NewGuid(),
             "hash-authorize"

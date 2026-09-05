@@ -42,7 +42,7 @@ public sealed class ConfigureDocumentSequenceCommandHandler
 
         // Carga con query filters globales activos (tenant + empresa ambiente) — un punto de
         // emisión de otra empresa/tenant nunca es visible aquí, sin necesidad de comparar
-        // manualmente CompanyId (mismo criterio que AuthorizeSalesUseCases/IssueWithholdingUseCases).
+        // manualmente CompanyId (mismo criterio que AuthorizeSalesUseCases/IssueRetentionUseCases).
         var emissionPoint = await _emissionPointRepo.GetByIdAsync(
             command.EmissionPointId,
             tenantId,

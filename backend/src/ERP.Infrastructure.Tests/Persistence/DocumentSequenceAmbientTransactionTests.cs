@@ -26,7 +26,7 @@ namespace ERP.Infrastructure.Tests.Persistence;
 /// igual que ya hacían <c>JournalEntrySequenceRepository.ReserveNextNumberAsync</c> y
 /// <c>SalesReturnRepository.AcquireReturnLockAsync</c> — sin abrir/comitear nada por su cuenta en
 /// ese caso. Cuando no hay transacción ambiente (todos los callers previos a este fix:
-/// <c>AuthorizeSalesInvoiceHandler</c>, <c>IssueWithholdingUseCases</c>), el comportamiento es
+/// <c>AuthorizeSalesInvoiceHandler</c>, <c>IssueRetentionUseCases</c>), el comportamiento es
 /// exactamente el de antes.
 ///
 /// Esta suite prueba el contrato del repositorio de forma aislada (sin pasar por Sales/API) para

@@ -176,9 +176,13 @@ public sealed class PurchasesControllerCancelRetentionTests
     }
 
     [Fact]
-    public void Endpoint_legacy_CancelWithholding_sigue_registrado_sin_cambios()
+    public void Endpoint_legacy_CancelWithholding_fue_retirado()
     {
-        typeof(PurchasesController).GetMethod(nameof(PurchasesController.CancelWithholding))
-            .Should().NotBeNull();
+        // PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E
+        typeof(PurchasesController)
+            .GetMethods()
+            .Select(m => m.Name)
+            .Should()
+            .NotContain("CancelWithholding");
     }
 }

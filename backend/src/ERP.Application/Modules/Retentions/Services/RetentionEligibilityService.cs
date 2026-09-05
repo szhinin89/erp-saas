@@ -11,7 +11,7 @@ namespace ERP.Application.Modules.Retentions.Services;
 /// repositorios/servicios ya definidos en <c>Domain</c>/<c>Application</c>
 /// (<see cref="ICompanyRepository"/>, <see cref="IBusinessPartnerRoleRepository"/>,
 /// <see cref="IRetentionCodeResolver"/>), el mismo criterio que ya usa
-/// <c>CalculateRetentionHandler</c>/<c>IssueWithholdingHandler</c> de Purchases para resolver
+/// <c>CalculateRetentionHandler</c>/<c>IssueRetentionHandler</c> de Purchases para resolver
 /// config de proveedor + código de retención — no se inventa un patrón nuevo.
 ///
 /// No modifica <see cref="IRetentionCodeResolver"/> (se inyecta y reutiliza tal cual, sin mover su
@@ -128,7 +128,7 @@ public sealed class RetentionEligibilityService : IRetentionEligibilityService
     /// puede/debe retener ese impuesto, (2) el proveedor no está exento, (3) el documento tiene
     /// base retenible para ese impuesto, (4) existe código de retención activo en catálogo/SSOT.
     /// Nunca lanza excepción por regla de negocio no cumplida — siempre devuelve un resultado
-    /// controlado, igual que <c>IssueWithholdingHandler</c>/<c>RetentionCalculator</c> ya hacen
+    /// controlado, igual que <c>IssueRetentionHandler</c>/<c>RetentionCalculator</c> ya hacen
     /// hoy (código ausente ⇒ línea omitida, no excepción).
     /// </summary>
     private async Task<(bool CanRetain, bool MissingCode, string? SuggestedCode)> EvaluateTaxAsync(

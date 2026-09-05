@@ -109,7 +109,7 @@ public sealed class ApplySupplierCreditHandler
         // §15.4: Lock A (del PurchasePayable destino) siempre antes de Lock B (del
         // SupplierCredit). Descubrimiento sin tracking del PurchaseInvoiceId dueño del destino
         // (mismo patrón GetPurchaseInvoiceIdAsync ya usado por RegisterPaymentCommandHandler/
-        // IssueWithholdingUseCases/AuthorizePurchaseReturnUseCases) — garantiza que la recarga
+        // IssueRetentionUseCases/AuthorizePurchaseReturnUseCases) — garantiza que la recarga
         // posterior (después del lock) sea la primera lectura tracking, genuinamente fresca.
         await _uow.BeginTransactionAsync(ct);
         try

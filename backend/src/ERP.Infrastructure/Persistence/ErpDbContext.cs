@@ -323,10 +323,6 @@ public class ErpDbContext : DbContext
     public DbSet<PurchaseCommunication> PurchaseCommunications => Set<PurchaseCommunication>();
     public DbSet<PurchaseInvoiceAudit> PurchaseInvoiceAudits => Set<PurchaseInvoiceAudit>();
     public DbSet<PurchaseLinePvpAudit> PurchaseLinePvpAudits => Set<PurchaseLinePvpAudit>();
-    public DbSet<IssuedWithholdingAudit> IssuedWithholdingAudits => Set<IssuedWithholdingAudit>();
-    public DbSet<IssuedWithholding> IssuedWithholdings => Set<IssuedWithholding>();
-    public DbSet<IssuedWithholdingDetail> IssuedWithholdingDetails =>
-        Set<IssuedWithholdingDetail>();
     public DbSet<PurchaseReceptionDocument> PurchaseReceptionDocuments =>
         Set<PurchaseReceptionDocument>();
     public DbSet<PurchaseReceptionLine> PurchaseReceptionLines => Set<PurchaseReceptionLine>();

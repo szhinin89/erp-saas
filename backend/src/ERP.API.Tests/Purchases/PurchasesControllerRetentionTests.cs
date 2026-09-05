@@ -157,17 +157,14 @@ public sealed class PurchasesControllerRetentionTests
     }
 
     [Fact]
-    public void Endpoints_legacy_de_withholding_siguen_registrados_sin_cambios()
+    public void Endpoints_legacy_de_withholding_fueron_retirados()
     {
-        // No rompe endpoints legacy (regla explícita de esta fase) — siguen existiendo con la
-        // misma firma/policy que antes.
-        typeof(PurchasesController).GetMethod(nameof(PurchasesController.GetWithholdingByPurchase))
-            .Should().NotBeNull();
-        typeof(PurchasesController).GetMethod(nameof(PurchasesController.IssueWithholding))
-            .Should().NotBeNull();
-        typeof(PurchasesController).GetMethod(nameof(PurchasesController.GetWithholdingById))
-            .Should().NotBeNull();
-        typeof(PurchasesController).GetMethod(nameof(PurchasesController.CancelWithholding))
-            .Should().NotBeNull();
+        // PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — el flujo legacy IssuedWithholding fue
+        // eliminado por completo: no debe quedar ningún endpoint /withholding en el controller.
+        var methodNames = typeof(PurchasesController).GetMethods().Select(m => m.Name).ToArray();
+        methodNames.Should().NotContain("GetWithholdingByPurchase");
+        methodNames.Should().NotContain("IssueWithholding");
+        methodNames.Should().NotContain("GetWithholdingById");
+        methodNames.Should().NotContain("CancelWithholding");
     }
 }

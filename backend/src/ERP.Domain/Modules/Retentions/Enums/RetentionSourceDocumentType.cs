@@ -14,9 +14,11 @@ public enum RetentionSourceDocumentType
     ExpenseDocument = 0,
 
     /// <summary>
-    /// Factura de compra. En E1, Compras sigue usando <c>IssuedWithholding</c> sin cambios — este
-    /// valor existe en el vocabulario del enum pero <c>RETENTIONS-ELIGIBILITY-01</c> no implementa
-    /// su resolución todavía (ver <c>RetentionEligibilityStatus.NotSupportedInThisPhase</c>).
+    /// Factura de compra — emite/cancela vía <c>IssueRetentionHandler</c>/<c>CancelRetentionHandler</c>
+    /// (PURCHASES-RETENTIONS-BRIDGE-05B, PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E), única vía de
+    /// retenciones para Compras. El preview de elegibilidad de <c>RETENTIONS-ELIGIBILITY-01</c>
+    /// sigue sin implementar este origen (ver <c>RetentionEligibilityStatus.NotSupportedInThisPhase</c>);
+    /// Compras arma sus líneas vía <c>retention-preview</c>/<c>CalculateRetentionQuery</c>.
     /// </summary>
     PurchaseInvoice = 1,
 

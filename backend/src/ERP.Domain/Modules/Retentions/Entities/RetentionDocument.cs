@@ -9,7 +9,7 @@ namespace ERP.Domain.Modules.Retentions.Entities;
 /// <c>docs/decisions/RETENTIONS-MODULE-DESIGN-01.md</c>). Se relaciona con su documento origen de
 /// forma genérica (<see cref="SourceDocumentType"/> + <see cref="SourceDocumentId"/>), replicando
 /// el patrón ya probado de <c>AccountsPayable.OriginType</c>/<c>OriginId</c> — nunca una FK fuerte
-/// por tipo de documento como hace <c>IssuedWithholding.PurchaseInvoiceId</c>.
+/// por tipo de documento.
 ///
 /// Fase <c>RETENTIONS-FOUNDATION-01A</c>: solo Domain puro. Sin persistencia EF, sin integración
 /// con Expenses Confirm, sin API/UI. La guarda de elegibilidad (<c>RETENTIONS-ELIGIBILITY-01</c>)
@@ -195,7 +195,7 @@ public sealed class RetentionDocument : AuditableEntity, ITenantScopedEntity, IC
     /// <summary>
     /// EMITE la retención: asigna número, congela fecha de emisión y pasa a
     /// <see cref="RetentionStatus.Issued"/>. Requiere al menos una línea y un total retenido mayor
-    /// a cero — igual que <c>IssuedWithholding.Issue()</c>, nunca se emite un documento vacío.
+    /// a cero — nunca se emite un documento vacío.
     /// </summary>
     public void Issue(string retentionNumber, DateOnly issueDate, Guid issuedBy)
     {

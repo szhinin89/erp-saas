@@ -353,19 +353,6 @@ export const purchaseService = {
 
   retentionPreview: (id: string) =>
     apiGet<RetentionPreviewDto>(`${BASE}/${id}/retention-preview`),
-  getWithholding: (id: string) =>
-    apiGet<IssuedWithholdingDto | null>(`${BASE}/${id}/withholding`),
-  issueWithholding: (id: string, emissionPointId: string, issueDate: string) =>
-    apiPost<IssuedWithholdingDto>(`${BASE}/${id}/withholding`, {
-      emissionPointId,
-      issueDate,
-    }),
-  getWithholdingById: (whId: string) =>
-    apiGet<IssuedWithholdingDto>(`${BASE}/withholdings/${whId}`),
-  cancelWithholding: (whId: string, reason: string) =>
-    apiPost<IssuedWithholdingDto>(`${BASE}/withholdings/${whId}/cancel`, {
-      reason,
-    }),
 
   // supplierId opcional: si se indica, el backend resuelve el código de proveedor
   // específico (ItemSupplierCode), única fuente de códigos de compra.
@@ -390,8 +377,6 @@ export const purchaseService = {
     apiGet<PurchaseInvoiceTaxSummaryDto[]>(`${BASE}/invoices/${invoiceId}/tax-summaries`),
 };
 
-// ── Withholding DTOs ─────────────────────────────────────────────────────
-
 export interface RetentionLinePreviewDto {
   taxType: string;
   retentionCode: string;
@@ -408,32 +393,4 @@ export interface RetentionPreviewDto {
   totalRetainedIsd: number;
   totalRetained: number;
   skipReason: string | null;
-}
-
-export interface IssuedWithholdingDetailDto {
-  id: string;
-  taxType: string;
-  retentionCode: string;
-  retentionCodeDescription: string;
-  taxableBase: number;
-  retentionPct: number;
-  amountRetained: number;
-}
-
-export interface IssuedWithholdingDto {
-  id: string;
-  purchaseInvoiceId: string;
-  supplierId: string;
-  emissionPointId: string;
-  withholdingNumber: string;
-  issueDate: string;
-  accessKey: string | null;
-  totalRetainedVat: number;
-  totalRetainedIncome: number;
-  totalRetainedIsd: number;
-  totalRetained: number;
-  status: string;
-  details: IssuedWithholdingDetailDto[];
-  createdAt: string;
-  updatedAt: string | null;
 }

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-03T18:23:57.866Z",
+  "generatedAt": "2026-09-05T04:12:43.850Z",
   "summary": {
-    "total": 119,
-    "allowed": 119,
+    "total": 129,
+    "allowed": 129,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -35,6 +35,7 @@
     "/api/org-config",
     "/api/payables",
     "/api/payment-methods",
+    "/api/retentions",
     "/api/ride",
     "/api/saas",
     "/api/security",
@@ -579,7 +580,32 @@
     {
       "endpoint": "/api/v1/expenses/documents",
       "files": [
+        "frontend/src/modules/expenses/api/expenseDocumentService.retention.test.ts",
         "frontend/src/modules/expenses/api/expenseDocumentService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/expenses/documents/confirmed",
+      "files": [
+        "frontend/src/modules/expenses/api/expenseDocumentService.retention.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/expenses/documents/exp-1",
+      "files": [
+        "frontend/src/modules/expenses/api/expenseDocumentService.retention.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/expenses/documents/exp-1/confirm",
+      "files": [
+        "frontend/src/modules/expenses/api/expenseDocumentService.retention.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -761,7 +787,8 @@
     {
       "endpoint": "/api/v1/purchases",
       "files": [
-        "frontend/src/modules/purchases/api/purchaseService.ts"
+        "frontend/src/modules/purchases/api/purchaseService.ts",
+        "frontend/src/modules/retentions/api/retentionsService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -770,6 +797,22 @@
       "endpoint": "/api/v1/purchases/credit-notes",
       "files": [
         "frontend/src/modules/purchases/api/purchaseCreditNoteService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/purchases/purchase-1/retention",
+      "files": [
+        "frontend/src/modules/retentions/api/retentionsService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/purchases/purchase-1/retention/ret-1/cancel",
+      "files": [
+        "frontend/src/modules/retentions/api/retentionsService.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -786,6 +829,38 @@
       "endpoint": "/api/v1/purchases/returns",
       "files": [
         "frontend/src/modules/purchases/api/purchaseReturnService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/retentions",
+      "files": [
+        "frontend/src/modules/retentions/api/retentionsService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/retentions/ret-1/electronic/register",
+      "files": [
+        "frontend/src/modules/retentions/api/retentionsService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/retentions/ret-1/electronic/xml",
+      "files": [
+        "frontend/src/modules/retentions/api/retentionsService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/retentions/ret-1/ride/pdf",
+      "files": [
+        "frontend/src/modules/retentions/api/retentionsService.test.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -936,6 +1011,14 @@
       "endpoint": "/api/v1/settings/document-flows",
       "files": [
         "frontend/src/modules/configuracion/documentFlows/api/documentFlowPolicyService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/document-sequences",
+      "files": [
+        "frontend/src/modules/documentSequences/api/documentSequencesService.ts"
       ],
       "legacy": false,
       "allowed": true

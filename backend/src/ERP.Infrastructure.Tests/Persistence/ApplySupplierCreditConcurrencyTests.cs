@@ -310,7 +310,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             originalLinesByDetailId,
             balanceDueBeforeApplication: 0m,
             sourceInv.CurrencyCode,
-            hasIssuedWithholding: false,
+            hasIssuedRetention: false,
             _userId,
             Guid.NewGuid(),
             "hash-authorize"

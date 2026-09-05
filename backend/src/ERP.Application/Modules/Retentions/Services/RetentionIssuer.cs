@@ -91,9 +91,8 @@ public sealed record RetentionIssueRequest(
 
 public sealed class RetentionIssuer : IRetentionIssuer
 {
-    /// <summary>Código SRI "07" = Comprobante de Retención — misma identidad fija que
-    /// <c>IssueWithholdingHandler.WithholdingDocTypeCode</c>, la retención de Compras ya emitida
-    /// hoy vía la misma infraestructura central de secuencias.</summary>
+    /// <summary>Código SRI "07" = Comprobante de Retención — misma identidad fija usada para
+    /// Gastos y Compras vía la misma infraestructura central de secuencias.</summary>
     private const string RetentionDocTypeCode = SriDocumentTypeCodes.Withholding;
 
     private readonly IRetentionDocumentRepository _retentionRepo;
@@ -200,7 +199,7 @@ public sealed class RetentionIssuer : IRetentionIssuer
             return Result<RetentionDocument>.ValidationFailure(string.Join(" ", eligibility.Reasons));
 
         // RETENTIONS-DOCUMENT-SEQUENCE-02E — resolver el punto de emisión y su establecimiento
-        // ANTES de construir el agregado (mismo orden que IssueWithholdingHandler): valida que
+        // ANTES de construir el agregado (mismo orden que IssueRetentionHandler): valida que
         // exista y pertenezca a la empresa/tenant activos (GetByIdAsync ya filtra por tenant +
         // query filter global de empresa — un punto de emisión de otro tenant/empresa nunca es
         // visible aquí) antes de gastar ningún recurso construyendo líneas.
@@ -261,7 +260,7 @@ public sealed class RetentionIssuer : IRetentionIssuer
             }
 
             // CaptureNextAsync: atómico (advisory lock + transacción propia) — mismo punto de
-            // entrada FROZEN (ADR-019) que ya usa IssueWithholdingHandler para el mismo doc type
+            // entrada FROZEN (ADR-019) que ya usa IssueRetentionHandler para el mismo doc type
             // "07". Se llama aquí, lo más tarde posible (líneas ya construidas, justo antes de
             // Issue()), para minimizar la ventana de un hueco si algo falla después. El número
             // nunca llega desde el cliente — RetentionIssueRequest ya no tiene ese campo.

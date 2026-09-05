@@ -49,23 +49,20 @@ public sealed record IssueRetentionLineInput(
 ///
 /// PURCHASES-RETENTIONS-BRIDGE-05B — <see cref="RetentionSourceDocumentType.PurchaseInvoice"/> SÍ
 /// queda soportado aquí (a diferencia de Gastos, Compras nunca integra la emisión dentro de
-/// confirmar la compra — el legacy <c>IssueWithholdingHandler</c> ya emite siempre post-
-/// confirmación, mismo momento de negocio que se replica aquí): resuelve la <c>AccountsPayable</c>
-/// ya existente del origen y le aplica <c>ApplyRetention</c> en esta misma operación, igual que
-/// <c>IssueWithholdingHandler</c> ya hace hoy para el flujo legacy — el asiento contable
-/// (<c>Retentions/DocumentIssued</c>) se dispara solo, vía el mismo <c>RetentionDocumentIssuedEvent</c>
-/// que ya escucha <c>RetentionDocumentIssuedPostingTranslator</c> (genérico, no distingue origen).
+/// confirmar la compra: siempre es post-confirmación): resuelve la <c>AccountsPayable</c> ya
+/// existente del origen y le aplica <c>ApplyRetention</c> en esta misma operación — el asiento
+/// contable (<c>Retentions/DocumentIssued</c>) se dispara solo, vía el mismo
+/// <c>RetentionDocumentIssuedEvent</c> que ya escucha <c>RetentionDocumentIssuedPostingTranslator</c>
+/// (genérico, no distingue origen).
 ///
 /// <see cref="RetentionNumber"/>: RETENTIONS-DOCUMENT-SEQUENCE-02E — ya no viaja en este command.
 /// <see cref="RetentionIssuer"/> lo genera internamente vía
 /// <see cref="ERP.Domain.Modules.Company.Interfaces.IDocumentSequenceRepository.CaptureNextAsync"/>
-/// a partir de <see cref="EmissionPointId"/> (mismo patrón ya probado por
-/// <c>IssueWithholdingHandler</c> para el mismo doc type SRI "07") — nunca un valor enviado por el
-/// cliente.
+/// a partir de <see cref="EmissionPointId"/> — nunca un valor enviado por el cliente.
 ///
 /// <c>TenantId</c>/<c>CompanyId</c>/<c>BranchId</c> NUNCA viajan en este command — salen siempre
 /// de <see cref="ICurrentTenant"/>/<see cref="ICurrentCompany"/>/<see cref="ICurrentBranch"/> en el
-/// handler, mismo patrón que <c>ExpenseDocumentConfirmUseCases.cs</c>/<c>IssueWithholdingUseCases.cs</c>.
+/// handler, mismo patrón que <c>ExpenseDocumentConfirmUseCases.cs</c>.
 /// </summary>
 public sealed record IssueRetentionCommand(
     RetentionSourceDocumentType SourceDocumentType,
@@ -109,6 +106,7 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
 {
     private readonly IExpenseDocumentRepository _expenseRepo;
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IRetentionIssuer _issuer;
     private readonly IUnitOfWork _uow;
@@ -120,6 +118,7 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
     public IssueRetentionHandler(
         IExpenseDocumentRepository expenseRepo,
         IPurchaseInvoiceRepository purchaseRepo,
+        IPurchaseReturnRepository purchaseReturnRepo,
         IAccountsPayableRepository payableRepo,
         IRetentionIssuer issuer,
         IUnitOfWork uow,
@@ -131,6 +130,7 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
     {
         _expenseRepo = expenseRepo;
         _purchaseRepo = purchaseRepo;
+        _purchaseReturnRepo = purchaseReturnRepo;
         _payableRepo = payableRepo;
         _issuer = issuer;
         _uow = uow;
@@ -205,13 +205,12 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
     }
 
     /// <summary>
-    /// PURCHASES-RETENTIONS-BRIDGE-05B — emite un <see cref="RetentionDocument"/> con
-    /// <see cref="RetentionSourceDocumentType.PurchaseInvoice"/>, dejando de depender
-    /// funcionalmente del legacy <c>IssuedWithholding</c> para nuevas emisiones (sin tocarlo ni
-    /// borrarlo — ver <c>PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05D</c>). Replica el mismo momento de
-    /// negocio y el mismo orden de validaciones que <c>IssueWithholdingHandler</c> (compra
-    /// confirmada → sin duplicado → elegibilidad/emisión vía <see cref="IRetentionIssuer"/> →
-    /// aplicar la retención a la <c>AccountsPayable</c> ya existente).
+    /// PURCHASES-RETENTIONS-BRIDGE-05B / PURCHASES-WITHHOLDING-LEGACY-REMOVAL-05E — emite un
+    /// <see cref="RetentionDocument"/> con <see cref="RetentionSourceDocumentType.PurchaseInvoice"/>,
+    /// única vía de emisión para Compras tras retirar el legacy <c>IssuedWithholding</c>. Adquiere el
+    /// mismo Lock A (<c>"PurchaseInvoice.FinancialLock"</c>) que <c>CancelPurchaseHandler</c> y que
+    /// adquiría el legacy <c>IssueWithholdingHandler</c>, serializando esta emisión contra cualquier
+    /// otra mutación financiera concurrente sobre la misma factura (pago, devolución, anulación).
     /// </summary>
     private async Task<Result<RetentionDocumentDto>> HandlePurchaseAsync(
         IssueRetentionCommand cmd,
@@ -223,83 +222,99 @@ public sealed class IssueRetentionHandler : IRequestHandler<IssueRetentionComman
         var bid = _branch.BranchId;
         var uid = _user.UserId;
 
-        // Cargar y validar la PurchaseInvoice origen, fail-closed tenant/company/branch — mismo
-        // criterio exacto que el bloque de ExpenseDocument (GetByIdAsync ya filtra tenant+company,
-        // branch se valida explícitamente porque el repositorio no lo filtra).
-        var invoice = await _purchaseRepo.GetByIdAsync(tid, cmd.SourceDocumentId, ct);
-        if (invoice is null || invoice.BranchId != bid)
-            return Result<RetentionDocumentDto>.NotFound("Compra no encontrada.");
+        await _uow.BeginTransactionAsync(ct);
+        try
+        {
+            await _purchaseReturnRepo.AcquireFinancialLockAsync(tid, cmd.SourceDocumentId, ct);
 
-        if (invoice.Status != PurchaseStatus.Confirmed)
-            return Result<RetentionDocumentDto>.ValidationFailure(
-                "Solo se puede emitir una retención sobre una compra confirmada."
+            // Cargar y validar la PurchaseInvoice origen (recarga autoritativa bajo lock),
+            // fail-closed tenant/company/branch — mismo criterio exacto que el bloque de
+            // ExpenseDocument (GetByIdAsync ya filtra tenant+company, branch se valida
+            // explícitamente porque el repositorio no lo filtra).
+            var invoice = await _purchaseRepo.GetByIdAsync(tid, cmd.SourceDocumentId, ct);
+            if (invoice is null || invoice.BranchId != bid)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<RetentionDocumentDto>.NotFound("Compra no encontrada.");
+            }
+
+            if (invoice.Status != PurchaseStatus.Confirmed)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<RetentionDocumentDto>.ValidationFailure(
+                    "Solo se puede emitir una retención sobre una compra confirmada."
+                );
+            }
+
+            // Núcleo de emisión genérico (unicidad por RetentionDocument.ExistsActiveBySourceAsync
+            // ya la aplica IRetentionIssuer.IssueAsync, sin duplicar el chequeo aquí).
+            var issued = await _issuer.IssueAsync(
+                new RetentionSourceDocumentData(
+                    RetentionSourceDocumentType.PurchaseInvoice,
+                    invoice.Id,
+                    invoice.SupplierId,
+                    invoice.TotalVat,
+                    invoice.Lines.Sum(l => l.TaxableBase),
+                    new RetentionDocument.SourceDocumentSnapshot(
+                        invoice.DocTypeCode,
+                        invoice.InvoiceNumber,
+                        invoice.IssueDate,
+                        invoice.AuthorizationNumber,
+                        invoice.TaxSupportCode,
+                        invoice.Subtotal,
+                        invoice.GrandTotal
+                    )
+                ),
+                new RetentionIssueRequest(tid, cid, bid, uid, cmd.EmissionPointId, cmd.IssueDate, cmd.Lines),
+                ct
             );
+            if (!issued.IsSuccess)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<RetentionDocumentDto>.Failure(issued.Error!, issued.Code);
+            }
 
-        // Regla 4 — bloquear si ya existe una IssuedWithholding (legacy) activa para esta compra:
-        // evita que el nuevo camino y el legacy emitan dos retenciones distintas sobre el mismo
-        // origen mientras ambos coexisten (ver PURCHASES-WITHHOLDING-RETENTIONS-AUDIT-05A § riesgos).
-        var legacyWithholding = await _purchaseRepo.GetWithholdingByPurchaseIdAsync(tid, invoice.Id, ct);
-        if (legacyWithholding is not null && legacyWithholding.Status != WithholdingStatus.Cancelled)
-            return Result<RetentionDocumentDto>.Conflict(
-                "Esta compra ya tiene una retención emitida por el flujo anterior (IssuedWithholding). "
-                    + "No se puede emitir una segunda retención por el nuevo flujo."
-            );
-
-        // Núcleo de emisión genérico (regla 5 — unicidad por RetentionDocument.ExistsActiveBySourceAsync
-        // ya la aplica IRetentionIssuer.IssueAsync, sin duplicar el chequeo aquí).
-        var issued = await _issuer.IssueAsync(
-            new RetentionSourceDocumentData(
-                RetentionSourceDocumentType.PurchaseInvoice,
+            // Aplicar la retención a la CxP ya existente de la compra. A diferencia de Gastos (que
+            // crea/stagea su CxP en la misma transacción de confirmación), Compras siempre tiene ya
+            // una AccountsPayable confirmada de antes — si no existe, es un estado de datos
+            // inconsistente y se rechaza en vez de emitir una retención sin efecto financiero real.
+            var payable = await _payableRepo.GetByOriginAsync(
+                tid,
+                cid,
+                AccountsPayableOriginType.PurchaseInvoice,
                 invoice.Id,
-                invoice.SupplierId,
-                invoice.TotalVat,
-                invoice.Lines.Sum(l => l.TaxableBase),
-                new RetentionDocument.SourceDocumentSnapshot(
-                    invoice.DocTypeCode,
-                    invoice.InvoiceNumber,
-                    invoice.IssueDate,
-                    invoice.AuthorizationNumber,
-                    invoice.TaxSupportCode,
-                    invoice.Subtotal,
-                    invoice.GrandTotal
-                )
-            ),
-            new RetentionIssueRequest(tid, cid, bid, uid, cmd.EmissionPointId, cmd.IssueDate, cmd.Lines),
-            ct
-        );
-        if (!issued.IsSuccess)
-            return Result<RetentionDocumentDto>.Failure(issued.Error!, issued.Code);
-
-        // Aplicar la retención a la CxP ya existente de la compra (regla 9 — mismo método de
-        // dominio que usa IssueWithholdingHandler). A diferencia de Gastos (que crea/stagea su CxP
-        // en la misma transacción de confirmación), Compras siempre tiene ya una AccountsPayable
-        // confirmada de antes — si no existe, es un estado de datos inconsistente y se rechaza en
-        // vez de emitir una retención sin efecto financiero real.
-        var payable = await _payableRepo.GetByOriginAsync(
-            tid,
-            cid,
-            AccountsPayableOriginType.PurchaseInvoice,
-            invoice.Id,
-            ct
-        );
-        if (payable is not null)
-        {
-            if (issued.Value!.TotalRetained > 0)
-                payable.ApplyRetention(issued.Value.TotalRetained, uid);
-        }
-        else if (issued.Value!.TotalRetained > 0)
-        {
-            return Result<RetentionDocumentDto>.ValidationFailure(
-                "No se encontró cuenta por pagar asociada. No se puede aplicar la retención financieramente."
+                ct
             );
+            if (payable is not null)
+            {
+                if (issued.Value!.TotalRetained > 0)
+                    payable.ApplyRetention(issued.Value.TotalRetained, uid);
+            }
+            else if (issued.Value!.TotalRetained > 0)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<RetentionDocumentDto>.ValidationFailure(
+                    "No se encontró cuenta por pagar asociada. No se puede aplicar la retención financieramente."
+                );
+            }
+
+            // Persistir en la misma transacción explícita abierta arriba: el RetentionDocument
+            // nuevo (staged por IRetentionIssuer) y la mutación de AccountsPayable ya trackeada.
+            await _uow.SaveChangesAsync(ct);
+            await _uow.CommitAsync(ct);
+
+            return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(issued.Value!));
         }
-
-        // Persistir en una sola transacción implícita: el RetentionDocument nuevo (staged por
-        // IRetentionIssuer) y la mutación de AccountsPayable ya trackeada — mismo criterio que
-        // ConfirmExpenseDocumentHandler (un único SaveChangesAsync para ambos agregados).
-        await _uow.SaveChangesAsync(ct);
-
-        return Result<RetentionDocumentDto>.Success(RetentionDocumentMapper.ToDto(issued.Value!));
+        catch (InvalidOperationException ex)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<RetentionDocumentDto>.ValidationFailure(ex.Message);
+        }
+        catch
+        {
+            await _uow.RollbackAsync(ct);
+            throw;
+        }
     }
 }
 
