@@ -1,6 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Company.UseCases.ConfigureDocumentSequence;
+using ERP.Application.Modules.Company.UseCases.GetDocumentSequences;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -10,19 +11,24 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// DOCUMENT-SEQUENCES-CONFIG-03 — administración mínima de <c>DocumentSequence</c> (secuencias
-/// documentales SRI centralizadas, ADR-019). Un único endpoint: configurar el número inicial
-/// antes del primer uso real. Sin UI en esta fase (ver
-/// docs/decisions/DOCUMENT-SEQUENCES-DESIGN-02.md) — <c>IsVisibleInMenu = false</c> registra el
-/// permiso en el catálogo (para asignación por rol) sin agregar un ítem de navegación real.
+/// documentales SRI centralizadas, ADR-019).
+///
+/// DOCUMENT-SEQUENCES-CONFIG-UI-04 — agrega la pantalla de Settings ("Secuencias documentales")
+/// para configurar el número inicial por establecimiento/punto de emisión/tipo de documento SRI;
+/// <c>IsVisibleInMenu</c> pasa a <c>true</c> para que el ítem aparezca en el menú server-driven de
+/// Settings (antes registraba el permiso en el catálogo sin ítem de navegación real, ver
+/// docs/decisions/DOCUMENT-SEQUENCES-DESIGN-02.md). Se agrega un único endpoint de lectura
+/// (<see cref="GetAll"/>) — gap detectado al revisar esta fase: no existía ninguna forma de listar
+/// el estado de las secuencias ya configuradas/usadas, solo el PUT de configuración. No cambia
+/// ninguna regla de dominio.
 /// </summary>
 [AppFeature(
     "Secuencias documentales",
     $"perm:{SettingsPermissions.DocumentSequencesManage}",
-    null,
+    "format_list_numbered",
     "/settings/document-sequences",
-    $"perm:{SettingsPermissions.EmissionPointsView}",
-    41,
-    IsVisibleInMenu = false
+    "perm:settings.group",
+    41
 )]
 [ApiController]
 [Route("api/v1/settings/document-sequences")]
@@ -33,6 +39,20 @@ public sealed class DocumentSequencesController : ControllerBase
     private readonly IMediator _mediator;
 
     public DocumentSequencesController(IMediator mediator) => _mediator = mediator;
+
+    /// <summary>
+    /// DOCUMENT-SEQUENCES-CONFIG-UI-04 — lista todas las secuencias documentales SRI ya
+    /// configuradas/usadas de la empresa activa. Solo lectura — nunca captura numeración (eso
+    /// sigue siendo exclusivo de <c>IDocumentSequenceRepository.CaptureNextAsync</c>, invocado
+    /// desde los flujos de emisión reales, nunca desde aquí).
+    /// </summary>
+    [HttpGet]
+    [Authorize(Policy = $"perm:{SettingsPermissions.DocumentSequencesManage}")]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetDocumentSequencesQuery(), cancellationToken);
+        return this.ToOkOrBadRequest(result);
+    }
 
     /// <summary>
     /// Configura el próximo secuencial de una secuencia documental SRI, antes de su primer uso

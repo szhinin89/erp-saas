@@ -31,6 +31,14 @@ public interface IDocumentSequenceRepository
     );
 
     /// <summary>
+    /// DOCUMENT-SEQUENCES-CONFIG-UI-04 — lectura simple (respeta los query filters globales de
+    /// tenant/empresa, sin lock) de todas las secuencias de la empresa activa, para la pantalla de
+    /// configuración. Mismo criterio que <see cref="GetByEmissionPointAndDocTypeAsync"/>: nunca
+    /// usar para capturar numeración.
+    /// </summary>
+    Task<IReadOnlyList<DocumentSequence>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Obtiene el DocumentSequence con bloqueo pesimista (SELECT FOR UPDATE).
     /// Llamar siempre dentro de una transacción activa. Preferir <see cref="CaptureNextAsync"/>.
     /// </summary>

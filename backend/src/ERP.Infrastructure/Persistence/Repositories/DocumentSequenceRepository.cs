@@ -118,6 +118,15 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
             cancellationToken
         );
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<DocumentSequence>> GetAllAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .DocumentSequences.OrderBy(s => s.EmissionPointId)
+            .ThenBy(s => s.DocTypeCode)
+            .ToListAsync(cancellationToken);
+
     public async Task<DocumentSequence?> GetForUpdateAsync(
         Guid emissionPointId,
         string docTypeCode,

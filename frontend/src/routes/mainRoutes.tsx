@@ -45,6 +45,10 @@ const EstablishmentsPage = lazyNamedPage(
   () => import("../modules/establishments/pages/EstablishmentsPage"),
   "EstablishmentsPage",
 );
+const DocumentSequencesPage = lazyNamedPage(
+  () => import("../modules/documentSequences/pages/DocumentSequencesPage"),
+  "DocumentSequencesPage",
+);
 const SalesReportPage = lazyNamedPage(
   () => import("../modules/reportes/pages/SalesReportPage"),
   "SalesReportPage",
@@ -252,6 +256,11 @@ export const mainRoutes = [
     key="settings-emission-points"
     path="/settings/emission-points"
     element={<EmissionPointsPage />}
+  />,
+  <Route
+    key="settings-document-sequences"
+    path="/settings/document-sequences"
+    element={<DocumentSequencesPage />}
   />,
 
   // -- Reportes ---------------------------------------------------------------
