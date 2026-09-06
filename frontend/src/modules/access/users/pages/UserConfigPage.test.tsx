@@ -642,6 +642,80 @@ describe("UserConfigPage — reglas de negocio de sucursales/preferencias", () =
     );
   });
 
+  it("ZH-IAM-COMPANY-USER-PREFERENCES-VALIDATION-01: revocar la sucursal por defecto y guardar SIN volver a Preferencias no manda la branch vieja", async () => {
+    // Reproduce el 422 real: defaultBranchId="branch-1" cargado (válido en ese momento), el
+    // usuario revoca branch-1 desde "Acceso a sucursales" y pulsa "Guardar configuración"
+    // directamente desde esa misma pestaña — sin volver a "Preferencias", que es la única que
+    // desmonta/remonta y corre el efecto que limpia defaultBranchId reactivamente. El fix
+    // normaliza el payload en el propio submit contra authorizedBranchIds, sin depender de que
+    // esa sección se haya montado.
+    vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
+      companyUserId: membershipRow.companyUserId,
+      defaultBranchId: "branch-1",
+      loginMode: "AskBranch",
+    });
+
+    renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
+    await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
+    // Matriz (branch-1) es la única autorizada y la default cargada — se revoca.
+    fireEvent.click(screen.getAllByRole("switch")[0]);
+
+    // Guarda directamente desde "Acceso a sucursales", nunca visita "Preferencias" de nuevo.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar configuración" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        branchAssignmentService.updateMembershipBranches,
+      ).toHaveBeenCalledWith("membership-1", []);
+      expect(companyUserPreferencesService.update).toHaveBeenCalledWith(
+        "membership-1",
+        { loginMode: "AskBranch", defaultBranchId: null },
+      );
+    });
+  });
+
+  it("ZH-IAM-COMPANY-USER-PREFERENCES-VALIDATION-01: en DirectToDefault, revocar la única sucursal bloquea el submit en el propio cliente (Zod) sin llegar al backend", async () => {
+    // Complementa el test anterior: en DirectToDefault, userConfigSchema.superRefine SÍ valida
+    // defaultBranchId contra authorizedBranchIds en cada submit (independiente de qué tab esté
+    // montada), así que este caso nunca llega a generar el 422 — RHF simplemente no invoca
+    // onSubmit. El bug real (y lo que corrige este fix) es exclusivo del modo AskBranch, que ese
+    // mismo superRefine no valida (ver test anterior).
+    vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
+      companyUserId: membershipRow.companyUserId,
+      defaultBranchId: "branch-1",
+      loginMode: "DirectToDefault",
+    });
+
+    renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
+    await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
+    fireEvent.click(screen.getAllByRole("switch")[0]);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar configuración" }),
+    );
+
+    // Da tiempo a que un submit exitoso (si el bloqueo fallara) dispare sus llamadas.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(branchAssignmentService.updateMembershipBranches).not.toHaveBeenCalled();
+    expect(companyUserPreferencesService.update).not.toHaveBeenCalled();
+  });
+
   it("cero sucursales autorizadas fuerza AskBranch, deshabilita el select y muestra el mensaje explicativo", async () => {
     vi.mocked(branchAssignmentService.getMembershipBranches).mockResolvedValue({
       companyUserId: membershipRow.companyUserId,

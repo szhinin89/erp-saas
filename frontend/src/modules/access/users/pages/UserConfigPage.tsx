@@ -339,9 +339,26 @@ export function UserConfigPage() {
         }));
       }
       try {
+        // ZH-IAM-COMPANY-USER-PREFERENCES-VALIDATION-01: defaultBranchId/loginMode pueden quedar
+        // desincronizados de authorizedBranchIds si el usuario edita "Sucursales" y envía sin
+        // volver a "Preferencias" — esa pestaña se desmonta al cambiar de tab, junto con el único
+        // efecto que los corrige reactivamente (ver UserPreferencesSection). El backend valida
+        // DefaultBranchId contra CompanyUserBranch sin importar el loginMode (correcto: nunca debe
+        // aceptar una sucursal no autorizada), así que se normaliza aquí, contra el mismo array que
+        // se acaba de enviar a /branches, para no mandar nunca una sucursal vieja/no autorizada.
+        const normalizedDefaultBranchId =
+          values.defaultBranchId &&
+          values.authorizedBranchIds.includes(values.defaultBranchId)
+            ? values.defaultBranchId
+            : null;
+        const normalizedLoginMode: UserConfigFormValues["loginMode"] =
+          values.authorizedBranchIds.length === 0
+            ? "AskBranch"
+            : values.loginMode;
+
         await companyUserPreferencesService.update(resolvedCompanyUserId, {
-          loginMode: values.loginMode,
-          defaultBranchId: values.defaultBranchId || null,
+          loginMode: normalizedLoginMode,
+          defaultBranchId: normalizedDefaultBranchId,
         });
       } catch (err) {
         hadBlockError = true;
