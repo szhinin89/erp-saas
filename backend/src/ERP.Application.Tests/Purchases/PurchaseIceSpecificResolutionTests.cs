@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
+using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
@@ -65,13 +66,13 @@ public sealed class PurchaseIceSpecificResolutionTests
         return roleRepo;
     }
 
-    private static Mock<IPaymentTermRepository> BuildPaymentTermRepo()
+    private static Mock<IPaymentTermDefaultResolver> BuildPaymentTermResolver()
     {
-        var ptRepo = new Mock<IPaymentTermRepository>();
-        ptRepo
-            .Setup(r => r.GetByIdAsync(TenantId, PtId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId));
-        return ptRepo;
+        var resolver = new Mock<IPaymentTermDefaultResolver>();
+        resolver
+            .Setup(r => r.ResolveForPurchaseAsync(SupplierId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId)));
+        return resolver;
     }
 
     private static Mock<PurchaseTaxResolver> BuildTaxResolver()
@@ -110,7 +111,7 @@ public sealed class PurchaseIceSpecificResolutionTests
             repo.Object,
             BuildActiveSupplierRepo().Object,
             BuildSupplierRoleRepo().Object,
-            BuildPaymentTermRepo().Object,
+            BuildPaymentTermResolver().Object,
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),
             tax.Object,

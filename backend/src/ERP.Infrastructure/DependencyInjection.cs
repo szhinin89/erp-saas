@@ -181,6 +181,10 @@ public static class DependencyInjection
             ICompanyBpPurchaseSettingsRepository,
             CompanyBpPurchaseSettingsRepository
         >();
+        services.AddScoped<
+            ERP.Application.MasterData.Services.IPaymentTermDefaultResolver,
+            ERP.Application.MasterData.Services.PaymentTermDefaultResolver
+        >();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp =>

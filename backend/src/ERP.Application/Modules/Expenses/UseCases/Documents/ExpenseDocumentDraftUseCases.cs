@@ -183,7 +183,7 @@ public sealed class CreateExpenseDraftHandler
     private readonly IAccountRepository _accounts;
     private readonly IBusinessPartnerRepository _businessPartners;
     private readonly IBusinessPartnerRoleRepository _roles;
-    private readonly IPaymentTermRepository _paymentTerms;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ICurrentTenant _tenant;
@@ -197,7 +197,7 @@ public sealed class CreateExpenseDraftHandler
         IAccountRepository accounts,
         IBusinessPartnerRepository businessPartners,
         IBusinessPartnerRoleRepository roles,
-        IPaymentTermRepository paymentTerms,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         IDocumentFlowPolicyService workflowPolicy,
         ICurrentTenant tenant,
@@ -211,7 +211,7 @@ public sealed class CreateExpenseDraftHandler
         _accounts = accounts;
         _businessPartners = businessPartners;
         _roles = roles;
-        _paymentTerms = paymentTerms;
+        _ptResolver = ptResolver;
         _tax = tax;
         _workflowPolicy = workflowPolicy;
         _tenant = tenant;
@@ -251,10 +251,9 @@ public sealed class CreateExpenseDraftHandler
             return supplier.Error.ToResult<ExpenseDocumentDetailDto>();
 
         var paymentTerm = await ExpenseDraftRules.ResolvePaymentTermAsync(
-            _paymentTerms,
-            _tenant.TenantId,
+            _ptResolver,
+            cmd.SupplierId,
             cmd.PaymentTermId,
-            supplier.Role,
             ct
         );
         if (paymentTerm.Error is not null)
@@ -345,7 +344,7 @@ public sealed class UpdateExpenseDraftHandler
     private readonly IAccountRepository _accounts;
     private readonly IBusinessPartnerRepository _businessPartners;
     private readonly IBusinessPartnerRoleRepository _roles;
-    private readonly IPaymentTermRepository _paymentTerms;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -358,7 +357,7 @@ public sealed class UpdateExpenseDraftHandler
         IAccountRepository accounts,
         IBusinessPartnerRepository businessPartners,
         IBusinessPartnerRoleRepository roles,
-        IPaymentTermRepository paymentTerms,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         ICurrentTenant tenant,
         ICurrentCompany company,
@@ -371,7 +370,7 @@ public sealed class UpdateExpenseDraftHandler
         _accounts = accounts;
         _businessPartners = businessPartners;
         _roles = roles;
-        _paymentTerms = paymentTerms;
+        _ptResolver = ptResolver;
         _tax = tax;
         _tenant = tenant;
         _company = company;
@@ -403,10 +402,9 @@ public sealed class UpdateExpenseDraftHandler
             return supplier.Error.ToResult<ExpenseDocumentDetailDto>();
 
         var paymentTerm = await ExpenseDraftRules.ResolvePaymentTermAsync(
-            _paymentTerms,
-            _tenant.TenantId,
+            _ptResolver,
+            cmd.SupplierId,
             cmd.PaymentTermId,
-            supplier.Role,
             ct
         );
         if (paymentTerm.Error is not null)
@@ -609,37 +607,24 @@ internal static class ExpenseDraftRules
         return new SupplierResolution(supplier, role, null);
     }
 
+    /// <summary>
+    /// ADR-033, Fase 3b — delega en IPaymentTermDefaultResolver (explícito → default
+    /// company-scoped del proveedor vía CompanyBpPurchaseSettings → exigir selección). Ya no
+    /// recibe IPaymentTermRepository ni BusinessPartnerRole: el resolver central resuelve el
+    /// default internamente, sin caer a SupplierRoleConfig.PaymentTermId.
+    /// </summary>
     public static async Task<PaymentTermResolution> ResolvePaymentTermAsync(
-        IPaymentTermRepository paymentTerms,
-        Guid tenantId,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
+        Guid supplierId,
         Guid? paymentTermId,
-        BusinessPartnerRole? supplierRole,
         CancellationToken ct
     )
     {
-        var resolvedId = paymentTermId ?? supplierRole?.SupplierConfig?.PaymentTermId;
-        if (!resolvedId.HasValue || resolvedId.Value == Guid.Empty)
-            return new PaymentTermResolution(
-                null,
-                Validation("La condicion de pago es obligatoria para crear el borrador.")
-            );
+        var result = await ptResolver.ResolveForPurchaseAsync(supplierId, paymentTermId, ct);
+        if (!result.IsSuccess)
+            return new PaymentTermResolution(null, Validation(result.Error!));
 
-        var paymentTerm = await paymentTerms.GetByIdAsync(tenantId, resolvedId.Value, ct);
-        if (paymentTerm is null)
-            return new PaymentTermResolution(
-                null,
-                new ExpenseDraftError(
-                    "La condicion de pago no existe.",
-                    ApiResponseCodes.Common.NotFound
-                )
-            );
-        if (!paymentTerm.IsActive)
-            return new PaymentTermResolution(
-                null,
-                Validation("La condicion de pago esta inactiva.")
-            );
-
-        return new PaymentTermResolution(paymentTerm, null);
+        return new PaymentTermResolution(result.Value, null);
     }
 
     /// <summary>

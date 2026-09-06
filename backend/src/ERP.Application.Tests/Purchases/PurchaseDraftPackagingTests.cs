@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
+using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
@@ -81,8 +82,7 @@ public sealed class PurchaseDraftPackagingTests
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
             bpRepo.Object,
-            Mock.Of<IBusinessPartnerRoleRepository>(),
-            Mock.Of<IPaymentTermRepository>(),
+            Mock.Of<IPaymentTermDefaultResolver>(),
             itemRepo.Object,
             whRepo.Object,
             tax.Object,
@@ -154,7 +154,7 @@ public sealed class PurchaseDraftPackagingTests
             repo.Object,
             bpRepo.Object,
             Mock.Of<IBusinessPartnerRoleRepository>(),
-            Mock.Of<IPaymentTermRepository>(),
+            Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),
             Mock.Of<PurchaseTaxResolver>(),
@@ -207,8 +207,7 @@ public sealed class PurchaseDraftPackagingTests
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
             bpRepo.Object,
-            Mock.Of<IBusinessPartnerRoleRepository>(),
-            Mock.Of<IPaymentTermRepository>(),
+            Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),
             Mock.Of<PurchaseTaxResolver>(),

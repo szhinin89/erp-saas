@@ -454,7 +454,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly IAccountRepository _accounts;
     private readonly IBusinessPartnerRepository _businessPartners;
     private readonly IBusinessPartnerRoleRepository _roles;
-    private readonly IPaymentTermRepository _paymentTerms;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
@@ -471,7 +471,7 @@ public sealed class CreateConfirmedExpenseHandler
         IAccountRepository accounts,
         IBusinessPartnerRepository businessPartners,
         IBusinessPartnerRoleRepository roles,
-        IPaymentTermRepository paymentTerms,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
@@ -488,7 +488,7 @@ public sealed class CreateConfirmedExpenseHandler
         _accounts = accounts;
         _businessPartners = businessPartners;
         _roles = roles;
-        _paymentTerms = paymentTerms;
+        _ptResolver = ptResolver;
         _tax = tax;
         _payables = payables;
         _workflowPolicy = workflowPolicy;
@@ -533,10 +533,9 @@ public sealed class CreateConfirmedExpenseHandler
             return supplier.Error.ToResult<ExpenseDocumentDetailDto>();
 
         var paymentTerm = await ExpenseDraftRules.ResolvePaymentTermAsync(
-            _paymentTerms,
-            _tenant.TenantId,
+            _ptResolver,
+            cmd.SupplierId,
             cmd.PaymentTermId,
-            supplier.Role,
             ct
         );
         if (paymentTerm.Error is not null)

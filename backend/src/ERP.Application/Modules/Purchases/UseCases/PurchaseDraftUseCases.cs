@@ -469,7 +469,7 @@ public sealed class CreatePurchaseDraftHandler
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IPaymentTermRepository _ptRepo;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
@@ -484,7 +484,7 @@ public sealed class CreatePurchaseDraftHandler
         IPurchaseInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
-        IPaymentTermRepository ptRepo,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IItemRepository itemRepo,
         IWarehouseRepository whRepo,
         ISriTaxResolver tax,
@@ -499,7 +499,7 @@ public sealed class CreatePurchaseDraftHandler
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
-        _ptRepo = ptRepo;
+        _ptResolver = ptResolver;
         _itemRepo = itemRepo;
         _whRepo = whRepo;
         _tax = tax;
@@ -547,14 +547,10 @@ public sealed class CreatePurchaseDraftHandler
                 "El proveedor no tiene configuración SRI."
             );
 
-        var ptId = cmd.PaymentTermId ?? supplierRole.SupplierConfig.PaymentTermId;
-        var pt = await _ptRepo.GetByIdAsync(_t.TenantId, ptId, ct);
-        if (pt is null)
-            return Result<PurchaseInvoiceDto>.ValidationFailure("La condición de pago no existe.");
-        if (!pt.IsActive)
-            return Result<PurchaseInvoiceDto>.ValidationFailure(
-                "La condición de pago se encuentra inactiva."
-            );
+        var ptResult = await _ptResolver.ResolveForPurchaseAsync(cmd.SupplierId, cmd.PaymentTermId, ct);
+        if (!ptResult.IsSuccess)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ptResult.Error!);
+        var pt = ptResult.Value!;
 
         if (cmd.GlobalWarehouseId.HasValue)
         {
@@ -798,8 +794,7 @@ public sealed class UpdatePurchaseDraftHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
-    private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IPaymentTermRepository _ptRepo;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
@@ -811,8 +806,7 @@ public sealed class UpdatePurchaseDraftHandler
     public UpdatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
-        IBusinessPartnerRoleRepository roleRepo,
-        IPaymentTermRepository ptRepo,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IItemRepository itemRepo,
         IWarehouseRepository whRepo,
         ISriTaxResolver tax,
@@ -824,8 +818,7 @@ public sealed class UpdatePurchaseDraftHandler
     {
         _repo = repo;
         _bpRepo = bpRepo;
-        _roleRepo = roleRepo;
-        _ptRepo = ptRepo;
+        _ptResolver = ptResolver;
         _itemRepo = itemRepo;
         _whRepo = whRepo;
         _tax = tax;
@@ -866,15 +859,14 @@ public sealed class UpdatePurchaseDraftHandler
 
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTermId)
         {
-            var pt = await _ptRepo.GetByIdAsync(_t.TenantId, cmd.PaymentTermId.Value, ct);
-            if (pt is null)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    "La condición de pago no existe."
-                );
-            if (!pt.IsActive)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    "La condición de pago se encuentra inactiva."
-                );
+            var ptResult = await _ptResolver.ResolveForPurchaseAsync(
+                cmd.SupplierId,
+                cmd.PaymentTermId,
+                ct
+            );
+            if (!ptResult.IsSuccess)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(ptResult.Error!);
+            var pt = ptResult.Value!;
             inv.UpdatePaymentTermSnapshot(
                 pt.Id,
                 pt.Name,
@@ -884,25 +876,20 @@ public sealed class UpdatePurchaseDraftHandler
         }
         else if (cmd.SupplierId != inv.SupplierId)
         {
-            var role = await _roleRepo.GetByTypeAsync(
-                cmd.SupplierId,
-                Domain.MasterData.Enums.RoleType.Supplier,
-                ct
-            );
-            if (role?.SupplierConfig is not null)
+            // Cambio de proveedor sin PaymentTermId explícito: intenta el default de la empresa
+            // activa para el nuevo proveedor (ADR-033, Fase 3b). Si no hay uno válido, se
+            // mantiene el PaymentTerm actual del borrador (mismo criterio ya vigente desde
+            // Fase 2) — el usuario deberá elegir uno explícito si lo necesita.
+            var ptResult = await _ptResolver.ResolveForPurchaseAsync(cmd.SupplierId, null, ct);
+            if (ptResult.IsSuccess)
             {
-                var pt = await _ptRepo.GetByIdAsync(
-                    _t.TenantId,
-                    role.SupplierConfig.PaymentTermId,
-                    ct
+                var pt = ptResult.Value!;
+                inv.UpdatePaymentTermSnapshot(
+                    pt.Id,
+                    pt.Name,
+                    pt.Installments,
+                    pt.DaysBetweenInstallments
                 );
-                if (pt is not null && pt.IsActive)
-                    inv.UpdatePaymentTermSnapshot(
-                        pt.Id,
-                        pt.Name,
-                        pt.Installments,
-                        pt.DaysBetweenInstallments
-                    );
             }
         }
 

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
@@ -226,7 +227,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public Mock<IAccountRepository> Accounts { get; } = new();
         public Mock<IBusinessPartnerRepository> Partners { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> Roles { get; } = new();
-        public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
+        public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
@@ -247,7 +248,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 Accounts.Object,
                 Partners.Object,
                 Roles.Object,
-                PaymentTerms.Object,
+                PtResolver.Object,
                 Tax.Object,
                 Payables.Object,
                 WorkflowPolicy.Object,
@@ -299,9 +300,9 @@ public sealed class CreateConfirmedExpenseUseCasesTests
             Roles
                 .Setup(r => r.GetByTypeAsync(Supplier.Id, RoleType.Supplier, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(SupplierRole);
-            PaymentTerms
-                .Setup(r => r.GetByIdAsync(TenantId, PaymentTerm.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(PaymentTerm);
+            PtResolver
+                .Setup(r => r.ResolveForPurchaseAsync(Supplier.Id, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<PaymentTerm>.Success(PaymentTerm));
             CategoryRepo
                 .Setup(r => r.GetByIdAsync(TenantId, Subcategory.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Subcategory);
