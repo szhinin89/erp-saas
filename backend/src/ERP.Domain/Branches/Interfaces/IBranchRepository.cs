@@ -34,6 +34,13 @@ public interface IBranchRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Conteo agregado de sucursales activas por empresa (batch, evita N+1 en listados multiempresa).</summary>
+    Task<IReadOnlyDictionary<Guid, int>> CountActiveByCompanyIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> companyIds,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>CONFIG-FOUNDATION-P2-01: devuelve los Id de las sucursales desmarcadas (para auditoría).</summary>
     Task<IReadOnlyList<Guid>> ClearMainBranchExceptAsync(
         Guid tenantId,

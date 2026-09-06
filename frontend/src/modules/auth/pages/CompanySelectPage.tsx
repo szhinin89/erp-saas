@@ -13,6 +13,55 @@ import "./CompanySelectPage.css";
 
 const AVATAR_VARIANTS = ["primary", "secondary", "tertiary"] as const;
 
+type TFn = (key: string, fallbackOrParams?: string | Record<string, string | number>) => string;
+
+type StatusChip = {
+  label: string;
+  tone: "success" | "warning" | "neutral" | "error";
+};
+
+function getCompanyStatusChip(company: AccessibleCompany, t: TFn): StatusChip {
+  if (!company.isActive) {
+    return { label: t("subscriberSelect.status.inactive", "Inactiva"), tone: "error" };
+  }
+  switch (company.operationalStatus) {
+    case "Suspended":
+      return { label: t("subscriberSelect.status.suspended", "Suspendida"), tone: "warning" };
+    case "PendingSetup":
+      return {
+        label: t("subscriberSelect.status.pendingSetup", "En configuración"),
+        tone: "neutral",
+      };
+    case "Operational":
+    default:
+      return { label: t("subscriberSelect.status.operational", "Activa"), tone: "success" };
+  }
+}
+
+function getCompanyBranchLabel(company: AccessibleCompany, t: TFn): string {
+  const count = company.assignedBranchCount;
+  if (count <= 0) {
+    return t("subscriberSelect.noBranchesAssigned", "Sin sucursales asignadas");
+  }
+  if (count === 1) {
+    return t("subscriberSelect.branchCount.singular", "1 sucursal");
+  }
+  return t("subscriberSelect.branchCount.plural", { count });
+}
+
+function getCompanyMetaItems(company: AccessibleCompany, t: TFn): string[] {
+  const items: string[] = [];
+  if (company.role) items.push(`${t("subscriberSelect.roleLabel", "Rol:")} ${company.role}`);
+  items.push(getCompanyBranchLabel(company, t));
+  if (company.taxRegime) items.push(company.taxRegime);
+  items.push(
+    company.isAccountingRequired
+      ? t("subscriberSelect.accounting.required", "Lleva contabilidad")
+      : t("subscriberSelect.accounting.notRequired", "No lleva contabilidad"),
+  );
+  return items;
+}
+
 export function CompanySelectPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -50,7 +99,7 @@ export function CompanySelectPage() {
     const query = q.trim().toLowerCase();
     if (!query) return companies;
     return companies.filter((x) =>
-      `${x.displayName} ${x.legalName} ${x.ruc} ${x.companyId}`
+      `${x.displayName} ${x.legalName} ${x.ruc} ${x.companyId} ${x.role} ${x.taxRegime ?? ""} ${x.operationalStatus}`
         .toLowerCase()
         .includes(query),
     );
@@ -251,43 +300,54 @@ export function CompanySelectPage() {
 
     return (
       <div className="cs-list" role="list">
-        {filtered.map((x, i) => (
-          <div key={x.companyId} className="zh-entity-item cs-company-card" role="listitem">
-            <div
-              className={`zh-avatar zh-avatar--${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}
-              aria-hidden="true"
-            >
-              {x.displayName.charAt(0).toUpperCase()}
-            </div>
-            <div className="zh-entity-item-info">
-              <span className="zh-entity-item-name">{x.displayName}</span>
-              <span className="zh-entity-item-sub mono">
-                {t("subscriberSelect.rucLabel", "RUC:")} {x.ruc}
-              </span>
-            </div>
-            {x.role && (
-              <span className="cs-company-role">
-                {t("subscriberSelect.roleLabel", "Rol:")} {x.role}
-              </span>
-            )}
-            <div className="zh-entity-item-right">
-              <ZHBtn
-                variant="primary"
-                disabled={loading}
-                onClick={() => choose(x.companyId)}
+        {filtered.map((x, i) => {
+          const statusChip = getCompanyStatusChip(x, t);
+          const metaItems = getCompanyMetaItems(x, t);
+          return (
+            <div key={x.companyId} className="zh-entity-item cs-company-card" role="listitem">
+              <div
+                className={`zh-avatar zh-avatar--${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}
+                aria-hidden="true"
               >
-                {pendingId === x.companyId ? (
-                  <span className="zh-auth-submit-spinner" aria-hidden="true" />
-                ) : (
-                  <span className="material-symbols-outlined" aria-hidden="true">
-                    arrow_forward
+                {x.displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="zh-entity-item-info">
+                <span className="zh-entity-item-name-row">
+                  <span className="zh-entity-item-name">{x.displayName}</span>
+                  <span className={`cs-chip cs-chip--${statusChip.tone}`}>
+                    {statusChip.label}
                   </span>
-                )}
-                {t("subscriberSelect.enter", "Entrar")}
-              </ZHBtn>
+                </span>
+                <span className="zh-entity-item-sub mono">
+                  {t("subscriberSelect.rucLabel", "RUC:")} {x.ruc}
+                </span>
+                <span className="cs-company-meta">
+                  {metaItems.map((item) => (
+                    <span key={item} className="cs-chip cs-chip--neutral">
+                      {item}
+                    </span>
+                  ))}
+                </span>
+              </div>
+              <div className="zh-entity-item-right">
+                <ZHBtn
+                  variant="primary"
+                  disabled={loading}
+                  onClick={() => choose(x.companyId)}
+                >
+                  {pendingId === x.companyId ? (
+                    <span className="zh-auth-submit-spinner" aria-hidden="true" />
+                  ) : (
+                    <span className="material-symbols-outlined" aria-hidden="true">
+                      arrow_forward
+                    </span>
+                  )}
+                  {t("subscriberSelect.enter", "Entrar")}
+                </ZHBtn>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {filtered.length === 0 && (
           <div className="cs-empty">
             <span className="material-symbols-outlined" aria-hidden="true">

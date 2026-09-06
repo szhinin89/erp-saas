@@ -26,6 +26,22 @@ public sealed class CompanyUserBranchRepository : ICompanyUserBranchRepository
             .Where(x => x.CompanyUserMembershipId == companyUserMembershipId)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyDictionary<Guid, int>> CountActiveByMembershipIdsAsync(
+        IReadOnlyCollection<Guid> membershipIds,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (membershipIds.Count == 0)
+            return new Dictionary<Guid, int>();
+
+        return await _db
+            .CompanyUserBranches.AsPlatformQuery()
+            .Where(x => membershipIds.Contains(x.CompanyUserMembershipId) && x.IsActive)
+            .GroupBy(x => x.CompanyUserMembershipId)
+            .Select(g => new { MembershipId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.MembershipId, x => x.Count, cancellationToken);
+    }
+
     public Task<bool> ExistsAsync(
         Guid companyUserMembershipId,
         Guid branchId,

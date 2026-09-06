@@ -112,6 +112,7 @@ public sealed class CompanyRepository : ICompanyRepository
 
         return await _db
             .Companies.AsPlatformQuery()
+            .Include(c => c.TaxRegime)
             .AsNoTracking()
             .Where(c => companyIds.Contains(c.Id) && c.IsActive)
             .ToListAsync(cancellationToken);

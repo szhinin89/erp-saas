@@ -16,6 +16,7 @@ import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 import { useSessionStore } from "../../../store/sessionStore";
 import type { AuthResponse } from "../../../types/auth";
+import type { AccessibleCompany } from "../../../types/access";
 import { authService } from "../api/authService";
 import { CompanySelectPage } from "./CompanySelectPage";
 
@@ -52,6 +53,24 @@ const authResponse: AuthResponse = {
   refreshToken: "refresh-token",
   refreshTokenExpiry: "2026-09-01T12:00:00Z",
 };
+
+function baseCompany(overrides: Partial<AccessibleCompany> = {}): AccessibleCompany {
+  return {
+    companyId: "company-2",
+    tenantId: "tenant-1",
+    legalName: "Empresa Dos S.A.",
+    displayName: "Empresa Dos",
+    ruc: "0999999999001",
+    role: "Admin",
+    isActive: true,
+    operationalStatus: "Operational",
+    taxRegime: null,
+    isAccountingRequired: false,
+    assignedBranchCount: 1,
+    totalBranchCount: 1,
+    ...overrides,
+  };
+}
 
 const originalAuthLogin = useAuthStore.getState().login;
 const originalSessionRefresh = useSessionStore.getState().refresh;
@@ -115,16 +134,7 @@ describe("CompanySelectPage", () => {
       refresh: vi.fn().mockResolvedValue(undefined),
     });
 
-    vi.mocked(authService.listMyCompanies).mockResolvedValue([
-      {
-        companyId: "company-2",
-        tenantId: "tenant-1",
-        legalName: "Empresa Dos S.A.",
-        displayName: "Empresa Dos",
-        ruc: "0999999999001",
-        role: "Admin",
-      },
-    ]);
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([baseCompany()]);
     vi.mocked(authService.switchCompany).mockResolvedValue(authResponse);
     vi.mocked(companyManagementService.getCurrent).mockResolvedValue(null);
     vi.mocked(loadDecimalConfig).mockResolvedValue({
@@ -209,16 +219,79 @@ describe("CompanySelectPage", () => {
     expect(screen.getByRole("button", { name: "Entrar" })).toBeTruthy();
   });
 
-  it("muestra el rol de la empresa cuando el DTO lo trae y no inventa sucursales/estado", async () => {
+  it("renderiza rol, estado, sucursal (singular) y contabilidad reales del DTO", async () => {
     renderPage();
 
     expect(await screen.findByText("Empresa Dos")).toBeTruthy();
 
     expect(screen.getByText(/Rol:\s*Admin/)).toBeTruthy();
-    expect(screen.queryByText(/sucursal/i)).toBeNull();
+    expect(screen.getByText("Activa")).toBeTruthy();
+    expect(screen.getByText("1 sucursal")).toBeTruthy();
+    expect(screen.getByText("No lleva contabilidad")).toBeTruthy();
+  });
+
+  it("no inventa régimen tributario, logo ni última usada cuando el DTO no los trae", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+
+    expect(screen.queryByText(/RIMPE|Régimen/i)).toBeNull();
     expect(screen.queryByText(/Última usada/i)).toBeNull();
-    expect(screen.queryByText(/Activa|Disponible/)).toBeNull();
-    expect(screen.queryByText(/Modo empresa/i)).toBeNull();
+    expect(screen.queryByRole("img")).toBeNull();
+    // Sin logoUrl: cae al avatar con inicial.
+    expect(screen.getByText("E")).toBeTruthy();
+  });
+
+  it("renderiza sucursales en plural y régimen/contabilidad cuando el DTO los trae", async () => {
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([
+      baseCompany({
+        assignedBranchCount: 3,
+        totalBranchCount: 5,
+        taxRegime: "RIMPE",
+        isAccountingRequired: true,
+      }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    expect(screen.getByText("3 sucursales")).toBeTruthy();
+    expect(screen.getByText("RIMPE")).toBeTruthy();
+    expect(screen.getByText("Lleva contabilidad")).toBeTruthy();
+  });
+
+  it("muestra 'Sin sucursales asignadas' cuando assignedBranchCount es 0", async () => {
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([
+      baseCompany({ assignedBranchCount: 0, totalBranchCount: 4, role: "User" }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    expect(screen.getByText("Sin sucursales asignadas")).toBeTruthy();
+    // No bloquea el botón: el backend actual no impone esa regla.
+    expect(
+      (screen.getByRole("button", { name: "Entrar" }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  });
+
+  it("muestra chip Suspendida cuando operationalStatus lo indica, sin bloquear el flujo", async () => {
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([
+      baseCompany({ operationalStatus: "Suspended" }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    expect(screen.getByText("Suspendida")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeTruthy();
+  });
+
+  it("muestra chip Inactiva cuando isActive es false", async () => {
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([
+      baseCompany({ isActive: false }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    expect(screen.getByText("Inactiva")).toBeTruthy();
   });
 
   it("filtra empresas por nombre y por RUC, y muestra el empty state sin resultados", async () => {
@@ -237,6 +310,32 @@ describe("CompanySelectPage", () => {
     expect(
       screen.getByText("No se encontraron empresas con ese criterio."),
     ).toBeTruthy();
+    expect(screen.queryByText("Empresa Dos")).toBeNull();
+  });
+
+  it("filtra empresas por rol y por régimen tributario", async () => {
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([
+      baseCompany({ role: "Admin", taxRegime: "RIMPE" }),
+      baseCompany({
+        companyId: "company-3",
+        displayName: "Empresa Tres",
+        legalName: "Empresa Tres S.A.",
+        ruc: "0999999999002",
+        role: "User",
+        taxRegime: "Régimen General",
+      }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    const search = screen.getByPlaceholderText("Buscar por nombre o RUC");
+
+    fireEvent.change(search, { target: { value: "RIMPE" } });
+    expect(screen.getByText("Empresa Dos")).toBeTruthy();
+    expect(screen.queryByText("Empresa Tres")).toBeNull();
+
+    fireEvent.change(search, { target: { value: "User" } });
+    expect(screen.getByText("Empresa Tres")).toBeTruthy();
     expect(screen.queryByText("Empresa Dos")).toBeNull();
   });
 

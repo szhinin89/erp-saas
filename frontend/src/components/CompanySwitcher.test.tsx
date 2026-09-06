@@ -73,6 +73,12 @@ describe("CompanySwitcher", () => {
         displayName: "Empresa Uno",
         ruc: "0999999998001",
         role: "Admin",
+        isActive: true,
+        operationalStatus: "Operational",
+        taxRegime: null,
+        isAccountingRequired: false,
+        assignedBranchCount: 1,
+        totalBranchCount: 1,
       },
       {
         companyId: "company-2",
@@ -81,6 +87,12 @@ describe("CompanySwitcher", () => {
         displayName: "Empresa Dos",
         ruc: "0999999999001",
         role: "Admin",
+        isActive: true,
+        operationalStatus: "Operational",
+        taxRegime: null,
+        isAccountingRequired: false,
+        assignedBranchCount: 1,
+        totalBranchCount: 1,
       },
     ]);
     vi.mocked(authService.switchCompany).mockResolvedValue(authResponse);

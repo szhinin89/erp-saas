@@ -32,6 +32,8 @@ export interface SessionResponse {
   token: string;
 }
 
+export type CompanyOperationalStatus = "PendingSetup" | "Operational" | "Suspended";
+
 export interface AccessibleCompany {
   companyId: string;
   tenantId: string;
@@ -39,6 +41,12 @@ export interface AccessibleCompany {
   displayName: string;
   ruc: string;
   role: string;
+  isActive: boolean;
+  operationalStatus: CompanyOperationalStatus | string;
+  taxRegime: string | null;
+  isAccountingRequired: boolean;
+  assignedBranchCount: number;
+  totalBranchCount: number;
 }
 
 /**

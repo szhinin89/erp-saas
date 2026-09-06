@@ -6,5 +6,11 @@ public sealed record AccessibleCompanyDto(
     string LegalName,
     string DisplayName,
     string Ruc,
-    string Role
+    string Role,
+    bool IsActive,
+    string OperationalStatus,
+    string? TaxRegime,
+    bool IsAccountingRequired,
+    int AssignedBranchCount,
+    int TotalBranchCount
 );

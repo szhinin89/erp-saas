@@ -9,6 +9,12 @@ public interface ICompanyUserBranchRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Conteo agregado de sucursales activas asignadas por membership (batch, evita N+1 en listados multiempresa).</summary>
+    Task<IReadOnlyDictionary<Guid, int>> CountActiveByMembershipIdsAsync(
+        IReadOnlyCollection<Guid> membershipIds,
+        CancellationToken cancellationToken = default
+    );
+
     Task<bool> ExistsAsync(
         Guid companyUserMembershipId,
         Guid branchId,

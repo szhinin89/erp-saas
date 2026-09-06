@@ -106,6 +106,25 @@ public sealed class BranchRepository : IBranchRepository
                 cancellationToken
             );
 
+    public async Task<IReadOnlyDictionary<Guid, int>> CountActiveByCompanyIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> companyIds,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (companyIds.Count == 0)
+            return new Dictionary<Guid, int>();
+
+        // AsPlatformQuery + WHERE explícito por tenantId: mismo patrón gobernado que el resto
+        // de este repositorio (ver GetAsync/GetByCompanyAsync).
+        return await _context
+            .Branches.AsPlatformQuery()
+            .Where(x => x.TenantId == tenantId && companyIds.Contains(x.CompanyId) && x.IsActive)
+            .GroupBy(x => x.CompanyId)
+            .Select(g => new { CompanyId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CompanyId, x => x.Count, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Guid>> ClearMainBranchExceptAsync(
         Guid tenantId,
         Guid companyId,
