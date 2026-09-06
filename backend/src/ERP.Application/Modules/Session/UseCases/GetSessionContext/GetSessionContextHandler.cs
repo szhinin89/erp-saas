@@ -167,6 +167,13 @@ public sealed class GetSessionContextHandler
     ///      nunca lo muta (ver SwitchBranchHandler). Es el fallback de arranque en frío: el primer
     ///      bootstrap inmediatamente después del login, antes de que el cliente tenga nada
     ///      persistido en activeBranchStore/sessionStorage.
+    ///      ZH-AUTH-BRANCH-FORBIDDEN-F5-NO-LOGOUT-13: igual que el header en el nivel 1, este valor
+    ///      también se revalida con <see cref="IsAuthorizedForBranchAsync"/> antes de devolverse. Sin
+    ///      esto, una sucursal revocada (CompanyUserBranch desactivado) después de abrir la sesión
+    ///      podía seguir siendo "la sucursal activa" reportada aquí — el cliente la reenviaba a
+    ///      endpoints branch-scoped reales, que la rechazan (BRANCH_SCOPE_FORBIDDEN), y session/context
+    ///      volvía a servir la misma sucursal revocada en cada F5, cascadeando el 403 en vez de
+    ///      autocorregirse. Si no pasa la validación, se descarta y se continúa al nivel 3.
     ///   3. CompanyUserPreferencesLoginResolver — única fuente de verdad para resolver la
     ///      sucursal inicial cuando tampoco existe una UserSession reutilizable (mismo mecanismo
     ///      que LoginHandler/SwitchCompanyHandler, sin reimplementarlo).
@@ -211,6 +218,12 @@ public sealed class GetSessionContextHandler
         var existingSession = activeSessions.FirstOrDefault(s => s.CompanyId == companyId);
 
         Guid? branchId = existingSession?.BranchId;
+
+        if (
+            branchId is Guid sessionBranchId
+            && !await IsAuthorizedForBranchAsync(membership, sessionBranchId, cancellationToken)
+        )
+            branchId = null;
 
         if (branchId is null && membership is not null && membership.IsActive)
         {

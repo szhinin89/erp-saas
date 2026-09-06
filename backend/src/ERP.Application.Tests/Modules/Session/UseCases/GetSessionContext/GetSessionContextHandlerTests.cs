@@ -265,6 +265,73 @@ public sealed class GetSessionContextHandlerTests
         result.Value!.Branch.Should().BeNull();
     }
 
+    /// <summary>
+    /// ZH-AUTH-BRANCH-FORBIDDEN-F5-NO-LOGOUT-13: mismo bug que el nivel 1 (header), ahora en el
+    /// nivel 2 (UserSession.BranchId histórico). Sin header X-Branch-Id, si la sucursal con la que
+    /// se abrió la sesión ya no tiene fila CompanyUserBranch vigente para la membership (revocada
+    /// después del login), session/context NO debe seguir reportándola como sucursal activa — el
+    /// cliente la reenviaría a endpoints branch-scoped reales, que la rechazan con
+    /// BRANCH_SCOPE_FORBIDDEN, y cada F5 volvería a servir la misma sucursal revocada sin
+    /// autocorregirse nunca. Debe caer al nivel 3 (resolver de preferencias/heurístico).
+    /// </summary>
+    [Fact]
+    public async Task Branch_de_UserSession_sin_autorizacion_CompanyUserBranch_se_descarta_y_cae_al_siguiente_nivel()
+    {
+        var (f, userId, tenant, companyA) = BuildBaseContext();
+        var branchRevocada = NewBranch(tenant.Id, companyA.Id, "Sucursal revocada");
+        var membership = CompanyUserMembership.Create(companyA.Id, userId, "User", null, CreatedBy);
+        var existingSession = UserSession.Create(
+            tenant.Id,
+            companyA.Id,
+            userId,
+            branchRevocada.Id,
+            "terminal-1"
+        );
+
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(false);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(companyA.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(userId, tenant.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync([existingSession]);
+        // La membership existe y está activa, pero ya no tiene fila CompanyUserBranch vigente
+        // para la sucursal con la que se abrió la sesión (revocada después del login).
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.ExistsAsync(membership.Id, branchRevocada.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+        // Sin preferencias configuradas y sin una única sucursal IsMainBranch resoluble por el
+        // heurístico de respaldo — así el fallback tampoco "adivina" ninguna sucursal.
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<ERP.Application.Access.UseCases.GetCompanyUserPreferences.GetCompanyUserPreferencesQuery>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result<ERP.Application.Access.DTOs.CompanyUserPreferencesDto?>.Success(null));
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Array.Empty<Branch>());
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(new GetSessionContextQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        // Sin preferencia/heurístico resoluble en este fixture, el resultado correcto es
+        // "sin sucursal confirmada" — nunca la sucursal revocada de UserSession.
+        result.Value!.Branch.Should().BeNull();
+    }
+
     [Fact]
     public async Task Branch_del_header_que_pertenece_a_otra_empresa_se_descarta_y_nunca_se_devuelve_como_contexto_operativo()
     {
