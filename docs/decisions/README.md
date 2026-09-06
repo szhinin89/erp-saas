@@ -36,6 +36,7 @@
 | [ADR-030](./ADR-030-purchase-line-warehouse-mass-apply.md) | Bodega por línea en Compras — selector general como aplicación masiva, no sincronización | Accepted |
 | [ADR-031](./ADR-031-credit-note-v1-activation.md) | Activación de Nota de Crédito V1.1.0 (extensión controlada de ADR-023) | Accepted |
 | [ADR-032](./ADR-032-tax-line-ssot-ice-irbpnr.md) | ICE e IRBPNR como impuestos de línea — SSOT en `*DetailTax` (propuesta técnica) | Approved (dirección) — pre-implementación |
+| [ADR-033](./ADR-033-payment-term-ssot-and-document-schedules.md) | PaymentTerm como SSOT operativo + defaults por empresa/rol + cronograma final por documento (CreditTerm fuera de alcance) | Approved (diseño) — pre-implementación |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

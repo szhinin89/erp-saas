@@ -274,16 +274,20 @@ public sealed class CreateSalesDraftHandler
         if (ptId is null || ptId == Guid.Empty)
         {
             var pts = await _ptRepo.ListAsync(_t.TenantId, null, ct);
-            var defaultPt = pts.FirstOrDefault();
+            var defaultPt = pts.Where(p => p.IsActive).FirstOrDefault();
             if (defaultPt is null)
                 return Result<SalesInvoiceDto>.ValidationFailure(
-                    "No hay condiciones de pago configuradas."
+                    "No hay una condición de pago activa disponible; debe seleccionar una."
                 );
             ptId = defaultPt.Id;
         }
         var pt = await _ptRepo.GetByIdAsync(_t.TenantId, ptId.Value, ct);
         if (pt is null)
             return Result<SalesInvoiceDto>.ValidationFailure("La condición de pago no existe.");
+        if (!pt.IsActive)
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                "La condición de pago se encuentra inactiva."
+            );
 
         var tid = _t.TenantId;
 
@@ -450,20 +454,25 @@ public sealed class UpdateSalesDraftHandler
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTerm.Id)
         {
             var pt = await _ptRepo.GetByIdAsync(_t.TenantId, cmd.PaymentTermId.Value, ct);
-            if (pt is not null)
-                inv.UpdatePaymentTerm(
-                    PaymentTermSnapshot.Create(
-                        pt.Id,
-                        pt.Name,
-                        pt.Installments,
-                        pt.DaysBetweenInstallments
-                    )
+            if (pt is null)
+                return Result<SalesInvoiceDto>.ValidationFailure("La condición de pago no existe.");
+            if (!pt.IsActive)
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    "La condición de pago se encuentra inactiva."
                 );
+            inv.UpdatePaymentTerm(
+                PaymentTermSnapshot.Create(
+                    pt.Id,
+                    pt.Name,
+                    pt.Installments,
+                    pt.DaysBetweenInstallments
+                )
+            );
         }
         else if (cmd.CustomerId != inv.CustomerId)
         {
             var pts = await _ptRepo.ListAsync(_t.TenantId, null, ct);
-            var defaultPt = pts.FirstOrDefault();
+            var defaultPt = pts.Where(p => p.IsActive).FirstOrDefault();
             if (defaultPt is not null)
                 inv.UpdatePaymentTerm(
                     PaymentTermSnapshot.Create(

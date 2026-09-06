@@ -110,6 +110,7 @@ public sealed class ConfirmExpenseDocumentHandler
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly IRetentionIssuer _retentionIssuer;
+    private readonly IPaymentTermRepository _ptRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -123,6 +124,7 @@ public sealed class ConfirmExpenseDocumentHandler
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
         IRetentionIssuer retentionIssuer,
+        IPaymentTermRepository ptRepo,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -136,6 +138,7 @@ public sealed class ConfirmExpenseDocumentHandler
         _payables = payables;
         _workflowPolicy = workflowPolicy;
         _retentionIssuer = retentionIssuer;
+        _ptRepo = ptRepo;
         _tenant = tenant;
         _company = company;
         _logger = logger;
@@ -185,6 +188,18 @@ public sealed class ConfirmExpenseDocumentHandler
         if (document.Lines.Count == 0)
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 "El gasto debe tener al menos una linea para confirmarse."
+            );
+
+        // ── Validar que la condición de pago del borrador siga activa (ADR-033, Fase 2 P1) ──
+        // El snapshot congelado en el borrador (document.PaymentTermId) no refleja cambios
+        // posteriores en el catálogo — si la condición fue desactivada después de crear el
+        // borrador, no debe confirmarse silenciosamente. El usuario debe editar el borrador con
+        // una condición activa. Mismo criterio ya aplicado en Ventas/Compras.
+        var pt = await _ptRepo.GetByIdAsync(_tenant.TenantId, document.PaymentTermId, ct);
+        if (pt is null || !pt.IsActive)
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                "La condición de pago de este gasto fue desactivada. Edite el borrador y "
+                    + "seleccione una condición de pago activa antes de confirmar."
             );
 
         var snapshots = new Dictionary<Guid, (Guid AccountId, string? Code, string? Name)>();
@@ -312,49 +327,20 @@ public sealed class ConfirmExpenseDocumentHandler
             }
         }
 
-        try
-        {
-            // EXPENSES-CONFIRM-07: a diferencia de Purchases/Sales, el posting de Gastos es
-            // estricto — ExpenseDocumentConfirmedPostingTranslator lanza ExpensePostingFailedException
-            // (en vez de solo loguear un warning) si IPostingEngine.PostAsync falla. La excepción se
-            // propaga desde el Publish() interno de ErpDbContext.SaveChangesAsync, que hace rollback
-            // completo de la transacción ANTES de este catch — el documento queda en Draft en BD,
-            // nada de lo mutado en memoria (Confirm() de arriba, ni el RetentionDocument/AccountsPayable
-            // en staging de arriba) llegó a persistirse.
-            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: mismo criterio para el posting de la retención
-            // — RetentionDocumentIssuedPostingTranslator lanza RetentionPostingFailedException si
-            // falla, capturada abajo, con el mismo efecto de rollback completo.
-            // DOCUMENT-FLOW-POLICY-01: la política inicial obligatoria de GASDOC declara
-            // AccountingPostingMode.OnConfirmation, que coincide con este comportamiento existente
-            // (posting disparado por ExpenseDocumentConfirmedEvent al confirmar). Reestructurar el
-            // translator para leer el modo de la política queda fuera de alcance — no rompe nada
-            // hoy porque ambos coinciden.
-            await _repo.SaveChangesAsync(ct);
-        }
-        catch (ExpensePostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-        catch (RetentionPostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-
-        // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01: "al confirmar gasto, después de
-        // posting contable exitoso, crear AccountsPayable" — solo si la política de flujo documental
-        // lo declara (PayableGenerationMode.OnConfirmation) Y no se creó ya de forma staged por el
-        // camino de retención de arriba (RETENTIONS-EXPENSES-INTEGRATION-01D-2 — evita un
-        // AccountsPayable duplicado para el mismo origen). El posting ya se confirmó y persistió
-        // arriba (si hubiera fallado, ya habríamos retornado). A diferencia del posting, un fallo
-        // aquí NO debe revertir la confirmación ya persistida (el gasto ya tiene asiento contable
-        // real) — se registra para seguimiento manual, mismo criterio que Purchases usa para gaps de
-        // configuración que no bloquean el documento de origen. CreateFromOriginAsync es
-        // idempotente, así que un reintento manual posterior es seguro.
+        // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01 (ADR-033, Fase 2 P1 —
+        // atomicidad CxP en Gastos): "al confirmar gasto, crear AccountsPayable" — solo si la
+        // política de flujo documental lo declara (PayableGenerationMode.OnConfirmation) Y no se
+        // creó ya de forma staged por el camino de retención de arriba (evita un AccountsPayable
+        // duplicado para el mismo origen). Igual que el camino con retención (arriba) y que Compras
+        // (ConfirmPurchaseUseCases), se usa StageFromOriginAsync — nunca CreateFromOriginAsync, que
+        // comitea por su cuenta — para que la CxP quede en el MISMO SaveChangesAsync que el posting
+        // y la confirmación del documento: si la generación de CxP falla, todo el rollback ocurre
+        // junto (nunca queda un gasto confirmado con asiento contable pero sin CxP obligatoria).
         if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation && !retentionAppliedToPayable)
         {
             try
             {
-                await _payables.CreateFromOriginAsync(
+                await _payables.StageFromOriginAsync(
                     new CreateAccountsPayableFromOriginRequest(
                         _tenant.TenantId,
                         _company.CompanyId,
@@ -381,13 +367,36 @@ public sealed class ConfirmExpenseDocumentHandler
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
-                _logger.LogWarning(
-                    ex,
-                    "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
-                    document.Id,
-                    document.DocumentNumber
-                );
+                return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
             }
+        }
+
+        try
+        {
+            // EXPENSES-CONFIRM-07: a diferencia de Purchases/Sales, el posting de Gastos es
+            // estricto — ExpenseDocumentConfirmedPostingTranslator lanza ExpensePostingFailedException
+            // (en vez de solo loguear un warning) si IPostingEngine.PostAsync falla. La excepción se
+            // propaga desde el Publish() interno de ErpDbContext.SaveChangesAsync, que hace rollback
+            // completo de la transacción ANTES de este catch — el documento queda en Draft en BD,
+            // nada de lo mutado en memoria (Confirm() de arriba, ni el RetentionDocument/AccountsPayable
+            // en staging de arriba) llegó a persistirse.
+            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: mismo criterio para el posting de la retención
+            // — RetentionDocumentIssuedPostingTranslator lanza RetentionPostingFailedException si
+            // falla, capturada abajo, con el mismo efecto de rollback completo.
+            // DOCUMENT-FLOW-POLICY-01: la política inicial obligatoria de GASDOC declara
+            // AccountingPostingMode.OnConfirmation, que coincide con este comportamiento existente
+            // (posting disparado por ExpenseDocumentConfirmedEvent al confirmar). Reestructurar el
+            // translator para leer el modo de la política queda fuera de alcance — no rompe nada
+            // hoy porque ambos coinciden.
+            await _repo.SaveChangesAsync(ct);
+        }
+        catch (ExpensePostingFailedException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
+        }
+        catch (RetentionPostingFailedException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
 
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));
@@ -692,34 +701,16 @@ public sealed class CreateConfirmedExpenseHandler
             }
         }
 
-        try
-        {
-            // Mismo criterio que ConfirmExpenseDocumentHandler (EXPENSES-CONFIRM-07): posting de
-            // Gastos es estricto — ExpensePostingFailedException aborta la transacción completa,
-            // nada de lo construido arriba llega a persistirse. RETENTIONS-EXPENSES-INTEGRATION-01D-2:
-            // mismo criterio para RetentionPostingFailedException (posting de la retención).
-            await _repo.SaveChangesAsync(ct);
-        }
-        catch (ExpensePostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-        catch (RetentionPostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-
-        // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01, mismo criterio que
-        // ConfirmExpenseDocumentHandler: solo si PayableGenerationMode.OnConfirmation Y no se creó
-        // ya de forma staged por el camino de retención de arriba (evita un AccountsPayable
-        // duplicado). El posting ya se confirmó y persistió arriba; un fallo aquí no revierte la
-        // confirmación ya persistida — se registra para seguimiento manual. CreateFromOriginAsync es
-        // idempotente.
+        // PAYABLES-GENERIC-FOUNDATION-09 + DOCUMENT-FLOW-POLICY-01 (ADR-033, Fase 2 P1 —
+        // atomicidad CxP en Gastos): mismo criterio que ConfirmExpenseDocumentHandler — se usa
+        // StageFromOriginAsync (nunca CreateFromOriginAsync) para que la CxP quede en el mismo
+        // SaveChangesAsync que el posting y la creación del documento: si falla, todo el rollback
+        // ocurre junto (nunca queda un gasto confirmado sin CxP obligatoria).
         if (policy.PayableGenerationMode == PayableGenerationMode.OnConfirmation && !retentionAppliedToPayable)
         {
             try
             {
-                await _payables.CreateFromOriginAsync(
+                await _payables.StageFromOriginAsync(
                     new CreateAccountsPayableFromOriginRequest(
                         _tenant.TenantId,
                         _company.CompanyId,
@@ -746,13 +737,25 @@ public sealed class CreateConfirmedExpenseHandler
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
-                _logger.LogWarning(
-                    ex,
-                    "No se pudo crear la cuenta por pagar para el gasto {ExpenseDocumentId} ({DocumentNumber}) tras confirmar.",
-                    document.Id,
-                    document.DocumentNumber
-                );
+                return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message);
             }
+        }
+
+        try
+        {
+            // Mismo criterio que ConfirmExpenseDocumentHandler (EXPENSES-CONFIRM-07): posting de
+            // Gastos es estricto — ExpensePostingFailedException aborta la transacción completa,
+            // nada de lo construido arriba llega a persistirse. RETENTIONS-EXPENSES-INTEGRATION-01D-2:
+            // mismo criterio para RetentionPostingFailedException (posting de la retención).
+            await _repo.SaveChangesAsync(ct);
+        }
+        catch (ExpensePostingFailedException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
+        }
+        catch (RetentionPostingFailedException ex)
+        {
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
         }
 
         return Result<ExpenseDocumentDetailDto>.Success(ExpenseDocumentMapper.ToDetail(document));

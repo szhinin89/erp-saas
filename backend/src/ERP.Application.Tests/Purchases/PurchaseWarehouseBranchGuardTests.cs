@@ -308,11 +308,17 @@ public sealed class PurchaseWarehouseBranchGuardTests
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(ConfirmPurchaseHandlerTests.DefaultOperationalPreferences());
 
+        var ptRepo = new Mock<IPaymentTermRepository>();
+        ptRepo
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId));
+
         var handler = new ConfirmPurchaseHandler(
             repo.Object,
             stockRepo.Object,
             itemRepo.Object,
             whRepo.Object,
+            ptRepo.Object,
             Mock.Of<PurchaseTaxResolver>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<IPricingResolver>(),

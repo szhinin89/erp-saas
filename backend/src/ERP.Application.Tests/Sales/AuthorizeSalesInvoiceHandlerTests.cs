@@ -40,6 +40,17 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     private static readonly Guid PaymentMethodId = Guid.NewGuid();
     private static readonly Guid CashSessionId = Guid.NewGuid();
 
+    /// <summary>ADR-033, Fase 2 P1: la condición de pago del borrador siempre está activa por
+    /// defecto en estas pruebas (foco en fecha/stock/política fiscal, no en el guard de
+    /// IsActive — cubierto en su propio test más abajo).</summary>
+    private static Mock<IPaymentTermRepository> ActivePaymentTermRepoMock()
+    {
+        var repo = new Mock<IPaymentTermRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId));
+        return repo;
+    }
+
     /// <summary>Factura de contado, sin punto de emisión (evita mockear captura de secuencial /
     /// emisión electrónica — fuera del alcance de esta regresión) y sin ítem/bodega en la línea
     /// (evita mockear validación de stock) — aísla exclusivamente la validación de fecha.
@@ -285,6 +296,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             repo.Object,
             receivableRepo.Object,
             stockRepo.Object,
+            ActivePaymentTermRepoMock().Object,
             tax.Object,
             Mock.Of<IDocumentSequenceRepository>(),
             Mock.Of<IEmissionPointRepository>(),
@@ -398,6 +410,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             repo.Object,
             Mock.Of<ISalesReceivableRepository>(),
             stockRepo.Object,
+            ActivePaymentTermRepoMock().Object,
             tax.Object,
             Mock.Of<IDocumentSequenceRepository>(),
             Mock.Of<IEmissionPointRepository>(),
@@ -617,6 +630,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             repo.Object,
             Mock.Of<ISalesReceivableRepository>(),
             stockRepo.Object,
+            ActivePaymentTermRepoMock().Object,
             tax.Object,
             Mock.Of<IDocumentSequenceRepository>(),
             Mock.Of<IEmissionPointRepository>(),
@@ -637,6 +651,65 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         );
 
         return (handler, stockRepo);
+    }
+
+    // ── ADR-033, Fase 2 P1: condición de pago desactivada después del borrador ─────────────
+
+    [Fact]
+    public async Task Autorizar_bloqueado_si_condicion_de_pago_fue_desactivada_despues_del_borrador()
+    {
+        var inv = CreateDraftInvoice(new DateOnly(2026, 8, 1));
+
+        var repo = new Mock<ISalesInvoiceRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+
+        var inactiveTerm = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
+        inactiveTerm.Disable(UserId);
+        var ptRepo = new Mock<IPaymentTermRepository>();
+        ptRepo
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inactiveTerm);
+
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(BranchId);
+        var user = new Mock<ICurrentUser>();
+        user.Setup(u => u.UserId).Returns(UserId);
+
+        var handler = new AuthorizeSalesInvoiceHandler(
+            repo.Object,
+            Mock.Of<ISalesReceivableRepository>(),
+            Mock.Of<IStockRepository>(),
+            ptRepo.Object,
+            Mock.Of<ISriTaxResolver>(),
+            Mock.Of<IDocumentSequenceRepository>(),
+            Mock.Of<IEmissionPointRepository>(),
+            Mock.Of<IEstablishmentRepository>(),
+            Mock.Of<IElectronicDocumentRepository>(),
+            Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
+            Mock.Of<ICompanyClock>(),
+            Mock.Of<IBusinessPartnerRepository>(),
+            Mock.Of<ISalesFiscalPolicyResolver>(),
+            Mock.Of<IPaymentMethodRepository>(),
+            Mock.Of<IPostingEngine>(),
+            Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
+            tenant.Object,
+            company.Object,
+            branch.Object,
+            user.Object,
+            Mock.Of<IOperationalPreferencesResolver>()
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
     }
 
     // ── SALES-PRESENTATIONS-02: venta por presentación (caja x12) ──────────

@@ -196,7 +196,7 @@ export function PaymentTermsPage() {
   return (
     <ErpPageTemplate
       title="Condiciones de Pago"
-      subtitle="Plazos y cuotas para proveedores."
+      subtitle="Plazos y cuotas de pago y cobro, usados en compras, gastos y ventas."
     >
       <div className="prd-tabs">
         {tabs.map((t) => (

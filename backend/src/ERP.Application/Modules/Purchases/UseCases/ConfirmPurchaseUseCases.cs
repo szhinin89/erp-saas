@@ -12,6 +12,7 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -41,6 +42,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IStockRepository _stockRepo;
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _whRepo;
+    private readonly IPaymentTermRepository _ptRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPostingEngine _postingEngine;
     private readonly IPricingResolver _pricingResolver;
@@ -57,6 +59,7 @@ public sealed class ConfirmPurchaseHandler
         IStockRepository stockRepo,
         IItemRepository itemRepo,
         IWarehouseRepository whRepo,
+        IPaymentTermRepository ptRepo,
         ISriTaxResolver tax,
         IPostingEngine postingEngine,
         IPricingResolver pricingResolver,
@@ -73,6 +76,7 @@ public sealed class ConfirmPurchaseHandler
         _stockRepo = stockRepo;
         _itemRepo = itemRepo;
         _whRepo = whRepo;
+        _ptRepo = ptRepo;
         _tax = tax;
         _postingEngine = postingEngine;
         _pricingResolver = pricingResolver;
@@ -100,6 +104,17 @@ public sealed class ConfirmPurchaseHandler
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");
+
+        // ── Validar que la condición de pago del borrador siga activa (ADR-033, Fase 2 P1) ──
+        // El snapshot congelado en el borrador (inv.PaymentTermId) no refleja cambios posteriores
+        // en el catálogo — si la condición fue desactivada después de crear el borrador, no debe
+        // confirmarse silenciosamente. El usuario debe editar el borrador con una condición activa.
+        var pt = await _ptRepo.GetByIdAsync(tid, inv.PaymentTermId, ct);
+        if (pt is null || !pt.IsActive)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "La condición de pago de esta compra fue desactivada. Edite el borrador y "
+                    + "seleccione una condición de pago activa antes de confirmar."
+            );
 
         // CONFIG-DYNAMIC-OPERATIONS-02 (purchases.allow_confirm_without_reception_xml): si está
         // desactivada, exige que al menos una línea provenga de Recepción Electrónica

@@ -6,6 +6,8 @@ using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -33,6 +35,16 @@ public sealed class ConfirmPurchaseHandlerTests
     private static readonly Guid ItemId2 = Guid.NewGuid();
     private static readonly Guid WhId = Guid.NewGuid();
     private static readonly Guid PtId = Guid.NewGuid();
+
+    /// <summary>ADR-033, Fase 2 P1: condición de pago activa por defecto en estas pruebas (foco en
+    /// costeo/stock/posting, no en el guard de IsActive — cubierto en su propio test).</summary>
+    private static Mock<IPaymentTermRepository> ActivePaymentTermRepoMock()
+    {
+        var repo = new Mock<IPaymentTermRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId));
+        return repo;
+    }
 
     private static PurchaseInvoice CreateDraftInvoice(int lineCount = 1, bool sameItem = false)
     {
@@ -476,6 +488,7 @@ public sealed class ConfirmPurchaseHandlerTests
             stockRepo.Object,
             itemRepo.Object,
             whRepo.Object,
+            ActivePaymentTermRepoMock().Object,
             tax.Object,
             postingEngine.Object,
             pricingResolver.Object,
@@ -990,6 +1003,57 @@ public sealed class ConfirmPurchaseHandlerTests
     }
 
     [Fact]
+    public async Task Confirm_bloqueado_si_condicion_de_pago_fue_desactivada_despues_del_borrador()
+    {
+        // ADR-033, Fase 2 P1: el snapshot del borrador no refleja que la condición de pago fue
+        // desactivada después de crearlo — la confirmación debe bloquear con mensaje claro.
+        var inv = CreateDraftInvoice(1);
+
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+
+        var inactiveTerm = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
+        inactiveTerm.Disable(UserId);
+        var ptRepo = new Mock<IPaymentTermRepository>();
+        ptRepo
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inactiveTerm);
+
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
+        var branch = new Mock<ICurrentBranch>();
+        branch.Setup(b => b.BranchId).Returns(BranchId);
+        var user = new Mock<ICurrentUser>();
+        user.Setup(u => u.UserId).Returns(UserId);
+
+        var handler = new ConfirmPurchaseHandler(
+            repo.Object,
+            Mock.Of<IStockRepository>(),
+            Mock.Of<IItemRepository>(),
+            Mock.Of<IWarehouseRepository>(),
+            ptRepo.Object,
+            Mock.Of<ISriTaxResolver>(),
+            Mock.Of<IPostingEngine>(),
+            Mock.Of<IPricingResolver>(),
+            Mock.Of<IAccountsPayableService>(),
+            Mock.Of<ILogger<ConfirmPurchaseHandler>>(),
+            tenant.Object,
+            company.Object,
+            branch.Object,
+            user.Object,
+            Mock.Of<IOperationalPreferencesResolver>()
+        );
+
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+    }
+
+    [Fact]
     public async Task Confirm_not_found_returns_failure()
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
@@ -1024,6 +1088,7 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<IStockRepository>().Object,
             new Mock<IItemRepository>().Object,
             new Mock<IWarehouseRepository>().Object,
+            ActivePaymentTermRepoMock().Object,
             new Mock<ISriTaxResolver>().Object,
             new Mock<IPostingEngine>().Object,
             new Mock<IPricingResolver>().Object,

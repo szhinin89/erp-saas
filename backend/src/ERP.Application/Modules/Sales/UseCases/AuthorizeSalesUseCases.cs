@@ -37,6 +37,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ISalesInvoiceRepository _repo;
     private readonly ISalesReceivableRepository _rxRepo;
     private readonly IStockRepository _stockRepo;
+    private readonly IPaymentTermRepository _ptRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IDocumentSequenceRepository _seqRepo;
     private readonly IEmissionPointRepository _epRepo;
@@ -59,6 +60,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         ISalesInvoiceRepository repo,
         ISalesReceivableRepository rxRepo,
         IStockRepository stockRepo,
+        IPaymentTermRepository ptRepo,
         ISriTaxResolver tax,
         IDocumentSequenceRepository seqRepo,
         IEmissionPointRepository epRepo,
@@ -81,6 +83,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _repo = repo;
         _rxRepo = rxRepo;
         _stockRepo = stockRepo;
+        _ptRepo = ptRepo;
         _tax = tax;
         _seqRepo = seqRepo;
         _epRepo = epRepo;
@@ -115,6 +118,17 @@ public sealed class AuthorizeSalesInvoiceHandler
 
         if (inv.Status != Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft)
             return Result<SalesInvoiceDto>.ValidationFailure("Esta factura ya fue autorizada.");
+
+        // ── Validar que la condición de pago del borrador siga activa (ADR-033, Fase 2 P1) ──
+        // El snapshot congelado en el borrador (inv.PaymentTerm) no refleja cambios posteriores
+        // en el catálogo — si la condición fue desactivada después de crear el borrador, no debe
+        // confirmarse silenciosamente. El usuario debe editar el borrador con una condición activa.
+        var pt = await _ptRepo.GetByIdAsync(tid, inv.PaymentTerm.Id, ct);
+        if (pt is null || !pt.IsActive)
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                "La condición de pago de este documento fue desactivada. Edite el borrador y "
+                    + "seleccione una condición de pago activa antes de confirmar."
+            );
 
         // ── Validar fecha de emisión contra la fecha empresarial (Ecuador) ──
         // Corrige SRI [65] FECHA EMISIÓN EXTEMPORÁNEA: debe ejecutarse ANTES de capturar

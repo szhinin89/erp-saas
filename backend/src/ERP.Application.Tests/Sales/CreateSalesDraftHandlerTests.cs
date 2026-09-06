@@ -182,6 +182,59 @@ public sealed class CreateSalesDraftHandlerTests
     }
 
     [Fact]
+    public async Task ADR033_rechaza_PaymentTermId_explicito_inactivo()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var inactivePt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
+        inactivePt.Disable(UserId);
+        f.PtRepo
+            .Setup(r => r.GetByIdAsync(TenantId, inactivePt.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inactivePt);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") },
+            PaymentTermId: inactivePt.Id
+        );
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("inactiva");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ADR033_fallback_implicito_no_toma_condiciones_inactivas()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        // Todas las condiciones del tenant están inactivas — el fallback implícito no debe
+        // devolver ninguna (nunca "el primer registro" sin importar su estado).
+        var inactivePt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
+        inactivePt.Disable(UserId);
+        f.PtRepo
+            .Setup(r => r.ListAsync(TenantId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PaymentTerm> { inactivePt });
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("activa");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task POS_DISCOUNT_RULES_01_rechaza_descuento_manual_por_linea_si_no_esta_permitido()
     {
         var f = new Fixture();

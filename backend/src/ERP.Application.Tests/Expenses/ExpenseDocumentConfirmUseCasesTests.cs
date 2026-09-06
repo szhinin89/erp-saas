@@ -12,6 +12,8 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.DocTypes.Enums;
+using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Events;
@@ -51,6 +53,27 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
     }
 
     [Fact]
+    public async Task Confirmar_bloqueado_si_condicion_de_pago_fue_desactivada()
+    {
+        // ADR-033, Fase 2 P1: el snapshot del borrador no refleja que la condición de pago fue
+        // desactivada después de crearlo — la confirmación debe bloquear con mensaje claro, nunca
+        // confirmar silenciosamente. Mismo criterio ya aplicado en Ventas/Compras.
+        var fx = new Fixture();
+        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
+        fx.SetupDocument(document);
+        var inactiveTerm = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
+        inactiveTerm.Disable(UserId);
+        fx.PaymentTerms
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inactiveTerm);
+
+        var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Confirmar_gasto_crea_CxP_generica_con_OriginType_ExpenseDocument()
     {
         var fx = new Fixture();
@@ -62,7 +85,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         result.IsSuccess.Should().BeTrue();
         fx.Payables.Verify(
             p =>
-                p.CreateFromOriginAsync(
+                p.StageFromOriginAsync(
                     It.Is<CreateAccountsPayableFromOriginRequest>(req =>
                         req.OriginType == AccountsPayableOriginType.ExpenseDocument
                         && req.OriginId == document.Id
@@ -77,17 +100,18 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
     }
 
     [Fact]
-    public async Task Si_falla_la_creacion_de_CxP_la_confirmacion_igual_tiene_exito()
+    public async Task Si_falla_la_creacion_de_CxP_la_confirmacion_completa_falla()
     {
-        // La CxP se crea DESPUES de que el posting ya se confirmo y persistio — un fallo aqui no
-        // debe revertir la confirmacion (a diferencia del posting, que si es estricto). Ver
-        // comentario en ConfirmExpenseDocumentHandler.
+        // ADR-033, Fase 2 P1 (atomicidad CxP en Gastos): a diferencia del comportamiento anterior
+        // (CreateFromOriginAsync comiteaba aparte y un fallo solo se logueaba), ahora la CxP se
+        // genera vía StageFromOriginAsync ANTES del único SaveChangesAsync — un fallo aquí debe
+        // abortar toda la confirmación, nunca dejar un gasto confirmado sin CxP obligatoria.
         var fx = new Fixture();
         var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
         fx.SetupDocument(document);
         fx.Payables
             .Setup(p =>
-                p.CreateFromOriginAsync(
+                p.StageFromOriginAsync(
                     It.IsAny<CreateAccountsPayableFromOriginRequest>(),
                     It.IsAny<Guid>(),
                     It.IsAny<CancellationToken>()
@@ -97,8 +121,8 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
 
         var result = await fx.Handler.Handle(new ConfirmExpenseDocumentCommand(document.Id), CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.Status.Should().Be(ExpenseStatus.Confirmed);
+        result.IsSuccess.Should().BeFalse();
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -328,7 +352,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         result.IsSuccess.Should().BeTrue();
         fx.Payables.Verify(
             p =>
-                p.CreateFromOriginAsync(
+                p.StageFromOriginAsync(
                     It.IsAny<CreateAccountsPayableFromOriginRequest>(),
                     It.IsAny<Guid>(),
                     It.IsAny<CancellationToken>()
@@ -765,6 +789,9 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         public Mock<IAccountsPayableService> Payables { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
         public Mock<IRetentionIssuer> RetentionIssuer { get; } = new();
+        public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
+        public PaymentTerm ActivePaymentTerm { get; } =
+            PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
 
         public ExpenseCategoryNode Type { get; }
         public ExpenseCategoryNode Category { get; }
@@ -779,6 +806,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                 Payables.Object,
                 WorkflowPolicy.Object,
                 RetentionIssuer.Object,
+                PaymentTerms.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -804,6 +832,9 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             Docs
                 .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
+            PaymentTerms
+                .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ActivePaymentTerm);
             WorkflowPolicy
                 .Setup(w =>
                     w.EnsureConfirmationFlowAsync(

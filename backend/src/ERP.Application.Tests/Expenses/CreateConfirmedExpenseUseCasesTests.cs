@@ -93,7 +93,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         result.IsSuccess.Should().BeTrue();
         fx.Payables.Verify(
             p =>
-                p.CreateFromOriginAsync(
+                p.StageFromOriginAsync(
                     It.Is<CreateAccountsPayableFromOriginRequest>(req =>
                         req.OriginType == AccountsPayableOriginType.ExpenseDocument
                         && req.SupplierId == fx.Supplier.Id
@@ -166,7 +166,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Once);
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         fx.Payables.Verify(
-            p => p.CreateFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -214,8 +214,8 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         staged!.RetainedAmount.Should().Be(3m);
         staged.OutstandingAmount.Should().Be(staged.TotalAmount - 3m);
         fx.Payables.Verify(
-            p => p.CreateFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never
+            p => p.StageFromOriginAsync(It.IsAny<CreateAccountsPayableFromOriginRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Once
         );
     }
 

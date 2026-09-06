@@ -551,6 +551,10 @@ public sealed class CreatePurchaseDraftHandler
         var pt = await _ptRepo.GetByIdAsync(_t.TenantId, ptId, ct);
         if (pt is null)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La condición de pago no existe.");
+        if (!pt.IsActive)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "La condición de pago se encuentra inactiva."
+            );
 
         if (cmd.GlobalWarehouseId.HasValue)
         {
@@ -863,13 +867,20 @@ public sealed class UpdatePurchaseDraftHandler
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTermId)
         {
             var pt = await _ptRepo.GetByIdAsync(_t.TenantId, cmd.PaymentTermId.Value, ct);
-            if (pt is not null)
-                inv.UpdatePaymentTermSnapshot(
-                    pt.Id,
-                    pt.Name,
-                    pt.Installments,
-                    pt.DaysBetweenInstallments
+            if (pt is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "La condición de pago no existe."
                 );
+            if (!pt.IsActive)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "La condición de pago se encuentra inactiva."
+                );
+            inv.UpdatePaymentTermSnapshot(
+                pt.Id,
+                pt.Name,
+                pt.Installments,
+                pt.DaysBetweenInstallments
+            );
         }
         else if (cmd.SupplierId != inv.SupplierId)
         {
@@ -885,7 +896,7 @@ public sealed class UpdatePurchaseDraftHandler
                     role.SupplierConfig.PaymentTermId,
                     ct
                 );
-                if (pt is not null)
+                if (pt is not null && pt.IsActive)
                     inv.UpdatePaymentTermSnapshot(
                         pt.Id,
                         pt.Name,

@@ -423,6 +423,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
                 new EstablishmentRepository(db),
                 new DocumentSequenceRepository(db)
             ),
+            new PaymentTermRepository(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
             new FixedCurrentBranch(_branchId),

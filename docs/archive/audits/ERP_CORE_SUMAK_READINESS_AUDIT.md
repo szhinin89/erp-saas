@@ -6,6 +6,8 @@
 **Metodología:** exploración de código en paralelo por 6 agentes de solo lectura + build/test real del backend. Ningún archivo de código fue modificado durante esta auditoría.
 **Regla de lectura:** cada hallazgo está marcado como **[HECHO]** (verificado leyendo código/ejecutando comandos), **[INFERENCIA]** (deducción razonable no 100% verificada) o **[RECOMENDACIÓN]** (opinión sobre qué hacer, no un hecho).
 
+> **Nota (2026-09-06):** Documento histórico. La fila "PaymentMethods/PaymentTerms/CreditTerms" (§6, columna "Integrado: Sí") quedó superada por [ADR-033](../../decisions/ADR-033-payment-term-ssot-and-document-schedules.md): `CreditTerm` no tiene ningún caso de uso transaccional conectado. No se reescribe el resto de esta auditoría.
+
 ---
 
 ## 1. Resumen ejecutivo
