@@ -20,7 +20,9 @@ public interface IRefreshTokenService
         Guid tenantId,
         Guid? companyId,
         string userType,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool isOperatorSession = false,
+        Guid? globalAdminUserId = null
     );
 
     /// <summary>
@@ -110,6 +112,10 @@ public sealed class RefreshTokenValidationResult
     public string? Error { get; init; }
     public bool IsRateLimited { get; init; }
 
+    /// <summary>Ver <see cref="ERP.Domain.Auth.Entities.RefreshToken.IsOperatorSession"/>.</summary>
+    public bool IsOperatorSession { get; init; }
+    public Guid? GlobalAdminUserId { get; init; }
+
     public static RefreshTokenValidationResult Fail(string error) =>
         new() { IsValid = false, Error = error };
 
@@ -126,7 +132,9 @@ public sealed class RefreshTokenValidationResult
         Guid userId,
         Guid tenantId,
         Guid? companyId,
-        string userType
+        string userType,
+        bool isOperatorSession = false,
+        Guid? globalAdminUserId = null
     ) =>
         new()
         {
@@ -135,6 +143,8 @@ public sealed class RefreshTokenValidationResult
             TenantId = tenantId,
             CompanyId = companyId,
             UserType = userType,
+            IsOperatorSession = isOperatorSession,
+            GlobalAdminUserId = globalAdminUserId,
         };
 
     public static RefreshTokenValidationResult Ok(
@@ -143,7 +153,9 @@ public sealed class RefreshTokenValidationResult
         Guid? companyId,
         string userType,
         string newToken,
-        DateTime newExpiry
+        DateTime newExpiry,
+        bool isOperatorSession = false,
+        Guid? globalAdminUserId = null
     ) =>
         new()
         {
@@ -154,5 +166,7 @@ public sealed class RefreshTokenValidationResult
             UserType = userType,
             NewToken = newToken,
             NewExpiry = newExpiry,
+            IsOperatorSession = isOperatorSession,
+            GlobalAdminUserId = globalAdminUserId,
         };
 }

@@ -41,7 +41,9 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         Guid tenantId,
         Guid? companyId,
         string userType,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool isOperatorSession = false,
+        Guid? globalAdminUserId = null
     )
     {
         var rawToken = GenerateRaw();
@@ -55,7 +57,9 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             userType,
             tokenHash,
             expiresAt,
-            absoluteExpiresAt
+            absoluteExpiresAt,
+            isOperatorSession: isOperatorSession,
+            globalAdminUserId: globalAdminUserId
         );
         await _repo.AddAsync(entity, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
@@ -174,7 +178,12 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             successorAbsoluteExpiresAt,
             familyId: stored.FamilyId,
             parentTokenId: stored.Id,
-            rotationDepth: stored.RotationDepth + 1
+            rotationDepth: stored.RotationDepth + 1,
+            // ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: se hereda sin cambios en cada rotación —
+            // ver RefreshToken.IsOperatorSession. RefreshTokenHandler revalida GlobalUserRole en
+            // cada uso; este flag solo dice "de dónde vino esta sesión", nunca autoriza por sí solo.
+            isOperatorSession: stored.IsOperatorSession,
+            globalAdminUserId: stored.GlobalAdminUserId
         );
 
         var (rotated, previous) = await _repo.TryRotateAsync(
@@ -215,7 +224,9 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             stored.CompanyId,
             stored.UserType,
             newRaw,
-            successor.ExpiresAt
+            successor.ExpiresAt,
+            isOperatorSession: stored.IsOperatorSession,
+            globalAdminUserId: stored.GlobalAdminUserId
         );
     }
 
@@ -246,7 +257,9 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             stored.UserId,
             stored.TenantId,
             stored.CompanyId,
-            stored.UserType
+            stored.UserType,
+            isOperatorSession: stored.IsOperatorSession,
+            globalAdminUserId: stored.GlobalAdminUserId
         );
     }
 

@@ -116,7 +116,9 @@ public sealed class OperateCompanyHandler
             company.TenantId,
             company.Id,
             RefreshUserType.Identity,
-            cancellationToken
+            cancellationToken,
+            isOperatorSession: true,
+            globalAdminUserId: user.Id
         );
 
         return Result<AuthResponseDto>.Success(

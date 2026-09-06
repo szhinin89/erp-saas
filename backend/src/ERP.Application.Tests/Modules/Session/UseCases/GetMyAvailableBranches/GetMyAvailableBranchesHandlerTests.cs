@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Session.UseCases.GetMyAvailableBranches;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
@@ -25,12 +26,18 @@ public sealed class GetMyAvailableBranchesHandlerTests
         public Mock<IBranchRepository> BranchRepository { get; } = new();
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepository { get; } = new();
         public Mock<ICompanyUserPreferencesRepository> PreferencesRepository { get; } = new();
+        public Mock<IOperatorCompanyAccessPolicy> OperatorAccessPolicy { get; } = new();
 
         public Fixture()
         {
             CurrentUser.Setup(u => u.UserId).Returns(UserId);
             CurrentCompany.Setup(c => c.CompanyId).Returns(CompanyId);
             CurrentTenant.Setup(t => t.TenantId).Returns(TenantId);
+            // Por defecto ningún test de esta clase es un admin global operando — evita que un
+            // Mock sin Setup devuelva Task<bool> nulo (NullReferenceException al await).
+            OperatorAccessPolicy
+                .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
         }
 
         public GetMyAvailableBranchesHandler BuildHandler() =>
@@ -41,7 +48,8 @@ public sealed class GetMyAvailableBranchesHandlerTests
                 AccessRepository.Object,
                 BranchRepository.Object,
                 CompanyUserBranchRepository.Object,
-                PreferencesRepository.Object
+                PreferencesRepository.Object,
+                OperatorAccessPolicy.Object
             );
     }
 
@@ -76,7 +84,7 @@ public sealed class GetMyAvailableBranchesHandlerTests
         );
 
     [Fact]
-    public async Task Sin_membership_activa_rechaza()
+    public async Task Sin_membership_activa_y_sin_autorizacion_de_operador_rechaza()
     {
         var f = new Fixture();
         f.AccessRepository.Setup(r =>
@@ -89,6 +97,134 @@ public sealed class GetMyAvailableBranchesHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
+    }
+
+    /// <summary>
+    /// ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: un admin global operando esta empresa (sin
+    /// CompanyUserMembership, autorizado por IOperatorCompanyAccessPolicy) debe ver TODAS las
+    /// sucursales activas de la empresa — nunca "No tiene sucursales asignadas" cuando sí puede
+    /// operar en modo global. Sin preferencia resoluble (no hay membership), el modo es
+    /// AskBranch y sin DefaultBranchId.
+    /// </summary>
+    [Fact]
+    public async Task Admin_global_sin_membership_autorizado_como_operador_recibe_todas_las_sucursales_activas()
+    {
+        var f = new Fixture();
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+        f.OperatorAccessPolicy
+            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var mainBranch = CreateBranch("Matriz", isMain: true);
+        var northBranch = CreateBranch("Norte", isMain: false);
+        f.BranchRepository.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new[] { northBranch, mainBranch });
+
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Branches.Should().HaveCount(2);
+        result.Value!.Branches[0].Name.Should().Be("Matriz");
+        result.Value!.Branches[0].IsMainBranch.Should().BeTrue();
+        result.Value!.Branches[1].Name.Should().Be("Norte");
+        result.Value!.LoginMode.Should().Be(nameof(CompanyUserLoginMode.AskBranch));
+        result.Value!.DefaultBranchId.Should().BeNull();
+        f.CompanyUserBranchRepository.Verify(
+            r => r.GetByMembershipAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "el admin global no tiene membership de la cual derivar CompanyUserBranch"
+        );
+    }
+
+    /// <summary>
+    /// Regresión del bug real encontrado en revisión manual: el usuario tenía una
+    /// CompanyUserMembership propia y activa en la empresa (es Admin de esa empresa) pero su
+    /// única fila CompanyUserBranch estaba revocada (is_active=false) — el código anterior
+    /// resolvía por la rama de membership (que existía y estaba activa) y devolvía la lista
+    /// vacía de siempre ("No tiene sucursales asignadas") sin llegar nunca a consultar la
+    /// política de operador. Ahora la política de operador se evalúa primero y gana siempre que
+    /// aplica, sin importar si además existe una membership restringida.
+    /// </summary>
+    [Fact]
+    public async Task Admin_global_con_membership_propia_pero_CompanyUserBranch_revocada_recibe_todas_las_sucursales_activas()
+    {
+        var f = new Fixture();
+        var membership = CompanyUserMembership.Create(CompanyId, UserId, "Admin", null, Guid.NewGuid());
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        f.OperatorAccessPolicy
+            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var mainBranch = CreateBranch("Sucursal Principal", isMain: true);
+        f.BranchRepository.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new[] { mainBranch });
+        // La única CompanyUserBranch de esta membership está revocada — si el handler
+        // consultara esta rama, la lista resultante sería vacía.
+        var revokedAuthorization = CompanyUserBranch.Create(
+            TenantId,
+            CompanyId,
+            membership.Id,
+            mainBranch.Id,
+            Guid.NewGuid()
+        );
+        revokedAuthorization.Deactivate(Guid.NewGuid());
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new[] { revokedAuthorization });
+
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Branches.Should().ContainSingle(b => b.Id == mainBranch.Id);
+        f.CompanyUserBranchRepository.Verify(
+            r => r.GetByMembershipAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "la política de operador gana antes de siquiera consultar CompanyUserBranch de la membership propia"
+        );
+    }
+
+    /// <summary>
+    /// Ninguna sucursal inactiva de la empresa se filtra al admin global — GetByCompanyAsync ya
+    /// se llama con activeFilter=true, igual que en el flujo normal.
+    /// </summary>
+    [Fact]
+    public async Task Admin_global_autorizado_no_recibe_sucursales_inactivas()
+    {
+        var f = new Fixture();
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+        f.OperatorAccessPolicy
+            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        f.BranchRepository.Setup(r =>
+                r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Array.Empty<Branch>());
+
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Branches.Should().BeEmpty();
+        f.BranchRepository.Verify(
+            r => r.GetByCompanyAsync(TenantId, CompanyId, true, null, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]

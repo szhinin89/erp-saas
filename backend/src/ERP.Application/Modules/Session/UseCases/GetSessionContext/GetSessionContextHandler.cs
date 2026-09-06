@@ -2,6 +2,7 @@ using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Media;
@@ -37,6 +38,7 @@ public sealed class GetSessionContextHandler
     private readonly IBranchRepository _branchRepository;
     private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
     private readonly IMediator _mediator;
+    private readonly IOperatorCompanyAccessPolicy _operatorAccessPolicy;
 
     public GetSessionContextHandler(
         ICurrentUser currentUser,
@@ -51,7 +53,8 @@ public sealed class GetSessionContextHandler
         IUserSessionRepository userSessionRepository,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
-        IMediator mediator
+        IMediator mediator,
+        IOperatorCompanyAccessPolicy operatorAccessPolicy
     )
     {
         _currentUser = currentUser;
@@ -67,6 +70,7 @@ public sealed class GetSessionContextHandler
         _branchRepository = branchRepository;
         _companyUserBranchRepository = companyUserBranchRepository;
         _mediator = mediator;
+        _operatorAccessPolicy = operatorAccessPolicy;
     }
 
     public async Task<Result<SessionContextDto>> Handle(
@@ -254,17 +258,31 @@ public sealed class GetSessionContextHandler
     /// <summary>
     /// Misma autorización que <see cref="IBranchAccessGuard"/>: membership activa en la empresa
     /// y fila <c>CompanyUserBranch</c> vigente para esa membership+sucursal. Sin excepción para
-    /// Admin — BranchAccessGuard tampoco la aplica (Admin recibe sus propias filas CompanyUserBranch
-    /// igual que cualquier otro rol).
+    /// Admin de empresa — BranchAccessGuard tampoco la aplica (recibe sus propias filas
+    /// CompanyUserBranch igual que cualquier otro rol). ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01:
+    /// la única excepción real es un admin global operando esta empresa (sin membership aquí),
+    /// resuelta por <see cref="IOperatorCompanyAccessPolicy"/> — misma política que
+    /// <c>BranchAccessGuard</c>, nunca duplicada.
     /// </summary>
     private async Task<bool> IsAuthorizedForBranchAsync(
         CompanyUserMembership? membership,
         Guid branchId,
         CancellationToken cancellationToken
-    ) =>
-        membership is not null
-        && membership.IsActive
-        && await _companyUserBranchRepository.ExistsAsync(membership.Id, branchId, cancellationToken);
+    )
+    {
+        if (
+            membership is not null
+            && membership.IsActive
+            && await _companyUserBranchRepository.ExistsAsync(
+                membership.Id,
+                branchId,
+                cancellationToken
+            )
+        )
+            return true;
+
+        return await _operatorAccessPolicy.IsAuthorizedOperatorAsync(cancellationToken);
+    }
 
     /// <summary>
     /// Mismo heurístico interino que LoginHandler.ResolveMainBranchIdAsync/

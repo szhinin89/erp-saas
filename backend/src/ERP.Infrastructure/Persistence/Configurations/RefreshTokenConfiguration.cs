@@ -47,6 +47,14 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 
         builder.Property(e => e.RotationDepth).HasColumnName("rotation_depth").IsRequired();
 
+        builder
+            .Property(e => e.IsOperatorSession)
+            .HasColumnName("is_operator_session")
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(e => e.GlobalAdminUserId).HasColumnName("global_admin_user_id");
+
         // Búsqueda principal por hash (único para prevenir duplicados)
         builder.HasIndex(e => e.TokenHash).IsUnique().HasDatabaseName("ix_refresh_tokens_hash");
 

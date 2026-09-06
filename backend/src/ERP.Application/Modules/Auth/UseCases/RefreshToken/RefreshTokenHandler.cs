@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -116,6 +117,59 @@ public sealed class RefreshTokenHandler
             );
             if (resolvedCompany is null)
                 return Result<AuthResponseDto>.Failure("Empresa no válida para el tenant.");
+
+            // ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: si este refresh token se originó en
+            // operate-company (RefreshToken.IsOperatorSession), revalidar GlobalUserRole en vivo
+            // — nunca confiar en el flag persistido solo — y, si sigue activo, reemitir
+            // operator_mode/global_admin_user_id en el nuevo access token. Sin esto, cada
+            // refresh/F5 perdía esos claims (solo viven en el access token, que nunca se
+            // persiste) y la sesión se degradaba silenciosamente a admin de empresa normal,
+            // regida por su propia CompanyUserMembership (que puede no tener CompanyUserBranch
+            // vigente). Si el rol global ya no está activo, no se falla aquí — simplemente se
+            // continúa con la resolución normal por membership de abajo.
+            if (v.IsOperatorSession && v.GlobalAdminUserId is Guid globalAdminUserId)
+            {
+                var globalRole = await _accessRepository.GetActiveGlobalUserRoleAsync(
+                    globalAdminUserId,
+                    SecurityRoles.Admin,
+                    cancellationToken
+                );
+                if (globalRole is not null)
+                {
+                    var operatorAccessToken = _accessTokenService.GenerateSessionToken(
+                        user,
+                        v.TenantId,
+                        SecurityRoles.Admin,
+                        new Claim[]
+                        {
+                            new("operator_mode", "true"),
+                            new("global_admin_user_id", globalAdminUserId.ToString()),
+                        }
+                    );
+
+                    return Result<AuthResponseDto>.Success(
+                        new AuthResponseDto(
+                            user.Id,
+                            user.FullName,
+                            user.Username,
+                            user.Email?.Value,
+                            SecurityRoles.Admin,
+                            v.TenantId,
+                            operatorAccessToken
+                        )
+                        {
+                            CompanyId = resolvedCompany.Id,
+                            RequiresCompanySelection = false,
+                            OnboardingCompleted = resolvedCompany.OnboardingCompleted,
+                            OperationalStatus = resolvedCompany.OperationalStatus,
+                            RefreshToken = v.NewToken,
+                            RefreshTokenExpiry = v.NewExpiry,
+                            OperatorMode = true,
+                            GlobalAdminUserId = globalAdminUserId,
+                        }
+                    );
+                }
+            }
 
             membership = await _accessRepository.GetCompanyUserMembershipAsync(
                 resolvedCompany.Id,

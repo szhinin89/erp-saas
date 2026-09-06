@@ -148,7 +148,9 @@ public sealed class OperateCompanyHandlerTests
                     tenant.Id,
                     company.Id,
                     RefreshUserType.Identity,
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    true,
+                    user.Id
                 )
             )
             .ReturnsAsync(("raw-refresh-token", DateTime.UtcNow.AddDays(1)));
@@ -165,6 +167,23 @@ public sealed class OperateCompanyHandlerTests
         result.Value.CompanyId.Should().Be(company.Id);
         result.Value.OperatorMode.Should().BeTrue();
         result.Value.GlobalAdminUserId.Should().Be(user.Id);
+        // ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: el refresh token de esta sesión debe quedar
+        // marcado como sesión de operador — es lo único que sobrevive un refresh/F5 (el access
+        // token con operator_mode/global_admin_user_id nunca se persiste), y sin este flag
+        // RefreshTokenHandler no puede reemitir esos claims al rotar.
+        f.RefreshTokenService.Verify(
+            s =>
+                s.CreateAsync(
+                    user.Id,
+                    tenant.Id,
+                    company.Id,
+                    RefreshUserType.Identity,
+                    It.IsAny<CancellationToken>(),
+                    true,
+                    user.Id
+                ),
+            Times.Once
+        );
     }
 
     [Fact]

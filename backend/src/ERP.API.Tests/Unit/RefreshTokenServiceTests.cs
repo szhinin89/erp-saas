@@ -50,6 +50,83 @@ public sealed class RefreshTokenServiceTests
         repo.Stored[0].ExpiresAt.Should().Be(repo.Stored[0].AbsoluteExpiresAt);
     }
 
+    /// <summary>
+    /// ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: CreateAsync debe persistir IsOperatorSession/
+    /// GlobalAdminUserId cuando el caller (OperateCompanyHandler) los pasa — es el único
+    /// registro que sobrevive un refresh/F5, ya que el access token con operator_mode/
+    /// global_admin_user_id nunca se persiste.
+    /// </summary>
+    [Fact]
+    public async Task Create_con_isOperatorSession_persiste_el_flag_y_el_global_admin_user_id()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
+
+        await service.CreateAsync(
+            userId,
+            tenantId,
+            companyId,
+            RefreshUserType.Identity,
+            isOperatorSession: true,
+            globalAdminUserId: userId
+        );
+
+        repo.Stored.Should().HaveCount(1);
+        repo.Stored[0].IsOperatorSession.Should().BeTrue();
+        repo.Stored[0].GlobalAdminUserId.Should().Be(userId);
+    }
+
+    [Fact]
+    public async Task Create_sin_isOperatorSession_no_marca_la_sesion_como_operador()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+
+        await service.CreateAsync(Guid.NewGuid(), Guid.NewGuid(), null, RefreshUserType.Identity);
+
+        repo.Stored[0].IsOperatorSession.Should().BeFalse();
+        repo.Stored[0].GlobalAdminUserId.Should().BeNull();
+    }
+
+    /// <summary>
+    /// La rotación debe heredar IsOperatorSession/GlobalAdminUserId sin cambios en el sucesor —
+    /// si esto se rompiera, un admin global perdería su contexto de operador en cada refresh
+    /// exactamente como pasaba antes de este fix.
+    /// </summary>
+    [Fact]
+    public async Task ValidateAndRotate_hereda_IsOperatorSession_y_GlobalAdminUserId_en_el_sucesor()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
+
+        var (rawToken, _) = await service.CreateAsync(
+            userId,
+            tenantId,
+            companyId,
+            RefreshUserType.Identity,
+            isOperatorSession: true,
+            globalAdminUserId: userId
+        );
+
+        var result = await service.ValidateAndRotateAsync(rawToken);
+
+        result.IsValid.Should().BeTrue(result.Error);
+        result.IsOperatorSession.Should().BeTrue();
+        result.GlobalAdminUserId.Should().Be(userId);
+
+        var successor = repo.Stored.First(t =>
+            t.TokenHash == RefreshTokenService.Hash(result.NewToken!)
+        );
+        successor.IsOperatorSession.Should().BeTrue();
+        successor.GlobalAdminUserId.Should().Be(userId);
+    }
+
     // ── Validación y rotación ─────────────────────────────────────────────
 
     [Fact]

@@ -194,6 +194,10 @@ public static class DependencyInjection
             MasterData.Reconciliation.BusinessPartnerReconciliationService
         >();
         services.AddScoped<
+            ERP.Application.Common.Security.IOperatorCompanyAccessPolicy,
+            OperatorCompanyAccessPolicy
+        >();
+        services.AddScoped<
             ERP.Application.Modules.Companies.ICompanyAccessGuard,
             CompanyAccessGuard
         >();

@@ -1,5 +1,7 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Session.DTOs;
+using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
@@ -12,6 +14,17 @@ namespace ERP.Application.Modules.Session.UseCases.GetMyAvailableBranches;
 /// todas las sucursales de la empresa con un flag de autorización, para el admin gestionando
 /// a otro usuario). Esta query es self-service: solo la lista ya filtrada a
 /// activas+autorizadas para el membership del usuario actual, más su preferencia de login.
+///
+/// ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: un admin global operando esta empresa (autorizado
+/// por <see cref="IOperatorCompanyAccessPolicy"/> — misma política que
+/// <c>ICompanyAccessGuard</c>/<c>IBranchAccessGuard</c>) recibe todas las sucursales activas de
+/// la empresa, con preferencia AskBranch. Este chequeo corre ANTES de resolver membership y
+/// gana incondicionalmente cuando aplica — no solo cuando no hay CompanyUserMembership. Caso
+/// real que forzó esto: el mismo usuario puede tener una CompanyUserMembership propia en esta
+/// empresa (p. ej. es también su Admin de empresa) cuya CompanyUserBranch fue revocada
+/// (is_active=false) después; sin este orden, esa restricción puntual de la membership
+/// eclipsaba por completo la capacidad de soporte global y el modal seguía mostrando "No tiene
+/// sucursales asignadas" aunque el usuario sí pudiera operar en modo global.
 /// </summary>
 public sealed class GetMyAvailableBranchesHandler
     : IRequestHandler<GetMyAvailableBranchesQuery, Result<MyAvailableBranchesDto>>
@@ -23,6 +36,7 @@ public sealed class GetMyAvailableBranchesHandler
     private readonly IBranchRepository _branchRepository;
     private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
     private readonly ICompanyUserPreferencesRepository _preferencesRepository;
+    private readonly IOperatorCompanyAccessPolicy _operatorAccessPolicy;
 
     public GetMyAvailableBranchesHandler(
         ICurrentUser currentUser,
@@ -31,7 +45,8 @@ public sealed class GetMyAvailableBranchesHandler
         IAccessRepository accessRepository,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
-        ICompanyUserPreferencesRepository preferencesRepository
+        ICompanyUserPreferencesRepository preferencesRepository,
+        IOperatorCompanyAccessPolicy operatorAccessPolicy
     )
     {
         _currentUser = currentUser;
@@ -41,6 +56,7 @@ public sealed class GetMyAvailableBranchesHandler
         _branchRepository = branchRepository;
         _companyUserBranchRepository = companyUserBranchRepository;
         _preferencesRepository = preferencesRepository;
+        _operatorAccessPolicy = operatorAccessPolicy;
     }
 
     public async Task<Result<MyAvailableBranchesDto>> Handle(
@@ -48,14 +64,26 @@ public sealed class GetMyAvailableBranchesHandler
         CancellationToken cancellationToken
     )
     {
+        if (await _operatorAccessPolicy.IsAuthorizedOperatorAsync(cancellationToken))
+            return await BuildForOperatorAsync(cancellationToken);
+
         var membership = await _accessRepository.GetCompanyUserMembershipAsync(
             _currentCompany.CompanyId,
             _currentUser.UserId,
             cancellationToken
         );
-        if (membership is null || !membership.IsActive)
-            return Result<MyAvailableBranchesDto>.Failure("No tiene acceso a esta empresa.");
 
+        if (membership is not null && membership.IsActive)
+            return await BuildForMembershipAsync(membership, cancellationToken);
+
+        return Result<MyAvailableBranchesDto>.Failure("No tiene acceso a esta empresa.");
+    }
+
+    private async Task<Result<MyAvailableBranchesDto>> BuildForMembershipAsync(
+        CompanyUserMembership membership,
+        CancellationToken cancellationToken
+    )
+    {
         var authorizations = await _companyUserBranchRepository.GetByMembershipAsync(
             membership.Id,
             cancellationToken
@@ -65,15 +93,7 @@ public sealed class GetMyAvailableBranchesHandler
             .Select(a => a.BranchId)
             .ToHashSet();
 
-        var branches = (
-            await _branchRepository.GetByCompanyAsync(
-                _currentTenant.TenantId,
-                _currentCompany.CompanyId,
-                activeFilter: true,
-                search: null,
-                cancellationToken
-            )
-        )
+        var branches = (await GetActiveCompanyBranchesAsync(cancellationToken))
             .Where(b => authorizedBranchIds.Contains(b.Id))
             .OrderByDescending(b => b.IsMainBranch)
             .ThenBy(b => b.Name)
@@ -90,4 +110,30 @@ public sealed class GetMyAvailableBranchesHandler
             new MyAvailableBranchesDto(branches, loginMode, preferences?.DefaultBranchId)
         );
     }
+
+    private async Task<Result<MyAvailableBranchesDto>> BuildForOperatorAsync(
+        CancellationToken cancellationToken
+    )
+    {
+        var branches = (await GetActiveCompanyBranchesAsync(cancellationToken))
+            .OrderByDescending(b => b.IsMainBranch)
+            .ThenBy(b => b.Name)
+            .Select(b => new AvailableBranchOptionDto(b.Id, b.Name, b.IsMainBranch))
+            .ToList();
+
+        return Result<MyAvailableBranchesDto>.Success(
+            new MyAvailableBranchesDto(branches, nameof(CompanyUserLoginMode.AskBranch), null)
+        );
+    }
+
+    private Task<IReadOnlyList<ERP.Domain.Branches.Entities.Branch>> GetActiveCompanyBranchesAsync(
+        CancellationToken cancellationToken
+    ) =>
+        _branchRepository.GetByCompanyAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            activeFilter: true,
+            search: null,
+            cancellationToken
+        );
 }

@@ -47,12 +47,35 @@ public sealed class RefreshToken
     /// <summary>Profundidad de rotación dentro de la familia (0 = emisión inicial).</summary>
     public int RotationDepth { get; private set; }
 
+    /// <summary>
+    /// ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: true cuando este token se originó en
+    /// <c>POST /auth/global/operate-company</c> (admin global operando una empresa sin
+    /// CompanyUserMembership). Se hereda sin cambios en cada sucesor rotado — es el único
+    /// registro persistido de "esta sesión viene de operar empresa", porque el access token
+    /// (que sí lleva <c>operator_mode</c>/<c>global_admin_user_id</c> como claims) nunca se
+    /// persiste: el navegador solo conserva la cookie httpOnly del refresh token. Sin este flag,
+    /// <c>RefreshTokenHandler</c> no tenía forma de saber que debía reemitir esos claims al
+    /// rotar, y la sesión se degradaba silenciosamente a admin de empresa normal en cada
+    /// refresh/F5 — bug real encontrado en revisión manual.
+    /// </summary>
+    public bool IsOperatorSession { get; private set; }
+
+    /// <summary>
+    /// UserId del admin global cuando <see cref="IsOperatorSession"/> es true — mismo valor que
+    /// el claim <c>global_admin_user_id</c> del access token emitido por operate-company. Se
+    /// revalida contra <c>GlobalUserRole</c> en cada refresh (nunca se confía en el flag solo)
+    /// antes de reemitir los claims de operador.
+    /// </summary>
+    public Guid? GlobalAdminUserId { get; private set; }
+
     private RefreshToken() { }
 
     /// <summary>
     /// <paramref name="expiresAt"/> y <paramref name="absoluteExpiresAt"/> los calcula el caller
     /// (política de configuración, fuera del Domain). Al rotar, el caller debe pasar el mismo
-    /// <paramref name="absoluteExpiresAt"/> del token que se está reemplazando.
+    /// <paramref name="absoluteExpiresAt"/> del token que se está reemplazando, y el mismo
+    /// <paramref name="isOperatorSession"/>/<paramref name="globalAdminUserId"/> del token
+    /// predecesor — ver <see cref="IsOperatorSession"/>.
     /// </summary>
     public static RefreshToken Create(
         Guid userId,
@@ -64,7 +87,9 @@ public sealed class RefreshToken
         DateTime absoluteExpiresAt,
         Guid? familyId = null,
         Guid? parentTokenId = null,
-        int rotationDepth = 0
+        int rotationDepth = 0,
+        bool isOperatorSession = false,
+        Guid? globalAdminUserId = null
     )
     {
         var id = Guid.NewGuid();
@@ -83,6 +108,8 @@ public sealed class RefreshToken
             FamilyId = familyId ?? id,
             ParentTokenId = parentTokenId,
             RotationDepth = rotationDepth,
+            IsOperatorSession = isOperatorSession,
+            GlobalAdminUserId = globalAdminUserId,
         };
     }
 

@@ -1,6 +1,7 @@
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Common;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Media;
 using ERP.Application.Modules.Session.UseCases.GetSessionContext;
 using ERP.Domain.Access.Entities;
@@ -44,6 +45,16 @@ public sealed class GetSessionContextHandlerTests
         public Mock<IBranchRepository> BranchRepo { get; } = new();
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
+        public Mock<IOperatorCompanyAccessPolicy> OperatorAccessPolicy { get; } = new();
+
+        public Fixture()
+        {
+            // Por defecto ningún test de esta clase es un admin global operando — evita que un
+            // Mock sin Setup devuelva Task<bool> nulo (NullReferenceException al await).
+            OperatorAccessPolicy
+                .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+        }
 
         public GetSessionContextHandler BuildHandler() =>
             new(
@@ -59,7 +70,8 @@ public sealed class GetSessionContextHandlerTests
                 UserSessionRepo.Object,
                 BranchRepo.Object,
                 CompanyUserBranchRepo.Object,
-                Mediator.Object
+                Mediator.Object,
+                OperatorAccessPolicy.Object
             );
     }
 
@@ -330,6 +342,92 @@ public sealed class GetSessionContextHandlerTests
         // Sin preferencia/heurístico resoluble en este fixture, el resultado correcto es
         // "sin sucursal confirmada" — nunca la sucursal revocada de UserSession.
         result.Value!.Branch.Should().BeNull();
+    }
+
+    /// <summary>
+    /// ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: un admin global operando esta empresa (sin
+    /// CompanyUserMembership, autorizado por IOperatorCompanyAccessPolicy) sí debe ver confirmada
+    /// la sucursal del header, igual que la política ya deja pasar a BranchAccessGuard para
+    /// requests branch-scoped reales — session/context no puede quedar más estricto que el guard.
+    /// </summary>
+    [Fact]
+    public async Task Branch_del_header_sin_membership_pero_autorizado_como_operador_global_se_confirma()
+    {
+        var (f, userId, tenant, companyA) = BuildBaseContext();
+        var branch = NewBranch(tenant.Id, companyA.Id, "Sucursal operada por admin global");
+
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
+        f.CurrentBranch.Setup(b => b.BranchId).Returns(branch.Id);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(branch);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(companyA.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+        f.OperatorAccessPolicy
+            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(new GetSessionContextQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Branch.Should().NotBeNull();
+        result.Value.Branch!.Id.Should().Be(branch.Id);
+    }
+
+    /// <summary>
+    /// Mismo caso que el anterior, ahora en el nivel 2 (UserSession.BranchId histórico) sin
+    /// header X-Branch-Id — la política de operador debe aplicar igual en ambos niveles.
+    /// </summary>
+    [Fact]
+    public async Task Branch_de_UserSession_sin_membership_pero_autorizado_como_operador_global_se_confirma()
+    {
+        var (f, userId, tenant, companyA) = BuildBaseContext();
+        var branch = NewBranch(tenant.Id, companyA.Id, "Sucursal operada por admin global");
+        var existingSession = UserSession.Create(
+            tenant.Id,
+            companyA.Id,
+            userId,
+            branch.Id,
+            "terminal-1"
+        );
+
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(false);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(companyA.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(userId, tenant.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync([existingSession]);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    branch.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(branch);
+        f.OperatorAccessPolicy
+            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(new GetSessionContextQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Branch.Should().NotBeNull();
+        result.Value.Branch!.Id.Should().Be(branch.Id);
     }
 
     [Fact]

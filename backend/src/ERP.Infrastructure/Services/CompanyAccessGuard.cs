@@ -2,6 +2,8 @@ using ERP.Application.Common;
 using ERP.Application.Common.Security;
 using ERP.Application.Modules.Companies;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Kernel.Security;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -17,6 +19,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
     private readonly ICurrentCompany _currentCompany;
     private readonly ITenantRepository _tenants;
     private readonly ISecurityMetrics _metrics;
+    private readonly IOperatorCompanyAccessPolicy _operatorAccessPolicy;
 
     public CompanyAccessGuard(
         IAccessRepository access,
@@ -25,7 +28,8 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ITenantRepository tenants,
-        ISecurityMetrics metrics
+        ISecurityMetrics metrics,
+        IOperatorCompanyAccessPolicy operatorAccessPolicy
     )
     {
         _access = access;
@@ -35,6 +39,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         _currentCompany = currentCompany;
         _tenants = tenants;
         _metrics = metrics;
+        _operatorAccessPolicy = operatorAccessPolicy;
     }
 
     public async Task<Result<Guid>> RequireActiveTenantAsync(
@@ -90,12 +95,40 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
             _currentUser.UserId,
             cancellationToken
         );
-        if (membership is null || !membership.IsActive)
-        {
-            _metrics.RecordMembershipValidationFailed();
-            return Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa.");
-        }
+        if (membership is not null && membership.IsActive)
+            return await BuildSuccessAsync(
+                tenantId,
+                companyId,
+                membership.Role,
+                company,
+                cancellationToken
+            );
 
+        // ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: un admin global operando esta empresa
+        // (operator_mode + GlobalUserRole activa) no tiene CompanyUserMembership aquí — la
+        // política central es la única fuente que puede sustituir ese requisito. Usuarios
+        // normales sin membership siguen bloqueados igual que antes.
+        if (await _operatorAccessPolicy.IsAuthorizedOperatorAsync(cancellationToken))
+            return await BuildSuccessAsync(
+                tenantId,
+                companyId,
+                SecurityRoles.Admin,
+                company,
+                cancellationToken
+            );
+
+        _metrics.RecordMembershipValidationFailed();
+        return Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa.");
+    }
+
+    private async Task<Result<CompanyAccessContext>> BuildSuccessAsync(
+        Guid tenantId,
+        Guid companyId,
+        string role,
+        Company company,
+        CancellationToken cancellationToken
+    )
+    {
         var tenantEntity = await _tenants.GetByIdAsync(tenantId, cancellationToken);
 
         return Result<CompanyAccessContext>.Success(
@@ -103,7 +136,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
                 _currentUser.UserId,
                 tenantId,
                 companyId,
-                membership.Role,
+                role,
                 tenantEntity?.IsActive ?? false,
                 company.IsActive
             )

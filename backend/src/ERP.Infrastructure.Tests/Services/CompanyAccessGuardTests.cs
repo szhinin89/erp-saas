@@ -33,6 +33,16 @@ public sealed class CompanyAccessGuardTests
         public Mock<ICurrentCompany> CurrentCompany { get; } = new();
         public Mock<ITenantRepository> Tenants { get; } = new();
         public Mock<ISecurityMetrics> Metrics { get; } = new();
+        public Mock<IOperatorCompanyAccessPolicy> OperatorAccessPolicy { get; } = new();
+
+        public Fixture()
+        {
+            // Por defecto ningún test de esta clase es un admin global operando — evita que un
+            // Mock sin Setup devuelva Task<bool> nulo (NullReferenceException al await).
+            OperatorAccessPolicy
+                .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+        }
 
         public CompanyAccessGuard BuildGuard() =>
             new(
@@ -42,7 +52,8 @@ public sealed class CompanyAccessGuardTests
                 CurrentTenant.Object,
                 CurrentCompany.Object,
                 Tenants.Object,
-                Metrics.Object
+                Metrics.Object,
+                OperatorAccessPolicy.Object
             );
     }
 
@@ -160,6 +171,60 @@ public sealed class CompanyAccessGuardTests
         result.Value!.CompanyId.Should().Be(company.Id);
         result.Value.TenantId.Should().Be(tenant.Id);
         result.Value.UserId.Should().Be(userId);
+    }
+
+    /// <summary>
+    /// ERP-CORE-GLOBAL-ADMIN-BRANCH-ACCESS-01: un admin global operando esta empresa
+    /// (IOperatorCompanyAccessPolicy autorizado) no tiene CompanyUserMembership aquí — la
+    /// política central es la única fuente que puede sustituir ese requisito, y solo para ese
+    /// caso puntual. El contexto resultante usa SecurityRoles.Admin como rol operativo.
+    /// </summary>
+    [Fact]
+    public async Task RequireMembershipAsync_sin_membership_pero_autorizado_como_operador_global_permite_el_acceso()
+    {
+        var (f, tenant, company, userId) = BuildAuthenticatedContext();
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+        f.OperatorAccessPolicy
+            .Setup(o => o.IsAuthorizedOperatorAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CompanyId.Should().Be(company.Id);
+        result.Value.TenantId.Should().Be(tenant.Id);
+        result.Value.Role.Should().Be(ERP.Domain.Kernel.Security.SecurityRoles.Admin);
+        f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Never);
+    }
+
+    /// <summary>
+    /// Sin autorización de la política de operador (usuario normal sin membership, o admin
+    /// global sin operator_mode/GlobalUserRole vigente), el rechazo sigue siendo el mismo de
+    /// siempre — la política nunca se convierte en un bypass general.
+    /// </summary>
+    [Fact]
+    public async Task RequireMembershipAsync_sin_membership_y_sin_autorizacion_de_operador_rechaza_el_acceso()
+    {
+        var (f, _, company, userId) = BuildAuthenticatedContext();
+        f.Companies.Setup(c => c.GetByIdAsync(company.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        f.Access.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+
+        var guard = f.BuildGuard();
+        var result = await guard.RequireMembershipAsync(company.Id);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("No tiene acceso a esta empresa.");
+        f.Metrics.Verify(m => m.RecordMembershipValidationFailed(null), Times.Once);
     }
 
     [Fact]
