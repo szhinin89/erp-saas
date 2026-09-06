@@ -1,1 +1,223 @@
-/* Company select page styles */
+/* Company select page — layout específico de esta pantalla.
+   Reutiliza tokens/clases globales (zh-auth-*, zh-entity-item, zh-input-group);
+   aquí solo van ajustes de densidad/ancho propios de esta vista. */
+
+/* Panel más ancho que el de login/reset: esta pantalla es un panel operativo
+   de selección, no un formulario de un solo campo. */
+.zh-auth-wrapper.cs-wrapper {
+  max-width: 860px;
+}
+
+/* Copy decorativo de fondo (marca), visible solo cuando hay espacio real a los
+   costados del panel — nunca se superpone al panel ni compite con su contenido. */
+.cs-bg-copy {
+  position: fixed;
+  z-index: 1;
+  margin: 0;
+  max-width: 220px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--color-text-primary) 22%, transparent);
+  pointer-events: none;
+}
+
+.cs-bg-copy-accent {
+  display: block;
+  width: 36px;
+  height: 3px;
+  margin-top: var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  opacity: 0.5;
+}
+
+.cs-bg-copy--left {
+  top: var(--space-8);
+  left: var(--space-8);
+  text-align: left;
+}
+
+.cs-bg-copy--right {
+  bottom: var(--space-8);
+  right: var(--space-8);
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
+}
+
+.cs-bg-copy--right .cs-bg-copy-accent {
+  margin-left: auto;
+}
+
+@media (max-width: 1280px) {
+  .cs-bg-copy {
+    display: none;
+  }
+}
+
+.cs-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Franja informativa (conteo + acceso seguro) entre el título y el buscador. */
+.cs-summary {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-5);
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+
+.cs-summary-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cs-summary-item--secure {
+  align-items: flex-end;
+  text-align: right;
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-5);
+}
+
+.cs-summary-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-body-md-size);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.cs-summary-item--secure .cs-summary-value {
+  flex-direction: row-reverse;
+}
+
+.cs-summary-value .material-symbols-outlined {
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.cs-summary-hint {
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.cs-search input {
+  padding-left: 0;
+}
+
+.cs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* Filas de empresa con más presencia que la fila básica de .zh-entity-item. */
+.cs-company-card {
+  padding: var(--space-4);
+}
+
+.cs-company-card .zh-entity-item-name {
+  font-size: var(--text-body-md-size);
+}
+
+.cs-company-card .zh-btn {
+  padding: 0 18px;
+}
+
+.cs-company-role {
+  flex-shrink: 0;
+  font-size: var(--text-label-sm-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-container-low);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .cs-company-role {
+    display: none;
+  }
+}
+
+.cs-footer-help {
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.cs-loading,
+.cs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-sm-size);
+  text-align: center;
+}
+
+.cs-empty .material-symbols-outlined {
+  font-size: 28px;
+  color: var(--color-outline);
+}
+
+.cs-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: zh-auth-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .zh-auth-wrapper.cs-wrapper {
+    max-width: 680px;
+  }
+}
+
+@media (max-width: 640px) {
+  .zh-auth-wrapper.cs-wrapper {
+    max-width: 100%;
+  }
+
+  .cs-summary {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .cs-summary-item--secure {
+    align-items: flex-start;
+    text-align: left;
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+  }
+
+  .cs-summary-item--secure .cs-summary-value {
+    flex-direction: row;
+  }
+}

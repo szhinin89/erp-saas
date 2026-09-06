@@ -179,4 +179,144 @@ describe("CompanySelectPage", () => {
     expect(useAuthStore.getState().user?.companyId).toBe("company-2");
     expect(useActiveBranchStore.getState().branch?.id).toBe("new-branch");
   });
+
+  it("renderiza título, subtítulo operativo, conteo y bloque de acceso seguro", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+
+    expect(screen.getByText("Selecciona una empresa")).toBeTruthy();
+    expect(
+      screen.getByText("Seleccione la empresa operativa para continuar"),
+    ).toBeTruthy();
+    expect(screen.getByText(/1\s+empresa disponible/)).toBeTruthy();
+    expect(screen.getByText("Acceso seguro")).toBeTruthy();
+    expect(screen.getByText("Está usando una sesión autenticada.")).toBeTruthy();
+    expect(
+      screen.getByText("Si no encuentra su empresa, contacte al administrador."),
+    ).toBeTruthy();
+  });
+
+  it("renderiza el buscador con placeholder correcto y una card por empresa con RUC", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+
+    expect(
+      screen.getByPlaceholderText("Buscar por nombre o RUC"),
+    ).toBeTruthy();
+    expect(screen.getByText(/RUC:\s*0999999999001/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeTruthy();
+  });
+
+  it("muestra el rol de la empresa cuando el DTO lo trae y no inventa sucursales/estado", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+
+    expect(screen.getByText(/Rol:\s*Admin/)).toBeTruthy();
+    expect(screen.queryByText(/sucursal/i)).toBeNull();
+    expect(screen.queryByText(/Última usada/i)).toBeNull();
+    expect(screen.queryByText(/Activa|Disponible/)).toBeNull();
+    expect(screen.queryByText(/Modo empresa/i)).toBeNull();
+  });
+
+  it("filtra empresas por nombre y por RUC, y muestra el empty state sin resultados", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    const search = screen.getByPlaceholderText("Buscar por nombre o RUC");
+
+    fireEvent.change(search, { target: { value: "Empresa Dos" } });
+    expect(screen.getByText("Empresa Dos")).toBeTruthy();
+
+    fireEvent.change(search, { target: { value: "0999999999001" } });
+    expect(screen.getByText("Empresa Dos")).toBeTruthy();
+
+    fireEvent.change(search, { target: { value: "no-existe" } });
+    expect(
+      screen.getByText("No se encontraron empresas con ese criterio."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Empresa Dos")).toBeNull();
+  });
+
+  it("muestra el estado de carga inicial antes de resolver la lista", () => {
+    vi.mocked(authService.listMyCompanies).mockReturnValue(
+      new Promise(() => {}),
+    );
+    renderPage();
+
+    expect(screen.getByText("Cargando empresas…")).toBeTruthy();
+    expect(screen.queryByText("Empresa Dos")).toBeNull();
+  });
+
+  it("muestra un error técnico si falla la carga de empresas", async () => {
+    vi.mocked(authService.listMyCompanies).mockRejectedValue(new Error("boom"));
+    renderPage();
+
+    expect(
+      await screen.findByText("No se pudieron cargar las empresas."),
+    ).toBeTruthy();
+  });
+
+  it("muestra el estado sin empresas asignadas y no ofrece botón Entrar", async () => {
+    vi.mocked(authService.listMyCompanies).mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText("No tienes empresas asignadas")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Entrar" })).toBeNull();
+  });
+
+  it("deshabilita el botón Entrar mientras la selección está en curso", async () => {
+    let resolveSwitch: (value: AuthResponse) => void = () => {};
+    vi.mocked(authService.switchCompany).mockReturnValue(
+      new Promise((resolve) => {
+        resolveSwitch = resolve;
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+    const enterBtn = screen.getByRole("button", {
+      name: /Entrar/,
+    }) as HTMLButtonElement;
+    fireEvent.click(enterBtn);
+
+    await waitFor(() => expect(enterBtn.disabled).toBe(true));
+
+    resolveSwitch(authResponse);
+    expect(await screen.findByText("Dashboard listo")).toBeTruthy();
+  });
+
+  it("mantiene el guard cuando no hay tenantId activo", () => {
+    useAuthStore.setState({
+      user: {
+        userId: "user-1",
+        fullName: "Ana Perez",
+        username: "ana",
+        email: "ana@test.com",
+        role: "Admin",
+        tenantId: null as unknown as string,
+        companyId: null,
+      },
+    });
+    renderPage();
+
+    expect(
+      screen.getByText(
+        "No hay una sesión de selección activa. Inicia sesión nuevamente.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Volver al inicio" })).toBeTruthy();
+  });
+
+  it("no usa clases ts-* heredadas sin estilos", async () => {
+    const { container } = renderPage();
+    expect(await screen.findByText("Empresa Dos")).toBeTruthy();
+
+    const orphanClasses = Array.from(container.querySelectorAll("*")).some((el) =>
+      Array.from(el.classList).some((cls) => cls.startsWith("ts-")),
+    );
+    expect(orphanClasses).toBe(false);
+  });
 });

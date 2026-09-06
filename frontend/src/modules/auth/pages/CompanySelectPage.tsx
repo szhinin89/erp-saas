@@ -8,6 +8,7 @@ import { useI18n } from "../../../i18n/i18n";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import "./CompanySelectPage.css";
 
 const AVATAR_VARIANTS = ["primary", "secondary", "tertiary"] as const;
@@ -21,6 +22,7 @@ export function CompanySelectPage() {
   const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,7 +35,8 @@ export function CompanySelectPage() {
         const list = await authService.listMyCompanies();
         if (!cancelled) setCompanies(list);
       } catch {
-        if (!cancelled) setError("No se pudieron cargar las empresas.");
+        if (!cancelled)
+          setError(t("subscriberSelect.loadError", "No se pudieron cargar las empresas."));
       } finally {
         if (!cancelled) setLoadingList(false);
       }
@@ -41,7 +44,7 @@ export function CompanySelectPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -56,6 +59,7 @@ export function CompanySelectPage() {
   const choose = async (companyId: string) => {
     setError("");
     setLoading(true);
+    setPendingId(companyId);
     try {
       const session = await authService.switchCompany(companyId);
       await syncCompanySelection(session);
@@ -68,21 +72,30 @@ export function CompanySelectPage() {
         navigate("/login", { replace: true });
         return;
       }
-      setError(ax?.response?.data?.message ?? "No se pudo cambiar de empresa.");
+      setError(
+        ax?.response?.data?.message ??
+          t("subscriberSelect.error.default", "No se pudo cambiar de empresa."),
+      );
     } finally {
       setLoading(false);
+      setPendingId(null);
     }
   };
 
   if (!user?.tenantId) {
     return (
       <div className="zh-auth-bg">
-        <div className="zh-auth-wrapper ts-wrapper">
-          <div className="ts-card">
-            <div className="ts-card-body">
-              <p>Inicie sesión y seleccione un suscriptor primero.</p>
+        <div className="zh-auth-wrapper">
+          <div className="zh-auth-card">
+            <div className="zh-auth-card-body zh-auth-card-body--center">
+              <p className="zh-auth-card-desc">
+                {t(
+                  "subscriberSelect.missing",
+                  "Inicie sesión y seleccione un suscriptor primero.",
+                )}
+              </p>
               <ZHBtn variant="primary" onClick={() => navigate("/login")}>
-                Ir al login
+                {t("subscriberSelect.back", "Ir al login")}
               </ZHBtn>
             </div>
           </div>
@@ -91,89 +104,204 @@ export function CompanySelectPage() {
     );
   }
 
+  const countLabel = t(
+    companies.length === 1
+      ? "subscriberSelect.count.singular"
+      : "subscriberSelect.count.plural",
+    companies.length === 1 ? "empresa disponible" : "empresas disponibles",
+  );
+
   return (
     <div className="zh-auth-bg">
       <div className="zh-auth-bg-orb zh-auth-bg-orb--tr" aria-hidden="true" />
       <div className="zh-auth-bg-orb zh-auth-bg-orb--bl" aria-hidden="true" />
       <div className="zh-auth-bg-grid" aria-hidden="true" />
 
-      <div className="zh-auth-wrapper ts-wrapper">
+      <p className="cs-bg-copy cs-bg-copy--left" aria-hidden="true">
+        {t("subscriberSelect.bgLeft", "Soluciones que impulsan tu negocio")}
+        <span className="cs-bg-copy-accent" />
+      </p>
+      <p className="cs-bg-copy cs-bg-copy--right" aria-hidden="true">
+        {t("subscriberSelect.bgRightLabel", "ERP")}
+        <br />
+        ZH Technologies
+        <span className="cs-bg-copy-accent" />
+      </p>
+
+      <div className="zh-auth-wrapper cs-wrapper">
         <header className="zh-auth-brand">
           <div className="zh-auth-brand-icon" aria-hidden="true">
             <span className="material-symbols-outlined">apartment</span>
           </div>
           <h1 className="zh-auth-brand-name">ZH Technologies</h1>
-          <p className="zh-auth-brand-sub">Seleccione la empresa operativa</p>
         </header>
 
-        <div className="ts-card">
-          <div className="ts-card-body">
-            <div className="ts-card-head">
-              <h2 className="ts-title">Empresa operativa</h2>
-              <span className="ts-count">
-                {companies.length}{" "}
-                {companies.length === 1 ? "empresa" : "empresas"}
+        <div className="zh-auth-card cs-card">
+          <div className="zh-auth-card-header">
+            <h2 className="zh-auth-card-title">
+              {t("subscriberSelect.title", "Selecciona una empresa")}
+            </h2>
+            <p className="zh-auth-card-desc">
+              {t(
+                "subscriberSelect.heroSubtitle",
+                "Seleccione la empresa operativa para continuar",
+              )}
+            </p>
+          </div>
+
+          <div className="cs-summary">
+            <div className="cs-summary-item">
+              <span className="cs-summary-value">
+                {!loadingList && !error ? (
+                  <>
+                    {companies.length} {countLabel}
+                  </>
+                ) : (
+                  countLabel
+                )}
+              </span>
+              <span className="cs-summary-hint">
+                {t(
+                  "subscriberSelect.summaryHint",
+                  "Elija la empresa con la que desea trabajar hoy.",
+                )}
               </span>
             </div>
+            <div className="cs-summary-item cs-summary-item--secure">
+              <span className="cs-summary-value">
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  lock
+                </span>
+                {t("subscriberSelect.secureAccess.title", "Acceso seguro")}
+              </span>
+              <span className="cs-summary-hint">
+                {t(
+                  "subscriberSelect.secureAccess.text",
+                  "Está usando una sesión autenticada.",
+                )}
+              </span>
+            </div>
+          </div>
 
-            <input
-              className="ts-search"
+          <div className="zh-input-group cs-search">
+            <span className="zh-input-group__prefix" aria-hidden="true">
+              <span className="material-symbols-outlined">search</span>
+            </span>
+            <ZhTextInput
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por nombre o RUC"
+              placeholder={t(
+                "subscriberSelect.searchPlaceholder",
+                "Buscar por nombre o RUC",
+              )}
+              aria-label={t(
+                "subscriberSelect.searchPlaceholder",
+                "Buscar por nombre o RUC",
+              )}
               disabled={loading || loadingList}
             />
-
-            {error && (
-              <ZHPageNotice
-                variant="error"
-                message={t("common.errorPrefix")}
-                detail={error}
-              />
-            )}
-
-            {loadingList ? (
-              <p className="ts-empty">Cargando empresas…</p>
-            ) : (
-              <div className="ts-list" role="list">
-                {filtered.map((x, i) => (
-                  <div
-                    key={x.companyId}
-                    className="zh-entity-item"
-                    role="listitem"
-                  >
-                    <div
-                      className={`zh-avatar zh-avatar--${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}
-                      aria-hidden="true"
-                    >
-                      {x.displayName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="zh-entity-item-info">
-                      <span className="zh-entity-item-name">
-                        {x.displayName}
-                      </span>
-                      <span className="zh-entity-item-sub mono">{x.ruc}</span>
-                    </div>
-                    <div className="zh-entity-item-right">
-                      <ZHBtn
-                        variant="primary"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => choose(x.companyId)}
-                      >
-                        Entrar
-                      </ZHBtn>
-                    </div>
-                  </div>
-                ))}
-                {filtered.length === 0 && !loadingList && (
-                  <p className="ts-empty">No se encontraron empresas</p>
-                )}
-              </div>
-            )}
           </div>
+
+          {error && (
+            <ZHPageNotice
+              variant="error"
+              message={t("common.errorPrefix")}
+              detail={error}
+            />
+          )}
+
+          {renderCompanyArea()}
+
+          <p className="cs-footer-help">
+            {t(
+              "subscriberSelect.footerHelp",
+              "Si no encuentra su empresa, contacte al administrador.",
+            )}
+          </p>
         </div>
       </div>
     </div>
   );
+
+  function renderCompanyArea() {
+    if (loadingList) {
+      return (
+        <div className="cs-loading">
+          <span className="cs-spinner" aria-hidden="true" />
+          <span>{t("subscriberSelect.loading", "Cargando empresas…")}</span>
+        </div>
+      );
+    }
+
+    if (companies.length === 0 && !error) {
+      return (
+        <ZHPageNotice
+          variant="info"
+          message={t(
+            "subscriberSelect.noCompanies.title",
+            "No tienes empresas asignadas",
+          )}
+          detail={t(
+            "subscriberSelect.noCompanies.detail",
+            "Contacta a tu administrador para que te asigne acceso a una empresa.",
+          )}
+        />
+      );
+    }
+
+    return (
+      <div className="cs-list" role="list">
+        {filtered.map((x, i) => (
+          <div key={x.companyId} className="zh-entity-item cs-company-card" role="listitem">
+            <div
+              className={`zh-avatar zh-avatar--${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}
+              aria-hidden="true"
+            >
+              {x.displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="zh-entity-item-info">
+              <span className="zh-entity-item-name">{x.displayName}</span>
+              <span className="zh-entity-item-sub mono">
+                {t("subscriberSelect.rucLabel", "RUC:")} {x.ruc}
+              </span>
+            </div>
+            {x.role && (
+              <span className="cs-company-role">
+                {t("subscriberSelect.roleLabel", "Rol:")} {x.role}
+              </span>
+            )}
+            <div className="zh-entity-item-right">
+              <ZHBtn
+                variant="primary"
+                disabled={loading}
+                onClick={() => choose(x.companyId)}
+              >
+                {pendingId === x.companyId ? (
+                  <span className="zh-auth-submit-spinner" aria-hidden="true" />
+                ) : (
+                  <span className="material-symbols-outlined" aria-hidden="true">
+                    arrow_forward
+                  </span>
+                )}
+                {t("subscriberSelect.enter", "Entrar")}
+              </ZHBtn>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="cs-empty">
+            <span className="material-symbols-outlined" aria-hidden="true">
+              search_off
+            </span>
+            <span>
+              {t(
+                "subscriberSelect.emptySearch",
+                "No se encontraron empresas con ese criterio.",
+              )}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 }
