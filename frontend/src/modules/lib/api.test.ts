@@ -5,10 +5,18 @@ import { useActiveBranchStore } from "../../store/activeBranchStore";
 
 /**
  * ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12: el interceptor de respuesta debe limpiar
- * activeBranchStore cuando el backend rechaza una sucursal por BRANCH_SCOPE_FORBIDDEN /
- * COMPANY_SCOPE_FORBIDDEN — esto reabre automáticamente el selector de sucursal
- * (useBranchGate + AppLayout ya reaccionan a branch=null) en vez de dejar la pantalla
- * atascada con la sucursal inválida y un error seco sin salida.
+ * activeBranchStore cuando el backend rechaza específicamente por BRANCH_SCOPE_FORBIDDEN —
+ * esto reabre automáticamente el selector de sucursal (useBranchGate + AppLayout ya reaccionan
+ * a branch=null) en vez de dejar la pantalla atascada con la sucursal inválida y un error seco
+ * sin salida.
+ *
+ * ERP-CORE-BRANCH-SESSION-PERSISTENCE-01: COMPANY_SCOPE_FORBIDDEN ya NO limpia la sucursal —
+ * es el código genérico de cualquier CompanyScopeException (sin empresa seleccionada,
+ * membership inválida, tenant inactivo, mismatch de empresa en el body), ninguna causa dice
+ * nada sobre si la sucursal sigue siendo válida. Tratarlo como "sucursal inválida" borraba una
+ * sucursal recién elegida y correcta ante cualquier 403 de scope de empresa no relacionado —
+ * bug real reproducido navegando a Ítems (dos requests solo company-scoped, nunca
+ * branch-scoped, disparaban esto).
  *
  * axios no expone un método público para invocar un interceptor aislado, así que se accede
  * al handler registrado vía `interceptors.response` (mismo mecanismo interno que axios usa
@@ -63,12 +71,12 @@ describe("api response interceptor — branch/company scope recovery", () => {
     expect(useActiveBranchStore.getState().branch).toBeNull();
   });
 
-  it("limpia activeBranchStore cuando el backend responde 403 COMPANY_SCOPE_FORBIDDEN", async () => {
+  it("NO limpia activeBranchStore cuando el backend responde 403 COMPANY_SCOPE_FORBIDDEN", async () => {
     const rejected = getResponseErrorHandler();
     const error = makeError(403, { code: "COMPANY_SCOPE_FORBIDDEN" });
 
     await expect(rejected(error)).rejects.toBe(error);
-    expect(useActiveBranchStore.getState().branch).toBeNull();
+    expect(useActiveBranchStore.getState().branch).toEqual(activeBranch);
   });
 
   it("no toca activeBranchStore ante un 403 de permisos sin código de scope", async () => {

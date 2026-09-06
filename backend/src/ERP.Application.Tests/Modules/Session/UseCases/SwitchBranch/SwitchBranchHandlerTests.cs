@@ -192,33 +192,53 @@ public sealed class SwitchBranchHandlerTests
         f.UserSessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// ERP-CORE-BRANCH-SESSION-PERSISTENCE-01: regresión del bug real encontrado en revisión
+    /// manual — usuarios en LoginMode.AskBranch (el caso típico) no tienen UserSession activa
+    /// al momento de seleccionar sucursal manualmente (LoginHandler deliberadamente no crea una
+    /// cuando no puede resolver la sucursal en el login). Antes, switch-branch no-opeaba en ese
+    /// caso, así que la selección nunca quedaba persistida server-side: una pestaña nueva (o
+    /// cualquier limpieza de activeBranchStore en la misma pestaña) no tenía forma de
+    /// recuperarla y volvía a pedir sucursal indefinidamente. Ahora debe crear la UserSession.
+    /// </summary>
     [Fact]
-    public async Task Switch_exitoso_sin_UserSession_activa_no_falla_ni_intenta_guardar()
+    public async Task Switch_exitoso_sin_UserSession_activa_crea_una_nueva_con_la_sucursal_elegida()
     {
         var f = new Fixture();
         var branchId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<BranchAccessContext>.Success(
-                    new BranchAccessContext(
-                        Guid.NewGuid(),
-                        Guid.NewGuid(),
-                        Guid.NewGuid(),
-                        branchId,
-                        "Matriz",
-                        true
-                    )
+                    new BranchAccessContext(userId, tenantId, companyId, branchId, "Matriz", true)
                 )
             );
+
+        UserSession? created = null;
+        f.UserSessions
+            .Setup(r => r.AddAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()))
+            .Callback<UserSession, CancellationToken>((s, _) => created = s)
+            .Returns(Task.CompletedTask);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         f.UserSessions.Verify(
+            r => r.AddAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        f.UserSessions.Verify(
             r => r.UpdateAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-        f.UserSessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.UserSessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        created.Should().NotBeNull();
+        created!.TenantId.Should().Be(tenantId);
+        created.CompanyId.Should().Be(companyId);
+        created.IdentityUserId.Should().Be(userId);
+        created.BranchId.Should().Be(branchId);
     }
 }

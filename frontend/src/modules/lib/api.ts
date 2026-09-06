@@ -73,16 +73,22 @@ api.interceptors.request.use((config) => {
 });
 
 /**
- * Códigos de `BranchScopeException`/`CompanyScopeException` (backend, BranchScopeBehavior):
- * indican que la sucursal en `activeBranchStore` ya no es una operativa válida para la empresa
- * activa (revocada después de resolverse en /session/context, o persistida de un contexto
- * anterior) — ver ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12. Mismo conjunto que ya clasifica
- * useSalesPage.ts (CASH_SESSION_SCOPE_ERROR_CODES) para el chequeo de caja.
+ * Código de `BranchScopeException` (backend, BranchScopeBehavior/IBranchAccessGuard): indica
+ * que la sucursal en `activeBranchStore` específicamente ya no es válida para la empresa activa
+ * (revocada después de resolverse en /session/context, o persistida de un contexto anterior) —
+ * ver ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12.
+ *
+ * ERP-CORE-BRANCH-SESSION-PERSISTENCE-01: `COMPANY_SCOPE_FORBIDDEN` se sacó deliberadamente de
+ * este conjunto — es el código genérico de CUALQUIER `CompanyScopeException` (sin empresa
+ * seleccionada, membership inválida, mismatch de empresa en el body, tenant inactivo — ver
+ * ExceptionMiddleware), ninguna de esas causas dice nada sobre si la sucursal sigue siendo
+ * válida. Tratarlo como "sucursal inválida" borraba una sucursal recién elegida y correcta ante
+ * cualquier 403 de scope de empresa no relacionado (reproducido navegando a Ítems: dos requests
+ * ICompanyScopedRequest, nunca branch-scoped, disparaban esto y reabrían el modal de sucursal
+ * sin motivo). Un 403 de company-scope debe manejarse por su cuenta (o revalidar company vía su
+ * propio flujo), nunca resetear la sucursal.
  */
-const BRANCH_CONTEXT_INVALID_CODES = new Set([
-  "BRANCH_SCOPE_FORBIDDEN",
-  "COMPANY_SCOPE_FORBIDDEN",
-]);
+const BRANCH_CONTEXT_INVALID_CODES = new Set(["BRANCH_SCOPE_FORBIDDEN"]);
 
 api.interceptors.response.use(
   (res) => res,
