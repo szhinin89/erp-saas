@@ -177,6 +177,10 @@ public static class DependencyInjection
             ICompanyBpTradingSettingsRepository,
             CompanyBpTradingSettingsRepository
         >();
+        services.AddScoped<
+            ICompanyBpPurchaseSettingsRepository,
+            CompanyBpPurchaseSettingsRepository
+        >();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp =>

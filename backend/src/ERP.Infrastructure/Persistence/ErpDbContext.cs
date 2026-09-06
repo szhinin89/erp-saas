@@ -188,6 +188,8 @@ public class ErpDbContext : DbContext
     public DbSet<BusinessPartnerRole> BusinessPartnerRoles => Set<BusinessPartnerRole>();
     public DbSet<CompanyBpTradingSettings> CompanyBpTradingSettings =>
         Set<CompanyBpTradingSettings>();
+    public DbSet<CompanyBpPurchaseSettings> CompanyBpPurchaseSettings =>
+        Set<CompanyBpPurchaseSettings>();
     public DbSet<BusinessPartnerLocation> BusinessPartnerLocations =>
         Set<BusinessPartnerLocation>();
     public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();
