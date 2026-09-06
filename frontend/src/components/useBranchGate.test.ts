@@ -171,6 +171,35 @@ describe("useBranchGate", () => {
     expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
   });
 
+  it("ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12: si la sucursal activa se limpia externamente (BRANCH_SCOPE_FORBIDDEN), el gate reabre y consulta available-branches", async () => {
+    vi.mocked(sessionService.getAvailableBranches).mockResolvedValue({
+      branches: branchOptions,
+      loginMode: "AskBranch",
+      defaultBranchId: null,
+    });
+
+    setCompany("company-1");
+    useActiveBranchStore.setState({
+      branch: { id: "branch-1", name: "Matriz", isMainBranch: true },
+    });
+
+    const { result } = renderHook(() => useBranchGate());
+    expect(result.current.gateOpen).toBe(false);
+    expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
+
+    // Simula lo que hace el interceptor de axios al recibir BRANCH_SCOPE_FORBIDDEN: limpiar
+    // la sucursal inválida, sin ninguna otra intervención del componente que hizo el request.
+    act(() => {
+      useActiveBranchStore.getState().clear();
+    });
+
+    await waitFor(() => expect(result.current.gateOpen).toBe(true));
+    await waitFor(() =>
+      expect(sessionService.getAvailableBranches).toHaveBeenCalledTimes(1),
+    );
+    expect(result.current.options).toEqual(branchOptions);
+  });
+
   it("cuando session/context termina sin resolver sucursal, recién ahí consulta available-branches", async () => {
     vi.mocked(sessionService.getAvailableBranches).mockResolvedValue({
       branches: branchOptions,

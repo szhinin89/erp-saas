@@ -2,9 +2,11 @@ using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
+using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Media;
 using ERP.Application.Modules.Session.DTOs;
+using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Kernel.Security;
@@ -33,6 +35,7 @@ public sealed class GetSessionContextHandler
     private readonly IMediaService _media;
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IBranchRepository _branchRepository;
+    private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
     private readonly IMediator _mediator;
 
     public GetSessionContextHandler(
@@ -47,6 +50,7 @@ public sealed class GetSessionContextHandler
         IMediaService media,
         IUserSessionRepository userSessionRepository,
         IBranchRepository branchRepository,
+        ICompanyUserBranchRepository companyUserBranchRepository,
         IMediator mediator
     )
     {
@@ -61,6 +65,7 @@ public sealed class GetSessionContextHandler
         _media = media;
         _userSessionRepository = userSessionRepository;
         _branchRepository = branchRepository;
+        _companyUserBranchRepository = companyUserBranchRepository;
         _mediator = mediator;
     }
 
@@ -146,11 +151,17 @@ public sealed class GetSessionContextHandler
     ///   1. <see cref="ICurrentBranch"/> (header X-Branch-Id) — fuente de verdad de "la sucursal
     ///      activa ahora mismo" para este request, exactamente igual que ICurrentCompany para la
     ///      empresa. Si el cliente ya trae un contexto de sucursal válido (porque un bootstrap
-    ///      anterior lo fijó o porque hizo switch-branch), ese valor manda siempre. Se considera
-    ///      "válido" solo si la sucursal existe y pertenece a la empresa operativa actual —
-    ///      validación mínima de integridad, no autorización (CompanyUserBranch queda para
-    ///      IBranchAccessGuard, fase posterior). Si el header no es válido, se trata como si no
-    ///      existiera y se continúa con el siguiente nivel, nunca se devuelve directamente null.
+    ///      anterior lo fijó o porque hizo switch-branch), ese valor manda siempre — pero solo si
+    ///      además pasa la MISMA autorización que <see cref="IBranchAccessGuard"/> exige en cada
+    ///      request branch-scoped (sucursal activa + CompanyUserBranch vigente para la membership).
+    ///      ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12: antes esto solo validaba integridad mínima
+    ///      (existe y pertenece a la empresa), por lo que un X-Branch-Id persistido en el cliente
+    ///      cuya autorización fue revocada después (CompanyUserBranch desactivado) seguía siendo
+    ///      "confirmado" aquí y el cliente lo reenviaba a endpoints branch-scoped reales, que sí
+    ///      la rechazan (BRANCH_SCOPE_FORBIDDEN) — session/context nunca se autocorregía. Si el
+    ///      header no pasa esta validación, se trata como si no existiera y se continúa con el
+    ///      siguiente nivel, nunca se devuelve directamente null ni se lanza excepción (este
+    ///      endpoint no es branch-scoped: solo informa cuál es la sucursal activa real).
     ///   2. UserSession Active para (usuario, tenant, empresa) — solo si no hay header. Hecho
     ///      histórico inmutable ("con qué sucursal se abrió esta sesión de sistema"); switch-branch
     ///      nunca lo muta (ver SwitchBranchHandler). Es el fallback de arranque en frío: el primer
@@ -165,6 +176,12 @@ public sealed class GetSessionContextHandler
         CancellationToken cancellationToken
     )
     {
+        var membership = await _accessRepository.GetCompanyUserMembershipAsync(
+            companyId,
+            _currentUser.UserId,
+            cancellationToken
+        );
+
         if (_currentBranch.HasBranchContext)
         {
             var headerBranch = await _branchRepository.GetByIdForCompanyAsync(
@@ -174,7 +191,11 @@ public sealed class GetSessionContextHandler
                 cancellationToken
             );
 
-            if (headerBranch is not null)
+            if (
+                headerBranch is not null
+                && headerBranch.IsActive
+                && await IsAuthorizedForBranchAsync(membership, headerBranch.Id, cancellationToken)
+            )
                 return new SessionBranchDto(
                     headerBranch.Id,
                     headerBranch.Name,
@@ -191,25 +212,16 @@ public sealed class GetSessionContextHandler
 
         Guid? branchId = existingSession?.BranchId;
 
-        if (branchId is null)
+        if (branchId is null && membership is not null && membership.IsActive)
         {
-            var membership = await _accessRepository.GetCompanyUserMembershipAsync(
-                companyId,
-                _currentUser.UserId,
+            var (resolvedBranchId, _) = await CompanyUserPreferencesLoginResolver.ResolveAsync(
+                _mediator,
+                membership.Id,
+                () => ResolveMainBranchIdAsync(companyId, cancellationToken),
                 cancellationToken
             );
 
-            if (membership is not null && membership.IsActive)
-            {
-                var (resolvedBranchId, _) = await CompanyUserPreferencesLoginResolver.ResolveAsync(
-                    _mediator,
-                    membership.Id,
-                    () => ResolveMainBranchIdAsync(companyId, cancellationToken),
-                    cancellationToken
-                );
-
-                branchId = resolvedBranchId;
-            }
+            branchId = resolvedBranchId;
         }
 
         if (branchId is not Guid resolved || resolved == Guid.Empty)
@@ -225,6 +237,21 @@ public sealed class GetSessionContextHandler
             ? null
             : new SessionBranchDto(branch.Id, branch.Name, branch.IsMainBranch);
     }
+
+    /// <summary>
+    /// Misma autorización que <see cref="IBranchAccessGuard"/>: membership activa en la empresa
+    /// y fila <c>CompanyUserBranch</c> vigente para esa membership+sucursal. Sin excepción para
+    /// Admin — BranchAccessGuard tampoco la aplica (Admin recibe sus propias filas CompanyUserBranch
+    /// igual que cualquier otro rol).
+    /// </summary>
+    private async Task<bool> IsAuthorizedForBranchAsync(
+        CompanyUserMembership? membership,
+        Guid branchId,
+        CancellationToken cancellationToken
+    ) =>
+        membership is not null
+        && membership.IsActive
+        && await _companyUserBranchRepository.ExistsAsync(membership.Id, branchId, cancellationToken);
 
     /// <summary>
     /// Mismo heurístico interino que LoginHandler.ResolveMainBranchIdAsync/

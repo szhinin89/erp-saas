@@ -42,6 +42,7 @@ public sealed class GetSessionContextHandlerTests
         public Mock<IMediaService> Media { get; } = new();
         public Mock<IUserSessionRepository> UserSessionRepo { get; } = new();
         public Mock<IBranchRepository> BranchRepo { get; } = new();
+        public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
 
         public GetSessionContextHandler BuildHandler() =>
@@ -57,6 +58,7 @@ public sealed class GetSessionContextHandlerTests
                 Media.Object,
                 UserSessionRepo.Object,
                 BranchRepo.Object,
+                CompanyUserBranchRepo.Object,
                 Mediator.Object
             );
     }
@@ -148,8 +150,9 @@ public sealed class GetSessionContextHandlerTests
     [Fact]
     public async Task Branch_del_header_que_pertenece_a_la_empresa_activa_se_usa_directamente_sin_consultar_UserSession()
     {
-        var (f, _, tenant, companyA) = BuildBaseContext();
+        var (f, userId, tenant, companyA) = BuildBaseContext();
         var branchDeEmpresaA = NewBranch(tenant.Id, companyA.Id, "Matriz");
+        var membership = CompanyUserMembership.Create(companyA.Id, userId, "User", null, CreatedBy);
 
         f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
         f.CurrentBranch.Setup(b => b.BranchId).Returns(branchDeEmpresaA.Id);
@@ -162,6 +165,14 @@ public sealed class GetSessionContextHandlerTests
                 )
             )
             .ReturnsAsync(branchDeEmpresaA);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(companyA.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.ExistsAsync(membership.Id, branchDeEmpresaA.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(new GetSessionContextQuery(), CancellationToken.None);
@@ -181,6 +192,77 @@ public sealed class GetSessionContextHandlerTests
             Times.Never,
             "el header válido es la fuente de mayor precedencia; no debe consultar niveles inferiores"
         );
+    }
+
+    /// <summary>
+    /// ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12: regresión del bug real — una sucursal que
+    /// pertenece a la empresa activa y está habilitada, pero cuya autorización CompanyUserBranch
+    /// fue revocada para esta membership, ya NO debe "confirmarse" como sucursal activa solo
+    /// porque venga en el header. Antes de este fix, session/context la devolvía igual (solo
+    /// validaba pertenencia a la empresa) mientras que los endpoints branch-scoped reales
+    /// (IBranchAccessGuard, p. ej. GET /expenses/documents) sí la rechazaban con
+    /// BRANCH_SCOPE_FORBIDDEN — dejando al cliente en un loop sin salida porque su "fuente de
+    /// verdad" nunca se autocorregía. Ahora debe caer al siguiente nivel de precedencia.
+    /// </summary>
+    [Fact]
+    public async Task Branch_del_header_sin_autorizacion_CompanyUserBranch_se_descarta_y_cae_al_siguiente_nivel()
+    {
+        var (f, userId, tenant, companyA) = BuildBaseContext();
+        var branchRevocada = NewBranch(tenant.Id, companyA.Id, "Sucursal revocada");
+        var membership = CompanyUserMembership.Create(companyA.Id, userId, "User", null, CreatedBy);
+
+        f.CurrentBranch.Setup(b => b.HasBranchContext).Returns(true);
+        f.CurrentBranch.Setup(b => b.BranchId).Returns(branchRevocada.Id);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    branchRevocada.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(branchRevocada);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(companyA.Id, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        // La membership existe y está activa, pero ya no tiene fila CompanyUserBranch vigente
+        // para esta sucursal (revocada) — exactamente lo que IBranchAccessGuard también verifica.
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.ExistsAsync(membership.Id, branchRevocada.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(userId, tenant.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Array.Empty<UserSession>());
+        // Sin preferencias configuradas y sin una única sucursal IsMainBranch resoluble por el
+        // heurístico de respaldo — así el fallback tampoco "adivina" ninguna sucursal.
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<ERP.Application.Access.UseCases.GetCompanyUserPreferences.GetCompanyUserPreferencesQuery>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result<ERP.Application.Access.DTOs.CompanyUserPreferencesDto?>.Success(null));
+        f.BranchRepo.Setup(r =>
+                r.GetByCompanyAsync(
+                    tenant.Id,
+                    companyA.Id,
+                    true,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Array.Empty<Branch>());
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(new GetSessionContextQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        // Sin UserSession reutilizable y sin preferencia/heurístico resoluble en este fixture,
+        // el resultado correcto es "sin sucursal confirmada" — nunca la sucursal revocada.
+        result.Value!.Branch.Should().BeNull();
     }
 
     [Fact]

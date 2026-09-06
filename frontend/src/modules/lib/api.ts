@@ -72,6 +72,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * Códigos de `BranchScopeException`/`CompanyScopeException` (backend, BranchScopeBehavior):
+ * indican que la sucursal en `activeBranchStore` ya no es una operativa válida para la empresa
+ * activa (revocada después de resolverse en /session/context, o persistida de un contexto
+ * anterior) — ver ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12. Mismo conjunto que ya clasifica
+ * useSalesPage.ts (CASH_SESSION_SCOPE_ERROR_CODES) para el chequeo de caja.
+ */
+const BRANCH_CONTEXT_INVALID_CODES = new Set([
+  "BRANCH_SCOPE_FORBIDDEN",
+  "COMPANY_SCOPE_FORBIDDEN",
+]);
+
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -80,6 +92,16 @@ api.interceptors.response.use(
     };
     const status = error.response?.status as number | undefined;
     const url = (originalRequest?.url ?? "") as string;
+
+    if (status === 403) {
+      const code = (error.response?.data as { code?: string } | undefined)?.code;
+      if (code && BRANCH_CONTEXT_INVALID_CODES.has(code)) {
+        // Limpiar en vez de dejar la pantalla con un error seco: useBranchGate (AppLayout) ya
+        // reacciona a branch=null reabriendo el selector de sucursal automáticamente — reusa
+        // esa arquitectura existente en lugar de inventar un mensaje/flujo nuevo aquí.
+        useActiveBranchStore.getState().clear();
+      }
+    }
 
     if (
       !shouldAttemptTokenRefresh(status, url, originalRequest._retry ?? false)
