@@ -97,7 +97,7 @@ export function AppLayout() {
         </div>
       }
     >
-      {branchGate.gateOpen ? (
+      {branchGate.contextLoading ? null : branchGate.gateOpen ? (
         <BranchSelectorModal
           open
           loading={branchGate.loading}

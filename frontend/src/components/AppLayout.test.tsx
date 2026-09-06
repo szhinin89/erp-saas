@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { I18nProvider } from "../i18n/i18n";
 import { useAuthStore } from "../store/authStore";
 import { useActiveBranchStore } from "../store/activeBranchStore";
+import { useSessionStore } from "../store/sessionStore";
 import { accessService } from "../modules/auth/api/accessService";
 import { authService } from "../modules/auth/api/authService";
 import { sessionService } from "../modules/session/api/sessionService";
@@ -85,6 +86,7 @@ afterEach(() => {
     companySessionVersion: 0,
   });
   useActiveBranchStore.setState({ branch: null });
+  useSessionStore.setState({ isLoading: false, isLoaded: false });
 });
 
 describe("AppLayout — AppShell global", () => {
@@ -104,4 +106,23 @@ describe("AppLayout — AppShell global", () => {
     expect(await screen.findByText("CONTENIDO_DE_PRUEBA")).toBeTruthy();
     expect(document.querySelector(".zh-app-tenantHeader")).toBeTruthy();
   });
+
+  /**
+   * ERP-CORE-BRANCH-GATE-FLICKER-01: regresión del flash de BranchSelectorModal confirmado
+   * con instrumentación temporal — mientras GET /session/context sigue en vuelo (F5/bootstrap),
+   * AppLayout no debe renderizar ni el contenido protegido NI el selector de sucursal, aunque
+   * la sucursal ya esté persistida en UserSession y se vaya a resolver en milisegundos.
+   */
+  it("mientras session/context está cargando no muestra el contenido de la ruta ni el selector de sucursal", () => {
+    useSessionStore.setState({ isLoading: true });
+    useActiveBranchStore.setState({ branch: null });
+
+    renderAppLayoutAt("/dashboard");
+
+    expect(screen.queryByText("CONTENIDO_DE_PRUEBA")).toBeNull();
+    expect(
+      screen.queryByText("Seleccione una sucursal"),
+    ).toBeNull();
+  });
+
 });

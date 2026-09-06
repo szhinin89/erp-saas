@@ -106,10 +106,14 @@ export function useBranchGate() {
     [setBranch],
   );
 
-  // Abrimos también mientras sessionContextLoading es true: evita el parpadeo del
-  // contenido protegido (o del mensaje "sin sucursales") antes de conocer la sucursal
-  // real resuelta por GET /session/context.
-  const gateOpen = !!companyId && (sessionContextLoading || status !== "ready");
+  // ERP-CORE-BRANCH-GATE-FLICKER-01: gateOpen NUNCA debe ser true mientras
+  // sessionContextLoading es true — antes lo era a propósito (comentario histórico: "evita el
+  // parpadeo del contenido protegido... antes de conocer la sucursal real"), pero eso montaba
+  // BranchSelectorModal en cada F5/hidratación, aunque la sucursal ya estuviera persistida en
+  // UserSession y se fuera a resolver en milisegundos — un flash real del modal, confirmado con
+  // instrumentación. AppLayout ahora es responsable de esa protección (no renderiza el Outlet
+  // mientras contextLoading es true), así que este hook ya no necesita cubrir ese caso.
+  const gateOpen = !!companyId && !sessionContextLoading && status !== "ready";
 
   return {
     gateOpen,

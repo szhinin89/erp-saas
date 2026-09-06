@@ -138,25 +138,25 @@ describe("useBranchGate", () => {
     expect(result.current.gateOpen).toBe(true);
   });
 
-  it("mientras session/context está cargando no consulta available-branches ni muestra 'sin sucursales'", () => {
+  it("ERP-CORE-BRANCH-GATE-FLICKER-01: mientras session/context está cargando el gate NO abre (AppLayout evita render mientras tanto) ni consulta available-branches", () => {
     setCompany("company-1");
     useSessionStore.setState({ isLoading: true });
 
     const { result } = renderHook(() => useBranchGate());
 
-    expect(result.current.gateOpen).toBe(true);
+    expect(result.current.gateOpen).toBe(false);
     expect(result.current.contextLoading).toBe(true);
     expect(result.current.loading).toBe(true);
     expect(result.current.options).toEqual([]);
     expect(sessionService.getAvailableBranches).not.toHaveBeenCalled();
   });
 
-  it("si session/context resuelve una sucursal mientras carga, el gate se cierra sin consultar available-branches", async () => {
+  it("si session/context resuelve una sucursal mientras carga, el gate nunca llega a abrirse ni consulta available-branches", async () => {
     setCompany("company-1");
     useSessionStore.setState({ isLoading: true });
 
     const { result } = renderHook(() => useBranchGate());
-    expect(result.current.gateOpen).toBe(true);
+    expect(result.current.gateOpen).toBe(false);
 
     act(() => {
       useActiveBranchStore.getState().setBranch({
