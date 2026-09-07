@@ -15,6 +15,7 @@
 import {
   bpContactService,
   bpLocationService,
+  bpPurchaseSettingsService,
   bpRoleService,
   bpTradingSettingsService,
   businessPartnerService,
@@ -33,6 +34,7 @@ import type {
   BusinessPartnerRoleDto,
   BusinessPartnerSummaryDto,
   CarrierConfigBody,
+  CompanyBpPurchaseSettingsDto,
   CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
   CreateContactBody,
@@ -48,6 +50,7 @@ import type {
   UpdateIdentificationBody,
   UpdateLocationBody,
   UpdateRoleNotesBody,
+  UpsertPurchaseSettingsBody,
   UpsertTradingSettingsBody,
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
@@ -250,6 +253,17 @@ export const businessPartnerFacade = {
 
   unblockBusinessPartner: (bpId: string): Promise<boolean> =>
     bpTradingSettingsService.unblock(bpId),
+
+  // ── Purchase Settings — default de proveedor por empresa (ADR-033, Fase 3d) ──
+
+  getPurchaseSettings: (bpId: string): Promise<CompanyBpPurchaseSettingsDto> =>
+    bpPurchaseSettingsService.get(bpId),
+
+  upsertPurchaseSettings: (
+    bpId: string,
+    body: UpsertPurchaseSettingsBody,
+  ): Promise<CompanyBpPurchaseSettingsDto> =>
+    bpPurchaseSettingsService.upsert(bpId, body),
 };
 
 // ── Re-exports para compatibilidad con imports existentes ─────────────────────

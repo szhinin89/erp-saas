@@ -15,6 +15,7 @@ import type {
   BusinessPartnerRoleDto,
   BusinessPartnerSummaryDto,
   CarrierConfigBody,
+  CompanyBpPurchaseSettingsDto,
   CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
   CreateContactBody,
@@ -28,6 +29,7 @@ import type {
   UpdateIdentificationBody,
   UpdateLocationBody,
   UpdateRoleNotesBody,
+  UpsertPurchaseSettingsBody,
   UpsertTradingSettingsBody,
 } from "../types/businessPartner.types";
 
@@ -298,4 +300,24 @@ export const bpTradingSettingsService = {
   /** PATCH /{bpId}/trading-settings/unblock */
   unblock: (bpId: string): Promise<boolean> =>
     apiPatch<boolean>(`${BASE}/${enc(bpId)}/trading-settings/unblock`),
+};
+
+// ── CompanyBpPurchaseSettings (ADR-033, Fase 3d) ───────────────────────────────
+
+export const bpPurchaseSettingsService = {
+  /** GET /{bpId}/purchase-settings */
+  get: (bpId: string): Promise<CompanyBpPurchaseSettingsDto> =>
+    apiGet<CompanyBpPurchaseSettingsDto>(
+      `${BASE}/${enc(bpId)}/purchase-settings`,
+    ),
+
+  /** PUT /{bpId}/purchase-settings — crea o actualiza */
+  upsert: (
+    bpId: string,
+    body: UpsertPurchaseSettingsBody,
+  ): Promise<CompanyBpPurchaseSettingsDto> =>
+    apiPut<CompanyBpPurchaseSettingsDto>(
+      `${BASE}/${enc(bpId)}/purchase-settings`,
+      body,
+    ),
 };

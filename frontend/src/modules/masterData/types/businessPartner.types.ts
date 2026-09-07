@@ -237,6 +237,23 @@ export type CompanyBpTradingSettingsDto = {
   hasCustomConfiguration: boolean;
 };
 
+/**
+ * ADR-033, Fase 3d — default de condición de pago de PROVEEDOR por empresa activa.
+ * Distinto de CompanyBpTradingSettingsDto (cliente/crédito comercial) y de
+ * SupplierConfigBody.paymentTermId (config SRI general del proveedor, tenant-wide).
+ */
+export type CompanyBpPurchaseSettingsDto = {
+  id: string;
+  businessPartnerId: string;
+  paymentTermId: string | null;
+  hasCustomConfiguration: boolean;
+};
+
+/** PUT /api/v1/master/business-partners/{bpId}/purchase-settings */
+export type UpsertPurchaseSettingsBody = {
+  paymentTermId: string | null;
+};
+
 // ── Paginación ────────────────────────────────────────────────────────────────
 
 /** Resultado paginado — data de la API para búsquedas */

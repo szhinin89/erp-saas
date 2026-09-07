@@ -3,6 +3,7 @@ import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
+  ZHBtn,
   ZHField,
   ZHGrid,
   ZHToggle,
@@ -18,6 +19,7 @@ import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResu
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
 import { useMasterDataSuppliersUiStore } from "../store/masterDataPartnerUiStore";
 import { message } from "../../../lib/messages";
+import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
   CreateBusinessPartnerBody,
   SupplierClassificationBody,
@@ -65,12 +67,14 @@ const DRAFT_KEY = "erp.masterdata.suppliers.draft";
 
 // ── SupplierConfigModal — Config SRI operativa (S3-A: incluye método de pago + exención) ──
 function SupplierConfigModal({
+  bpId,
   bpName,
   saving,
   error,
   onClose,
   onSave,
 }: {
+  bpId: string;
   bpName: string;
   saving: boolean;
   error?: string | null;
@@ -102,6 +106,63 @@ function SupplierConfigModal({
   }, []);
 
   const selectedPt = paymentTermsList.find((pt) => pt.id === paymentTermId);
+
+  // ── Default de compras/gastos por empresa activa (ADR-033, Fase 3d) ──────
+  // Sección independiente: fetch/save propios, separados del formulario de
+  // Config SRI de arriba — un fallo en uno no afecta al otro, y cada uno
+  // muestra su propio error.
+  const [purchaseDefaultPtId, setPurchaseDefaultPtId] = useState("");
+  const [purchaseSettingsLoading, setPurchaseSettingsLoading] =
+    useState(true);
+  const [purchaseSettingsSaving, setPurchaseSettingsSaving] = useState(false);
+  const [purchaseSettingsError, setPurchaseSettingsError] = useState<
+    string | null
+  >(null);
+  const [purchaseSettingsSaved, setPurchaseSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPurchaseSettingsLoading(true);
+    businessPartnerFacade
+      .getPurchaseSettings(bpId)
+      .then((dto) => {
+        if (!cancelled) setPurchaseDefaultPtId(dto.paymentTermId ?? "");
+      })
+      .catch((err: unknown) => {
+        if (!cancelled)
+          setPurchaseSettingsError(
+            formatApiRequestError(err, {
+              generic: "No se pudo cargar la condición predeterminada.",
+            }),
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setPurchaseSettingsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bpId]);
+
+  const handleSavePurchaseDefault = async () => {
+    setPurchaseSettingsSaving(true);
+    setPurchaseSettingsError(null);
+    setPurchaseSettingsSaved(false);
+    try {
+      await businessPartnerFacade.upsertPurchaseSettings(bpId, {
+        paymentTermId: purchaseDefaultPtId || null,
+      });
+      setPurchaseSettingsSaved(true);
+    } catch (err: unknown) {
+      setPurchaseSettingsError(
+        formatApiRequestError(err, {
+          generic: "No se pudo guardar la condición predeterminada.",
+        }),
+      );
+    } finally {
+      setPurchaseSettingsSaving(false);
+    }
+  };
 
   return (
     <ZHModal
@@ -158,7 +219,11 @@ function SupplierConfigModal({
               maxLength={5}
             />
           </ZHField>
-          <ZHField label="Condición de pago *" required>
+          <ZHField
+            label="Condición de pago general del proveedor *"
+            required
+            hint="Se conserva para compatibilidad de la configuración general del proveedor. El default operativo para compras y gastos se define por empresa en la sección inferior."
+          >
             <select
               value={paymentTermId}
               onChange={(e) => setPaymentTermId(e.target.value)}
@@ -238,6 +303,54 @@ function SupplierConfigModal({
           }}
         />
       </form>
+
+      <hr className="md-supplier-section-divider" />
+
+      <div className="md-supplier-purchase-default-section">
+        <h4>Condición predeterminada para compras/gastos</h4>
+        {purchaseSettingsError && (
+          <ZHPageNotice variant="error" message={purchaseSettingsError} />
+        )}
+        <ZHField
+          label="Condición predeterminada para compras/gastos"
+          hint="Aplica solo a la empresa activa. Si este proveedor trabaja con otra empresa, puede tener una condición distinta."
+        >
+          <select
+            value={purchaseDefaultPtId}
+            onChange={(e) => {
+              setPurchaseDefaultPtId(e.target.value);
+              setPurchaseSettingsSaved(false);
+            }}
+            disabled={purchaseSettingsLoading || purchaseSettingsSaving}
+          >
+            <option value="">
+              — Sin default (exigir selección al crear documentos) —
+            </option>
+            {paymentTermsList
+              .filter(
+                (pt) => pt.isActive || pt.id === purchaseDefaultPtId,
+              )
+              .map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {pt.code} — {pt.name} ({pt.summary})
+                </option>
+              ))}
+          </select>
+        </ZHField>
+        <ZHBtn
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={purchaseSettingsLoading || purchaseSettingsSaving}
+          onClick={() => void handleSavePurchaseDefault()}
+        >
+          {purchaseSettingsSaving
+            ? "Guardando..."
+            : purchaseSettingsSaved
+              ? "Guardado ✓"
+              : "Guardar condición de compras/gastos"}
+        </ZHBtn>
+      </div>
     </ZHModal>
   );
 }
@@ -662,6 +775,7 @@ export function MasterDataSuppliersPage() {
 
       {page.supplierConfigBp && (
         <SupplierConfigModal
+          bpId={page.supplierConfigBp.bp.id}
           bpName={page.supplierConfigBp.bp.legalName}
           saving={page.saving}
           error={page.modalError}

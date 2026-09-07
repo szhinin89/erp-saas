@@ -225,6 +225,17 @@ public sealed class UpsertTradingSettingsRequest
     public string CreditCurrencyCode { get; set; } = "USD";
 }
 
+// ── CompanyBpPurchaseSettings (ADR-033, Fase 3d) ───────────────────────────────
+
+/// <summary>
+/// Configura el default de condición de pago de un PROVEEDOR en la empresa activa. Crea o
+/// actualiza. PaymentTermId null limpia el default ("sin default configurado").
+/// </summary>
+public sealed class UpsertPurchaseSettingsRequest
+{
+    public Guid? PaymentTermId { get; set; }
+}
+
 /// <summary>Clasificación estratégica del proveedor (S3-B).</summary>
 public sealed class SupplierClassificationRequest
 {
