@@ -86,6 +86,31 @@ public sealed class SalesReceivable
         }
     }
 
+    /// <summary>
+    /// ADR-033, Fase 4 — crea las cuotas de la CxC copiando exactamente número, fecha y monto del
+    /// cronograma ya congelado del documento de origen (SalesInvoice.PaymentSchedules). A
+    /// diferencia de <see cref="GenerateInstallments"/> (que recalcula desde PaymentTerm/
+    /// CreditTermDays), este método NO recalcula nada — es la fuente preferida cuando el
+    /// documento ya tiene cronograma persistido. GenerateInstallments queda como fallback
+    /// defensivo únicamente para documentos legacy sin cronograma.
+    /// </summary>
+    public void CreateInstallmentsFromSchedule(IReadOnlyList<SalesPaymentSchedule> schedule)
+    {
+        _installments.Clear();
+        foreach (var s in schedule.OrderBy(s => s.InstallmentNumber))
+        {
+            _installments.Add(
+                SalesReceivableInstallment.Create(
+                    Id,
+                    TenantId,
+                    s.InstallmentNumber,
+                    s.DueDate,
+                    s.Amount
+                )
+            );
+        }
+    }
+
     public void Cancel(Guid updatedBy)
     {
         if (PaidAmount > 0)

@@ -108,6 +108,14 @@ export interface PaymentMethodDto {
   detailType: PaymentMethodDetailType;
 }
 
+export interface SalesPaymentScheduleDto {
+  id: string;
+  installmentNumber: number;
+  dueDate: string;
+  amount: number;
+  notes: string | null;
+}
+
 export interface SalesInvoiceDto {
   id: string;
   customerId: string;
@@ -145,6 +153,8 @@ export interface SalesInvoiceDto {
   grandTotal: number;
   payments: SalesInvoicePaymentDto[];
   lines: SalesInvoiceDetailDto[];
+  paymentSchedule: SalesPaymentScheduleDto[];
+  isPaymentScheduleManual: boolean;
   createdAt: string;
   updatedAt: string | null;
   /** Motivo del fallo si la emisión electrónica falló en el intento más reciente; null si no aplica o tuvo éxito. */
@@ -278,6 +288,13 @@ export interface SalesLineInput {
   packagingLevelId?: string | null;
 }
 
+export interface SalesScheduleInput {
+  installmentNumber: number;
+  dueDate: string;
+  amount: number;
+  notes?: string | null;
+}
+
 export interface CreateSalesPayload {
   customerId: string;
   issueDate: string;
@@ -288,6 +305,9 @@ export interface CreateSalesPayload {
   payments?: SalesPaymentInput[];
   docTypeCode?: string | null;
   sriPaymentMethodCode?: string | null;
+  /** ADR-033, Fase 4: detalle de cuotas explícito (cronograma personalizado) — si se omite, el
+   * backend genera el cronograma automático a partir de la condición de pago. */
+  schedule?: SalesScheduleInput[] | null;
 }
 
 export interface UpdateSalesPayload extends CreateSalesPayload {

@@ -387,6 +387,11 @@ public sealed class AuthorizeSalesInvoiceHandler
 
         // ── Generar cuenta por cobrar (solo crédito — contado no genera CxC) ─
         // isCredit ya calculado arriba (validación de política fiscal de Consumidor Final).
+        // ADR-033, Fase 4: nace del cronograma ya congelado del documento (inv.PaymentSchedules)
+        // — nunca recalculado desde PaymentTerm/CreditTermDays en este momento. GenerateInstallments
+        // queda solo como fallback defensivo para documentos legacy sin cronograma persistido
+        // (no debería ocurrir en la práctica: el cronograma se genera desde la creación del
+        // borrador, Fase 4).
         if (isCredit && inv.GrandTotal > 0)
         {
             var receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(
@@ -397,11 +402,18 @@ public sealed class AuthorizeSalesInvoiceHandler
                 inv.GrandTotal,
                 uid
             );
-            receivable.GenerateInstallments(
-                inv.IssueDate,
-                inv.CreditTermDays,
-                inv.PaymentTerm.Installments
-            );
+            if (inv.PaymentSchedules.Count > 0)
+            {
+                receivable.CreateInstallmentsFromSchedule(inv.PaymentSchedules);
+            }
+            else
+            {
+                receivable.GenerateInstallments(
+                    inv.IssueDate,
+                    inv.CreditTermDays,
+                    inv.PaymentTerm.Installments
+                );
+            }
             await _rxRepo.AddAsync(receivable, ct);
         }
 

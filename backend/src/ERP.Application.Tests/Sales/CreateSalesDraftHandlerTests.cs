@@ -178,6 +178,60 @@ public sealed class CreateSalesDraftHandlerTests
     }
 
     [Fact]
+    public async Task Fase4_genera_cronograma_automatico_al_crear_el_borrador()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentSchedules.Should().ContainSingle();
+        captured.PaymentSchedules[0].Amount.Should().Be(captured.GrandTotal);
+        captured.IsPaymentScheduleManual.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Fase4_Schedule_explicito_persiste_exacto_y_marca_manual()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var issueDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            issueDate,
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") },
+            Schedule: new List<SalesScheduleInput>
+            {
+                new(1, issueDate.AddDays(15), 60m),
+                new(2, issueDate.AddDays(30), 55m),
+            }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentSchedules.Should().HaveCount(2);
+        captured.PaymentSchedules.Sum(s => s.Amount).Should().Be(captured.GrandTotal);
+        captured.IsPaymentScheduleManual.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task ADR033_rechaza_PaymentTermId_explicito_inactivo()
     {
         var f = new Fixture();

@@ -91,5 +91,14 @@ public interface ISalesInvoiceRepository
         CancellationToken ct = default
     );
     Task RemovePaymentsByInvoiceAsync(Guid invoiceId, CancellationToken ct = default);
+
+    /// <summary>
+    /// ADR-033, Fase 4 — borra por SQL directo las filas de cronograma existentes y desengancha su
+    /// tracking, para permitir que GeneratePaymentSchedule/ReplacePaymentSchedule reconstruyan la
+    /// colección sin conflictos de EF ChangeTracker (mismo patrón que RemovePaymentsByInvoiceAsync).
+    /// Llamar ANTES de invocar esos métodos de dominio cuando se está regenerando/reemplazando el
+    /// cronograma de un borrador ya persistido (Update). No es necesario en Create (entidad nueva).
+    /// </summary>
+    Task RemovePaymentSchedulesByInvoiceAsync(Guid invoiceId, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

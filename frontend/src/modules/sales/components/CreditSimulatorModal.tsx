@@ -16,9 +16,14 @@ interface Props {
   paymentTermName?: string;
   installments?: number;
   daysBetween?: number;
+  /** Fecha de emisión del borrador — ninguna cuota puede vencer antes de esta fecha. */
+  issueDate?: string;
+  /** ADR-033, Fase 4: true si el cronograma ya persistido en el borrador fue personalizado
+   * (ReplacePaymentSchedule) — false si es el automático generado desde la condición de pago. */
+  isManual?: boolean;
   onRowsChange: (rows: CreditRow[]) => void;
   onRecalculate: () => void;
-  onConfirm: (totalAmount: number) => void;
+  onConfirm: (rows: CreditRow[], totalAmount: number) => void;
   onCancel: () => void;
 }
 
@@ -29,6 +34,8 @@ export function CreditSimulatorModal({
   paymentTermName,
   installments,
   daysBetween,
+  issueDate = "",
+  isManual = false,
   onRowsChange,
   onRecalculate,
   onConfirm,
@@ -38,6 +45,9 @@ export function CreditSimulatorModal({
   const factor = 10 ** totalAmountDecimals;
   const totalCuotas = rows.reduce((s, r) => s + r.amount, 0);
   const diff = Math.round((amount - totalCuotas) * factor) / factor;
+  const hasInvalidRow = rows.some(
+    (r) => r.amount <= 0 || (issueDate && r.dueDate < issueDate),
+  );
 
   return (
     <ZHModal
@@ -45,7 +55,7 @@ export function CreditSimulatorModal({
       onClose={onCancel}
       size="md"
       title="Simulación de Cuotas"
-      subtitle={`Monto a crédito: $${formatMoney(amount, totalAmountDecimals)}${paymentTermName && installments && daysBetween ? ` — ${paymentTermName} (${installments} cuota${installments > 1 ? "s" : ""} × ${daysBetween} días)` : ""}`}
+      subtitle={`${isManual ? "Personalizado" : "Automático"} — Monto a crédito: $${formatMoney(amount, totalAmountDecimals)}${paymentTermName && installments && daysBetween ? ` — ${paymentTermName} (${installments} cuota${installments > 1 ? "s" : ""} × ${daysBetween} días)` : ""}`}
       footer={
         <>
           <ZHBtn variant="ghost" size="md" onClick={onCancel}>
@@ -57,8 +67,10 @@ export function CreditSimulatorModal({
           <ZHBtn
             variant="primary"
             size="md"
-            disabled={Math.abs(diff) > INSTALLMENT_ROUNDING_TOLERANCE}
-            onClick={() => onConfirm(totalCuotas)}
+            disabled={
+              Math.abs(diff) > INSTALLMENT_ROUNDING_TOLERANCE || hasInvalidRow
+            }
+            onClick={() => onConfirm(rows, totalCuotas)}
           >
             Confirmar cuotas
           </ZHBtn>
@@ -69,6 +81,12 @@ export function CreditSimulatorModal({
         <ZHPageNotice
           variant="warning"
           message={`Diferencia: $${formatMoney(Math.abs(diff), totalAmountDecimals)} — las cuotas deben sumar $${formatMoney(amount, totalAmountDecimals)}`}
+        />
+      )}
+      {diff === 0 && hasInvalidRow && (
+        <ZHPageNotice
+          variant="warning"
+          message="Cada cuota debe tener un monto mayor a cero y una fecha de vencimiento igual o posterior a la fecha de emisión."
         />
       )}
 

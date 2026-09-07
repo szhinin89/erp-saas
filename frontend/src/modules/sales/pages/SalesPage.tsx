@@ -703,11 +703,17 @@ export function SalesPage() {
         paymentTermName={ctx.selectedPt?.name}
         installments={ctx.selectedPt?.installments}
         daysBetween={ctx.selectedPt?.daysBetweenInstallments}
+        issueDate={ctx.formWatch.issueDate || ""}
+        isManual={ctx.scheduleIsManual}
         onRowsChange={ctx.setCreditRows}
         onRecalculate={() =>
           ctx.setCreditRows(ctx.simulateCreditInstallments(ctx.creditAmount))
         }
-        onConfirm={(totalAmount) => {
+        onConfirm={(rows, totalAmount) => {
+          // ADR-033, Fase 4: el cronograma confirmado (detalle exacto, no solo el total) se
+          // envía al backend al guardar el borrador — ver persistDraft/schedule en useSalesPage.
+          ctx.setConfirmedScheduleRows(rows);
+          ctx.setScheduleIsManual(true);
           const creditPm = ctx.paymentMethods.find((p) => p.isCreditAllowed);
           if (creditPm) {
             ctx.setInvoicePayments((prev) => {

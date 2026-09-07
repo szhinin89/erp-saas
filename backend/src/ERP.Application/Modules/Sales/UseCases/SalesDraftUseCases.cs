@@ -74,6 +74,14 @@ public sealed record ChequeDetailInput(
 /// Fase 4): el servidor los resuelve exclusivamente desde <c>ICurrentCashSession</c>. Si el
 /// usuario no tiene una caja abierta, la creación del borrador se rechaza.
 /// </summary>
+/// <summary>ADR-033, Fase 4 — una cuota del cronograma enviada explícitamente por el usuario.</summary>
+public sealed record SalesScheduleInput(
+    int InstallmentNumber,
+    DateOnly DueDate,
+    decimal Amount,
+    string? Notes = null
+);
+
 public sealed record CreateSalesDraftCommand(
     Guid CustomerId,
     DateOnly IssueDate,
@@ -83,7 +91,8 @@ public sealed record CreateSalesDraftCommand(
     Guid? PaymentTermId = null,
     List<SalesPaymentInput>? Payments = null,
     string? DocTypeCode = null,
-    string? SriPaymentMethodCode = null
+    string? SriPaymentMethodCode = null,
+    List<SalesScheduleInput>? Schedule = null
 ) : IRequest<Result<SalesInvoiceDto>>, IBranchScopedRequest;
 
 public sealed record UpdateSalesDraftCommand(
@@ -94,7 +103,8 @@ public sealed record UpdateSalesDraftCommand(
     DateOnly? DueDate = null,
     string? Notes = null,
     Guid? PaymentTermId = null,
-    List<SalesPaymentInput>? Payments = null
+    List<SalesPaymentInput>? Payments = null,
+    List<SalesScheduleInput>? Schedule = null
 ) : IRequest<Result<SalesInvoiceDto>>, IBranchScopedRequest;
 
 public sealed record GetSalesInvoiceByIdQuery(Guid Id)
@@ -351,6 +361,24 @@ public sealed class CreateSalesDraftHandler
 
         inv.ReplaceLines(linesResult.Lines, _u.UserId);
 
+        // ADR-033, Fase 4: cronograma inicial — automático desde el PaymentTerm resuelto, o
+        // manual si el comando trae un Schedule explícito (usuario ya lo personalizó).
+        try
+        {
+            if (cmd.Schedule is { Count: > 0 })
+                inv.ReplacePaymentSchedule(
+                    cmd.Schedule
+                        .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
+                        .ToList()
+                );
+            else
+                inv.GeneratePaymentSchedule();
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
+        }
+
         if (cmd.Payments is { Count: > 0 })
         {
             var paymentsResult = await SalesPaymentHelper.BuildPaymentsAsync(
@@ -437,6 +465,12 @@ public sealed class UpdateSalesDraftHandler
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
+        // ADR-033, Fase 4: si el PaymentTerm cambia (explícito o por default del nuevo cliente),
+        // el cronograma se regenera automático y descarta cualquier personalización previa —
+        // se decide más abajo, después de reconstruir líneas (GeneratePaymentSchedule necesita
+        // el GrandTotal vigente).
+        var paymentTermChanged = false;
+
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTerm.Id)
         {
             var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, cmd.PaymentTermId, ct);
@@ -451,13 +485,16 @@ public sealed class UpdateSalesDraftHandler
                     pt.DaysBetweenInstallments
                 )
             );
+            paymentTermChanged = true;
         }
         else if (cmd.CustomerId != inv.CustomerId)
         {
             // Cambio de cliente sin PaymentTermId explícito: intenta el default de la empresa
             // activa para el nuevo cliente (ADR-033, Fase 3c). Sin default válido, se mantiene
             // el PaymentTerm actual del borrador (mismo criterio ya vigente en Compras desde
-            // Fase 3b) — el usuario deberá elegir uno explícito si lo necesita.
+            // Fase 3b) — el usuario deberá elegir uno explícito si lo necesita. Test explícito
+            // (Fase 4) documenta que en ese caso NO se marca ningún default del nuevo cliente y
+            // el cronograma manual existente, si lo hay, no se toca.
             var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, null, ct);
             if (ptResult.IsSuccess)
             {
@@ -470,6 +507,7 @@ public sealed class UpdateSalesDraftHandler
                         pt.DaysBetweenInstallments
                     )
                 );
+                paymentTermChanged = true;
             }
         }
 
@@ -518,6 +556,44 @@ public sealed class UpdateSalesDraftHandler
             await _repo.RemoveLinesByInvoiceAsync(inv.Id, linesResult.Lines, ct);
             inv.ReplaceLines(linesResult.Lines, _u.UserId);
 
+            // ADR-033, Fase 4 — reglas de regeneración/bloqueo del cronograma.
+            if (paymentTermChanged)
+            {
+                // Cambio de condición de pago o de cliente con default válido: siempre regenera
+                // automático, descarta cualquier personalización previa.
+                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                inv.GeneratePaymentSchedule();
+            }
+            else if (cmd.Schedule is { Count: > 0 })
+            {
+                // El usuario envía un cronograma explícito en este Update — se acepta si es
+                // válido (ReplacePaymentSchedule exige que la suma calce con el GrandTotal
+                // actual, ya recalculado tras ReplaceLines).
+                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                inv.ReplacePaymentSchedule(
+                    cmd.Schedule
+                        .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
+                        .ToList()
+                );
+            }
+            else
+            {
+                var currentScheduleSum = inv.PaymentSchedules.Sum(s => s.Amount);
+                if (currentScheduleSum != inv.GrandTotal)
+                {
+                    if (inv.IsPaymentScheduleManual)
+                        return Result<SalesInvoiceDto>.ValidationFailure(
+                            $"El cronograma fue personalizado y el total del documento cambió "
+                                + $"(nuevo total: {inv.GrandTotal:F2}, cronograma actual: {currentScheduleSum:F2}). "
+                                + "Debe revisar y ajustar el cronograma antes de continuar."
+                        );
+
+                    // Cronograma automático: se regenera silenciosamente con el nuevo total.
+                    await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                    inv.GeneratePaymentSchedule();
+                }
+            }
+
             if (cmd.Payments is { Count: > 0 })
             {
                 var paymentsResult = await SalesPaymentHelper.BuildPaymentsAsync(
@@ -533,7 +609,7 @@ public sealed class UpdateSalesDraftHandler
                 inv.ReplacePayments(paymentsResult.Items!, _u.UserId);
             }
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
         }

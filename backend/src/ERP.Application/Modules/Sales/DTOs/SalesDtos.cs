@@ -68,6 +68,8 @@ public sealed record SalesInvoiceDto(
     decimal GrandTotal,
     IReadOnlyList<SalesInvoicePaymentDto> Payments,
     IReadOnlyList<SalesInvoiceDetailDto> Lines,
+    IReadOnlyList<SalesPaymentScheduleDto> PaymentSchedule,
+    bool IsPaymentScheduleManual,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     /// <summary>
@@ -76,6 +78,14 @@ public sealed record SalesInvoiceDto(
     /// misma respuesta). Null si no se intentó, si la factura no es electrónica, o si tuvo éxito.
     /// </summary>
     string? ElectronicIssueError = null
+);
+
+public sealed record SalesPaymentScheduleDto(
+    Guid Id,
+    int InstallmentNumber,
+    DateOnly DueDate,
+    decimal Amount,
+    string? Notes
 );
 
 public sealed record SalesInvoicePaymentDto(

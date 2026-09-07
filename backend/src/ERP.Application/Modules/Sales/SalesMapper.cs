@@ -55,10 +55,15 @@ internal static class SalesMapper
             i.GrandTotal,
             i.Payments.Select(MapPayment).ToList(),
             i.Lines.OrderBy(l => l.SortOrder).Select(MapDetail).ToList(),
+            i.PaymentSchedules.OrderBy(s => s.InstallmentNumber).Select(MapSchedule).ToList(),
+            i.IsPaymentScheduleManual,
             i.CreatedAt,
             i.UpdatedAt,
             electronicIssueError
         );
+
+    private static SalesPaymentScheduleDto MapSchedule(SalesPaymentSchedule s) =>
+        new(s.Id, s.InstallmentNumber, s.DueDate, s.Amount, s.Notes);
 
     private static SalesInvoicePaymentDto MapPayment(SalesInvoicePayment p) =>
         new(

@@ -114,6 +114,13 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
             .HasColumnName("notes")
             .HasMaxLength(SalesInvoice.NotesMaxLen);
 
+        // ── Cronograma de cuotas (ADR-033, Fase 4) ──────────────────
+        builder
+            .Property(x => x.IsPaymentScheduleManual)
+            .HasColumnName("payment_schedule_is_manual")
+            .IsRequired()
+            .HasDefaultValue(false);
+
         // ── Estado interno ──────────────────────────────────────────
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
@@ -183,6 +190,12 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
             .HasMany(x => x.Payments)
             .WithOne()
             .HasForeignKey(x => x.InvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(x => x.PaymentSchedules)
+            .WithOne()
+            .HasForeignKey(x => x.SalesInvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder

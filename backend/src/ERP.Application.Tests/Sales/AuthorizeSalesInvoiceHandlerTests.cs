@@ -1425,4 +1425,152 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(SalesInvoiceStatus.Authorized);
     }
+
+    // ── ADR-033, Fase 4: CxC nace del cronograma persistido del documento ─────────────────
+
+    [Fact]
+    public async Task Contado_GeneraCronogramaPeroNoGeneraCxC()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 10m); // Contado (installments=1, days=0)
+        inv.GeneratePaymentSchedule();
+        var (handler, _, receivableRepo) = BuildHandler(inv, today, CreateIdentifiedCustomerBp());
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.PaymentSchedules.Should().ContainSingle();
+        receivableRepo.Verify(
+            r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "Contado no debe generar CxC aunque el cronograma exista"
+        );
+    }
+
+    [Fact]
+    public async Task Credito_UnaCuota_GeneraCxC_ConLosDatosExactosDelCronograma()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            unitPrice: 10m,
+            installments: 1,
+            daysBetween: 30
+        );
+        inv.GeneratePaymentSchedule();
+        var expectedSchedule = inv.PaymentSchedules.Single();
+
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: true
+        );
+
+        SalesReceivable? captured = null;
+        receivableRepo
+            .Setup(r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesReceivable, CancellationToken>((rx, _) => captured = rx)
+            .Returns(Task.CompletedTask);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured.Should().NotBeNull();
+        captured!.Installments.Should().ContainSingle();
+        var installment = captured.Installments.Single();
+        installment.InstallmentNumber.Should().Be(expectedSchedule.InstallmentNumber);
+        installment.DueDate.Should().Be(expectedSchedule.DueDate);
+        installment.Amount.Should().Be(expectedSchedule.Amount);
+    }
+
+    [Fact]
+    public async Task Credito_VariasCuotas_GeneraCxC_ConFechasMontosYNumerosExactosDelCronograma()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            unitPrice: 100m, // GrandTotal = 100 (CreateDraftInvoice no aplica IVA a nivel de dominio)
+            installments: 3,
+            daysBetween: 30
+        );
+        // Cronograma manual con montos desiguales, distinto del prorrateo automático — prueba
+        // que la autorización copia EXACTAMENTE el cronograma persistido, sin recalcular.
+        inv.ReplacePaymentSchedule(
+            new List<(int, DateOnly, decimal, string?)>
+            {
+                (1, today.AddDays(15), 40m, null),
+                (2, today.AddDays(45), 35m, null),
+                (3, today.AddDays(75), 25m, null),
+            }
+        );
+
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: true
+        );
+
+        SalesReceivable? captured = null;
+        receivableRepo
+            .Setup(r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesReceivable, CancellationToken>((rx, _) => captured = rx)
+            .Returns(Task.CompletedTask);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured.Should().NotBeNull();
+        captured!.Installments.Should().HaveCount(3);
+        var byNumber = captured.Installments.ToDictionary(i => i.InstallmentNumber);
+        byNumber[1].DueDate.Should().Be(today.AddDays(15));
+        byNumber[1].Amount.Should().Be(40m);
+        byNumber[2].DueDate.Should().Be(today.AddDays(45));
+        byNumber[2].Amount.Should().Be(35m);
+        byNumber[3].DueDate.Should().Be(today.AddDays(75));
+        byNumber[3].Amount.Should().Be(25m);
+    }
+
+    [Fact]
+    public async Task Credito_SinCronogramaPersistido_UsaFallbackLegacyDeGenerateInstallments()
+    {
+        // Borrador "legacy" (previo a Fase 4): PaymentSchedules vacío al autorizar. Debe seguir
+        // generando CxC vía el fallback defensivo (SalesReceivable.GenerateInstallments).
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            unitPrice: 10m,
+            installments: 1,
+            daysBetween: 30
+        );
+        inv.PaymentSchedules.Should().BeEmpty();
+
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodIsCreditAllowed: true
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        receivableRepo.Verify(
+            r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
 }

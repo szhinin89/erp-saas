@@ -75,6 +75,18 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     private readonly List<SalesInvoicePayment> _payments = new();
     public IReadOnlyList<SalesInvoicePayment> Payments => _payments.AsReadOnly();
 
+    // ── Cronograma de cuotas (ADR-033, Fase 4) ──────────────────────
+    private readonly List<SalesPaymentSchedule> _paymentSchedules = new();
+    public IReadOnlyList<SalesPaymentSchedule> PaymentSchedules => _paymentSchedules.AsReadOnly();
+
+    /// <summary>
+    /// true cuando el cronograma fue personalizado explícitamente por el usuario
+    /// (ReplacePaymentSchedule); false cuando fue generado automáticamente
+    /// (GeneratePaymentSchedule). Se resetea a false al regenerar por cambio de condición de
+    /// pago o de cliente (con default válido).
+    /// </summary>
+    public bool IsPaymentScheduleManual { get; private set; }
+
     // ── Calculated (NOT persisted) ──────────────────────────────────
     public decimal Subtotal => AuthorizedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
     public decimal TotalDiscount => AuthorizedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
@@ -234,6 +246,116 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         foreach (var p in payments)
             _payments.Add(p);
         SetUpdated(updatedBy);
+    }
+
+    // ── Cronograma de cuotas (ADR-033, Fase 4) ──────────────────────
+
+    /// <summary>
+    /// Genera automáticamente el cronograma desde PaymentTerm + GrandTotal + IssueDate vigentes.
+    /// A diferencia de PurchaseInvoice.GeneratePaymentSchedule (single-shot, lanza si ya existe),
+    /// esta SÍ permite regenerar: Ventas necesita recalcular el cronograma automático cada vez
+    /// que cambian las líneas/total, el PaymentTerm o el cliente — mientras el cronograma no haya
+    /// sido personalizado por el usuario (ver reglas en Application). Reemplaza cualquier
+    /// cronograma previo y marca IsPaymentScheduleManual = false.
+    /// </summary>
+    public void GeneratePaymentSchedule()
+    {
+        EnsureDraft();
+
+        if (GrandTotal <= 0)
+            throw new InvalidOperationException(
+                "No se puede generar cronograma para una venta con total cero o negativo."
+            );
+        if (PaymentTerm.Installments < 1)
+            throw new InvalidOperationException(
+                "La condición de pago debe tener al menos 1 cuota."
+            );
+
+        var total = GrandTotal;
+        var installmentAmount = Math.Round(
+            total / PaymentTerm.Installments,
+            2,
+            MidpointRounding.AwayFromZero
+        );
+        decimal accumulated = 0;
+
+        _paymentSchedules.Clear();
+        for (var i = 1; i <= PaymentTerm.Installments; i++)
+        {
+            var dueDate = IssueDate.AddDays(PaymentTerm.DaysBetween * i);
+            var amount =
+                i == PaymentTerm.Installments ? total - accumulated : installmentAmount;
+
+            _paymentSchedules.Add(SalesPaymentSchedule.Create(Id, TenantId, i, dueDate, amount));
+            accumulated += amount;
+        }
+
+        IsPaymentScheduleManual = false;
+    }
+
+    /// <summary>
+    /// Reemplaza el cronograma con cuotas explícitas provistas por el usuario. Valida suma exacta
+    /// contra GrandTotal, fechas >= IssueDate, números >= 1 y sin duplicados — mismas invariantes
+    /// que PurchaseInvoice.ReplacePaymentSchedule. A diferencia de esa, ESTA SÍ llama EnsureDraft()
+    /// (no se copia el hueco de Compras: Ventas nunca permite tocar el cronograma fuera de Draft).
+    /// Marca IsPaymentScheduleManual = true.
+    /// </summary>
+    public void ReplacePaymentSchedule(
+        IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments
+    )
+    {
+        EnsureDraft();
+
+        if (installments.Count == 0)
+            throw new ArgumentException("Debe incluir al menos una cuota.", nameof(installments));
+
+        var total = GrandTotal;
+        if (total <= 0)
+            throw new InvalidOperationException(
+                "No se puede generar cronograma para una venta con total cero o negativo."
+            );
+
+        var numbers = new HashSet<int>();
+        foreach (var inst in installments)
+        {
+            if (inst.Number < 1)
+                throw new ArgumentException(
+                    $"El número de cuota debe ser >= 1 (recibido: {inst.Number})."
+                );
+            if (inst.Amount <= 0)
+                throw new ArgumentException(
+                    $"Cuota #{inst.Number}: el monto debe ser mayor a cero."
+                );
+            if (inst.DueDate < IssueDate)
+                throw new ArgumentException(
+                    $"Cuota #{inst.Number}: la fecha de vencimiento no puede ser anterior a la fecha de emisión."
+                );
+            if (!numbers.Add(inst.Number))
+                throw new ArgumentException($"Cuota #{inst.Number}: número de cuota duplicado.");
+        }
+
+        var sum = installments.Sum(i => i.Amount);
+        if (sum != total)
+            throw new InvalidOperationException(
+                $"La suma de las cuotas ({sum:F2}) no coincide con el total de la venta ({total:F2})."
+            );
+
+        _paymentSchedules.Clear();
+        foreach (var inst in installments.OrderBy(i => i.Number))
+        {
+            _paymentSchedules.Add(
+                SalesPaymentSchedule.Create(
+                    Id,
+                    TenantId,
+                    inst.Number,
+                    inst.DueDate,
+                    inst.Amount,
+                    inst.Notes
+                )
+            );
+        }
+
+        IsPaymentScheduleManual = true;
     }
 
     // ── Authorize (final — immutable after this) ────────────────────

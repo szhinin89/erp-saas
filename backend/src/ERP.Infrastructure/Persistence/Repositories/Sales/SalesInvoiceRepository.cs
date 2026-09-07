@@ -28,6 +28,7 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
         Scoped(tenantId)
             .Include(x => x.Lines.OrderBy(l => l.SortOrder))
             .Include(x => x.Payments)
+            .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<(IReadOnlyList<SalesInvoice> Items, int Total)> GetPagedAsync(
@@ -223,6 +224,20 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
         );
 
         foreach (var entry in _db.ChangeTracker.Entries<SalesInvoicePayment>().ToList())
+            entry.State = EntityState.Detached;
+    }
+
+    public async Task RemovePaymentSchedulesByInvoiceAsync(
+        Guid invoiceId,
+        CancellationToken ct = default
+    )
+    {
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM sales_payment_schedules WHERE sales_invoice_id = {invoiceId}",
+            ct
+        );
+
+        foreach (var entry in _db.ChangeTracker.Entries<SalesPaymentSchedule>().ToList())
             entry.State = EntityState.Detached;
     }
 

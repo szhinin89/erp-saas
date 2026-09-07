@@ -361,6 +361,14 @@ export function useSalesPage() {
   // ── Credit modal state ─────────────────────────────────────────────
   const [creditAmount, setCreditAmount] = useState(0);
   const [creditRows, setCreditRows] = useState<CreditRow[]>([]);
+  // ADR-033, Fase 4: cronograma explícito confirmado en el simulador — se envía tal cual al
+  // guardar el borrador (schedule) mientras scheduleIsManual sea true. Si el usuario nunca
+  // confirma un cronograma personalizado, queda null y el backend genera uno automático a
+  // partir de la condición de pago (comportamiento por defecto, sin cambios).
+  const [confirmedScheduleRows, setConfirmedScheduleRows] = useState<
+    CreditRow[] | null
+  >(null);
+  const [scheduleIsManual, setScheduleIsManual] = useState(false);
 
   // ── Cash payment: monto recibido / vuelto (solo UI — el backend no exige este dato) ──
   const [cashReceived, setCashReceived] = useState(0);
@@ -1009,6 +1017,9 @@ export function useSalesPage() {
     setLineKey(1);
     setPayKey(1);
     setCashReceived(0);
+    setCreditRows([]);
+    setConfirmedScheduleRows(null);
+    setScheduleIsManual(false);
     setProductSearchFocusKey((k) => k + 1); // reenfoca "buscar producto" — UX retail
 
     // Cliente por defecto: Caja (DefaultCustomerId) → fallback universal Consumidor
@@ -1053,6 +1064,12 @@ export function useSalesPage() {
         shouldValidate: true,
         shouldDirty: true,
       });
+      // ADR-033, Fase 4: cambiar de cliente puede cambiar el PaymentTerm resuelto — cualquier
+      // cronograma personalizado confirmado para el cliente anterior deja de ser válido; el
+      // backend igual regenera el automático en este caso, pero se limpia aquí para que el
+      // simulador no muestre "Personalizado" con datos obsoletos si se reabre.
+      setConfirmedScheduleRows(null);
+      setScheduleIsManual(false);
       if (c) {
         const profile = await loadCustomerProfile(c.id);
         setCustomerProfile(profile);
@@ -1141,6 +1158,20 @@ export function useSalesPage() {
 
         setLineKey(inv.lines.length + 1);
         setPayKey((inv.payments?.length ?? 0) + 1);
+
+        // ADR-033, Fase 4: hidrata el cronograma persistido — si el usuario reabre el
+        // simulador, ve exactamente lo que ya tiene el borrador (automático o personalizado).
+        const scheduleRows: CreditRow[] = (inv.paymentSchedule ?? []).map((s) => ({
+          number: s.installmentNumber,
+          dueDate: s.dueDate,
+          amount: s.amount,
+        }));
+        setCreditRows(scheduleRows);
+        setConfirmedScheduleRows(
+          inv.isPaymentScheduleManual && scheduleRows.length > 0 ? scheduleRows : null,
+        );
+        setScheduleIsManual(inv.isPaymentScheduleManual);
+
         setTab("nuevo");
       } catch (err: unknown) {
         setSaveError(
@@ -1190,13 +1221,24 @@ export function useSalesPage() {
           transferDetail: p.transferDetail ?? undefined,
           chequeDetail: p.chequeDetail ?? undefined,
         })),
+        // ADR-033, Fase 4: solo se envía si el usuario confirmó explícitamente un cronograma
+        // personalizado en el simulador — si no, se omite y el backend genera/regenera el
+        // cronograma automático a partir de la condición de pago vigente.
+        schedule:
+          scheduleIsManual && confirmedScheduleRows && confirmedScheduleRows.length > 0
+            ? confirmedScheduleRows.map((r) => ({
+                installmentNumber: r.number,
+                dueDate: r.dueDate,
+                amount: r.amount,
+              }))
+            : null,
       };
 
       return editing
         ? salesService.update(editing.id, { ...payload, id: editing.id })
         : salesService.create(payload);
     },
-    [editing],
+    [editing, scheduleIsManual, confirmedScheduleRows],
   );
 
   // ── Issue flow (Nueva Venta → Emitir Factura → Confirmación → Emisión →
@@ -1801,6 +1843,10 @@ export function useSalesPage() {
     creditRows,
     setCreditRows,
     simulateCreditInstallments,
+    confirmedScheduleRows,
+    setConfirmedScheduleRows,
+    scheduleIsManual,
+    setScheduleIsManual,
 
     // Cash payment (Monto recibido / Vuelto)
     cashReceived,

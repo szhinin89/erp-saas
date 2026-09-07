@@ -100,6 +100,8 @@ function buildInvoice(
     grandTotal: 115,
     payments: [],
     lines: [],
+    paymentSchedule: [],
+    isPaymentScheduleManual: false,
     createdAt: "2026-07-01T00:00:00Z",
     updatedAt: null,
     electronicIssueError: null,
