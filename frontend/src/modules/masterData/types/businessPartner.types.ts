@@ -139,6 +139,7 @@ export type SupplierRoleConfigDto = {
   defaultPaymentMethodCode?: string | null; // SRI code: 01-21
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt: boolean; // RISE, microempresa, sector público
+  isRequiredToKeepAccounting: boolean; // dato informativo — no altera el cálculo de retención
 };
 
 /**
@@ -312,6 +313,7 @@ export type SupplierConfigBody = {
   defaultPaymentMethodCode?: string | null; // SRI code 01-21
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt?: boolean; // default false
+  isRequiredToKeepAccounting?: boolean; // default false — dato informativo, no altera retenciones
 };
 
 export type CarrierConfigBody = {

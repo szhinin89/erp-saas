@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, cleanup, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataSuppliersPage } from "./MasterDataSuppliersPage";
 import { useMasterDataSuppliersUiStore } from "../store/masterDataPartnerUiStore";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
+import { paymentTermService } from "../api/paymentTermService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
-import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
+import type {
+  BusinessPartnerRoleDto,
+  BusinessPartnerSummaryDto,
+} from "../types/businessPartner.types";
 
 /**
  * CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04 — "Activar/desactivar proveedor" sigue el mismo
@@ -21,7 +25,24 @@ vi.mock("../api/businessPartnerFacade", () => ({
     deactivateBusinessPartner: vi.fn(),
     activateBusinessPartner: vi.fn(),
     assignRole: vi.fn(),
+    getRoles: vi.fn(),
+    updateSupplierConfig: vi.fn(),
+    getPurchaseSettings: vi.fn(),
   },
+}));
+
+vi.mock("../api/paymentTermService", () => ({
+  paymentTermService: {
+    list: vi.fn(),
+  },
+}));
+
+vi.mock("../api/useSriSupplierTypes", () => ({
+  useSriSupplierTypes: () => ({ options: [{ code: "01", name: "Persona Natural" }], loading: false }),
+}));
+
+vi.mock("../api/useSriPaymentMethods", () => ({
+  useSriPaymentMethods: () => ({ options: [{ code: "01", name: "Sin sistema financiero" }], loading: false, error: null }),
 }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({
@@ -203,6 +224,93 @@ describe("MasterDataSuppliersPage — activar proveedor: confirmación y feedbac
 
     await waitFor(() => expect(message.error).toHaveBeenCalled());
     expect(message.success).not.toHaveBeenCalled();
+  });
+});
+
+// ZHToggle no asocia el label con el <button role="switch"> vía aria-label/htmlFor
+// (son hermanos en el DOM) — se localiza el switch subiendo al contenedor .zh-toggle.
+function getToggleSwitchByLabel(labelText: string): HTMLElement {
+  const label = screen.getByText(labelText);
+  const container = label.closest(".zh-toggle");
+  if (!container) throw new Error(`No se encontró el contenedor .zh-toggle para "${labelText}"`);
+  return within(container as HTMLElement).getByRole("switch");
+}
+
+describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar contabilidad", () => {
+  const SUPPLIER_ROLE: BusinessPartnerRoleDto = {
+    id: "role-1",
+    roleType: "Supplier",
+    roleLabel: "Proveedor",
+    isActive: true,
+    notes: null,
+    assignedAt: "2026-08-01T00:00:00Z",
+    revokedAt: null,
+    supplierConfig: {
+      defaultTaxSupportCode: "01",
+      defaultRetentionVatCode: "725",
+      defaultRetentionIncomeCode: "303",
+      defaultPaymentMethodCode: "01",
+      refundProviderTypeCode: "01",
+      isRetentionExempt: false,
+      isRequiredToKeepAccounting: true,
+    },
+    carrierConfig: null,
+    customerConfig: null,
+  };
+
+  beforeEach(() => {
+    vi.mocked(businessPartnerFacade.getRoles).mockResolvedValue([SUPPLIER_ROLE]);
+    vi.mocked(businessPartnerFacade.getPurchaseSettings).mockResolvedValue({
+      id: "pcbs-1",
+      businessPartnerId: "bp-2",
+      paymentTermId: null,
+      hasCustomConfiguration: false,
+    });
+    vi.mocked(paymentTermService.list).mockResolvedValue([]);
+  });
+
+  it("precarga el toggle y los demás campos desde el SupplierRoleConfigDto existente", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+
+    await waitFor(() => expect(businessPartnerFacade.getRoles).toHaveBeenCalledWith("bp-2", true));
+    await waitFor(() =>
+      expect(screen.getByText("Obligado a llevar contabilidad")).toBeTruthy(),
+    );
+
+    const toggle = getToggleSwitchByLabel("Obligado a llevar contabilidad");
+    expect(toggle.getAttribute("aria-checked")).toBe("true");
+
+    expect((screen.getByPlaceholderText("01") as HTMLInputElement).value).toBe("01");
+    expect((screen.getByPlaceholderText("725") as HTMLInputElement).value).toBe("725");
+    expect((screen.getByPlaceholderText("303") as HTMLInputElement).value).toBe("303");
+  });
+
+  it("se puede desactivar el toggle y el body de guardado incluye isRequiredToKeepAccounting", async () => {
+    vi.mocked(businessPartnerFacade.updateSupplierConfig).mockResolvedValue(SUPPLIER_ROLE);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+
+    await screen.findByText("Obligado a llevar contabilidad");
+    const toggle = getToggleSwitchByLabel("Obligado a llevar contabilidad");
+    expect(toggle.getAttribute("aria-checked")).toBe("true");
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() =>
+      expect(businessPartnerFacade.updateSupplierConfig).toHaveBeenCalledWith(
+        "bp-2",
+        "role-1",
+        expect.objectContaining({ isRequiredToKeepAccounting: false }),
+      ),
+    );
   });
 });
 

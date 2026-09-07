@@ -83,7 +83,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.SupplierConfig.DefaultRetentionIncomeCode,
                 defaultPaymentMethodCode: body.SupplierConfig.DefaultPaymentMethodCode,
                 refundProviderTypeCode: body.SupplierConfig.RefundProviderTypeCode,
-                isRetentionExempt: body.SupplierConfig.IsRetentionExempt
+                isRetentionExempt: body.SupplierConfig.IsRetentionExempt,
+                isRequiredToKeepAccounting: body.SupplierConfig.IsRequiredToKeepAccounting
             )
             : null;
 
@@ -165,7 +166,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.DefaultRetentionIncomeCode,
                 defaultPaymentMethodCode: body.DefaultPaymentMethodCode,
                 refundProviderTypeCode: body.RefundProviderTypeCode,
-                isRetentionExempt: body.IsRetentionExempt
+                isRetentionExempt: body.IsRetentionExempt,
+                isRequiredToKeepAccounting: body.IsRequiredToKeepAccounting
             );
         }
         catch (ArgumentException ex)

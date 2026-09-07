@@ -22,6 +22,7 @@ import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
   CreateBusinessPartnerBody,
   SupplierConfigBody,
+  SupplierRoleConfigDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import { paymentTermService } from "../api/paymentTermService";
@@ -59,6 +60,7 @@ const DRAFT_KEY = "erp.masterdata.suppliers.draft";
 function SupplierConfigModal({
   bpId,
   bpName,
+  initialConfig,
   saving,
   error,
   onClose,
@@ -66,17 +68,32 @@ function SupplierConfigModal({
 }: {
   bpId: string;
   bpName: string;
+  initialConfig: SupplierRoleConfigDto | null;
   saving: boolean;
   error?: string | null;
   onClose: () => void;
   onSave: (body: SupplierConfigBody) => void;
 }) {
-  const [taxSupportCode, setTaxSupportCode] = useState("");
-  const [retentionVatCode, setRetentionVatCode] = useState("");
-  const [retentionIncomeCode, setRetentionIncomeCode] = useState("");
-  const [paymentMethodCode, setPaymentMethodCode] = useState("");
-  const [refundProviderType, setRefundProviderType] = useState("");
-  const [isRetentionExempt, setIsRetentionExempt] = useState(false);
+  const [taxSupportCode, setTaxSupportCode] = useState(
+    initialConfig?.defaultTaxSupportCode ?? "",
+  );
+  const [retentionVatCode, setRetentionVatCode] = useState(
+    initialConfig?.defaultRetentionVatCode ?? "",
+  );
+  const [retentionIncomeCode, setRetentionIncomeCode] = useState(
+    initialConfig?.defaultRetentionIncomeCode ?? "",
+  );
+  const [paymentMethodCode, setPaymentMethodCode] = useState(
+    initialConfig?.defaultPaymentMethodCode ?? "",
+  );
+  const [refundProviderType, setRefundProviderType] = useState(
+    initialConfig?.refundProviderTypeCode ?? "",
+  );
+  const [isRetentionExempt, setIsRetentionExempt] = useState(
+    initialConfig?.isRetentionExempt ?? false,
+  );
+  const [isRequiredToKeepAccounting, setIsRequiredToKeepAccounting] =
+    useState(initialConfig?.isRequiredToKeepAccounting ?? false);
   const [paymentTermsList, setPaymentTermsList] = useState<PaymentTermDto[]>(
     [],
   );
@@ -169,6 +186,7 @@ function SupplierConfigModal({
             defaultPaymentMethodCode: paymentMethodCode || null,
             refundProviderTypeCode: refundProviderType || null,
             isRetentionExempt,
+            isRequiredToKeepAccounting,
           });
         }}
       >
@@ -245,6 +263,15 @@ function SupplierConfigModal({
               description="RISE / Microempresa / Sector publico"
               value={isRetentionExempt}
               onChange={setIsRetentionExempt}
+              disabled={saving}
+            />
+          </div>
+          <div className="zh-col-span-2">
+            <ZHToggle
+              label="Obligado a llevar contabilidad"
+              description="Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones."
+              value={isRequiredToKeepAccounting}
+              onChange={setIsRequiredToKeepAccounting}
               disabled={saving}
             />
           </div>
@@ -549,6 +576,7 @@ export function MasterDataSuppliersPage() {
         <SupplierConfigModal
           bpId={page.supplierConfigBp.bp.id}
           bpName={page.supplierConfigBp.bp.legalName}
+          initialConfig={page.supplierConfigBp.config}
           saving={page.saving}
           error={page.modalError}
           onClose={page.closeSupplierConfig}

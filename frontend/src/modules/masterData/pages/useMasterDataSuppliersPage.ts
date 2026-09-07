@@ -9,6 +9,7 @@ import type {
   CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
   SupplierConfigBody,
+  SupplierRoleConfigDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
@@ -42,10 +43,11 @@ export function useMasterDataSuppliersPage() {
     useState<BusinessPartnerSummaryDto | null>(null);
   const [settingsData, setSettingsData] =
     useState<CompanyBpTradingSettingsDto | null>(null);
-  // supplierProfileBp: store the bp + roleId for updating supplier config
+  // supplierProfileBp: store the bp + roleId + current config for prefilling the modal
   const [supplierConfigBp, setSupplierConfigBp] = useState<{
     bp: BusinessPartnerSummaryDto;
     roleId: string;
+    config: SupplierRoleConfigDto | null;
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
@@ -161,7 +163,12 @@ export function useMasterDataSuppliersPage() {
     try {
       const roles = await businessPartnerFacade.getRoles(bp.id, true);
       const supplierRole = roles.find((r) => r.roleType === "Supplier");
-      if (supplierRole) setSupplierConfigBp({ bp, roleId: supplierRole.id });
+      if (supplierRole)
+        setSupplierConfigBp({
+          bp,
+          roleId: supplierRole.id,
+          config: supplierRole.supplierConfig,
+        });
     } catch {
       /* no action */
     }

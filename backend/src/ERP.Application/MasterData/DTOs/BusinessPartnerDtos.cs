@@ -129,7 +129,8 @@ public sealed record SupplierRoleConfigDto(
     string? DefaultRetentionIncomeCode,
     string? DefaultPaymentMethodCode,
     string? RefundProviderTypeCode,
-    bool IsRetentionExempt
+    bool IsRetentionExempt,
+    bool IsRequiredToKeepAccounting
 )
 {
     public static SupplierRoleConfigDto From(SupplierRoleConfig c) =>
@@ -139,7 +140,8 @@ public sealed record SupplierRoleConfigDto(
             c.DefaultRetentionIncomeCode,
             c.DefaultPaymentMethodCode,
             c.RefundProviderTypeCode,
-            c.IsRetentionExempt
+            c.IsRetentionExempt,
+            c.IsRequiredToKeepAccounting
         );
 }
 

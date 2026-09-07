@@ -82,6 +82,12 @@ public sealed class SupplierConfigRequest
 
     /// <summary>Proveedor exento de retención (RISE, microempresa, sector público). Default: false.</summary>
     public bool IsRetentionExempt { get; set; }
+
+    /// <summary>
+    /// Obligado a llevar contabilidad según SRI Ecuador. Por ahora es dato informativo — no
+    /// altera el cálculo de retención (ver RetentionEligibilityService). Default: false.
+    /// </summary>
+    public bool IsRequiredToKeepAccounting { get; set; }
 }
 
 /// <summary>Datos del transportista para guías de remisión electrónicas SRI.</summary>
