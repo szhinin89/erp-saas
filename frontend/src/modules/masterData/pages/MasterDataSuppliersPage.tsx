@@ -29,6 +29,8 @@ import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { useSriPaymentMethods } from "../api/useSriPaymentMethods";
+import { useSriTaxSupportCodes } from "../api/useSriTaxSupportCodes";
+import { useSriRetentionCodes } from "../api/useSriRetentionCodes";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
@@ -55,6 +57,22 @@ const TABS = [
 ] as const;
 
 const DRAFT_KEY = "erp.masterdata.suppliers.draft";
+
+/**
+ * Un valor guardado que ya no exista o esté inactivo en el catálogo no se descarta ni se
+ * reemplaza silenciosamente (perdería el dato real sin que el usuario lo note) — se detecta
+ * aquí para mostrar una opción sintética deshabilitada + fieldError, exigiendo reselección.
+ */
+function isOrphanCatalogValue(
+  value: string,
+  options: readonly { code: string }[],
+  loading: boolean,
+): boolean {
+  return value !== "" && !loading && !options.some((o) => o.code === value);
+}
+
+const ORPHAN_CODE_MESSAGE =
+  "Este código ya no está activo en el catálogo. Selecciona una opción válida.";
 
 // ── SupplierConfigModal — Config SRI operativa (S3-A: incluye método de pago + exención) ──
 function SupplierConfigModal({
@@ -103,6 +121,37 @@ function SupplierConfigModal({
     loading: loadingPaymentMethods,
     error: paymentMethodsError,
   } = useSriPaymentMethods();
+  const {
+    options: taxSupportOptions,
+    loading: loadingTaxSupport,
+    error: taxSupportFetchError,
+  } = useSriTaxSupportCodes();
+  const {
+    options: retentionVatOptions,
+    loading: loadingRetentionVat,
+    error: retentionVatFetchError,
+  } = useSriRetentionCodes("IVA");
+  const {
+    options: retentionIncomeOptions,
+    loading: loadingRetentionIncome,
+    error: retentionIncomeFetchError,
+  } = useSriRetentionCodes("RENTA");
+
+  const taxSupportOrphan = isOrphanCatalogValue(
+    taxSupportCode,
+    taxSupportOptions,
+    loadingTaxSupport,
+  );
+  const retentionVatOrphan = isOrphanCatalogValue(
+    retentionVatCode,
+    retentionVatOptions,
+    loadingRetentionVat,
+  );
+  const retentionIncomeOrphan = isOrphanCatalogValue(
+    retentionIncomeCode,
+    retentionIncomeOptions,
+    loadingRetentionIncome,
+  );
 
   useEffect(() => {
     paymentTermService
@@ -192,35 +241,98 @@ function SupplierConfigModal({
       >
         {error && <ZHPageNotice variant="error" message={error} />}
         <ZHGrid cols={2}>
-          <ZHField label="Sustento tributario">
-            <input
-              className="zh-input mono"
+          <ZHField
+            label="Sustento tributario predeterminado"
+            fieldError={
+              taxSupportFetchError ??
+              (taxSupportOrphan ? ORPHAN_CODE_MESSAGE : undefined)
+            }
+          >
+            <select
               value={taxSupportCode}
               onChange={(e) => setTaxSupportCode(e.target.value)}
-              disabled={saving}
-              placeholder="01"
-              maxLength={2}
-            />
+              disabled={saving || loadingTaxSupport}
+            >
+              <option value="">— Sin definir —</option>
+              {loadingTaxSupport ? (
+                <option value="">Cargando…</option>
+              ) : (
+                <>
+                  {taxSupportOrphan && (
+                    <option value={taxSupportCode} disabled>
+                      {taxSupportCode} — (código no vigente)
+                    </option>
+                  )}
+                  {taxSupportOptions.map((o) => (
+                    <option key={o.code} value={o.code}>
+                      {o.code} — {o.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
           </ZHField>
-          <ZHField label="Código ret. IVA">
-            <input
-              className="zh-input mono"
+          <ZHField
+            label="Código ret. IVA predeterminado"
+            fieldError={
+              retentionVatFetchError ??
+              (retentionVatOrphan ? ORPHAN_CODE_MESSAGE : undefined)
+            }
+          >
+            <select
               value={retentionVatCode}
               onChange={(e) => setRetentionVatCode(e.target.value)}
-              disabled={saving}
-              placeholder="725"
-              maxLength={5}
-            />
+              disabled={saving || loadingRetentionVat}
+            >
+              <option value="">— Sin definir —</option>
+              {loadingRetentionVat ? (
+                <option value="">Cargando…</option>
+              ) : (
+                <>
+                  {retentionVatOrphan && (
+                    <option value={retentionVatCode} disabled>
+                      {retentionVatCode} — (código no vigente)
+                    </option>
+                  )}
+                  {retentionVatOptions.map((o) => (
+                    <option key={o.code} value={o.code}>
+                      {o.code} — {o.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
           </ZHField>
-          <ZHField label="Código ret. Renta">
-            <input
-              className="zh-input mono"
+          <ZHField
+            label="Código ret. Renta predeterminado"
+            fieldError={
+              retentionIncomeFetchError ??
+              (retentionIncomeOrphan ? ORPHAN_CODE_MESSAGE : undefined)
+            }
+          >
+            <select
               value={retentionIncomeCode}
               onChange={(e) => setRetentionIncomeCode(e.target.value)}
-              disabled={saving}
-              placeholder="303"
-              maxLength={5}
-            />
+              disabled={saving || loadingRetentionIncome}
+            >
+              <option value="">— Sin definir —</option>
+              {loadingRetentionIncome ? (
+                <option value="">Cargando…</option>
+              ) : (
+                <>
+                  {retentionIncomeOrphan && (
+                    <option value={retentionIncomeCode} disabled>
+                      {retentionIncomeCode} — (código no vigente)
+                    </option>
+                  )}
+                  {retentionIncomeOptions.map((o) => (
+                    <option key={o.code} value={o.code}>
+                      {o.code} — {o.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
           </ZHField>
           <ZHField
             label="Método de pago SRI"

@@ -49,7 +49,7 @@ public sealed class CatalogController : ControllerBase
         );
 
     [HttpGet("sri-retention-codes")]
-    [Authorize(Policy = $"perm:{CatalogPermissions.Manage}")]
+    [Authorize]
     public async Task<IActionResult> GetSriRetentionCodes(
         [FromQuery] string? taxType = null,
         CancellationToken cancellationToken = default
@@ -60,7 +60,7 @@ public sealed class CatalogController : ControllerBase
         );
 
     [HttpGet("sri-tax-support-codes")]
-    [Authorize(Policy = $"perm:{CatalogPermissions.Manage}")]
+    [Authorize]
     public async Task<IActionResult> GetSriTaxSupportCodes(CancellationToken cancellationToken) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new GetSriTaxSupportCodesQuery(), cancellationToken),

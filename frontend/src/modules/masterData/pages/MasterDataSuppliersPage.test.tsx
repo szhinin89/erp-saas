@@ -45,6 +45,29 @@ vi.mock("../api/useSriPaymentMethods", () => ({
   useSriPaymentMethods: () => ({ options: [{ code: "01", name: "Sin sistema financiero" }], loading: false, error: null }),
 }));
 
+vi.mock("../api/useSriTaxSupportCodes", () => ({
+  useSriTaxSupportCodes: () => ({
+    options: [{ code: "01", name: "Crédito Tributario" }],
+    loading: false,
+    error: null,
+  }),
+}));
+
+vi.mock("../api/useSriRetentionCodes", () => ({
+  useSriRetentionCodes: (taxType: "IVA" | "RENTA") =>
+    taxType === "IVA"
+      ? {
+          options: [{ code: "725", name: "Retención en la fuente IVA 100%" }],
+          loading: false,
+          error: null,
+        }
+      : {
+          options: [{ code: "303", name: "Honorarios profesionales" }],
+          loading: false,
+          error: null,
+        },
+}));
+
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
 }));
@@ -236,6 +259,15 @@ function getToggleSwitchByLabel(labelText: string): HTMLElement {
   return within(container as HTMLElement).getByRole("switch");
 }
 
+// ZHField envuelve label + <select> en un <label> nativo, pero jsdom no siempre resuelve el
+// nombre accesible por wrapping label — se localiza subiendo al contenedor .zh-field.
+function getSelectByFieldLabel(labelText: string): HTMLSelectElement {
+  const label = screen.getByText(labelText);
+  const container = label.closest(".zh-field");
+  if (!container) throw new Error(`No se encontró el contenedor .zh-field para "${labelText}"`);
+  return within(container as HTMLElement).getByRole("combobox") as HTMLSelectElement;
+}
+
 describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar contabilidad", () => {
   const SUPPLIER_ROLE: BusinessPartnerRoleDto = {
     id: "role-1",
@@ -283,9 +315,47 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
     const toggle = getToggleSwitchByLabel("Obligado a llevar contabilidad");
     expect(toggle.getAttribute("aria-checked")).toBe("true");
 
-    expect((screen.getByPlaceholderText("01") as HTMLInputElement).value).toBe("01");
-    expect((screen.getByPlaceholderText("725") as HTMLInputElement).value).toBe("725");
-    expect((screen.getByPlaceholderText("303") as HTMLInputElement).value).toBe("303");
+    expect(getSelectByFieldLabel("Sustento tributario predeterminado").value).toBe("01");
+    expect(getSelectByFieldLabel("Código ret. IVA predeterminado").value).toBe("725");
+    expect(getSelectByFieldLabel("Código ret. Renta predeterminado").value).toBe("303");
+  });
+
+  it("ya no permite escribir códigos manuales: los 3 campos son <select>, no <input>", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+
+    await waitFor(() => getSelectByFieldLabel("Sustento tributario predeterminado"));
+    expect(
+      screen.queryByPlaceholderText("01") ??
+        screen.queryByPlaceholderText("725") ??
+        screen.queryByPlaceholderText("303"),
+    ).toBeNull();
+  });
+
+  it("un código guardado que ya no existe en el catálogo se muestra como no vigente, sin descartarlo", async () => {
+    vi.mocked(businessPartnerFacade.getRoles).mockResolvedValue([
+      {
+        ...SUPPLIER_ROLE,
+        supplierConfig: {
+          ...SUPPLIER_ROLE.supplierConfig!,
+          defaultTaxSupportCode: "99",
+        },
+      },
+    ]);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+
+    await waitFor(() =>
+      expect(getSelectByFieldLabel("Sustento tributario predeterminado").value).toBe("99"),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText("Este código ya no está activo en el catálogo. Selecciona una opción válida."),
+      ).toBeTruthy(),
+    );
   });
 
   it("se puede desactivar el toggle y el body de guardado incluye isRequiredToKeepAccounting", async () => {
