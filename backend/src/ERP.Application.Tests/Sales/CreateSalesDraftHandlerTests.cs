@@ -266,7 +266,7 @@ public sealed class CreateSalesDraftHandlerTests
         f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
         f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
 
-        // Sin PaymentTermId explícito y sin CompanyBpTradingSettings válido para el cliente —
+        // Sin PaymentTermId explícito y sin CompanyBpSalesSettings válido para el cliente —
         // nunca cae al catálogo ("primer registro") ni a un default genérico de empresa.
         f.PtResolver
             .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
@@ -283,7 +283,7 @@ public sealed class CreateSalesDraftHandlerTests
     }
 
     [Fact]
-    public async Task ADR033_usa_default_de_CompanyBpTradingSettings_del_cliente()
+    public async Task ADR033_usa_default_de_CompanyBpSalesSettings_del_cliente()
     {
         var f = new Fixture();
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);

@@ -9,7 +9,7 @@
  *   - searchCustomersForPicker con legacyId
  *   - addRole con flags booleanos (asCustomer/asSupplier)
  *   - updateCustomerNotes / updateSupplierProfile (reemplazados por updateRoleNotes / updateSupplierConfig)
- *   - getCompanySettings / upsertCompanySettings (endpoint renombrado a trading-settings)
+ *   - getCompanySettings / upsertCompanySettings (endpoint renombrado a sales-settings)
  */
 
 import {
@@ -18,7 +18,7 @@ import {
   bpPurchaseSettingsService,
   bpRetentionDefaultsService,
   bpRoleService,
-  bpTradingSettingsService,
+  bpSalesSettingsService,
   businessPartnerService,
 } from "./businessPartnerService";
 import {
@@ -28,7 +28,6 @@ import {
 import type {
   AddRetentionDefaultBody,
   AssignRoleBody,
-  BlockBody,
   BpContactDto,
   BpLocationDto,
   BusinessPartnerDetailDto,
@@ -37,7 +36,7 @@ import type {
   BusinessPartnerSummaryDto,
   CarrierConfigBody,
   CompanyBpPurchaseSettingsDto,
-  CompanyBpTradingSettingsDto,
+  CompanyBpSalesSettingsDto,
   CreateBusinessPartnerBody,
   CreateContactBody,
   CreateLocationBody,
@@ -54,7 +53,7 @@ import type {
   UpdateLocationBody,
   UpdateRoleNotesBody,
   UpsertPurchaseSettingsBody,
-  UpsertTradingSettingsBody,
+  UpsertSalesSettingsBody,
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
 
@@ -235,20 +234,15 @@ export const businessPartnerFacade = {
 
   // ── Trading Settings ───────────────────────────────────────────────────────
 
-  getTradingSettings: (bpId: string): Promise<CompanyBpTradingSettingsDto> =>
-    bpTradingSettingsService.get(bpId),
+  getSalesSettings: (bpId: string): Promise<CompanyBpSalesSettingsDto> =>
+    bpSalesSettingsService.get(bpId),
 
-  upsertTradingSettings: (
+  upsertSalesSettings: (
     bpId: string,
-    body: UpsertTradingSettingsBody,
-  ): Promise<CompanyBpTradingSettingsDto> =>
-    bpTradingSettingsService.upsert(bpId, body),
+    body: UpsertSalesSettingsBody,
+  ): Promise<CompanyBpSalesSettingsDto> =>
+    bpSalesSettingsService.upsert(bpId, body),
 
-  blockBusinessPartner: (bpId: string, body: BlockBody): Promise<boolean> =>
-    bpTradingSettingsService.block(bpId, body),
-
-  unblockBusinessPartner: (bpId: string): Promise<boolean> =>
-    bpTradingSettingsService.unblock(bpId),
 
   // ── Purchase Settings — default de proveedor por empresa (ADR-033, Fase 3d) ──
 
@@ -288,7 +282,7 @@ export type {
   BusinessPartnerRoleDto,
   BpLocationDto,
   BpContactDto,
-  CompanyBpTradingSettingsDto,
+  CompanyBpSalesSettingsDto,
   CustomerPickerRow,
   SupplierPickerRow,
   UpdateBusinessPartnerBody,

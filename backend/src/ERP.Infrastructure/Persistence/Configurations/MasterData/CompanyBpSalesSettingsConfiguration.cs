@@ -4,26 +4,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 
-/// <summary>
-/// Configuración EF Core para CompanyBpPurchaseSettings — ADR-033, Fase 3.
-///
-/// Espejo de CompanyBpSalesSettingsConfiguration en scope y patrón, pero para el default de
-/// proveedor (compras/gastos) en vez del default de cliente (ventas) — entidades separadas a
-/// propósito, no se fusionan.
-///
-/// FK a BusinessPartner es de columna simple. Cross-tenant safety garantizada por el
-/// query filter global (fail-closed), no por FK compuesta.
-///
-/// QUERY FILTER:
-///   ICompanyScopedEntity + ITenantScopedEntity → strict company filter fail-closed.
-///   (EnterpriseQueryFilterConfigurator.BuildStrictCompanyScopedFilter)
-/// </summary>
-public sealed class CompanyBpPurchaseSettingsConfiguration
-    : IEntityTypeConfiguration<CompanyBpPurchaseSettings>
+public sealed class CompanyBpSalesSettingsConfiguration
+    : IEntityTypeConfiguration<CompanyBpSalesSettings>
 {
-    public void Configure(EntityTypeBuilder<CompanyBpPurchaseSettings> builder)
+    public void Configure(EntityTypeBuilder<CompanyBpSalesSettings> builder)
     {
-        builder.ToTable("master_company_bp_purchase_settings");
+        builder.ToTable("master_company_bp_sales_settings");
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -48,11 +34,11 @@ public sealed class CompanyBpPurchaseSettingsConfiguration
             .WithMany()
             .HasForeignKey(x => x.BusinessPartnerId)
             .OnDelete(DeleteBehavior.Restrict)
-            .HasConstraintName("fk_cbps_business_partner");
+            .HasConstraintName("fk_cbss_business_partner");
 
         // ── Índices ───────────────────────────────────────────────────────────
 
-        // Una única configuración por empresa+proveedor (upsert semántico, Fase 3d)
+        // Una única configuración por empresa+cliente (upsert semántico, Fase 3d)
         builder
             .HasIndex(x => new
             {
@@ -61,6 +47,6 @@ public sealed class CompanyBpPurchaseSettingsConfiguration
                 x.BusinessPartnerId,
             })
             .IsUnique()
-            .HasDatabaseName("uq_cbps_company_bp");
+            .HasDatabaseName("uq_cbss_company_bp");
     }
 }

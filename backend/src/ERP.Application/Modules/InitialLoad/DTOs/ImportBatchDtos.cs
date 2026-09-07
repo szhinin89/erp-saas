@@ -104,9 +104,7 @@ public sealed record ParsedCustomerRow(
     string? Phone,
     string? CustomerCategory,
     string? CustomerSegment,
-    string? SalesZone,
-    decimal? CreditLimit,
-    int? PaymentDays
+    string? SalesZone
 );
 
 /// <summary>

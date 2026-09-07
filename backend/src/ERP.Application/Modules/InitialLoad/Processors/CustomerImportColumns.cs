@@ -20,8 +20,6 @@ public static class CustomerImportColumns
     public const string CustomerCategory = "Categoría";
     public const string CustomerSegment = "Segmento";
     public const string SalesZone = "Zona de Ventas";
-    public const string CreditLimit = "Límite de Crédito";
-    public const string PaymentDays = "Días de Pago";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -35,7 +33,5 @@ public static class CustomerImportColumns
         CustomerCategory,
         CustomerSegment,
         SalesZone,
-        CreditLimit,
-        PaymentDays,
     ];
 }

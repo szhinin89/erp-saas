@@ -8,19 +8,19 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
 {
     private readonly IPaymentTermRepository _paymentTerms;
     private readonly ICompanyBpPurchaseSettingsRepository _purchaseSettings;
-    private readonly ICompanyBpTradingSettingsRepository _tradingSettings;
+    private readonly ICompanyBpSalesSettingsRepository _salesSettings;
     private readonly ICurrentTenant _tenant;
 
     public PaymentTermDefaultResolver(
         IPaymentTermRepository paymentTerms,
         ICompanyBpPurchaseSettingsRepository purchaseSettings,
-        ICompanyBpTradingSettingsRepository tradingSettings,
+        ICompanyBpSalesSettingsRepository salesSettings,
         ICurrentTenant tenant
     )
     {
         _paymentTerms = paymentTerms;
         _purchaseSettings = purchaseSettings;
-        _tradingSettings = tradingSettings;
+        _salesSettings = salesSettings;
         _tenant = tenant;
     }
 
@@ -42,7 +42,7 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
     ) =>
         ResolveAsync(
             explicitPaymentTermId,
-            async () => (await _tradingSettings.GetByBusinessPartnerAsync(customerId, ct))?.PaymentTermId,
+            async () => (await _salesSettings.GetByBusinessPartnerAsync(customerId, ct))?.PaymentTermId,
             ct
         );
 
@@ -52,7 +52,7 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
     /// exigir selección explícita. Nunca "primer registro", nunca inferencia por días, nunca un
     /// PaymentTerm inactivo. <paramref name="resolveDefaultId"/> es la única diferencia entre
     /// compra y venta: de dónde sale el Guid del default (CompanyBpPurchaseSettings vs
-    /// CompanyBpTradingSettings) — el resto de la regla es idéntico y vive en un solo lugar.
+    /// CompanyBpSalesSettings) — el resto de la regla es idéntico y vive en un solo lugar.
     /// </summary>
     private async Task<Result<PaymentTerm>> ResolveAsync(
         Guid? explicitPaymentTermId,

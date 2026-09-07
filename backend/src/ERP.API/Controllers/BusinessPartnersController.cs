@@ -25,7 +25,7 @@ namespace ERP.API.Controllers;
 ///   2. POST /business-partners/{id}/roles → asigna rol Customer/Supplier
 ///   3. POST /business-partners/{id}/contacts → registra representante legal, teléfonos
 ///   4. POST /business-partners/{id}/locations → registra direcciones
-///   5. PUT  /business-partners/{id}/trading-settings → configura crédito por empresa
+///   5. PUT  /business-partners/{id}/sales-settings → configura condición de ventas por empresa
 /// </summary>
 [ApiController]
 [Route("api/v1/master/business-partners")]

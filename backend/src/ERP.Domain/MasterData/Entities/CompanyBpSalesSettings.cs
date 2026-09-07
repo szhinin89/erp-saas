@@ -2,25 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.MasterData.Entities;
 
-/// <summary>
-/// Aggregate Root: default de condición de pago de un proveedor (BusinessPartner) en una Company
-/// específica — ADR-033, Fase 3.
-///
-/// SCOPE: ITenantScopedEntity + ICompanyScopedEntity.
-/// Query filter fail-closed en ambas dimensiones. Sin company context → 0 filas.
-///
-/// CONTIENE: únicamente el default de condición de pago para compras/gastos por empresa.
-/// NO CONTIENE: default de condición de pago de ventas — eso es un concepto de Cliente y vive en
-///              CompanyBpSalesSettings, nunca se fusiona aquí.
-///
-/// Única entrada por (tenant_id, company_id, business_partner_id).
-///
-/// PaymentTermId es opcional: ausente significa "sin default configurado para esta empresa" — la
-/// resolución de default (IPaymentTermDefaultResolver, Fase 3b) exige selección explícita en ese
-/// caso, nunca infiere un valor. SupplierRoleConfig.PaymentTermId (tenant-wide) deja de ser la
-/// fuente operativa una vez que existe esta entidad — solo se usa como semilla de backfill.
-/// </summary>
-public sealed class CompanyBpPurchaseSettings
+public sealed class CompanyBpSalesSettings
     : AuditableEntity,
         ITenantScopedEntity,
         ICompanyScopedEntity
@@ -29,9 +11,9 @@ public sealed class CompanyBpPurchaseSettings
     public Guid BusinessPartnerId { get; private set; }
     public Guid? PaymentTermId { get; private set; }
 
-    private CompanyBpPurchaseSettings() { }
+    private CompanyBpSalesSettings() { }
 
-    public static CompanyBpPurchaseSettings Create(
+    public static CompanyBpSalesSettings Create(
         Guid tenantId,
         Guid companyId,
         Guid businessPartnerId,
@@ -49,7 +31,7 @@ public sealed class CompanyBpPurchaseSettings
                 nameof(businessPartnerId)
             );
 
-        var settings = new CompanyBpPurchaseSettings
+        var settings = new CompanyBpSalesSettings
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
@@ -61,7 +43,6 @@ public sealed class CompanyBpPurchaseSettings
         return settings;
     }
 
-    /// <summary>Actualiza el default. Usado en el flujo Upsert del handler (Fase 3d).</summary>
     public void SetPaymentTerm(Guid? paymentTermId, Guid updatedBy)
     {
         PaymentTermId = paymentTermId;

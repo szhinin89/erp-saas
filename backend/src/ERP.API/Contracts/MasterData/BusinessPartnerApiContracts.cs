@@ -111,7 +111,7 @@ public sealed class CustomerConfigRequest
     /// <summary>Territorio libre: "Norte", "Sur", código de zona, etc.</summary>
     public string? SalesZone { get; set; }
 
-    /// <summary>AAA | AA | A | BBB | BB | B | C | D | NR (no reemplaza CreditLimit)</summary>
+    /// <summary>AAA | AA | A | BBB | BB | B | C | D | NR</summary>
     public string? CreditRating { get; set; }
 
     /// <summary>None | Bronze | Silver | Gold | Platinum</summary>
@@ -206,19 +206,14 @@ public sealed class UpdateContactRequest
     public string? OtherDescription { get; set; }
 }
 
-// ── CompanyBpTradingSettings ──────────────────────────────────────────────────
+// ── CompanyBpSalesSettings ──────────────────────────────────────────────────
 
-/// <summary>Configura condiciones comerciales del BP en la empresa activa. Crea o actualiza.</summary>
-public sealed class UpsertTradingSettingsRequest
+/// <summary>Default de pago del cliente en la empresa activa.</summary>
+[System.Text.Json.Serialization.JsonUnmappedMemberHandling(System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow)]
+public sealed class UpsertSalesSettingsRequest
 {
-    /// <summary>Límite de crédito. 0 = sin crédito. Mínimo: 0.</summary>
-    public decimal CreditLimit { get; set; }
-
-    /// <summary>Plazo de pago en días. 0 = contado. Mínimo: 0.</summary>
-    public int PaymentDays { get; set; }
-
-    /// <summary>ISO 4217. Default: USD.</summary>
-    public string CreditCurrencyCode { get; set; } = "USD";
+    [System.Text.Json.Serialization.JsonRequired]
+    public Guid? PaymentTermId { get; set; }
 }
 
 // ── CompanyBpPurchaseSettings (ADR-033, Fase 3d) ───────────────────────────────
@@ -243,11 +238,4 @@ public sealed class SetRetentionDefaultStateRequest
 {
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
-}
-
-/// <summary>Bloquea operativamente al BP en la empresa activa. Requiere motivo.</summary>
-public sealed class BlockRequest
-{
-    /// <summary>Motivo del bloqueo. Obligatorio. Máximo 500 caracteres.</summary>
-    public string Reason { get; set; } = "";
 }

@@ -12,7 +12,7 @@ namespace ERP.Domain.MasterData.Entities;
 /// CONTIENE: TaxIdentification, PersonName, LegalEntityTypeCode, CountryCode, IsActive.
 /// NO CONTIENE: Email, Phone, LegalRepresentativeName (→ BusinessPartnerContact),
 ///              roles (→ BusinessPartnerRole AR independiente),
-///              condiciones comerciales (→ CompanyBpTradingSettings).
+///              condiciones comerciales (→ CompanyBpSalesSettings).
 ///
 /// EXTENSIÓN DE ROLES: ver BusinessPartnerRole. PROHIBIDO agregar IsCustomer/IsSupplier aquí.
 /// </summary>

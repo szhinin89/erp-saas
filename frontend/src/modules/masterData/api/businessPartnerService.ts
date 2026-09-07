@@ -8,7 +8,6 @@ import {
 import type {
   AddRetentionDefaultBody,
   AssignRoleBody,
-  BlockBody,
   BpContactDto,
   BpLocationDto,
   BusinessPartnerDetailDto,
@@ -17,7 +16,7 @@ import type {
   BusinessPartnerSummaryDto,
   CarrierConfigBody,
   CompanyBpPurchaseSettingsDto,
-  CompanyBpTradingSettingsDto,
+  CompanyBpSalesSettingsDto,
   CreateBusinessPartnerBody,
   CreateContactBody,
   CreateLocationBody,
@@ -32,7 +31,7 @@ import type {
   UpdateLocationBody,
   UpdateRoleNotesBody,
   UpsertPurchaseSettingsBody,
-  UpsertTradingSettingsBody,
+  UpsertSalesSettingsBody,
 } from "../types/businessPartner.types";
 
 const BASE = "/api/v1/master/business-partners";
@@ -265,32 +264,26 @@ export const bpContactService = {
     apiDelete<boolean>(`${BASE}/${enc(bpId)}/contacts/${enc(contactId)}`),
 };
 
-// ── CompanyBpTradingSettings ──────────────────────────────────────────────────
+// ── CompanyBpSalesSettings ──────────────────────────────────────────────────
 
-export const bpTradingSettingsService = {
-  /** GET /{bpId}/trading-settings */
-  get: (bpId: string): Promise<CompanyBpTradingSettingsDto> =>
-    apiGet<CompanyBpTradingSettingsDto>(
-      `${BASE}/${enc(bpId)}/trading-settings`,
+export const bpSalesSettingsService = {
+  /** GET /{bpId}/sales-settings */
+  get: (bpId: string): Promise<CompanyBpSalesSettingsDto> =>
+    apiGet<CompanyBpSalesSettingsDto>(
+      `${BASE}/${enc(bpId)}/sales-settings`,
     ),
 
-  /** PUT /{bpId}/trading-settings — crea o actualiza */
+  /** PUT /{bpId}/sales-settings — crea o actualiza */
   upsert: (
     bpId: string,
-    body: UpsertTradingSettingsBody,
-  ): Promise<CompanyBpTradingSettingsDto> =>
-    apiPut<CompanyBpTradingSettingsDto>(
-      `${BASE}/${enc(bpId)}/trading-settings`,
+    body: UpsertSalesSettingsBody,
+  ): Promise<CompanyBpSalesSettingsDto> =>
+    apiPut<CompanyBpSalesSettingsDto>(
+      `${BASE}/${enc(bpId)}/sales-settings`,
       body,
     ),
 
-  /** PATCH /{bpId}/trading-settings/block */
-  block: (bpId: string, body: BlockBody): Promise<boolean> =>
-    apiPatch<boolean>(`${BASE}/${enc(bpId)}/trading-settings/block`, body),
 
-  /** PATCH /{bpId}/trading-settings/unblock */
-  unblock: (bpId: string): Promise<boolean> =>
-    apiPatch<boolean>(`${BASE}/${enc(bpId)}/trading-settings/unblock`),
 };
 
 // ── CompanyBpPurchaseSettings (ADR-033, Fase 3d) ───────────────────────────────

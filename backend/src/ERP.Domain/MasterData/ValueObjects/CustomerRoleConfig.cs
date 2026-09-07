@@ -13,7 +13,6 @@ namespace ERP.Domain.MasterData.ValueObjects;
 ///   PreferredInvoiceFormat              → automatización documental
 ///   CustomerClassification              → clasificación tributaria/comercial Ecuador
 ///
-///   CreditLimit / PaymentDays / IsBlocked → CompanyBpTradingSettings (company-scoped)
 ///   Email / Phone → BusinessPartnerContact
 ///   LegalName     → BusinessPartner
 ///
@@ -58,7 +57,6 @@ public sealed record CustomerRoleConfig
 
     /// <summary>
     /// Calificación de riesgo crediticio interno. Uso: scoring, riesgo.
-    /// NO reemplaza CompanyBpTradingSettings.CreditLimit — ese es el límite operativo.
     /// Valores: AAA | AA | A | BBB | BB | B | C | D | NR (no rated)
     /// </summary>
     public string? CreditRating { get; }

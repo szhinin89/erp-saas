@@ -6,7 +6,6 @@ import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
   BusinessPartnerStatusFilter,
   BusinessPartnerSummaryDto,
-  CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
   SupplierConfigBody,
   SupplierRoleConfigDto,
@@ -14,7 +13,6 @@ import type {
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
-import { message } from "../../../lib/messages";
 
 function toIsActiveParam(status: BusinessPartnerStatusFilter): boolean | undefined {
   if (status === "active") return true;
@@ -39,10 +37,6 @@ export function useMasterDataSuppliersPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editBp, setEditBp] = useState<BusinessPartnerSummaryDto | null>(null);
-  const [settingsBp, setSettingsBp] =
-    useState<BusinessPartnerSummaryDto | null>(null);
-  const [settingsData, setSettingsData] =
-    useState<CompanyBpTradingSettingsDto | null>(null);
   // supplierProfileBp: store the bp + roleId + current config for prefilling the modal
   const [supplierConfigBp, setSupplierConfigBp] = useState<{
     bp: BusinessPartnerSummaryDto;
@@ -264,80 +258,6 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
-  // ── Trading Settings ───────────────────────────────────────────────────────
-
-  const openSettings = async (bp: BusinessPartnerSummaryDto) => {
-    clearModalError();
-    setInlineError(null);
-    setSettingsBp(bp);
-    try {
-      const data = await businessPartnerFacade.getTradingSettings(bp.id);
-      setSettingsData(data);
-    } catch {
-      setSettingsData(null);
-    }
-  };
-
-  const closeSettings = useCallback(() => {
-    setSettingsBp(null);
-    setSettingsData(null);
-    clearModalError();
-  }, []);
-
-  const saveSettings = async (
-    id: string,
-    payload: {
-      creditLimit: number;
-      paymentDays: number;
-      creditCurrencyCode: string;
-    },
-  ): Promise<void> => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.upsertTradingSettings(id, payload);
-    } finally {
-      setSaving(false);
-    }
-    listState.refetch();
-    openSettings({ ...settingsBp!, id }).catch(() => {});
-  };
-
-  const blockSupplier = async (id: string, reason: string) => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.blockBusinessPartner(id, { reason });
-      await openSettings({ ...settingsBp!, id });
-      message.success("Cliente/proveedor bloqueado correctamente.");
-    } catch (err) {
-      setModalError(
-        formatApiRequestError(err, {
-          generic: "Error al procesar la operación.",
-        }),
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const unblockSupplier = async (id: string) => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.unblockBusinessPartner(id);
-      await openSettings({ ...settingsBp!, id });
-      message.success("Cliente/proveedor desbloqueado correctamente.");
-    } catch (err) {
-      setModalError(
-        formatApiRequestError(err, {
-          generic: "Error al procesar la operación.",
-        }),
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return {
     canView,
@@ -375,13 +295,6 @@ export function useMasterDataSuppliersPage() {
     openSupplierConfig,
     closeSupplierConfig,
     saveSupplierConfig,
-    settingsBp,
-    settingsData,
-    openSettings,
-    closeSettings,
-    saveSettings,
-    blockSupplier,
-    unblockSupplier,
     saving,
     refetch: listState.refetch,
   };

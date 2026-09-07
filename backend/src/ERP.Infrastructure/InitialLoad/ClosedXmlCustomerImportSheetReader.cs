@@ -90,8 +90,6 @@ public sealed class ClosedXmlCustomerImportSheetReader : ICustomerImportSheetRea
         sheet.Cell(2, 8).Value = "Retail";
         sheet.Cell(2, 9).Value = "SMB";
         sheet.Cell(2, 10).Value = "Norte";
-        sheet.Cell(2, 11).Value = 1000;
-        sheet.Cell(2, 12).Value = 30;
 
         sheet.Columns().AdjustToContents();
 

@@ -204,26 +204,18 @@ export type BpContactDto = {
 
 /**
  * Configuración comercial del BP en la empresa activa. Company-scoped.
- * Response: GET /api/master/business-partners/{bpId}/trading-settings
+ * Response: GET /api/master/business-partners/{bpId}/sales-settings
  */
-export type CompanyBpTradingSettingsDto = {
+export type CompanyBpSalesSettingsDto = {
   id: string;
   businessPartnerId: string;
-  creditLimit: number;
-  creditCurrencyCode: string; // ISO 4217, default "USD"
-  paymentDays: number;
   paymentTermId: string | null;
-  installments: number;
-  daysBetweenInstallments: number;
-  isBlocked: boolean;
-  blockedReason: string | null;
-  blockedAt: string | null;
   hasCustomConfiguration: boolean;
 };
 
 /**
  * ADR-033 — default de condición de pago de PROVEEDOR por empresa activa. Única fuente de la
- * condición de pago de compras/gastos — distinto de CompanyBpTradingSettingsDto (cliente/crédito
+ * condición de pago de compras/gastos — distinto de CompanyBpSalesSettingsDto (cliente/crédito
  * comercial). SupplierRoleConfig (config SRI general del proveedor) ya no tiene condición de pago.
  */
 export type CompanyBpPurchaseSettingsDto = {
@@ -388,17 +380,11 @@ export type CreateContactBody = {
 /** PUT /api/master/business-partners/{bpId}/contacts/{id} */
 export type UpdateContactBody = Omit<CreateContactBody, "isPrimary">;
 
-/** PUT /api/master/business-partners/{bpId}/trading-settings */
-export type UpsertTradingSettingsBody = {
-  creditLimit: number; // >= 0
-  paymentDays: number; // >= 0
-  creditCurrencyCode: string; // ISO 4217, default "USD"
+/** PUT /api/master/business-partners/{bpId}/sales-settings */
+export type UpsertSalesSettingsBody = {
+  paymentTermId: string | null;
 };
 
-/** PATCH /api/master/business-partners/{bpId}/trading-settings/block */
-export type BlockBody = {
-  reason: string; // Obligatorio, max 500 chars
-};
 
 // ── Parámetros de búsqueda ────────────────────────────────────────────────────
 

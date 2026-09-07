@@ -13,7 +13,6 @@ import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataSuppliersPage } from "./useMasterDataSuppliersPage";
-import { MasterDataCompanySettingsModal } from "./MasterDataCompanySettingsModal";
 import { MasterDataPartnerWizard } from "../components/MasterDataPartnerWizard";
 import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResumenTab";
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
@@ -812,7 +811,7 @@ export function MasterDataSuppliersPage() {
             totalPages={page.totalPages}
             setPage={page.setPage}
             searchInputRef={searchRef}
-            onSettings={(bp) => void page.openSettings(bp)}
+
             onSupplierProfile={(bp) => void page.openSupplierConfig(bp)}
             onAddAsCustomer={(id) => void page.addAsCustomer(id)}
             onActivate={handleActivate}
@@ -834,20 +833,6 @@ export function MasterDataSuppliersPage() {
         )}
       </div>
 
-      {page.settingsBp && page.canConfigure && (
-        <MasterDataCompanySettingsModal
-          partner={page.settingsBp}
-          initialSettings={page.settingsData}
-          saving={page.saving}
-          error={page.modalError}
-          onClose={page.closeSettings}
-          onSave={(payload) => page.saveSettings(page.settingsBp!.id, payload)}
-          onBlock={(reason) =>
-            void page.blockSupplier(page.settingsBp!.id, reason)
-          }
-          onUnblock={() => void page.unblockSupplier(page.settingsBp!.id)}
-        />
-      )}
 
       {page.supplierConfigBp && (
         <SupplierConfigModal

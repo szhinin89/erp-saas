@@ -1,7 +1,6 @@
 using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
-using ERP.Application.MasterData.UseCases.UpsertCompanyBpTradingSettings;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.MasterData.Enums;
@@ -17,7 +16,7 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// Único <c>IImportProcessor</c> registrado en esta entrega (INITIAL-LOAD-ARCH-01). Confirmar una
 /// fila NUNCA escribe directo a BusinessPartner — orquesta los mismos comandos MediatR que usaría
 /// un usuario manual (<see cref="CreateBusinessPartnerCommand"/> → <see cref="AssignBusinessPartnerRoleCommand"/>
-/// → opcionalmente <see cref="CreateBpContactCommand"/> / <see cref="UpsertCompanyBpTradingSettingsCommand"/>),
+/// → opcionalmente <see cref="CreateBpContactCommand"/>),
 /// reutilizando exactamente las mismas invariantes/validaciones/duplicados del flujo manual.
 /// </summary>
 public sealed class CustomerImportProcessor : IImportProcessor
@@ -97,40 +96,6 @@ public sealed class CustomerImportProcessor : IImportProcessor
                 )
             );
 
-        decimal? creditLimit = null;
-        var creditLimitRaw = Get(rawRow, CustomerImportColumns.CreditLimit);
-        if (!string.IsNullOrWhiteSpace(creditLimitRaw))
-        {
-            if (decimal.TryParse(creditLimitRaw, out var parsedCreditLimit) && parsedCreditLimit >= 0)
-                creditLimit = parsedCreditLimit;
-            else
-                issues.Add(
-                    new RowIssue(
-                        ImportSeverity.Error,
-                        "INVALID_NUMBER",
-                        "El límite de crédito no es un número válido.",
-                        CustomerImportColumns.CreditLimit
-                    )
-                );
-        }
-
-        int? paymentDays = null;
-        var paymentDaysRaw = Get(rawRow, CustomerImportColumns.PaymentDays);
-        if (!string.IsNullOrWhiteSpace(paymentDaysRaw))
-        {
-            if (int.TryParse(paymentDaysRaw, out var parsedPaymentDays) && parsedPaymentDays >= 0)
-                paymentDays = parsedPaymentDays;
-            else
-                issues.Add(
-                    new RowIssue(
-                        ImportSeverity.Error,
-                        "INVALID_NUMBER",
-                        "Los días de pago no son un número válido.",
-                        CustomerImportColumns.PaymentDays
-                    )
-                );
-        }
-
         if (
             !string.IsNullOrWhiteSpace(identificationType)
             && !string.IsNullOrWhiteSpace(identificationNumber)
@@ -161,9 +126,7 @@ public sealed class CustomerImportProcessor : IImportProcessor
             Get(rawRow, CustomerImportColumns.Phone),
             Get(rawRow, CustomerImportColumns.CustomerCategory),
             Get(rawRow, CustomerImportColumns.CustomerSegment),
-            Get(rawRow, CustomerImportColumns.SalesZone),
-            creditLimit,
-            paymentDays
+            Get(rawRow, CustomerImportColumns.SalesZone)
         );
 
         var hasBlockingIssue = issues.Any(i => i.Severity == ImportSeverity.Error);
@@ -222,18 +185,6 @@ public sealed class CustomerImportProcessor : IImportProcessor
                     ContactRole.Billing,
                     Email: parsed.Email,
                     Phone: parsed.Phone
-                ),
-                ct
-            );
-        }
-
-        if (parsed.CreditLimit.HasValue || parsed.PaymentDays.HasValue)
-        {
-            await _mediator.Send(
-                new UpsertCompanyBpTradingSettingsCommand(
-                    businessPartnerId,
-                    parsed.CreditLimit ?? 0,
-                    parsed.PaymentDays ?? 0
                 ),
                 ct
             );

@@ -8,9 +8,9 @@ namespace ERP.Application.MasterData.Services;
 ///
 /// Cadena de resolución (idéntica para compra y venta, solo cambia la fuente del default):
 /// PaymentTermId explícito del documento (si viene, validado activo) → default company-scoped
-/// del tercero (CompanyBpPurchaseSettings para proveedor, CompanyBpTradingSettings para
+/// del tercero (CompanyBpPurchaseSettings para proveedor, CompanyBpSalesSettings para
 /// cliente, ambos validados activos) → exigir selección explícita. Nunca "primer registro" del
-/// catálogo, nunca inferencia por días/PaymentDays/totalDays, nunca una condición inactiva,
+/// catálogo, nunca inferencia por duración numérica, nunca una condición inactiva,
 /// nunca fallback silencioso a SupplierRoleConfig.PaymentTermId ni a un default genérico de
 /// empresa.
 /// </summary>

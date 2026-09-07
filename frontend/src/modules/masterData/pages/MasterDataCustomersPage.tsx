@@ -7,7 +7,7 @@ import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataCustomersPage } from "./useMasterDataCustomersPage";
-import { MasterDataCompanySettingsModal } from "./MasterDataCompanySettingsModal";
+import { MasterDataSalesSettingsModal } from "./MasterDataSalesSettingsModal";
 import { MasterDataPartnerWizard } from "../components/MasterDataPartnerWizard";
 import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResumenTab";
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
@@ -467,17 +467,13 @@ export function MasterDataCustomersPage() {
       </div>
 
       {page.settingsBp && page.canConfigure && (
-        <MasterDataCompanySettingsModal
+        <MasterDataSalesSettingsModal
           partner={page.settingsBp}
           initialSettings={page.settingsData}
           saving={page.saving}
           error={page.modalError}
           onClose={page.closeSettings}
           onSave={(payload) => page.saveSettings(page.settingsBp!.id, payload)}
-          onBlock={(reason) =>
-            void page.blockCustomer(page.settingsBp!.id, reason)
-          }
-          onUnblock={() => void page.unblockCustomer(page.settingsBp!.id)}
         />
       )}
 

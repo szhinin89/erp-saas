@@ -134,9 +134,6 @@ export type CustomerProfile = {
   email: string | null;
   phone: string | null;
   address: string | null;
-  paymentDays: number;
-  installments: number;
-  daysBetweenInstallments: number;
   paymentTermId: string | null;
 };
 
@@ -673,21 +670,18 @@ export function useSalesPage() {
           businessPartnerFacade.getBusinessPartner(bpId),
           bpLocationService.list(bpId, true).catch(() => []),
           bpContactService.list(bpId, true).catch(() => []),
-          businessPartnerFacade.getTradingSettings(bpId),
+          businessPartnerFacade.getSalesSettings(bpId),
         ]);
 
         const {
-          installments,
-          daysBetweenInstallments: daysBetween,
-          paymentDays,
           paymentTermId: ptId,
         } = trading;
 
-        // ADR-033, Fase 3c: el backend resuelve el default (CompanyBpTradingSettings.PaymentTermId
+        // ADR-033, Fase 3c: el backend resuelve el default (CompanyBpSalesSettings.PaymentTermId
         // de la empresa activa) al crear/actualizar el borrador — es la autoridad final. Aquí solo
         // se previsualiza esa misma fuente (mismo dato que el backend usaría en primer lugar) para
         // no dejar el campo vacío mientras el usuario arma la venta. Eliminado: inferencia por
-        // PaymentDays/totalDays y fallback a un default genérico de empresa — ninguno de los dos es
+        // duración numérica y fallback a un default genérico de empresa — ninguno de los dos es
         // parte de la cadena de resolución aprobada.
         if (ptId && paymentTermsList.some((p) => p.id === ptId && p.isActive)) {
           setValue("paymentTermId", ptId, { shouldDirty: true });
@@ -726,9 +720,6 @@ export function useSalesPage() {
           email: contacts[0]?.email ?? locations[0]?.email ?? null,
           phone: contacts[0]?.phone ?? locations[0]?.phone ?? null,
           address: locations[0]?.addressLine ?? null,
-          paymentDays,
-          installments,
-          daysBetweenInstallments: daysBetween,
           paymentTermId: ptId,
         };
       } catch {
@@ -1094,9 +1085,6 @@ export function useSalesPage() {
           email: inv.customerEmail,
           address: inv.customerAddress,
           phone: null,
-          paymentDays: 0,
-          installments: 0,
-          daysBetweenInstallments: 0,
           paymentTermId: null,
         });
 
@@ -1508,12 +1496,12 @@ export function useSalesPage() {
   const simulateCreditInstallments = useCallback(
     (amount: number): CreditRow[] => {
       if (amount <= 0) return [];
-      const count =
-        selectedPt?.installments ?? customerProfile?.installments ?? 1;
-      const interval =
-        selectedPt?.daysBetweenInstallments ??
-        customerProfile?.daysBetweenInstallments ??
-        30;
+      if (!selectedPt?.isActive) {
+        message.error("Debe seleccionar una condición de pago activa.");
+        return [];
+      }
+      const count = selectedPt.installments;
+      const interval = selectedPt.daysBetweenInstallments;
       const factor = 10 ** getDecimalConfig().totalAmount;
       const base = Math.round((amount / count) * factor) / factor;
       const rows: CreditRow[] = [];
@@ -1531,7 +1519,7 @@ export function useSalesPage() {
       }
       return rows;
     },
-    [selectedPt, customerProfile],
+    [selectedPt],
   );
 
   // ── Quick customer create/edit ─────────────────────────────────────

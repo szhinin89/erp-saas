@@ -120,7 +120,7 @@ export function MasterDataPartnerListTab({
               {t("common.edit", "Editar")}
             </ZHBtn>
           )}
-          {canConfigure && onSettings && (
+          {role === "customer" && canConfigure && onSettings && (
             <ZHBtn variant="ghost" size="sm" onClick={() => void onSettings(bp)}>
               {t(`${prefix}.action.company`, "Condiciones")}
             </ZHBtn>

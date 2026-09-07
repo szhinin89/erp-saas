@@ -186,8 +186,8 @@ public class ErpDbContext : DbContext
     // ── MasterData BC ─────────────────────────────────────────────────────
     public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
     public DbSet<BusinessPartnerRole> BusinessPartnerRoles => Set<BusinessPartnerRole>();
-    public DbSet<CompanyBpTradingSettings> CompanyBpTradingSettings =>
-        Set<CompanyBpTradingSettings>();
+    public DbSet<CompanyBpSalesSettings> CompanyBpSalesSettings =>
+        Set<CompanyBpSalesSettings>();
     public DbSet<CompanyBpPurchaseSettings> CompanyBpPurchaseSettings =>
         Set<CompanyBpPurchaseSettings>();
     public DbSet<SupplierRetentionDefault> SupplierRetentionDefaults =>

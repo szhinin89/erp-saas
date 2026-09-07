@@ -9,9 +9,9 @@ namespace ERP.Application.Tests.MasterData;
 
 /// <summary>
 /// ADR-033, Fases 3b/3c — cadena de resolución compartida por Compras (CompanyBpPurchaseSettings)
-/// y Ventas (CompanyBpTradingSettings): explícito (validado activo) → default company-scoped del
+/// y Ventas (CompanyBpSalesSettings): explícito (validado activo) → default company-scoped del
 /// tercero (validado activo) → exigir selección. Nunca "primer registro", nunca inferencia por
-/// días/PaymentDays/totalDays, nunca condición inactiva, nunca fallback silencioso a
+/// duración numérica, nunca condición inactiva, nunca fallback silencioso a
 /// SupplierRoleConfig.PaymentTermId ni a un default genérico de empresa (ninguno de los dos
 /// participa en esta clase en absoluto).
 /// </summary>
@@ -26,7 +26,7 @@ public sealed class PaymentTermDefaultResolverTests
     {
         public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
         public Mock<ICompanyBpPurchaseSettingsRepository> PurchaseSettings { get; } = new();
-        public Mock<ICompanyBpTradingSettingsRepository> TradingSettings { get; } = new();
+        public Mock<ICompanyBpSalesSettingsRepository> SalesSettings { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
 
         public Fixture()
@@ -35,7 +35,7 @@ public sealed class PaymentTermDefaultResolverTests
         }
 
         public PaymentTermDefaultResolver BuildResolver() =>
-            new(PaymentTerms.Object, PurchaseSettings.Object, TradingSettings.Object, Tenant.Object);
+            new(PaymentTerms.Object, PurchaseSettings.Object, SalesSettings.Object, Tenant.Object);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public sealed class PaymentTermDefaultResolverTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeSameAs(pt);
-        f.TradingSettings.Verify(
+        f.SalesSettings.Verify(
             r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
@@ -229,22 +229,22 @@ public sealed class PaymentTermDefaultResolverTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactiva");
-        f.TradingSettings.Verify(
+        f.SalesSettings.Verify(
             r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
     [Fact]
-    public async Task Venta_sin_explicito_usa_default_de_CompanyBpTradingSettings_si_esta_activo()
+    public async Task Venta_sin_explicito_usa_default_de_CompanyBpSalesSettings_si_esta_activo()
     {
         var f = new Fixture();
         var defaultPt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
-        var settings = CompanyBpTradingSettings.Create(
-            TenantId, Guid.NewGuid(), CustomerId, creditLimit: 0m, paymentDays: 0, UserId
+        var settings = CompanyBpSalesSettings.Create(
+            TenantId, Guid.NewGuid(), CustomerId, null, UserId
         );
-        settings.SetPaymentTerms(defaultPt.Id, defaultPt.Installments, defaultPt.DaysBetweenInstallments);
-        f.TradingSettings
+        settings.SetPaymentTerm(defaultPt.Id, UserId);
+        f.SalesSettings
             .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(settings);
         f.PaymentTerms
@@ -263,11 +263,11 @@ public sealed class PaymentTermDefaultResolverTests
         var f = new Fixture();
         var defaultPt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
         defaultPt.Disable(UserId);
-        var settings = CompanyBpTradingSettings.Create(
-            TenantId, Guid.NewGuid(), CustomerId, creditLimit: 0m, paymentDays: 0, UserId
+        var settings = CompanyBpSalesSettings.Create(
+            TenantId, Guid.NewGuid(), CustomerId, null, UserId
         );
-        settings.SetPaymentTerms(defaultPt.Id, defaultPt.Installments, defaultPt.DaysBetweenInstallments);
-        f.TradingSettings
+        settings.SetPaymentTerm(defaultPt.Id, UserId);
+        f.SalesSettings
             .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(settings);
         f.PaymentTerms
@@ -281,12 +281,12 @@ public sealed class PaymentTermDefaultResolverTests
     }
 
     [Fact]
-    public async Task Venta_sin_explicito_y_sin_CompanyBpTradingSettings_exige_seleccion()
+    public async Task Venta_sin_explicito_y_sin_CompanyBpSalesSettings_exige_seleccion()
     {
         var f = new Fixture();
-        f.TradingSettings
+        f.SalesSettings
             .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CompanyBpTradingSettings?)null);
+            .ReturnsAsync((CompanyBpSalesSettings?)null);
 
         var result = await f.BuildResolver().ResolveForSaleAsync(CustomerId, null, CancellationToken.None);
 
@@ -299,16 +299,13 @@ public sealed class PaymentTermDefaultResolverTests
     }
 
     [Fact]
-    public async Task Venta_sin_explicito_y_CompanyBpTradingSettings_sin_PaymentTermId_exige_seleccion()
+    public async Task Venta_sin_explicito_y_CompanyBpSalesSettings_sin_PaymentTermId_exige_seleccion()
     {
-        // Confirma que PaymentDays (siempre presente en CompanyBpTradingSettings) NUNCA se
-        // usa como sustituto — solo PaymentTermId. Un registro con PaymentDays > 0 pero sin
-        // PaymentTermId debe exigir selección igual que uno vacío.
         var f = new Fixture();
-        var settings = CompanyBpTradingSettings.Create(
-            TenantId, Guid.NewGuid(), CustomerId, creditLimit: 500m, paymentDays: 45, UserId
+        var settings = CompanyBpSalesSettings.Create(
+            TenantId, Guid.NewGuid(), CustomerId, null, UserId
         );
-        f.TradingSettings
+        f.SalesSettings
             .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(settings);
 

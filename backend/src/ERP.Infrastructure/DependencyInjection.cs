@@ -168,8 +168,8 @@ public static class DependencyInjection
             CustomerClassificationRepository
         >();
         services.AddScoped<
-            ICompanyBpTradingSettingsRepository,
-            CompanyBpTradingSettingsRepository
+            ICompanyBpSalesSettingsRepository,
+            CompanyBpSalesSettingsRepository
         >();
         services.AddScoped<
             ICompanyBpPurchaseSettingsRepository,

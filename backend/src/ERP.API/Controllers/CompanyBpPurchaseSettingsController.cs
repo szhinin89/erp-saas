@@ -20,7 +20,7 @@ namespace ERP.API.Controllers;
 ///
 /// Distinto de SupplierRoleConfig.PaymentTermId (tenant-wide, config SRI general del proveedor,
 /// conservado solo por compatibilidad — ver BusinessPartnerRolesController) y de
-/// CompanyBpTradingSettingsController (equivalente para CLIENTE, crédito comercial de venta).
+/// CompanyBpSalesSettingsController (equivalente para CLIENTE, condición predeterminada de ventas).
 ///
 /// OPERACIONES:
 ///   - GET: obtiene el default actual (valores por defecto con hasCustomConfiguration=false si
