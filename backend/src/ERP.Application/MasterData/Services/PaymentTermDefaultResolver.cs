@@ -8,23 +8,56 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
 {
     private readonly IPaymentTermRepository _paymentTerms;
     private readonly ICompanyBpPurchaseSettingsRepository _purchaseSettings;
+    private readonly ICompanyBpTradingSettingsRepository _tradingSettings;
     private readonly ICurrentTenant _tenant;
 
     public PaymentTermDefaultResolver(
         IPaymentTermRepository paymentTerms,
         ICompanyBpPurchaseSettingsRepository purchaseSettings,
+        ICompanyBpTradingSettingsRepository tradingSettings,
         ICurrentTenant tenant
     )
     {
         _paymentTerms = paymentTerms;
         _purchaseSettings = purchaseSettings;
+        _tradingSettings = tradingSettings;
         _tenant = tenant;
     }
 
-    public async Task<Result<PaymentTerm>> ResolveForPurchaseAsync(
+    public Task<Result<PaymentTerm>> ResolveForPurchaseAsync(
         Guid supplierId,
         Guid? explicitPaymentTermId,
         CancellationToken ct = default
+    ) =>
+        ResolveAsync(
+            explicitPaymentTermId,
+            async () => (await _purchaseSettings.GetByBusinessPartnerAsync(supplierId, ct))?.PaymentTermId,
+            ct
+        );
+
+    public Task<Result<PaymentTerm>> ResolveForSaleAsync(
+        Guid customerId,
+        Guid? explicitPaymentTermId,
+        CancellationToken ct = default
+    ) =>
+        ResolveAsync(
+            explicitPaymentTermId,
+            async () => (await _tradingSettings.GetByBusinessPartnerAsync(customerId, ct))?.PaymentTermId,
+            ct
+        );
+
+    /// <summary>
+    /// ADR-033: cadena única compartida por Compras/Gastos (Fase 3b) y Ventas (Fase 3c) —
+    /// explícito (validado activo) → default company-scoped del tercero (validado activo) →
+    /// exigir selección explícita. Nunca "primer registro", nunca inferencia por días, nunca un
+    /// PaymentTerm inactivo. <paramref name="resolveDefaultId"/> es la única diferencia entre
+    /// compra y venta: de dónde sale el Guid del default (CompanyBpPurchaseSettings vs
+    /// CompanyBpTradingSettings) — el resto de la regla es idéntico y vive en un solo lugar.
+    /// </summary>
+    private async Task<Result<PaymentTerm>> ResolveAsync(
+        Guid? explicitPaymentTermId,
+        Func<Task<Guid?>> resolveDefaultId,
+        CancellationToken ct
     )
     {
         var tenantId = _tenant.TenantId;
@@ -41,17 +74,16 @@ public sealed class PaymentTermDefaultResolver : IPaymentTermDefaultResolver
             return Result<PaymentTerm>.Success(explicitPt);
         }
 
-        var companyDefault = await _purchaseSettings.GetByBusinessPartnerAsync(supplierId, ct);
-        if (companyDefault?.PaymentTermId is { } defaultId)
+        var defaultId = await resolveDefaultId();
+        if (defaultId is { } dId)
         {
-            var defaultPt = await _paymentTerms.GetByIdAsync(tenantId, defaultId, ct);
+            var defaultPt = await _paymentTerms.GetByIdAsync(tenantId, dId, ct);
             if (defaultPt is not null && defaultPt.IsActive)
                 return Result<PaymentTerm>.Success(defaultPt);
         }
 
         return Result<PaymentTerm>.ValidationFailure(
-            "Debe seleccionar una condición de pago; este proveedor no tiene una configurada "
-                + "para esta empresa."
+            "Debe seleccionar una condición de pago; no hay una configurada para esta empresa."
         );
     }
 }

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.UseCases;
@@ -40,7 +41,7 @@ public sealed class SalesDraftSpecialTaxTests
         public Mock<ISalesInvoiceRepository> Repo { get; } = new();
         public Mock<IBusinessPartnerRepository> BpRepo { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> RoleRepo { get; } = new();
-        public Mock<IPaymentTermRepository> PtRepo { get; } = new();
+        public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<IPaymentMethodRepository> PmRepo { get; } = new();
         public Mock<IItemRepository> ItemRepo { get; } = new();
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
@@ -95,12 +96,9 @@ public sealed class SalesDraftSpecialTaxTests
                 .ReturnsAsync(role);
 
             var pt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
-            PtRepo
-                .Setup(r => r.ListAsync(TenantId, null, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<PaymentTerm> { pt });
-            PtRepo
-                .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(pt);
+            PtResolver
+                .Setup(r => r.ResolveForSaleAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<PaymentTerm>.Success(pt));
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
@@ -139,7 +137,7 @@ public sealed class SalesDraftSpecialTaxTests
                 Repo.Object,
                 BpRepo.Object,
                 RoleRepo.Object,
-                PtRepo.Object,
+                PtResolver.Object,
                 PmRepo.Object,
                 ItemRepo.Object,
                 EpRepo.Object,

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Configuration.Interfaces;
@@ -156,7 +157,7 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             repo.Object,
             bpRepo.Object,
             Mock.Of<IBusinessPartnerRoleRepository>(),
-            Mock.Of<IPaymentTermRepository>(),
+            Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IPaymentMethodRepository>(),
             Mock.Of<IItemRepository>(),
             Mock.Of<ISriTaxResolver>(),

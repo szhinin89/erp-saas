@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.MasterData.Services;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.UseCases;
@@ -36,7 +37,7 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<ISalesInvoiceRepository> Repo { get; } = new();
         public Mock<IBusinessPartnerRepository> BpRepo { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> RoleRepo { get; } = new();
-        public Mock<IPaymentTermRepository> PtRepo { get; } = new();
+        public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<IPaymentMethodRepository> PmRepo { get; } = new();
         public Mock<IItemRepository> ItemRepo { get; } = new();
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
@@ -99,14 +100,9 @@ public sealed class CreateSalesDraftHandlerTests
                 .ReturnsAsync(role);
 
             var pt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
-            PtRepo
-                .Setup(r => r.ListAsync(TenantId, null, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<PaymentTerm> { pt });
-            PtRepo
-                .Setup(r =>
-                    r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
-                )
-                .ReturnsAsync(pt);
+            PtResolver
+                .Setup(r => r.ResolveForSaleAsync(CustomerId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<PaymentTerm>.Success(pt));
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
@@ -129,7 +125,7 @@ public sealed class CreateSalesDraftHandlerTests
                 Repo.Object,
                 BpRepo.Object,
                 RoleRepo.Object,
-                PtRepo.Object,
+                PtResolver.Object,
                 PmRepo.Object,
                 ItemRepo.Object,
                 EpRepo.Object,
@@ -189,17 +185,15 @@ public sealed class CreateSalesDraftHandlerTests
         f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
         f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
 
-        var inactivePt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
-        inactivePt.Disable(UserId);
-        f.PtRepo
-            .Setup(r => r.GetByIdAsync(TenantId, inactivePt.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(inactivePt);
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("La condición de pago se encuentra inactiva."));
 
         var command = new CreateSalesDraftCommand(
             CustomerId,
             DateOnly.FromDateTime(DateTime.UtcNow),
             new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") },
-            PaymentTermId: inactivePt.Id
+            PaymentTermId: Guid.NewGuid()
         );
 
         var handler = f.BuildHandler();
@@ -211,27 +205,52 @@ public sealed class CreateSalesDraftHandlerTests
     }
 
     [Fact]
-    public async Task ADR033_fallback_implicito_no_toma_condiciones_inactivas()
+    public async Task ADR033_sin_default_valido_del_cliente_exige_seleccion_explicita()
     {
         var f = new Fixture();
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
         f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
         f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
 
-        // Todas las condiciones del tenant están inactivas — el fallback implícito no debe
-        // devolver ninguna (nunca "el primer registro" sin importar su estado).
-        var inactivePt = PaymentTerm.Create(TenantId, "30D", "30 días", 1, 30, UserId);
-        inactivePt.Disable(UserId);
-        f.PtRepo
-            .Setup(r => r.ListAsync(TenantId, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PaymentTerm> { inactivePt });
+        // Sin PaymentTermId explícito y sin CompanyBpTradingSettings válido para el cliente —
+        // nunca cae al catálogo ("primer registro") ni a un default genérico de empresa.
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure(
+                "Debe seleccionar una condición de pago; no hay una configurada para esta empresa."
+            ));
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(Fixture.ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("activa");
+        result.Error.Should().Contain("Debe seleccionar");
         f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ADR033_usa_default_de_CompanyBpTradingSettings_del_cliente()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var defaultPt = PaymentTerm.Create(TenantId, "30D", "Crédito 30 días", 1, 30, UserId);
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.Success(defaultPt));
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var handler = f.BuildHandler();
+        var result = await handler.Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentTerm.Id.Should().Be(defaultPt.Id);
     }
 
     [Fact]

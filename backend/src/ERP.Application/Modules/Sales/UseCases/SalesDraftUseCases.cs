@@ -193,7 +193,7 @@ public sealed class CreateSalesDraftHandler
     private readonly ISalesInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IPaymentTermRepository _ptRepo;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IPaymentMethodRepository _pmRepo;
     private readonly IItemRepository _itemRepo;
     private readonly IEmissionPointRepository _epRepo;
@@ -211,7 +211,7 @@ public sealed class CreateSalesDraftHandler
         ISalesInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
-        IPaymentTermRepository ptRepo,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IPaymentMethodRepository pmRepo,
         IItemRepository itemRepo,
         IEmissionPointRepository epRepo,
@@ -229,7 +229,7 @@ public sealed class CreateSalesDraftHandler
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
-        _ptRepo = ptRepo;
+        _ptResolver = ptResolver;
         _pmRepo = pmRepo;
         _itemRepo = itemRepo;
         _epRepo = epRepo;
@@ -270,24 +270,10 @@ public sealed class CreateSalesDraftHandler
                 "El socio de negocio no tiene rol de Cliente."
             );
 
-        var ptId = cmd.PaymentTermId;
-        if (ptId is null || ptId == Guid.Empty)
-        {
-            var pts = await _ptRepo.ListAsync(_t.TenantId, null, ct);
-            var defaultPt = pts.Where(p => p.IsActive).FirstOrDefault();
-            if (defaultPt is null)
-                return Result<SalesInvoiceDto>.ValidationFailure(
-                    "No hay una condición de pago activa disponible; debe seleccionar una."
-                );
-            ptId = defaultPt.Id;
-        }
-        var pt = await _ptRepo.GetByIdAsync(_t.TenantId, ptId.Value, ct);
-        if (pt is null)
-            return Result<SalesInvoiceDto>.ValidationFailure("La condición de pago no existe.");
-        if (!pt.IsActive)
-            return Result<SalesInvoiceDto>.ValidationFailure(
-                "La condición de pago se encuentra inactiva."
-            );
+        var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, cmd.PaymentTermId, ct);
+        if (!ptResult.IsSuccess)
+            return Result<SalesInvoiceDto>.ValidationFailure(ptResult.Error!);
+        var pt = ptResult.Value!;
 
         var tid = _t.TenantId;
 
@@ -391,7 +377,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly ISalesInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IPaymentTermRepository _ptRepo;
+    private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IPaymentMethodRepository _pmRepo;
     private readonly IItemRepository _itemRepo;
     private readonly ISriTaxResolver _tax;
@@ -407,7 +393,7 @@ public sealed class UpdateSalesDraftHandler
         ISalesInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
-        IPaymentTermRepository ptRepo,
+        ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IPaymentMethodRepository pmRepo,
         IItemRepository itemRepo,
         ISriTaxResolver tax,
@@ -423,7 +409,7 @@ public sealed class UpdateSalesDraftHandler
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
-        _ptRepo = ptRepo;
+        _ptResolver = ptResolver;
         _pmRepo = pmRepo;
         _itemRepo = itemRepo;
         _tax = tax;
@@ -453,13 +439,10 @@ public sealed class UpdateSalesDraftHandler
 
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTerm.Id)
         {
-            var pt = await _ptRepo.GetByIdAsync(_t.TenantId, cmd.PaymentTermId.Value, ct);
-            if (pt is null)
-                return Result<SalesInvoiceDto>.ValidationFailure("La condición de pago no existe.");
-            if (!pt.IsActive)
-                return Result<SalesInvoiceDto>.ValidationFailure(
-                    "La condición de pago se encuentra inactiva."
-                );
+            var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, cmd.PaymentTermId, ct);
+            if (!ptResult.IsSuccess)
+                return Result<SalesInvoiceDto>.ValidationFailure(ptResult.Error!);
+            var pt = ptResult.Value!;
             inv.UpdatePaymentTerm(
                 PaymentTermSnapshot.Create(
                     pt.Id,
@@ -471,17 +454,23 @@ public sealed class UpdateSalesDraftHandler
         }
         else if (cmd.CustomerId != inv.CustomerId)
         {
-            var pts = await _ptRepo.ListAsync(_t.TenantId, null, ct);
-            var defaultPt = pts.Where(p => p.IsActive).FirstOrDefault();
-            if (defaultPt is not null)
+            // Cambio de cliente sin PaymentTermId explícito: intenta el default de la empresa
+            // activa para el nuevo cliente (ADR-033, Fase 3c). Sin default válido, se mantiene
+            // el PaymentTerm actual del borrador (mismo criterio ya vigente en Compras desde
+            // Fase 3b) — el usuario deberá elegir uno explícito si lo necesita.
+            var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, null, ct);
+            if (ptResult.IsSuccess)
+            {
+                var pt = ptResult.Value!;
                 inv.UpdatePaymentTerm(
                     PaymentTermSnapshot.Create(
-                        defaultPt.Id,
-                        defaultPt.Name,
-                        defaultPt.Installments,
-                        defaultPt.DaysBetweenInstallments
+                        pt.Id,
+                        pt.Name,
+                        pt.Installments,
+                        pt.DaysBetweenInstallments
                     )
                 );
+            }
         }
 
         try

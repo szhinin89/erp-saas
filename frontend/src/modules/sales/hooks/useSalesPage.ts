@@ -675,24 +675,14 @@ export function useSalesPage() {
           paymentTermId: ptId,
         } = trading;
 
-        if (ptId && paymentTermsList.some((p) => p.id === ptId)) {
-          // 1. Condición de pago del cliente (máxima prioridad)
+        // ADR-033, Fase 3c: el backend resuelve el default (CompanyBpTradingSettings.PaymentTermId
+        // de la empresa activa) al crear/actualizar el borrador — es la autoridad final. Aquí solo
+        // se previsualiza esa misma fuente (mismo dato que el backend usaría en primer lugar) para
+        // no dejar el campo vacío mientras el usuario arma la venta. Eliminado: inferencia por
+        // PaymentDays/totalDays y fallback a un default genérico de empresa — ninguno de los dos es
+        // parte de la cadena de resolución aprobada.
+        if (ptId && paymentTermsList.some((p) => p.id === ptId && p.isActive)) {
           setValue("paymentTermId", ptId, { shouldDirty: true });
-        } else if (paymentDays > 0 && paymentTermsList.length > 0) {
-          // 2. Buscar por días de crédito del cliente
-          const match = paymentTermsList.find(
-            (p) => p.isActive && p.totalDays === paymentDays,
-          );
-          if (match) setValue("paymentTermId", match.id, { shouldDirty: true });
-        } else {
-          // 3. Default de empresa (único punto de fallback para condición de pago)
-          const companyDefault = tenantDefaults?.defaultPaymentTermId;
-          if (
-            companyDefault &&
-            paymentTermsList.some((p) => p.id === companyDefault && p.isActive)
-          ) {
-            setValue("paymentTermId", companyDefault, { shouldDirty: true });
-          }
         }
 
         // Consumidor Final nunca puede crédito (regla fija del backend, ver
@@ -737,7 +727,7 @@ export function useSalesPage() {
         return null;
       }
     },
-    [paymentTermsList, setValue, getValues, tenantDefaults],
+    [paymentTermsList, setValue, getValues],
   );
 
   // ── Line operations ────────────────────────────────────────────────

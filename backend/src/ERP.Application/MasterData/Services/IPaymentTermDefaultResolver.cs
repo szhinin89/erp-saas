@@ -4,21 +4,26 @@ using ERP.Domain.MasterData.Entities;
 namespace ERP.Application.MasterData.Services;
 
 /// <summary>
-/// Fuente única de resolución de PaymentTerm para Compras/Gastos — ADR-033, Fase 3b.
+/// Fuente única de resolución de PaymentTerm para Compras/Gastos/Ventas — ADR-033, Fases 3b/3c.
 ///
-/// Cadena de resolución: PaymentTermId explícito del documento (si viene, validado activo) →
-/// default company-scoped del proveedor (CompanyBpPurchaseSettings, Fase 3a, validado activo) →
-/// exigir selección explícita. Nunca "primer registro" del catálogo, nunca inferencia por días,
-/// nunca una condición inactiva, nunca fallback silencioso a SupplierRoleConfig.PaymentTermId
-/// (tenant-wide) — esa propiedad se mantiene sin cambios pero deja de ser fuente operativa.
-///
-/// Ventas queda fuera de esta fase (ResolveForSaleAsync se agrega en Fase 3c cuando exista
-/// consumidor real).
+/// Cadena de resolución (idéntica para compra y venta, solo cambia la fuente del default):
+/// PaymentTermId explícito del documento (si viene, validado activo) → default company-scoped
+/// del tercero (CompanyBpPurchaseSettings para proveedor, CompanyBpTradingSettings para
+/// cliente, ambos validados activos) → exigir selección explícita. Nunca "primer registro" del
+/// catálogo, nunca inferencia por días/PaymentDays/totalDays, nunca una condición inactiva,
+/// nunca fallback silencioso a SupplierRoleConfig.PaymentTermId ni a un default genérico de
+/// empresa.
 /// </summary>
 public interface IPaymentTermDefaultResolver
 {
     Task<Result<PaymentTerm>> ResolveForPurchaseAsync(
         Guid supplierId,
+        Guid? explicitPaymentTermId,
+        CancellationToken ct = default
+    );
+
+    Task<Result<PaymentTerm>> ResolveForSaleAsync(
+        Guid customerId,
         Guid? explicitPaymentTermId,
         CancellationToken ct = default
     );
