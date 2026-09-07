@@ -66,9 +66,6 @@ public sealed class AssignRoleRequest
 /// <summary>Config SRI operativa del proveedor (pre-llenado para documentos de compra).</summary>
 public sealed class SupplierConfigRequest
 {
-    /// <summary>Condición de pago obligatoria — FK a master_payment_terms.</summary>
-    public Guid PaymentTermId { get; set; }
-
     /// <summary>Código sustento tributario SRI (01-19). Ej: "01" = Crédito Tributario.</summary>
     public string? DefaultTaxSupportCode { get; set; }
 

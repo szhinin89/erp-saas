@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { useSriIdTypes, useSriIdTypesByUsage } from "../api/useSriIdTypes";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
-import { paymentTermService } from "../api/paymentTermService";
-import type { PaymentTermDto } from "../api/paymentTermService";
 import {
   isLegalEntityTypeInferable,
   type BusinessPartnerFormValues,
@@ -39,7 +37,6 @@ export function MasterDataBpFormFields({
     useLegalEntityTypes();
   const { options: supplierTypeOptions, loading: loadingSupplierTypes } =
     useSriSupplierTypes();
-  const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
   const watchedIdentificationType = watch("identificationType");
 
   useEffect(() => {
@@ -49,14 +46,6 @@ export function MasterDataBpFormFields({
       setValue("legalEntityTypeCode", undefined, { shouldValidate: false });
     }
   }, [watchedIdentificationType, setValue]);
-
-  useEffect(() => {
-    if (usage === "supplier")
-      paymentTermService
-        .list()
-        .then(setPaymentTerms)
-        .catch(() => {});
-  }, [usage]);
 
   if (section === "review") {
     const values = watch();
@@ -68,9 +57,6 @@ export function MasterDataBpFormFields({
         : "—";
     const supplierTypeLabel = supplierTypeOptions.find(
       (o) => o.code === values.refundProviderTypeCode,
-    )?.name;
-    const paymentTermLabel = paymentTerms.find(
-      (pt) => pt.id === values.paymentTermId,
     )?.name;
     return (
       <dl className="prd-review-grid">
@@ -94,8 +80,6 @@ export function MasterDataBpFormFields({
           <>
             <dt>Tipo de Proveedor</dt>
             <dd>{supplierTypeLabel ?? "—"}</dd>
-            <dt>Condición de pago</dt>
-            <dd>{paymentTermLabel ?? "—"}</dd>
           </>
         )}
       </dl>
@@ -242,23 +226,6 @@ export function MasterDataBpFormFields({
                     {o.name}
                   </option>
                 ))}
-              </ZhSelect>
-            </ZHField>
-
-            <ZHField
-              label="Condición de pago"
-              required
-              fieldError={errors.paymentTermId?.message}
-            >
-              <ZhSelect {...register("paymentTermId")} disabled={saving}>
-                <option value="">— Seleccionar —</option>
-                {paymentTerms
-                  .filter((pt) => pt.isActive)
-                  .map((pt) => (
-                    <option key={pt.id} value={pt.id}>
-                      {pt.code} — {pt.name}
-                    </option>
-                  ))}
               </ZhSelect>
             </ZHField>
           </ZHGrid>

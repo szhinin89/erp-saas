@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
+using ERP.Application.MasterData.UseCases.UpsertCompanyBpPurchaseSettings;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.MasterData.Enums;
@@ -20,10 +21,12 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// <see cref="AssignBusinessPartnerRoleCommand"/> → opcionalmente <see cref="CreateBpContactCommand"/>),
 /// nunca escribe directo a <c>BusinessPartner</c>.
 ///
-/// Única condición operativa obligatoria de <see cref="SupplierRoleConfig"/> es
-/// <c>PaymentTermId</c> — se resuelve por código de plantilla contra <see cref="IPaymentTermRepository"/>
-/// durante la validación; sin condición de pago válida la fila queda bloqueada (no hay valor por
-/// defecto silencioso: es una decisión de negocio, no algo que el importador deba inventar).
+/// La condición de pago de la fila es obligatoria — se resuelve por código de plantilla contra
+/// <see cref="IPaymentTermRepository"/> durante la validación; sin condición de pago válida la fila
+/// queda bloqueada (no hay valor por defecto silencioso: es una decisión de negocio, no algo que el
+/// importador deba inventar). ADR-033: el destino de esa condición de pago es
+/// <see cref="UpsertCompanyBpPurchaseSettingsCommand"/> (default de compras/gastos de la empresa
+/// activa) — <see cref="SupplierRoleConfig"/> ya no tiene un campo de condición de pago propio.
 /// </summary>
 public sealed class SupplierImportProcessor : IImportProcessor
 {
@@ -217,7 +220,7 @@ public sealed class SupplierImportProcessor : IImportProcessor
             new AssignBusinessPartnerRoleCommand(
                 businessPartnerId,
                 RoleType.Supplier,
-                SupplierConfig: SupplierRoleConfig.Create(parsed.PaymentTermId),
+                SupplierConfig: SupplierRoleConfig.Create(),
                 ClassificationConfig: SupplierClassificationConfig.Create(
                     parsed.SupplierCategory,
                     parsed.SupplierType,
@@ -233,6 +236,19 @@ public sealed class SupplierImportProcessor : IImportProcessor
             // transacción cruzada entre agregados. Se reporta para revisión manual.
             return RowConfirmResult.Failed(
                 $"Proveedor creado sin rol asignado, revisar manualmente: {roleResult.Error}"
+            );
+        }
+
+        // ADR-033: el default de condición de pago para compras/gastos vive en
+        // CompanyBpPurchaseSettings (company-scoped), no en SupplierRoleConfig.
+        var purchaseSettingsResult = await _mediator.Send(
+            new UpsertCompanyBpPurchaseSettingsCommand(businessPartnerId, parsed.PaymentTermId),
+            ct
+        );
+        if (!purchaseSettingsResult.IsSuccess)
+        {
+            return RowConfirmResult.Failed(
+                $"Proveedor creado sin condición de pago configurada, revisar manualmente: {purchaseSettingsResult.Error}"
             );
         }
 

@@ -78,7 +78,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     {
         var supplierConfig = body.SupplierConfig is not null
             ? SupplierRoleConfig.Create(
-                body.SupplierConfig.PaymentTermId,
                 body.SupplierConfig.DefaultTaxSupportCode,
                 body.SupplierConfig.DefaultRetentionVatCode,
                 body.SupplierConfig.DefaultRetentionIncomeCode,
@@ -183,7 +182,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         try
         {
             config = SupplierRoleConfig.Create(
-                body.PaymentTermId,
                 body.DefaultTaxSupportCode,
                 body.DefaultRetentionVatCode,
                 body.DefaultRetentionIncomeCode,

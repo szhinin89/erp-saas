@@ -140,7 +140,6 @@ export type SupplierRoleConfigDto = {
   defaultPaymentMethodCode?: string | null; // SRI code: 01-21
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt: boolean; // RISE, microempresa, sector público
-  paymentTermId: string; // FK a master_payment_terms (obligatorio)
 };
 
 /**
@@ -238,9 +237,9 @@ export type CompanyBpTradingSettingsDto = {
 };
 
 /**
- * ADR-033, Fase 3d — default de condición de pago de PROVEEDOR por empresa activa.
- * Distinto de CompanyBpTradingSettingsDto (cliente/crédito comercial) y de
- * SupplierConfigBody.paymentTermId (config SRI general del proveedor, tenant-wide).
+ * ADR-033 — default de condición de pago de PROVEEDOR por empresa activa. Única fuente de la
+ * condición de pago de compras/gastos — distinto de CompanyBpTradingSettingsDto (cliente/crédito
+ * comercial). SupplierRoleConfig (config SRI general del proveedor) ya no tiene condición de pago.
  */
 export type CompanyBpPurchaseSettingsDto = {
   id: string;
@@ -321,7 +320,6 @@ export type CustomerConfigBody = {
 
 /** Body para PATCH /{bpId}/roles/{roleId}/supplier-config */
 export type SupplierConfigBody = {
-  paymentTermId: string; // FK obligatorio a master_payment_terms
   defaultTaxSupportCode?: string | null;
   defaultRetentionVatCode?: string | null;
   defaultRetentionIncomeCode?: string | null;

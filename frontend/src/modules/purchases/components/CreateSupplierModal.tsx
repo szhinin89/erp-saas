@@ -39,7 +39,7 @@ export function CreateSupplierModal({
 
   const handleCreate = async (
     body: CreateBusinessPartnerBody,
-    supplierConfig?: { refundProviderTypeCode: string; paymentTermId: string },
+    supplierConfig?: { refundProviderTypeCode: string },
   ): Promise<void> => {
     setSaving(true);
     try {
@@ -48,7 +48,6 @@ export function CreateSupplierModal({
         roleType: RoleTypeEnum.Supplier,
         supplierConfig: supplierConfig
           ? {
-              paymentTermId: supplierConfig.paymentTermId,
               refundProviderTypeCode: supplierConfig.refundProviderTypeCode,
             }
           : undefined,

@@ -118,8 +118,6 @@ public sealed class BusinessPartnerRoleConfiguration : IEntityTypeConfiguration<
                     .HasColumnName("is_required_to_keep_accounting")
                     .IsRequired()
                     .HasDefaultValue(false);
-
-                sc.Property(c => c.PaymentTermId).HasColumnName("payment_term_id").IsRequired();
             }
         );
 

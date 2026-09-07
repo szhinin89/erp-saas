@@ -68,7 +68,6 @@ export function getPartnerSearchResultState(
 /** Solo aplica cuando role='supplier' — ver SupplierRoleConfig (backend). */
 export type SupplierConfigAtCreation = {
   refundProviderTypeCode: string;
-  paymentTermId: string;
 };
 
 /** Precarga del formulario saltando la búsqueda — para flujos que ya saben que el BP no
@@ -188,7 +187,6 @@ export function MasterDataPartnerWizard({
       countryCode:
         editingPartner?.countryCode ?? initialValues?.countryCode ?? "EC",
       refundProviderTypeCode: "",
-      paymentTermId: "",
     },
   });
 
@@ -305,7 +303,6 @@ export function MasterDataPartnerWizard({
           role === "supplier"
             ? {
                 refundProviderTypeCode: v.refundProviderTypeCode || "",
-                paymentTermId: v.paymentTermId || "",
               }
             : undefined;
         await onSubmitCreate(buildCreateBody(), supplierConfig);

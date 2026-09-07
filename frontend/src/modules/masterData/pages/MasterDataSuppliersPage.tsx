@@ -84,7 +84,6 @@ function SupplierConfigModal({
   const [taxSupportCode, setTaxSupportCode] = useState("");
   const [retentionVatCode, setRetentionVatCode] = useState("");
   const [retentionIncomeCode, setRetentionIncomeCode] = useState("");
-  const [paymentTermId, setPaymentTermId] = useState("");
   const [paymentMethodCode, setPaymentMethodCode] = useState("");
   const [refundProviderType, setRefundProviderType] = useState("");
   const [isRetentionExempt, setIsRetentionExempt] = useState(false);
@@ -105,9 +104,7 @@ function SupplierConfigModal({
       .catch(() => {});
   }, []);
 
-  const selectedPt = paymentTermsList.find((pt) => pt.id === paymentTermId);
-
-  // ── Default de compras/gastos por empresa activa (ADR-033, Fase 3d) ──────
+  // ── Default de compras/gastos por empresa activa (ADR-033) ───────────────
   // Sección independiente: fetch/save propios, separados del formulario de
   // Config SRI de arriba — un fallo en uno no afecta al otro, y cada uno
   // muestra su propio error.
@@ -175,9 +172,7 @@ function SupplierConfigModal({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!paymentTermId) return;
           onSave({
-            paymentTermId,
             defaultTaxSupportCode: taxSupportCode || null,
             defaultRetentionVatCode: retentionVatCode || null,
             defaultRetentionIncomeCode: retentionIncomeCode || null,
@@ -218,34 +213,6 @@ function SupplierConfigModal({
               placeholder="303"
               maxLength={5}
             />
-          </ZHField>
-          <ZHField
-            label="Condición de pago general del proveedor *"
-            required
-            hint="Se conserva para compatibilidad de la configuración general del proveedor. El default operativo para compras y gastos se define por empresa en la sección inferior."
-          >
-            <select
-              value={paymentTermId}
-              onChange={(e) => setPaymentTermId(e.target.value)}
-              disabled={saving}
-              required
-            >
-              <option value="">— Seleccionar condición de pago —</option>
-              {paymentTermsList
-                .filter((pt) => pt.isActive)
-                .map((pt) => (
-                  <option key={pt.id} value={pt.id}>
-                    {pt.code} — {pt.name} ({pt.summary})
-                  </option>
-                ))}
-            </select>
-            {selectedPt && (
-              <div className="md-supplier-payment-term-summary">
-                Cuotas: <strong>{selectedPt.installments}</strong> · Dias entre
-                cuotas: <strong>{selectedPt.daysBetweenInstallments}</strong> ·
-                Total: <strong>{selectedPt.totalDays} dias</strong>
-              </div>
-            )}
           </ZHField>
           <ZHField
             label="Método de pago SRI"
@@ -569,7 +536,6 @@ export function MasterDataSuppliersPage() {
       body: CreateBusinessPartnerBody,
       supplierConfig?: {
         refundProviderTypeCode: string;
-        paymentTermId: string;
       },
     ): Promise<void> => {
       await page.createSupplier(body, supplierConfig);

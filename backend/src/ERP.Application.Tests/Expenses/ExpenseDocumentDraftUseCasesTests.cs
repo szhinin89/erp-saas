@@ -353,7 +353,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Supplier.Id,
                 RoleType.Supplier,
                 UserId,
-                SupplierRoleConfig.Create(PaymentTerm.Id, defaultTaxSupportCode: code)
+                SupplierRoleConfig.Create(defaultTaxSupportCode: code)
             );
             Roles
                 .Setup(r => r.GetByTypeAsync(Supplier.Id, RoleType.Supplier, It.IsAny<CancellationToken>()))
@@ -403,7 +403,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Supplier.Id,
                 RoleType.Supplier,
                 UserId,
-                SupplierRoleConfig.Create(PaymentTerm.Id)
+                SupplierRoleConfig.Create()
             );
 
             Partners

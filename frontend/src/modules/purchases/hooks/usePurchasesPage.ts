@@ -938,10 +938,10 @@ export function usePurchasesPage() {
         );
         setValue("taxSupportCode", profile.config.defaultTaxSupportCode ?? "");
       }
-      if (!profile.config?.paymentTermId) return;
+      if (!profile.purchaseDefaultPaymentTermId) return;
       try {
         const pt = await paymentTermService.getById(
-          profile.config.paymentTermId,
+          profile.purchaseDefaultPaymentTermId,
         );
         setValue("paymentTermId", pt.id);
         setPtInstallments(pt.installments);
@@ -980,8 +980,16 @@ export function usePurchasesPage() {
     const cached = profileCache.current.get(supplierId);
     if (cached && !options?.forceRefresh) return cached;
 
-    const bp = await businessPartnerFacade.getBusinessPartner(supplierId);
-    const profile = buildSupplierProfile(bp);
+    const [bp, purchaseSettings] = await Promise.all([
+      businessPartnerFacade.getBusinessPartner(supplierId),
+      businessPartnerFacade
+        .getPurchaseSettings(supplierId)
+        .catch(() => null),
+    ]);
+    const profile = buildSupplierProfile(
+      bp,
+      purchaseSettings?.paymentTermId ?? null,
+    );
     profileCache.current.set(supplierId, profile);
     return profile;
   }, []);
@@ -1004,6 +1012,7 @@ export function usePurchasesPage() {
           isActive: s.isActive,
           config: s.supplierConfig,
           isRequiredToKeepAccounting: false,
+          purchaseDefaultPaymentTermId: null,
         });
       }
     },

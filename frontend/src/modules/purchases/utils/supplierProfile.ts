@@ -10,6 +10,9 @@ export type SupplierProfile = {
   isActive: boolean;
   config: SupplierRoleConfigDto | null;
   isRequiredToKeepAccounting: boolean;
+  /** ADR-033: default de condición de pago para compras/gastos de la empresa activa — única
+   * fuente (CompanyBpPurchaseSettings.PaymentTermId). Null si no hay default configurado. */
+  purchaseDefaultPaymentTermId: string | null;
 };
 
 // El backend incluye este campo adicional en supplierConfig, aunque el contrato
@@ -24,6 +27,7 @@ function getActiveSupplierRole(bp: BusinessPartnerDetailDto) {
 
 export function buildSupplierProfile(
   bp: BusinessPartnerDetailDto,
+  purchaseDefaultPaymentTermId: string | null = null,
 ): SupplierProfile {
   const role = getActiveSupplierRole(bp);
   const config = role?.supplierConfig ?? null;
@@ -36,6 +40,7 @@ export function buildSupplierProfile(
     isRequiredToKeepAccounting:
       (config as SupplierConfigWithAccounting | null)
         ?.isRequiredToKeepAccounting ?? false,
+    purchaseDefaultPaymentTermId,
   };
 }
 

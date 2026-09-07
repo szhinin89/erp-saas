@@ -10,7 +10,6 @@ namespace ERP.Domain.MasterData.ValueObjects;
 ///   DefaultTaxSupportCode       — sustento tributario por defecto (01-19)
 ///   DefaultRetentionVatCode     — código retención IVA (ej: 725)
 ///   DefaultRetentionIncomeCode  — código retención Renta (ej: 303)
-///   PaymentTermId               — FK a master_payment_terms (OBLIGATORIO)
 ///   PaymentTerms                — [LEGACY] texto libre, será eliminado
 ///   DefaultPaymentMethodCode    — método de pago SRI por defecto (01-21)
 ///   RefundProviderTypeCode      — Tipo Proveedor de Reembolso (global.sri_supplier_type: 01/02)
@@ -49,11 +48,8 @@ public sealed record SupplierRoleConfig
     public string? DefaultRetentionVatCode { get; }
     public string? DefaultRetentionIncomeCode { get; }
 
-    /// <summary>[LEGACY] Texto libre — será eliminado. Usar PaymentTermId.</summary>
+    /// <summary>[LEGACY] Texto libre — será eliminado.</summary>
     public string? PaymentTerms { get; }
-
-    /// <summary>Condición de pago obligatoria — FK a master_payment_terms.</summary>
-    public Guid PaymentTermId { get; }
 
     /// <summary>
     /// Método de pago SRI por defecto (código global.sri_payment_method).
@@ -89,8 +85,7 @@ public sealed record SupplierRoleConfig
         string? defaultPaymentMethodCode,
         string? refundProviderTypeCode,
         bool isRetentionExempt,
-        bool isRequiredToKeepAccounting,
-        Guid paymentTermId
+        bool isRequiredToKeepAccounting
     )
     {
         DefaultTaxSupportCode = defaultTaxSupportCode;
@@ -101,11 +96,9 @@ public sealed record SupplierRoleConfig
         RefundProviderTypeCode = refundProviderTypeCode;
         IsRetentionExempt = isRetentionExempt;
         IsRequiredToKeepAccounting = isRequiredToKeepAccounting;
-        PaymentTermId = paymentTermId;
     }
 
     public static SupplierRoleConfig Create(
-        Guid paymentTermId,
         string? defaultTaxSupportCode = null,
         string? defaultRetentionVatCode = null,
         string? defaultRetentionIncomeCode = null,
@@ -116,12 +109,6 @@ public sealed record SupplierRoleConfig
         bool isRequiredToKeepAccounting = false
     )
     {
-        if (paymentTermId == Guid.Empty)
-            throw new ArgumentException(
-                "El proveedor debe tener una condición de pago obligatoria.",
-                nameof(paymentTermId)
-            );
-
         var paymentMethodCode = defaultPaymentMethodCode?.Trim();
         if (
             !string.IsNullOrEmpty(paymentMethodCode)
@@ -141,8 +128,7 @@ public sealed record SupplierRoleConfig
             string.IsNullOrEmpty(paymentMethodCode) ? null : paymentMethodCode,
             NormalizeSriCode(refundProviderTypeCode, nameof(refundProviderTypeCode)),
             isRetentionExempt,
-            isRequiredToKeepAccounting,
-            paymentTermId
+            isRequiredToKeepAccounting
         );
     }
 

@@ -1,4 +1,9 @@
 using ERP.Application.Common;
+using ERP.Application.MasterData.DTOs;
+using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
+using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
+using ERP.Application.MasterData.UseCases.UpsertCompanyBpPurchaseSettings;
+using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Domain.MasterData.Entities;
@@ -149,5 +154,148 @@ public sealed class SupplierImportProcessorTests
         result.Issues.Should().ContainSingle(i =>
             i.Code == "MISSING_CONTACT_INFO" && i.Severity == ImportSeverity.Warning
         );
+    }
+
+    // ── ConfirmRowAsync — ADR-033: el destino de la condición de pago es
+    // CompanyBpPurchaseSettings (company-scoped), no SupplierRoleConfig ─────────────────────
+
+    private static string ValidParsedRowJson(Guid businessPartnerRoleTermId) =>
+        System.Text.Json.JsonSerializer.Serialize(
+            new ParsedSupplierRow(
+                "04",
+                "1790012345001",
+                "Proveedor Válido",
+                null,
+                null,
+                "contacto@proveedor.test",
+                "0999999999",
+                businessPartnerRoleTermId,
+                null,
+                null,
+                null,
+                null
+            )
+        );
+
+    [Fact]
+    public async Task ConfirmRowAsync_guarda_la_condicion_de_pago_en_CompanyBpPurchaseSettings()
+    {
+        var businessPartnerId = Guid.NewGuid();
+        var processor = BuildProcessor();
+
+        _mediator
+            .Setup(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BusinessPartnerSummaryDto>.Success(
+                    new BusinessPartnerSummaryDto(
+                        businessPartnerId,
+                        "04",
+                        "1790012345001",
+                        "Proveedor Válido",
+                        null,
+                        1,
+                        null,
+                        true,
+                        DateTime.UtcNow
+                    )
+                )
+            );
+        _mediator
+            .Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BusinessPartnerRoleDto>.Success(
+                    new BusinessPartnerRoleDto(
+                        Guid.NewGuid(),
+                        "Supplier",
+                        "Proveedor",
+                        true,
+                        null,
+                        DateTime.UtcNow,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                )
+            );
+        UpsertCompanyBpPurchaseSettingsCommand? capturedCommand = null;
+        _mediator
+            .Setup(m =>
+                m.Send(It.IsAny<UpsertCompanyBpPurchaseSettingsCommand>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<object, CancellationToken>(
+                (cmd, _) => capturedCommand = (UpsertCompanyBpPurchaseSettingsCommand)cmd
+            )
+            .ReturnsAsync(
+                Result<CompanyBpPurchaseSettingsDto>.Success(
+                    new CompanyBpPurchaseSettingsDto(Guid.NewGuid(), businessPartnerId, PaymentTermId, true)
+                )
+            );
+
+        var result = await processor.ConfirmRowAsync(ValidParsedRowJson(PaymentTermId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.BusinessPartnerId.Should().Be(businessPartnerId);
+        capturedCommand.PaymentTermId.Should().Be(PaymentTermId);
+    }
+
+    [Fact]
+    public async Task ConfirmRowAsync_falla_si_no_se_pudo_guardar_la_condicion_de_pago()
+    {
+        var businessPartnerId = Guid.NewGuid();
+        var processor = BuildProcessor();
+
+        _mediator
+            .Setup(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BusinessPartnerSummaryDto>.Success(
+                    new BusinessPartnerSummaryDto(
+                        businessPartnerId,
+                        "04",
+                        "1790012345001",
+                        "Proveedor Válido",
+                        null,
+                        1,
+                        null,
+                        true,
+                        DateTime.UtcNow
+                    )
+                )
+            );
+        _mediator
+            .Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<BusinessPartnerRoleDto>.Success(
+                    new BusinessPartnerRoleDto(
+                        Guid.NewGuid(),
+                        "Supplier",
+                        "Proveedor",
+                        true,
+                        null,
+                        DateTime.UtcNow,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                )
+            );
+        _mediator
+            .Setup(m =>
+                m.Send(It.IsAny<UpsertCompanyBpPurchaseSettingsCommand>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyBpPurchaseSettingsDto>.ValidationFailure(
+                    "La condición de pago seleccionada no existe."
+                )
+            );
+
+        var result = await processor.ConfirmRowAsync(ValidParsedRowJson(PaymentTermId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("condición de pago");
     }
 }

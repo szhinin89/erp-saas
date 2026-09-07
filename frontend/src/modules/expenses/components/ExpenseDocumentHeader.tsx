@@ -71,16 +71,28 @@ export function ExpenseDocumentHeader({
             disabled={disabled}
             onChange={(next) => {
               onSupplierChange(next);
+              const prefillPaymentTerm = !value.paymentTermId;
               onChange({
                 supplierId: next?.id ?? "",
-                paymentTermId: value.paymentTermId || next?.supplierConfig?.paymentTermId || "",
-                // RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — mismo criterio que paymentTermId: si el
-                // usuario ya escribió algo, se preserva; si no, se sugiere el default del
-                // proveedor (solo pre-llenado en el cliente — el backend vuelve a aplicar el
-                // mismo fallback si este campo llega vacío).
+                // RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — mismo criterio: si el usuario ya
+                // escribió algo, se preserva; si no, se sugiere el default del proveedor (solo
+                // pre-llenado en el cliente — el backend vuelve a aplicar el mismo fallback si
+                // este campo llega vacío).
                 taxSupportCode:
                   value.taxSupportCode || next?.supplierConfig?.defaultTaxSupportCode || "",
               });
+              // ADR-033: la condición de pago default de compras/gastos vive en
+              // CompanyBpPurchaseSettings (empresa activa) — SupplierRoleConfig ya no la tiene.
+              if (next && prefillPaymentTerm) {
+                businessPartnerFacade
+                  .getPurchaseSettings(next.id)
+                  .then((settings) => {
+                    if (settings.paymentTermId) {
+                      onChange({ paymentTermId: settings.paymentTermId });
+                    }
+                  })
+                  .catch(() => {});
+              }
             }}
           />
         </ZHField>

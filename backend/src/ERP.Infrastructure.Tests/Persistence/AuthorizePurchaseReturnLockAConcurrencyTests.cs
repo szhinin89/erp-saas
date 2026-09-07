@@ -176,7 +176,6 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             Domain.MasterData.Enums.RoleType.Supplier,
             _userId,
             supplierConfig: SupplierRoleConfig.Create(
-                _paymentTermId,
                 defaultRetentionVatCode: "725A"
             )
         );

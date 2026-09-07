@@ -177,7 +177,6 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             RoleType.Supplier,
             _createdBy,
             supplierConfig: SupplierRoleConfig.Create(
-                paymentTerm.Id,
                 defaultRetentionVatCode: RetentionVatCode,
                 isRetentionExempt: false
             )
@@ -188,7 +187,6 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             RoleType.Supplier,
             _createdBy,
             supplierConfig: SupplierRoleConfig.Create(
-                paymentTerm.Id,
                 defaultRetentionVatCode: RetentionVatCode,
                 isRetentionExempt: true
             )
@@ -199,7 +197,6 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             RoleType.Supplier,
             _createdBy,
             supplierConfig: SupplierRoleConfig.Create(
-                paymentTerm.Id,
                 defaultRetentionVatCode: MissingRetentionVatCode,
                 isRetentionExempt: false
             )

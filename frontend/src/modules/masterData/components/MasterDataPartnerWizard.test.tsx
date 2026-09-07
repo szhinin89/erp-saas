@@ -14,7 +14,6 @@ import {
   getPartnerSearchResultState,
 } from "./MasterDataPartnerWizard";
 import { businessPartnerService } from "../api/businessPartnerService";
-import { paymentTermService } from "../api/paymentTermService";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
 vi.mock("../api/businessPartnerService", () => ({
@@ -34,12 +33,6 @@ vi.mock("../api/useLegalEntityTypes", () => ({
 
 vi.mock("../api/useSriSupplierTypes", () => ({
   useSriSupplierTypes: () => ({ options: [{ code: "01", name: "Bienes" }], loading: false }),
-}));
-
-vi.mock("../api/paymentTermService", () => ({
-  paymentTermService: {
-    list: vi.fn().mockResolvedValue([]),
-  },
 }));
 
 /**
@@ -717,18 +710,6 @@ describe("MasterDataPartnerWizard — guardar conserva payload actual", () => {
   });
 
   it("Guardar proveedor envía el mismo payload de creación (sin campos de revisión nuevos)", async () => {
-    vi.mocked(paymentTermService.list).mockResolvedValue([
-      {
-        id: "pt-1",
-        code: "30D",
-        name: "30 días",
-        installments: 1,
-        daysBetweenInstallments: 30,
-        totalDays: 30,
-        summary: "30 días",
-        isActive: true,
-      },
-    ]);
     const onSubmitCreate = vi.fn().mockResolvedValue(undefined);
     renderWizard({ role: "supplier", onSubmitCreate });
     fireEvent.click(screen.getByRole("button", { name: /Crear nuevo registro/i }));
@@ -741,12 +722,6 @@ describe("MasterDataPartnerWizard — guardar conserva payload actual", () => {
     });
     fireEvent.change(screen.getByLabelText(/Tipo de Proveedor/i), {
       target: { value: "01" },
-    });
-    await waitFor(() =>
-      expect(screen.getByLabelText(/Condición de pago/i).querySelector('option[value="pt-1"]')).toBeTruthy(),
-    );
-    fireEvent.change(screen.getByLabelText(/Condición de pago/i), {
-      target: { value: "pt-1" },
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Crear Proveedor/i }));
@@ -763,7 +738,6 @@ describe("MasterDataPartnerWizard — guardar conserva payload actual", () => {
     });
     expect(supplierConfig).toEqual({
       refundProviderTypeCode: "01",
-      paymentTermId: "pt-1",
     });
   });
 });

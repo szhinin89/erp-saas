@@ -45,7 +45,7 @@ public sealed class UpsertCompanyBpPurchaseSettingsHandlerTests
 
             var role = BusinessPartnerRole.Create(
                 TenantId, SupplierId, RoleType.Supplier, UserId,
-                ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create(ActivePaymentTerm.Id)
+                ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()
             );
             RoleRepo
                 .Setup(r => r.GetByTypeAsync(SupplierId, RoleType.Supplier, It.IsAny<CancellationToken>()))

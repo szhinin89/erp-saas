@@ -85,7 +85,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
     private static Mock<IBusinessPartnerRoleRepository> BuildSupplierRoleRepo()
     {
         var roleRepo = new Mock<IBusinessPartnerRoleRepository>();
-        var config = SupplierRoleConfig.Create(PtId);
+        var config = SupplierRoleConfig.Create();
         var role = BusinessPartnerRole.Create(
             TenantId,
             SupplierId,

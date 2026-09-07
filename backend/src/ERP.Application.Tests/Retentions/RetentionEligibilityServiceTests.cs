@@ -23,7 +23,6 @@ public sealed class RetentionEligibilityServiceTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
-    private static readonly Guid PaymentTermId = Guid.NewGuid();
 
     [Fact]
     public async Task Empresa_sin_WithholdsVat_no_es_elegible_para_IVA_con_razon_clara()
@@ -171,7 +170,6 @@ public sealed class RetentionEligibilityServiceTests
         )
         {
             var config = SupplierRoleConfig.Create(
-                paymentTermId: PaymentTermId,
                 defaultRetentionVatCode: vatCode,
                 defaultRetentionIncomeCode: incomeCode,
                 isRetentionExempt: isExempt,

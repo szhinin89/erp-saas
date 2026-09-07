@@ -97,7 +97,7 @@ export function useMasterDataSuppliersPage() {
 
   const createSupplier = async (
     body: CreateBusinessPartnerBody,
-    supplierConfig?: { refundProviderTypeCode: string; paymentTermId: string },
+    supplierConfig?: { refundProviderTypeCode: string },
   ): Promise<void> => {
     setSaving(true);
     clearModalError();
@@ -107,7 +107,6 @@ export function useMasterDataSuppliersPage() {
         roleType: RoleTypeEnum.Supplier,
         supplierConfig: supplierConfig
           ? {
-              paymentTermId: supplierConfig.paymentTermId,
               refundProviderTypeCode: supplierConfig.refundProviderTypeCode,
             }
           : undefined,

@@ -16,9 +16,6 @@ public sealed class UpdateSupplierRoleConfigValidator
             x => x.Config is not null,
             () =>
             {
-                RuleFor(x => x.Config.PaymentTermId)
-                    .NotEmpty()
-                    .WithMessage("El proveedor debe tener una condición de pago obligatoria.");
                 RuleFor(x => x.Config.DefaultTaxSupportCode)
                     .MaximumLength(SupplierRoleConfig.SriCodeMaxLen)
                     .When(x => x.Config.DefaultTaxSupportCode is not null);

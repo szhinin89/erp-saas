@@ -291,7 +291,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 Supplier.Id,
                 RoleType.Supplier,
                 UserId,
-                SupplierRoleConfig.Create(PaymentTerm.Id)
+                SupplierRoleConfig.Create()
             );
 
             Partners

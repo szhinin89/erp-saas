@@ -10,7 +10,6 @@ const base = {
   tradeName: "",
   countryCode: "EC",
   refundProviderTypeCode: "",
-  paymentTermId: "",
 };
 
 describe("isLegalEntityTypeInferable", () => {

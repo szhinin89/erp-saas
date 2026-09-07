@@ -9,16 +9,12 @@ public sealed class UpdateSupplierRoleConfigHandler
     : IRequestHandler<UpdateSupplierRoleConfigCommand, Result<BusinessPartnerRoleDto>>
 {
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IPaymentTermRepository _ptRepo;
     private readonly IOperationalContext _ctx;
-    private readonly ICurrentTenant _tenant;
 
     public UpdateSupplierRoleConfigHandler(
         IBusinessPartnerRoleRepository roleRepo,
-        IPaymentTermRepository ptRepo,
-        IOperationalContext ctx,
-        ICurrentTenant tenant
-    ) => (_roleRepo, _ptRepo, _ctx, _tenant) = (roleRepo, ptRepo, ctx, tenant);
+        IOperationalContext ctx
+    ) => (_roleRepo, _ctx) = (roleRepo, ctx);
 
     public async Task<Result<BusinessPartnerRoleDto>> Handle(
         UpdateSupplierRoleConfigCommand cmd,
@@ -28,20 +24,6 @@ public sealed class UpdateSupplierRoleConfigHandler
         var role = await _roleRepo.GetByIdAsync(cmd.RoleId, cancellationToken);
         if (role is null)
             return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
-
-        var pt = await _ptRepo.GetByIdAsync(
-            _tenant.TenantId,
-            cmd.Config.PaymentTermId,
-            cancellationToken
-        );
-        if (pt is null)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(
-                "La condición de pago seleccionada no existe."
-            );
-        if (!pt.IsActive)
-            return Result<BusinessPartnerRoleDto>.ValidationFailure(
-                "La condición de pago seleccionada está desactivada."
-            );
 
         try
         {

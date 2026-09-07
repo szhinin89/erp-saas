@@ -68,7 +68,7 @@ public sealed class PurchasePaymentTermActiveGuardTests
             // guard previo al de PaymentTerm — no relacionado con la resolución del default.
             var role = BusinessPartnerRole.Create(
                 TenantId, SupplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, UserId,
-                ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create(DefaultPaymentTerm.Id)
+                ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()
             );
             RoleRepo
                 .Setup(r => r.GetByTypeAsync(SupplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>()))

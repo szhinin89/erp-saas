@@ -63,9 +63,8 @@ const identificationErrorMap: Record<string, string> = {
  *   de los casos — el backend es la autoridad final, este schema solo replica la
  *   obligatoriedad condicional para feedback inmediato (ver isLegalEntityTypeInferable).
  *
- * refundProviderTypeCode / paymentTermId: solo obligatorios cuando role='supplier' — viven en
- * SupplierRoleConfig (backend), que exige PaymentTermId obligatorio por regla de dominio ya
- * existente. Para Customer quedan sin usar (el formulario ni los muestra).
+ * refundProviderTypeCode: solo obligatorio cuando role='supplier' — vive en SupplierRoleConfig
+ * (backend). Para Customer queda sin usar (el formulario ni lo muestra).
  */
 const businessPartnerBaseShape = {
   identificationType: z
@@ -93,7 +92,6 @@ const businessPartnerBaseShape = {
     .optional()
     .or(z.literal("")),
   refundProviderTypeCode: z.string().optional().or(z.literal("")),
-  paymentTermId: z.string().optional().or(z.literal("")),
 };
 
 export function businessPartnerSchema(
@@ -126,13 +124,6 @@ export function businessPartnerSchema(
           code: z.ZodIssueCode.custom,
           path: ["refundProviderTypeCode"],
           message: "El tipo de proveedor es obligatorio.",
-        });
-      }
-      if (!data.paymentTermId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["paymentTermId"],
-          message: "La condición de pago es obligatoria.",
         });
       }
     }
