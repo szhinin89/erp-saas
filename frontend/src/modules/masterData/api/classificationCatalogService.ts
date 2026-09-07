@@ -1,8 +1,8 @@
 /**
- * classificationCatalogService — acceso HTTP a los 12 catálogos persistidos de clasificación de
- * BusinessPartner (CLASS-BP-CATALOGS-01): api/v1/catalog/classifications/*. Reemplazan los 12
- * arrays hardcodeados que vivían en businessPartner.types.ts. Solo lectura (GET) — CRUD
- * administrativo queda fuera de alcance de este bloque.
+ * classificationCatalogService — acceso HTTP a los 6 catálogos persistidos de clasificación de
+ * Customer (CLASS-BP-CATALOGS-01): api/v1/catalog/classifications/*. Reemplazan los arrays
+ * hardcodeados que vivían en businessPartner.types.ts. Solo lectura (GET) — CRUD administrativo
+ * queda fuera de alcance de este bloque.
  */
 
 import { apiGet } from "../../lib/apiEnvelope";
@@ -28,13 +28,4 @@ export const classificationCatalogService = {
     apiGet<ClassificationCatalogItem[]>(`${BASE}/customer-invoice-formats`),
   customerClassifications: () =>
     apiGet<ClassificationCatalogItem[]>(`${BASE}/customer-classifications`),
-  supplierCategories: () =>
-    apiGet<ClassificationCatalogItem[]>(`${BASE}/supplier-categories`),
-  supplierTypes: () => apiGet<ClassificationCatalogItem[]>(`${BASE}/supplier-types`),
-  supplierRisks: () => apiGet<ClassificationCatalogItem[]>(`${BASE}/supplier-risks`),
-  supplierRatings: () => apiGet<ClassificationCatalogItem[]>(`${BASE}/supplier-ratings`),
-  primaryGoodTypes: () =>
-    apiGet<ClassificationCatalogItem[]>(`${BASE}/primary-good-types`),
-  supplierSegments: () =>
-    apiGet<ClassificationCatalogItem[]>(`${BASE}/supplier-segments`),
 };

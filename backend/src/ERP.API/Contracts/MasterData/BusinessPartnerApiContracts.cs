@@ -58,7 +58,6 @@ public sealed class AssignRoleRequest
     /// <summary>Customer=1, Supplier=2, Employee=3, Carrier=4, Broker=5, Agent=6, Distributor=7, Contractor=8</summary>
     public RoleType RoleType { get; set; }
     public SupplierConfigRequest? SupplierConfig { get; set; }
-    public SupplierClassificationRequest? SupplierClassification { get; set; }
     public CarrierConfigRequest? CarrierConfig { get; set; }
     public CustomerConfigRequest? CustomerConfig { get; set; }
 }
@@ -231,31 +230,6 @@ public sealed class UpsertTradingSettingsRequest
 public sealed class UpsertPurchaseSettingsRequest
 {
     public Guid? PaymentTermId { get; set; }
-}
-
-/// <summary>Clasificación estratégica del proveedor (S3-B).</summary>
-public sealed class SupplierClassificationRequest
-{
-    /// <summary>Manufacturer | Distributor | ServiceProvider | Agent | Retailer | Other</summary>
-    public string? SupplierCategory { get; set; }
-
-    /// <summary>National | International | Both</summary>
-    public string? SupplierType { get; set; }
-
-    /// <summary>Low | Medium | High | Critical</summary>
-    public string? SupplierRisk { get; set; }
-
-    /// <summary>AAA | AA | A | BBB | BB | B | C | D | NR</summary>
-    public string? SupplierRating { get; set; }
-
-    /// <summary>Goods | Services | Both | Digital</summary>
-    public string? PrimaryGoodType { get; set; }
-
-    /// <summary>Strategic | Preferred | Approved | Transactional</summary>
-    public string? SupplierSegment { get; set; }
-
-    /// <summary>Texto libre — método de pago operativo interno (distinto del código SRI).</summary>
-    public string? PaymentMethodPreference { get; set; }
 }
 
 /// <summary>Bloquea operativamente al BP en la empresa activa. Requiere motivo.</summary>

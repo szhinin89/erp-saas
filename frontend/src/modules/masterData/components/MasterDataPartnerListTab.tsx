@@ -37,7 +37,6 @@ export interface MasterDataPartnerListTabProps {
   onSettings?: (bp: BusinessPartnerSummaryDto) => void;
   onSupplierProfile?: (bp: BusinessPartnerSummaryDto) => void;
   onCustomerConfig?: (bp: BusinessPartnerSummaryDto) => void;
-  onSupplierClassification?: (bp: BusinessPartnerSummaryDto) => void;
   onAddAsSupplier?: (id: string) => void;
   onAddAsCustomer?: (id: string) => void;
   onActivate: (id: string) => void;
@@ -66,7 +65,6 @@ export function MasterDataPartnerListTab({
   onSettings,
   onSupplierProfile,
   onCustomerConfig,
-  onSupplierClassification,
   onAddAsSupplier,
   onAddAsCustomer,
   onActivate,
@@ -134,11 +132,6 @@ export function MasterDataPartnerListTab({
           )}
           {role === "customer" && canUpdate && onCustomerConfig && (
             <ZHBtn variant="ghost" size="sm" onClick={() => onCustomerConfig(bp)}>
-              {t(`${prefix}.action.classification`, "Clasificación")}
-            </ZHBtn>
-          )}
-          {role === "supplier" && canUpdate && onSupplierClassification && (
-            <ZHBtn variant="ghost" size="sm" onClick={() => onSupplierClassification(bp)}>
               {t(`${prefix}.action.classification`, "Clasificación")}
             </ZHBtn>
           )}

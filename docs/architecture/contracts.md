@@ -221,7 +221,6 @@ Single centralized HTTP client: `frontend/src/modules/lib/api.ts`.
 | POST | `/api/v1/master/business-partners/{bpId}/roles` | Session + update | `AssignRoleRequest` | `BusinessPartnerRoleDto` |
 | DELETE | `/api/v1/master/business-partners/{bpId}/roles/{roleId}` | Session + update | — | `bool` |
 | PATCH | `/api/v1/master/business-partners/{bpId}/roles/{roleId}/supplier-config` | Session + update | `SupplierConfigRequest` | `BusinessPartnerRoleDto` |
-| PATCH | `/api/v1/master/business-partners/{bpId}/roles/{roleId}/supplier-classification` | Session + update | `SupplierClassificationRequest` | `BusinessPartnerRoleDto` |
 | PATCH | `/api/v1/master/business-partners/{bpId}/roles/{roleId}/carrier-config` | Session + update | `CarrierConfigRequest` | `BusinessPartnerRoleDto` |
 | PATCH | `/api/v1/master/business-partners/{bpId}/roles/{roleId}/customer-config` | Session + update | `CustomerConfigRequest` | `BusinessPartnerRoleDto` |
 | PATCH | `/api/v1/master/business-partners/{bpId}/roles/{roleId}/notes` | Session + update | `UpdateRoleNotesRequest` | `bool` |

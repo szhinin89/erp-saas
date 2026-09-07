@@ -101,8 +101,7 @@ public sealed record BusinessPartnerRoleDto(
     DateTime? RevokedAt,
     SupplierRoleConfigDto? SupplierConfig,
     CarrierRoleConfigDto? CarrierConfig,
-    CustomerRoleConfigDto? CustomerConfig,
-    SupplierClassificationConfigDto? ClassificationConfig
+    CustomerRoleConfigDto? CustomerConfig
 )
 {
     public static BusinessPartnerRoleDto From(BusinessPartnerRole role) =>
@@ -120,9 +119,6 @@ public sealed record BusinessPartnerRoleDto(
             role.CarrierConfig is not null ? CarrierRoleConfigDto.From(role.CarrierConfig) : null,
             role.CustomerConfig is not null
                 ? CustomerRoleConfigDto.From(role.CustomerConfig)
-                : null,
-            role.ClassificationConfig is not null
-                ? SupplierClassificationConfigDto.From(role.ClassificationConfig)
                 : null
         );
 }
@@ -144,28 +140,6 @@ public sealed record SupplierRoleConfigDto(
             c.DefaultPaymentMethodCode,
             c.RefundProviderTypeCode,
             c.IsRetentionExempt
-        );
-}
-
-public sealed record SupplierClassificationConfigDto(
-    string? SupplierCategory,
-    string? SupplierType,
-    string? SupplierRisk,
-    string? SupplierRating,
-    string? PrimaryGoodType,
-    string? SupplierSegment,
-    string? PaymentMethodPreference
-)
-{
-    public static SupplierClassificationConfigDto From(SupplierClassificationConfig c) =>
-        new(
-            c.SupplierCategory,
-            c.SupplierType,
-            c.SupplierRisk,
-            c.SupplierRating,
-            c.PrimaryGoodType,
-            c.SupplierSegment,
-            c.PaymentMethodPreference
         );
 }
 

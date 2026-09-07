@@ -10,7 +10,7 @@ namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 ///
 /// DISEÑO DE TABLAS:
 ///   master_bp_roles           — rol base con audit + notas
-///   master_bp_supplier_configs — config específica Supplier (OwnsOne split table, 1:1)
+///   master_bp_supplier_configs — config SRI operativa Supplier (OwnsOne split table, 1:1)
 ///   master_bp_carrier_configs  — config específica Carrier  (OwnsOne split table, 1:1)
 ///
 ///   Si el rol no tiene config del tipo, no existe fila en la tabla config. ADR-BP-11.
@@ -118,45 +118,6 @@ public sealed class BusinessPartnerRoleConfiguration : IEntityTypeConfiguration<
                     .HasColumnName("is_required_to_keep_accounting")
                     .IsRequired()
                     .HasDefaultValue(false);
-            }
-        );
-
-        // ── SupplierClassificationConfig — tabla separada (1:1, PK = FK al rol) ─
-        builder.OwnsOne(
-            r => r.ClassificationConfig,
-            scc =>
-            {
-                scc.ToTable("master_bp_supplier_classification_configs");
-
-                scc.WithOwner().HasForeignKey("role_id").HasConstraintName("fk_bpscc_role");
-
-                scc.Property(c => c.SupplierCategory)
-                    .HasColumnName("supplier_category")
-                    .HasMaxLength(SupplierClassificationConfig.CategoryMaxLen);
-
-                scc.Property(c => c.SupplierType)
-                    .HasColumnName("supplier_type")
-                    .HasMaxLength(SupplierClassificationConfig.TypeMaxLen);
-
-                scc.Property(c => c.SupplierRisk)
-                    .HasColumnName("supplier_risk")
-                    .HasMaxLength(SupplierClassificationConfig.RiskMaxLen);
-
-                scc.Property(c => c.SupplierRating)
-                    .HasColumnName("supplier_rating")
-                    .HasMaxLength(SupplierClassificationConfig.RatingMaxLen);
-
-                scc.Property(c => c.PrimaryGoodType)
-                    .HasColumnName("primary_good_type")
-                    .HasMaxLength(SupplierClassificationConfig.GoodTypeMaxLen);
-
-                scc.Property(c => c.SupplierSegment)
-                    .HasColumnName("supplier_segment")
-                    .HasMaxLength(SupplierClassificationConfig.SegmentMaxLen);
-
-                scc.Property(c => c.PaymentMethodPreference)
-                    .HasColumnName("payment_method_preference")
-                    .HasMaxLength(SupplierClassificationConfig.PaymentPrefMaxLen);
             }
         );
 

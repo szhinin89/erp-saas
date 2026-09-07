@@ -8,7 +8,6 @@ import type {
   BusinessPartnerSummaryDto,
   CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
-  SupplierClassificationBody,
   SupplierConfigBody,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
@@ -45,10 +44,6 @@ export function useMasterDataSuppliersPage() {
     useState<CompanyBpTradingSettingsDto | null>(null);
   // supplierProfileBp: store the bp + roleId for updating supplier config
   const [supplierConfigBp, setSupplierConfigBp] = useState<{
-    bp: BusinessPartnerSummaryDto;
-    roleId: string;
-  } | null>(null);
-  const [supplierClassificationBp, setSupplierClassificationBp] = useState<{
     bp: BusinessPartnerSummaryDto;
     roleId: string;
   } | null>(null);
@@ -176,10 +171,6 @@ export function useMasterDataSuppliersPage() {
     setSupplierConfigBp(null);
     clearModalError();
   }, []);
-  const closeSupplierClassification = useCallback(() => {
-    setSupplierClassificationBp(null);
-    clearModalError();
-  }, []);
 
   const saveSupplierConfig = async (
     bpId: string,
@@ -204,44 +195,6 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
-  const openSupplierClassification = async (bp: BusinessPartnerSummaryDto) => {
-    clearModalError();
-    try {
-      const roles = await businessPartnerFacade.getRoles(bp.id, true);
-      const supplierRole = roles.find((r) => r.roleType === "Supplier");
-      if (supplierRole)
-        setSupplierClassificationBp({ bp, roleId: supplierRole.id });
-    } catch {
-      /* no action */
-    }
-  };
-
-  const saveSupplierClassification = async (
-    bpId: string,
-    roleId: string,
-    config: SupplierClassificationBody,
-  ): Promise<boolean> => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.updateSupplierClassification(
-        bpId,
-        roleId,
-        config,
-      );
-      setSupplierClassificationBp(null);
-      return true;
-    } catch (err) {
-      setModalError(
-        formatApiRequestError(err, {
-          generic: "Error al procesar la operación.",
-        }),
-      );
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // ── Inline actions ─────────────────────────────────────────────────────────
 
@@ -415,10 +368,6 @@ export function useMasterDataSuppliersPage() {
     openSupplierConfig,
     closeSupplierConfig,
     saveSupplierConfig,
-    supplierClassificationBp,
-    openSupplierClassification,
-    closeSupplierClassification,
-    saveSupplierClassification,
     settingsBp,
     settingsData,
     openSettings,

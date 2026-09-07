@@ -1,7 +1,7 @@
 /**
- * classificationCatalogFacade — superficie pública read-only de los 12 catálogos de clasificación
- * de BusinessPartner (CLASS-BP-CATALOGS-01) para consumidores externos (formularios de cliente y
- * proveedor en MasterDataCustomersPage / MasterDataSuppliersPage).
+ * classificationCatalogFacade — superficie pública read-only de los 6 catálogos de clasificación
+ * de Customer (CLASS-BP-CATALOGS-01) para consumidores externos (formulario de cliente en
+ * MasterDataCustomersPage).
  *
  * Expone únicamente los lookups GET de classificationCatalogService; no hay mutación porque el
  * CRUD administrativo de estos catálogos queda fuera de alcance de este bloque (bloque futuro).
@@ -20,10 +20,4 @@ export const classificationCatalogFacade = {
   loyaltyTiers: classificationCatalogService.loyaltyTiers,
   customerInvoiceFormats: classificationCatalogService.customerInvoiceFormats,
   customerClassifications: classificationCatalogService.customerClassifications,
-  supplierCategories: classificationCatalogService.supplierCategories,
-  supplierTypes: classificationCatalogService.supplierTypes,
-  supplierRisks: classificationCatalogService.supplierRisks,
-  supplierRatings: classificationCatalogService.supplierRatings,
-  primaryGoodTypes: classificationCatalogService.primaryGoodTypes,
-  supplierSegments: classificationCatalogService.supplierSegments,
 };

@@ -106,34 +106,12 @@ public sealed class BusinessPartnerRolesController : ControllerBase
             )
             : null;
 
-        SupplierClassificationConfig? classificationConfig = null;
-        if (body.SupplierClassification is not null)
-        {
-            try
-            {
-                classificationConfig = SupplierClassificationConfig.Create(
-                    body.SupplierClassification.SupplierCategory,
-                    body.SupplierClassification.SupplierType,
-                    body.SupplierClassification.SupplierRisk,
-                    body.SupplierClassification.SupplierRating,
-                    body.SupplierClassification.PrimaryGoodType,
-                    body.SupplierClassification.SupplierSegment,
-                    body.SupplierClassification.PaymentMethodPreference
-                );
-            }
-            catch (ArgumentException ex)
-            {
-                return this.ApiBadRequest(ex.Message);
-            }
-        }
-
         var cmd = new AssignBusinessPartnerRoleCommand(
             bpId,
             body.RoleType,
             supplierConfig,
             carrierConfig,
-            customerConfig,
-            classificationConfig
+            customerConfig
         );
 
         var result = await _mediator.Send(cmd, cancellationToken);
@@ -197,48 +175,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
 
         var result = await _mediator.Send(
             new UpdateSupplierRoleConfigCommand(roleId, config),
-            cancellationToken
-        );
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>
-    /// Actualiza la clasificación estratégica del rol Supplier.
-    /// Categoría, tipo, riesgo, rating, tipo de bien, segmento, preferencia de pago operativo.
-    /// Solo aplica a roles con RoleType = Supplier.
-    /// </summary>
-    [HttpPatch("{roleId:guid}/supplier-classification")]
-    [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
-    [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdateSupplierClassification(
-        [FromRoute] Guid bpId,
-        [FromRoute] Guid roleId,
-        [FromBody] SupplierClassificationRequest body,
-        CancellationToken cancellationToken = default
-    )
-    {
-        _ = bpId;
-        SupplierClassificationConfig config;
-        try
-        {
-            config = SupplierClassificationConfig.Create(
-                body.SupplierCategory,
-                body.SupplierType,
-                body.SupplierRisk,
-                body.SupplierRating,
-                body.PrimaryGoodType,
-                body.SupplierSegment,
-                body.PaymentMethodPreference
-            );
-        }
-        catch (ArgumentException ex)
-        {
-            return this.ApiBadRequest(ex.Message);
-        }
-
-        var result = await _mediator.Send(
-            new UpdateSupplierClassificationConfigCommand(roleId, config),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

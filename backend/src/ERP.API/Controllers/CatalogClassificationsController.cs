@@ -7,12 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Lectura de los 12 catálogos de clasificación de BusinessPartner (CLASS-BP-CATALOGS-01):
-/// categorías/segmentos/ratings de cliente y proveedor, loyalty tier, formato de factura
-/// preferido, clasificación tributaria/comercial, tipo de proveedor, riesgo, tipo de bien
-/// principal. Reemplazan los 12 arrays hardcodeados del frontend y los HashSet fijos de
-/// <c>CustomerRoleConfig</c>/<c>SupplierClassificationConfig</c>. Solo GET — CRUD administrativo
-/// queda fuera de alcance de este bloque (bloque futuro).
+/// Lectura de los 6 catálogos de clasificación de Customer (CLASS-BP-CATALOGS-01):
+/// categoría, segmento, rating de crédito, loyalty tier, formato de factura preferido y
+/// clasificación tributaria/comercial. Reemplazan los arrays hardcodeados del frontend y los
+/// HashSet fijos de <c>CustomerRoleConfig</c>. Solo GET — CRUD administrativo queda fuera de
+/// alcance de este bloque (bloque futuro).
 /// </summary>
 [ApiController]
 [Route("api/v1/catalog/classifications")]
@@ -50,28 +49,4 @@ public sealed class CatalogClassificationsController : ControllerBase
     [HttpGet("customer-classifications")]
     public async Task<IActionResult> GetCustomerClassifications(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetActiveCustomerClassificationsQuery(), ct));
-
-    [HttpGet("supplier-categories")]
-    public async Task<IActionResult> GetSupplierCategories(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActiveSupplierCategoriesQuery(), ct));
-
-    [HttpGet("supplier-types")]
-    public async Task<IActionResult> GetSupplierTypes(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActiveSupplierTypesQuery(), ct));
-
-    [HttpGet("supplier-risks")]
-    public async Task<IActionResult> GetSupplierRisks(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActiveSupplierRisksQuery(), ct));
-
-    [HttpGet("supplier-ratings")]
-    public async Task<IActionResult> GetSupplierRatings(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActiveSupplierRatingsQuery(), ct));
-
-    [HttpGet("primary-good-types")]
-    public async Task<IActionResult> GetPrimaryGoodTypes(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActivePrimaryGoodTypesQuery(), ct));
-
-    [HttpGet("supplier-segments")]
-    public async Task<IActionResult> GetSupplierSegments(CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetActiveSupplierSegmentsQuery(), ct));
 }

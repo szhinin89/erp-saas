@@ -140,7 +140,7 @@ public sealed class CreateSalesDraftValidator : AbstractValidator<CreateSalesDra
     /// <c>DocumentSequence</c>, que sí referencia <c>SriDocType</c>) — sin esta regla, un cliente
     /// podía enviar cualquier string de hasta 5 caracteres y quedaba guardado sin validar contra el
     /// catálogo fiscal real. Mismo patrón <c>MustAsync</c> que
-    /// <c>UpdateSupplierClassificationConfigValidator</c> (CLASS-BP-CATALOGS-01).
+    /// <c>UpdateCustomerRoleConfigValidator</c> (CLASS-BP-CATALOGS-01).
     /// </summary>
     public CreateSalesDraftValidator(ISriDocTypeCatalogResolver docTypeCatalogResolver)
     {

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding;
 
 /// <summary>
-/// Lógica idempotente única de siembra de los 12 catálogos de clasificación de BusinessPartner
+/// Lógica idempotente única de siembra de los 6 catálogos de clasificación de Customer
 /// (CLASS-BP-CATALOGS-01). Reutilizada por dos consumidores distintos que NUNCA deben duplicar
 /// esta lógica (ver plan CLASS-BP-CATALOGS-01):
 ///   1. <see cref="Steps.MasterDataClassificationBootstrapStep"/> — corre en la creación de cada
@@ -18,9 +18,9 @@ namespace ERP.Infrastructure.Seeding;
 ///      duplicar filas.
 ///
 /// Los códigos sembrados son exactamente los que hoy validan los HashSet fijos
-/// <c>CustomerRoleConfig.ValidX</c> / <c>SupplierClassificationConfig.ValidX</c> (y, para
-/// CustomerClassification, el array <c>CUSTOMER_CLASSIFICATIONS</c> del frontend) — no se pierde
-/// ni se renombra ningún valor ya usado en producción.
+/// <c>CustomerRoleConfig.ValidX</c> (y, para CustomerClassification, el array
+/// <c>CUSTOMER_CLASSIFICATIONS</c> del frontend) — no se pierde ni se renombra ningún valor ya
+/// usado en producción.
 /// </summary>
 public sealed class MasterDataClassificationSeeder
 {
@@ -97,63 +97,9 @@ public sealed class MasterDataClassificationSeeder
         ("Especial", "Especial", 5),
     ];
 
-    private static readonly (string Code, string Name, int Sort)[] SupplierCategorySeed =
-    [
-        ("Manufacturer", "Fabricante", 1),
-        ("Distributor", "Distribuidor", 2),
-        ("ServiceProvider", "Proveedor de servicios", 3),
-        ("Agent", "Agente", 4),
-        ("Retailer", "Minorista", 5),
-        ("Other", "Otro", 6),
-    ];
-
-    private static readonly (string Code, string Name, int Sort)[] SupplierTypeSeed =
-    [
-        ("National", "Nacional", 1),
-        ("International", "Internacional", 2),
-        ("Both", "Ambos", 3),
-    ];
-
-    private static readonly (string Code, string Name, int Sort)[] SupplierRiskSeed =
-    [
-        ("Low", "Bajo", 1),
-        ("Medium", "Medio", 2),
-        ("High", "Alto", 3),
-        ("Critical", "Crítico", 4),
-    ];
-
-    private static readonly (string Code, string Name, int Sort)[] SupplierRatingSeed =
-    [
-        ("AAA", "AAA (Excelente)", 1),
-        ("AA", "AA (Muy bueno)", 2),
-        ("A", "A (Bueno)", 3),
-        ("BBB", "BBB (Aceptable)", 4),
-        ("BB", "BB (Regular)", 5),
-        ("B", "B (Bajo)", 6),
-        ("C", "C (Riesgo alto)", 7),
-        ("D", "D (Riesgo crítico)", 8),
-        ("NR", "NR (No calificado)", 9),
-    ];
-
-    private static readonly (string Code, string Name, int Sort)[] PrimaryGoodTypeSeed =
-    [
-        ("Goods", "Bienes", 1),
-        ("Services", "Servicios", 2),
-        ("Both", "Ambos", 3),
-        ("Digital", "Digital", 4),
-    ];
-
-    private static readonly (string Code, string Name, int Sort)[] SupplierSegmentSeed =
-    [
-        ("Strategic", "Estratégico", 1),
-        ("Preferred", "Preferido", 2),
-        ("Approved", "Aprobado", 3),
-        ("Transactional", "Transaccional", 4),
-    ];
-
     /// <summary>
-    /// Siembra los 12 catálogos para (tenantId, companyId) — idempotente: solo inserta los
-    /// códigos que aún no existen para esa empresa. Devuelve el total de filas insertadas
+    /// Siembra los 6 catálogos de Customer para (tenantId, companyId) — idempotente: solo inserta
+    /// los códigos que aún no existen para esa empresa. Devuelve el total de filas insertadas
     /// (0 en una segunda corrida, salvo que se hayan agregado catálogos nuevos).
     /// </summary>
     public async Task<int> SeedAsync(
@@ -219,61 +165,6 @@ public sealed class MasterDataClassificationSeeder
             CustomerClassification.CreateSystemSeeded,
             ct
         );
-        added += await SeedOneAsync(
-            _db.SupplierCategories,
-            tenantId,
-            companyId,
-            actorId,
-            SupplierCategorySeed,
-            SupplierCategory.CreateSystemSeeded,
-            ct
-        );
-        added += await SeedOneAsync(
-            _db.SupplierTypes,
-            tenantId,
-            companyId,
-            actorId,
-            SupplierTypeSeed,
-            SupplierType.CreateSystemSeeded,
-            ct
-        );
-        added += await SeedOneAsync(
-            _db.SupplierRisks,
-            tenantId,
-            companyId,
-            actorId,
-            SupplierRiskSeed,
-            SupplierRisk.CreateSystemSeeded,
-            ct
-        );
-        added += await SeedOneAsync(
-            _db.SupplierRatings,
-            tenantId,
-            companyId,
-            actorId,
-            SupplierRatingSeed,
-            SupplierRating.CreateSystemSeeded,
-            ct
-        );
-        added += await SeedOneAsync(
-            _db.PrimaryGoodTypes,
-            tenantId,
-            companyId,
-            actorId,
-            PrimaryGoodTypeSeed,
-            PrimaryGoodType.CreateSystemSeeded,
-            ct
-        );
-        added += await SeedOneAsync(
-            _db.SupplierSegments,
-            tenantId,
-            companyId,
-            actorId,
-            SupplierSegmentSeed,
-            SupplierSegment.CreateSystemSeeded,
-            ct
-        );
-
         if (added > 0)
             _logger.LogInformation(
                 "MasterDataClassifications: {Added} fila(s) sembrada(s) para tenant {TenantId}, empresa {CompanyId}.",

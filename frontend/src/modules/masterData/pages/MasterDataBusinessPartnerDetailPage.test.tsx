@@ -87,7 +87,6 @@ const BP = {
       supplierConfig: null,
       carrierConfig: null,
       customerConfig: null,
-      classificationConfig: null,
     },
   ],
 };

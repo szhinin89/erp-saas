@@ -185,11 +185,7 @@ public sealed class SupplierImportProcessor : IImportProcessor
             Get(rawRow, SupplierImportColumns.CountryCode),
             email,
             phone,
-            paymentTermId,
-            Get(rawRow, SupplierImportColumns.SupplierCategory),
-            Get(rawRow, SupplierImportColumns.SupplierType),
-            Get(rawRow, SupplierImportColumns.PrimaryGoodType),
-            Get(rawRow, SupplierImportColumns.SupplierSegment)
+            paymentTermId
         );
 
         var hasBlockingIssue = issues.Any(i => i.Severity == ImportSeverity.Error);
@@ -220,13 +216,7 @@ public sealed class SupplierImportProcessor : IImportProcessor
             new AssignBusinessPartnerRoleCommand(
                 businessPartnerId,
                 RoleType.Supplier,
-                SupplierConfig: SupplierRoleConfig.Create(),
-                ClassificationConfig: SupplierClassificationConfig.Create(
-                    parsed.SupplierCategory,
-                    parsed.SupplierType,
-                    primaryGoodType: parsed.PrimaryGoodType,
-                    supplierSegment: parsed.SupplierSegment
-                )
+                SupplierConfig: SupplierRoleConfig.Create()
             ),
             ct
         );

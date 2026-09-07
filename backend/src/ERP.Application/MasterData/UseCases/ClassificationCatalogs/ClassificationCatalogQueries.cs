@@ -8,7 +8,7 @@ using MediatR;
 namespace ERP.Application.MasterData.UseCases.ClassificationCatalogs;
 
 // ══════════════════════════════════════════════════════════════════════════
-// QUERIES — 12 catálogos de clasificación de BusinessPartner (CLASS-BP-CATALOGS-01).
+// QUERIES — 6 catálogos de clasificación de Customer (CLASS-BP-CATALOGS-01).
 // Solo lectura (GET) — CRUD administrativo queda fuera de alcance de este bloque.
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -33,30 +33,6 @@ public sealed record GetActiveCustomerInvoiceFormatsQuery
         ICompanyScopedRequest;
 
 public sealed record GetActiveCustomerClassificationsQuery
-    : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
-        ICompanyScopedRequest;
-
-public sealed record GetActiveSupplierCategoriesQuery
-    : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
-        ICompanyScopedRequest;
-
-public sealed record GetActiveSupplierTypesQuery
-    : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
-        ICompanyScopedRequest;
-
-public sealed record GetActiveSupplierRisksQuery
-    : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
-        ICompanyScopedRequest;
-
-public sealed record GetActiveSupplierRatingsQuery
-    : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
-        ICompanyScopedRequest;
-
-public sealed record GetActivePrimaryGoodTypesQuery
-    : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
-        ICompanyScopedRequest;
-
-public sealed record GetActiveSupplierSegmentsQuery
     : IRequest<Result<IReadOnlyList<ClassificationCatalogItemDto>>>,
         ICompanyScopedRequest;
 
@@ -207,120 +183,6 @@ public sealed class GetActiveCustomerClassificationsQueryHandler
 
     public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
         GetActiveCustomerClassificationsQuery request,
-        CancellationToken ct
-    ) => HandleAsync(_repo.GetActiveAsync, ct);
-}
-
-public sealed class GetActiveSupplierCategoriesQueryHandler
-    : GetActiveClassificationCatalogQueryHandlerBase<SupplierCategory>,
-        IRequestHandler<GetActiveSupplierCategoriesQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
-{
-    private readonly ISupplierCategoryRepository _repo;
-
-    public GetActiveSupplierCategoriesQueryHandler(
-        ISupplierCategoryRepository repo,
-        ICurrentTenant tenant,
-        ICurrentCompany company
-    )
-        : base(tenant, company) => _repo = repo;
-
-    public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
-        GetActiveSupplierCategoriesQuery request,
-        CancellationToken ct
-    ) => HandleAsync(_repo.GetActiveAsync, ct);
-}
-
-public sealed class GetActiveSupplierTypesQueryHandler
-    : GetActiveClassificationCatalogQueryHandlerBase<SupplierType>,
-        IRequestHandler<GetActiveSupplierTypesQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
-{
-    private readonly ISupplierTypeRepository _repo;
-
-    public GetActiveSupplierTypesQueryHandler(
-        ISupplierTypeRepository repo,
-        ICurrentTenant tenant,
-        ICurrentCompany company
-    )
-        : base(tenant, company) => _repo = repo;
-
-    public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
-        GetActiveSupplierTypesQuery request,
-        CancellationToken ct
-    ) => HandleAsync(_repo.GetActiveAsync, ct);
-}
-
-public sealed class GetActiveSupplierRisksQueryHandler
-    : GetActiveClassificationCatalogQueryHandlerBase<SupplierRisk>,
-        IRequestHandler<GetActiveSupplierRisksQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
-{
-    private readonly ISupplierRiskRepository _repo;
-
-    public GetActiveSupplierRisksQueryHandler(
-        ISupplierRiskRepository repo,
-        ICurrentTenant tenant,
-        ICurrentCompany company
-    )
-        : base(tenant, company) => _repo = repo;
-
-    public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
-        GetActiveSupplierRisksQuery request,
-        CancellationToken ct
-    ) => HandleAsync(_repo.GetActiveAsync, ct);
-}
-
-public sealed class GetActiveSupplierRatingsQueryHandler
-    : GetActiveClassificationCatalogQueryHandlerBase<SupplierRating>,
-        IRequestHandler<GetActiveSupplierRatingsQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
-{
-    private readonly ISupplierRatingRepository _repo;
-
-    public GetActiveSupplierRatingsQueryHandler(
-        ISupplierRatingRepository repo,
-        ICurrentTenant tenant,
-        ICurrentCompany company
-    )
-        : base(tenant, company) => _repo = repo;
-
-    public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
-        GetActiveSupplierRatingsQuery request,
-        CancellationToken ct
-    ) => HandleAsync(_repo.GetActiveAsync, ct);
-}
-
-public sealed class GetActivePrimaryGoodTypesQueryHandler
-    : GetActiveClassificationCatalogQueryHandlerBase<PrimaryGoodType>,
-        IRequestHandler<GetActivePrimaryGoodTypesQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
-{
-    private readonly IPrimaryGoodTypeRepository _repo;
-
-    public GetActivePrimaryGoodTypesQueryHandler(
-        IPrimaryGoodTypeRepository repo,
-        ICurrentTenant tenant,
-        ICurrentCompany company
-    )
-        : base(tenant, company) => _repo = repo;
-
-    public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
-        GetActivePrimaryGoodTypesQuery request,
-        CancellationToken ct
-    ) => HandleAsync(_repo.GetActiveAsync, ct);
-}
-
-public sealed class GetActiveSupplierSegmentsQueryHandler
-    : GetActiveClassificationCatalogQueryHandlerBase<SupplierSegment>,
-        IRequestHandler<GetActiveSupplierSegmentsQuery, Result<IReadOnlyList<ClassificationCatalogItemDto>>>
-{
-    private readonly ISupplierSegmentRepository _repo;
-
-    public GetActiveSupplierSegmentsQueryHandler(
-        ISupplierSegmentRepository repo,
-        ICurrentTenant tenant,
-        ICurrentCompany company
-    )
-        : base(tenant, company) => _repo = repo;
-
-    public Task<Result<IReadOnlyList<ClassificationCatalogItemDto>>> Handle(
-        GetActiveSupplierSegmentsQuery request,
         CancellationToken ct
     ) => HandleAsync(_repo.GetActiveAsync, ct);
 }

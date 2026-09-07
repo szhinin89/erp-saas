@@ -107,8 +107,7 @@ public sealed class AssignBusinessPartnerRoleHandler
                     _ctx.UserId,
                     cmd.SupplierConfig,
                     cmd.CarrierConfig,
-                    cmd.CustomerConfig,
-                    cmd.ClassificationConfig
+                    cmd.CustomerConfig
                 );
             }
             catch (ArgumentException ex)

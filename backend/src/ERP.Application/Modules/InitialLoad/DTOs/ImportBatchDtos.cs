@@ -123,11 +123,7 @@ public sealed record ParsedSupplierRow(
     string? CountryCode,
     string? Email,
     string? Phone,
-    Guid PaymentTermId,
-    string? SupplierCategory,
-    string? SupplierType,
-    string? PrimaryGoodType,
-    string? SupplierSegment
+    Guid PaymentTermId
 );
 
 /// <summary>

@@ -1835,7 +1835,6 @@
   "masterdata.suppliers.legacyMissing": "No link",
   "masterdata.suppliers.action.sri": "SRI",
   "masterdata.suppliers.action.company": "Company",
-  "masterdata.suppliers.action.classification": "Classification",
   "masterdata.suppliers.action.addCustomer": "Also add as customer",
   "masterdata.suppliers.action.addCustomerShort": "+ Customer",
   "masterdata.suppliers.action.activate": "Activate supplier",

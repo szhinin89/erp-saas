@@ -10,7 +10,6 @@ import {
   ZHFormActions,
 } from "../../../components/zh/ZHForm";
 import { ZHModal } from "../../../components/zh/ZHModal";
-import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataSuppliersPage } from "./useMasterDataSuppliersPage";
 import { MasterDataCompanySettingsModal } from "./MasterDataCompanySettingsModal";
@@ -22,18 +21,9 @@ import { message } from "../../../lib/messages";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
   CreateBusinessPartnerBody,
-  SupplierClassificationBody,
   SupplierConfigBody,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
-import {
-  usePrimaryGoodTypes,
-  useSupplierCategories,
-  useSupplierRatings,
-  useSupplierRisks,
-  useSupplierSegments,
-  useSupplierTypes,
-} from "../api/useClassificationCatalogs";
 import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
@@ -322,185 +312,6 @@ function SupplierConfigModal({
   );
 }
 
-// ── SupplierClassificationModal — Clasificación estratégica (S3-B) ───────────
-function SupplierClassificationModal({
-  bpName,
-  saving,
-  error,
-  onClose,
-  onSave,
-}: {
-  bpName: string;
-  saving: boolean;
-  error?: string | null;
-  onClose: () => void;
-  onSave: (body: SupplierClassificationBody) => void;
-}) {
-  const [category, setCategory] = useState("");
-  const [type, setType] = useState("");
-  const [risk, setRisk] = useState("");
-  const [rating, setRating] = useState("");
-  const [goodType, setGoodType] = useState("");
-  const [segment, setSegment] = useState("");
-  const [paymentPref, setPaymentPref] = useState("");
-
-  const categories = useSupplierCategories();
-  const types = useSupplierTypes();
-  const risks = useSupplierRisks();
-  const ratings = useSupplierRatings();
-  const goodTypes = usePrimaryGoodTypes();
-  const segments = useSupplierSegments();
-  const catalogsError =
-    categories.error ||
-    types.error ||
-    risks.error ||
-    ratings.error ||
-    goodTypes.error ||
-    segments.error;
-
-  return (
-    <ZHModal
-      open
-      onClose={onClose}
-      title="Clasificación — Proveedor"
-      subtitle={bpName}
-      closeOnBackdrop={false}
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSave({
-            supplierCategory: category || null,
-            supplierType: type || null,
-            supplierRisk: risk || null,
-            supplierRating: rating || null,
-            primaryGoodType: goodType || null,
-            supplierSegment: segment || null,
-            paymentMethodPreference: paymentPref || null,
-          });
-        }}
-      >
-        {error && <ZHPageNotice variant="error" message={error} />}
-        {catalogsError && <ZHPageNotice variant="error" message={catalogsError} />}
-        <ZHGrid cols={2}>
-          <ZHField label="Categoría">
-            <ZhSelect
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              disabled={saving || categories.loading}
-            >
-              <option value="">
-                {categories.loading ? "Cargando…" : "— Sin asignar —"}
-              </option>
-              {categories.options.map((v) => (
-                <option key={v.id} value={v.code}>
-                  {v.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Tipo">
-            <ZhSelect
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              disabled={saving || types.loading}
-            >
-              <option value="">{types.loading ? "Cargando…" : "— Sin asignar —"}</option>
-              {types.options.map((v) => (
-                <option key={v.id} value={v.code}>
-                  {v.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Riesgo">
-            <ZhSelect
-              value={risk}
-              onChange={(e) => setRisk(e.target.value)}
-              disabled={saving || risks.loading}
-            >
-              <option value="">{risks.loading ? "Cargando…" : "— Sin asignar —"}</option>
-              {risks.options.map((v) => (
-                <option key={v.id} value={v.code}>
-                  {v.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Rating">
-            <ZhSelect
-              value={rating}
-              onChange={(e) => setRating(e.target.value)}
-              disabled={saving || ratings.loading}
-            >
-              <option value="">
-                {ratings.loading ? "Cargando…" : "— Sin calificar —"}
-              </option>
-              {ratings.options.map((v) => (
-                <option key={v.id} value={v.code}>
-                  {v.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Tipo de bien">
-            <ZhSelect
-              value={goodType}
-              onChange={(e) => setGoodType(e.target.value)}
-              disabled={saving || goodTypes.loading}
-            >
-              <option value="">
-                {goodTypes.loading ? "Cargando…" : "— Sin asignar —"}
-              </option>
-              {goodTypes.options.map((v) => (
-                <option key={v.id} value={v.code}>
-                  {v.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Segmento estratégico">
-            <ZhSelect
-              value={segment}
-              onChange={(e) => setSegment(e.target.value)}
-              disabled={saving || segments.loading}
-            >
-              <option value="">
-                {segments.loading ? "Cargando…" : "— Sin asignar —"}
-              </option>
-              {segments.options.map((v) => (
-                <option key={v.id} value={v.code}>
-                  {v.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Método de pago interno">
-            <ZhTextInput
-              className="zh-input"
-              value={paymentPref}
-              onChange={(e) => setPaymentPref(e.target.value)}
-              disabled={saving}
-              placeholder="Ej: Transferencia bancaria"
-              maxLength={100}
-            />
-          </ZHField>
-        </ZHGrid>
-        <ZHFormActions
-          onCancel={onClose}
-          hideDraft
-          saveButtonType="submit"
-          disableSave={saving}
-          labels={{
-            cancel: "Cerrar",
-            save: saving ? "Guardando..." : "Guardar",
-          }}
-        />
-      </form>
-    </ZHModal>
-  );
-}
-
 export function MasterDataSuppliersPage() {
   const { t } = useI18n();
   const page = useMasterDataSuppliersPage();
@@ -699,11 +510,6 @@ export function MasterDataSuppliersPage() {
             searchInputRef={searchRef}
             onSettings={(bp) => void page.openSettings(bp)}
             onSupplierProfile={(bp) => void page.openSupplierConfig(bp)}
-            onSupplierClassification={
-              page.canUpdate
-                ? (bp) => void page.openSupplierClassification(bp)
-                : undefined
-            }
             onAddAsCustomer={(id) => void page.addAsCustomer(id)}
             onActivate={handleActivate}
             onDisable={handleDisable}
@@ -750,22 +556,6 @@ export function MasterDataSuppliersPage() {
             void page.saveSupplierConfig(
               page.supplierConfigBp!.bp.id,
               page.supplierConfigBp!.roleId,
-              body,
-            )
-          }
-        />
-      )}
-
-      {page.supplierClassificationBp && (
-        <SupplierClassificationModal
-          bpName={page.supplierClassificationBp.bp.legalName}
-          saving={page.saving}
-          error={page.modalError}
-          onClose={page.closeSupplierClassification}
-          onSave={(body) =>
-            void page.saveSupplierClassification(
-              page.supplierClassificationBp!.bp.id,
-              page.supplierClassificationBp!.roleId,
               body,
             )
           }

@@ -167,12 +167,6 @@ public static class DependencyInjection
             ICustomerClassificationRepository,
             CustomerClassificationRepository
         >();
-        services.AddScoped<ISupplierCategoryRepository, SupplierCategoryRepository>();
-        services.AddScoped<ISupplierTypeRepository, SupplierTypeRepository>();
-        services.AddScoped<ISupplierRiskRepository, SupplierRiskRepository>();
-        services.AddScoped<ISupplierRatingRepository, SupplierRatingRepository>();
-        services.AddScoped<IPrimaryGoodTypeRepository, PrimaryGoodTypeRepository>();
-        services.AddScoped<ISupplierSegmentRepository, SupplierSegmentRepository>();
         services.AddScoped<
             ICompanyBpTradingSettingsRepository,
             CompanyBpTradingSettingsRepository

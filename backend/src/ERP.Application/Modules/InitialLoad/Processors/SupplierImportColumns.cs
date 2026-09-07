@@ -22,10 +22,6 @@ public static class SupplierImportColumns
     public const string Email = "Email";
     public const string Phone = "Teléfono";
     public const string PaymentTermCode = "Condición de Pago";
-    public const string SupplierCategory = "Categoría";
-    public const string SupplierType = "Tipo";
-    public const string PrimaryGoodType = "Bien Principal";
-    public const string SupplierSegment = "Segmento";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -37,9 +33,5 @@ public static class SupplierImportColumns
         Email,
         Phone,
         PaymentTermCode,
-        SupplierCategory,
-        SupplierType,
-        PrimaryGoodType,
-        SupplierSegment,
     ];
 }

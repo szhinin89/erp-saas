@@ -169,11 +169,7 @@ public sealed class SupplierImportProcessorTests
                 null,
                 "contacto@proveedor.test",
                 "0999999999",
-                businessPartnerRoleTermId,
-                null,
-                null,
-                null,
-                null
+                businessPartnerRoleTermId
             )
         );
 
@@ -211,7 +207,6 @@ public sealed class SupplierImportProcessorTests
                         true,
                         null,
                         DateTime.UtcNow,
-                        null,
                         null,
                         null,
                         null,
@@ -275,7 +270,6 @@ public sealed class SupplierImportProcessorTests
                         true,
                         null,
                         DateTime.UtcNow,
-                        null,
                         null,
                         null,
                         null,

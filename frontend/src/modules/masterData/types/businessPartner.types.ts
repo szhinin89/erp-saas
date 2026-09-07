@@ -120,7 +120,6 @@ export type BusinessPartnerRoleDto = {
   supplierConfig: SupplierRoleConfigDto | null; // solo si roleType === "Supplier"
   carrierConfig: CarrierRoleConfigDto | null; // solo si roleType === "Carrier"
   customerConfig: CustomerRoleConfigDto | null; // solo si roleType === "Customer"
-  classificationConfig: SupplierClassificationConfigDto | null; // solo si roleType === "Supplier"
 };
 
 /** Datos de transporte — parte de BusinessPartnerRoleDto cuando roleType="Carrier" */
@@ -140,19 +139,6 @@ export type SupplierRoleConfigDto = {
   defaultPaymentMethodCode?: string | null; // SRI code: 01-21
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt: boolean; // RISE, microempresa, sector público
-};
-
-/**
- * Clasificación estratégica del proveedor (S3-B) — parte de BusinessPartnerRoleDto cuando roleType="Supplier".
- */
-export type SupplierClassificationConfigDto = {
-  supplierCategory?: string | null; // 'Manufacturer' | 'Distributor' | 'ServiceProvider' | 'Agent' | 'Retailer' | 'Other'
-  supplierType?: string | null; // 'National' | 'International' | 'Both'
-  supplierRisk?: string | null; // 'Low' | 'Medium' | 'High' | 'Critical'
-  supplierRating?: string | null; // 'AAA' | 'AA' | 'A' | 'BBB' | 'B' | 'C' | 'D' | 'NR'
-  primaryGoodType?: string | null; // 'Goods' | 'Services' | 'Both' | 'Digital'
-  supplierSegment?: string | null; // 'Strategic' | 'Preferred' | 'Approved' | 'Transactional'
-  paymentMethodPreference?: string | null; // texto libre operativo interno
 };
 
 /**
@@ -327,22 +313,6 @@ export type SupplierConfigBody = {
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt?: boolean; // default false
 };
-
-/** Body para PATCH /{bpId}/roles/{roleId}/supplier-classification */
-export type SupplierClassificationBody = {
-  supplierCategory?: string | null;
-  supplierType?: string | null;
-  supplierRisk?: string | null;
-  supplierRating?: string | null;
-  primaryGoodType?: string | null;
-  supplierSegment?: string | null;
-  paymentMethodPreference?: string | null;
-};
-
-// CLASS-BP-CATALOGS-01: mismo cambio que las constantes de cliente arriba — categoría, tipo,
-// riesgo, rating, tipo de bien principal y segmento de proveedor son catálogos persistidos,
-// consumidos vía useSupplierCategories/useSupplierTypes/useSupplierRisks/useSupplierRatings/
-// usePrimaryGoodTypes/useSupplierSegments en ../api/useClassificationCatalogs.ts.
 
 export type CarrierConfigBody = {
   transportAuthorizationNumber?: string | null;
