@@ -32,6 +32,12 @@ public interface ISriCatalogLookupRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Existe y está activo en global.sri_tax_support. Usado por validación de defaults de proveedor.</summary>
+    Task<bool> TaxSupportCodeExistsActiveAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<SriDocType>> GetActiveDocTypesAsync(
         CancellationToken cancellationToken = default
     );
@@ -40,7 +46,19 @@ public interface ISriCatalogLookupRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Existe y está activo en global.sri_payment_method. Usado por validación de defaults de proveedor.</summary>
+    Task<bool> PaymentMethodCodeExistsActiveAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<SriSupplierType>> GetActiveSupplierTypesAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Existe y está activo en global.sri_supplier_type. Usado por validación de defaults de proveedor.</summary>
+    Task<bool> SupplierTypeCodeExistsActiveAsync(
+        string code,
         CancellationToken cancellationToken = default
     );
 

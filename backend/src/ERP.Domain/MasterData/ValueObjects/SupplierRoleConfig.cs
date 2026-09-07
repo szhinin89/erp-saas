@@ -16,6 +16,11 @@ namespace ERP.Domain.MasterData.ValueObjects;
 ///   IsRetentionExempt           — exento de retención (RISE, microempresa, etc.)
 ///
 /// Almacenado en tabla master_bp_supplier_configs (1:1 con master_bp_roles).
+///
+/// Este VO solo valida invariantes estructurales (trim, longitud máxima) — nunca contra
+/// catálogos SRI (Domain no depende de EF Core / repositorios). La validación de pertenencia a
+/// catálogo real (sri_tax_support, sri_retention_code, sri_payment_method, sri_supplier_type)
+/// vive en Application: <c>UpdateSupplierRoleConfigValidator</c> (FluentValidation MustAsync).
 /// </summary>
 public sealed record SupplierRoleConfig
 {
@@ -23,26 +28,6 @@ public sealed record SupplierRoleConfig
     public const int SriCodeMaxLen = 5;
     public const int PaymentTermsMaxLen = 200;
     public const int PaymentMethodCodeMaxLen = 5;
-
-    /// <summary>
-    /// Códigos de método de pago SRI válidos (global.sri_payment_method).
-    /// 01=Sin sistema financiero, 15=Compensación, 16=Tarjeta débito,
-    /// 17=Dinero electrónico, 18=Tarjeta prepago, 19=Tarjeta crédito,
-    /// 20=Otros con sistema financiero, 21=Endoso de títulos.
-    /// </summary>
-    public static readonly IReadOnlySet<string> ValidPaymentMethodCodes = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        "01",
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-        "20",
-        "21",
-    };
 
     public string? DefaultTaxSupportCode { get; }
     public string? DefaultRetentionVatCode { get; }
@@ -109,23 +94,12 @@ public sealed record SupplierRoleConfig
         bool isRequiredToKeepAccounting = false
     )
     {
-        var paymentMethodCode = defaultPaymentMethodCode?.Trim();
-        if (
-            !string.IsNullOrEmpty(paymentMethodCode)
-            && !ValidPaymentMethodCodes.Contains(paymentMethodCode)
-        )
-            throw new ArgumentException(
-                $"DefaultPaymentMethodCode '{paymentMethodCode}' no es un código SRI válido. "
-                    + $"Valores permitidos: {string.Join(", ", ValidPaymentMethodCodes)}.",
-                nameof(defaultPaymentMethodCode)
-            );
-
         return new SupplierRoleConfig(
             NormalizeSriCode(defaultTaxSupportCode, nameof(defaultTaxSupportCode)),
             NormalizeSriCode(defaultRetentionVatCode, nameof(defaultRetentionVatCode)),
             NormalizeSriCode(defaultRetentionIncomeCode, nameof(defaultRetentionIncomeCode)),
             NormalizeText(paymentTerms, PaymentTermsMaxLen, nameof(paymentTerms)),
-            string.IsNullOrEmpty(paymentMethodCode) ? null : paymentMethodCode,
+            NormalizeSriCode(defaultPaymentMethodCode, nameof(defaultPaymentMethodCode)),
             NormalizeSriCode(refundProviderTypeCode, nameof(refundProviderTypeCode)),
             isRetentionExempt,
             isRequiredToKeepAccounting

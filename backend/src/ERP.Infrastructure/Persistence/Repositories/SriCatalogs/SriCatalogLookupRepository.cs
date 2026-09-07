@@ -75,6 +75,11 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             .OrderBy(t => t.Code)
             .ToListAsync(cancellationToken);
 
+    public Task<bool> TaxSupportCodeExistsActiveAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    ) => _db.SriTaxSupports.AsNoTracking().AnyAsync(t => t.Code == code && t.IsActive, cancellationToken);
+
     public async Task<IReadOnlyList<SriDocType>> GetActiveDocTypesAsync(
         CancellationToken cancellationToken = default
     ) =>
@@ -93,6 +98,13 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             .OrderBy(p => p.Code)
             .ToListAsync(cancellationToken);
 
+    public Task<bool> PaymentMethodCodeExistsActiveAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.SriPaymentMethods.AsNoTracking()
+            .AnyAsync(p => p.Code == code && p.IsActive, cancellationToken);
+
     public async Task<IReadOnlyList<SriSupplierType>> GetActiveSupplierTypesAsync(
         CancellationToken cancellationToken = default
     ) =>
@@ -101,6 +113,13 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             .Where(r => r.IsActive)
             .OrderBy(r => r.Code)
             .ToListAsync(cancellationToken);
+
+    public Task<bool> SupplierTypeCodeExistsActiveAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.SriSupplierTypes.AsNoTracking()
+            .AnyAsync(r => r.Code == code && r.IsActive, cancellationToken);
 
     public async Task<IReadOnlyList<SriTaxRegime>> GetActiveTaxRegimesAsync(
         CancellationToken cancellationToken = default
