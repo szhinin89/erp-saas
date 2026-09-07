@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260907201949_ReplaceCompanyBpTradingSettingsWithSalesSettings")]
-    partial class ReplaceCompanyBpTradingSettingsWithSalesSettings
+    [Migration("20260907212533_InitialEnterpriseBaseline")]
+    partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
