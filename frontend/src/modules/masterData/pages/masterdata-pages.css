@@ -634,6 +634,57 @@
   font-weight: 600;
 }
 
+.md-supplier-section-hint {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.md-supplier-retention-list {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.md-supplier-retention-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.md-supplier-retention-row--inactive {
+  opacity: 0.6;
+}
+
+.md-supplier-retention-row__code {
+  font-size: var(--text-body-sm-size);
+  font-weight: 500;
+}
+
+.md-supplier-retention-row__warning {
+  font-size: var(--text-help-size);
+  color: var(--color-error);
+}
+
+.md-supplier-retention-row__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.md-supplier-retention-add-btn {
+  display: flex;
+  align-items: flex-end;
+}
+
 .md-payment-term-preview {
   margin-top: var(--space-5);
   max-width: 600px;

@@ -125,8 +125,6 @@ public sealed record BusinessPartnerRoleDto(
 
 public sealed record SupplierRoleConfigDto(
     string? DefaultTaxSupportCode,
-    string? DefaultRetentionVatCode,
-    string? DefaultRetentionIncomeCode,
     string? DefaultPaymentMethodCode,
     string? RefundProviderTypeCode,
     bool IsRetentionExempt,
@@ -136,8 +134,6 @@ public sealed record SupplierRoleConfigDto(
     public static SupplierRoleConfigDto From(SupplierRoleConfig c) =>
         new(
             c.DefaultTaxSupportCode,
-            c.DefaultRetentionVatCode,
-            c.DefaultRetentionIncomeCode,
             c.DefaultPaymentMethodCode,
             c.RefundProviderTypeCode,
             c.IsRetentionExempt,

@@ -176,6 +176,10 @@ public static class DependencyInjection
             CompanyBpPurchaseSettingsRepository
         >();
         services.AddScoped<
+            ISupplierRetentionDefaultRepository,
+            SupplierRetentionDefaultRepository
+        >();
+        services.AddScoped<
             ERP.Application.MasterData.Services.IPaymentTermDefaultResolver,
             ERP.Application.MasterData.Services.PaymentTermDefaultResolver
         >();

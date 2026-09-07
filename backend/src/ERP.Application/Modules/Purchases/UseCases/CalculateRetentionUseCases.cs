@@ -42,23 +42,33 @@ public sealed record CalculateRetentionQuery(Guid PurchaseInvoiceId)
 
 // ── Handler ─────────────────────────────────────────────────────────────
 
+/// <summary>
+/// RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: ya no lee
+/// SupplierRoleConfig.DefaultRetentionVatCode/DefaultRetentionIncomeCode (eliminados) — resuelve
+/// la lista de <see cref="ISupplierRetentionDefaultRepository"/> activos del proveedor en la
+/// empresa del contexto autenticado (nunca del body) y arma un candidato por cada uno con código
+/// vigente en catálogo SRI.
+/// </summary>
 public sealed class CalculateRetentionHandler
     : IRequestHandler<CalculateRetentionQuery, Result<RetentionPreviewDto>>
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
+    private readonly ISupplierRetentionDefaultRepository _retentionDefaultRepo;
     private readonly IRetentionCodeResolver _retCodeResolver;
     private readonly ICurrentTenant _t;
 
     public CalculateRetentionHandler(
         IPurchaseInvoiceRepository repo,
         IBusinessPartnerRoleRepository roleRepo,
+        ISupplierRetentionDefaultRepository retentionDefaultRepo,
         IRetentionCodeResolver retCodeResolver,
         ICurrentTenant t
     )
     {
         _repo = repo;
         _roleRepo = roleRepo;
+        _retentionDefaultRepo = retentionDefaultRepo;
         _retCodeResolver = retCodeResolver;
         _t = t;
     }
@@ -79,56 +89,27 @@ public sealed class CalculateRetentionHandler
 
         var supplierRole = await _roleRepo.GetByTypeAsync(inv.SupplierId, RoleType.Supplier, ct);
         var config = supplierRole?.SupplierConfig;
-
         var isExempt = config?.IsRetentionExempt ?? false;
 
-        // Resolver códigos y tasas desde catálogo SRI
-        string? vatCode = config?.DefaultRetentionVatCode;
-        decimal vatPct = 0;
-        string? vatName = null;
+        // Resolver candidatos desde la lista dinámica de defaults activos del proveedor.
+        var defaults = await _retentionDefaultRepo.GetActiveByBusinessPartnerAsync(
+            inv.SupplierId,
+            ct
+        );
 
-        if (!string.IsNullOrWhiteSpace(vatCode))
+        var candidates = new List<RetentionCandidate>();
+        foreach (var entry in defaults)
         {
-            var info = await _retCodeResolver.GetRetentionCodeAsync(vatCode, "IVA", ct);
-            if (info is not null)
-            {
-                vatPct = info.Percentage;
-                vatName = info.Name;
-            }
-            else
-                vatCode = null;
-        }
-
-        string? incomeCode = config?.DefaultRetentionIncomeCode;
-        decimal incomePct = 0;
-        string? incomeName = null;
-
-        if (!string.IsNullOrWhiteSpace(incomeCode))
-        {
-            var info = await _retCodeResolver.GetRetentionCodeAsync(incomeCode, "RENTA", ct);
-            if (info is not null)
-            {
-                incomePct = info.Percentage;
-                incomeName = info.Name;
-            }
-            else
-                incomeCode = null;
+            var info = await _retCodeResolver.GetRetentionCodeByIdAsync(entry.SriRetentionCodeId, ct);
+            if (info is null)
+                continue;
+            candidates.Add(new RetentionCandidate(info.TaxType, info.Code, info.Percentage, info.Name));
         }
 
         // Base imponible renta = Sum(TaxableBase) de las líneas (subtotal - descuento)
         var taxableBaseIncome = inv.Lines.Sum(l => l.TaxableBase);
 
-        var result = RetentionCalculator.Calculate(
-            inv.TotalVat,
-            taxableBaseIncome,
-            isExempt,
-            vatCode,
-            vatPct,
-            vatName,
-            incomeCode,
-            incomePct,
-            incomeName
-        );
+        var result = RetentionCalculator.Calculate(inv.TotalVat, taxableBaseIncome, isExempt, candidates);
 
         var dto = new RetentionPreviewDto(
             result

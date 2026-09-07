@@ -1,4 +1,3 @@
-using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
@@ -7,20 +6,20 @@ using FluentValidation;
 namespace ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 
 /// <summary>
-/// SUPPLIER-SRI-CATALOGS-01: los 5 códigos SRI de <see cref="SupplierRoleConfig"/> se validan de
+/// SUPPLIER-SRI-CATALOGS-01: los códigos SRI de <see cref="SupplierRoleConfig"/> se validan de
 /// forma async contra sus catálogos reales (globales, sin tenant/company scope) — reemplaza el
 /// antiguo <c>HashSet&lt;string&gt;</c> fijo de <c>DefaultPaymentMethodCode</c> en Domain y agrega
-/// validación de catálogo (antes inexistente) para los otros 4 campos. Reutiliza
-/// <see cref="IRetentionCodeResolver"/> ya usado por el motor de cálculo de retenciones de
-/// Compras, en vez de duplicar la consulta de <c>sri_retention_code</c>.
+/// validación de catálogo (antes inexistente) para los otros 2 campos.
+///
+/// RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: DefaultRetentionVatCode/DefaultRetentionIncomeCode se
+/// eliminaron de este VO — la validación de códigos de retención contra
+/// <see cref="ERP.Application.Modules.Purchases.Services.IRetentionCodeResolver"/> ahora vive en
+/// UpsertSupplierRetentionDefaultValidator, sobre la lista dinámica.
 /// </summary>
 public sealed class UpdateSupplierRoleConfigValidator
     : AbstractValidator<UpdateSupplierRoleConfigCommand>
 {
-    public UpdateSupplierRoleConfigValidator(
-        ISriCatalogLookupRepository catalogRepo,
-        IRetentionCodeResolver retentionCodeResolver
-    )
+    public UpdateSupplierRoleConfigValidator(ISriCatalogLookupRepository catalogRepo)
     {
         RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId es obligatorio.");
         RuleFor(x => x.Config).NotNull().WithMessage("Config es obligatoria.");
@@ -36,26 +35,6 @@ public sealed class UpdateSupplierRoleConfigValidator
                         "DefaultTaxSupportCode no corresponde a un código activo del catálogo sri_tax_support."
                     )
                     .When(x => x.Config.DefaultTaxSupportCode is not null);
-                RuleFor(x => x.Config.DefaultRetentionVatCode)
-                    .MaximumLength(SupplierRoleConfig.SriCodeMaxLen)
-                    .MustAsync(
-                        async (v, ct) =>
-                            await retentionCodeResolver.GetRetentionCodeAsync(v!, "IVA", ct) is not null
-                    )
-                    .WithMessage(
-                        "DefaultRetentionVatCode no corresponde a un código activo del catálogo sri_retention_code (IVA)."
-                    )
-                    .When(x => x.Config.DefaultRetentionVatCode is not null);
-                RuleFor(x => x.Config.DefaultRetentionIncomeCode)
-                    .MaximumLength(SupplierRoleConfig.SriCodeMaxLen)
-                    .MustAsync(
-                        async (v, ct) =>
-                            await retentionCodeResolver.GetRetentionCodeAsync(v!, "RENTA", ct) is not null
-                    )
-                    .WithMessage(
-                        "DefaultRetentionIncomeCode no corresponde a un código activo del catálogo sri_retention_code (RENTA)."
-                    )
-                    .When(x => x.Config.DefaultRetentionIncomeCode is not null);
                 RuleFor(x => x.Config.DefaultPaymentMethodCode)
                     .MaximumLength(SupplierRoleConfig.SriCodeMaxLen)
                     .MustAsync((v, ct) => catalogRepo.PaymentMethodCodeExistsActiveAsync(v!, ct))

@@ -16,6 +16,13 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// <c>Manual</c>) de "no elegible por regla fiscal" (<see cref="RetentionEligibilityResult.IsEligible"/>
 /// en false con <c>Reasons</c> pobladas) — nunca deben confundirse.
 /// </summary>
+public sealed record RetentionEligibilityCandidateDto(
+    string TaxType,
+    string RetentionCode,
+    string RetentionCodeName,
+    decimal RetentionPct
+);
+
 public sealed record RetentionEligibilityDto(
     RetentionSourceDocumentType SourceDocumentType,
     Guid SourceDocumentId,
@@ -26,8 +33,7 @@ public sealed record RetentionEligibilityDto(
     bool HasRetainableBase,
     bool MissingRetentionCode,
     bool IsSupplierRequiredToKeepAccounting,
-    string? SuggestedVatRetentionCode,
-    string? SuggestedIncomeRetentionCode,
+    IReadOnlyList<RetentionEligibilityCandidateDto> Candidates,
     IReadOnlyList<string> Reasons
 );
 
@@ -108,8 +114,7 @@ public sealed class GetRetentionEligibilityHandler
                     HasRetainableBase: false,
                     MissingRetentionCode: false,
                     IsSupplierRequiredToKeepAccounting: false,
-                    SuggestedVatRetentionCode: null,
-                    SuggestedIncomeRetentionCode: null,
+                    Candidates: Array.Empty<RetentionEligibilityCandidateDto>(),
                     Reasons: new[]
                     {
                         $"NotSupportedInThisPhase: la evaluación de elegibilidad para "
@@ -168,8 +173,14 @@ public sealed class GetRetentionEligibilityHandler
                 eligibility.HasRetainableBase,
                 eligibility.MissingRetentionCode,
                 eligibility.IsSupplierRequiredToKeepAccounting,
-                eligibility.SuggestedVatRetentionCode,
-                eligibility.SuggestedIncomeRetentionCode,
+                eligibility
+                    .Candidates.Select(c => new RetentionEligibilityCandidateDto(
+                        c.TaxType,
+                        c.RetentionCode,
+                        c.RetentionCodeName,
+                        c.RetentionPct
+                    ))
+                    .ToList(),
                 eligibility.Reasons
             )
         );

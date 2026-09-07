@@ -66,6 +66,11 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<SriRetentionCode?> GetRetentionCodeByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) => _db.SriRetentionCodes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
     public async Task<IReadOnlyList<SriTaxSupport>> GetActiveTaxSupportCodesAsync(
         CancellationToken cancellationToken = default
     ) =>

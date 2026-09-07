@@ -47,8 +47,11 @@ public sealed class IssueRetentionHandlerTests
         HasRetainableBase: true,
         MissingRetentionCode: false,
         IsSupplierRequiredToKeepAccounting: false,
-        SuggestedVatRetentionCode: "725",
-        SuggestedIncomeRetentionCode: "303",
+        Candidates: new[]
+        {
+            new RetentionEligibilityCandidate("IVA", "725", "Retención IVA 30%", 30m),
+            new RetentionEligibilityCandidate("RENTA", "303", "Honorarios profesionales", 10m),
+        },
         Reasons: Array.Empty<string>()
     );
 

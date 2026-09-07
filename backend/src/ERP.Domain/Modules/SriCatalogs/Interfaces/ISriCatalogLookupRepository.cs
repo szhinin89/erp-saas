@@ -28,6 +28,17 @@ public interface ISriCatalogLookupRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Lee un código de retención por Id sin filtrar por IsActive — usado por la administración de
+    /// SupplierRetentionDefault (RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01) para mostrar también
+    /// filas cuyo código quedó inactivo en catálogo después de configurarse (nunca se ocultan,
+    /// el operador debe poder verlas y desactivarlas).
+    /// </summary>
+    Task<SriRetentionCode?> GetRetentionCodeByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<SriTaxSupport>> GetActiveTaxSupportCodesAsync(
         CancellationToken cancellationToken = default
     );

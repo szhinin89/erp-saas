@@ -176,30 +176,21 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             supplierNonExempt.Id,
             RoleType.Supplier,
             _createdBy,
-            supplierConfig: SupplierRoleConfig.Create(
-                defaultRetentionVatCode: RetentionVatCode,
-                isRetentionExempt: false
-            )
+            supplierConfig: SupplierRoleConfig.Create(isRetentionExempt: false)
         );
         var roleExempt = BusinessPartnerRole.Create(
             tenant.Id,
             supplierExempt.Id,
             RoleType.Supplier,
             _createdBy,
-            supplierConfig: SupplierRoleConfig.Create(
-                defaultRetentionVatCode: RetentionVatCode,
-                isRetentionExempt: true
-            )
+            supplierConfig: SupplierRoleConfig.Create(isRetentionExempt: true)
         );
         var roleMissingCode = BusinessPartnerRole.Create(
             tenant.Id,
             supplierMissingCode.Id,
             RoleType.Supplier,
             _createdBy,
-            supplierConfig: SupplierRoleConfig.Create(
-                defaultRetentionVatCode: MissingRetentionVatCode,
-                isRetentionExempt: false
-            )
+            supplierConfig: SupplierRoleConfig.Create(isRetentionExempt: false)
         );
         db.BusinessPartnerRoles.AddRange(roleNonExempt, roleExempt, roleMissingCode);
         await db.SaveChangesAsync();
@@ -209,21 +200,45 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         _supplierMissingCodeId = supplierMissingCode.Id;
 
         // ── Código de retención IVA activo en catálogo SRI (fixture, 70%) ──────
-        db.SriRetentionCodes.Add(
-            new SriRetentionCode
-            {
-                Id = Guid.NewGuid(),
-                TaxType = "IVA",
-                Code = RetentionVatCode,
-                Name = "RETQA IVA 70% (fixture de prueba)",
-                Percentage = 70m,
-                AppliesTo = "SUPPLIER",
-                IsActive = true,
-            }
+        var vatRetentionCode = new SriRetentionCode
+        {
+            Id = Guid.NewGuid(),
+            TaxType = "IVA",
+            Code = RetentionVatCode,
+            Name = "RETQA IVA 70% (fixture de prueba)",
+            Percentage = 70m,
+            AppliesTo = "SUPPLIER",
+            IsActive = true,
+        };
+        // RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: el escenario "código de retención sin catálogo
+        // activo" ahora se representa con una fila SupplierRetentionDefault cuya FK apunta a un
+        // SriRetentionCode desactivado (nunca a un Id inexistente — la FK real ya no lo permite).
+        var missingRetentionCode = new SriRetentionCode
+        {
+            Id = Guid.NewGuid(),
+            TaxType = "IVA",
+            Code = MissingRetentionVatCode,
+            Name = "RETQA IVA código desactivado (fixture de prueba)",
+            Percentage = 70m,
+            AppliesTo = "SUPPLIER",
+            IsActive = false,
+        };
+        db.SriRetentionCodes.AddRange(vatRetentionCode, missingRetentionCode);
+        await db.SaveChangesAsync();
+
+        // ── Retenciones predeterminadas por proveedor+empresa (lista dinámica) ─
+        db.SupplierRetentionDefaults.AddRange(
+            SupplierRetentionDefault.Create(
+                tenant.Id, company.Id, supplierNonExempt.Id, vatRetentionCode.Id, 0, _createdBy
+            ),
+            SupplierRetentionDefault.Create(
+                tenant.Id, company.Id, supplierExempt.Id, vatRetentionCode.Id, 0, _createdBy
+            ),
+            SupplierRetentionDefault.Create(
+                tenant.Id, company.Id, supplierMissingCode.Id, missingRetentionCode.Id, 0, _createdBy
+            )
         );
         await db.SaveChangesAsync();
-        // Deliberadamente NO se siembra un SriRetentionCode para MissingRetentionVatCode — ese es
-        // precisamente el gap que el escenario 7 (MissingRetentionCode) necesita.
 
         // TECH-DEBT-RETENTION-E2E-POSTING-SEED-CLEANUP-01: el Plan de Cuentas canónico (incluidas
         // las cuentas fijas que "Expenses"/"DocumentConfirmed" y "Retentions"/"DocumentIssued"
@@ -414,6 +429,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
                 new RetentionEligibilityService(
                     new CompanyRepository(db),
                     new BusinessPartnerRoleRepository(db),
+                    new SupplierRetentionDefaultRepository(db),
                     new RetentionCodeResolver(db)
                 ),
                 new EmissionPointRepository(db),
@@ -449,6 +465,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
             new RetentionEligibilityService(
                 new CompanyRepository(db),
                 new BusinessPartnerRoleRepository(db),
+                new SupplierRetentionDefaultRepository(db),
                 new RetentionCodeResolver(db)
             ),
             new FixedCurrentTenant(_tenantId),
@@ -500,7 +517,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         eligibility.Value!.IsSupportedInThisPhase.Should().BeTrue();
         eligibility.Value.CanRetainVat.Should().BeTrue();
         eligibility.Value.IsSupplierExempt.Should().BeFalse();
-        eligibility.Value.SuggestedVatRetentionCode.Should().Be(RetentionVatCode);
+        eligibility.Value.Candidates.Should().ContainSingle(c => c.TaxType == "IVA" && c.RetentionCode == RetentionVatCode);
         // MissingRetentionCode agrega IVA e Income (RetentionEligibilityService.cs) — este fixture
         // deliberadamente NO configura DefaultRetentionIncomeCode (fuera de alcance de este
         // escenario, solo IVA), así que MissingRetentionCode=true es el resultado correcto y

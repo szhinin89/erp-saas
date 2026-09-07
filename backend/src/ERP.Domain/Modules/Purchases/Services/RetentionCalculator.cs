@@ -3,39 +3,43 @@ using static ERP.Domain.Common.FiscalPrecision;
 namespace ERP.Domain.Modules.Purchases.Services;
 
 /// <summary>
+/// Insumo resuelto de un código de retención candidato (ya validado contra catálogo SRI activo)
+/// para calcular una línea. RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: reemplaza los antiguos
+/// parámetros fijos "un código IVA + un código Renta" por una colección — un proveedor puede tener
+/// N candidatos activos por impuesto.
+/// </summary>
+public sealed record RetentionCandidate(
+    string TaxType,
+    string RetentionCode,
+    decimal RetentionPct,
+    string? RetentionCodeName
+);
+
+/// <summary>
 /// Motor de cálculo de retenciones Ecuador SRI — Domain Service puro.
 /// Sin dependencias externas. Recibe datos resueltos y devuelve resultado.
 ///
 /// Reglas fiscales Ecuador:
 /// - Si proveedor IsRetentionExempt → no retener (RISE, microempresa)
-/// - Retención IVA: se aplica sobre TotalVat de la compra
-/// - Retención Renta: se aplica sobre base imponible (subtotal - descuento)
-/// - La tasa depende del código SRI configurado en el proveedor
+/// - Retención IVA: se aplica sobre TotalVat de la compra, por cada candidato IVA
+/// - Retención Renta: se aplica sobre base imponible (subtotal - descuento), por cada candidato Renta
+/// - La tasa depende del código SRI de cada candidato configurado en el proveedor
 /// </summary>
 public static class RetentionCalculator
 {
     /// <summary>
-    /// Calcula las líneas de retención para una compra.
+    /// Calcula las líneas de retención para una compra, una por cada candidato activo elegible
+    /// (0..N por impuesto — ya no está limitado a máximo un código IVA + un código Renta).
     /// </summary>
     /// <param name="totalVat">Total IVA de la compra (base para retención IVA)</param>
     /// <param name="taxableBaseIncome">Base imponible para retención renta (subtotal - descuento + ICE)</param>
     /// <param name="isRetentionExempt">Proveedor exento de retención</param>
-    /// <param name="vatRetentionCode">Código retención IVA del proveedor (ej: "725")</param>
-    /// <param name="vatRetentionPct">Porcentaje de retención IVA (ej: 30)</param>
-    /// <param name="vatRetentionName">Descripción del código IVA (snapshot)</param>
-    /// <param name="incomeRetentionCode">Código retención Renta del proveedor (ej: "303")</param>
-    /// <param name="incomeRetentionPct">Porcentaje de retención Renta (ej: 10)</param>
-    /// <param name="incomeRetentionName">Descripción del código Renta (snapshot)</param>
+    /// <param name="candidates">Códigos de retención candidatos del proveedor, ya resueltos contra catálogo</param>
     public static RetentionCalculationResult Calculate(
         decimal totalVat,
         decimal taxableBaseIncome,
         bool isRetentionExempt,
-        string? vatRetentionCode,
-        decimal vatRetentionPct,
-        string? vatRetentionName,
-        string? incomeRetentionCode,
-        decimal incomeRetentionPct,
-        string? incomeRetentionName
+        IReadOnlyList<RetentionCandidate> candidates
     )
     {
         if (isRetentionExempt)
@@ -50,45 +54,30 @@ public static class RetentionCalculator
 
         var lines = new List<RetentionLineResult>();
 
-        // ── Retención IVA ───────────────────────────────────────────────
-        if (!string.IsNullOrWhiteSpace(vatRetentionCode) && vatRetentionPct > 0 && totalVat > 0)
+        foreach (var candidate in candidates)
         {
-            var amount = Math.Round(
-                totalVat * vatRetentionPct / 100m,
-                TaxAmount,
-                MidpointRounding.AwayFromZero
-            );
-            lines.Add(
-                new RetentionLineResult(
-                    "IVA",
-                    vatRetentionCode,
-                    vatRetentionName ?? vatRetentionCode,
-                    totalVat,
-                    vatRetentionPct,
-                    amount
-                )
-            );
-        }
+            var isVat = string.Equals(candidate.TaxType, "IVA", StringComparison.OrdinalIgnoreCase);
+            var baseAmount = isVat ? totalVat : taxableBaseIncome;
 
-        // ── Retención Renta ─────────────────────────────────────────────
-        if (
-            !string.IsNullOrWhiteSpace(incomeRetentionCode)
-            && incomeRetentionPct > 0
-            && taxableBaseIncome > 0
-        )
-        {
+            if (
+                string.IsNullOrWhiteSpace(candidate.RetentionCode)
+                || candidate.RetentionPct <= 0
+                || baseAmount <= 0
+            )
+                continue;
+
             var amount = Math.Round(
-                taxableBaseIncome * incomeRetentionPct / 100m,
+                baseAmount * candidate.RetentionPct / 100m,
                 TaxAmount,
                 MidpointRounding.AwayFromZero
             );
             lines.Add(
                 new RetentionLineResult(
-                    "RENTA",
-                    incomeRetentionCode,
-                    incomeRetentionName ?? incomeRetentionCode,
-                    taxableBaseIncome,
-                    incomeRetentionPct,
+                    isVat ? "IVA" : "RENTA",
+                    candidate.RetentionCode,
+                    candidate.RetentionCodeName ?? candidate.RetentionCode,
+                    baseAmount,
+                    candidate.RetentionPct,
                     amount
                 )
             );

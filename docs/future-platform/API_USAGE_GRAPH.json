@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-05T04:12:43.850Z",
+  "generatedAt": "2026-09-07T19:25:22.275Z",
   "summary": {
     "total": 129,
     "allowed": 129,
@@ -581,7 +581,8 @@
       "endpoint": "/api/v1/expenses/documents",
       "files": [
         "frontend/src/modules/expenses/api/expenseDocumentService.retention.test.ts",
-        "frontend/src/modules/expenses/api/expenseDocumentService.ts"
+        "frontend/src/modules/expenses/api/expenseDocumentService.ts",
+        "frontend/src/modules/lib/api.test.ts"
       ],
       "legacy": false,
       "allowed": true

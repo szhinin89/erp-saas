@@ -17,6 +17,7 @@ import {
   expenseDocumentService,
   type ExpenseStatus,
   type RetentionDocumentDto,
+  type RetentionEligibilityCandidate,
   type RetentionEligibilityResult,
 } from "../api/expenseDocumentService";
 import {
@@ -205,12 +206,12 @@ export function ExpenseRetentionSection({
           <EligibilityBadge
             label="IVA"
             eligible={eligibility.canRetainVat}
-            suggestedCode={eligibility.suggestedVatRetentionCode}
+            candidates={eligibility.candidates.filter((c) => c.taxType === "IVA")}
           />
           <EligibilityBadge
             label="Renta"
             eligible={eligibility.canRetainIncome}
-            suggestedCode={eligibility.suggestedIncomeRetentionCode}
+            candidates={eligibility.candidates.filter((c) => c.taxType === "RENTA")}
           />
           {eligibility.isSupplierExempt && (
             <span className="exp-doc-retention-flag">Proveedor exento</span>
@@ -428,18 +429,20 @@ export function ExpenseRetentionSection({
 function EligibilityBadge({
   label,
   eligible,
-  suggestedCode,
+  candidates,
 }: {
   label: string;
   eligible: boolean;
-  suggestedCode: string | null;
+  candidates: RetentionEligibilityCandidate[];
 }) {
   return (
     <span
       className={`exp-doc-retention-badge ${eligible ? "exp-doc-retention-badge--yes" : "exp-doc-retention-badge--no"}`}
     >
       {label}: {eligible ? "Aplica" : "No aplica"}
-      {eligible && suggestedCode ? ` (${suggestedCode})` : ""}
+      {eligible && candidates.length > 0
+        ? ` (${candidates.map((c) => c.retentionCode).join(", ")})`
+        : ""}
     </span>
   );
 }

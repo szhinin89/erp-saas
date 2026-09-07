@@ -158,28 +158,37 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         _supplierId = supplier.Id;
 
         // ── Configuración de retención (punto 6) — código IVA 725 al 30%, catálogo real sembrado ──
-        db.SriRetentionCodes.Add(
-            new SriRetentionCode
-            {
-                Id = Guid.NewGuid(),
-                TaxType = "IVA",
-                Code = "725A",
-                Name = "Retención IVA 30% bienes",
-                Percentage = 30m,
-                AppliesTo = "SUPPLIER",
-                IsActive = true,
-            }
-        );
+        var vatRetentionCode = new SriRetentionCode
+        {
+            Id = Guid.NewGuid(),
+            TaxType = "IVA",
+            Code = "725A",
+            Name = "Retención IVA 30% bienes",
+            Percentage = 30m,
+            AppliesTo = "SUPPLIER",
+            IsActive = true,
+        };
+        db.SriRetentionCodes.Add(vatRetentionCode);
         var supplierRole = Domain.MasterData.Entities.BusinessPartnerRole.Create(
             _tenantId,
             supplier.Id,
             Domain.MasterData.Enums.RoleType.Supplier,
             _userId,
-            supplierConfig: SupplierRoleConfig.Create(
-                defaultRetentionVatCode: "725A"
-            )
+            supplierConfig: SupplierRoleConfig.Create()
         );
         db.Set<Domain.MasterData.Entities.BusinessPartnerRole>().Add(supplierRole);
+        // RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: el default ahora es una fila por proveedor+empresa.
+        db.Set<SupplierRetentionDefault>()
+            .Add(
+                SupplierRetentionDefault.Create(
+                    _tenantId,
+                    _companyId,
+                    supplier.Id,
+                    vatRetentionCode.Id,
+                    0,
+                    _userId
+                )
+            );
 
         var establishment = Establishment.Create(
             _tenantId,
@@ -451,6 +460,7 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         var eligibilityService = new RetentionEligibilityService(
             new CompanyRepository(db),
             new BusinessPartnerRoleRepository(db),
+            new SupplierRetentionDefaultRepository(db),
             new RetentionCodeResolver(db)
         );
         var issuer = new RetentionIssuer(

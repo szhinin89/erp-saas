@@ -79,8 +79,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         var supplierConfig = body.SupplierConfig is not null
             ? SupplierRoleConfig.Create(
                 body.SupplierConfig.DefaultTaxSupportCode,
-                body.SupplierConfig.DefaultRetentionVatCode,
-                body.SupplierConfig.DefaultRetentionIncomeCode,
                 defaultPaymentMethodCode: body.SupplierConfig.DefaultPaymentMethodCode,
                 refundProviderTypeCode: body.SupplierConfig.RefundProviderTypeCode,
                 isRetentionExempt: body.SupplierConfig.IsRetentionExempt,
@@ -162,8 +160,6 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         {
             config = SupplierRoleConfig.Create(
                 body.DefaultTaxSupportCode,
-                body.DefaultRetentionVatCode,
-                body.DefaultRetentionIncomeCode,
                 defaultPaymentMethodCode: body.DefaultPaymentMethodCode,
                 refundProviderTypeCode: body.RefundProviderTypeCode,
                 isRetentionExempt: body.IsRetentionExempt,

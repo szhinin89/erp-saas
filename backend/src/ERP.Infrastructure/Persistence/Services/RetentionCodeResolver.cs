@@ -22,6 +22,18 @@ public sealed class RetentionCodeResolver : IRetentionCodeResolver
                 ct
             );
 
-        return r is null ? null : new RetentionCodeInfo(r.Code, r.Name, r.Percentage);
+        return r is null ? null : new RetentionCodeInfo(r.TaxType, r.Code, r.Name, r.Percentage);
+    }
+
+    public async Task<RetentionCodeInfo?> GetRetentionCodeByIdAsync(
+        Guid sriRetentionCodeId,
+        CancellationToken ct = default
+    )
+    {
+        var r = await _db
+            .SriRetentionCodes.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == sriRetentionCodeId && x.IsActive, ct);
+
+        return r is null ? null : new RetentionCodeInfo(r.TaxType, r.Code, r.Name, r.Percentage);
     }
 }

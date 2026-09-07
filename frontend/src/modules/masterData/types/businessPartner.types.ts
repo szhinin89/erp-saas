@@ -134,8 +134,6 @@ export type CarrierRoleConfigDto = {
  */
 export type SupplierRoleConfigDto = {
   defaultTaxSupportCode?: string | null;
-  defaultRetentionVatCode?: string | null;
-  defaultRetentionIncomeCode?: string | null;
   defaultPaymentMethodCode?: string | null; // SRI code: 01-21
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt: boolean; // RISE, microempresa, sector público
@@ -240,6 +238,37 @@ export type UpsertPurchaseSettingsBody = {
   paymentTermId: string | null;
 };
 
+/**
+ * RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 — retención predeterminada del proveedor en la empresa
+ * activa. Reemplaza SupplierRoleConfigDto.defaultRetentionVatCode/defaultRetentionIncomeCode (un
+ * único código fijo por impuesto) por una lista dinámica: N filas, cada una con FK real a
+ * SriRetentionCode. Los campos de catálogo (taxType/code/codeName/percentage) son snapshot de
+ * lectura — nunca se editan directamente, solo se agrega/activa/desactiva/reordena la fila.
+ */
+export type SupplierRetentionDefaultDto = {
+  id: string;
+  businessPartnerId: string;
+  sriRetentionCodeId: string;
+  taxType: string; // "IVA" | "RENTA"
+  code: string;
+  codeName: string;
+  percentage: number;
+  isCatalogCodeActive: boolean; // false = código huérfano (desactivado en catálogo después de configurarse)
+  isActive: boolean;
+  displayOrder: number;
+};
+
+/** POST /api/v1/master/business-partners/{bpId}/retention-defaults */
+export type AddRetentionDefaultBody = {
+  sriRetentionCodeId: string;
+};
+
+/** PATCH /api/v1/master/business-partners/{bpId}/retention-defaults/{id} */
+export type SetRetentionDefaultStateBody = {
+  isActive: boolean;
+  displayOrder: number;
+};
+
 // ── Paginación ────────────────────────────────────────────────────────────────
 
 /** Resultado paginado — data de la API para búsquedas */
@@ -308,8 +337,6 @@ export type CustomerConfigBody = {
 /** Body para PATCH /{bpId}/roles/{roleId}/supplier-config */
 export type SupplierConfigBody = {
   defaultTaxSupportCode?: string | null;
-  defaultRetentionVatCode?: string | null;
-  defaultRetentionIncomeCode?: string | null;
   defaultPaymentMethodCode?: string | null; // SRI code 01-21
   refundProviderTypeCode?: string | null; // global.sri_supplier_type: 01=Persona Natural, 02=Sociedad
   isRetentionExempt?: boolean; // default false

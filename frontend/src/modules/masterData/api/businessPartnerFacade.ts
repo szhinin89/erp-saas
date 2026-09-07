@@ -16,6 +16,7 @@ import {
   bpContactService,
   bpLocationService,
   bpPurchaseSettingsService,
+  bpRetentionDefaultsService,
   bpRoleService,
   bpTradingSettingsService,
   businessPartnerService,
@@ -25,6 +26,7 @@ import {
   mapBusinessPartnerToSupplierPickerRow,
 } from "../adapters/businessPartnerCustomerAdapter";
 import type {
+  AddRetentionDefaultBody,
   AssignRoleBody,
   BlockBody,
   BpContactDto,
@@ -42,8 +44,10 @@ import type {
   CustomerConfigBody,
   CustomerPickerRow,
   SearchBusinessPartnersParams,
+  SetRetentionDefaultStateBody,
   SupplierConfigBody,
   SupplierPickerRow,
+  SupplierRetentionDefaultDto,
   UpdateBusinessPartnerBody,
   UpdateContactBody,
   UpdateIdentificationBody,
@@ -256,6 +260,24 @@ export const businessPartnerFacade = {
     body: UpsertPurchaseSettingsBody,
   ): Promise<CompanyBpPurchaseSettingsDto> =>
     bpPurchaseSettingsService.upsert(bpId, body),
+
+  // ── Retention Defaults — retenciones predeterminadas del proveedor por empresa (RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01) ──
+
+  getRetentionDefaults: (bpId: string): Promise<SupplierRetentionDefaultDto[]> =>
+    bpRetentionDefaultsService.list(bpId),
+
+  addRetentionDefault: (
+    bpId: string,
+    body: AddRetentionDefaultBody,
+  ): Promise<SupplierRetentionDefaultDto> =>
+    bpRetentionDefaultsService.add(bpId, body),
+
+  setRetentionDefaultState: (
+    bpId: string,
+    id: string,
+    body: SetRetentionDefaultStateBody,
+  ): Promise<SupplierRetentionDefaultDto> =>
+    bpRetentionDefaultsService.setState(bpId, id, body),
 };
 
 // ── Re-exports para compatibilidad con imports existentes ─────────────────────

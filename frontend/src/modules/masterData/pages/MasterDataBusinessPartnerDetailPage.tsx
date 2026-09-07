@@ -708,16 +708,6 @@ export function MasterDataBusinessPartnerDetailPage() {
                                 Sustento:{" "}
                                 {r.supplierConfig.defaultTaxSupportCode ?? "—"}
                               </small>
-                              <small>
-                                Ret. IVA:{" "}
-                                {r.supplierConfig.defaultRetentionVatCode ??
-                                  "—"}
-                              </small>
-                              <small>
-                                Ret. Renta:{" "}
-                                {r.supplierConfig.defaultRetentionIncomeCode ??
-                                  "—"}
-                              </small>
                             </div>
                           )}
                           {r.carrierConfig?.transportAuthorizationNumber && (

@@ -28,6 +28,9 @@ vi.mock("../api/businessPartnerFacade", () => ({
     getRoles: vi.fn(),
     updateSupplierConfig: vi.fn(),
     getPurchaseSettings: vi.fn(),
+    getRetentionDefaults: vi.fn(),
+    addRetentionDefault: vi.fn(),
+    setRetentionDefaultState: vi.fn(),
   },
 }));
 
@@ -57,12 +60,30 @@ vi.mock("../api/useSriRetentionCodes", () => ({
   useSriRetentionCodes: (taxType: "IVA" | "RENTA") =>
     taxType === "IVA"
       ? {
-          options: [{ code: "725", name: "Retención en la fuente IVA 100%" }],
+          options: [
+            {
+              id: "src-725",
+              taxType: "IVA",
+              code: "725",
+              name: "Retención en la fuente IVA 100%",
+              percentage: 100,
+              appliesTo: "SUPPLIER",
+            },
+          ],
           loading: false,
           error: null,
         }
       : {
-          options: [{ code: "303", name: "Honorarios profesionales" }],
+          options: [
+            {
+              id: "src-303",
+              taxType: "RENTA",
+              code: "303",
+              name: "Honorarios profesionales",
+              percentage: 10,
+              appliesTo: "SUPPLIER",
+            },
+          ],
           loading: false,
           error: null,
         },
@@ -279,8 +300,6 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
     revokedAt: null,
     supplierConfig: {
       defaultTaxSupportCode: "01",
-      defaultRetentionVatCode: "725",
-      defaultRetentionIncomeCode: "303",
       defaultPaymentMethodCode: "01",
       refundProviderTypeCode: "01",
       isRetentionExempt: false,
@@ -298,6 +317,7 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
       paymentTermId: null,
       hasCustomConfiguration: false,
     });
+    vi.mocked(businessPartnerFacade.getRetentionDefaults).mockResolvedValue([]);
     vi.mocked(paymentTermService.list).mockResolvedValue([]);
   });
 
@@ -316,21 +336,15 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
     expect(toggle.getAttribute("aria-checked")).toBe("true");
 
     expect(getSelectByFieldLabel("Sustento tributario predeterminado").value).toBe("01");
-    expect(getSelectByFieldLabel("Código ret. IVA predeterminado").value).toBe("725");
-    expect(getSelectByFieldLabel("Código ret. Renta predeterminado").value).toBe("303");
   });
 
-  it("ya no permite escribir códigos manuales: los 3 campos son <select>, no <input>", async () => {
+  it("ya no permite escribir el sustento tributario manualmente: es <select>, no <input>", async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "SRI" }));
 
     await waitFor(() => getSelectByFieldLabel("Sustento tributario predeterminado"));
-    expect(
-      screen.queryByPlaceholderText("01") ??
-        screen.queryByPlaceholderText("725") ??
-        screen.queryByPlaceholderText("303"),
-    ).toBeNull();
+    expect(screen.queryByPlaceholderText("01")).toBeNull();
   });
 
   it("un código guardado que ya no existe en el catálogo se muestra como no vigente, sin descartarlo", async () => {
@@ -379,6 +393,93 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
         "bp-2",
         "role-1",
         expect.objectContaining({ isRequiredToKeepAccounting: false }),
+      ),
+    );
+  });
+
+  it("RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: lista, agrega y desactiva retenciones predeterminadas dinámicas", async () => {
+    vi.mocked(businessPartnerFacade.getRetentionDefaults).mockResolvedValue([
+      {
+        id: "srd-1",
+        businessPartnerId: "bp-2",
+        sriRetentionCodeId: "src-303",
+        taxType: "RENTA",
+        code: "303",
+        codeName: "Honorarios profesionales",
+        percentage: 10,
+        isCatalogCodeActive: true,
+        isActive: true,
+        displayOrder: 0,
+      },
+    ]);
+    vi.mocked(businessPartnerFacade.addRetentionDefault).mockResolvedValue({
+      id: "srd-2",
+      businessPartnerId: "bp-2",
+      sriRetentionCodeId: "src-725",
+      taxType: "IVA",
+      code: "725",
+      codeName: "Retención en la fuente IVA 100%",
+      percentage: 100,
+      isCatalogCodeActive: true,
+      isActive: true,
+      displayOrder: 1,
+    });
+    vi.mocked(businessPartnerFacade.setRetentionDefaultState).mockResolvedValue({
+      id: "srd-1",
+      businessPartnerId: "bp-2",
+      sriRetentionCodeId: "src-303",
+      taxType: "RENTA",
+      code: "303",
+      codeName: "Honorarios profesionales",
+      percentage: 10,
+      isCatalogCodeActive: true,
+      isActive: false,
+      displayOrder: 0,
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+
+    await screen.findByText("Retenciones predeterminadas");
+    await waitFor(() =>
+      expect(screen.getByText(/RENTA — 303 — Honorarios profesionales/)).toBeTruthy(),
+    );
+
+    // No quedan los dos selects fijos legacy en el DOM.
+    expect(screen.queryByText("Código ret. IVA predeterminado")).toBeNull();
+    expect(screen.queryByText("Código ret. Renta predeterminado")).toBeNull();
+
+    // Agregar una nueva retención IVA.
+    fireEvent.change(getSelectByFieldLabel("Tipo de impuesto"), {
+      target: { value: "IVA" },
+    });
+    fireEvent.change(getSelectByFieldLabel("Código de retención SRI"), {
+      target: { value: "src-725" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Agregar retención" }));
+
+    await waitFor(() =>
+      expect(businessPartnerFacade.addRetentionDefault).toHaveBeenCalledWith("bp-2", {
+        sriRetentionCodeId: "src-725",
+      }),
+    );
+
+    // Desactivar la retención existente (fila 303 — no la recién agregada, "Agregar retención"
+    // no muta el estado local con el mock hasta que llega la respuesta, así que localizamos el
+    // switch dentro de la fila específica en vez de por texto global "Activa", que ya no es único).
+    const row303 = screen
+      .getByText(/RENTA — 303 — Honorarios profesionales/)
+      .closest(".md-supplier-retention-row");
+    if (!row303) throw new Error("No se encontró la fila de retención 303");
+    const toggle = within(row303 as HTMLElement).getByRole("switch");
+    fireEvent.click(toggle);
+
+    await waitFor(() =>
+      expect(businessPartnerFacade.setRetentionDefaultState).toHaveBeenCalledWith(
+        "bp-2",
+        "srd-1",
+        { isActive: false, displayOrder: 0 },
       ),
     );
   });

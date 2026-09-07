@@ -549,8 +549,11 @@ public sealed class ExpensesControllerTests
             HasRetainableBase: true,
             MissingRetentionCode: false,
             IsSupplierRequiredToKeepAccounting: false,
-            SuggestedVatRetentionCode: "1",
-            SuggestedIncomeRetentionCode: "303",
+            Candidates: new[]
+            {
+                new RetentionEligibilityCandidateDto("IVA", "1", "Retención IVA", 30m),
+                new RetentionEligibilityCandidateDto("RENTA", "303", "Honorarios profesionales", 10m),
+            },
             Reasons: Array.Empty<string>()
         );
 

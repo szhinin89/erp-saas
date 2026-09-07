@@ -8,12 +8,17 @@ namespace ERP.Domain.MasterData.ValueObjects;
 ///
 /// CAMPOS SRI OPERATIVOS (S3-A):
 ///   DefaultTaxSupportCode       — sustento tributario por defecto (01-19)
-///   DefaultRetentionVatCode     — código retención IVA (ej: 725)
-///   DefaultRetentionIncomeCode  — código retención Renta (ej: 303)
 ///   PaymentTerms                — [LEGACY] texto libre, será eliminado
 ///   DefaultPaymentMethodCode    — método de pago SRI por defecto (01-21)
 ///   RefundProviderTypeCode      — Tipo Proveedor de Reembolso (global.sri_supplier_type: 01/02)
 ///   IsRetentionExempt           — exento de retención (RISE, microempresa, etc.)
+///
+/// RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01: los antiguos DefaultRetentionVatCode/
+/// DefaultRetentionIncomeCode (un único código fijo por impuesto, tenant-wide) se eliminaron de
+/// este VO. La lista dinámica de retenciones predeterminadas por proveedor+empresa vive ahora en
+/// <see cref="ERP.Domain.MasterData.Entities.SupplierRetentionDefault"/> (N filas, FK real a
+/// SriRetentionCode, scoped por Company) — ver ADR-033 para el precedente de este mismo patrón
+/// aplicado a PaymentTermId.
 ///
 /// Almacenado en tabla master_bp_supplier_configs (1:1 con master_bp_roles).
 ///
@@ -30,8 +35,6 @@ public sealed record SupplierRoleConfig
     public const int PaymentMethodCodeMaxLen = 5;
 
     public string? DefaultTaxSupportCode { get; }
-    public string? DefaultRetentionVatCode { get; }
-    public string? DefaultRetentionIncomeCode { get; }
 
     /// <summary>[LEGACY] Texto libre — será eliminado.</summary>
     public string? PaymentTerms { get; }
@@ -64,8 +67,6 @@ public sealed record SupplierRoleConfig
 
     private SupplierRoleConfig(
         string? defaultTaxSupportCode,
-        string? defaultRetentionVatCode,
-        string? defaultRetentionIncomeCode,
         string? paymentTerms,
         string? defaultPaymentMethodCode,
         string? refundProviderTypeCode,
@@ -74,8 +75,6 @@ public sealed record SupplierRoleConfig
     )
     {
         DefaultTaxSupportCode = defaultTaxSupportCode;
-        DefaultRetentionVatCode = defaultRetentionVatCode;
-        DefaultRetentionIncomeCode = defaultRetentionIncomeCode;
         PaymentTerms = paymentTerms;
         DefaultPaymentMethodCode = defaultPaymentMethodCode;
         RefundProviderTypeCode = refundProviderTypeCode;
@@ -85,8 +84,6 @@ public sealed record SupplierRoleConfig
 
     public static SupplierRoleConfig Create(
         string? defaultTaxSupportCode = null,
-        string? defaultRetentionVatCode = null,
-        string? defaultRetentionIncomeCode = null,
         string? paymentTerms = null,
         string? defaultPaymentMethodCode = null,
         string? refundProviderTypeCode = null,
@@ -96,8 +93,6 @@ public sealed record SupplierRoleConfig
     {
         return new SupplierRoleConfig(
             NormalizeSriCode(defaultTaxSupportCode, nameof(defaultTaxSupportCode)),
-            NormalizeSriCode(defaultRetentionVatCode, nameof(defaultRetentionVatCode)),
-            NormalizeSriCode(defaultRetentionIncomeCode, nameof(defaultRetentionIncomeCode)),
             NormalizeText(paymentTerms, PaymentTermsMaxLen, nameof(paymentTerms)),
             NormalizeSriCode(defaultPaymentMethodCode, nameof(defaultPaymentMethodCode)),
             NormalizeSriCode(refundProviderTypeCode, nameof(refundProviderTypeCode)),

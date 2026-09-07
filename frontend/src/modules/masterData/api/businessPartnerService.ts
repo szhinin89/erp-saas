@@ -6,6 +6,7 @@ import {
   apiPut,
 } from "../../lib/apiEnvelope";
 import type {
+  AddRetentionDefaultBody,
   AssignRoleBody,
   BlockBody,
   BpContactDto,
@@ -22,7 +23,9 @@ import type {
   CreateLocationBody,
   CustomerConfigBody,
   SearchBusinessPartnersParams,
+  SetRetentionDefaultStateBody,
   SupplierConfigBody,
+  SupplierRetentionDefaultDto,
   UpdateBusinessPartnerBody,
   UpdateContactBody,
   UpdateIdentificationBody,
@@ -306,6 +309,40 @@ export const bpPurchaseSettingsService = {
   ): Promise<CompanyBpPurchaseSettingsDto> =>
     apiPut<CompanyBpPurchaseSettingsDto>(
       `${BASE}/${enc(bpId)}/purchase-settings`,
+      body,
+    ),
+};
+
+/**
+ * RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 — retenciones predeterminadas del proveedor por
+ * empresa activa (lista dinámica, reemplaza SupplierConfigBody.defaultRetentionVatCode/
+ * defaultRetentionIncomeCode).
+ */
+export const bpRetentionDefaultsService = {
+  /** GET /{bpId}/retention-defaults — lista completa (activas e inactivas) */
+  list: (bpId: string): Promise<SupplierRetentionDefaultDto[]> =>
+    apiGet<SupplierRetentionDefaultDto[]>(
+      `${BASE}/${enc(bpId)}/retention-defaults`,
+    ),
+
+  /** POST /{bpId}/retention-defaults — agrega una nueva */
+  add: (
+    bpId: string,
+    body: AddRetentionDefaultBody,
+  ): Promise<SupplierRetentionDefaultDto> =>
+    apiPost<SupplierRetentionDefaultDto>(
+      `${BASE}/${enc(bpId)}/retention-defaults`,
+      body,
+    ),
+
+  /** PATCH /{bpId}/retention-defaults/{id} — activa/desactiva y/o reordena */
+  setState: (
+    bpId: string,
+    id: string,
+    body: SetRetentionDefaultStateBody,
+  ): Promise<SupplierRetentionDefaultDto> =>
+    apiPatch<SupplierRetentionDefaultDto>(
+      `${BASE}/${enc(bpId)}/retention-defaults/${enc(id)}`,
       body,
     ),
 };

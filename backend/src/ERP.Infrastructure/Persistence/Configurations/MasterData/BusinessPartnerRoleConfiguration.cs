@@ -88,14 +88,6 @@ public sealed class BusinessPartnerRoleConfiguration : IEntityTypeConfiguration<
                     .HasColumnName("default_tax_support_code")
                     .HasMaxLength(SupplierRoleConfig.SriCodeMaxLen);
 
-                sc.Property(c => c.DefaultRetentionVatCode)
-                    .HasColumnName("default_retention_vat_code")
-                    .HasMaxLength(SupplierRoleConfig.SriCodeMaxLen);
-
-                sc.Property(c => c.DefaultRetentionIncomeCode)
-                    .HasColumnName("default_retention_income_code")
-                    .HasMaxLength(SupplierRoleConfig.SriCodeMaxLen);
-
                 sc.Property(c => c.PaymentTerms)
                     .HasColumnName("payment_terms")
                     .HasMaxLength(SupplierRoleConfig.PaymentTermsMaxLen);

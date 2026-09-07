@@ -190,6 +190,8 @@ public class ErpDbContext : DbContext
         Set<CompanyBpTradingSettings>();
     public DbSet<CompanyBpPurchaseSettings> CompanyBpPurchaseSettings =>
         Set<CompanyBpPurchaseSettings>();
+    public DbSet<SupplierRetentionDefault> SupplierRetentionDefaults =>
+        Set<SupplierRetentionDefault>();
     public DbSet<BusinessPartnerLocation> BusinessPartnerLocations =>
         Set<BusinessPartnerLocation>();
     public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();

@@ -180,8 +180,7 @@ const ELIGIBLE_RESULT: RetentionEligibilityResult = {
   hasRetainableBase: true,
   missingRetentionCode: false,
   isSupplierRequiredToKeepAccounting: false,
-  suggestedVatRetentionCode: "303",
-  suggestedIncomeRetentionCode: null,
+  candidates: [{ taxType: "IVA", retentionCode: "303", retentionCodeName: "Ret. IVA", retentionPct: 30 }],
   reasons: ["La empresa actual está configurada para retener IVA."],
   isEligible: true,
 };
@@ -193,8 +192,7 @@ const NOT_CONFIGURED_RESULT: RetentionEligibilityResult = {
   hasRetainableBase: true,
   missingRetentionCode: false,
   isSupplierRequiredToKeepAccounting: false,
-  suggestedVatRetentionCode: null,
-  suggestedIncomeRetentionCode: null,
+  candidates: [],
   reasons: ["La empresa actual no está configurada para retener IVA."],
   isEligible: false,
 };

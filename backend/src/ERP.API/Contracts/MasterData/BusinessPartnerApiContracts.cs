@@ -68,12 +68,6 @@ public sealed class SupplierConfigRequest
     /// <summary>Código sustento tributario SRI (01-19). Ej: "01" = Crédito Tributario.</summary>
     public string? DefaultTaxSupportCode { get; set; }
 
-    /// <summary>Código retención IVA SRI. Ej: "725".</summary>
-    public string? DefaultRetentionVatCode { get; set; }
-
-    /// <summary>Código retención renta SRI. Ej: "303".</summary>
-    public string? DefaultRetentionIncomeCode { get; set; }
-
     /// <summary>Método de pago SRI por defecto (01-21). Ej: "01" = Sin sistema financiero.</summary>
     public string? DefaultPaymentMethodCode { get; set; }
 
@@ -236,6 +230,19 @@ public sealed class UpsertTradingSettingsRequest
 public sealed class UpsertPurchaseSettingsRequest
 {
     public Guid? PaymentTermId { get; set; }
+}
+
+/// <summary>RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 — agrega una retención predeterminada al proveedor en la empresa activa.</summary>
+public sealed class AddRetentionDefaultRequest
+{
+    public Guid SriRetentionCodeId { get; set; }
+}
+
+/// <summary>RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 — activa/desactiva y/o reordena una retención predeterminada.</summary>
+public sealed class SetRetentionDefaultStateRequest
+{
+    public bool IsActive { get; set; }
+    public int DisplayOrder { get; set; }
 }
 
 /// <summary>Bloquea operativamente al BP en la empresa activa. Requiere motivo.</summary>

@@ -20,6 +20,19 @@ export type RetentionTaxType = "Vat" | "Income";
 /** RetentionStatus (backend). */
 export type RetentionStatus = "Draft" | "Issued" | "Cancelled";
 
+/**
+ * RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 — reemplaza los antiguos
+ * suggestedVatRetentionCode/suggestedIncomeRetentionCode (máx. 1 código por impuesto) por 0..N
+ * candidatos por impuesto — el proveedor puede tener varias retenciones default activas del
+ * mismo impuesto.
+ */
+export interface RetentionEligibilityCandidate {
+  taxType: string; // "IVA" | "RENTA"
+  retentionCode: string;
+  retentionCodeName: string;
+  retentionPct: number;
+}
+
 export interface RetentionEligibilityResult {
   canRetainVat: boolean;
   canRetainIncome: boolean;
@@ -27,8 +40,7 @@ export interface RetentionEligibilityResult {
   hasRetainableBase: boolean;
   missingRetentionCode: boolean;
   isSupplierRequiredToKeepAccounting: boolean;
-  suggestedVatRetentionCode: string | null;
-  suggestedIncomeRetentionCode: string | null;
+  candidates: RetentionEligibilityCandidate[];
   reasons: string[];
   /** Propiedad calculada del record C# (CanRetainVat || CanRetainIncome) — también serializada. */
   isEligible: boolean;
