@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
-import { ZHBtn } from "../../../components/zh/ZHForm";
+import {
+  ZHDataTable,
+  type ZHDataTableColumn,
+} from "../../../components/zh/ZHDataTable";
+import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { adminCoreService } from "../api/adminCoreService";
 import { authService } from "../../auth/api/authService";
 import { useAuthStore } from "../../../store/authStore";
 import { formatApiRequestError } from "../../lib/apiError";
 import type { AdminCoreCompany } from "../../../types/adminCore";
+
+import { ZHModal } from "../../../components/zh/ZHModal";
 
 interface TenantGroup {
   tenantId: string;
@@ -42,15 +47,21 @@ function groupByTenant(companies: AdminCoreCompany[]): TenantGroup[] {
  * Dashboard global AdminGlobalCore — nunca llama endpoints operativos (/me/menu,
  * /session/context, /auth/my-companies, /session/available-branches, /config/decimals,
  * /electronic-invoicing/status, /dashboard/kpis). Solo consume GET /api/v1/admin-core/companies
- * y POST /api/v1/auth/global/operate-company.
+ * PUT /api/v1/admin-core/companies/{id} y POST /api/v1/auth/global/operate-company.
  */
 export function AdminCoreDashboardPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const [companies, setCompanies] = useState<AdminCoreCompany[]>([]);
+  const [editing, setEditing] = useState<AdminCoreCompany | null>(null);
+  const [taxId, setTaxId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [operatingCompanyId, setOperatingCompanyId] = useState<string | null>(null);
+  const [operatingCompanyId, setOperatingCompanyId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -95,10 +106,51 @@ export function AdminCoreDashboardPage() {
     }
   };
 
+  const closeEditor = useCallback(() => {
+    if (!saving) setEditing(null);
+  }, [saving]);
+
+  const handleSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editing || saving) return;
+    setSaving(true);
+    setEditError("");
+    try {
+      await adminCoreService.updateCompany(editing, taxId);
+      const rows = await adminCoreService.listCompanies();
+      setCompanies(rows);
+      setEditing(null);
+    } catch (e) {
+      setEditError(
+        formatApiRequestError(e, {
+          offline: "No se pudo conectar con el servidor.",
+          generic: "No se pudo guardar la empresa.",
+        }),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const columns: ZHDataTableColumn<AdminCoreCompany>[] = [
-    { key: "ruc", header: "RUC", render: (r) => r.ruc },
+    {
+      key: "ruc",
+      header: "RUC",
+      render: (r) => (
+        <>
+          {r.ruc}
+          {r.ruc.startsWith("TMP-EC-") ? (
+            <span className="zh-form-badge">RUC Pendiente</span>
+          ) : null}
+        </>
+      ),
+    },
     { key: "legalName", header: "Razón social", render: (r) => r.legalName },
-    { key: "tradeName", header: "Nombre comercial", render: (r) => r.tradeName ?? "—" },
+    {
+      key: "tradeName",
+      header: "Nombre comercial",
+      render: (r) => r.tradeName ?? "—",
+    },
     {
       key: "isActive",
       header: "Estado",
@@ -109,21 +161,110 @@ export function AdminCoreDashboardPage() {
       header: "",
       align: "right",
       render: (r) => (
-        <ZHBtn
-          variant="primary"
-          size="sm"
-          type="button"
-          disabled={operatingCompanyId !== null}
-          onClick={() => void handleOperate(r.companyId)}
-        >
-          {operatingCompanyId === r.companyId ? "Ingresando…" : "Ingresar a esta empresa"}
-        </ZHBtn>
+        <>
+          <ZHBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            disabled={operatingCompanyId !== null}
+            onClick={() => {
+              setEditing({ ...r });
+              setTaxId(r.ruc.startsWith("TMP-EC-") ? "" : r.ruc);
+              setEditError("");
+            }}
+          >
+            Editar
+          </ZHBtn>
+          <ZHBtn
+            variant="primary"
+            size="sm"
+            type="button"
+            disabled={operatingCompanyId !== null}
+            onClick={() => void handleOperate(r.companyId)}
+          >
+            {operatingCompanyId === r.companyId
+              ? "Ingresando…"
+              : "Ingresar a esta empresa"}
+          </ZHBtn>
+        </>
       ),
     },
   ];
 
   return (
     <PageShell title="Dashboard global" subtitle="Empresas por tenant">
+      <ZHModal
+        open={editing !== null}
+        title="Editar empresa"
+        onClose={closeEditor}
+      >
+        {editing ? (
+          <form onSubmit={(event) => void handleSave(event)}>
+            {editError ? (
+              <ZHPageNotice variant="error" message={editError} />
+            ) : null}
+            <fieldset disabled={saving}>
+              <ZHField label="RUC">
+                <input
+                  className="zh-input"
+                  aria-label="RUC"
+                  value={taxId}
+                  maxLength={13}
+                  placeholder={
+                    editing.ruc.startsWith("TMP-EC-")
+                      ? "Pendiente: ingrese el RUC real"
+                      : "RUC"
+                  }
+                  onChange={(event) => setTaxId(event.target.value)}
+                />
+              </ZHField>
+              <ZHField label="Razón social" required>
+                <input
+                  className="zh-input"
+                  aria-label="Razón social"
+                  required
+                  maxLength={200}
+                  value={editing.legalName}
+                  onChange={(event) =>
+                    setEditing({ ...editing, legalName: event.target.value })
+                  }
+                />
+              </ZHField>
+              <ZHField label="Nombre comercial">
+                <input
+                  className="zh-input"
+                  aria-label="Nombre comercial"
+                  maxLength={200}
+                  value={editing.tradeName ?? ""}
+                  onChange={(event) =>
+                    setEditing({ ...editing, tradeName: event.target.value })
+                  }
+                />
+              </ZHField>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={editing.isActive}
+                  onChange={(event) =>
+                    setEditing({ ...editing, isActive: event.target.checked })
+                  }
+                />{" "}
+                Empresa activa
+              </label>
+              <ZHBtn type="submit" variant="primary">
+                {saving ? "Guardando..." : "Guardar"}
+              </ZHBtn>
+              <ZHBtn
+                type="button"
+                variant="ghost"
+                onClick={() => setEditing(null)}
+              >
+                Cancelar
+              </ZHBtn>
+            </fieldset>
+          </form>
+        ) : null}
+      </ZHModal>
       {error ? <ZHPageNotice variant="error" message={error} /> : null}
       {groups.length === 0 && !loading ? (
         <ZHCard>

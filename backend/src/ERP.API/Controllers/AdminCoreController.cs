@@ -3,6 +3,7 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Company.DTOs;
 using ERP.Application.Modules.Company.UseCases.ListCompaniesForAdminCore;
+using ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,5 +43,17 @@ public sealed class AdminCoreController : ControllerBase
     {
         var result = await _mediator.Send(new ListCompaniesForAdminCoreQuery(), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<AdminCoreCompanyDto>());
+    }
+    [HttpPut("companies/{id:guid}")]
+    public async Task<IActionResult> UpdateCompany(
+        Guid id,
+        [FromBody] UpdateCompanyForAdminCoreCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+            return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return this.ToOkOrBadRequest(result);
     }
 }

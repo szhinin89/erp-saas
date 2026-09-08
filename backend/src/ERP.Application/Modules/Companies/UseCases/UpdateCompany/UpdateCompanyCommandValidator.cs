@@ -14,8 +14,9 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
             .MaximumLength(200);
 
         RuleFor(x => x.TaxId)
-            .Length(13)
-            .WithMessage("El RUC debe tener 13 caracteres.")
+            .Must(ruc => ruc!.Trim().All(c => c is >= '0' and <= '9')
+                && ERP.Domain.Common.Validators.RucValidator.EsRucValido(ruc))
+            .WithMessage("El RUC ecuatoriano no es válido.")
             .When(x => !string.IsNullOrWhiteSpace(x.TaxId));
 
         RuleFor(x => x.TradeName)

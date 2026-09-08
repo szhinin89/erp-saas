@@ -45,6 +45,21 @@ public sealed class UpdateCompanyHandler
         if (entity is null)
             return Result<CompanyDetailDto>.Failure("Empresa no encontrada.");
 
+        return await UpdateEntityAsync(command, entity, _companies, _currentUser.UserId, cancellationToken);
+    }
+
+    internal static async Task<Result<CompanyDetailDto>> UpdateEntityAsync(
+        UpdateCompanyCommand command,
+        ERP.Domain.Modules.Company.Entities.Company entity,
+        ICompanyRepository companies,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        var validation = await new UpdateCompanyCommandValidator().ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+            return Result<CompanyDetailDto>.Failure(validation.Errors[0].ErrorMessage);
+
         if (
             !string.IsNullOrWhiteSpace(command.TaxId)
             && !string.Equals(
@@ -54,7 +69,7 @@ public sealed class UpdateCompanyHandler
             )
         )
         {
-            var taken = await _companies.GetByTaxIdentificationNumberAsync(
+            var taken = await companies.GetByTaxIdentificationNumberAsync(
                 command.TaxId.Trim(),
                 cancellationToken
             );
@@ -68,7 +83,7 @@ public sealed class UpdateCompanyHandler
                 command.TaxId,
                 isProvisional,
                 isProvisional ? TaxIdentificationStatus.Pending : TaxIdentificationStatus.Verified,
-                _currentUser.UserId
+                userId
             );
         }
 
@@ -76,10 +91,10 @@ public sealed class UpdateCompanyHandler
             command.LegalName,
             command.TradeName,
             command.IsActive,
-            _currentUser.UserId
+            userId
         );
 
-        await _companies.SaveChangesAsync(cancellationToken);
+        await companies.SaveChangesAsync(cancellationToken);
 
         return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(entity));
     }

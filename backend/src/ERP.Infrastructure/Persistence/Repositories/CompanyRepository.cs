@@ -127,9 +127,23 @@ public sealed class CompanyRepository : ICompanyRepository
             .OrderBy(c => c.LegalName)
             .ToListAsync(cancellationToken);
 
+    public Task<Company?> GetTrackedByIdForAdminCoreAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _db.Companies.AsPlatformQuery().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
     public async Task AddAsync(Company company, CancellationToken cancellationToken = default) =>
         await _db.Companies.AddAsync(company, cancellationToken);
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        _db.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException
+            { SqlState: "23505", ConstraintName: "uq_company_tax_identification_number" })
+        {
+            throw new ERP.Domain.Exceptions.CompanyRucAlreadyExistsException(
+                ex.Entries.Select(e => e.Entity).OfType<Company>().FirstOrDefault()?.TaxIdentificationNumber ?? "");
+        }
+    }
 }

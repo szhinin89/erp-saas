@@ -60,6 +60,8 @@ public interface ICompanyRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<CompanyEntity?> GetTrackedByIdForAdminCoreAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task AddAsync(CompanyEntity company, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

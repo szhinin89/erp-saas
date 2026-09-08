@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
 import { adminCoreService } from "../api/adminCoreService";
@@ -13,7 +19,7 @@ import { AdminCoreDashboardPage } from "./AdminCoreDashboardPage";
 const GLOBAL_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
 vi.mock("../api/adminCoreService", () => ({
-  adminCoreService: { listCompanies: vi.fn() },
+  adminCoreService: { listCompanies: vi.fn(), updateCompany: vi.fn() },
 }));
 
 vi.mock("../../auth/api/authService", () => ({
@@ -38,7 +44,10 @@ function renderDashboard() {
     <MemoryRouter initialEntries={["/admin-core/dashboard"]}>
       <Routes>
         <Route element={<AdminCoreLayout />}>
-          <Route path="/admin-core/dashboard" element={<AdminCoreDashboardPage />} />
+          <Route
+            path="/admin-core/dashboard"
+            element={<AdminCoreDashboardPage />}
+          />
         </Route>
         <Route path="/dashboard" element={<div>DASHBOARD_OPERATIVO</div>} />
       </Routes>
@@ -116,8 +125,12 @@ describe("AdminCoreDashboardPage", () => {
     renderDashboard();
 
     await screen.findByText("Tenant A");
-    const link = screen.getByRole("link", { name: "Crear empresa en este tenant" });
-    expect(link.getAttribute("href")).toBe("/admin-core/companies/new?tenantId=tenant-a");
+    const link = screen.getByRole("link", {
+      name: "Crear empresa en este tenant",
+    });
+    expect(link.getAttribute("href")).toBe(
+      "/admin-core/companies/new?tenantId=tenant-a",
+    );
   });
 
   it("operate-company navega a /dashboard operativo", async () => {
@@ -158,5 +171,69 @@ describe("AdminCoreDashboardPage", () => {
     });
     expect(await screen.findByText("DASHBOARD_OPERATIVO")).toBeTruthy();
     expect(useAuthStore.getState().user?.companyId).toBe("company-1");
+  });
+});
+
+describe("Editar empresa global", () => {
+  const company = {
+    tenantId: "tenant-a",
+    tenantName: "Tenant A",
+    tenantIsActive: true,
+    companyId: "company-1",
+    ruc: "TMP-EC-ceb18408",
+    legalName: "Original",
+    tradeName: null,
+    isActive: true,
+  };
+
+  it("guarda sobre la empresa existente y refresca el RUC pendiente desde backend", async () => {
+    vi.mocked(adminCoreService.listCompanies)
+      .mockResolvedValueOnce([company])
+      .mockResolvedValueOnce([
+        { ...company, ruc: "1790016919001", legalName: "Actualizada" },
+      ]);
+    vi.mocked(adminCoreService.updateCompany).mockResolvedValue();
+    renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    expect(screen.getByText("RUC Pendiente")).toBeTruthy();
+    fireEvent.change(screen.getByRole("textbox", { name: "RUC" }), {
+      target: { value: "1790016919001" },
+    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Raz\u00f3n social" }),
+      { target: { value: "Actualizada" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(adminCoreService.updateCompany).toHaveBeenCalledWith(
+        { ...company, legalName: "Actualizada" },
+        "1790016919001",
+      ),
+    );
+    expect(await screen.findByText("1790016919001")).toBeTruthy();
+    expect(screen.queryByText("RUC Pendiente")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("mantiene el formulario y los datos originales si backend rechaza", async () => {
+    vi.mocked(adminCoreService.listCompanies).mockResolvedValue([company]);
+    vi.mocked(adminCoreService.updateCompany).mockRejectedValue(
+      new Error("El RUC ya esta registrado en el sistema."),
+    );
+    renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "RUC" }), {
+      target: { value: "1234567890123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(adminCoreService.updateCompany).toHaveBeenCalled(),
+    );
+    expect(
+      await screen.findByText("El RUC ya esta registrado en el sistema."),
+    ).toBeTruthy();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByText("RUC Pendiente")).toBeTruthy();
+    expect(adminCoreService.listCompanies).toHaveBeenCalledTimes(1);
   });
 });
