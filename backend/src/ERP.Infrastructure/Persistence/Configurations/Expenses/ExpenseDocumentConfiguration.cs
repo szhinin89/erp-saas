@@ -2,6 +2,7 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -73,6 +74,15 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .HasColumnName("tax_support_code")
             .HasMaxLength(ExpenseDocument.TaxSupportCodeMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
+
+        // EXPENSES-FROM-RECEPTION-01 — mismo patrón que PurchaseCreditNote.ReceptionDocumentId/AccessKey.
+        builder
+            .Property(x => x.ReceptionDocumentId)
+            .HasColumnName("reception_document_id");
+        builder
+            .Property(x => x.AccessKey)
+            .HasColumnName("access_key")
+            .HasMaxLength(ExpenseDocument.AccessKeyMaxLen);
 
         builder
             .Property(x => x.ConfirmedSubtotal)
@@ -153,9 +163,34 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .HasForeignKey(x => x.PaymentTermId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // EXPENSES-FROM-RECEPTION-01 — FK restrictiva hacia purchase_reception_documents,
+        // referencia (no copia), 1:1 vía índice único filtrado abajo. Nunca se elimina un
+        // PurchaseReceptionDocument en cascada por esto.
+        builder
+            .HasOne<PurchaseReceptionDocument>()
+            .WithMany()
+            .HasForeignKey(x => x.ReceptionDocumentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder
             .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_expense_documents_tenant_company");
+
+        // EXPENSES-FROM-RECEPTION-01 — 1 documento de recepción → máx. 1 ExpenseDocument (mirror
+        // de uq_purchase_credit_notes_tenant_reception_document_id).
+        builder
+            .HasIndex(x => new { x.TenantId, x.ReceptionDocumentId })
+            .IsUnique()
+            .HasFilter("\"reception_document_id\" IS NOT NULL")
+            .HasDatabaseName("uq_expense_documents_tenant_reception_document_id");
+
+        // Unique within expenses. The migration also installs cross-table triggers that
+        // serialize purchase/expense writes sharing the same fiscal identity.
+        builder
+            .HasIndex(x => new { x.TenantId, x.AccessKey })
+            .IsUnique()
+            .HasFilter("\"access_key\" IS NOT NULL")
+            .HasDatabaseName("uq_expense_documents_tenant_access_key");
 
         builder
             .HasIndex(x => new

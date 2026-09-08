@@ -16,5 +16,7 @@ public sealed record DownloadPurchaseReceptionXmlResultDto(
     // infoTributaria/nombreComercial del emisor — solo para precargar el formulario de creación de
     // proveedor cuando el BP todavía no existe en el ERP; null si el XML no lo trae o no se pudo
     // interpretar la cabecera.
-    string? SupplierTradeName
+    string? SupplierTradeName,
+    // EXPENSES-FROM-RECEPTION-01 — si ya existe un Gasto con esta clave de acceso SRI.
+    bool ExpenseExists
 );

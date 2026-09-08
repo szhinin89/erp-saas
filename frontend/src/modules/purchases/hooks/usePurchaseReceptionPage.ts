@@ -105,6 +105,7 @@ export function usePurchaseReceptionPage() {
                       purchaseExists: download.purchaseExists,
                       purchaseId: download.purchaseId,
                       supplierIsActive: download.supplierIsActive,
+                      expenseExists: download.expenseExists,
                       supplierTradeName:
                         download.supplierTradeName ?? item.supplierTradeName,
                     }

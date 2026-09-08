@@ -89,6 +89,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         var handler = new DownloadPurchaseReceptionXmlHandler(
             repo.Object,
             purchaseRepo.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             bpRepo.Object,
             provider.Object,
             detailProcessor.Object,

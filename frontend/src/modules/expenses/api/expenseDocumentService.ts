@@ -209,6 +209,8 @@ export interface ExpenseDraftLineRequest {
 }
 
 export interface CreateExpenseDraftPayload {
+  receptionDocumentId?: string | null;
+  accessKey?: string | null;
   supplierId: string;
   issueDate: string;
   accountingDate: string;

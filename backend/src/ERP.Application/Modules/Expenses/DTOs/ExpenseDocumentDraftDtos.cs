@@ -73,7 +73,11 @@ public sealed record CreateExpenseDraftRequest(
     // RETENTIONS-SOURCE-DOCUMENT-TAX-SUPPORT-02G: opcional; si no llega, el handler usa el
     // default configurable del proveedor (SupplierRoleConfig.DefaultTaxSupportCode).
     string? TaxSupportCode = null,
-    RetentionIntentRequest? Retention = null
+    RetentionIntentRequest? Retention = null,
+    // EXPENSES-FROM-RECEPTION-01 — presentes solo cuando el gasto se arma desde
+    // purchases/reception; null en alta manual.
+    Guid? ReceptionDocumentId = null,
+    string? AccessKey = null
 );
 
 public sealed record CancelExpenseDocumentRequest(string Reason);

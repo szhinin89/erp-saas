@@ -1,3 +1,6 @@
+using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreateExpenseDraftFromReception;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.DocTypes.Services;
@@ -41,7 +44,11 @@ public sealed record CreateExpenseDraftCommand(
     string? AuthorizationNumber = null,
     DateTime? AuthorizationDate = null,
     string? Notes = null,
-    string? TaxSupportCode = null
+    string? TaxSupportCode = null,
+    // EXPENSES-FROM-RECEPTION-01 — presentes solo cuando el gasto se arma desde
+    // purchases/reception (CreateExpenseDraftFromReceptionQuery); null en alta manual.
+    Guid? ReceptionDocumentId = null,
+    string? AccessKey = null
 ) : IRequest<Result<ExpenseDocumentDetailDto>>, IBranchScopedRequest, IExpenseDraftInput;
 
 public sealed record UpdateExpenseDraftCommand(
@@ -84,7 +91,11 @@ public sealed class GetExpenseDocumentByIdValidator
 
 public sealed class CreateExpenseDraftValidator : AbstractValidator<CreateExpenseDraftCommand>
 {
-    public CreateExpenseDraftValidator() => Include(new ExpenseDraftHeaderRules<CreateExpenseDraftCommand>());
+    public CreateExpenseDraftValidator()
+    {
+        Include(new ExpenseDraftHeaderRules<CreateExpenseDraftCommand>());
+        RuleFor(x => x.AccessKey).MaximumLength(ExpenseDocument.AccessKeyMaxLen);
+    }
 }
 
 public sealed class UpdateExpenseDraftValidator : AbstractValidator<UpdateExpenseDraftCommand>
@@ -186,6 +197,9 @@ public sealed class CreateExpenseDraftHandler
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
+    private readonly ERP.Domain.Modules.Purchases.Interfaces.IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
+    private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -200,6 +214,9 @@ public sealed class CreateExpenseDraftHandler
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         IDocumentFlowPolicyService workflowPolicy,
+        ERP.Domain.Modules.Purchases.Interfaces.IPurchaseInvoiceRepository purchaseRepo,
+        IPurchaseReceptionDocumentRepository receptionRepo,
+        IDatabaseExceptionTranslator dbEx,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -214,6 +231,9 @@ public sealed class CreateExpenseDraftHandler
         _ptResolver = ptResolver;
         _tax = tax;
         _workflowPolicy = workflowPolicy;
+        _purchaseRepo = purchaseRepo;
+        _receptionRepo = receptionRepo;
+        _dbEx = dbEx;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -238,6 +258,31 @@ public sealed class CreateExpenseDraftHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 ExpenseWorkflowPolicyMessages.Translate(ex)
             );
+        }
+
+        if (cmd.DocumentType == "04")
+            return Result<ExpenseDocumentDetailDto>.ValidationFailure("Una nota de crédito no puede crear un gasto.");
+        if (cmd.ReceptionDocumentId is null && !string.IsNullOrWhiteSpace(cmd.AccessKey))
+        {
+            var sourceDocument = await _receptionRepo.GetByAccessKeyAsync(_tenant.TenantId, cmd.AccessKey.Trim(), ct);
+            if (sourceDocument is not null)
+                cmd = cmd with { ReceptionDocumentId = sourceDocument.Id };
+        }
+        // Revalidate at save time and resolve the fiscal identity on the server.
+        if (cmd.ReceptionDocumentId is { } receptionId)
+        {
+            var preview = await new CreateExpenseDraftFromReceptionHandler(
+                _receptionRepo, _purchaseRepo, _repo, _businessPartners, _roles, _tenant
+            ).Handle(new CreateExpenseDraftFromReceptionQuery(receptionId), ct);
+            if (!preview.IsSuccess)
+                return Result<ExpenseDocumentDetailDto>.Failure(preview.Error!, preview.Code);
+            var source = preview.Value!;
+            if (cmd.SupplierId != source.SupplierId || cmd.DocumentType != source.DocumentType
+                || cmd.DocumentNumber != source.DocumentNumber || cmd.IssueDate != source.IssueDate
+                || (!string.IsNullOrWhiteSpace(cmd.AccessKey) && cmd.AccessKey.Trim() != source.AccessKey))
+                return Result<ExpenseDocumentDetailDto>.ValidationFailure(
+                    "Los datos del gasto no coinciden con la factura recibida.");
+            cmd = cmd with { AccessKey = source.AccessKey, AuthorizationNumber = source.AuthorizationNumber, AuthorizationDate = source.AuthorizationDate };
         }
 
         var supplier = await ExpenseDraftRules.ResolveSupplierAsync(
@@ -271,6 +316,29 @@ public sealed class CreateExpenseDraftHandler
                 "Ya existe un gasto registrado para este proveedor, tipo y numero de documento."
             );
 
+        // EXPENSES-FROM-RECEPTION-01 — una misma factura recibida (clave de acceso SRI) no puede
+        // terminar registrada como Compra Y Gasto a la vez. El chequeo es cruzado entre las dos
+        // tablas (no hay una FK/constraint única que las una) porque son agregados distintos.
+        var accessKey = cmd.AccessKey?.Trim();
+        if (!string.IsNullOrWhiteSpace(accessKey))
+        {
+            var existingPurchase = await _purchaseRepo.GetByAccessKeyAsync(
+                _tenant.TenantId,
+                accessKey,
+                ct
+            );
+            if (existingPurchase is not null)
+                return Result<ExpenseDocumentDetailDto>.Conflict(
+                    "Ya existe una compra registrada con esta clave de acceso SRI."
+                );
+
+            var existingExpense = await _repo.ExistsByAccessKeyAsync(_tenant.TenantId, accessKey, ct);
+            if (existingExpense)
+                return Result<ExpenseDocumentDetailDto>.Conflict(
+                    "Ya existe un gasto registrado con esta clave de acceso SRI."
+                );
+        }
+
         var dueDate = ExpenseDraftRules.ResolveDueDate(
             cmd.IssueDate,
             cmd.DueDate,
@@ -301,7 +369,9 @@ public sealed class CreateExpenseDraftHandler
                 cmd.AuthorizationDate,
                 dueDate.Value,
                 cmd.Notes,
-                ExpenseDraftRules.ResolveTaxSupportCode(cmd.TaxSupportCode, supplier.Role)
+                ExpenseDraftRules.ResolveTaxSupportCode(cmd.TaxSupportCode, supplier.Role),
+                cmd.ReceptionDocumentId,
+                accessKey
             );
 
             var lines = await ExpenseDraftRules.BuildLinesAsync(
@@ -324,6 +394,13 @@ public sealed class CreateExpenseDraftHandler
             return Result<ExpenseDocumentDetailDto>.Success(
                 ExpenseDocumentMapper.ToDetail(document)
             );
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info)
+            && info.ConstraintName is "uq_purchase_expense_access_key"
+                or "uq_expense_documents_tenant_access_key"
+                or "uq_expense_documents_tenant_reception_document_id")
+        {
+            return Result<ExpenseDocumentDetailDto>.Conflict("La factura recibida ya fue registrada como compra o gasto.");
         }
         catch (ArgumentException ex)
         {

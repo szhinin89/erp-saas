@@ -10,6 +10,7 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -40,6 +41,7 @@ public sealed class PurchasePaymentTermActiveGuardTests
         public Mock<IWarehouseRepository> WhRepo { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
+        public Mock<IExpenseDocumentRepository> ExpenseRepo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
@@ -94,6 +96,7 @@ public sealed class PurchasePaymentTermActiveGuardTests
                 WhRepo.Object,
                 Tax.Object,
                 ReceptionRepo.Object,
+                ExpenseRepo.Object,
                 Tenant.Object,
                 Company.Object,
                 Branch.Object,
@@ -110,6 +113,47 @@ public sealed class PurchasePaymentTermActiveGuardTests
                 new List<PurchaseLineInput> { new(null, "Servicio", 1m, 100m, "0") },
                 PaymentTermId: paymentTermId
             );
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Expense_reception_blocks_purchase_even_when_access_key_is_omitted(bool omitKey)
+    {
+        var fx = new Fixture();
+        var key = new string('1', 49);
+        var lineId = Guid.NewGuid();
+        var source = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
+            TenantId, CompanyId, BranchId,
+            ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice,
+            "1791352688001", "Proveedor", SupplierId, key, "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow), null, 100, 0, 100, UserId);
+        fx.ReceptionRepo.Setup(r => r.GetByLineIdAsync(TenantId, lineId, It.IsAny<CancellationToken>())).ReturnsAsync(source);
+        fx.ExpenseRepo.Setup(r => r.ExistsByReceptionDocumentIdAsync(TenantId, source.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var cmd = Fixture.ValidCommand() with { AccessKey = omitKey ? null : key,
+            Lines = [new(null, "Servicio", 1m, 100m, "0", PurchaseReceptionLineId: lineId)] };
+        var result = await fx.BuildCreateHandler().Handle(cmd, default);
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        fx.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Existing_expense_blocks_purchase_creation()
+    {
+        var fx = new Fixture();
+        var key = new string('1', 49);
+        fx.ExpenseRepo.Setup(r => r.ExistsByAccessKeyAsync(TenantId, key, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var result = await fx.BuildCreateHandler().Handle(Fixture.ValidCommand() with { AccessKey = key }, default);
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        fx.Repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Credit_note_cannot_be_created_as_purchase()
+    {
+        var result = await new Fixture().BuildCreateHandler().Handle(Fixture.ValidCommand() with { DocTypeCode = "04" }, default);
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Solo una factura");
     }
 
     [Fact]

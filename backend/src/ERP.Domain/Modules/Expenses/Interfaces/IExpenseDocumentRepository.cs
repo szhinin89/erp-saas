@@ -24,6 +24,15 @@ public interface IExpenseDocumentRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// EXPENSES-FROM-RECEPTION-01 — usado para impedir que la misma factura de recepción termine
+    /// registrada como Gasto más de una vez, y como mitad del chequeo cruzado Compra↔Gasto (la
+    /// otra mitad es <c>IPurchaseInvoiceRepository.GetByAccessKeyAsync</c>).
+    /// </summary>
+    Task<bool> ExistsByAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
+
+    Task<bool> ExistsByReceptionDocumentIdAsync(Guid tenantId, Guid receptionDocumentId, CancellationToken ct = default);
+
     Task AddAsync(ExpenseDocument document, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

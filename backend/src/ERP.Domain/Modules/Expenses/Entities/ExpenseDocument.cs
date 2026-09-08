@@ -15,6 +15,8 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public const int NotesMaxLen = 500;
     /// <summary>Código de sustento tributario SRI (catálogo <c>global.sri_tax_support</c>, 2 dígitos: "01".."19"). Mismo campo que <see cref="ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice.TaxSupportCode"/> — misma semántica documental (Tabla 5 Ficha Técnica SRI), aplicada al documento origen de Gastos.</summary>
     public const int TaxSupportCodeMaxLen = 5;
+    /// <summary>Mismo campo/longitud que <see cref="ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.AccessKey"/> — clave de acceso SRI de 49 dígitos.</summary>
+    public const int AccessKeyMaxLen = 49;
 
     public Guid CompanyId { get; private set; }
     public Guid BranchId { get; private set; }
@@ -35,6 +37,24 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
     public string? Notes { get; private set; }
     public string? TaxSupportCode { get; private set; }
     public ExpenseStatus Status { get; private set; } = ExpenseStatus.Draft;
+
+    /// <summary>
+    /// EXPENSES-FROM-RECEPTION-01 — <c>PurchaseReceptionDocument</c> origen cuando este gasto se
+    /// creó a partir de una factura recibida vía recepción electrónica (en vez de una compra).
+    /// Null en gastos ingresados manualmente. Mismo patrón que
+    /// <see cref="ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote.ReceptionDocumentId"/>:
+    /// solo referencia de trazabilidad, nunca modifica el documento de recepción por su cuenta.
+    /// </summary>
+    public Guid? ReceptionDocumentId { get; private set; }
+
+    /// <summary>
+    /// EXPENSES-FROM-RECEPTION-01 — clave de acceso SRI del comprobante origen, copiada desde
+    /// <c>PurchaseReceptionDocument.AccessKey</c>. Único índice (TenantId, AccessKey) evita que la
+    /// misma recepción termine registrada dos veces como Gasto, y su verificación cruzada contra
+    /// <c>PurchaseInvoice.AccessKey</c> (en el handler de aplicación) evita que termine registrada
+    /// como Compra Y Gasto a la vez. Null en gastos ingresados manualmente.
+    /// </summary>
+    public string? AccessKey { get; private set; }
 
     public decimal? ConfirmedSubtotal { get; private set; }
     public decimal? ConfirmedTotalTax { get; private set; }
@@ -81,7 +101,9 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         DateTime? authorizationDate = null,
         DateOnly? dueDate = null,
         string? notes = null,
-        string? taxSupportCode = null
+        string? taxSupportCode = null,
+        Guid? receptionDocumentId = null,
+        string? accessKey = null
     )
     {
         if (tenantId == Guid.Empty)
@@ -130,6 +152,8 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
             Notes = notes?.Trim(),
             TaxSupportCode = OptionalCode.Normalize(taxSupportCode),
             Status = ExpenseStatus.Draft,
+            ReceptionDocumentId = receptionDocumentId,
+            AccessKey = OptionalCode.Normalize(accessKey),
         };
         document.SetCreated(createdBy);
         return document;

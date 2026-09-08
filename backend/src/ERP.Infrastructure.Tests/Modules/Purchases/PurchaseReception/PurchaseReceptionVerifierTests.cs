@@ -90,6 +90,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([Record()]);
@@ -145,6 +146,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([Record()]);
@@ -212,6 +214,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([Record()]);
@@ -279,6 +282,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([CreditNoteRecord()]);
@@ -329,6 +333,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([CreditNoteRecord()]);
@@ -354,6 +359,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([CreditNoteRecord()]);
@@ -389,6 +395,7 @@ public sealed class PurchaseReceptionVerifierTests
             bp.Object,
             role.Object,
             purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             tenant.Object
         );
         var result = await verifier.VerifyAsync([Record()]);

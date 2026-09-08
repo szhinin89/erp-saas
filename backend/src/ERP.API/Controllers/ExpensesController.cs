@@ -72,7 +72,9 @@ public sealed class ExpensesController : ControllerBase
                     request.AuthorizationNumber,
                     request.AuthorizationDate,
                     request.Notes,
-                    request.TaxSupportCode
+                    request.TaxSupportCode,
+                    request.ReceptionDocumentId,
+                    request.AccessKey
                 ),
                 ct
             )

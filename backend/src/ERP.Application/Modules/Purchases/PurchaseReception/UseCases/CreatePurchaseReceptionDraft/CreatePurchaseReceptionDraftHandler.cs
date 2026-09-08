@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
@@ -35,6 +36,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IExpenseDocumentRepository _expenseRepo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
     private readonly IItemRepository _itemRepo;
@@ -46,6 +48,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     public CreatePurchaseReceptionDraftHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
         IPurchaseInvoiceRepository purchaseRepo,
+        IExpenseDocumentRepository expenseRepo,
         IBusinessPartnerRepository bpRepo,
         IPurchaseReceptionDetailProcessor detailProcessor,
         IItemRepository itemRepo,
@@ -57,6 +60,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     {
         _documentRepo = documentRepo;
         _purchaseRepo = purchaseRepo;
+        _expenseRepo = expenseRepo;
         _bpRepo = bpRepo;
         _detailProcessor = detailProcessor;
         _itemRepo = itemRepo;
@@ -92,6 +96,10 @@ public sealed class CreatePurchaseReceptionDraftHandler
                 "Solo se puede generar un borrador de compra desde documentos con XML autorizado (estado Verificado)."
             );
         }
+
+        if (await _expenseRepo.ExistsByAccessKeyAsync(_tenant.TenantId, document.AccessKey, cancellationToken)
+            || await _expenseRepo.ExistsByReceptionDocumentIdAsync(_tenant.TenantId, document.Id, cancellationToken))
+            return Result<PurchaseDraftDto>.Conflict("La recepción ya fue utilizada como gasto.");
 
         var existingPurchase = await _purchaseRepo.GetByAccessKeyAsync(
             _tenant.TenantId,

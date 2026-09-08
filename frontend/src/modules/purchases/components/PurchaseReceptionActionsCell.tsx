@@ -40,6 +40,13 @@ export function PurchaseReceptionActionsCell({
     </ZHBtn>
   );
 
+  if (row.sourceDocType === "INVOICE" && row.expenseExists) {
+    return <div className="pur-actions-cell">
+      <Badge variant="success" label="Gasto ya ingresado al sistema" />
+      {viewXmlButton}
+    </div>;
+  }
+
   if (row.purchaseExists) {
     return (
       <div className="pur-actions-cell">
@@ -206,6 +213,17 @@ export function PurchaseReceptionActionsCell({
           >
             {t("purchases.reception.actions.createPurchase", "Crear compra")}
           </ZHBtn>
+          {row.sourceDocType === "INVOICE" && (
+            <ZHBtn variant="secondary" size="xs" type="button"
+              disabled={!row.supplierExists || row.supplierIsActive === false}
+              title={!row.supplierExists ? "Cree primero el proveedor" : undefined}
+              onClick={() => window.open(
+                `/expenses/documents/new?fromReceptionId=${row.documentId}`,
+                "_blank", "noopener,noreferrer",
+              )}>
+              Crear gasto
+            </ZHBtn>
+          )}
           {!row.supplierExists && (
             <p className="pur-actions-hint">
               {t(

@@ -257,9 +257,32 @@ file static class PurchaseAccessKeyDuplicateGuard
         duplicate is null ? null : Result<T>.Conflict(DuplicateAccessKeyMessage);
 
     public static string? MapUniqueViolation(string? constraintName) =>
-        string.Equals(constraintName, ConstraintName, StringComparison.Ordinal)
+        constraintName == "uq_purchase_expense_access_key"
+            ? "La factura ya fue registrada como gasto."
+            : string.Equals(constraintName, ConstraintName, StringComparison.Ordinal)
             ? DuplicateAccessKeyMessage
             : null;
+
+    /// <summary>
+    /// EXPENSES-FROM-RECEPTION-01 — mitad "Compra rechaza si ya fue usada como Gasto" del chequeo
+    /// cruzado (la otra mitad vive en <c>CreateExpenseDraftHandler</c>). Misma clave de acceso SRI
+    /// no puede terminar registrada como Compra Y Gasto a la vez.
+    /// </summary>
+    public static async Task<Result<T>?> ToConflictIfUsedByExpenseAsync<T>(
+        ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository expenseRepo,
+        Guid tenantId,
+        string? accessKey,
+        CancellationToken ct
+    )
+    {
+        if (string.IsNullOrWhiteSpace(accessKey))
+            return null;
+
+        var usedByExpense = await expenseRepo.ExistsByAccessKeyAsync(tenantId, accessKey.Trim(), ct);
+        return usedByExpense
+            ? Result<T>.Conflict("Ya existe un gasto registrado con esta clave de acceso SRI.")
+            : null;
+    }
 }
 
 // ── Commands & Queries ──────────────────────────────────────────────────
@@ -474,6 +497,7 @@ public sealed class CreatePurchaseDraftHandler
     private readonly IWarehouseRepository _whRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
+    private readonly ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository _expenseRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -489,6 +513,7 @@ public sealed class CreatePurchaseDraftHandler
         IWarehouseRepository whRepo,
         ISriTaxResolver tax,
         IPurchaseReceptionDocumentRepository receptionRepo,
+        ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository expenseRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -504,6 +529,7 @@ public sealed class CreatePurchaseDraftHandler
         _whRepo = whRepo;
         _tax = tax;
         _receptionRepo = receptionRepo;
+        _expenseRepo = expenseRepo;
         _t = t;
         _c = c;
         _b = b;
@@ -516,6 +542,33 @@ public sealed class CreatePurchaseDraftHandler
         CancellationToken ct
     )
     {
+        // Reception line references also identify the source when the client omits AccessKey.
+        foreach (var lineId in cmd.Lines.Where(l => l.PurchaseReceptionLineId.HasValue)
+            .Select(l => l.PurchaseReceptionLineId!.Value).Distinct())
+        {
+            var source = await _receptionRepo.GetByLineIdAsync(_t.TenantId, lineId, ct);
+            if (source is null) continue;
+            if (source.SourceDocType != ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice)
+                return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra.");
+            if (!string.IsNullOrWhiteSpace(cmd.AccessKey) && cmd.AccessKey.Trim() != source.AccessKey)
+                return Result<PurchaseInvoiceDto>.ValidationFailure("Las lineas no corresponden a la factura recibida.");
+            if (await _expenseRepo.ExistsByReceptionDocumentIdAsync(_t.TenantId, source.Id, ct))
+                return Result<PurchaseInvoiceDto>.Conflict("La recepcion ya fue utilizada como gasto.");
+            cmd = cmd with { AccessKey = source.AccessKey };
+        }
+        if (cmd.DocTypeCode == "04")
+            return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra. Procese la nota de crédito desde su flujo propio.");
+        if (!string.IsNullOrWhiteSpace(cmd.AccessKey))
+        {
+            var reception = await _receptionRepo.GetByAccessKeyAsync(_t.TenantId, cmd.AccessKey.Trim(), ct);
+            if (reception is not null)
+            {
+                if (reception.SourceDocType != ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice)
+                    return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra.");
+                if (await _expenseRepo.ExistsByReceptionDocumentIdAsync(_t.TenantId, reception.Id, ct))
+                    return Result<PurchaseInvoiceDto>.Conflict("La recepción ya fue utilizada como gasto.");
+            }
+        }
         var tid = _t.TenantId;
         var duplicate = await PurchaseAccessKeyDuplicateGuard.FindDuplicateAsync(
             _repo,
@@ -528,6 +581,15 @@ public sealed class CreatePurchaseDraftHandler
             PurchaseAccessKeyDuplicateGuard.ToConflictIfDuplicate<PurchaseInvoiceDto>(duplicate);
         if (duplicateResult is not null)
             return duplicateResult;
+
+        var expenseConflict = await PurchaseAccessKeyDuplicateGuard.ToConflictIfUsedByExpenseAsync<PurchaseInvoiceDto>(
+            _expenseRepo,
+            tid,
+            cmd.AccessKey,
+            ct
+        );
+        if (expenseConflict is not null)
+            return expenseConflict;
 
         var supplier = await _bpRepo.GetByIdAsync(cmd.SupplierId, ct);
         if (supplier is null)

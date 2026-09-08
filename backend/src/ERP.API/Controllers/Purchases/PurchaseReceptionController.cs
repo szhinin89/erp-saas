@@ -8,6 +8,7 @@ using ERP.Application.Modules.Inventory.ItemMatching.UseCases.GetLineMatch;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.UnmatchItem;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreateExpenseDraftFromReception;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurchaseReceptionXmlView;
@@ -75,6 +76,22 @@ public sealed class PurchaseReceptionController : ControllerBase
     public async Task<IActionResult> CreateDraft(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new CreatePurchaseReceptionDraftCommand(id), ct)
+        );
+
+    /// <summary>
+    /// EXPENSES-FROM-RECEPTION-01 — cabecera de solo lectura para precargar el formulario de
+    /// Nuevo Gasto. Solo facturas (nunca notas de crédito); nunca crea ni persiste el
+    /// <c>ExpenseDocument</c> — eso ocurre al guardar desde el formulario de Gastos.
+    /// </summary>
+    [HttpPost("{id:guid}/create-expense-draft")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<ExpenseReceptionDraftDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> CreateExpenseDraft(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new CreateExpenseDraftFromReceptionQuery(id), ct)
         );
 
     /// <summary>

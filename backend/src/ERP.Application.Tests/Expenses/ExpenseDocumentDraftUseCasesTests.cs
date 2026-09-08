@@ -1,3 +1,10 @@
+using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreateExpenseDraftFromReception;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -29,6 +36,108 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
+
+    private static PurchaseReceptionDocument SetupReception(Fixture fx,
+        PurchaseReceptionSourceDocType type = PurchaseReceptionSourceDocType.Invoice, bool verified = true)
+    {
+        var cmd = fx.ValidCreateCommand();
+        var doc = PurchaseReceptionDocument.Create(TenantId, CompanyId, BranchId, type,
+            fx.Supplier.Identification.Number, "Proveedor", fx.Supplier.Id, new string('1', 49),
+            cmd.DocumentNumber, cmd.IssueDate, null, 10m, 0m, 10m, UserId);
+        if (verified)
+            doc.AttachSriAuthorization(doc.AccessKey, DateTime.UtcNow, "<factura/>", DateTime.UtcNow,
+                [], UserId, "01", null, PurchaseReceptionProcessingOutcome.Failed("Sin detalle"));
+        fx.Receptions.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+        fx.Receptions.Setup(r => r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+        return doc;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Reception_requires_existing_active_supplier(bool missing)
+    {
+        var fx = new Fixture();
+        var doc = SetupReception(fx);
+        if (missing)
+            fx.Partners.Setup(r => r.GetByIdAsync(fx.Supplier.Id, It.IsAny<CancellationToken>())).ReturnsAsync((BusinessPartner?)null);
+        else
+            fx.Supplier.Deactivate(UserId);
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        result.IsSuccess.Should().BeFalse();
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reception_save_copies_server_access_key_and_reception_id()
+    {
+        var fx = new Fixture();
+        var doc = SetupReception(fx);
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        fx.Docs.Verify(r => r.AddAsync(It.Is<ExpenseDocument>(e => e.ReceptionDocumentId == doc.Id && e.AccessKey == doc.AccessKey), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Reception_credit_note_rejected_by_preview_and_save(bool preview)
+    {
+        var fx = new Fixture();
+        var doc = SetupReception(fx, PurchaseReceptionSourceDocType.CreditNote);
+        if (preview)
+        {
+            var result = await new CreateExpenseDraftFromReceptionHandler(fx.Receptions.Object, fx.Purchases.Object,
+                fx.Docs.Object, fx.Partners.Object, fx.Roles.Object, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId))
+                .Handle(new(doc.Id), default);
+            result.IsSuccess.Should().BeFalse();
+        }
+        else
+        {
+            var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+            result.IsSuccess.Should().BeFalse();
+        }
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reception_rejects_missing_unverified_and_tampered_source()
+    {
+        var fx = new Fixture();
+        (await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = Guid.NewGuid() }, default)).IsSuccess.Should().BeFalse();
+        var imported = SetupReception(fx, verified: false);
+        (await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = imported.Id }, default)).IsSuccess.Should().BeFalse();
+        var verified = SetupReception(fx);
+        (await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = verified.Id, AccessKey = new string('2', 49) }, default)).IsSuccess.Should().BeFalse();
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Reception_rejects_existing_expense_by_key_or_reception(bool byId)
+    {
+        var fx = new Fixture();
+        var doc = SetupReception(fx);
+        fx.Docs.Setup(r => r.ExistsByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(!byId);
+        fx.Docs.Setup(r => r.ExistsByReceptionDocumentIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(byId);
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Existing_purchase_blocks_expense_save()
+    {
+        var fx = new Fixture();
+        var doc = SetupReception(fx);
+        var purchase = PurchaseInvoice.CreateDraft(TenantId, CompanyId, BranchId, fx.Supplier.Id, "Proveedor", fx.Supplier.Identification.Number, "01",
+            doc.InvoiceNumber, doc.IssueDate, UserId, fx.PaymentTerm.Id, "Contado", 1, 0, accessKey: doc.AccessKey);
+        fx.Purchases.Setup(r => r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(purchase);
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand() with { ReceptionDocumentId = doc.Id }, default);
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        fx.Docs.Verify(r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     [Fact]
     public async Task Create_Draft_valido_con_linea_de_subcategoria_activa_recalcula_totales()
@@ -308,6 +417,8 @@ public sealed class ExpenseDocumentDraftUseCasesTests
 
     private sealed class Fixture
     {
+        public Mock<IPurchaseInvoiceRepository> Purchases { get; } = new();
+        public Mock<IPurchaseReceptionDocumentRepository> Receptions { get; } = new();
         public Mock<IExpenseDocumentRepository> Docs { get; } = new();
         public Mock<IExpenseCategoryRepository> CategoryRepo { get; } = new();
         public Mock<IAccountRepository> Accounts { get; } = new();
@@ -335,6 +446,9 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 PtResolver.Object,
                 Tax.Object,
                 WorkflowPolicy.Object,
+                Purchases.Object,
+                Receptions.Object,
+                Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>(),
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

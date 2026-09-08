@@ -4,6 +4,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -20,6 +21,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IExpenseDocumentRepository _expenseRepo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISriReceptionXmlProvider _xmlProvider;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
@@ -31,6 +33,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     public DownloadPurchaseReceptionXmlHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
         IPurchaseInvoiceRepository purchaseRepo,
+        IExpenseDocumentRepository expenseRepo,
         IBusinessPartnerRepository bpRepo,
         ISriReceptionXmlProvider xmlProvider,
         IPurchaseReceptionDetailProcessor detailProcessor,
@@ -42,6 +45,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     {
         _documentRepo = documentRepo;
         _purchaseRepo = purchaseRepo;
+        _expenseRepo = expenseRepo;
         _bpRepo = bpRepo;
         _xmlProvider = xmlProvider;
         _detailProcessor = detailProcessor;
@@ -162,6 +166,11 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.AccessKey,
             cancellationToken
         );
+        var expenseExists = await _expenseRepo.ExistsByAccessKeyAsync(
+            _tenant.TenantId,
+            document.AccessKey,
+            cancellationToken
+        );
         bool? supplierIsActive = null;
         if (document.SupplierId is { } supplierId)
         {
@@ -182,7 +191,8 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             existingPurchase is not null,
             existingPurchase?.Id,
             supplierIsActive,
-            processed.SupplierTradeName
+            processed.SupplierTradeName,
+            expenseExists
         );
 
         return Result<DownloadPurchaseReceptionXmlResultDto>.Success(dto);

@@ -16,6 +16,7 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -141,6 +142,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
             BuildWarehouseRepo().Object,
             BuildTaxResolver().Object,
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
+            Mock.Of<IExpenseDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchA),
@@ -167,6 +169,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
             BuildWarehouseRepo().Object,
             Mock.Of<PurchaseTaxResolver>(),
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
+            Mock.Of<IExpenseDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchA),

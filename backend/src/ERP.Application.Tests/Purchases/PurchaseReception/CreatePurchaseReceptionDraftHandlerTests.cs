@@ -99,6 +99,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var handler = new CreatePurchaseReceptionDraftHandler(
             repo.Object,
             purchaseRepo.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             bpRepo.Object,
             detailProcessor.Object,
             itemRepo.Object,

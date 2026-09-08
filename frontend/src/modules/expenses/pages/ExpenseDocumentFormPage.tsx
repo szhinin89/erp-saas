@@ -1,3 +1,4 @@
+import { purchaseReceptionService, type ExpenseReceptionDraft } from "../../purchases/api/purchaseReceptionService";
 import {
   useCallback,
   useEffect,
@@ -6,7 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { NoAccessPage, PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormAlert, ZHFormActions } from "../../../components/zh/ZHForm";
@@ -95,6 +96,9 @@ const EMPTY_HEADER: ExpenseDocumentHeaderState = {
 export function ExpenseDocumentFormPage() {
   const { id } = useParams();
   const isNew = !id;
+  const [searchParams] = useSearchParams();
+  const fromReceptionId = !id ? searchParams.get("fromReceptionId") : null;
+  const [reception, setReception] = useState<ExpenseReceptionDraft | null>(null);
   const navigate = useNavigate();
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
@@ -137,7 +141,7 @@ export function ExpenseDocumentFormPage() {
   const totals = useMemo(() => calculateExpenseDocumentTotals(lines), [lines]);
   const canSave = isNew ? canCreate : canUpdate;
   const isDraft = document?.status ? document.status === "Draft" : true;
-  const disabled = saving || !isDraft || !canSave;
+  const disabled = loading || saving || !isDraft || !canSave || (!!fromReceptionId && !reception);
   const canShowConfirmButton = !isNew && canConfirm && document?.status === "Draft";
   const canShowCancelButton = !isNew && canCancel && document?.status === "Confirmed";
   const catalogReady =
@@ -146,6 +150,7 @@ export function ExpenseDocumentFormPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setPageError(null);
+    setReception(null);
     try {
       const requests = [
         canReadCatalog ? expenseCategoryService.getTree(false) : Promise.resolve([]),
@@ -168,8 +173,23 @@ export function ExpenseDocumentFormPage() {
         setLines(documentToLines(expenseDocument));
       } else {
         setDocument(null);
-        setHeader(EMPTY_HEADER);
-        setSupplier(null);
+        const source = fromReceptionId
+          ? await purchaseReceptionService.createExpenseDraft(fromReceptionId) : null;
+        setReception(source);
+        setHeader(source ? {
+          ...EMPTY_HEADER,
+          supplierId: source.supplierId,
+          issueDate: source.issueDate,
+          documentType: source.documentType,
+          documentNumber: source.documentNumber,
+          authorizationNumber: source.authorizationNumber ?? "",
+          authorizationDate: toDateTimeLocalInputValue(source.authorizationDate),
+        } : EMPTY_HEADER);
+        setSupplier(source ? {
+          id: source.supplierId, fullName: source.supplierName,
+          identificationNumber: source.supplierTaxId, isActive: true,
+          hasSupplierRole: true, supplierConfig: null,
+        } : null);
         setLines([newExpenseDraftLine()]);
       }
       setRetention(emptyRetentionIntentState());
@@ -183,7 +203,7 @@ export function ExpenseDocumentFormPage() {
     } finally {
       setLoading(false);
     }
-  }, [canReadCatalog, id]);
+  }, [canReadCatalog, id, fromReceptionId]);
 
   useEffect(() => {
     if (canView || isNew) void load();
@@ -258,7 +278,13 @@ export function ExpenseDocumentFormPage() {
     setHeaderErrors({});
     setLineErrors({});
     try {
-      const payload = buildExpenseDraftPayload(header, lines);
+      const payload = {
+        ...buildExpenseDraftPayload(header, lines),
+        ...(reception ? {
+          receptionDocumentId: reception.receptionDocumentId,
+          accessKey: reception.accessKey,
+        } : {}),
+      };
       const saved = isNew
         ? await expenseDocumentService.create(payload)
         : await expenseDocumentService.update(id!, payload);
@@ -442,6 +468,10 @@ export function ExpenseDocumentFormPage() {
       <div className="exp-doc-form-layout">
         <div className="exp-doc-form-main">
           <ZHCard bodyClassName="exp-doc-card-body">
+            {reception && <p>
+              Factura recibida: subtotal {reception.subtotal.toFixed(2)}, IVA {reception.vatAmount.toFixed(2)}, total {reception.total.toFixed(2)}.
+              Complete el detalle y seleccione la subcategoría de cada gasto.
+            </p>}
             <ExpenseDocumentHeader
               value={header}
               supplier={supplier}

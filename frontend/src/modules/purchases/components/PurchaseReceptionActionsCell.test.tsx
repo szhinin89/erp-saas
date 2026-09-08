@@ -5,7 +5,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { PurchaseReceptionActionsCell } from "./PurchaseReceptionActionsCell";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const row: PurchaseReceptionItem = {
   documentId: "nc-1", sourceDocType: "CREDIT_NOTE", documentStatus: "IMPORTED",
   supplierRuc: "1790012345001", supplierName: "Proveedor", invoiceNumber: "001-001-000000001",
@@ -23,6 +23,27 @@ function show(overrides: Partial<PurchaseReceptionItem> = {}) {
   return { download, view };
 }
 describe("Purchase reception document actions", () => {
+  it("opens expense creation for a verified invoice", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ sourceDocType: "INVOICE", documentStatus: "VERIFIED" });
+    fireEvent.click(screen.getByRole("button", { name: "Crear gasto" }));
+    expect(open).toHaveBeenCalledWith("/expenses/documents/new?fromReceptionId=nc-1", "_blank", "noopener,noreferrer");
+  });
+  it("does not offer expense creation for credit notes", () => {
+    show({ documentStatus: "VERIFIED" });
+    expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
+  });
+  it("requires the supplier for expense creation", () => {
+    show({ sourceDocType: "INVOICE", documentStatus: "VERIFIED", supplierExists: false });
+    const button = screen.getByRole("button", { name: "Crear gasto" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(button.title).toBe("Cree primero el proveedor");
+  });
+  it.each([{ expenseExists: true }, { purchaseExists: true }])("blocks both creation actions for consumed invoices %j", (used) => {
+    show({ sourceDocType: "INVOICE", documentStatus: "VERIFIED", ...used });
+    expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
+  });
   it("consults XML for an imported credit note and keeps its own processing action", () => {
     const { download } = show();
     fireEvent.click(screen.getByRole("button", { name: "Consultar XML" }));

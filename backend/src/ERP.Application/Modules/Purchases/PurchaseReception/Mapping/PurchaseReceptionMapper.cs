@@ -34,7 +34,8 @@ public static class PurchaseReceptionMapper
             document.Id,
             ToDocumentStatusCode(document.Status),
             ToProcessingStatusCode(document.ProcessingStatus),
-            document.ProcessingNotes
+            document.ProcessingNotes,
+            item.ExpenseExists
         );
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>

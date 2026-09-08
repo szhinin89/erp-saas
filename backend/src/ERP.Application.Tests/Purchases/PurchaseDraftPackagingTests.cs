@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using FluentAssertions;
 using Moq;
 using PurchaseTaxResolver = ERP.Application.Modules.Purchases.Services.ISriTaxResolver;
@@ -159,6 +160,7 @@ public sealed class PurchaseDraftPackagingTests
             Mock.Of<IWarehouseRepository>(),
             Mock.Of<PurchaseTaxResolver>(),
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
+            Mock.Of<IExpenseDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

@@ -28,7 +28,11 @@ public sealed record PurchaseReceptionItemDto(
     Guid DocumentId,
     string DocumentStatus,
     string ProcessingStatus,
-    string? ProcessingNotes
+    string? ProcessingNotes,
+    // EXPENSES-FROM-RECEPTION-01 — si ya existe un Gasto con esta clave de acceso SRI (bloquea
+    // "Crear compra" en la UI, mirror de PurchaseExists bloqueando "Crear gasto"). Solo aplica a
+    // Factura — false en NC/ND.
+    bool ExpenseExists
 );
 
 public sealed record PurchaseReceptionImportResultDto(
@@ -36,4 +40,28 @@ public sealed record PurchaseReceptionImportResultDto(
     int TotalParsed,
     int ParseErrorCount,
     int SkippedUnsupportedCount
+);
+
+/// <summary>
+/// EXPENSES-FROM-RECEPTION-01 — cabecera para precargar el formulario de Nuevo Gasto desde una
+/// factura de recepción ya verificada. Sin líneas: la subcategoría de gasto por línea (obligatoria,
+/// <c>ExpenseSubcategoryId</c>) es un criterio contable que solo la persona usuaria puede asignar —
+/// no existe forma de inferirla del XML sin inventar una regla, así que el usuario completa el
+/// detalle en el formulario con <see cref="Subtotal"/>/<see cref="VatAmount"/>/<see cref="Total"/>
+/// como referencia de cuadre.
+/// </summary>
+public sealed record ExpenseReceptionDraftDto(
+    Guid ReceptionDocumentId,
+    string AccessKey,
+    Guid SupplierId,
+    string SupplierName,
+    string SupplierTaxId,
+    DateOnly IssueDate,
+    string DocumentType,
+    string DocumentNumber,
+    string? AuthorizationNumber,
+    DateTime? AuthorizationDate,
+    decimal Subtotal,
+    decimal VatAmount,
+    decimal Total
 );

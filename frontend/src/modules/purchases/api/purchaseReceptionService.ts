@@ -73,6 +73,7 @@ export interface PurchaseReceptionItem {
   supplierId: string | null;
   supplierIsActive: boolean | null;
   purchaseExists: boolean;
+  expenseExists?: boolean;
   purchaseId: string | null;
   /** Solo notas de crédito: si `modifiedDocumentNumber` ya existe como compra del mismo proveedor. False en Factura. */
   affectedPurchaseExists: boolean;
@@ -110,6 +111,7 @@ export interface DownloadXmlResult {
   linesProcessedCount: number;
   processingNotes: string | null;
   purchaseExists: boolean;
+  expenseExists?: boolean;
   purchaseId: string | null;
   supplierIsActive: boolean | null;
   /** infoTributaria/nombreComercial del emisor — null si el XML no lo declara. */
@@ -292,6 +294,10 @@ export const purchaseReceptionService = {
     return apiPost<DownloadXmlResult>(`${BASE}/${documentId}/download-xml`, {});
   },
 
+  createExpenseDraft(documentId: string): Promise<ExpenseReceptionDraft> {
+    return apiPost<ExpenseReceptionDraft>(`${BASE}/${documentId}/create-expense-draft`, {});
+  },
+
   createDraft(documentId: string): Promise<PurchaseDraftDto> {
     return apiPost<PurchaseDraftDto>(`${BASE}/${documentId}/create-draft`, {});
   },
@@ -337,3 +343,19 @@ export const purchaseReceptionService = {
     );
   },
 };
+
+export interface ExpenseReceptionDraft {
+  receptionDocumentId: string;
+  accessKey: string;
+  supplierId: string;
+  supplierName: string;
+  supplierTaxId: string;
+  issueDate: string;
+  documentType: string;
+  documentNumber: string;
+  authorizationNumber: string | null;
+  authorizationDate: string | null;
+  subtotal: number;
+  vatAmount: number;
+  total: number;
+}

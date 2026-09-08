@@ -11,6 +11,7 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentAssertions;
 using Moq;
@@ -116,6 +117,7 @@ public sealed class PurchaseIceSpecificResolutionTests
             Mock.Of<IWarehouseRepository>(),
             tax.Object,
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
+            Mock.Of<IExpenseDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

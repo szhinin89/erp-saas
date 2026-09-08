@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.ValueObjects;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -12,25 +13,29 @@ namespace ERP.Infrastructure.Modules.Purchases.PurchaseReception;
 /// <summary>
 /// Cruza registros parseados del TXT SRI contra proveedores (BusinessPartner + rol Supplier) y
 /// compras (PurchaseInvoice.AccessKey) ya existentes en el ERP — mismo criterio de resolución de
-/// proveedor que ya usa <c>CreatePurchaseDraftHandler</c>, sin duplicar la lógica.
+/// proveedor que ya usa <c>CreatePurchaseDraftHandler</c>, sin duplicar la lógica. EXPENSES-FROM-
+/// RECEPTION-01 agrega el mismo cruce contra Gastos (ExpenseDocument.AccessKey).
 /// </summary>
 public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
 {
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
+    private readonly IExpenseDocumentRepository _expenseRepo;
     private readonly ICurrentTenant _tenant;
 
     public PurchaseReceptionVerifier(
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
         IPurchaseInvoiceRepository purchaseRepo,
+        IExpenseDocumentRepository expenseRepo,
         ICurrentTenant tenant
     )
     {
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
         _purchaseRepo = purchaseRepo;
+        _expenseRepo = expenseRepo;
         _tenant = tenant;
     }
 
@@ -64,6 +69,7 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
 
             var purchaseExists = false;
             Guid? purchaseId = null;
+            var expenseExists = false;
             if (supplierExists)
             {
                 var purchase = await _purchaseRepo.GetByAccessKeyAsync(
@@ -73,6 +79,12 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                 );
                 purchaseExists = purchase is not null;
                 purchaseId = purchase?.Id;
+
+                expenseExists = await _expenseRepo.ExistsByAccessKeyAsync(
+                    _tenant.TenantId,
+                    record.AccessKey,
+                    cancellationToken
+                );
             }
 
             var status =
@@ -111,7 +123,8 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                     purchaseId,
                     affectedPurchaseExists,
                     affectedPurchaseId,
-                    supplierIsActive
+                    supplierIsActive,
+                    expenseExists
                 )
             );
         }

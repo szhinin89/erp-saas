@@ -15,5 +15,8 @@ public sealed record PurchaseReceptionVerifiedItem(
     // mismo proveedor. False/null para cualquier otro tipo de comprobante.
     bool AffectedPurchaseExists = false,
     Guid? AffectedPurchaseId = null,
-    bool? SupplierIsActive = null
+    bool? SupplierIsActive = null,
+    // EXPENSES-FROM-RECEPTION-01 — si ya existe un ExpenseDocument con esta clave de acceso SRI
+    // (bloquea "Crear compra", mirror de PurchaseExists bloqueando "Crear gasto").
+    bool ExpenseExists = false
 );
