@@ -24,12 +24,12 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
 
-    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null) =>
+    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null, PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.Invoice) =>
         PurchaseReceptionDocument.Create(
             TenantId,
             CompanyId,
             BranchId,
-            PurchaseReceptionSourceDocType.Invoice,
+            sourceDocType,
             "1790012345001",
             "PROVEEDOR ACME S.A.",
             supplierId,
@@ -108,6 +108,18 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             NullLogger<CreatePurchaseReceptionDraftHandler>.Instance
         );
         return (handler, repo, purchaseRepo, bpRepo, detailProcessor, itemRepo);
+    }
+
+    [Fact]
+    public async Task Handle_rejects_credit_note_before_invoice_processing()
+    {
+        var document = SampleDocument(sourceDocType: PurchaseReceptionSourceDocType.CreditNote);
+        var (handler, repo, _, _, processor, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Solo una factura");
+        processor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

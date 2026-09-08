@@ -3,15 +3,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 
-/**
- * Celda "Acciones" de `/purchases/reception`. Notas de crédito (FLOW-READY-02B.1) solo se cargan y
- * muestran — sin Consultar XML, sin Crear compra (nunca reintroduce matching de productos ni crea
- * proveedor desde esta fila). FLOW-READY-02C.4 agrega la única acción real posible: si la factura
- * afectada ya existe en el ERP, "Procesar NC" abre la pantalla centralizada de Nota de Crédito de
- * Compra (`PurchaseCreditNoteFormPage`, FLOW-READY-02C.3) en una pestaña nueva — mismo criterio que
- * "Crear compra"/"Abrir factura afectada": la Recepción permanece abierta como bandeja. El usuario
- * decide ahí mismo si es Devolución o Descuento/promoción; esta celda nunca infiere el tipo.
- */
+/** Recepción conserva el XML fiscal y abre el flujo operativo propio de cada tipo. */
 export function PurchaseReceptionActionsCell({
   row,
   xmlState,
@@ -37,6 +29,14 @@ export function PurchaseReceptionActionsCell({
       onClick={() => onViewXml(row.documentId)}
     >
       {t("purchases.reception.actions.viewXml", "Ver XML")}
+    </ZHBtn>
+  );
+
+  const consultXmlButton = row.documentStatus === "IMPORTED" && (
+    <ZHBtn variant="secondary" size="xs" type="button"
+      disabled={xmlState === "loading"}
+      onClick={() => onDownloadXml(row.documentId)}>
+      {t("purchases.reception.actions.consultXml", "Consultar XML")}
     </ZHBtn>
   );
 
@@ -124,6 +124,7 @@ export function PurchaseReceptionActionsCell({
           >
             {t("purchases.creditNote.actions.processNc", "Procesar NC")}
           </ZHBtn>
+          {consultXmlButton}
           {viewXmlButton}
         </div>
       );
@@ -145,7 +146,8 @@ export function PurchaseReceptionActionsCell({
             "Ingrese primero la factura afectada",
           )}
         </p>
-        {viewXmlButton}
+        {consultXmlButton}
+          {viewXmlButton}
       </div>
     );
   }

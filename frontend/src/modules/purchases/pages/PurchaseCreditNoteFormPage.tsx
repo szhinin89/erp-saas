@@ -1,3 +1,4 @@
+import { purchaseReceptionService } from "../api/purchaseReceptionService";
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -88,6 +89,7 @@ export function PurchaseCreditNoteFormPage() {
 
   const {
     register,
+    setValue,
     handleSubmit,
     setError,
     control,
@@ -143,9 +145,19 @@ export function PurchaseCreditNoteFormPage() {
     }
     let cancelled = false;
     setLoading(true);
-    Promise.all([purchaseService.getById(invoiceId), purchaseService.getTaxSummaries(invoiceId)])
-      .then(([inv, summaries]) => {
+    Promise.all([purchaseService.getById(invoiceId), purchaseService.getTaxSummaries(invoiceId),
+      receptionDocumentId ? purchaseReceptionService.getXmlView(receptionDocumentId) : Promise.resolve(null)])
+      .then(([inv, summaries, reception]) => {
         if (cancelled) return;
+        if (reception) {
+          if (reception.documentType !== "CREDIT_NOTE") throw new Error("El documento recibido no es una nota de crédito.");
+          setValue("accessKey", reception.accessKey);
+          setValue("creditNoteNumber", reception.documentNumber);
+          setValue("issueDate", reception.issueDate);
+          setValue("authorizationNumber", reception.authorizationNumber ?? "");
+          setValue("authorizationDate", reception.authorizationDate ?? "");
+          setValue("reason", reception.modificationReason ?? "");
+        }
         setInvoice(inv);
         setTaxSummaries(summaries);
       })
@@ -167,7 +179,7 @@ export function PurchaseCreditNoteFormPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoiceId]);
+  }, [invoiceId, receptionDocumentId, setValue]);
 
   // FLOW-READY-02C-R1.1: al crearse el PurchaseReturn (motor exclusivo de inventario/CxP/
   // SupplierCredit — nunca reimplementado aquí), se vincula la NC fiscal ya guardada de forma
@@ -404,7 +416,7 @@ export function PurchaseCreditNoteFormPage() {
                 label={t("purchases.creditNote.fiscal.accessKey", "Clave de acceso")}
                 fieldError={errors.accessKey?.message}
               >
-                <ZhTextInput className="zh-input" maxLength={49} {...register("accessKey")} />
+                <ZhTextInput className="zh-input" maxLength={49} readOnly={!!receptionDocumentId} {...register("accessKey")} />
               </ZHField>
               <ZHField
                 label={t("purchases.creditNote.fiscal.authorizationNumber", "Autorización")}

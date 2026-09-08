@@ -79,6 +79,10 @@ public sealed class CreatePurchaseReceptionDraftHandler
         if (document is null)
             return Result<PurchaseDraftDto>.NotFound("El documento de recepción no existe.");
 
+        if (document.SourceDocType != PurchaseReceptionSourceDocType.Invoice)
+            return Result<PurchaseDraftDto>.ValidationFailure(
+                "Solo una factura puede generar un borrador de compra. Procese la nota de crédito desde su flujo propio.");
+
         if (
             document.Status != PurchaseReceptionDocumentStatus.Verified
             || string.IsNullOrWhiteSpace(document.XmlContent)

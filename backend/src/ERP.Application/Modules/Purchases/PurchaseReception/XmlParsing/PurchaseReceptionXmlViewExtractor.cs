@@ -175,8 +175,8 @@ public static class PurchaseReceptionXmlViewExtractor
         detalles
             ?.Elements("detalle")
             .Select(d => new PurchaseReceptionXmlViewExtraLine(
-                MainCode: OptionalText(d, "codigoPrincipal"),
-                AuxCode: OptionalText(d, "codigoAuxiliar"),
+                MainCode: OptionalText(d, "codigoPrincipal") ?? OptionalText(d, "codigoInterno"),
+                AuxCode: OptionalText(d, "codigoAuxiliar") ?? OptionalText(d, "codigoAdicional"),
                 Description: OptionalText(d, "descripcion") ?? string.Empty,
                 Taxes: ParseLineTaxes(d.Element("impuestos")),
                 AdditionalDetails: ParseAdditionalDetails(d.Element("detallesAdicionales"))

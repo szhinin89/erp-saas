@@ -80,13 +80,14 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
 
     private static PurchaseReceptionDocument BuildReceptionDoc(
         Guid? supplierId,
-        string? modifiedDocumentNumber = null
+        string? modifiedDocumentNumber = null,
+        PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.CreditNote
     ) =>
         PurchaseReceptionDocument.Create(
             TenantId,
             CompanyId,
             BranchId,
-            PurchaseReceptionSourceDocType.CreditNote,
+            sourceDocType,
             supplierRuc: "1710034065001",
             supplierName: "Proveedor Test",
             supplierId: supplierId,
@@ -211,6 +212,40 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     }
 
     // ── 1. CreateDraft válido ────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("CLIENT-KEY")]
+    public async Task CreateDraft_copies_authoritative_reception_key(string? clientKey)
+    {
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var reception = BuildReceptionDoc(SupplierId, f.Invoice.InvoiceNumber);
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reception);
+        var result = await m.BuildCreateHandler().Handle(new CreateDraftPurchaseCreditNoteCommand(
+            Guid.NewGuid(), f.Invoice.Id, reception.Id, PurchaseCreditNoteApplicationType.Discount,
+            reception.InvoiceNumber, clientKey, null, null, f.Invoice.IssueDate, "Descuento", OneLine()), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.AccessKey.Should().Be(reception.AccessKey);
+        result.Value.ReceptionDocumentId.Should().Be(reception.Id);
+        m.CreditNoteRepo.Verify(r => r.ExistsByAccessKeyAsync(TenantId, reception.AccessKey, It.IsAny<CancellationToken>()), Times.Once);
+        m.CreditNoteRepo.Verify(r => r.AddAsync(It.Is<PurchaseCreditNote>(c => c.AccessKey == reception.AccessKey && c.ReceptionDocumentId == reception.Id), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateDraft_rejects_invoice_reception()
+    {
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var reception = BuildReceptionDoc(SupplierId, sourceDocType: PurchaseReceptionSourceDocType.Invoice);
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reception);
+        var result = await m.BuildCreateHandler().Handle(new CreateDraftPurchaseCreditNoteCommand(
+            Guid.NewGuid(), f.Invoice.Id, reception.Id, PurchaseCreditNoteApplicationType.Discount,
+            reception.InvoiceNumber, null, null, null, f.Invoice.IssueDate, "Descuento", OneLine()), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no es una Nota de Crédito");
+        m.CreditNoteRepo.Verify(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     [Fact]
     public async Task CreateDraft_valido_crea_borrador()
@@ -596,5 +631,54 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Reason.Should().Be("Nuevo motivo");
         result.Value.TotalAmount.Should().Be(230m);
+    }
+    [Fact]
+    public async Task UpdateDraft_preserves_reception_access_key()
+    {
+        var f = BuildFixture();
+        var creditNote = PurchaseCreditNote.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            f.Invoice.Id,
+            Guid.NewGuid(),
+            PurchaseCreditNoteApplicationType.Discount,
+            "001-001-000000012",
+            "RECEPTION-KEY",
+            null,
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "Descuento",
+            new[] { new PurchaseCreditNote.DraftLineInput("Descuento", 100m, "2", 15m, 15m) },
+            Array.Empty<PurchaseCreditNote.TaxSummaryDraftLineInput>(),
+            UserId,
+            Guid.NewGuid(),
+            "hash"
+        );
+
+        var m = new Mocks(f);
+        m.CreditNoteRepo
+            .Setup(r => r.GetByIdAsync(TenantId, creditNote.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(creditNote);
+        var handler = m.BuildUpdateHandler();
+
+        var result = await handler.Handle(
+            new UpdatePurchaseCreditNoteDraftCommand(
+                creditNote.Id,
+                "001-001-000000012",
+                "CLIENT-KEY",
+                null,
+                null,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "Nuevo motivo",
+                OneLine(subtotal: 200m)
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Reason.Should().Be("Nuevo motivo");
+        result.Value.AccessKey.Should().Be("RECEPTION-KEY");
     }
 }

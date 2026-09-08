@@ -277,6 +277,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
             if (validation.Error is not null)
                 return validation.Error;
             receptionDoc = validation.Document;
+            cmd = cmd with { AccessKey = receptionDoc!.AccessKey };
         }
 
         if (
@@ -640,6 +641,10 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
         var creditNote = await _creditNoteRepo.GetByIdAsync(tid, cmd.Id, ct);
         if (creditNote is null)
             return Result<PurchaseCreditNoteDto>.NotFound("Nota de crédito no encontrada.");
+
+        // La clave fiscal copiada desde recepción no puede ser reemplazada al editar el borrador.
+        if (creditNote.ReceptionDocumentId is not null)
+            cmd = cmd with { AccessKey = creditNote.AccessKey };
 
         if (
             !string.Equals(creditNote.CreditNoteNumber, cmd.CreditNoteNumber.Trim(), StringComparison.Ordinal)

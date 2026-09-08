@@ -26,12 +26,12 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null) =>
+    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null, PurchaseReceptionSourceDocType sourceDocType = PurchaseReceptionSourceDocType.Invoice) =>
         PurchaseReceptionDocument.Create(
             TenantId,
             CompanyId,
             BranchId,
-            PurchaseReceptionSourceDocType.Invoice,
+            sourceDocType,
             "1791352688001",
             "QUALA ECUADOR S A",
             supplierId,
@@ -99,6 +99,52 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         );
 
         return (handler, repo, purchaseRepo, bpRepo, provider, detailProcessor);
+    }
+
+    [Theory]
+    [InlineData("<factura><infoFactura /></factura>")]
+    [InlineData("<notaCredito><infoTributaria><codDoc>01</codDoc></infoTributaria></notaCredito>")]
+    public async Task Handle_rejects_wrong_xml_type_for_credit_note(string xml)
+    {
+        var document = SampleDocument(sourceDocType: PurchaseReceptionSourceDocType.CreditNote);
+        var (handler, repo, _, _, provider, invoiceProcessor) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        provider.Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, xml, null));
+        var result = await handler.Handle(new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Imported);
+        invoiceProcessor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_credit_note_uses_own_parser_and_preserves_verified_xml_and_lines()
+    {
+        var document = SampleDocument(sourceDocType: PurchaseReceptionSourceDocType.CreditNote);
+        var (handler, repo, _, _, provider, invoiceProcessor) = BuildHandler();
+        var xml = $$"""
+            <notaCredito><infoTributaria><codDoc>04</codDoc><claveAcceso>{{document.AccessKey}}</claveAcceso>
+            <ruc>{{document.SupplierRuc}}</ruc><razonSocial>Proveedor</razonSocial><estab>015</estab><ptoEmi>027</ptoEmi><secuencial>000161740</secuencial></infoTributaria>
+            <infoNotaCredito><fechaEmision>01/07/2026</fechaEmision><numDocModificado>001-001-000000001</numDocModificado><motivo>Descuento</motivo>
+            <totalSinImpuestos>10</totalSinImpuestos><valorModificacion>11.5</valorModificacion></infoNotaCredito>
+            <detalles><detalle><codigoInterno>NC-1</codigoInterno><descripcion>Descuento</descripcion><cantidad>1</cantidad><precioUnitario>10</precioUnitario>
+            <descuento>0</descuento><precioTotalSinImpuesto>10</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje>
+            <tarifa>15</tarifa><baseImponible>10</baseImponible><valor>1.5</valor></impuesto></impuestos></detalle></detalles></notaCredito>
+            """;
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        provider.Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, xml, null));
+        var result = await handler.Handle(new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        document.DocTypeCode.Should().Be("04");
+        document.XmlContent.Should().Be(xml);
+        document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
+        document.Lines.Should().ContainSingle().Which.SupplierCode.Should().Be("NC-1");
+        document.Lines.Single().TotalLine.Should().Be(11.5m);
+        invoiceProcessor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
