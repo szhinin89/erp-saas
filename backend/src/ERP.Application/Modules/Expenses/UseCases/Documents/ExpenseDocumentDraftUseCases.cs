@@ -272,7 +272,7 @@ public sealed class CreateExpenseDraftHandler
         if (cmd.ReceptionDocumentId is { } receptionId)
         {
             var preview = await new CreateExpenseDraftFromReceptionHandler(
-                _receptionRepo, _purchaseRepo, _repo, _businessPartners, _roles, _tenant
+                _receptionRepo, _purchaseRepo, _repo, _businessPartners, _roles, _tenant, _user
             ).Handle(new CreateExpenseDraftFromReceptionQuery(receptionId), ct);
             if (!preview.IsSuccess)
                 return Result<ExpenseDocumentDetailDto>.Failure(preview.Error!, preview.Code);

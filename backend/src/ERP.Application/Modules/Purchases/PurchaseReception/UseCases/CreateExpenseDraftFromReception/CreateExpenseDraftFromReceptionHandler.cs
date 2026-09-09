@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Domain.MasterData.Interfaces;
@@ -25,6 +26,7 @@ public sealed class CreateExpenseDraftFromReceptionHandler
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roles;
     private readonly ICurrentTenant _tenant;
+    private readonly ICurrentUser _user;
 
     public CreateExpenseDraftFromReceptionHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
@@ -32,7 +34,8 @@ public sealed class CreateExpenseDraftFromReceptionHandler
         IExpenseDocumentRepository expenseRepo,
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roles,
-        ICurrentTenant tenant
+        ICurrentTenant tenant,
+        ICurrentUser user
     )
     {
         _documentRepo = documentRepo;
@@ -41,6 +44,7 @@ public sealed class CreateExpenseDraftFromReceptionHandler
         _bpRepo = bpRepo;
         _roles = roles;
         _tenant = tenant;
+        _user = user;
     }
 
     public async Task<Result<ExpenseReceptionDraftDto>> Handle(
@@ -92,20 +96,12 @@ public sealed class CreateExpenseDraftFromReceptionHandler
                 "Ya existe un gasto registrado con esta clave de acceso SRI."
             );
 
-        if (document.SupplierId is not { } supplierId)
-            return Result<ExpenseReceptionDraftDto>.ValidationFailure(
-                "Cree primero el proveedor antes de generar el borrador de gasto."
-            );
-
-        var supplier = await _bpRepo.GetByIdAsync(supplierId, cancellationToken);
-        if (supplier is null || supplier.TenantId != _tenant.TenantId)
-            return Result<ExpenseReceptionDraftDto>.ValidationFailure(
-                "Cree primero el proveedor antes de generar el borrador de gasto."
-            );
-        if (!supplier.IsActive)
-            return Result<ExpenseReceptionDraftDto>.ValidationFailure(
-                $"El proveedor '{supplier.Name.LegalName}' se encuentra inactivo."
-            );
+        var resolved = await ReceptionSupplierResolver.ResolveAsync(
+            document, _bpRepo, _documentRepo, _tenant.TenantId, _user.UserId, cancellationToken);
+        if (!resolved.IsSuccess)
+            return Result<ExpenseReceptionDraftDto>.Failure(resolved.Error!, resolved.Code);
+        var supplier = resolved.Value!;
+        var supplierId = supplier.Id;
 
         var role = await _roles.GetByTypeAsync(supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, cancellationToken);
         if (role is null || !role.IsActive || role.TenantId != _tenant.TenantId)

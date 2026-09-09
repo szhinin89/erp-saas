@@ -144,3 +144,18 @@ describe("usePurchaseReceptionPage — importar TXT: feedback (CRITICAL-CONFIRMA
     alertSpy.mockRestore();
   });
 });
+
+it("does not claim an invoice supplier is registered without a resolved BP id", async () => {
+  vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
+    items: [buildItem({ supplierExists: true, supplierId: null })],
+    totalParsed: 1, parseErrorCount: 0, skippedUnsupportedCount: 0,
+  });
+  const { result } = renderHook(() => usePurchaseReceptionPage());
+  await act(async () => { await result.current.handleFileSelected(buildFile()); });
+  expect(result.current.items[0].supplierExists).toBe(false);
+  act(() => result.current.handleSupplierCreated("0999999999001", ""));
+  expect(result.current.items[0].supplierExists).toBe(false);
+  act(() => result.current.handleSupplierCreated("0999999999001", "real-bp-id"));
+  expect(result.current.items[0].supplierExists).toBe(true);
+  expect(result.current.items[0].supplierId).toBe("real-bp-id");
+});

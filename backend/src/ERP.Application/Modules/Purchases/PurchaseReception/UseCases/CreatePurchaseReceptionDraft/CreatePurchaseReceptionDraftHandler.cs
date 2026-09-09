@@ -111,14 +111,10 @@ public sealed class CreatePurchaseReceptionDraftHandler
                 "Ya existe una compra registrada con esta clave de acceso SRI."
             );
 
-        if (document.SupplierId is { } documentSupplierId)
-        {
-            var supplier = await _bpRepo.GetByIdAsync(documentSupplierId, cancellationToken);
-            if (supplier is not null && !supplier.IsActive)
-                return Result<PurchaseDraftDto>.ValidationFailure(
-                    $"El proveedor '{supplier.Name.LegalName}' se encuentra inactivo."
-                );
-        }
+        var supplier = await ReceptionSupplierResolver.ResolveAsync(
+            document, _bpRepo, _documentRepo, _tenant.TenantId, _user.UserId, cancellationToken);
+        if (!supplier.IsSuccess)
+            return Result<PurchaseDraftDto>.Failure(supplier.Error!, supplier.Code);
 
         // Caso recuperable: el detalle nunca se interpretó con éxito (p. ej. porque el parser
         // vigente al momento de la descarga original era menos tolerante que el actual). Se

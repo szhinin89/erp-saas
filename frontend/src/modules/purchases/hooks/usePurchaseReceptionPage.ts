@@ -63,6 +63,7 @@ export function usePurchaseReceptionPage() {
         ...importResult,
         items: importResult.items.map((item) => ({
           ...item,
+          supplierExists: item.sourceDocType === "INVOICE" ? item.supplierExists && !!item.supplierId : item.supplierExists,
           supplierTradeName: item.supplierTradeName ?? null,
           supplierIsActive: item.supplierIsActive ?? null,
         })),
@@ -190,7 +191,7 @@ export function usePurchaseReceptionPage() {
     // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
     // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor
     // existe + compra no existe todavía => PENDING).
-    handleSupplierCreated: (ruc: string) => {
+    handleSupplierCreated: (ruc: string, supplierId: string) => {
       setResult((prev) =>
         prev === null
           ? prev
@@ -200,7 +201,8 @@ export function usePurchaseReceptionPage() {
                 item.supplierRuc === ruc
                   ? {
                       ...item,
-                      supplierExists: true,
+                      supplierId: item.sourceDocType === "INVOICE" ? supplierId || null : item.supplierId,
+                      supplierExists: item.sourceDocType === "INVOICE" ? !!supplierId : true,
                       supplierIsActive: true,
                       status: item.purchaseExists ? item.status : "PENDING",
                     }

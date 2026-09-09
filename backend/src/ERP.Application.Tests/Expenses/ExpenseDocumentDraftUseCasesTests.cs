@@ -38,11 +38,11 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     private static PurchaseReceptionDocument SetupReception(Fixture fx,
-        PurchaseReceptionSourceDocType type = PurchaseReceptionSourceDocType.Invoice, bool verified = true)
+        PurchaseReceptionSourceDocType type = PurchaseReceptionSourceDocType.Invoice, bool verified = true, bool withoutSupplier = false)
     {
         var cmd = fx.ValidCreateCommand();
         var doc = PurchaseReceptionDocument.Create(TenantId, CompanyId, BranchId, type,
-            fx.Supplier.Identification.Number, "Proveedor", fx.Supplier.Id, new string('1', 49),
+            fx.Supplier.Identification.Number, "Proveedor", withoutSupplier ? null : fx.Supplier.Id, new string('1', 49),
             cmd.DocumentNumber, cmd.IssueDate, null, 10m, 0m, 10m, UserId);
         if (verified)
             doc.AttachSriAuthorization(doc.AccessKey, DateTime.UtcNow, "<factura/>", DateTime.UtcNow,
@@ -50,6 +50,33 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         fx.Receptions.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
         fx.Receptions.Setup(r => r.GetByAccessKeyAsync(TenantId, doc.AccessKey, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
         return doc;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Expense_preview_resolves_missing_supplier_id_by_ruc_or_blocks(bool exists)
+    {
+        var fx = new Fixture();
+        var doc = SetupReception(fx, withoutSupplier: true);
+        fx.Partners.Setup(r => r.GetByIdentificationAsync(TaxIdentification.SriRuc, doc.SupplierRuc, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(exists ? fx.Supplier : null);
+        var handler = new CreateExpenseDraftFromReceptionHandler(fx.Receptions.Object, fx.Purchases.Object,
+            fx.Docs.Object, fx.Partners.Object, fx.Roles.Object, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId));
+        var result = await handler.Handle(new(doc.Id), default);
+        result.IsSuccess.Should().Be(exists, result.Error);
+        if (exists)
+        {
+            result.Value!.SupplierId.Should().Be(fx.Supplier.Id);
+            doc.SupplierId.Should().Be(fx.Supplier.Id);
+            fx.Receptions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+        else
+        {
+            result.Error.Should().Contain("Cree primero el proveedor");
+            fx.Receptions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
     }
 
     [Theory]
@@ -88,7 +115,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         if (preview)
         {
             var result = await new CreateExpenseDraftFromReceptionHandler(fx.Receptions.Object, fx.Purchases.Object,
-                fx.Docs.Object, fx.Partners.Object, fx.Roles.Object, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId))
+                fx.Docs.Object, fx.Partners.Object, fx.Roles.Object, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId), Mock.Of<ICurrentUser>(u => u.UserId == UserId))
                 .Handle(new(doc.Id), default);
             result.IsSuccess.Should().BeFalse();
         }

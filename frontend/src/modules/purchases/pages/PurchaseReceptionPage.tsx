@@ -40,7 +40,9 @@ export function PurchaseReceptionPage() {
         <div className="pur-supplier-cell">
           <p className="pur-supplier-name">{row.supplierName}</p>
           <p className="pur-supplier-ruc">{row.supplierRuc}</p>
-          {row.supplierExists ? (
+          {(row.sourceDocType === "INVOICE"
+            ? row.supplierExists && !!row.supplierId
+            : row.supplierExists) ? (
             <Badge
               variant={row.supplierIsActive === false ? "warning" : "success"}
               label={t(
@@ -348,9 +350,9 @@ export function PurchaseReceptionPage() {
         supplierName={ctx.newSupplierRow?.name ?? ""}
         supplierTradeName={ctx.newSupplierRow?.tradeName ?? null}
         onClose={ctx.closeCreateSupplier}
-        onCreated={() =>
+        onCreated={(supplierId) =>
           ctx.newSupplierRow &&
-          ctx.handleSupplierCreated(ctx.newSupplierRow.ruc)
+          ctx.handleSupplierCreated(ctx.newSupplierRow.ruc, supplierId)
         }
       />
 

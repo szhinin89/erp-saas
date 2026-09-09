@@ -18,7 +18,7 @@ interface Props {
   supplierTradeName: string | null;
   onClose: () => void;
   /** El proveedor quedó creado y con rol Supplier activo — el caller refresca la fila. */
-  onCreated: () => void;
+  onCreated: (supplierId: string) => void;
 }
 
 /**
@@ -53,7 +53,7 @@ export function CreateSupplierModal({
           : undefined,
       });
       message.success("Proveedor creado correctamente.");
-      onCreated();
+      onCreated(created.id);
     } finally {
       setSaving(false);
     }
@@ -66,7 +66,7 @@ export function CreateSupplierModal({
         roleType: RoleTypeEnum.Supplier,
       });
       message.success("Rol de proveedor asignado correctamente.");
-      onCreated();
+      onCreated(id);
     } finally {
       setSaving(false);
     }

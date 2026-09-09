@@ -2,7 +2,9 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.Models;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -30,7 +32,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             CompanyId,
             BranchId,
             sourceDocType,
-            "1790012345001",
+            "1791352688001",
             "PROVEEDOR ACME S.A.",
             supplierId,
             "0107202601179135268800120150270001617400016174011",
@@ -108,7 +110,57 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             user.Object,
             NullLogger<CreatePurchaseReceptionDraftHandler>.Instance
         );
+        SetupSupplierMock(bpRepo);
         return (handler, repo, purchaseRepo, bpRepo, detailProcessor, itemRepo);
+    }
+
+    private static BusinessPartner DefaultSupplier { get; } = BusinessPartner.Create(
+        TenantId,
+        TaxIdentification.SriRuc,
+        "1791352688001",
+        2,
+        "PROVEEDOR ACME S.A.",
+        UserId
+    );
+
+    private static BusinessPartner SampleSupplier() => DefaultSupplier;
+
+    private static void SetupSupplierMock(
+        Mock<IBusinessPartnerRepository> bpRepo,
+        BusinessPartner? supplier = null,
+        Guid? supplierId = null
+    )
+    {
+        supplier ??= SampleSupplier();
+        var id = supplierId ?? SupplierId;
+        bpRepo
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(supplier);
+        bpRepo
+            .Setup(r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    "1791352688001",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(supplier);
+    }
+
+    private static void ClearSupplierMock(Mock<IBusinessPartnerRepository> bpRepo)
+    {
+        bpRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((BusinessPartner?)null);
+        bpRepo
+            .Setup(r =>
+                r.GetByIdentificationAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((BusinessPartner?)null);
     }
 
     [Fact]
@@ -156,7 +208,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         var dto = result.Value!;
         dto.SupplierId.Should().Be(SupplierId);
-        dto.SupplierRuc.Should().Be("1790012345001");
+        dto.SupplierRuc.Should().Be("1791352688001");
         dto.DocTypeCode.Should().Be("01");
         dto.InvoiceNumber.Should().Be("015-027-000161740");
         dto.AccessKey.Should().Be(document.AccessKey);
@@ -222,7 +274,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     }
 
     [Fact]
-    public async Task Handle_leaves_supplier_null_when_the_reception_document_never_matched_one()
+    public async Task Handle_rejects_draft_when_supplier_cannot_be_resolved()
     {
         var document = SampleDocument(supplierId: null);
         var line = SampleLine(document.Id);
@@ -242,7 +294,42 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
                 null
             )
         );
-        var (handler, repo, _, _, _, _) = BuildHandler();
+        var (handler, repo, _, bpRepo, _, _) = BuildHandler();
+        ClearSupplierMock(bpRepo);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cree primero el proveedor");
+    }
+
+    [Fact]
+    public async Task Handle_resolves_supplier_by_ruc_and_persists_supplier_id()
+    {
+        var document = SampleDocument(supplierId: null);
+        var line = SampleLine(document.Id);
+        document.AttachSriAuthorization(
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
+        var (handler, repo, _, bpRepo, _, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -252,7 +339,18 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.SupplierId.Should().BeNull();
+        result.Value!.SupplierId.Should().Be(DefaultSupplier.Id);
+        document.SupplierId.Should().Be(DefaultSupplier.Id);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        bpRepo.Verify(
+            r =>
+                r.GetByIdentificationAsync(
+                    TaxIdentification.SriRuc,
+                    "1791352688001",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -950,7 +1048,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         <factura id="comprobante" version="2.1.0">
           <infoTributaria>
             <razonSocial>PROVEEDOR DUPLICADOS S.A.</razonSocial>
-            <ruc>1790012345001</ruc>
+            <ruc>1791352688001</ruc>
             <codDoc>01</codDoc>
             <estab>001</estab>
             <ptoEmi>001</ptoEmi>
@@ -995,7 +1093,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         <factura id="comprobante" version="2.1.0">
           <infoTributaria>
             <razonSocial>PROVEEDOR DUPLICADOS S.A.</razonSocial>
-            <ruc>1790012345001</ruc>
+            <ruc>1791352688001</ruc>
             <codDoc>01</codDoc>
             <estab>001</estab>
             <ptoEmi>001</ptoEmi>
