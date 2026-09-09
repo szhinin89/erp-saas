@@ -26,6 +26,39 @@ namespace ERP.Application.Tests.Purchases;
 /// </summary>
 public sealed class PurchaseDraftExplicitCostAllocationTests
 {
+    [Theory]
+    [InlineData("2026-09-03T21:50")]
+    [InlineData("2026-09-03T21:50:00Z")]
+    [InlineData(null)]
+    public async Task CreateDraft_normalizes_reception_date_before_save_and_allows_manual_purchase(string? date)
+    {
+        var authorizationDate = date is null ? (DateTime?)null
+            : System.Text.Json.JsonSerializer.Deserialize<DateTime>($"\"{date}\"");
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+        PurchaseInvoice? saved = null;
+        repo.Setup(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<PurchaseInvoice, CancellationToken>((invoice, _) => saved = invoice)
+            .Returns(Task.CompletedTask);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Callback(() =>
+            {
+                saved.Should().NotBeNull();
+                if (authorizationDate.HasValue)
+                    saved!.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
+            })
+            .Returns(Task.CompletedTask);
+        var command = new CreatePurchaseDraftCommand(SupplierId, "01", "001-001-000000001",
+            new DateOnly(2026, 9, 3), [new PurchaseLineInput(null, "Producto", 1m, 100m, "10")],
+            AuthorizationDate: authorizationDate);
+
+        var result = await BuildCreateHandler(repo).Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        saved!.AuthorizationDate.Should().Be(authorizationDate is null ? null
+            : new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Utc));
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();

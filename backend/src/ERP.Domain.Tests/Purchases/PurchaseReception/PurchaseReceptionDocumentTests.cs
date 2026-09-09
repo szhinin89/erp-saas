@@ -13,6 +13,27 @@ namespace ERP.Domain.Tests.Purchases.PurchaseReception;
 /// </summary>
 public sealed class PurchaseReceptionDocumentTests
 {
+    [Fact]
+    public void Reception_and_xml_dates_without_timezone_are_normalized_to_utc()
+    {
+        var date = new DateTime(2026, 9, 3, 21, 50, 0, DateTimeKind.Unspecified);
+        var document = PurchaseReceptionDocument.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), PurchaseReceptionSourceDocType.Invoice,
+            "1791352688001", "Supplier", null,
+            "0107202601179135268800120150270001617400016174011", "015-027-000161740",
+            new DateOnly(2026, 9, 3), date, 100m, 15m, 115m, UserId);
+        document.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
+        document.AuthorizationDate.Value.Ticks.Should().Be(date.Ticks);
+
+        document.AttachSriAuthorization("AUTH-1", date, "<factura/>", date, [], UserId,
+            "01", "20", new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Failed, 0, 0, "No detail lines"));
+
+        document.AuthorizationDate.Value.Kind.Should().Be(DateTimeKind.Utc);
+        document.XmlDownloadedAt!.Value.Kind.Should().Be(DateTimeKind.Utc);
+        document.XmlDownloadedAt.Value.Ticks.Should().Be(date.Ticks);
+    }
+
     private static readonly Guid UserId = Guid.NewGuid();
 
     private static PurchaseReceptionDocument SampleDocument() =>

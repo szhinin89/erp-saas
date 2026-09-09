@@ -186,7 +186,7 @@ public sealed class PurchaseInvoice
             IssueDate = issueDate,
             AccessKey = OptionalCode.Normalize(accessKey),
             AuthorizationNumber = OptionalCode.Normalize(authorizationNumber),
-            AuthorizationDate = authorizationDate,
+            AuthorizationDate = UtcDateTime.Normalize(authorizationDate),
             TaxSupportCode = OptionalCode.Normalize(taxSupportCode),
             SriPaymentMethodCode = OptionalCode.Normalize(sriPaymentMethodCode),
             SriPaymentMethodName = OptionalCode.Normalize(sriPaymentMethodName),
@@ -258,7 +258,7 @@ public sealed class PurchaseInvoice
         IssueDate = issueDate;
         AccessKey = OptionalCode.Normalize(accessKey);
         AuthorizationNumber = OptionalCode.Normalize(authorizationNumber);
-        AuthorizationDate = authorizationDate;
+        AuthorizationDate = UtcDateTime.Normalize(authorizationDate);
         TaxSupportCode = OptionalCode.Normalize(taxSupportCode);
         SriPaymentMethodCode = OptionalCode.Normalize(sriPaymentMethodCode);
         SriPaymentMethodName = OptionalCode.Normalize(sriPaymentMethodName);

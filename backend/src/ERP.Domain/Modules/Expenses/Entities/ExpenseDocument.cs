@@ -143,7 +143,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
             DocumentType = documentType.Trim(),
             DocumentNumber = documentNumber.Trim(),
             AuthorizationNumber = OptionalCode.Normalize(authorizationNumber),
-            AuthorizationDate = authorizationDate,
+            AuthorizationDate = UtcDateTime.Normalize(authorizationDate),
             PaymentTermId = paymentTermId,
             PaymentTermName = paymentTermName.Trim(),
             PaymentTermInstallments = paymentTermInstallments,
@@ -221,7 +221,7 @@ public sealed class ExpenseDocument : AuditableEntity, ITenantScopedEntity, ICom
         DocumentType = documentType.Trim();
         DocumentNumber = documentNumber.Trim();
         AuthorizationNumber = OptionalCode.Normalize(authorizationNumber);
-        AuthorizationDate = authorizationDate;
+        AuthorizationDate = UtcDateTime.Normalize(authorizationDate);
         PaymentTermId = paymentTermId;
         PaymentTermName = paymentTermName.Trim();
         PaymentTermInstallments = paymentTermInstallments;
