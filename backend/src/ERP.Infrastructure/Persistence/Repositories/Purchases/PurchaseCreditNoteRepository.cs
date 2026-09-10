@@ -29,6 +29,11 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             .Include(x => x.TaxSummaries)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public Task<PurchaseCreditNote?> GetByLinkedPurchaseReturnIdAsync(Guid tenantId, Guid returnId, CancellationToken ct = default) =>
+        _db.PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
+            .Include(x => x.Lines).Include(x => x.TaxSummaries)
+            .FirstOrDefaultAsync(x => x.LinkedPurchaseReturnId == returnId, ct);
+
     public Task AddAsync(PurchaseCreditNote creditNote, CancellationToken ct = default) =>
         _db.PurchaseCreditNotes.AddAsync(creditNote, ct).AsTask();
 

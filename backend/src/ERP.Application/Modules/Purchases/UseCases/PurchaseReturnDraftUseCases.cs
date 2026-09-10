@@ -339,18 +339,24 @@ public sealed class UpdatePurchaseReturnDraftHandler
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
+    private readonly ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? _receptionRepo;
 
     public UpdatePurchaseReturnDraftHandler(
         IPurchaseReturnRepository returnRepo,
         IPurchaseInvoiceRepository invoiceRepo,
         ICurrentTenant t,
-        ICurrentUser u
+        ICurrentUser u,
+        IPurchaseCreditNoteRepository? creditNoteRepo = null,
+        ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
     {
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _t = t;
         _u = u;
+        _creditNoteRepo = creditNoteRepo;
+        _receptionRepo = receptionRepo;
     }
 
     public async Task<Result<PurchaseReturnDto>> Handle(
@@ -416,6 +422,26 @@ public sealed class UpdatePurchaseReturnDraftHandler
             );
         }
 
+        var creditNote = _creditNoteRepo is null ? null
+            : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
+        if (creditNote is not null)
+        {
+            var resolved = await CreditNoteReturnLines.ResolveAsync(invoice, cmd.Lines, _returnRepo, tid, ct);
+            if (resolved.Error is not null)
+                return Result<PurchaseReturnDto>.ValidationFailure(resolved.Error);
+            if (creditNote.Status != PurchaseCreditNoteStatus.Draft || purchaseReturn.Status != PurchaseReturnStatus.Draft)
+                return Result<PurchaseReturnDto>.ValidationFailure("La NC y su devolución deben estar en borrador.");
+            if (creditNote.ReceptionDocumentId is { } receptionId)
+            {
+                var reception = await _receptionRepo!.GetByIdAsync(tid, receptionId, ct);
+                var total = resolved.Fiscal.Sum(l => l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount);
+                if (reception is null || Math.Abs(total - reception.TotalAmount) > 0.01m)
+                    return Result<PurchaseReturnDto>.ValidationFailure("El total no coincide con la NC/XML recibido.");
+            }
+            creditNote.UpdateDraft(creditNote.CreditNoteNumber, creditNote.AccessKey, creditNote.AuthorizationNumber,
+                creditNote.AuthorizationDate, creditNote.IssueDate, cmd.Reason, resolved.Fiscal, [], _u.UserId);
+        }
+
         try
         {
             purchaseReturn.UpdateDraft(cmd.Reason, lines, _u.UserId);
@@ -437,16 +463,19 @@ public sealed class CancelPurchaseReturnDraftHandler
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
 
     public CancelPurchaseReturnDraftHandler(
         IPurchaseReturnRepository returnRepo,
         ICurrentTenant t,
-        ICurrentUser u
+        ICurrentUser u,
+        IPurchaseCreditNoteRepository? creditNoteRepo = null
     )
     {
         _returnRepo = returnRepo;
         _t = t;
         _u = u;
+        _creditNoteRepo = creditNoteRepo;
     }
 
     public async Task<Result<PurchaseReturnDto>> Handle(
@@ -487,6 +516,9 @@ public sealed class CancelPurchaseReturnDraftHandler
             return Result<PurchaseReturnDto>.ValidationFailure(ex.Message);
         }
 
+        var creditNote = _creditNoteRepo is null ? null
+            : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(_t.TenantId, purchaseReturn.Id, ct);
+        creditNote?.CancelLinkedReturn(purchaseReturn, _u.UserId);
         await _returnRepo.SaveChangesAsync(ct);
         return Result<PurchaseReturnDto>.Success(Map.ToDto(purchaseReturn));
     }

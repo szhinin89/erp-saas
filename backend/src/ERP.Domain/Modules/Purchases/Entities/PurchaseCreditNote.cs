@@ -9,10 +9,10 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 /// FLOW-READY-02C-R1.1. Cubre los dos tipos de aplicación (<see cref="PurchaseCreditNoteApplicationType"/>):
 /// <c>Discount</c> (descuento/promoción, flujo original FLOW-READY-02C, autoriza/cancela aquí mismo
 /// contra <c>AccountsPayable.CreditNoteAmount</c>, sin inventario ni efecto contable) y
-/// <c>Return</c> (devolución física, donde esta entidad es solo captura/referencia del documento
-/// fiscal — el movimiento de inventario/CxP/<c>SupplierCredit</c> sigue siendo responsabilidad
-/// exclusiva de <see cref="PurchaseReturn"/>, vinculada vía <see cref="LinkPurchaseReturn"/>; nunca
-/// se reimplementa aquí, ni se autoriza vía <see cref="Authorize"/>).
+/// <c>Return</c> conserva las líneas fiscales de la devolución vinculada. Inventario/CxP/crédito
+/// del proveedor y contabilidad siguen siendo responsabilidad exclusiva de <see cref="PurchaseReturn"/>;
+/// <see cref="CompleteLinkedReturn"/> y <see cref="CancelLinkedReturn"/> sincronizan el estado fiscal
+/// sin publicar otro evento financiero.
 /// </summary>
 public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
@@ -46,7 +46,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     public string? AuthorizationNumber { get; private set; }
 
     /// <summary>Fecha documental/SRI de autorización — nunca un instante, no se persiste con hora (FLOW-READY-02C-R1.1-FIX01).</summary>
-    public DateOnly? AuthorizationDate { get; private set; }
+    public DateTime? AuthorizationDate { get; private set; }
 
     /// <summary>Fecha fiscal/documental de emisión — mismo criterio que <see cref="PurchaseInvoice.IssueDate"/> (FLOW-READY-02C-R1.1-FIX01).</summary>
     public DateOnly IssueDate { get; private set; }
@@ -108,7 +108,11 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         decimal Subtotal,
         string? VatCode,
         decimal? VatRate,
-        decimal VatAmount
+        decimal VatAmount,
+        Guid? PurchaseInvoiceDetailId = null,
+        decimal? Quantity = null,
+        decimal IceAmount = 0m,
+        decimal IrbpnrAmount = 0m
     );
 
     /// <summary>
@@ -156,7 +160,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         string creditNoteNumber,
         string? accessKey,
         string? authorizationNumber,
-        DateOnly? authorizationDate,
+        DateTime? authorizationDate,
         DateOnly issueDate,
         string reason,
         IEnumerable<DraftLineInput> lines,
@@ -240,7 +244,7 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         string creditNoteNumber,
         string? accessKey,
         string? authorizationNumber,
-        DateOnly? authorizationDate,
+        DateTime? authorizationDate,
         DateOnly issueDate,
         string reason,
         IEnumerable<DraftLineInput> lines,
@@ -286,7 +290,11 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
                     input.Subtotal,
                     input.VatCode,
                     input.VatRate,
-                    input.VatAmount
+                    input.VatAmount,
+                    input.PurchaseInvoiceDetailId,
+                    input.Quantity,
+                    input.IceAmount,
+                    input.IrbpnrAmount
                 )
             );
         }
@@ -388,9 +396,9 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
     private void RecalculateTotals()
     {
         Subtotal = _lines.Sum(l => l.Subtotal) + _taxSummaries.Sum(s => s.TaxableBase);
-        IceAmount = _taxSummaries.Sum(s => s.IceAmount);
+        IceAmount = _lines.Sum(l => l.IceAmount) + _taxSummaries.Sum(s => s.IceAmount);
         VatAmount = _lines.Sum(l => l.VatAmount) + _taxSummaries.Sum(s => s.VatAmount);
-        IrbpnrAmount = _taxSummaries.Sum(s => s.IrbpnrAmount);
+        IrbpnrAmount = _lines.Sum(l => l.IrbpnrAmount) + _taxSummaries.Sum(s => s.IrbpnrAmount);
         TotalAmount = Subtotal + IceAmount + VatAmount + IrbpnrAmount;
     }
 
@@ -552,7 +560,35 @@ public sealed class PurchaseCreditNote : AuditableEntity, ITenantScopedEntity, I
         SetUpdated(updatedBy);
     }
 
-    // ── Guards ─────────────────────────────────────────────────────────
+    // Fiscal state follows the return; these methods never publish financial events.
+    public void CancelLinkedReturn(PurchaseReturn purchaseReturn, Guid userId)
+    {
+        if (ApplicationType != PurchaseCreditNoteApplicationType.Return
+            || LinkedPurchaseReturnId != purchaseReturn.Id
+            || purchaseReturn.Status != PurchaseReturnStatus.Cancelled)
+            throw new InvalidOperationException("La devolución cancelada no corresponde a esta NC.");
+        Status = PurchaseCreditNoteStatus.Cancelled;
+        CancelledAtUtc = purchaseReturn.CancelledAtUtc;
+        CancelledByUserId = userId;
+        CancellationReason = purchaseReturn.CancellationReason;
+        SetUpdated(userId);
+    }
+
+    public void CompleteLinkedReturn(PurchaseReturn purchaseReturn, Guid userId)
+    {
+        EnsureDraft();
+        if (ApplicationType != PurchaseCreditNoteApplicationType.Return
+            || LinkedPurchaseReturnId != purchaseReturn.Id
+            || purchaseReturn.Status != PurchaseReturnStatus.Authorized
+            || purchaseReturn.AuthorizedGrandTotal != TotalAmount)
+            throw new InvalidOperationException("La devolución autorizada no coincide con la nota de crédito.");
+        Status = PurchaseCreditNoteStatus.Authorized;
+        AppliedToPayableAmount = purchaseReturn.AppliedToPayableAmount;
+        AuthorizedAtUtc = purchaseReturn.AuthorizedAtUtc;
+        AuthorizedByUserId = userId;
+        SetUpdated(userId);
+    }
+
     private void EnsureDraft()
     {
         if (Status != PurchaseCreditNoteStatus.Draft)

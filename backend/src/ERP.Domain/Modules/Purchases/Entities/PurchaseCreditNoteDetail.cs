@@ -3,10 +3,9 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Modules.Purchases.Entities;
 
 /// <summary>
-/// Línea de concepto de una <see cref="PurchaseCreditNote"/> — diseño FLOW-READY-02C §2.2. Solo
-/// cubre descuento/promoción: nunca tiene <c>ItemId</c>/<c>WarehouseId</c>/<c>Quantity</c>/
-/// <c>PurchaseInvoiceDetailId</c>/<c>AffectsStock</c> porque este agregado nunca mueve inventario
-/// (§0.1 — devolución física es responsabilidad exclusiva de <see cref="PurchaseReturn"/>).
+/// Línea fiscal de una NC. Para devolución conserva la referencia exacta a la línea comprada,
+/// la cantidad y los importes históricos prorrateados. El inventario y la contabilidad se aplican
+/// exclusivamente mediante la <see cref="PurchaseReturn"/> vinculada.
 /// </summary>
 public sealed class PurchaseCreditNoteDetail : IMustHaveTenant
 {
@@ -17,6 +16,11 @@ public sealed class PurchaseCreditNoteDetail : IMustHaveTenant
     public Guid PurchaseCreditNoteId { get; private set; }
 
     public string Description { get; private set; } = null!;
+
+    public Guid? PurchaseInvoiceDetailId { get; private set; }
+    public decimal? Quantity { get; private set; }
+    public decimal IceAmount { get; private set; }
+    public decimal IrbpnrAmount { get; private set; }
 
     public decimal Subtotal { get; private set; }
     public string? VatCode { get; private set; }
@@ -33,7 +37,11 @@ public sealed class PurchaseCreditNoteDetail : IMustHaveTenant
         decimal subtotal,
         string? vatCode,
         decimal? vatRate,
-        decimal vatAmount
+        decimal vatAmount,
+        Guid? purchaseInvoiceDetailId = null,
+        decimal? quantity = null,
+        decimal iceAmount = 0m,
+        decimal irbpnrAmount = 0m
     )
     {
         if (purchaseCreditNoteId == Guid.Empty)
@@ -46,7 +54,11 @@ public sealed class PurchaseCreditNoteDetail : IMustHaveTenant
                 "La descripción de la línea es obligatoria.",
                 nameof(description)
             );
-        if (subtotal <= 0)
+        if (purchaseInvoiceDetailId is not null && (purchaseInvoiceDetailId == Guid.Empty || quantity is null or <= 0))
+            throw new ArgumentException("La línea de factura y cantidad a devolver son obligatorias.");
+        if (iceAmount < 0 || irbpnrAmount < 0)
+            throw new ArgumentException("Los impuestos no pueden ser negativos.");
+        if (subtotal < 0 || (subtotal == 0 && purchaseInvoiceDetailId is null))
             throw new ArgumentException(
                 "El subtotal de la línea debe ser mayor a cero.",
                 nameof(subtotal)
@@ -67,7 +79,11 @@ public sealed class PurchaseCreditNoteDetail : IMustHaveTenant
             VatCode = OptionalCode.Normalize(vatCode),
             VatRate = vatRate,
             VatAmount = vatAmount,
-            TotalAmount = subtotal + vatAmount,
+            PurchaseInvoiceDetailId = purchaseInvoiceDetailId,
+            Quantity = quantity,
+            IceAmount = iceAmount,
+            IrbpnrAmount = irbpnrAmount,
+            TotalAmount = subtotal + vatAmount + iceAmount + irbpnrAmount,
         };
     }
 }

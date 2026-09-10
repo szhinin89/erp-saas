@@ -763,11 +763,10 @@ public sealed class PurchaseCreditNoteTests
     // ── Estructural: nunca mueve inventario ─────────────────────────────
 
     [Fact]
-    public void PurchaseCreditNoteDetail_no_expone_campos_de_inventario()
+    public void PurchaseCreditNoteDetail_conserva_referencia_y_cantidad_sin_duplicar_motor_de_inventario()
     {
-        // Verificación estructural (§0.1, §2.2 del diseño): esta entidad es solo para descuento/
-        // promoción — nunca ItemId/WarehouseId/Quantity/PurchaseInvoiceDetailId/AffectsStock,
-        // porque el caso Return delega completamente en PurchaseReturn.
+        // La NC conserva las líneas fiscales devueltas; producto y bodega se resuelven
+        // desde la factura y los movimientos siguen siendo responsabilidad de PurchaseReturn.
         var propertyNames = typeof(PurchaseCreditNoteDetail)
             .GetProperties()
             .Select(p => p.Name)
@@ -775,8 +774,8 @@ public sealed class PurchaseCreditNoteTests
 
         propertyNames.Should().NotContain("ItemId");
         propertyNames.Should().NotContain("WarehouseId");
-        propertyNames.Should().NotContain("Quantity");
-        propertyNames.Should().NotContain("PurchaseInvoiceDetailId");
+        propertyNames.Should().Contain("Quantity");
+        propertyNames.Should().Contain("PurchaseInvoiceDetailId");
         propertyNames.Should().NotContain("AffectsStock");
     }
 }

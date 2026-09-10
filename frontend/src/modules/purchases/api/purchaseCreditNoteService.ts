@@ -7,6 +7,10 @@ const BASE = "/api/v1/purchases/credit-notes";
 
 export interface PurchaseCreditNoteDetailDto {
   id: string;
+  purchaseInvoiceDetailId?: string | null;
+  quantity?: number | null;
+  iceAmount?: number;
+  irbpnrAmount?: number;
   description: string;
   subtotal: number;
   vatCode: string | null;
@@ -120,6 +124,7 @@ export interface CreatePurchaseCreditNoteDraftPayload {
   issueDate: string;
   reason: string;
   lines: PurchaseCreditNoteDraftLineInput[];
+  returnLines?: { originalInvoiceDetailId: string; quantity: number }[];
   taxSummaryLines?: PurchaseCreditNoteTaxSummaryLineInput[];
 }
 

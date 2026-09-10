@@ -59,6 +59,7 @@ public sealed class CancelPurchaseReturnHandler
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
 
     public CancelPurchaseReturnHandler(
         IPurchaseReturnRepository returnRepo,
@@ -69,7 +70,8 @@ public sealed class CancelPurchaseReturnHandler
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
-        ICurrentUser u
+        ICurrentUser u,
+        IPurchaseCreditNoteRepository? creditNoteRepo = null
     )
     {
         _returnRepo = returnRepo;
@@ -81,6 +83,7 @@ public sealed class CancelPurchaseReturnHandler
         _dbEx = dbEx;
         _t = t;
         _u = u;
+        _creditNoteRepo = creditNoteRepo;
     }
 
     public async Task<Result<PurchaseReturnDto>> Handle(
@@ -259,6 +262,9 @@ public sealed class CancelPurchaseReturnHandler
             try
             {
                 purchaseReturn.Cancel(cmd.Reason, uid, cmd.ClientRequestId, cancelHash);
+                var creditNote = _creditNoteRepo is null ? null
+                    : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
+                creditNote?.CancelLinkedReturn(purchaseReturn, uid);
             }
             catch (InvalidOperationException ex)
             {

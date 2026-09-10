@@ -1,6 +1,19 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-02** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-10** · Kernel refactor: **2026-06-05**.
+
+---
+
+## NC de compra por devolución de productos (2026-09-10)
+
+**Estado: IMPLEMENTADO.** Descuento/promoción conserva su comportamiento.
+
+- Captura cantidades sobre las líneas de la factura: comprado, ya devuelto, disponible, precio, base, IVA, ICE, IRBPNR, total y bodega. Sin productos libres.
+- NC y borrador de devolución se guardan juntos. Cada línea fiscal conserva `purchase_invoice_detail_id` y cantidad; impuestos históricos prorrateados server-side.
+- Autorización revalida disponibilidad bajo bloqueo financiero, aplica inventario/CxP/contabilidad mediante PurchaseReturn y marca la recepción procesada. Edición y cancelación sincronizan la NC sin duplicar efectos.
+- Validado: 292 tests de dominio, 316 de aplicación, 56 de API/E2E, 15 PostgreSQL de persistencia/concurrencia/contabilidad y 201 frontend. Builds backend/frontend, tsc, lint (0 errores, 29 advertencias) y `git diff --check` correctos.
+- `architecture:check`: 187 incumplimientos preexistentes en cinco categorías; no se amplía el alcance para corregirlos.
+- Migración `20260909172144_PurchaseCreditNoteReturnLines` generada y probada en PostgreSQL temporal; pendiente de aplicar a la BD de la aplicación.
 
 ---
 

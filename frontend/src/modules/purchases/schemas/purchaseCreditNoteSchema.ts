@@ -1,13 +1,13 @@
 import { z } from "zod";
+import { purchaseReturnLineSchema } from "./purchaseReturnSchema";
 
 // FLOW-READY-02C.3 — espejo de CreateDraftPurchaseCreditNoteValidator/
 // UpdatePurchaseCreditNoteDraftValidator (ERP.Application). La fuente de
 // verdad de la regla de negocio sigue siendo el backend (incluyendo el
 // bloqueo por excedente de saldo, que nunca se recalcula aquí) — esto es
 // solo feedback inmediato de UI, mismo criterio que purchaseReturnSchema.ts.
-// Alcance v1 (§0.1 del diseño): solo cubre el tipo Descuento/Promoción —
-// nunca item/bodega/cantidad, la devolución física delega en
-// purchaseReturnSchema.ts sin cambios.
+// Devolución reutiliza la validación de referencias y cantidades de purchaseReturnSchema.
+// Producto, bodega e impuestos siempre se resuelven desde la factura en el servidor.
 
 export const purchaseCreditNoteLineSchema = z.object({
   description: z
@@ -54,6 +54,7 @@ export const purchaseCreditNoteDraftSchema = z.object({
     .min(1, "El motivo/concepto es obligatorio.")
     .max(500, "El motivo no puede superar 500 caracteres."),
   lines: z.array(purchaseCreditNoteLineSchema),
+  returnLines: z.array(purchaseReturnLineSchema).default([]),
   taxSummaryLines: z.array(purchaseCreditNoteTaxSummaryLineSchema),
 });
 
@@ -70,6 +71,7 @@ export function emptyPurchaseCreditNoteDraftForm(): PurchaseCreditNoteDraftFormV
     issueDate: "",
     reason: "",
     lines: [],
+    returnLines: [],
     taxSummaryLines: [],
   };
 }

@@ -19,7 +19,7 @@ public sealed record PurchaseCreditNoteDto(
     string CreditNoteNumber,
     string? AccessKey,
     string? AuthorizationNumber,
-    DateOnly? AuthorizationDate,
+    DateTime? AuthorizationDate,
     DateOnly IssueDate,
     string Reason,
     decimal Subtotal,
@@ -48,7 +48,11 @@ public sealed record PurchaseCreditNoteDetailDto(
     string? VatCode,
     decimal? VatRate,
     decimal VatAmount,
-    decimal TotalAmount
+    decimal TotalAmount,
+    Guid? PurchaseInvoiceDetailId = null,
+    decimal? Quantity = null,
+    decimal IceAmount = 0m,
+    decimal IrbpnrAmount = 0m
 );
 
 /// <summary>

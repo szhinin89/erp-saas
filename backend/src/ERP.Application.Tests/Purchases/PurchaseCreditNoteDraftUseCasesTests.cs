@@ -32,7 +32,7 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
 
     private sealed record Fixture(PurchaseInvoice Invoice, AccountsPayable Payable);
 
-    private static Fixture BuildFixture(decimal totalAmount = 1000m, decimal paidAmount = 0m)
+    private static Fixture BuildFixture(decimal totalAmount = 1000m, decimal paidAmount = 0m, bool secondLine = false)
     {
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -62,7 +62,19 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
             itemId: Guid.NewGuid(),
             warehouseId: WarehouseId
         );
-        invoice.ReplaceLines(new[] { line }, UserId);
+        line.ApplyTaxes("0", 0m, "IVA", null, 0m, null);
+        var invoiceLines = new List<PurchaseInvoiceDetail> { line };
+        if (secondLine)
+        {
+            var other = PurchaseInvoiceDetail.Create(invoice.Id, TenantId, "Producto 2", 2, 50m,
+                "2", "UNIT", itemId: Guid.NewGuid(), warehouseId: WarehouseId);
+            other.ReplaceTaxes([PurchaseInvoiceDetailTax.Create(other.Id, TenantId, "5", "5001", "IRBPNR", 1m,
+                ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific,
+                other.TaxableBase, 2m, PurchaseTaxSource.Xml)]);
+            other.ApplyTaxes("2", 15m, "IVA", "3000", 10m, "ICE");
+            invoiceLines.Add(other);
+        }
+        invoice.ReplaceLines(invoiceLines, UserId);
         invoice.Confirm(UserId);
 
         var payable = AccountsPayable.CreateFromOrigin(
@@ -111,10 +123,14 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
+        public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
         public Mocks(Fixture f)
         {
+            ReturnRepo.Setup(r => r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(TenantId,
+                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Dictionary<Guid, decimal>());
             InvoiceRepo
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
@@ -175,7 +191,8 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
                 FixedTenant(),
                 FixedCompany(),
                 FixedBranch(),
-                FixedUser()
+                FixedUser(),
+                ReturnRepo.Object
             );
 
         public UpdatePurchaseCreditNoteDraftHandler BuildUpdateHandler() =>
@@ -307,39 +324,92 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateDraftPurchaseCreditNoteCommand.ApplicationType));
     }
 
+    private static CreateDraftPurchaseCreditNoteCommand ReturnCommand(Fixture f,
+        IReadOnlyList<PurchaseReturnDraftLineInput> lines, Guid? receptionId = null) =>
+        new(Guid.NewGuid(), f.Invoice.Id, receptionId, PurchaseCreditNoteApplicationType.Return,
+            "001-001-000000013", null, null, null, f.Invoice.IssueDate, "Devolucion", [], ReturnLines: lines);
+
     [Fact]
-    public async Task CreateDraft_Return_guarda_cabecera_fiscal_sin_aplicar_CxP()
+    public async Task Return_partial_line_saves_linked_draft_and_server_amounts_without_financial_effects()
     {
         var f = BuildFixture();
         var m = new Mocks(f);
-        var handler = m.BuildCreateHandler();
-
-        var result = await handler.Handle(
-            new CreateDraftPurchaseCreditNoteCommand(
-                Guid.NewGuid(),
-                f.Invoice.Id,
-                null,
-                PurchaseCreditNoteApplicationType.Return,
-                "001-001-000000013",
-                null,
-                null,
-                null,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                "Devolución de mercadería",
-                OneLine()
-            ),
-            CancellationToken.None
-        );
-
+        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
+            [new(f.Invoice.Lines[0].Id, 0.25m)]), CancellationToken.None);
         result.IsSuccess.Should().BeTrue();
-        result.Value!.ApplicationType.Should().Be("Return");
+        result.Value!.TotalAmount.Should().Be(250m);
+        result.Value.Lines.Single().PurchaseInvoiceDetailId.Should().Be(f.Invoice.Lines[0].Id);
+        result.Value.Lines.Single().Quantity.Should().Be(0.25m);
+        result.Value.LinkedPurchaseReturnId.Should().NotBeNull();
         result.Value.Status.Should().Be("Draft");
-        result.Value.AppliedToPayableAmount.Should().BeNull();
-        result.Value.LinkedPurchaseReturnId.Should().BeNull();
-        f.Payable.OutstandingAmount.Should().Be(f.Payable.TotalAmount); // CxP intacta
+        f.Payable.OutstandingAmount.Should().Be(f.Payable.TotalAmount);
+        m.ReturnRepo.Verify(r => r.AddAsync(It.Is<PurchaseReturn>(x => x.Id == result.Value.LinkedPurchaseReturnId),
+            It.IsAny<CancellationToken>()), Times.Once);
+        m.ReturnRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        m.CreditNoteRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // ── 2. CreateDraft con ReceptionDocumentId válido ───────────────────
+    [Fact]
+    public async Task Return_multiple_lines_prorates_base_IVA_ICE_and_IRBPNR()
+    {
+        var f = BuildFixture(secondLine: true);
+        var m = new Mocks(f);
+        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
+            [new(f.Invoice.Lines[0].Id, .5m), new(f.Invoice.Lines[1].Id, 1m)]), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Lines.Should().HaveCount(2);
+        result.Value.Subtotal.Should().Be(550m);
+        result.Value.IceAmount.Should().Be(5m);
+        result.Value.VatAmount.Should().Be(8.25m);
+        result.Value.Lines.Sum(l => l.IrbpnrAmount).Should().Be(1m);
+        result.Value.TotalAmount.Should().Be(564.25m);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(1.01)]
+    [InlineData(0.00001)]
+    public async Task Return_rejects_invalid_quantity(decimal quantity)
+    {
+        var f = BuildFixture(); var m = new Mocks(f);
+        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
+            [new(f.Invoice.Lines[0].Id, quantity)]), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        m.CreditNoteRepo.Verify(r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Return_rejects_previous_partial_returns_foreign_products_duplicates_and_free_lines()
+    {
+        var f = BuildFixture(); var m = new Mocks(f); var id = f.Invoice.Lines[0].Id;
+        m.ReturnRepo.Setup(r => r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(TenantId,
+            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, decimal> { [id] = .75m });
+        foreach (var inputs in new PurchaseReturnDraftLineInput[][] {
+            [new(id, .3m)], [new(Guid.NewGuid(), .1m)], [new(id, .1m), new(id, .1m)] })
+        {
+            var result = await m.BuildCreateHandler().Handle(ReturnCommand(f, inputs), CancellationToken.None);
+            result.IsSuccess.Should().BeFalse();
+        }
+        var free = await m.BuildCreateHandler().Handle(ReturnCommand(f, []) with { Lines = OneLine() }, CancellationToken.None);
+        free.IsSuccess.Should().BeFalse();
+        var valid = await m.BuildCreateHandler().Handle(ReturnCommand(f, [new(id, .25m)]), CancellationToken.None);
+        valid.IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(.115, true)]
+    [InlineData(.2, false)]
+    public async Task Return_validates_received_XML_total(decimal quantity, bool success)
+    {
+        var f = BuildFixture(); var m = new Mocks(f);
+        var reception = BuildReceptionDoc(SupplierId, f.Invoice.InvoiceNumber);
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, reception.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reception);
+        var result = await m.BuildCreateHandler().Handle(ReturnCommand(f,
+            [new(f.Invoice.Lines[0].Id, quantity)], reception.Id), CancellationToken.None);
+        result.IsSuccess.Should().Be(success);
+    }
 
     [Fact]
     public async Task CreateDraft_con_ReceptionDocumentId_valido_vincula_documento()

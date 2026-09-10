@@ -2,6 +2,7 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Common;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -66,7 +67,8 @@ public sealed class PurchaseCreditNoteController : ControllerBase
                     request.IssueDate,
                     request.Reason,
                     request.Lines,
-                    request.TaxSummaryLines
+                    request.TaxSummaryLines,
+                    request.ReturnLines
                 ),
                 ct
             )
@@ -93,7 +95,7 @@ public sealed class PurchaseCreditNoteController : ControllerBase
                     request.CreditNoteNumber,
                     request.AccessKey,
                     request.AuthorizationNumber,
-                    request.AuthorizationDate,
+                    UtcDateTime.Normalize(request.AuthorizationDate),
                     request.IssueDate,
                     request.Reason,
                     request.Lines,
@@ -252,11 +254,12 @@ public sealed record CreatePurchaseCreditNoteDraftRequest(
     string CreditNoteNumber,
     string? AccessKey,
     string? AuthorizationNumber,
-    DateOnly? AuthorizationDate,
+    DateTime? AuthorizationDate,
     DateOnly IssueDate,
     string Reason,
     IReadOnlyList<PurchaseCreditNoteDraftLineInput> Lines,
-    IReadOnlyList<PurchaseCreditNoteTaxSummaryLineInput>? TaxSummaryLines = null
+    IReadOnlyList<PurchaseCreditNoteTaxSummaryLineInput>? TaxSummaryLines = null,
+    IReadOnlyList<PurchaseReturnDraftLineInput>? ReturnLines = null
 );
 
 /// <summary>Cuerpo de <see cref="PurchaseCreditNoteController.UpdateDraft"/>.</summary>
@@ -264,7 +267,7 @@ public sealed record UpdatePurchaseCreditNoteDraftRequest(
     string CreditNoteNumber,
     string? AccessKey,
     string? AuthorizationNumber,
-    DateOnly? AuthorizationDate,
+    DateTime? AuthorizationDate,
     DateOnly IssueDate,
     string Reason,
     IReadOnlyList<PurchaseCreditNoteDraftLineInput> Lines,

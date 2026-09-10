@@ -502,8 +502,10 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         return (ret, payable);
     }
 
-    [Fact]
-    public async Task Autorizar_PurchaseReturn_genera_JournalEntry_Posted_balanceado()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Autorizar_PurchaseReturn_genera_JournalEntry_Posted_balanceado(bool linkedCreditNote)
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -516,6 +518,21 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         await GrantStockAsync(db, 10, inv.Id);
 
         var (ret, _) = BuildAuthorizedReturn(inv, returnQuantity: 2);
+        PurchaseCreditNote? note = null;
+        if (linkedCreditNote)
+        {
+            var line = ret.Lines.Single();
+            note = PurchaseCreditNote.CreateDraft(_tenantId, _companyId, _branchId, _supplierId, inv.Id,
+                null, ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteApplicationType.Return,
+                "001-001-000000099", null, null, null, issueDate, "Devolucion",
+                [new("Producto", line.ReturnedSubtotal!.Value, line.VatCode, line.VatRate,
+                    line.ReturnedVatAmount!.Value, line.OriginalInvoiceDetailId, line.Quantity,
+                    line.ReturnedIceAmount ?? 0m, line.IrbpnrAmount)], [], _createdBy, Guid.NewGuid(), "create-note");
+            note.LinkPurchaseReturn(ret.Id, _createdBy);
+            note.CompleteLinkedReturn(ret, _createdBy);
+            ret.RegisterLinkedCreditNote(note, _createdBy);
+            db.PurchaseCreditNotes.Add(note);
+        }
         db.PurchaseReturns.Add(ret);
         await db.SaveChangesAsync();
 
@@ -524,6 +541,12 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             .JournalEntries.Include(e => e.Lines)
             .FirstOrDefaultAsync(x => x.SourceEventId == ret.Id);
 
+        if (note is not null)
+        {
+            (await verifyDb.PurchaseCreditNotes.SingleAsync(n => n.Id == note.Id)).Status
+                .Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteStatus.Authorized);
+            (await verifyDb.JournalEntries.CountAsync(e => e.SourceEventId == note.Id)).Should().Be(0);
+        }
         entry.Should().NotBeNull();
         entry!.Status.Should().Be(JournalEntryStatus.Posted);
         entry.SourceModule.Should().Be("Purchases");

@@ -230,6 +230,7 @@ export function PurchaseCreditNoteDetailPage() {
   }
 
   const isDraft = editing.status === "Draft";
+  const canEditFiscal = isDraft && editing.applicationType === "Discount";
   const isAuthorized = editing.status === "Authorized";
   const isCancelled = editing.status === "Cancelled";
 
@@ -301,6 +302,15 @@ export function PurchaseCreditNoteDetailPage() {
   // FLOW-READY-02C-R1.1: las notas de crédito tipo Devolución nunca se autorizan aquí — se aplican
   // mediante el PurchaseReturn vinculado (backend rechaza Authorize() para este tipo).
   const isDiscountType = editing.applicationType === "Discount";
+  if (!isDiscountType) {
+    discountLineColumns.splice(1, 0, {
+      key: "quantity", header: "Cantidad devuelta", align: "right", render: (line) => line.quantity ?? "—",
+    });
+    discountLineColumns.splice(discountLineColumns.length - 1, 0,
+      { key: "ice", header: "ICE", align: "right", render: (line) => <ZHMoneyValue value={line.iceAmount ?? 0} currencySymbol="" /> },
+      { key: "irbpnr", header: "IRBPNR", align: "right", render: (line) => <ZHMoneyValue value={line.irbpnrAmount ?? 0} currencySymbol="" /> },
+    );
+  }
   const exceedsBalance =
     editing.invoiceBalanceDue !== null && editing.totalAmount > editing.invoiceBalanceDue;
 
@@ -395,7 +405,7 @@ export function PurchaseCreditNoteDetailPage() {
       </ZHCard>
 
       <ZHCard title={t("purchases.creditNote.fiscal.title", "Nota de crédito recibida / datos fiscales")}>
-        {isDraft ? (
+        {canEditFiscal ? (
           <div className="pcn-fiscal-grid">
             <ZHField
               label={t("purchases.creditNote.fiscal.number", "Número NC")}
@@ -447,7 +457,7 @@ export function PurchaseCreditNoteDetailPage() {
       </ZHCard>
 
       <ZHCard title={t("purchases.creditNote.reason.title", "Concepto / motivo")}>
-        {isDraft ? (
+        {canEditFiscal ? (
           <ZHField
             label={t("purchases.creditNote.reason.label", "Motivo")}
             required
@@ -477,8 +487,8 @@ export function PurchaseCreditNoteDetailPage() {
       )}
 
       {(isDraft || editing.lines.length > 0) && (
-        <ZHCard title={t("purchases.creditNote.lines.title", "Líneas de descuento / promoción")}>
-          {isDraft ? (
+        <ZHCard title={isDiscountType ? t("purchases.creditNote.lines.title", "Líneas de descuento / promoción") : "Productos devueltos"}>
+          {canEditFiscal ? (
             <>
               <PurchaseCreditNoteDiscountLinesEditor
                 register={draftForm.register}
@@ -530,7 +540,7 @@ export function PurchaseCreditNoteDetailPage() {
         </ZHCard>
       )}
 
-      {(isDraft || isAuthorized) && (
+      {(isDraft || isAuthorized) && isDiscountType && (
         <ZHCard title={t("purchases.creditNote.actions.title", "Acciones")}>
           {!cancelling ? (
             <div className="pcn-actions-row">

@@ -130,6 +130,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
 
     private sealed class Mocks
     {
+        public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
+        public Mock<ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IPurchaseReturnRepository> ReturnRepo { get; } = new();
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
@@ -318,12 +320,98 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 PostingEngine.Object,
                 t.Object,
                 b.Object,
-                user ?? u.Object
+                user ?? u.Object,
+                CreditNoteRepo.Object,
+                ReceptionRepo.Object
             );
         }
     }
 
     // ── Autorización feliz ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Editing_and_cancelling_linked_return_keeps_the_fiscal_note_in_sync()
+    {
+        var f = BuildFixture(); var m = new Mocks(f);
+        var note = PurchaseCreditNote.CreateDraft(TenantId, CompanyId, BranchId, SupplierId, f.Invoice.Id,
+            null, PurchaseCreditNoteApplicationType.Return, "001-001-000000099", null, null, null,
+            f.Invoice.IssueDate, "Devolucion", [new("Producto 1", 300m, "10", 12m, 36m, f.Line.Id, 3m)],
+            [], UserId, Guid.NewGuid(), "hash");
+        note.LinkPurchaseReturn(f.Return.Id, UserId);
+        m.CreditNoteRepo.Setup(r => r.GetByLinkedPurchaseReturnIdAsync(TenantId, f.Return.Id,
+            It.IsAny<CancellationToken>())).ReturnsAsync(note);
+        var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
+        var user = Mock.Of<ICurrentUser>(u => u.UserId == UserId);
+        var update = new UpdatePurchaseReturnDraftHandler(m.ReturnRepo.Object, m.InvoiceRepo.Object,
+            tenant, user, m.CreditNoteRepo.Object, m.ReceptionRepo.Object);
+        var result = await update.Handle(new(f.Return.Id, "Cantidad corregida", [new(f.Line.Id, 2m)]), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        note.TotalAmount.Should().Be(224m);
+        note.Lines.Single().Quantity.Should().Be(2m);
+        f.Return.Lines.Single().Quantity.Should().Be(2m);
+        var cancel = new CancelPurchaseReturnDraftHandler(m.ReturnRepo.Object, tenant, user, m.CreditNoteRepo.Object);
+        var cancelled = await cancel.Handle(new(f.Return.Id, Guid.NewGuid(), "Cancelada"), CancellationToken.None);
+        cancelled.IsSuccess.Should().BeTrue();
+        note.Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
+        note.DomainEvents.Should().NotContain(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteCancelledEvent);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Linked_credit_note_authorizes_inventory_payable_accounting_event_and_reception(bool xmlMismatch)
+    {
+        var f = BuildFixture(); var m = new Mocks(f);
+        var doc = ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
+            TenantId, CompanyId, BranchId,
+            ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.CreditNote,
+            "1234567890001", "Proveedor", SupplierId, "AK-TEST", "001-001-000000099",
+            f.Invoice.IssueDate, DateTime.UtcNow, 300m, 36m, xmlMismatch ? 400m : 336m, UserId);
+        doc.MarkVerified(UserId);
+        var note = PurchaseCreditNote.CreateDraft(TenantId, CompanyId, BranchId, SupplierId, f.Invoice.Id,
+            doc.Id, PurchaseCreditNoteApplicationType.Return, doc.InvoiceNumber, doc.AccessKey,
+            null, null, f.Invoice.IssueDate, "Devolucion", [new("Producto 1", 300m, "10", 12m, 36m, f.Line.Id, 3m)], [], UserId, Guid.NewGuid(), "hash");
+        note.LinkPurchaseReturn(f.Return.Id, UserId);
+        m.CreditNoteRepo.Setup(r => r.GetByLinkedPurchaseReturnIdAsync(TenantId, f.Return.Id,
+            It.IsAny<CancellationToken>())).ReturnsAsync(note);
+        m.ReceptionRepo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+        var before = f.Payable.OutstandingAmount;
+        var command = new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid());
+        var result = await m.BuildHandler().Handle(command, CancellationToken.None);
+        result.IsSuccess.Should().Be(!xmlMismatch);
+        if (xmlMismatch)
+        {
+            f.Payable.OutstandingAmount.Should().Be(before);
+            m.AppendedItemWarehouses.Should().BeEmpty();
+            m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+            return;
+        }
+        note.Status.Should().Be(PurchaseCreditNoteStatus.Authorized);
+        f.Return.FiscalStatus.Should().Be(PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered);
+        doc.Status.Should().Be(ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionDocumentStatus.Processed);
+        doc.PurchaseId.Should().Be(f.Invoice.Id);
+        f.Payable.OutstandingAmount.Should().Be(before - 336m);
+        m.AppendedItemWarehouses.Should().HaveCount(1);
+        f.Return.DomainEvents.Should().ContainSingle(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseReturnAuthorizedEvent);
+        note.DomainEvents.Should().NotContain(e => e is ERP.Domain.Modules.Purchases.Events.PurchaseCreditNoteAuthorizedEvent);
+        var retry = await m.BuildHandler().Handle(command, CancellationToken.None);
+        retry.IsSuccess.Should().BeTrue();
+        m.AppendedItemWarehouses.Should().HaveCount(1);
+        f.Payable.OutstandingAmount.Should().Be(before - 336m);
+    }
+
+    [Fact]
+    public async Task Linked_credit_note_revalidates_prior_returns_before_any_inventory_movement()
+    {
+        var f = BuildFixture(); var m = new Mocks(f);
+        m.ReturnRepo.Setup(r => r.GetReturnedQuantitiesByInvoiceDetailIdsAsync(TenantId,
+            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, decimal> { [f.Line.Id] = 8m });
+        var result = await m.BuildHandler().Handle(new(f.Return.Id, Guid.NewGuid()), CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        m.AppendedItemWarehouses.Should().BeEmpty();
+        m.ReturnRepo.Verify(r => r.AcquireFinancialLockAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()), Times.Once);
+    }
 
     [Fact]
     public async Task Autorizacion_feliz_factura_impaga_no_crea_SupplierCredit()

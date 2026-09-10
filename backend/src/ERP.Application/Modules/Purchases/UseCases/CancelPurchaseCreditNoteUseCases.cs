@@ -148,6 +148,12 @@ public sealed class CancelPurchaseCreditNoteHandler
                     );
             }
 
+            if (creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return && creditNote.LinkedPurchaseReturnId is not null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseCreditNoteDto>.ValidationFailure("Cancele la devolución vinculada para revertir la NC y sus movimientos.");
+            }
+
             var wasAuthorized = creditNote.Status == PurchaseCreditNoteStatus.Authorized;
 
             if (wasAuthorized)

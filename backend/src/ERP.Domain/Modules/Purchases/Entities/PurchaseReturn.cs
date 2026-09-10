@@ -339,9 +339,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 );
 
             var fraction = line.Quantity / original.OriginalQuantity;
-            var returnedSubtotal = Round2(
-                fraction * (original.LineSubtotal - original.DiscountAmount)
-            );
+            var returnedSubtotal = ProrateAmount(original.LineSubtotal - original.DiscountAmount, line.Quantity, original.OriginalQuantity);
             var returnedVat = Round2(fraction * original.VatAmount);
             var returnedDiscount = Round2(fraction * original.DiscountAmount);
             var historicalCost = Round2(original.LandedUnitCost * line.Quantity);
@@ -359,7 +357,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 t.Rate,
                 t.CalculationType,
                 Round2(fraction * t.TaxableBase),
-                Round2(fraction * t.TaxAmount)
+                ProrateAmount(t.TaxAmount, line.Quantity, original.OriginalQuantity)
             ));
 
             line.Freeze(
@@ -565,6 +563,18 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     }
 
     // ── Guards ─────────────────────────────────────────────────────────
+    public void RegisterLinkedCreditNote(PurchaseCreditNote creditNote, Guid userId)
+    {
+        if (Status != PurchaseReturnStatus.Authorized
+            || creditNote.Status != PurchaseCreditNoteStatus.Authorized
+            || creditNote.LinkedPurchaseReturnId != Id)
+            throw new InvalidOperationException("La NC no corresponde a esta devolución autorizada.");
+        // The fiscal reference is PurchaseCreditNote.LinkedPurchaseReturnId. The legacy
+        // SupplierCreditNoteDocumentId belongs to the separate supplier-document workflow.
+        FiscalStatus = PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered;
+        SetUpdated(userId);
+    }
+
     private void EnsureDraft()
     {
         if (Status != PurchaseReturnStatus.Draft)
@@ -572,6 +582,9 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
                 "Esta devolución ya no está en borrador (fue autorizada o cancelada), por lo que no se puede modificar."
             );
     }
+
+    public static decimal ProrateAmount(decimal amount, decimal quantity, decimal originalQuantity) =>
+        Round2(quantity / originalQuantity * amount);
 
     private static decimal Round2(decimal value) =>
         Math.Round(value, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);

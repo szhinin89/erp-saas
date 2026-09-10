@@ -10,6 +10,8 @@ public interface IPurchaseCreditNoteRepository
 {
     Task<PurchaseCreditNote?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
+    Task<PurchaseCreditNote?> GetByLinkedPurchaseReturnIdAsync(Guid tenantId, Guid returnId, CancellationToken ct = default);
+
     Task AddAsync(PurchaseCreditNote creditNote, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 

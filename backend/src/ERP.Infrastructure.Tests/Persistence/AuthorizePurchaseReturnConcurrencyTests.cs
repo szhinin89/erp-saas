@@ -336,7 +336,8 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
             Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId))
         );
 
         var result = await handler.Handle(
@@ -354,6 +355,53 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
             CancellationToken.None
         );
         return (true, reloaded);
+    }
+
+    [Fact]
+    public async Task Concurrent_partial_credit_notes_cannot_return_more_than_the_invoice_and_persist_source_lines()
+    {
+        var seedReturnId = await SeedAuthorizableDraftAsync(lineQuantity: 10, returnQuantity: 1);
+        var returnIds = new List<Guid>();
+        Guid invoiceId;
+        await using (var db = CreateContext())
+        {
+            invoiceId = (await db.PurchaseReturns.SingleAsync(r => r.Id == seedReturnId)).PurchaseInvoiceId;
+            var invoice = await db.PurchaseInvoices.Include(i => i.Lines).SingleAsync(i => i.Id == invoiceId);
+            var company = new FixedCurrentCompany(() => _companyId);
+            var handler = new CreateDraftPurchaseCreditNoteHandler(
+                new PurchaseCreditNoteRepository(db, company), new PurchaseInvoiceRepository(db, company),
+                new AccountsPayableRepository(db),
+                Mock.Of<ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository>(),
+                new RealDatabaseExceptionTranslator(), new FixedCurrentTenant(() => _tenantId), company,
+                new FixedCurrentBranch(() => _branchId), new FixedCurrentUser(_userId),
+                new PurchaseReturnRepository(db, company));
+            for (var i = 1; i <= 2; i++)
+            {
+                var result = await handler.Handle(new CreateDraftPurchaseCreditNoteCommand(
+                    Guid.NewGuid(), invoice.Id, null, ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteApplicationType.Return,
+                    $"001-001-00000000{i}", null, null, null, invoice.IssueDate, "Devolucion parcial", [],
+                    ReturnLines: [new(invoice.Lines.Single().Id, 6m)]), CancellationToken.None);
+                result.IsSuccess.Should().BeTrue(result.Error);
+                result.Value!.Lines.Single().PurchaseInvoiceDetailId.Should().Be(invoice.Lines.Single().Id);
+                returnIds.Add(result.Value.LinkedPurchaseReturnId!.Value);
+            }
+        }
+        var results = await Task.WhenAll(returnIds.Select(id => ExecuteAuthorizeAsync(id, Guid.NewGuid())));
+        results.Count(r => r.Success).Should().Be(1);
+        await using var verify = CreateContext();
+        var notes = await verify.PurchaseCreditNotes.Include(n => n.Lines).Where(n => n.PurchaseInvoiceId == invoiceId).ToListAsync();
+        notes.Count(n => n.Status == ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteStatus.Authorized).Should().Be(1);
+        notes.Should().OnlyContain(n => n.Lines.Single().Quantity == 6m);
+        var movements = await verify.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+            .Where(m => m.SourceDocId != null && returnIds.Contains(m.SourceDocId.Value)).ToListAsync();
+        movements.Should().ContainSingle().Which.Quantity.Should().Be(-6m);
+        var payable = await new AccountsPayableRepository(verify).GetByOriginAsync(_tenantId, _companyId,
+            AccountsPayableOriginType.PurchaseInvoice, invoiceId, CancellationToken.None);
+        payable!.OutstandingAmount.Should().Be(44m);
+        var returned = await new PurchaseReturnRepository(verify, new FixedCurrentCompany(() => _companyId))
+            .GetReturnedQuantitiesByInvoiceDetailIdsAsync(_tenantId,
+                notes.SelectMany(n => n.Lines).Select(l => l.PurchaseInvoiceDetailId!.Value).Distinct().ToArray());
+        returned.Values.Should().ContainSingle().Which.Should().Be(6m);
     }
 
     [Fact]
