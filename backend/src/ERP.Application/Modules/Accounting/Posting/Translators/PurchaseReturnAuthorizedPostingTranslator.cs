@@ -22,9 +22,6 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 public sealed class PurchaseReturnAuthorizedPostingTranslator
     : INotificationHandler<PurchaseReturnAuthorizedEvent>
 {
-    private const string SourceModuleName = "Purchases";
-    private const string FactTypeName = "PurchaseReturn";
-
     private readonly IPostingEngine _postingEngine;
     private readonly ILogger<PurchaseReturnAuthorizedPostingTranslator> _logger;
 
@@ -39,29 +36,18 @@ public sealed class PurchaseReturnAuthorizedPostingTranslator
 
     public async Task Handle(PurchaseReturnAuthorizedEvent e, CancellationToken ct)
     {
-        // §19.1bis: CostVarianceTotal puede ser positivo, negativo o cero — nunca las dos líneas
-        // condicionales a la vez (JournalFactory omite la que resuelve a 0).
-        var costVarianceDebit = Math.Max(e.CostVarianceTotal, 0m);
-        var costVarianceCredit = Math.Max(-e.CostVarianceTotal, 0m);
-
-        var fact = new PostingFact(
+        var fact = PurchaseReturnPostingFactBuilder.Build(
             e.TenantId!.Value,
             e.CompanyId,
-            SourceModuleName,
-            FactTypeName,
             e.PurchaseReturnId,
             DateOnly.FromDateTime(e.OccurredOn),
-            Subtotal: 0m,
-            TotalVat: e.AuthorizedVatTotal,
-            TotalIce: e.AuthorizedIceTotal,
-            TotalDiscount: 0m,
-            GrandTotal: 0m,
-            AppliedToPayableAmount: e.AppliedToPayableAmount,
-            SupplierCreditAmount: e.SupplierCreditAmount,
-            CostVarianceDebitAmount: costVarianceDebit,
-            CostVarianceCreditAmount: costVarianceCredit,
-            HistoricalCostTotal: e.HistoricalCostTotal,
-            TotalIrbpnr: e.AuthorizedIrbpnrTotal
+            e.AuthorizedVatTotal,
+            e.AuthorizedIceTotal,
+            e.AuthorizedIrbpnrTotal,
+            e.AppliedToPayableAmount,
+            e.SupplierCreditAmount,
+            e.CostVarianceTotal,
+            e.HistoricalCostTotal
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

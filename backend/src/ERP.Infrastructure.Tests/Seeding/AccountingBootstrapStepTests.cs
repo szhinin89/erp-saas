@@ -32,8 +32,12 @@ public sealed class AccountingBootstrapStepTests
     ///
     /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01: pasa de 9 a 10 — agrega
     /// "Expenses"/"DocumentConfirmed", que nunca había sido sembrada.
+    ///
+    /// PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01: pasa de 10 a 11 — agrega
+    /// "Purchases"/"PurchaseReturn", que nunca había sido sembrada (mismo tipo de gap que
+    /// Expenses/DocumentConfirmed: el traductor real existía desde P0-02 Fase 6, la regla no).
     /// </summary>
-    private const int ExpectedPostingRulesCount = 10;
+    private const int ExpectedPostingRulesCount = 11;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -295,6 +299,7 @@ public sealed class AccountingBootstrapStepTests
                     ("Payables", "SupplierPaymentReversed"),
                     ("Retentions", "DocumentIssued"),
                     ("Expenses", "DocumentConfirmed"),
+                    ("Purchases", "PurchaseReturn"),
                 }
             );
 
@@ -422,6 +427,52 @@ public sealed class AccountingBootstrapStepTests
         (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
             .Should()
             .Be("2.1.01.001", because: "Haber = CxP proveedores por el total del gasto");
+    }
+
+    /// <summary>
+    /// PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01 — la PostingRule de "Purchases"/"PurchaseReturn"
+    /// nunca existió en MinimalPostingRules, aunque PurchaseReturnAuthorizedPostingTranslator existe
+    /// desde P0-02 Fase 6: sin esta regla, AuthorizePurchaseReturnHandler autorizaba la devolución
+    /// (Kardex/CxP/SupplierCredit ya aplicados por PurchaseReturn.Authorize()) pero el posting
+    /// fallaba fail-closed "RULE_NOT_FOUND" en silencio (solo un warning de log, nunca revierte la
+    /// autorización) — la devolución quedaba sin JournalEntry. Confirma las 8 líneas del hecho
+    /// compuesto de §19.1bis: Debe CxP/Crédito proveedor/Variación de costo, Haber Inventario/IVA/
+    /// ICE/IRBPNR/Variación de costo — espejo de InvoiceReceived + los 5 campos de PostingFact
+    /// agregados en la Remediación 01.
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_purchases_purchasereturn_con_debe_cxp_y_haber_inventario()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturn"
+            );
+
+        rule.IsActive.Should().BeTrue();
+        rule.Lines.Should().HaveCount(8);
+
+        var debitLines = rule.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
+        debitLines.Should().HaveCount(3);
+
+        var payableLine = debitLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.AppliedToPayable).Which;
+        (await db.Accounts.SingleAsync(a => a.Id == payableLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001", because: "Debe = CxP proveedores, se reduce por el monto aplicado de la devolución");
+
+        var creditLines = rule.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
+        creditLines.Should().HaveCount(5);
+
+        var inventoryLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.HistoricalCost).Which;
+        (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId)).Code.Value
+            .Should()
+            .Be("1.1.04.001", because: "Haber = Inventario mercaderías, por el costo histórico de lo devuelto");
     }
 
     /// <summary>

@@ -69,6 +69,15 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// (RETENTIONS-SRI-SANDBOX-SEED-04F-1) al confirmar el primer gasto de una empresa de prueba. El
 /// mecanismo de detección/backfill existente (<see cref="RequiredPostingRuleKeys"/>) ya cubre esta
 /// clase de gap sin cambios adicionales: cualquier company activa sin esta clave vuelve a calificar.
+///
+/// PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01: mismo tipo de gap, ahora para
+/// <c>Purchases/PurchaseReturn</c> — <c>PurchaseReturnAuthorizedPostingTranslator</c> (P0-02 Fase 6)
+/// siempre existió y siempre publicó su <c>PostingFact</c>, pero <c>MinimalPostingRules</c> nunca
+/// tuvo la clave correspondiente, así que toda autorización de devolución de compra, en toda
+/// company, fallaba fail-closed ("RULE_NOT_FOUND") de forma silenciosa (el traductor solo loguea
+/// un warning — <c>Authorize()</c> ya movió Kardex/CxP/SupplierCredit y no se revierte). Reportado
+/// en producción: devolución autorizada con Kardex movido pero sin JournalEntry. Mismo mecanismo de
+/// detección/backfill que el gap anterior — sin cambios adicionales al pipeline.
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -293,6 +302,37 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("1.1.04.001", AccountNature.Credit, PostingAmountKind.Subtotal),
                 new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
                 new("1.1.05.001", AccountNature.Credit, PostingAmountKind.TaxVat),
+            ]
+        ),
+        // PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01 — "Purchases"/"PurchaseReturn" nunca tuvo
+        // entrada en MinimalPostingRules, igual clase de gap que Expenses/DocumentConfirmed:
+        // PurchaseReturnAuthorizedPostingTranslator existe y publica PostingFact desde P0-02 Fase 6,
+        // pero PostingRuleResolver fail-closed ("RULE_NOT_FOUND") en toda company — Authorize()
+        // persistía igual (Kardex/CxP/SupplierCredit ya aplicados por el propio agregado, el
+        // posting fallido solo se loguea como warning, nunca revierte la autorización, ver
+        // PurchaseReturnAuthorizedPostingTranslator), así que la devolución quedaba Authorized con
+        // Kardex movido pero sin JournalEntry — nunca un error visible para el usuario. Espejo de
+        // InvoiceReceived/PurchaseCreditNoteAuthorized + los 5 campos agregados a PostingFact en la
+        // Remediación 01 de P0-02 Fase 6 (§19.1bis): AppliedToPayable/SupplierCredit reducen lo
+        // exigible del proveedor (Debe), CostVarianceDebit/CostVarianceCredit son mutuamente
+        // excluyentes (JournalFactory omite la que resuelve a 0 — nunca las dos a la vez),
+        // HistoricalCost/TaxVat/TaxIce/TaxIrbpnr reversan exactamente lo que InvoiceReceived debitó.
+        // Cuentas reutilizadas del RetailChart existente, ninguna inventada: "1.1.03.004 Anticipos a
+        // proveedores" para SupplierCredit (mismo rol económico: saldo a favor frente al proveedor)
+        // y "5.1.02.001 Mermas y faltantes de inventario"/"4.2.01.001 Ingresos por ajustes positivos
+        // de inventario" para la variación de costo, mismo criterio ya usado por StockAdjustment.
+        new(
+            "Purchases",
+            "PurchaseReturn",
+            [
+                new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
+                new("1.1.03.004", AccountNature.Debit, PostingAmountKind.SupplierCredit),
+                new("5.1.02.001", AccountNature.Debit, PostingAmountKind.CostVarianceDebit),
+                new("1.1.04.001", AccountNature.Credit, PostingAmountKind.HistoricalCost),
+                new("1.1.05.001", AccountNature.Credit, PostingAmountKind.TaxVat),
+                new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
+                new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIrbpnr),
+                new("4.2.01.001", AccountNature.Credit, PostingAmountKind.CostVarianceCredit),
             ]
         ),
         new(

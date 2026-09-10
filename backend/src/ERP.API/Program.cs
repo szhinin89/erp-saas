@@ -462,6 +462,41 @@ if (args.Contains("backfill-accounting-chart-hierarchy"))
     return;
 }
 
+// Comando de una sola vez (PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01): remedia PurchaseReturn ya
+// Authorized antes de que MinimalPostingRules tuviera la clave ("Purchases","PurchaseReturn") —
+// esas devoluciones movieron Kardex/CxP/SupplierCredit con normalidad pero se quedaron sin
+// JournalEntry (posting fail-closed silencioso, solo un warning de log). Dry-run por defecto
+// (reporta qué crearía, sin escribir nada); agregar `-- apply` para postear de verdad. Cada
+// devolución se postea en su propia transacción — un fallo no afecta a las demás. No gateado por
+// IsProduction(): es una operación de despliegue explícita, igual que los comandos anteriores.
+// `dotnet run -- remediate-purchase-return-postings [apply]`. Sale sin iniciar el host web.
+if (args.Contains("remediate-purchase-return-postings"))
+{
+    var apply = args.Contains("apply");
+    using var remediationScope = app.Services.CreateScope();
+    var remediationService =
+        remediationScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.PurchaseReturnPostingRemediationService>();
+    var summary = await remediationService.RunAsync(apply);
+    Console.WriteLine(
+        $"[remediate-purchase-return-postings] Modo: {(apply ? "APPLY" : "DRY-RUN")}. "
+            + $"PurchaseReturn Authorized revisados: {summary.TotalAuthorizedReturns}. "
+            + $"Ya tenían asiento: {summary.AlreadyPostedCount}. "
+            + $"Sin asiento detectadas: {summary.MissingCount}. "
+            + $"Posteadas ahora: {summary.PostedNowCount}. "
+            + $"Con error: {summary.FailedCount}."
+    );
+    foreach (var row in summary.Rows.Where(r => !r.AlreadyPosted))
+    {
+        var state = row.Applied ? "POSTED" : row.Error is not null ? "ERROR" : "PENDING (dry-run)";
+        Console.WriteLine(
+            $"  - PurchaseReturn {row.PurchaseReturnId} ({row.ReturnNumber}) company={row.CompanyId} "
+                + $"AppliedToPayable={row.AppliedToPayableAmount} HistoricalCost={row.HistoricalCostTotal} [{state}]"
+                + (row.Error is not null ? $" — {row.Error}" : string.Empty)
+        );
+    }
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())
