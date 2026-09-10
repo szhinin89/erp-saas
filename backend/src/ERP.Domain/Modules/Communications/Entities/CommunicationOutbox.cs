@@ -94,7 +94,7 @@ public sealed class CommunicationOutbox
             BodyText = Optional(bodyText, BodyMaxLen, nameof(bodyText)),
             Status = CommunicationStatus.Pending,
             Priority = priority,
-            ScheduledAtUtc = NormalizeUtc(scheduledAtUtc ?? DateTime.UtcNow),
+            ScheduledAtUtc = UtcDateTime.Normalize(scheduledAtUtc ?? DateTime.UtcNow),
             MaxRetries = Math.Clamp(maxRetries ?? DefaultMaxRetries, 0, 20),
             CorrelationType = Optional(correlationType, CorrelationTypeMaxLen, nameof(correlationType)),
             CorrelationId = correlationId == Guid.Empty ? null : correlationId,
@@ -167,9 +167,6 @@ public sealed class CommunicationOutbox
         Status = CommunicationStatus.Cancelled;
         SetUpdated(updatedBy);
     }
-
-    private static DateTime NormalizeUtc(DateTime value) =>
-        value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Utc);
 
     private static string Required(string value, int maxLength, string paramName)
     {

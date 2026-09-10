@@ -33,6 +33,7 @@ public static class ApiResponseCodes
         public const string DomainRuleViolation = "DOMAIN_RULE_VIOLATION";
         public const string ConcurrencyConflict = "CONCURRENCY_CONFLICT";
         public const string DatabaseUnavailable = "DATABASE_UNAVAILABLE";
+        public const string InvalidDateTimeKind = "INVALID_DATETIME_KIND";
         public const string SriCommunicationError = "SRI_COMMUNICATION_ERROR";
         public const string CompanyScopeForbidden = "COMPANY_SCOPE_FORBIDDEN";
         public const string BranchScopeForbidden = "BRANCH_SCOPE_FORBIDDEN";

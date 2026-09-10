@@ -68,6 +68,11 @@ public static class MessageCatalog
             "Error temporal de base de datos. Reintente en unos segundos.",
             "Database update exception."
         ),
+        [ApiResponseCodes.Common.InvalidDateTimeKind] = new(
+            ApiSeverity.Error,
+            "Error interno del servidor.",
+            "Unspecified/Local DateTimeKind reached SaveChanges — invariant violation, not a database outage."
+        ),
         [ApiResponseCodes.Common.SriCommunicationError] = new(
             ApiSeverity.Error,
             "Error de comunicación con el SRI. La operación quedó pendiente para reintentar.",

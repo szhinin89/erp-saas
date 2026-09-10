@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<CompanyTenantInterceptor>();
         services.AddScoped<DbCommandTenantInterceptor>();
         services.AddScoped<NewChildEntityTrackingInterceptor>();
+        services.AddScoped<UtcDateTimeGuardInterceptor>();
         services.AddDbContext<ErpDbContext>(
             (sp, options) =>
                 options
@@ -90,7 +91,8 @@ public static class DependencyInjection
                         sp.GetRequiredService<PostgreSqlSessionContextInterceptor>(),
                         sp.GetRequiredService<CompanyTenantInterceptor>(),
                         sp.GetRequiredService<DbCommandTenantInterceptor>(),
-                        sp.GetRequiredService<NewChildEntityTrackingInterceptor>()
+                        sp.GetRequiredService<NewChildEntityTrackingInterceptor>(),
+                        sp.GetRequiredService<UtcDateTimeGuardInterceptor>()
                     )
         );
 

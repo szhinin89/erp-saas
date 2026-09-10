@@ -53,7 +53,7 @@ public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
             OrderId = orderId,
             Quantity = quantity,
             Status = StatusPending,
-            ExpiresAt = expiresAt,
+            ExpiresAt = UtcDateTime.Normalize(expiresAt),
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
         };
         r.SetCreated(createdBy);

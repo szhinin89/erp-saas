@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace ERP.API;
 
 internal static class ListQueryParameters
@@ -55,14 +57,21 @@ internal static class ListQueryParameters
         string toKey = "hasta"
     )
     {
+        // Kind=Utc obligatorio: un DateTime con Kind=Unspecified/Local usado como parámetro de
+        // una comparación EF Core contra una columna timestamptz falla en tiempo de ejecución
+        // (Npgsql exige Utc). Ver ZH-DATETIME-UTC-GUARDRAILS-01.
+        const DateTimeStyles styles = DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal;
         DateTime? from = null;
         DateTime? to = null;
         if (
             query.TryGetValue(fromKey, out var fromValue)
-            && DateTime.TryParse(fromValue, out var fromDate)
+            && DateTime.TryParse(fromValue, CultureInfo.InvariantCulture, styles, out var fromDate)
         )
             from = fromDate;
-        if (query.TryGetValue(toKey, out var toValue) && DateTime.TryParse(toValue, out var toDate))
+        if (
+            query.TryGetValue(toKey, out var toValue)
+            && DateTime.TryParse(toValue, CultureInfo.InvariantCulture, styles, out var toDate)
+        )
             to = toDate;
         return (from, to);
     }

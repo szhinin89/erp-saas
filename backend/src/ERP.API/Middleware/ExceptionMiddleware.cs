@@ -87,6 +87,13 @@ public partial class ExceptionMiddleware
                 HttpStatusCode.Conflict,
                 ApiResponseCodes.Common.ConcurrencyConflict
             ),
+            // ZH-DATETIME-UTC-GUARDRAILS-01: violación de invariante (DateTime sin normalizar a
+            // UTC) detectada por UtcDateTimeGuardInterceptor antes de tocar la base de datos — no
+            // es una caída/timeout de PostgreSQL, nunca debe salir como DATABASE_UNAVAILABLE.
+            UnspecifiedDateTimeKindException => (
+                HttpStatusCode.InternalServerError,
+                ApiResponseCodes.Common.InvalidDateTimeKind
+            ),
             DbUpdateException => (
                 HttpStatusCode.ServiceUnavailable,
                 ApiResponseCodes.Common.DatabaseUnavailable

@@ -1,10 +1,12 @@
 using ERP.API.Middleware;
+using ERP.Domain.Exceptions;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
 
@@ -78,5 +80,67 @@ public class ExceptionMiddlewareValidationTests
             .GetString()
             .Should()
             .Be("El nombre corto es obligatorio.");
+    }
+
+    // ZH-DATETIME-UTC-GUARDRAILS-01: la violación de invariante detectada por
+    // UtcDateTimeGuardInterceptor (DateTime sin normalizar a UTC) nunca debe salir del
+    // middleware como DATABASE_UNAVAILABLE — no es una caída/timeout de PostgreSQL, es un bug
+    // de normalización detectado ANTES de tocar la base de datos.
+    [Fact]
+    public async Task InvokeAsync_WhenUnspecifiedDateTimeKindException_Returns500WithDedicatedCode_NotDatabaseUnavailable()
+    {
+        RequestDelegate next = _ =>
+            throw new UnspecifiedDateTimeKindException(
+                "CashSession",
+                "OpenedAt",
+                DateTimeKind.Unspecified
+            );
+
+        var environment = new FakeWebHostEnvironment();
+        var middleware = new ExceptionMiddleware(
+            next,
+            NullLogger<ExceptionMiddleware>.Instance,
+            environment
+        );
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        context.Response.Body.Position = 0;
+        using var reader = new StreamReader(context.Response.Body);
+        var responseJson = await reader.ReadToEndAsync();
+
+        using var doc = JsonDocument.Parse(responseJson);
+        doc.RootElement.GetProperty("code").GetString().Should().Be("INVALID_DATETIME_KIND");
+        doc.RootElement.GetProperty("code").GetString().Should().NotBe("DATABASE_UNAVAILABLE");
+    }
+
+    // Control: un DbUpdateException genuino (fallo real de escritura en PostgreSQL) sigue
+    // clasificándose como DATABASE_UNAVAILABLE — el caso nuevo no debe desplazar este.
+    [Fact]
+    public async Task InvokeAsync_WhenGenuineDbUpdateException_StillReturnsDatabaseUnavailable()
+    {
+        RequestDelegate next = _ => throw new DbUpdateException("Simulated write failure");
+
+        var environment = new FakeWebHostEnvironment();
+        var middleware = new ExceptionMiddleware(
+            next,
+            NullLogger<ExceptionMiddleware>.Instance,
+            environment
+        );
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        context.Response.Body.Position = 0;
+        using var reader = new StreamReader(context.Response.Body);
+        var responseJson = await reader.ReadToEndAsync();
+
+        using var doc = JsonDocument.Parse(responseJson);
+        doc.RootElement.GetProperty("code").GetString().Should().Be("DATABASE_UNAVAILABLE");
     }
 }
