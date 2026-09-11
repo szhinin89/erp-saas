@@ -226,6 +226,9 @@ public sealed class CancelPurchaseHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
+        // PURCHASE-CANCEL-KARDEX-MOVEMENT-IDENTIFIER-01 — nunca PurchaseReturn: la reversa de
+        // stock de una factura anulada tiene su propio StockMovementType, no es una devolución
+        // real a proveedor. SourceDocType sigue siendo "PurchaseInvoice" (documento origen).
         stockRepo.Verify(
             s =>
                 s.AppendMovementAsync(
@@ -233,7 +236,7 @@ public sealed class CancelPurchaseHandlerTests
                     CompanyId,
                     ItemId,
                     WhId,
-                    StockMovementType.PurchaseReturn,
+                    StockMovementType.PurchaseCancelled,
                     -24m,
                     "UNIT",
                     It.IsAny<DateOnly>(),

@@ -220,6 +220,10 @@ public sealed class CancelPurchaseHandler
             }
 
             // ── 4. Revertir stock ──────────────────────────────────────────
+            // PURCHASE-CANCEL-KARDEX-MOVEMENT-IDENTIFIER-01 — StockMovementType.PurchaseCancelled
+            // (nunca PurchaseReturn: esto no es una devolución real a proveedor, es la reversa de
+            // stock de una factura anulada). SourceDocType sigue siendo "PurchaseInvoice" — sigue
+            // siendo únicamente el documento origen (FACCOM), no el motivo del movimiento.
             foreach (var line in inv.Lines)
             {
                 if (line.ItemId is null)
@@ -233,7 +237,7 @@ public sealed class CancelPurchaseHandler
                     cid,
                     line.ItemId.Value,
                     warehouseId.Value,
-                    StockMovementType.PurchaseReturn,
+                    StockMovementType.PurchaseCancelled,
                     -line.QuantityInBaseUom,
                     line.BaseUomCode,
                     DateOnly.FromDateTime(DateTime.UtcNow),

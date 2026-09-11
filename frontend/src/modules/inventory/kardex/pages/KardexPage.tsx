@@ -30,6 +30,10 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   TransferEntry: "Entrada por Transferencia",
   TransferExit: "Salida por Transferencia",
   PurchaseReturn: "Devolución a Proveedor",
+  // PURCHASE-CANCEL-KARDEX-MOVEMENT-IDENTIFIER-01 — StockMovementType propio
+  // (CancelPurchaseHandler), nunca PurchaseReturn: la reversa de stock de una factura de compra
+  // anulada no es una devolución real a proveedor.
+  PurchaseCancelled: "Anulación de Compra",
   SaleReturn: "Devolución de Cliente",
   SupplierCreditNote: "Nota de Crédito Proveedor",
   SupplierDebitNote: "Nota de Débito Proveedor",
@@ -45,7 +49,8 @@ function movementBadgeVariant(typeName: string): BadgeVariant {
   if (
     typeName.includes("Exit") ||
     typeName === "NegativeAdjust" ||
-    typeName === "PurchaseReturn"
+    typeName === "PurchaseReturn" ||
+    typeName === "PurchaseCancelled"
   )
     return "error";
   return "info";
