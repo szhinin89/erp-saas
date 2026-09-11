@@ -205,10 +205,16 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         CancellationToken ct = default
     )
     {
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — Posted Y Reversed, nunca solo Posted:
+        // un asiento Reversed nunca perdió su efecto contable histórico (JournalEntry.Reverse deja
+        // sus líneas/importes intactos, solo cambia Status), su reverso es un JournalEntry NUEVO,
+        // separado, en Posted — excluirlo de reportes dejaba visible solo la mitad del par contable
+        // (el reverso) y el neto del rango quedaba descuadrado en vez de en cero. Draft SÍ se
+        // excluye (nunca tuvo efecto contable real, nunca debe aparecer en un reporte histórico).
         var scoped = _context.JournalEntries.Where(x =>
             x.TenantId == tenantId
             && x.CompanyId == companyId
-            && x.Status == JournalEntryStatus.Posted
+            && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
             && x.EntryDate >= fromDate
             && x.EntryDate <= toDate
         );
@@ -251,11 +257,14 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         CancellationToken ct = default
     )
     {
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — ver GetPostedEntriesPageAsync: un
+        // Reversed conserva sus importes históricos, su reverso vive en un JournalEntry Posted
+        // aparte — ambos deben sumar aquí para que el rango quede neto en cero, nunca solo uno.
         var scoped = _context
             .JournalEntries.Where(x =>
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
-                && x.Status == JournalEntryStatus.Posted
+                && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
             )
             .SelectMany(x => x.Lines, (entry, line) => new { entry.EntryDate, line });
 
@@ -288,10 +297,11 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         CancellationToken ct = default
     ) =>
         await _context
+            // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — ver GetPostedEntriesPageAsync.
             .JournalEntries.Where(x =>
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
-                && x.Status == JournalEntryStatus.Posted
+                && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
                 && x.EntryDate >= fromDate
                 && x.EntryDate <= toDate
             )

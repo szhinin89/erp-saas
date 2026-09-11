@@ -18,12 +18,17 @@ namespace ERP.Infrastructure.Tests.Accounting;
 /// ACCOUNTING-REPORTS-09 — pruebas de integración (PostgreSQL 16 real vía Testcontainers) para
 /// las consultas de reportes agregadas en <see cref="JournalEntryRepository"/>
 /// (GetPostedEntriesPageAsync/GetAccountLineTotalsAsync/GetPostedLinesByAccountAsync). Cubre
-/// específicamente lo que solo puede probarse a nivel SQL: exclusión de Draft, y que un asiento
-/// Reversed (el original) queda fuera mientras su reverso (Posted) sí cuenta — y aislamiento
+/// específicamente lo que solo puede probarse a nivel SQL: exclusión de Draft, y aislamiento
 /// multi-tenant/company. La lógica de agregación pura (saldo inicial/final, convención
 /// deudora/acreedora) está cubierta en ERP.Application.Tests con repositorios mockeados.
 /// ACCOUNTING-FINANCIAL-STATEMENTS-10 agrega pruebas end-to-end (repositorio real + handler
-/// real) de Estado de Resultados/Balance General, mismo criterio de reverso ya validado arriba.
+/// real) de Estado de Resultados/Balance General, mismo criterio de reverso ya validado abajo.
+///
+/// ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — un asiento Reversed NUNCA se excluye de
+/// estos reportes: conserva sus importes históricos intactos (JournalEntry.Reverse solo cambia
+/// Status, nunca las líneas), y su reverso es un JournalEntry Posted nuevo y separado —
+/// excluir el original dejaba visible solo la mitad del par contable, descuadrando el reporte en
+/// vez de netear en cero. Solo Draft se excluye (nunca tuvo efecto contable real).
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
@@ -130,8 +135,14 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Asiento_reversado_queda_excluido_y_su_reverso_Posted_cuenta_en_los_totales()
+    public async Task Asiento_reversado_y_su_reverso_aparecen_ambos_y_los_totales_del_rango_netean_cero()
     {
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — caso reportado: factura de compra
+        // (Purchases/InvoiceReceived) creada y luego anulada dentro del mismo rango. El asiento
+        // original queda Reversed (nunca se borra ni se excluye) y su reverso queda Posted; ambos
+        // deben aparecer en el Libro Diario y sus totales de Debe/Haber deben cuadrar en cero — no
+        // "el original desaparece y solo cuenta el reverso" (eso dejaba Inventario/CxP/IVA
+        // descuadrados en los reportes, aunque el neto real fuera cero).
         var original = BalancedEntry(new DateOnly(2026, 8, 5), 200m, _companyId);
         original.AddLine(_cashAccountId, null, 200m, 0m);
         original.AddLine(_salesAccountId, null, 0m, 200m);
@@ -159,18 +170,23 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             null, null, 1, 50
         );
 
-        totalCount.Should().Be(1, because: "el asiento original quedó en estado Reversed — solo su reverso (Posted) debe contar");
-        items.Should().ContainSingle(e => e.Id == reversal.Id);
+        totalCount.Should().Be(2, because: "el original Reversed y su reverso Posted deben aparecer ambos en el Libro Diario");
+        items.Select(e => e.Id).Should().BeEquivalentTo(new[] { original.Id, reversal.Id });
+        items.Should().ContainSingle(e => e.Id == original.Id && e.Status == JournalEntryStatus.Reversed);
+        items.Should().ContainSingle(e => e.Id == reversal.Id && e.Status == JournalEntryStatus.Posted);
 
         var totals = await repo.GetAccountLineTotalsAsync(
             _tenantId, _companyId, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), null
         );
 
-        // El reverso invierte Débito/Crédito del original: Caja pasa a Crédito 200, Ventas a Débito 200.
-        totals[_cashAccountId].TotalDebit.Should().Be(0m);
+        // El reverso invierte Débito/Crédito del original — sumando ambos, cada cuenta queda con
+        // Debe == Haber (neto cero), no solo el lado del reverso.
+        totals[_cashAccountId].TotalDebit.Should().Be(200m);
         totals[_cashAccountId].TotalCredit.Should().Be(200m);
         totals[_salesAccountId].TotalDebit.Should().Be(200m);
-        totals[_salesAccountId].TotalCredit.Should().Be(0m);
+        totals[_salesAccountId].TotalCredit.Should().Be(200m);
+        (totals[_cashAccountId].TotalDebit - totals[_cashAccountId].TotalCredit).Should().Be(0m);
+        (totals[_salesAccountId].TotalDebit - totals[_salesAccountId].TotalCredit).Should().Be(0m);
     }
 
     [Fact]
@@ -217,6 +233,62 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         totals.Should().NotContainKey(otherCash.Id, because: "GetAccountLineTotalsAsync está scoped a _companyId — nunca debe fugar datos de otra Company");
     }
 
+    [Fact]
+    public async Task TrialBalance_con_asiento_reversado_y_su_reverso_en_el_rango_queda_balanceado_y_en_cero()
+    {
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — Balance de Comprobación: ambos
+        // asientos (original Reversed + reverso Posted) deben aparecer con su movimiento del
+        // período (Debe/Haber brutos) mientras el saldo final de cada cuenta neta en cero — nunca
+        // el saldo final quedando distinto de cero por excluir el original.
+        var original = BalancedEntry(new DateOnly(2026, 8, 5), 200m, _companyId);
+        original.AddLine(_cashAccountId, null, 200m, 0m);
+        original.AddLine(_salesAccountId, null, 0m, 200m);
+        original.Post(_createdBy, 1);
+
+        await using (var db = CreateContext())
+        {
+            db.JournalEntries.Add(original);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = CreateContext())
+        {
+            var loaded = await db.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == original.Id);
+            var reversal = loaded.Reverse(_createdBy, 2, "Factura de compra anulada");
+            db.JournalEntries.Add(reversal);
+            await db.SaveChangesAsync();
+        }
+
+        var handler = new GetTrialBalanceReportHandler(
+            new JournalEntryRepository(CreateContext()),
+            new AccountRepository(CreateContext()),
+            new FixedCurrentTenant(_tenantId),
+            new FixedCurrentCompany(_companyId)
+        );
+
+        var result = await handler.Handle(
+            new GetTrialBalanceReportQuery(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.IsBalanced.Should().BeTrue();
+        result.Value.TotalPeriodDebit.Should().Be(400m);
+        result.Value.TotalPeriodCredit.Should().Be(400m);
+
+        var cashLine = result.Value.Lines.Single(l => l.AccountId == _cashAccountId);
+        cashLine.PeriodDebit.Should().Be(200m);
+        cashLine.PeriodCredit.Should().Be(200m);
+        cashLine.ClosingDebit.Should().Be(0m, because: "el movimiento neta en cero, nunca queda un saldo final artificial");
+        cashLine.ClosingCredit.Should().Be(0m);
+
+        var salesLine = result.Value.Lines.Single(l => l.AccountId == _salesAccountId);
+        salesLine.PeriodDebit.Should().Be(200m);
+        salesLine.PeriodCredit.Should().Be(200m);
+        salesLine.ClosingDebit.Should().Be(0m);
+        salesLine.ClosingCredit.Should().Be(0m);
+    }
+
     // ── ACCOUNTING-FINANCIAL-STATEMENTS-10: Estado de Resultados / Balance General ────────
 
     [Fact]
@@ -253,12 +325,12 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             CancellationToken.None
         );
 
-        // El asiento original queda Reversed (excluido) — solo su reverso Posted cuenta, mismo
-        // criterio ya documentado/probado en ACCOUNTING-REPORTS-09 para Libro Mayor/Balance de
-        // Comprobación: el reverso invierte Sales de Crédito 500 a Débito 500, así que el total
-        // de Ingresos del período pasa de +500 (si el original no se hubiera reversado) a -500.
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — el original (Reversed) Y su reverso
+        // (Posted) cuentan ambos: Sales queda Crédito 500 (original) + Débito 500 (reverso), así
+        // que el total de Ingresos del período neta en cero — nunca en -500 (que dejaba el estado
+        // de resultados con una venta anulada mostrando ingreso negativo artificial).
         result.IsSuccess.Should().BeTrue();
-        result.Value!.TotalIncome.Should().Be(-500m);
+        result.Value!.TotalIncome.Should().Be(0m);
     }
 
     [Fact]
@@ -295,12 +367,14 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             CancellationToken.None
         );
 
-        // Caja (Activo, naturaleza deudora): el reverso deja Débito=0/Crédito=300 (solo el
-        // reverso cuenta, el original quedó Reversed) → saldo = 0 - 300 = -300.
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — Caja (Activo, naturaleza deudora): el
+        // original aporta Débito 300 y su reverso Crédito 300, ambos cuentan → saldo acumulado =
+        // 300 - 300 = 0. Nunca -300 (saldo acreedor artificial de una cuenta de Activo, que fue
+        // exactamente el síntoma reportado: Inventario/CxP quedaban con signo incorrecto).
         result.IsSuccess.Should().BeTrue();
         var cashLine = result.Value!.AssetLines.SingleOrDefault(l => l.AccountId == _cashAccountId);
         cashLine.Should().NotBeNull();
-        cashLine!.Amount.Should().Be(-300m);
+        cashLine!.Amount.Should().Be(0m);
     }
 
     [Fact]
