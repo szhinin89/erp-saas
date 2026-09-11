@@ -78,6 +78,9 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
             .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio ya cerrado para
+    // PurchaseCreditNote/PurchaseInvoice: un gasto Cancelled es historial, no activo — nunca
+    // cuenta como duplicado. Solo Draft/Confirmed cuenta como "activo".
     public Task<ExpenseDocument?> GetBySupplierAndDocumentNumberAsync(
         Guid tenantId,
         Guid supplierId,
@@ -90,7 +93,8 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
                 x =>
                     x.SupplierId == supplierId
                     && x.DocumentType == documentType
-                    && x.DocumentNumber == documentNumber,
+                    && x.DocumentNumber == documentNumber
+                    && x.Status != ExpenseStatus.Cancelled,
                 ct
             );
 
@@ -98,10 +102,34 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
-    ) => Scoped(tenantId).AnyAsync(x => x.AccessKey == accessKey, ct);
+    ) =>
+        Scoped(tenantId)
+            .AnyAsync(x => x.AccessKey == accessKey && x.Status != ExpenseStatus.Cancelled, ct);
 
     public Task<bool> ExistsByReceptionDocumentIdAsync(Guid tenantId, Guid receptionDocumentId, CancellationToken ct = default) =>
-        Scoped(tenantId).AnyAsync(x => x.ReceptionDocumentId == receptionDocumentId, ct);
+        Scoped(tenantId)
+            .AnyAsync(
+                x => x.ReceptionDocumentId == receptionDocumentId && x.Status != ExpenseStatus.Cancelled,
+                ct
+            );
+
+    /// <summary>
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id del gasto Cancelled más reciente con este
+    /// AccessKey, si existe (nunca el activo) — para "Ver gasto anulado" (historial) en la UI de
+    /// Recepción. Por AccessKey (no ReceptionDocumentId) porque es el mismo dato ya disponible en
+    /// PurchaseReceptionVerifier al momento de importar, sin esperar a que exista el documento de
+    /// recepción persistido — mismo criterio que <c>IPurchaseInvoiceRepository.GetLatestCancelledIdByAccessKeyAsync</c>.
+    /// </summary>
+    public Task<Guid?> GetLatestCancelledIdByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .Where(x => x.AccessKey == accessKey && x.Status == ExpenseStatus.Cancelled)
+            .OrderByDescending(x => x.CancelledAt)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
 
     public Task AddAsync(ExpenseDocument document, CancellationToken ct = default) =>
         _db.ExpenseDocuments.AddAsync(document, ct).AsTask();

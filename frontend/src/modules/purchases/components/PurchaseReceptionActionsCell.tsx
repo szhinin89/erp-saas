@@ -246,6 +246,16 @@ export function PurchaseReceptionActionsCell({
         // proveedor es requisito previo real: create-draft resuelve el Supplier del BP y
         // fallaría igual del lado del servidor.
         <>
+          {/* RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — si la única compra previa de este
+              AccessKey está Cancelled (historial, purchaseExists=false), se ofrece "Procesar
+              nuevamente" + "Ver compra anulada" en vez de "Crear compra" de primera vez, mismo
+              patrón ya cerrado para NC. */}
+          {row.cancelledPurchaseId && (
+            <Badge
+              variant="warning"
+              label={t("purchases.reception.actions.purchaseCancelled", "Compra anulada")}
+            />
+          )}
           <ZHBtn
             variant="primary"
             size="xs"
@@ -275,18 +285,62 @@ export function PurchaseReceptionActionsCell({
               )
             }
           >
-            {t("purchases.reception.actions.createPurchase", "Crear compra")}
+            {row.cancelledPurchaseId
+              ? t("purchases.reception.actions.reprocessPurchase", "Procesar nuevamente")
+              : t("purchases.reception.actions.createPurchase", "Crear compra")}
           </ZHBtn>
-          {row.sourceDocType === "INVOICE" && (
-            <ZHBtn variant="secondary" size="xs" type="button"
-              disabled={!row.supplierExists || row.supplierIsActive === false}
-              title={!row.supplierExists ? "Cree primero el proveedor" : undefined}
-              onClick={() => window.open(
-                `/expenses/documents/new?fromReceptionId=${row.documentId}`,
-                "_blank", "noopener,noreferrer",
-              )}>
-              Crear gasto
+          {row.cancelledPurchaseId && (
+            <ZHBtn
+              variant="secondary"
+              size="xs"
+              type="button"
+              onClick={() =>
+                window.open(
+                  `/purchases?invoiceId=${row.cancelledPurchaseId}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+            >
+              {t("purchases.reception.actions.viewCancelledPurchase", "Ver compra anulada")}
             </ZHBtn>
+          )}
+          {row.sourceDocType === "INVOICE" && (
+            <>
+              {row.cancelledExpenseId && (
+                <Badge
+                  variant="warning"
+                  label={t("purchases.reception.actions.expenseCancelled", "Gasto anulado")}
+                />
+              )}
+              <ZHBtn variant="secondary" size="xs" type="button"
+                disabled={!row.supplierExists || row.supplierIsActive === false}
+                title={!row.supplierExists ? "Cree primero el proveedor" : undefined}
+                onClick={() => window.open(
+                  `/expenses/documents/new?fromReceptionId=${row.documentId}`,
+                  "_blank", "noopener,noreferrer",
+                )}>
+                {row.cancelledExpenseId
+                  ? t("purchases.reception.actions.reprocessExpense", "Procesar nuevamente")
+                  : t("purchases.reception.actions.createExpense", "Crear gasto")}
+              </ZHBtn>
+              {row.cancelledExpenseId && (
+                <ZHBtn
+                  variant="secondary"
+                  size="xs"
+                  type="button"
+                  onClick={() =>
+                    window.open(
+                      `/expenses/documents/${row.cancelledExpenseId}`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
+                >
+                  {t("purchases.reception.actions.viewCancelledExpense", "Ver gasto anulado")}
+                </ZHBtn>
+              )}
+            </>
           )}
           {!row.supplierExists && (
             <p className="pur-actions-hint">

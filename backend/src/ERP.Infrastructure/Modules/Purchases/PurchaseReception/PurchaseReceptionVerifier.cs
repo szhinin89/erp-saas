@@ -72,9 +72,15 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
 
             var purchaseExists = false;
             Guid? purchaseId = null;
+            Guid? cancelledPurchaseId = null;
             var expenseExists = false;
+            Guid? cancelledExpenseId = null;
             if (supplierExists)
             {
+                // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — GetByAccessKeyAsync/
+                // ExistsByAccessKeyAsync ya ignoran Cancelled (solo Draft/Confirmed cuenta como
+                // "activa"); el historial de la más reciente Cancelled se resuelve aparte, solo
+                // cuando no hay ninguna activa, para "Ver compra/gasto anulado" en la UI.
                 var purchase = await _purchaseRepo.GetByAccessKeyAsync(
                     _tenant.TenantId,
                     record.AccessKey,
@@ -82,12 +88,24 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                 );
                 purchaseExists = purchase is not null;
                 purchaseId = purchase?.Id;
+                if (!purchaseExists)
+                    cancelledPurchaseId = await _purchaseRepo.GetLatestCancelledIdByAccessKeyAsync(
+                        _tenant.TenantId,
+                        record.AccessKey,
+                        cancellationToken
+                    );
 
                 expenseExists = await _expenseRepo.ExistsByAccessKeyAsync(
                     _tenant.TenantId,
                     record.AccessKey,
                     cancellationToken
                 );
+                if (!expenseExists)
+                    cancelledExpenseId = await _expenseRepo.GetLatestCancelledIdByAccessKeyAsync(
+                        _tenant.TenantId,
+                        record.AccessKey,
+                        cancellationToken
+                    );
             }
 
             var status =
@@ -127,7 +145,9 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                     affectedPurchaseExists,
                     affectedPurchaseId,
                     supplierIsActive,
-                    expenseExists
+                    expenseExists,
+                    cancelledPurchaseId,
+                    cancelledExpenseId
                 )
             );
         }

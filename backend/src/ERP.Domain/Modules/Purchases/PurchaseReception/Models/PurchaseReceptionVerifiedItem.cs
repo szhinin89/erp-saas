@@ -16,7 +16,14 @@ public sealed record PurchaseReceptionVerifiedItem(
     bool AffectedPurchaseExists = false,
     Guid? AffectedPurchaseId = null,
     bool? SupplierIsActive = null,
-    // EXPENSES-FROM-RECEPTION-01 — si ya existe un ExpenseDocument con esta clave de acceso SRI
-    // (bloquea "Crear compra", mirror de PurchaseExists bloqueando "Crear gasto").
-    bool ExpenseExists = false
+    // EXPENSES-FROM-RECEPTION-01 — si ya existe un ExpenseDocument ACTIVO (Draft/Confirmed) con
+    // esta clave de acceso SRI (bloquea "Crear compra", mirror de PurchaseExists bloqueando "Crear
+    // gasto"). RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01: un ExpenseDocument Cancelled nunca
+    // cuenta aquí.
+    bool ExpenseExists = false,
+    // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra/gasto Cancelled más reciente
+    // con este AccessKey, solo resuelto cuando NO hay una activa — para "Ver compra/gasto anulado"
+    // (historial) en la UI de Recepción.
+    Guid? CancelledPurchaseId = null,
+    Guid? CancelledExpenseId = null
 );

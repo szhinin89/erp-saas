@@ -32,11 +32,36 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             .Include(x => x.TaxSummaries)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio ya cerrado para
+    // PurchaseCreditNote: una compra Cancelled es historial, no activa — nunca cuenta como
+    // duplicado de AccessKey ni bloquea "Crear compra" desde la misma recepción. Solo
+    // Draft/Confirmed cuenta como "activa".
     public Task<PurchaseInvoice?> GetByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
-    ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
+    ) =>
+        Scoped(tenantId)
+            .FirstOrDefaultAsync(
+                x => x.AccessKey == accessKey && x.Status != PurchaseStatus.Cancelled,
+                ct
+            );
+
+    /// <summary>
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra Cancelled más reciente con
+    /// este AccessKey, si existe, para que la UI de Recepción ofrezca "Ver compra anulada"
+    /// (historial) sin bloquear "Crear compra" de nuevo.
+    /// </summary>
+    public Task<Guid?> GetLatestCancelledIdByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .Where(x => x.AccessKey == accessKey && x.Status == PurchaseStatus.Cancelled)
+            .OrderByDescending(x => x.CancelledAt)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
 
     public Task<PurchaseInvoice?> GetBySupplierAndInvoiceNumberAsync(
         Guid tenantId,

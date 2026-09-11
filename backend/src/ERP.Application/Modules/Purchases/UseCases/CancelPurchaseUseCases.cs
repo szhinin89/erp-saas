@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using FluentValidation;
@@ -52,6 +53,7 @@ public sealed class CancelPurchaseHandler
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly IPurchaseReceptionDocumentRepository? _receptionRepo;
 
     public CancelPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -65,7 +67,8 @@ public sealed class CancelPurchaseHandler
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
     {
         _repo = repo;
@@ -80,6 +83,7 @@ public sealed class CancelPurchaseHandler
         _c = c;
         _b = b;
         _u = u;
+        _receptionRepo = receptionRepo;
     }
 
     public async Task<Result<PurchaseInvoiceDto>> Handle(
@@ -256,6 +260,18 @@ public sealed class CancelPurchaseHandler
                 );
                 await _uow.RollbackAsync(ct);
                 return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+            }
+
+            // ── 5b. Liberar la recepción de origen (si la hay) ──────────────
+            // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — la recepción que originó esta compra
+            // (si vino de una) queda libre para "Crear compra" de nuevo. Se busca por AccessKey (el
+            // mismo dato que la vinculó al crearla, ver CreatePurchaseDraftHandler) y se confirma
+            // PurchaseId == inv.Id antes de desvincular — nunca desvincula una recepción ajena.
+            if (!string.IsNullOrWhiteSpace(inv.AccessKey) && _receptionRepo is not null)
+            {
+                var reception = await _receptionRepo.GetByAccessKeyAsync(tid, inv.AccessKey, ct);
+                if (reception is not null && reception.PurchaseId == inv.Id)
+                    reception.UnmarkProcessed(uid);
             }
 
             // ── 6. Persistir (misma transacción explícita abierta arriba) ──

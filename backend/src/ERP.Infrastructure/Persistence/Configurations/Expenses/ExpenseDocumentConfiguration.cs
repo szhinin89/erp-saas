@@ -176,22 +176,30 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_expense_documents_tenant_company");
 
-        // EXPENSES-FROM-RECEPTION-01 — 1 documento de recepción → máx. 1 ExpenseDocument (mirror
-        // de uq_purchase_credit_notes_tenant_reception_document_id).
+        // EXPENSES-FROM-RECEPTION-01 — 1 documento de recepción → máx. 1 ExpenseDocument ACTIVO
+        // (mirror de uq_purchase_credit_notes_tenant_reception_document_id).
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — un gasto Cancelled es historial, nunca
+        // ocupa el slot único de su recepción: reprocesar la misma recepción tras anular el gasto
+        // anterior puede volver a guardarse. Draft/Confirmed siguen compitiendo por el mismo slot
+        // único — nunca dos gastos activos para la misma recepción.
         builder
             .HasIndex(x => new { x.TenantId, x.ReceptionDocumentId })
             .IsUnique()
-            .HasFilter("\"reception_document_id\" IS NOT NULL")
+            .HasFilter("\"reception_document_id\" IS NOT NULL AND \"status\" <> 2")
             .HasDatabaseName("uq_expense_documents_tenant_reception_document_id");
 
         // Unique within expenses. The migration also installs cross-table triggers that
         // serialize purchase/expense writes sharing the same fiscal identity.
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio: un gasto Cancelled nunca
+        // ocupa el slot único de AccessKey.
         builder
             .HasIndex(x => new { x.TenantId, x.AccessKey })
             .IsUnique()
-            .HasFilter("\"access_key\" IS NOT NULL")
+            .HasFilter("\"access_key\" IS NOT NULL AND \"status\" <> 2")
             .HasDatabaseName("uq_expense_documents_tenant_access_key");
 
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio: un gasto Cancelled nunca
+        // ocupa el slot único de supplier+tipo+número.
         builder
             .HasIndex(x => new
             {
@@ -202,6 +210,7 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
                 x.DocumentNumber,
             })
             .IsUnique()
+            .HasFilter("\"status\" <> 2")
             .HasDatabaseName("uq_expense_documents_tenant_company_supplier_type_number");
 
         builder

@@ -5,7 +5,24 @@ namespace ERP.Domain.Modules.Purchases.Interfaces;
 public interface IPurchaseInvoiceRepository
 {
     Task<PurchaseInvoice?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — solo cuenta como duplicado una compra
+    /// ACTIVA (Draft/Confirmed) con este AccessKey; una compra <c>Cancelled</c> es historial,
+    /// nunca bloquea reprocesar la misma clave de acceso.
+    /// </summary>
     Task<PurchaseInvoice?> GetByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra Cancelled más reciente con
+    /// este AccessKey, si existe (nunca la activa) — para "Ver compra anulada" (historial) en la
+    /// UI de Recepción.
+    /// </summary>
+    Task<Guid?> GetLatestCancelledIdByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default

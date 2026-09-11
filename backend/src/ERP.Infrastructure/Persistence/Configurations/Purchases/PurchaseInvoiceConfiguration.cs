@@ -205,6 +205,11 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
             .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_purchase_invoices_tenant_company");
 
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio ya cerrado para
+        // PurchaseCreditNote (supplier+número): una compra Cancelled es historial, nunca ocupa el
+        // slot único de supplier+invoiceNumber — reutilizar el mismo número tras anular la compra
+        // anterior puede volver a guardarse. Draft/Confirmed siguen compitiendo por el mismo slot
+        // único — nunca dos compras activas con el mismo supplier+número.
         builder
             .HasIndex(x => new
             {
@@ -214,6 +219,7 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
                 x.InvoiceNumber,
             })
             .IsUnique()
+            .HasFilter("\"status\" <> 3")
             .HasDatabaseName("uq_purchase_invoices_tenant_company_supplier_number");
 
         builder
@@ -224,11 +230,13 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
             .HasIndex(x => new { x.TenantId, x.Status })
             .HasDatabaseName("ix_purchase_invoices_tenant_status");
 
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio: una compra Cancelled
+        // nunca ocupa el slot único de AccessKey.
         builder
             .HasIndex(x => new { x.TenantId, x.AccessKey })
             .IsUnique()
             .HasDatabaseName("uq_purchase_invoices_tenant_access_key")
-            .HasFilter("access_key IS NOT NULL");
+            .HasFilter("access_key IS NOT NULL AND status <> 3");
 
         builder
             .HasIndex(x => x.PurchaseOrderId)

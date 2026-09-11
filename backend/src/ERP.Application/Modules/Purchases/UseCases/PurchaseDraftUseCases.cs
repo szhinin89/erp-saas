@@ -234,6 +234,13 @@ file static class PurchaseAccessKeyDuplicateGuard
     public const string ConstraintName = "uq_purchase_invoices_tenant_access_key";
     public const string DuplicateAccessKeyMessage =
         "Ya existe una compra registrada con esta clave de acceso SRI.";
+    // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — antes sin mapear: una colisión real contra
+    // este constraint (dos compras activas con el mismo supplier+número) rethrow-eaba como
+    // excepción no controlada. Mismo criterio que el resto de constraints de este guard.
+    public const string SupplierNumberConstraintName =
+        "uq_purchase_invoices_tenant_company_supplier_number";
+    public const string DuplicateSupplierNumberMessage =
+        "Ya existe una compra con este número para este proveedor.";
 
     public static async Task<PurchaseInvoice?> FindDuplicateAsync(
         IPurchaseInvoiceRepository repo,
@@ -261,6 +268,8 @@ file static class PurchaseAccessKeyDuplicateGuard
             ? "La factura ya fue registrada como gasto."
             : string.Equals(constraintName, ConstraintName, StringComparison.Ordinal)
             ? DuplicateAccessKeyMessage
+            : string.Equals(constraintName, SupplierNumberConstraintName, StringComparison.Ordinal)
+            ? DuplicateSupplierNumberMessage
             : null;
 
     /// <summary>
@@ -542,6 +551,12 @@ public sealed class CreatePurchaseDraftHandler
         CancellationToken ct
     )
     {
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — reception queda trackeado (mismo
+        // DbContext que _repo) para marcarlo Processed junto con el SaveChanges de la compra más
+        // abajo, igual que AuthorizePurchaseReturnUseCases/AuthorizePurchaseCreditNoteUseCases
+        // hacen con la NC. Null si la compra no viene de una recepción (alta manual).
+        PurchaseReceptionDocument? linkedReception = null;
+
         // Reception line references also identify the source when the client omits AccessKey.
         foreach (var lineId in cmd.Lines.Where(l => l.PurchaseReceptionLineId.HasValue)
             .Select(l => l.PurchaseReceptionLineId!.Value).Distinct())
@@ -555,6 +570,7 @@ public sealed class CreatePurchaseDraftHandler
             if (await _expenseRepo.ExistsByReceptionDocumentIdAsync(_t.TenantId, source.Id, ct))
                 return Result<PurchaseInvoiceDto>.Conflict("La recepcion ya fue utilizada como gasto.");
             cmd = cmd with { AccessKey = source.AccessKey };
+            linkedReception = source;
         }
         if (cmd.DocTypeCode == "04")
             return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra. Procese la nota de crédito desde su flujo propio.");
@@ -567,6 +583,7 @@ public sealed class CreatePurchaseDraftHandler
                     return Result<PurchaseInvoiceDto>.ValidationFailure("Solo una factura puede generar una compra.");
                 if (await _expenseRepo.ExistsByReceptionDocumentIdAsync(_t.TenantId, reception.Id, ct))
                     return Result<PurchaseInvoiceDto>.Conflict("La recepción ya fue utilizada como gasto.");
+                linkedReception = reception;
             }
         }
         var tid = _t.TenantId;
@@ -680,6 +697,12 @@ public sealed class CreatePurchaseDraftHandler
         );
         if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
             inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
+
+        // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo patrón que
+        // AuthorizePurchaseReturnUseCases/AuthorizePurchaseCreditNoteUseCases: la recepción queda
+        // Processed, vinculada a la compra recién creada. CancelPurchaseHandler revierte esto con
+        // UnmarkProcessed cuando la compra se anula, dejando la recepción lista para reprocesar.
+        linkedReception?.MarkProcessed(inv.Id, _u.UserId);
 
         await _repo.AddAsync(inv, ct);
         try

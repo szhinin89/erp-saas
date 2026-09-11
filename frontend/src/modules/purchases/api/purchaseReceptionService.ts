@@ -101,6 +101,12 @@ export interface PurchaseReceptionItem {
    * solo presente cuando NO hay ninguna activa (creditNoteExists=false) — habilita "Procesar
    * nuevamente" + "Ver NC anulada" en vez de "Procesar NC" de primera vez. */
   cancelledCreditNoteId?: string | null;
+  /** RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra/gasto Cancelled más reciente
+   * con este AccessKey, solo presente cuando NO hay una activa (purchaseExists/expenseExists en
+   * false) — habilita "Procesar nuevamente" + "Ver compra/gasto anulado" en vez de "Crear
+   * compra"/"Crear gasto" de primera vez. */
+  cancelledPurchaseId?: string | null;
+  cancelledExpenseId?: string | null;
 }
 
 export interface PurchaseReceptionImportResult {

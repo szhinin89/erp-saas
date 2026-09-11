@@ -44,7 +44,12 @@ public sealed record PurchaseReceptionItemDto(
     // para esta recepción, cuando NO hay ninguna activa (CreditNoteExists=false) — historial para
     // "Ver NC anulada". Null si nunca hubo una NC cancelada para esta recepción, o si hay una
     // activa (en ese caso la UI muestra "NC ya procesada"/"Ver NC existente" en su lugar).
-    Guid? CancelledCreditNoteId = null
+    Guid? CancelledCreditNoteId = null,
+    // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra/gasto Cancelled más reciente
+    // con este AccessKey, solo presente cuando NO hay una activa (PurchaseExists/ExpenseExists en
+    // false) — para "Ver compra/gasto anulado" (historial) en la UI de Recepción.
+    Guid? CancelledPurchaseId = null,
+    Guid? CancelledExpenseId = null
 );
 
 public sealed record PurchaseReceptionImportResultDto(

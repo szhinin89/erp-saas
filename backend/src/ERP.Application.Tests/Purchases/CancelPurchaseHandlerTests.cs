@@ -8,6 +8,10 @@ using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
@@ -130,7 +134,8 @@ public sealed class CancelPurchaseHandlerTests
         Mock<IUnitOfWork> uow,
         Guid? activeBranchId = null,
         Mock<IRetentionDocumentRepository>? retentionRepo = null,
-        IRetentionCanceller? retentionCanceller = null
+        IRetentionCanceller? retentionCanceller = null,
+        Mock<IPurchaseReceptionDocumentRepository>? receptionRepo = null
     )
     {
         var tenant = new Mock<ICurrentTenant>();
@@ -173,7 +178,8 @@ public sealed class CancelPurchaseHandlerTests
             tenant.Object,
             company.Object,
             branch.Object,
-            user.Object
+            user.Object,
+            receptionRepo?.Object
         );
     }
 
@@ -704,5 +710,174 @@ public sealed class CancelPurchaseHandlerTests
         inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
         retention.Status.Should().Be(RetentionStatus.Cancelled);
         payable.RetainedAmount.Should().Be(0m);
+    }
+
+    // ── RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 ─────────────────────────
+
+    private static PurchaseInvoice CreateConfirmedInvoiceWithAccessKey(string accessKey)
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000099",
+            new DateOnly(2026, 7, 30),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            accessKey: accessKey
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT"
+        );
+        inv.ReplaceLines(new[] { line }, UserId);
+        inv.Confirm(UserId);
+        return inv;
+    }
+
+    private static PurchaseReceptionDocument CreateProcessedReceptionDocument(
+        string accessKey,
+        Guid purchaseId
+    )
+    {
+        var doc = PurchaseReceptionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            PurchaseReceptionSourceDocType.Invoice,
+            "1234567890001",
+            "Proveedor Test",
+            SupplierId,
+            accessKey,
+            "001-001-000000099",
+            new DateOnly(2026, 7, 30),
+            null,
+            100m,
+            10m,
+            110m,
+            UserId
+        );
+        doc.AttachSriAuthorization(
+            "AUTH-1",
+            DateTime.UtcNow,
+            "<factura/>",
+            DateTime.UtcNow,
+            [],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "20",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Pending,
+                0,
+                0,
+                null
+            )
+        );
+        doc.MarkProcessed(purchaseId, UserId);
+        return doc;
+    }
+
+    [Fact]
+    public async Task Anulacion_de_compra_creada_desde_recepcion_libera_la_recepcion_para_reprocesar()
+    {
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+        var inv = CreateConfirmedInvoiceWithAccessKey(accessKey);
+        var receptionDoc = CreateProcessedReceptionDocument(accessKey, inv.Id);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((AccountsPayable?)null);
+        var receptionRepo = new Mock<IPurchaseReceptionDocumentRepository>();
+        receptionRepo
+            .Setup(r => r.GetByAccessKeyAsync(TenantId, accessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receptionDoc);
+
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow, receptionRepo: receptionRepo);
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
+        // El documento de recepción queda libre para "Crear compra" de nuevo — nunca se borra,
+        // solo se revierte su vínculo con la compra anulada.
+        receptionDoc.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        receptionDoc.PurchaseId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Anulacion_de_compra_sin_AccessKey_no_consulta_ninguna_recepcion()
+    {
+        // Alta manual (sin recepción de por medio) — nunca debe intentar buscar ni mutar un
+        // PurchaseReceptionDocument.
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var inv = CreateConfirmedInvoice();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((AccountsPayable?)null);
+        var receptionRepo = new Mock<IPurchaseReceptionDocumentRepository>();
+
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow, receptionRepo: receptionRepo);
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        receptionRepo.Verify(
+            r => r.GetByAccessKeyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Anulacion_no_desvincula_una_recepcion_que_apunta_a_otra_compra()
+    {
+        // Defensa: si por cualquier motivo el AccessKey coincide pero PurchaseId de la recepción
+        // apunta a OTRA compra, nunca se desvincula — evita liberar una recepción ajena.
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+        var inv = CreateConfirmedInvoiceWithAccessKey(accessKey);
+        var otherPurchaseId = Guid.NewGuid();
+        var receptionDoc = CreateProcessedReceptionDocument(accessKey, otherPurchaseId);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        payableRepo.Setup(r =>
+                r.GetByOriginAsync(TenantId, CompanyId, AccountsPayableOriginType.PurchaseInvoice, inv.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((AccountsPayable?)null);
+        var receptionRepo = new Mock<IPurchaseReceptionDocumentRepository>();
+        receptionRepo
+            .Setup(r => r.GetByAccessKeyAsync(TenantId, accessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receptionDoc);
+
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow, receptionRepo: receptionRepo);
+        var result = await handler.Handle(
+            new CancelPurchaseCommand(inv.Id, "Motivo"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        receptionDoc.Status.Should().Be(PurchaseReceptionDocumentStatus.Processed);
+        receptionDoc.PurchaseId.Should().Be(otherPurchaseId);
     }
 }

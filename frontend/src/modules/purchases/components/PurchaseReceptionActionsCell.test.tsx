@@ -125,4 +125,88 @@ describe("Purchase reception document actions", () => {
     expect(screen.getByRole("button", { name: "Crear compra" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Procesar NC" })).toBeNull();
   });
+
+  // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo estándar de NC aplicado a compra/gasto.
+  it("offers reprocessing and the cancelled purchase history when the only prior purchase was cancelled", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({
+      sourceDocType: "INVOICE",
+      documentStatus: "VERIFIED",
+      purchaseExists: false,
+      purchaseId: null,
+      cancelledPurchaseId: "purchase-cancelled-1",
+    });
+
+    expect(screen.getByText("Compra anulada")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Procesar nuevamente" }));
+    expect(open).toHaveBeenCalledWith(
+      "/purchases?fromReceptionId=nc-1&accessKey=key",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver compra anulada" }));
+    expect(open).toHaveBeenCalledWith(
+      "/purchases?invoiceId=purchase-cancelled-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("shows the plain first-time Crear compra button when there is no prior purchase at all", () => {
+    show({
+      sourceDocType: "INVOICE",
+      documentStatus: "VERIFIED",
+      purchaseExists: false,
+      purchaseId: null,
+      cancelledPurchaseId: null,
+    });
+
+    expect(screen.getByRole("button", { name: "Crear compra" })).toBeTruthy();
+    expect(screen.queryByText("Compra anulada")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ver compra anulada" })).toBeNull();
+  });
+
+  it("offers reprocessing and the cancelled expense history when the only prior expense was cancelled", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({
+      sourceDocType: "INVOICE",
+      documentStatus: "VERIFIED",
+      expenseExists: false,
+      cancelledExpenseId: "expense-cancelled-1",
+    });
+
+    expect(screen.getByText("Gasto anulado")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
+
+    const reprocessButtons = screen.getAllByRole("button", { name: "Procesar nuevamente" });
+    fireEvent.click(reprocessButtons[reprocessButtons.length - 1]);
+    expect(open).toHaveBeenCalledWith(
+      "/expenses/documents/new?fromReceptionId=nc-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver gasto anulado" }));
+    expect(open).toHaveBeenCalledWith(
+      "/expenses/documents/expense-cancelled-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("shows the plain first-time Crear gasto button when there is no prior expense at all", () => {
+    show({
+      sourceDocType: "INVOICE",
+      documentStatus: "VERIFIED",
+      expenseExists: false,
+      cancelledExpenseId: null,
+    });
+
+    expect(screen.getByRole("button", { name: "Crear gasto" })).toBeTruthy();
+    expect(screen.queryByText("Gasto anulado")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ver gasto anulado" })).toBeNull();
+  });
 });

@@ -41,7 +41,9 @@ public static class PurchaseReceptionMapper
             item.ExpenseExists,
             creditNoteExists,
             creditNoteId,
-            cancelledCreditNoteId
+            cancelledCreditNoteId,
+            item.CancelledPurchaseId,
+            item.CancelledExpenseId
         );
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>
