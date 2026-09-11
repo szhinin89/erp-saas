@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
@@ -22,6 +22,7 @@ import {
   purchaseService,
   type PurchaseInvoiceDto,
   type PurchaseInvoiceTaxSummaryDto,
+  type PurchaseListItemDto,
 } from "../api/purchaseService";
 import {
   purchaseCreditNoteService,
@@ -32,6 +33,8 @@ import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 import { PurchaseReturnableLinesEditor } from "../components/PurchaseReturnableLinesEditor";
 import { PurchaseCreditNoteTaxSummaryLinesEditor } from "../components/PurchaseCreditNoteTaxSummaryLinesEditor";
 import { PurchaseInvoiceLinesDetailTable } from "../components/PurchaseInvoiceLinesDetailTable";
+import { SupplierPicker } from "../components/SupplierPicker";
+import { PurchaseInvoicePicker } from "../components/PurchaseInvoicePicker";
 import {
   purchaseCreditNoteDraftSchema,
   emptyPurchaseCreditNoteDraftForm,
@@ -50,15 +53,30 @@ function computeTaxPreview(taxableBase: number, vatRate: number, iceRate: number
   return { ice, vat };
 }
 
-/** Reuses PurchaseReturnableLinesEditor for invoice-bound quantities and ZH form components.
- * The server creates the fiscal note and physical return together; authorization uses PurchaseReturn.
+/**
+ * PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — una sola pantalla de ingreso para dos
+ * orígenes: (1) Recepción XML/SRI → "Procesar NC" abre esta misma ruta con `?invoiceId=` (y
+ * `?receptionDocumentId=` para precargar datos fiscales del XML); (2) menú "Notas de Crédito de
+ * Compra → Nueva" abre la MISMA ruta sin parámetros — modo manual: el usuario elige proveedor y
+ * factura `Confirmed` primero (`SupplierPicker` + `PurchaseInvoicePicker`, reutilizados/extendidos,
+ * ningún picker paralelo) y a partir de ahí el resto del formulario, la validación de cantidades y
+ * el guardado son EXACTAMENTE el mismo código que el modo XML (mismo estado, mismo efecto de carga,
+ * mismo `onSubmitFiscal`) — nunca un formulario ni un motor duplicado. El modo se decide una sola
+ * vez al montar (según si `invoiceId` llegó por URL); cuando no llegó, `manualInvoiceId` alimenta la
+ * misma variable `invoiceId` que dispara el effect de carga ya existente.
  */
 export function PurchaseCreditNoteFormPage() {
   const [searchParams] = useSearchParams();
-  const invoiceId = searchParams.get("invoiceId") ?? "";
+  const invoiceIdParam = searchParams.get("invoiceId") ?? "";
   const receptionDocumentId = searchParams.get("receptionDocumentId") ?? "";
   const navigate = useNavigate();
   const { t } = useI18n();
+
+  // searchParams no cambia durante la selección manual (nunca se llama setSearchParams aquí).
+  const isManualMode = !invoiceIdParam;
+  const [manualSupplierId, setManualSupplierId] = useState<string | null>(null);
+  const [manualInvoice, setManualInvoice] = useState<PurchaseListItemDto | null>(null);
+  const invoiceId = invoiceIdParam || manualInvoice?.id || "";
 
   const [invoice, setInvoice] = useState<PurchaseInvoiceDto | null>(null);
   const [taxSummaries, setTaxSummaries] = useState<PurchaseInvoiceTaxSummaryDto[]>([]);
@@ -130,7 +148,11 @@ export function PurchaseCreditNoteFormPage() {
 
   useEffect(() => {
     if (!invoiceId) {
-      setLoadError(t("purchases.creditNote.errors.missingInvoice", "Falta la factura afectada."));
+      // Modo manual: aún no se eligió proveedor/factura — no es un error, se muestra el
+      // selector (ver el render de abajo); el modo XML/`invoiceId` por URL sigue exigiéndolo.
+      if (!isManualMode) {
+        setLoadError(t("purchases.creditNote.errors.missingInvoice", "Falta la factura afectada."));
+      }
       setLoading(false);
       return;
     }
@@ -241,7 +263,7 @@ export function PurchaseCreditNoteFormPage() {
     );
   }
 
-  if (loadError || !invoice) {
+  if (loadError) {
     return (
       <PageShell title={t("purchases.creditNote.title", "Nota de crédito de compra")}>
         <ZHPageNotice
@@ -249,6 +271,63 @@ export function PurchaseCreditNoteFormPage() {
           message={t("purchases.creditNote.errors.cannotStart", "No se pudo iniciar la nota de crédito")}
           detail={loadError}
         />
+      </PageShell>
+    );
+  }
+
+  // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — modo manual sin factura elegida todavía:
+  // mismo `PageShell`/`ZHCard` de siempre, selector de proveedor + factura Confirmed en vez del
+  // error "Falta la factura afectada" del modo XML. Al elegir factura, `invoiceId` deja de estar
+  // vacío y el effect de arriba (idéntico al de siempre) carga todo lo demás.
+  if (!invoice) {
+    return (
+      <PageShell
+        title={t("purchases.creditNote.title", "Nota de crédito de compra")}
+        subtitle={t(
+          "purchases.creditNote.manual.subtitle",
+          "Seleccione el proveedor y la factura de compra afectada",
+        )}
+        action={
+          // PURCHASE-CREDIT-NOTE-FULL-UX-FLOW-01 — esta pantalla pertenece al módulo Notas de
+          // Crédito de Compra: "Volver" regresa a su listado, nunca a Facturas de compra.
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            onClick={() => navigate("/purchases/credit-notes")}
+          >
+            {t("common.back", "Volver")}
+          </ZHBtn>
+        }
+      >
+        <ZHCard title={t("purchases.creditNote.affectedInvoice.title", "Factura afectada")}>
+          <ZHField
+            label={t("purchases.creditNote.affectedInvoice.supplier", "Proveedor")}
+            required
+          >
+            <SupplierPicker
+              value={manualSupplierId}
+              onChange={(supplier) => {
+                setManualSupplierId(supplier?.id ?? null);
+                setManualInvoice(null);
+              }}
+            />
+          </ZHField>
+          {manualSupplierId && (
+            <ZHField
+              label={t(
+                "purchases.creditNote.affectedInvoice.invoiceNumber",
+                "Factura de compra confirmada",
+              )}
+              required
+            >
+              <PurchaseInvoicePicker
+                supplierId={manualSupplierId}
+                value={manualInvoice}
+                onChange={setManualInvoice}
+              />
+            </ZHField>
+          )}
+        </ZHCard>
       </PageShell>
     );
   }
@@ -521,7 +600,9 @@ export function PurchaseCreditNoteFormPage() {
           )}
 
           <ZHFormActions
-            onCancel={() => navigate("/purchases")}
+            // PURCHASE-CREDIT-NOTE-FULL-UX-FLOW-01 — "Volver" desde /purchases/credit-notes/new
+            // (XML o manual) regresa al listado de NC, nunca a Facturas de compra.
+            onCancel={() => navigate("/purchases/credit-notes")}
             onSave={() => void handleSubmit(onSubmitFiscal)()}
             hideDraft
             disableSave={isSubmitting || linesCount === 0 || (isDiscount ? anyTaxSummaryLineExceeds : invalidReturn || xmlMismatch)}
