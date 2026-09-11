@@ -18,9 +18,11 @@ const row: PurchaseReceptionItem = {
 function show(overrides: Partial<PurchaseReceptionItem> = {}) {
   const download = vi.fn();
   const view = vi.fn();
+  const processCreditNote = vi.fn();
   render(<I18nProvider><PurchaseReceptionActionsCell row={{ ...row, ...overrides }}
-    xmlState={undefined} onDownloadXml={download} onViewXml={view} /></I18nProvider>);
-  return { download, view };
+    xmlState={undefined} onDownloadXml={download} onViewXml={view}
+    onProcessCreditNote={processCreditNote} resolvingCreditNoteId={null} /></I18nProvider>);
+  return { download, view, processCreditNote };
 }
 describe("Purchase reception document actions", () => {
   it("opens expense creation for a verified invoice", () => {
@@ -75,7 +77,7 @@ describe("Purchase reception document actions", () => {
   });
   it("offers reprocessing and the cancelled credit note history when the only prior NC was cancelled", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
-    show({
+    const { processCreditNote } = show({
       creditNoteExists: false,
       creditNoteId: null,
       cancelledCreditNoteId: "cn-cancelled-1",
@@ -85,11 +87,12 @@ describe("Purchase reception document actions", () => {
     expect(screen.queryByText("NC ya procesada")).toBeNull();
     expect(screen.queryByRole("button", { name: "Procesar NC" })).toBeNull();
 
+    // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — el click ya no navega
+    // directamente con row.affectedPurchaseId (podría estar obsoleto desde el import original);
+    // delega a onProcessCreditNote, que re-resuelve la factura afectada vigente antes de navegar.
     fireEvent.click(screen.getByRole("button", { name: "Procesar nuevamente" }));
-    expect(open).toHaveBeenCalledWith(
-      "/purchases/credit-notes/new?invoiceId=invoice-1&receptionDocumentId=nc-1",
-      "_blank",
-      "noopener,noreferrer",
+    expect(processCreditNote).toHaveBeenCalledWith(
+      expect.objectContaining({ documentId: "nc-1", cancelledCreditNoteId: "cn-cancelled-1" }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Ver NC anulada" }));

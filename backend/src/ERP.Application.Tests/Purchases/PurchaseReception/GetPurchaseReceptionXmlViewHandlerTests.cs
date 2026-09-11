@@ -1,5 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurchaseReceptionXmlView;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -227,21 +230,23 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
 
     private static (
         GetPurchaseReceptionXmlViewHandler handler,
-        Mock<IPurchaseReceptionDocumentRepository> repo
+        Mock<IPurchaseReceptionDocumentRepository> repo,
+        Mock<IPurchaseInvoiceRepository> purchaseRepo
     ) BuildHandler()
     {
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
+        var purchaseRepo = new Mock<IPurchaseInvoiceRepository>();
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
 
-        var handler = new GetPurchaseReceptionXmlViewHandler(repo.Object, tenant.Object);
-        return (handler, repo);
+        var handler = new GetPurchaseReceptionXmlViewHandler(repo.Object, purchaseRepo.Object, tenant.Object);
+        return (handler, repo, purchaseRepo);
     }
 
     [Fact]
     public async Task Handle_returns_not_found_for_a_nonexistent_document()
     {
-        var (handler, repo) = BuildHandler();
+        var (handler, repo, _) = BuildHandler();
         var missingId = Guid.NewGuid();
         repo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseReceptionDocument?)null);
@@ -259,7 +264,7 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
     public async Task Handle_reports_xml_not_available_when_XmlContent_is_empty()
     {
         var document = SampleDocument();
-        var (handler, repo) = BuildHandler();
+        var (handler, repo, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -315,7 +320,7 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
             )
         );
 
-        var (handler, repo) = BuildHandler();
+        var (handler, repo, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -380,7 +385,7 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
             )
         );
 
-        var (handler, repo) = BuildHandler();
+        var (handler, repo, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -436,7 +441,7 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
     public async Task Handle_never_persists_anything()
     {
         var document = SampleDocument();
-        var (handler, repo) = BuildHandler();
+        var (handler, repo, _) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
@@ -447,6 +452,174 @@ public sealed class GetPurchaseReceptionXmlViewHandlerTests
 
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Imported);
+    }
+
+    // ── PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 ────────
+
+    private static PurchaseReceptionDocument CreditNoteDocument(
+        Guid supplierId,
+        string modifiedDocumentNumber
+    ) =>
+        PurchaseReceptionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            PurchaseReceptionSourceDocType.CreditNote,
+            "1791352688001",
+            "QUALA ECUADOR S A",
+            supplierId,
+            "0107202601179135268800120150270001617400016174012",
+            "001-001-000010350",
+            new DateOnly(2026, 7, 1),
+            new DateTime(2026, 7, 1, 21, 6, 55, DateTimeKind.Utc),
+            10m,
+            1.5m,
+            11.5m,
+            UserId,
+            modifiedDocumentNumber: modifiedDocumentNumber
+        );
+
+    private static PurchaseInvoice ConfirmedInvoice(Guid supplierId, string invoiceNumber)
+    {
+        var inv = PurchaseInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            supplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            invoiceNumber,
+            new DateOnly(2026, 6, 1),
+            UserId,
+            Guid.NewGuid(),
+            "Contado",
+            1,
+            30
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto 1",
+            quantity: 1,
+            unitPrice: 10m,
+            vatCode: "10",
+            uomCode: "UNIT"
+        );
+        inv.ReplaceLines(new[] { line }, UserId);
+        inv.Confirm(UserId);
+        return inv;
+    }
+
+    [Fact]
+    public async Task Handle_resuelve_AffectedPurchaseId_con_proveedor_y_ModifiedDocumentNumber_para_una_NC()
+    {
+        // Caso reportado: purchase_reception_documents.InvoiceNumber es el número PROPIO de la NC
+        // ("001-001-000010350") — nunca debe usarse para resolver la factura afectada. La
+        // resolución debe usar ModifiedDocumentNumber ("001-001-000031760", el numDocModificado
+        // del XML) — mismo criterio ya corregido en GetBySupplierAndInvoiceNumberAsync para
+        // ignorar Cancelled.
+        var supplierId = Guid.NewGuid();
+        const string affectedInvoiceNumber = "001-001-000031760";
+        var document = CreditNoteDocument(supplierId, affectedInvoiceNumber);
+        var confirmedInvoice = ConfirmedInvoice(supplierId, affectedInvoiceNumber);
+
+        var (handler, repo, purchaseRepo) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        purchaseRepo
+            .Setup(r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    TenantId,
+                    supplierId,
+                    affectedInvoiceNumber,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(confirmedInvoice);
+
+        var result = await handler.Handle(
+            new GetPurchaseReceptionXmlViewQuery(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.AffectedPurchaseExists.Should().BeTrue();
+        result.Value.AffectedPurchaseId.Should().Be(confirmedInvoice.Id);
+
+        // Nunca se llama con el número propio de la NC (el que documenta InvoiceNumber).
+        purchaseRepo.Verify(
+            r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    TenantId,
+                    supplierId,
+                    document.InvoiceNumber,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Handle_no_resuelve_AffectedPurchaseId_para_un_documento_de_tipo_Invoice()
+    {
+        var document = SampleDocument();
+        var (handler, repo, purchaseRepo) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new GetPurchaseReceptionXmlViewQuery(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.AffectedPurchaseExists.Should().BeFalse();
+        result.Value.AffectedPurchaseId.Should().BeNull();
+        purchaseRepo.Verify(
+            r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Handle_reporta_AffectedPurchaseExists_false_cuando_solo_hay_una_compra_Cancelled()
+    {
+        // GetBySupplierAndInvoiceNumberAsync (mockeado aquí) ya excluye Cancelled — si el mock
+        // simula ese comportamiento devolviendo null, la vista debe reflejarlo fielmente: ninguna
+        // factura afectada activa, mensaje claro en vez de resolver la anulada.
+        var supplierId = Guid.NewGuid();
+        const string affectedInvoiceNumber = "001-001-000031760";
+        var document = CreditNoteDocument(supplierId, affectedInvoiceNumber);
+
+        var (handler, repo, purchaseRepo) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        purchaseRepo
+            .Setup(r =>
+                r.GetBySupplierAndInvoiceNumberAsync(
+                    TenantId,
+                    supplierId,
+                    affectedInvoiceNumber,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((PurchaseInvoice?)null);
+
+        var result = await handler.Handle(
+            new GetPurchaseReceptionXmlViewQuery(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.AffectedPurchaseExists.Should().BeFalse();
+        result.Value.AffectedPurchaseId.Should().BeNull();
     }
 
     private static PurchaseReceptionLine ArcadorLine(

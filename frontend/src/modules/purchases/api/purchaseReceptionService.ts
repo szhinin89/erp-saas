@@ -287,6 +287,11 @@ export interface PurchaseReceptionXmlView {
   lines: PurchaseReceptionXmlViewLine[];
   rawXmlAvailable: boolean;
   rawXml: string | null;
+  /** PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — solo notas de crédito: la
+   * factura afectada resuelta EN ESTE MOMENTO (ignora Cancelled), nunca el valor calculado en el
+   * import original — usar siempre este valor en vez de uno guardado de una importación anterior. */
+  affectedPurchaseExists: boolean;
+  affectedPurchaseId: string | null;
 }
 
 export const purchaseReceptionService = {

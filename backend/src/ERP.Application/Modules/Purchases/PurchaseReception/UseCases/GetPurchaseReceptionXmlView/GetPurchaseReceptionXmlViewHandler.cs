@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 using ERP.Domain.Modules.Purchases;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
@@ -23,14 +24,17 @@ public sealed class GetPurchaseReceptionXmlViewHandler
     private const string SriIrbpnrTaxCode = SriTaxCategoryCodes.Irbpnr;
 
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
+    private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly ICurrentTenant _tenant;
 
     public GetPurchaseReceptionXmlViewHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
+        IPurchaseInvoiceRepository purchaseRepo,
         ICurrentTenant tenant
     )
     {
         _documentRepo = documentRepo;
+        _purchaseRepo = purchaseRepo;
         _tenant = tenant;
     }
 
@@ -75,6 +79,29 @@ public sealed class GetPurchaseReceptionXmlViewHandler
         var tip = extras?.Totals.Tip ?? 0m;
         var totalAmount = extras?.Totals.TotalAmount ?? document.TotalAmount;
 
+        // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — resuelto en cada llamada
+        // (nunca cacheado en el documento ni reutilizado del import original): si la factura
+        // afectada fue anulada y reprocesada después de importar esta NC, GetBySupplierAndInvoiceNumberAsync
+        // (ya ignora Cancelled) siempre devuelve la Confirmed vigente en este momento, no la
+        // resolución obsoleta del import.
+        var affectedPurchaseExists = false;
+        Guid? affectedPurchaseId = null;
+        if (
+            document.SourceDocType == PurchaseReceptionSourceDocType.CreditNote
+            && document.SupplierId is { } supplierId
+            && !string.IsNullOrWhiteSpace(document.ModifiedDocumentNumber)
+        )
+        {
+            var affectedPurchase = await _purchaseRepo.GetBySupplierAndInvoiceNumberAsync(
+                _tenant.TenantId,
+                supplierId,
+                document.ModifiedDocumentNumber,
+                cancellationToken
+            );
+            affectedPurchaseExists = affectedPurchase is not null;
+            affectedPurchaseId = affectedPurchase?.Id;
+        }
+
         var dto = new PurchaseReceptionXmlViewDto(
             DocumentId: document.Id,
             DocumentType: ToSourceDocTypeCode(document.SourceDocType),
@@ -106,7 +133,9 @@ public sealed class GetPurchaseReceptionXmlViewHandler
             TaxSummaries: taxSummaries,
             Lines: lines,
             RawXmlAvailable: !string.IsNullOrWhiteSpace(document.XmlContent),
-            RawXml: document.XmlContent
+            RawXml: document.XmlContent,
+            AffectedPurchaseExists: affectedPurchaseExists,
+            AffectedPurchaseId: affectedPurchaseId
         );
 
         return Result<PurchaseReceptionXmlViewDto>.Success(dto);

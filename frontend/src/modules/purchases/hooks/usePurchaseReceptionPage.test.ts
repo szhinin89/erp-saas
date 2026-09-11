@@ -5,6 +5,7 @@ import { usePurchaseReceptionPage } from "./usePurchaseReceptionPage";
 import {
   purchaseReceptionService,
   type PurchaseReceptionItem,
+  type PurchaseReceptionXmlView,
 } from "../api/purchaseReceptionService";
 import { message } from "../../../lib/messages";
 
@@ -62,6 +63,45 @@ function buildItem(overrides: Partial<PurchaseReceptionItem> = {}): PurchaseRece
 
 function buildFile(): File {
   return new File(["contenido"], "recepcion.txt", { type: "text/plain" });
+}
+
+function buildXmlView(overrides: Partial<PurchaseReceptionXmlView> = {}): PurchaseReceptionXmlView {
+  return {
+    documentId: "doc-1",
+    documentType: "CREDIT_NOTE",
+    documentNumber: "001-001-000010350",
+    issueDate: "2026-08-01",
+    accessKey: "1234567890",
+    authorizationNumber: null,
+    authorizationDate: null,
+    supplierName: "Proveedor Uno",
+    supplierTradeName: null,
+    supplierTaxId: "0999999999001",
+    referralGuide: null,
+    paymentMethodCode: null,
+    paymentTerm: null,
+    paymentTimeUnit: null,
+    modifiedDocumentNumber: "001-001-000031760",
+    modifiedDocumentType: null,
+    modifiedDocumentDate: null,
+    modificationReason: null,
+    subtotal: 100,
+    discountAmount: 0,
+    iceAmount: 0,
+    irbpnrAmount: 0,
+    vatAmount: 15,
+    tipAmount: 0,
+    totalAmount: 115,
+    lineCalculatedTotal: 115,
+    roundingDifference: 0,
+    taxSummaries: [],
+    lines: [],
+    rawXmlAvailable: false,
+    rawXml: null,
+    affectedPurchaseExists: false,
+    affectedPurchaseId: null,
+    ...overrides,
+  };
 }
 
 beforeEach(() => {
@@ -158,4 +198,61 @@ it("does not claim an invoice supplier is registered without a resolved BP id", 
   act(() => result.current.handleSupplierCreated("0999999999001", "real-bp-id"));
   expect(result.current.items[0].supplierExists).toBe(true);
   expect(result.current.items[0].supplierId).toBe("real-bp-id");
+});
+
+describe("usePurchaseReceptionPage — processCreditNote (PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01)", () => {
+  const ncRow = buildItem({
+    documentId: "doc-nc-1",
+    sourceDocType: "CREDIT_NOTE",
+    affectedPurchaseExists: true,
+    affectedPurchaseId: "stale-cancelled-invoice-id",
+  });
+
+  it("nunca navega con el affectedPurchaseId ya cargado en la fila — siempre re-resuelve vía xml-view antes de abrir", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    vi.mocked(purchaseReceptionService.getXmlView).mockResolvedValue(
+      buildXmlView({
+        affectedPurchaseExists: true,
+        affectedPurchaseId: "fresh-confirmed-invoice-id",
+      }),
+    );
+    const { result } = renderHook(() => usePurchaseReceptionPage());
+
+    await act(async () => {
+      await result.current.processCreditNote(ncRow);
+    });
+
+    expect(purchaseReceptionService.getXmlView).toHaveBeenCalledWith("doc-nc-1");
+    expect(open).toHaveBeenCalledWith(
+      "/purchases/credit-notes/new?invoiceId=fresh-confirmed-invoice-id&receptionDocumentId=doc-nc-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(open).not.toHaveBeenCalledWith(
+      expect.stringContaining("stale-cancelled-invoice-id"),
+      expect.anything(),
+      expect.anything(),
+    );
+
+    open.mockRestore();
+  });
+
+  it("si la resolución fresca no encuentra ninguna factura activa, muestra un mensaje claro y no navega", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    vi.mocked(purchaseReceptionService.getXmlView).mockResolvedValue(
+      buildXmlView({ affectedPurchaseExists: false, affectedPurchaseId: null }),
+    );
+    const { result } = renderHook(() => usePurchaseReceptionPage());
+
+    await act(async () => {
+      await result.current.processCreditNote(ncRow);
+    });
+
+    expect(open).not.toHaveBeenCalled();
+    expect(message.error).toHaveBeenCalledWith(
+      expect.stringContaining("factura afectada"),
+    );
+
+    open.mockRestore();
+  });
 });

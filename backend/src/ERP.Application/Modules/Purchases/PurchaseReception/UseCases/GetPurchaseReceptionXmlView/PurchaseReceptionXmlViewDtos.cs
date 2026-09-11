@@ -8,6 +8,14 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurcha
 /// del documento modificado se leen del XML crudo porque la entidad no los persiste. Cuando
 /// <see cref="RawXmlAvailable"/> es <see langword="false"/> esos campos quedan en su valor por
 /// defecto (nunca inventados) y <see cref="RawXml"/> es <see langword="null"/>.
+///
+/// PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — <see cref="AffectedPurchaseExists"/>/
+/// <see cref="AffectedPurchaseId"/> (solo notas de crédito) se resuelven en cada llamada, nunca se
+/// cachean: el import TXT (<c>PurchaseReceptionVerifier</c>) solo calcula estos campos una vez, al
+/// momento de importar — si la factura afectada se anula y se reprocesa después, esa resolución
+/// queda obsoleta y nada la refresca hasta que el usuario vuelva a subir el mismo TXT. Esta vista de
+/// solo lectura, en cambio, se puede consultar en cualquier momento sin volver a importar, así que
+/// es el punto correcto para exponer siempre la resolución vigente.
 /// </summary>
 public sealed record PurchaseReceptionXmlViewDto(
     Guid DocumentId,
@@ -40,7 +48,9 @@ public sealed record PurchaseReceptionXmlViewDto(
     IReadOnlyList<PurchaseReceptionXmlViewTaxSummaryDto> TaxSummaries,
     IReadOnlyList<PurchaseReceptionXmlViewLineDto> Lines,
     bool RawXmlAvailable,
-    string? RawXml
+    string? RawXml,
+    bool AffectedPurchaseExists = false,
+    Guid? AffectedPurchaseId = null
 );
 
 /// <summary>Un <c>&lt;totalImpuesto&gt;</c> de cabecera, enriquecido solo con tarifa observada en impuestos reales de línea cuando existe.</summary>

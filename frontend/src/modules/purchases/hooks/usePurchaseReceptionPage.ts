@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   purchaseReceptionService,
   type PurchaseReceptionImportResult,
+  type PurchaseReceptionItem,
   type PurchaseReceptionXmlView,
 } from "../api/purchaseReceptionService";
 import { message } from "../../../lib/messages";
@@ -147,6 +148,42 @@ export function usePurchaseReceptionPage() {
     setXmlViewData(null);
   };
 
+  // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — affectedPurchaseId en `result`
+  // se calculó UNA sola vez, al importar el TXT; si la factura afectada se anula y se reprocesa
+  // después (sin volver a importar el mismo archivo), ese valor queda obsoleto. xml-view sí se
+  // puede consultar en cualquier momento y siempre resuelve la Confirmed vigente — se vuelve a
+  // consultar aquí, justo antes de navegar, en vez de confiar en el valor ya cargado en la fila.
+  const [resolvingCreditNoteId, setResolvingCreditNoteId] = useState<
+    string | null
+  >(null);
+
+  const processCreditNote = async (row: PurchaseReceptionItem) => {
+    setResolvingCreditNoteId(row.documentId);
+    try {
+      const fresh = await purchaseReceptionService.getXmlView(row.documentId);
+      if (!fresh.affectedPurchaseExists || !fresh.affectedPurchaseId) {
+        message.error(
+          "La factura afectada ya no está disponible (anulada o no encontrada). Actualice la recepción e intente nuevamente.",
+        );
+        return;
+      }
+      window.open(
+        `/purchases/credit-notes/new?invoiceId=${fresh.affectedPurchaseId}&receptionDocumentId=${row.documentId}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } catch (err) {
+      setError(
+        extractErrorMessage(
+          err,
+          "No se pudo validar la factura afectada. Intente nuevamente.",
+        ),
+      );
+    } finally {
+      setResolvingCreditNoteId(null);
+    }
+  };
+
   const items = useMemo(() => result?.items ?? [], [result]);
   const pagedItems = useMemo(
     () => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -188,6 +225,8 @@ export function usePurchaseReceptionPage() {
     xmlViewData,
     openXmlView: (documentId: string) => void openXmlView(documentId),
     closeXmlView,
+    resolvingCreditNoteId,
+    processCreditNote,
     // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
     // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor
     // existe + compra no existe todavía => PENDING).

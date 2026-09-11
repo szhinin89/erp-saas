@@ -9,11 +9,15 @@ export function PurchaseReceptionActionsCell({
   xmlState,
   onDownloadXml,
   onViewXml,
+  onProcessCreditNote,
+  resolvingCreditNoteId,
 }: {
   row: PurchaseReceptionItem;
   xmlState: "loading" | "error" | undefined;
   onDownloadXml: (documentId: string) => void;
   onViewXml: (documentId: string) => void;
+  onProcessCreditNote: (row: PurchaseReceptionItem) => void;
+  resolvingCreditNoteId: string | null;
 }) {
   const { t } = useI18n();
 
@@ -167,13 +171,8 @@ export function PurchaseReceptionActionsCell({
             size="xs"
             type="button"
             title={t("purchases.creditNote.actions.processCreditNote", "Procesar nota de crédito")}
-            onClick={() =>
-              window.open(
-                `/purchases/credit-notes/new?invoiceId=${row.affectedPurchaseId}&receptionDocumentId=${row.documentId}`,
-                "_blank",
-                "noopener,noreferrer",
-              )
-            }
+            disabled={resolvingCreditNoteId === row.documentId}
+            onClick={() => onProcessCreditNote(row)}
           >
             {isReprocessing
               ? t("purchases.creditNote.actions.reprocessNc", "Procesar nuevamente")

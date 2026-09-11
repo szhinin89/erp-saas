@@ -203,6 +203,8 @@ export function PurchaseReceptionPage() {
           xmlState={ctx.xmlRowState[row.documentId]}
           onDownloadXml={(documentId) => void ctx.handleDownloadXml(documentId)}
           onViewXml={ctx.openXmlView}
+          onProcessCreditNote={ctx.processCreditNote}
+          resolvingCreditNoteId={ctx.resolvingCreditNoteId}
         />
       ),
     },
