@@ -40,8 +40,12 @@ public sealed class AccountingBootstrapStepTests
     /// PURCHASE-RETURN-CANCELLED-POSTING-RULE-01: pasa de 11 a 12 — agrega
     /// "Purchases"/"PurchaseReturnCancelled", mismo tipo de gap (traductor real desde P0-02 Fase 10,
     /// regla nunca sembrada).
+    ///
+    /// PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01: pasa de 12 a 13 — agrega
+    /// "Purchases"/"SupplierCreditApplied", mismo tipo de gap (traductor real desde P0-02 Fase 7,
+    /// regla nunca sembrada).
     /// </summary>
-    private const int ExpectedPostingRulesCount = 12;
+    private const int ExpectedPostingRulesCount = 13;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -305,6 +309,7 @@ public sealed class AccountingBootstrapStepTests
                     ("Expenses", "DocumentConfirmed"),
                     ("Purchases", "PurchaseReturn"),
                     ("Purchases", "PurchaseReturnCancelled"),
+                    ("Purchases", "SupplierCreditApplied"),
                 }
             );
 
@@ -569,6 +574,45 @@ public sealed class AccountingBootstrapStepTests
                 authorizedShape.Select(x => (x.AmountKind, x.AccountCode, x.InvertedNature)),
                 because: "el reverso contable de un asiento balanceado invierte la naturaleza de cada línea, nunca la cuenta ni el AmountKind"
             );
+    }
+
+    /// <summary>
+    /// PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01 — la PostingRule de
+    /// "Purchases"/"SupplierCreditApplied" nunca existió en MinimalPostingRules, aunque
+    /// SupplierCreditAppliedPostingTranslator existe desde P0-02 Fase 7. Confirma el hecho de una
+    /// sola línea por lado (GrandTotal, sin IVA/ICE): Debe CxP proveedores (se reduce lo exigible de
+    /// la factura destino), Haber "1.1.03.004 Anticipos a proveedores" (se reduce el crédito a favor
+    /// ya reconocido como activo).
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_purchases_suppliercreditapplied_con_debe_cxp_y_haber_anticipos()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"
+            );
+
+        rule.IsActive.Should().BeTrue();
+        rule.Lines.Should().HaveCount(2);
+
+        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        debitLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001", because: "Debe = CxP proveedores, se reduce por el monto de crédito aplicado a la factura destino");
+
+        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        creditLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
+            .Should()
+            .Be("1.1.03.004", because: "Haber = Anticipos a proveedores, se reduce el crédito a favor ya reconocido como activo");
     }
 
     /// <summary>

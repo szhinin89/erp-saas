@@ -87,6 +87,23 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// regla de "Purchases/PurchaseReturn" con cada línea invertida Debe↔Haber (mismos AmountKind,
 /// mismas cuentas) — el reverso contable de un asiento balanceado siempre invierte la naturaleza
 /// de cada línea, nunca recalcula montos (el traductor ya transporta el mismo snapshot congelado).
+///
+/// PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01: mismo tipo de gap, ahora para
+/// <c>Purchases/SupplierCreditApplied</c> — <c>SupplierCreditAppliedPostingTranslator</c> (P0-02
+/// Fase 7) siempre existió y siempre publicó su <c>PostingFact</c> (un único monto en
+/// <c>GrandTotal</c>), pero <c>MinimalPostingRules</c> nunca tuvo la clave correspondiente: aplicar
+/// un <c>SupplierCredit</c> contra una CxP destino (<c>ApplySupplierCreditUseCases</c>) persistía
+/// con normalidad (el movimiento y la reducción de la CxP destino no dependen del posting) pero el
+/// asiento fallaba fail-closed "RULE_NOT_FOUND" en silencio (mismo criterio de log-only warning que
+/// el resto de traductores de este módulo — nunca revierte la aplicación ya persistida). Hecho
+/// contable simple de 2 líneas (§19.1, doc comment del traductor): Debe CxP proveedores (reduce lo
+/// exigible de la factura destino), Haber "1.1.03.004 Anticipos a proveedores" (reduce el crédito a
+/// favor ya reconocido como activo — misma cuenta que <c>SupplierCredit</c> usa en
+/// "Purchases/PurchaseReturn"). <c>Purchases/SupplierCreditApplicationReversed</c>
+/// (<c>SupplierCreditApplicationReversedPostingTranslator</c>, mismo <c>PostingFact</c> de una sola
+/// línea) tiene el mismo gap — mirror exacto con Debe/Haber invertidos — pero queda deliberadamente
+/// fuera de este ticket (alcance angosto explícito: "no mezclar"), registrado aparte como su propio
+/// gap de seguimiento.
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -371,6 +388,26 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("1.1.04.001", AccountNature.Debit, PostingAmountKind.TaxIce),
                 new("1.1.04.001", AccountNature.Debit, PostingAmountKind.TaxIrbpnr),
                 new("4.2.01.001", AccountNature.Debit, PostingAmountKind.CostVarianceCredit),
+            ]
+        ),
+        // PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01 — "Purchases"/"SupplierCreditApplied"
+        // nunca tuvo entrada en MinimalPostingRules, aunque SupplierCreditAppliedPostingTranslator
+        // existe desde P0-02 Fase 7: aplicar un SupplierCredit contra una CxP destino persistía con
+        // normalidad (ApplySupplierCreditUseCases mueve el movimiento y reduce la CxP destino sin
+        // depender del posting) pero el asiento fallaba fail-closed "RULE_NOT_FOUND" en silencio.
+        // Hecho de una sola línea por lado (GrandTotal, sin IVA/ICE): Debe CxP proveedores (se
+        // reduce lo exigible de la factura destino), Haber "1.1.03.004 Anticipos a proveedores"
+        // (se reduce el crédito a favor ya reconocido como activo — misma cuenta que
+        // "Purchases"/"PurchaseReturn" usa para SupplierCredit).
+        // "Purchases"/"SupplierCreditApplicationReversed" (SupplierCreditApplicationReversedPostingTranslator,
+        // mismo PostingFact de una línea) tiene el mismo gap — mirror exacto Debe↔Haber invertido —
+        // pero queda deliberadamente fuera de esta regla: registrado aparte, no mezclado aquí.
+        new(
+            "Purchases",
+            "SupplierCreditApplied",
+            [
+                new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new("1.1.03.004", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
         new(

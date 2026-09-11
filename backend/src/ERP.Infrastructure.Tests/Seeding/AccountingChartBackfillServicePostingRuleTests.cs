@@ -335,6 +335,60 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         rule.Lines.Should().Contain(l => l.Id == customLineId);
     }
 
+    /// <summary>
+    /// PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01 — mismo escenario que
+    /// "Expenses"/"DocumentConfirmed" (ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01): una company
+    /// activa que ya pasó por el bootstrap ANTES de que "Purchases"/"SupplierCreditApplied"
+    /// existiera en MinimalPostingRules (simulado quitando esa única regla luego del seed completo)
+    /// vuelve a calificar para backfill vía <see cref="AccountingBootstrapStep.RequiredPostingRuleKeys"/>
+    /// y recibe solo la regla faltante, sin duplicar ni tocar las demás.
+    /// </summary>
+    [Fact]
+    public async Task EnsureAsync_siembra_solo_purchases_suppliercreditapplied_para_company_a_la_que_solo_le_falta_esa()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        List<Guid> otherRuleIds;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            await SeedActiveCompanyAsync(db);
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var supplierCreditRule = await db.PostingRules.SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"
+            );
+            db.PostingRules.Remove(supplierCreditRule);
+            await db.SaveChangesAsync();
+
+            otherRuleIds = await db.PostingRules
+                .Where(r => r.CompanyId == _companyId)
+                .Select(r => r.Id)
+                .OrderBy(id => id)
+                .ToListAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var service = NewService(db);
+            await service.EnsureAsync();
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
+        rules.Should().Contain(r => r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied");
+
+        var untouchedIds = rules
+            .Where(r => !(r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"))
+            .Select(r => r.Id)
+            .OrderBy(id => id)
+            .ToList();
+        untouchedIds.Should().BeEquivalentTo(otherRuleIds, because: "el backfill no debe tocar las reglas que ya estaban completas");
+    }
+
     private sealed class FakeHostEnvironment(bool isProduction) : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = isProduction ? "Production" : "Development";
