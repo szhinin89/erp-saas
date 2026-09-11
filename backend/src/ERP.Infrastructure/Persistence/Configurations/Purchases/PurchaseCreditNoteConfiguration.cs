@@ -249,6 +249,11 @@ public sealed class PurchaseCreditNoteConfiguration : IEntityTypeConfiguration<P
             .HasDatabaseName("uq_purchase_credit_notes_tenant_access_key");
 
         // Regla de duplicados §5.2 — mirror de uq_purchase_invoices_tenant_company_supplier_number.
+        // PURCHASE-CREDIT-NOTE-CANCELLED-NUMBER-REPROCESS-01: mismo criterio que los índices de
+        // ReceptionDocumentId/AccessKey arriba — una NC Cancelled es historial, nunca ocupa el slot
+        // único de supplier+creditNoteNumber, así que reutilizar el mismo número tras cancelar la
+        // NC anterior puede volver a guardarse. Draft/Authorized siguen compitiendo por el mismo
+        // slot único — nunca dos NC activas con el mismo supplier+creditNoteNumber.
         builder
             .HasIndex(x => new
             {
@@ -258,6 +263,7 @@ public sealed class PurchaseCreditNoteConfiguration : IEntityTypeConfiguration<P
                 x.CreditNoteNumber,
             })
             .IsUnique()
+            .HasFilter("\"status\" <> 3")
             .HasDatabaseName("uq_purchase_credit_notes_tenant_company_supplier_number");
 
         builder

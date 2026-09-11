@@ -77,6 +77,12 @@ public interface IPurchaseCreditNoteRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// PURCHASE-CREDIT-NOTE-CANCELLED-NUMBER-REPROCESS-01 — solo cuenta como duplicado una NC
+    /// ACTIVA (Draft/Authorized) con este supplier+creditNoteNumber; una NC <c>Cancelled</c> es
+    /// historial, nunca bloquea reutilizar el mismo número (mismo criterio que
+    /// <see cref="ExistsByAccessKeyAsync"/>/<see cref="GetIdByReceptionDocumentIdAsync"/>).
+    /// </summary>
     Task<bool> ExistsBySupplierAndCreditNoteNumberAsync(
         Guid tenantId,
         Guid companyId,

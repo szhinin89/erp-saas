@@ -555,6 +555,149 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
             .BeFalse("una NC Cancelled nunca bloquea reprocesar la misma clave de acceso");
     }
 
+    [Fact]
+    public async Task Duplicar_SupplierId_y_CreditNoteNumber_con_la_primera_NC_Cancelled_no_colisiona()
+    {
+        // PURCHASE-CREDIT-NOTE-CANCELLED-NUMBER-REPROCESS-01 — el índice único filtra Cancelled
+        // (status <> 3) igual que ReceptionDocumentId/AccessKey: una NC anulada nunca ocupa el slot
+        // único de supplier+creditNoteNumber — reutilizar el mismo número debe poder guardarse.
+        var ctx = await SeedTenantAsync();
+        var invoiceId1 = await CreateConfirmedInvoiceAsync(ctx);
+        var invoiceId2 = await CreateConfirmedInvoiceAsync(ctx);
+        const string creditNoteNumber = "001-001-000010362";
+
+        Guid firstNoteId;
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = BuildDraft(ctx, invoiceId1, _userId, creditNoteNumber);
+            db1.PurchaseCreditNotes.Add(first);
+            await db1.SaveChangesAsync();
+            firstNoteId = first.Id;
+        }
+
+        await using (var dbCancel = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = await dbCancel.PurchaseCreditNotes.SingleAsync(c => c.Id == firstNoteId);
+            first.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            await dbCancel.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.PurchaseCreditNotes.Add(BuildDraft(ctx, invoiceId2, _userId, creditNoteNumber));
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().NotThrowAsync();
+
+        await using var verify = CreateContext(ctx.TenantId, ctx.CompanyId);
+        var notesForNumber = await verify
+            .PurchaseCreditNotes.Where(c =>
+                c.SupplierId == ctx.SupplierId && c.CreditNoteNumber == creditNoteNumber
+            )
+            .ToListAsync();
+        notesForNumber.Should().HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
+        notesForNumber.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
+        notesForNumber.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Draft);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Duplicar_SupplierId_y_CreditNoteNumber_con_la_primera_NC_Draft_o_Authorized_sigue_lanzando_DbUpdateException(
+        bool authorize
+    )
+    {
+        // Regresión explícita del filtro nuevo: excluir Cancelled NUNCA debe permitir dos NC
+        // activas (Draft/Authorized) con el mismo supplier+creditNoteNumber.
+        var ctx = await SeedTenantAsync();
+        var invoiceId1 = await CreateConfirmedInvoiceAsync(ctx);
+        var invoiceId2 = await CreateConfirmedInvoiceAsync(ctx);
+        const string creditNoteNumber = "001-001-000010363";
+
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = BuildDraft(ctx, invoiceId1, _userId, creditNoteNumber);
+            if (authorize)
+                first.Authorize(first.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db1.PurchaseCreditNotes.Add(first);
+            await db1.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.PurchaseCreditNotes.Add(BuildDraft(ctx, invoiceId2, _userId, creditNoteNumber));
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistsBySupplierAndCreditNoteNumberAsync_devuelve_true_para_NC_Draft_o_Authorized(
+        bool authorize
+    )
+    {
+        var ctx = await SeedTenantAsync();
+        var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
+        const string creditNoteNumber = "001-001-000010364";
+
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var note = BuildDraft(ctx, invoiceId, _userId, creditNoteNumber);
+            if (authorize)
+                note.Authorize(note.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db.PurchaseCreditNotes.Add(note);
+            await db.SaveChangesAsync();
+        }
+
+        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+
+        (
+            await repo.ExistsBySupplierAndCreditNoteNumberAsync(
+                ctx.TenantId,
+                ctx.CompanyId,
+                ctx.SupplierId,
+                creditNoteNumber
+            )
+        )
+            .Should()
+            .BeTrue();
+    }
+
+    [Fact]
+    public async Task ExistsBySupplierAndCreditNoteNumberAsync_ignora_NC_Cancelled()
+    {
+        var ctx = await SeedTenantAsync();
+        var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
+        const string creditNoteNumber = "001-001-000010365";
+
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var note = BuildDraft(ctx, invoiceId, _userId, creditNoteNumber);
+            note.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db.PurchaseCreditNotes.Add(note);
+            await db.SaveChangesAsync();
+        }
+
+        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+
+        (
+            await repo.ExistsBySupplierAndCreditNoteNumberAsync(
+                ctx.TenantId,
+                ctx.CompanyId,
+                ctx.SupplierId,
+                creditNoteNumber
+            )
+        )
+            .Should()
+            .BeFalse("una NC Cancelled nunca bloquea reutilizar el mismo número");
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

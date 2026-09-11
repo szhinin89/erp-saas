@@ -168,6 +168,10 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             ct
         );
 
+    // PURCHASE-CREDIT-NOTE-CANCELLED-NUMBER-REPROCESS-01 — mismo criterio que
+    // ExistsByReceptionDocumentIdAsync/ExistsByAccessKeyAsync: una NC Cancelled es historial, no
+    // activa — nunca cuenta como duplicado de supplier+creditNoteNumber. Solo Draft/Authorized
+    // bloquea.
     public Task<bool> ExistsBySupplierAndCreditNoteNumberAsync(
         Guid tenantId,
         Guid companyId,
@@ -180,7 +184,8 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
                 && x.SupplierId == supplierId
-                && x.CreditNoteNumber == creditNoteNumber,
+                && x.CreditNoteNumber == creditNoteNumber
+                && x.Status != PurchaseCreditNoteStatus.Cancelled,
             ct
         );
 
