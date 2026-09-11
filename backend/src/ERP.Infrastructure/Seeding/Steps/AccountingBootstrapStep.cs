@@ -78,6 +78,15 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// un warning — <c>Authorize()</c> ya movió Kardex/CxP/SupplierCredit y no se revierte). Reportado
 /// en producción: devolución autorizada con Kardex movido pero sin JournalEntry. Mismo mecanismo de
 /// detección/backfill que el gap anterior — sin cambios adicionales al pipeline.
+///
+/// PURCHASE-RETURN-CANCELLED-POSTING-RULE-01: mismo gap, ahora para el reverso —
+/// <c>Purchases/PurchaseReturnCancelled</c>. <c>PurchaseReturnCancelledPostingTranslator</c>
+/// (P0-02 Fase 10) siempre existió, pero tampoco tuvo entrada en <c>MinimalPostingRules</c>.
+/// Reportado en producción: cancelar una devolución <c>Authorized</c> revertía Kardex/CxP/
+/// SupplierCredit con normalidad, pero el asiento reverso nunca se generaba. Espejo exacto de la
+/// regla de "Purchases/PurchaseReturn" con cada línea invertida Debe↔Haber (mismos AmountKind,
+/// mismas cuentas) — el reverso contable de un asiento balanceado siempre invierte la naturaleza
+/// de cada línea, nunca recalcula montos (el traductor ya transporta el mismo snapshot congelado).
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -333,6 +342,35 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
                 new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIrbpnr),
                 new("4.2.01.001", AccountNature.Credit, PostingAmountKind.CostVarianceCredit),
+            ]
+        ),
+        // PURCHASE-RETURN-CANCELLED-POSTING-RULE-01 — mismo tipo de gap que
+        // PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01, ahora para el reverso:
+        // PurchaseReturnCancelledPostingTranslator existe desde P0-02 Fase 10 y publica el mismo
+        // PostingFact que PurchaseReturnAuthorizedPostingTranslator (§19.1bis, mismos 7 montos
+        // snapshot congelados en Authorize(), "nunca recalculados" — ver doc comment del
+        // traductor), pero nunca tuvo entrada en MinimalPostingRules: cancelar una devolución
+        // Authorized revertía Kardex/CxP/SupplierCredit con normalidad (CancelPurchaseReturnUseCases)
+        // pero el posting fallaba fail-closed "RULE_NOT_FOUND" en silencio — la cancelación quedaba
+        // sin JournalEntry reverso. Espejo EXACTO de "Purchases"/"PurchaseReturn" con cada línea
+        // invertida Debe↔Haber (mismo AmountKind, misma cuenta — el reverso contable de un asiento
+        // balanceado es siempre invertir la naturaleza de cada línea, nunca recalcular montos):
+        // AppliedToPayable/SupplierCredit vuelven a aumentar lo exigible del proveedor (Haber),
+        // HistoricalCost/TaxVat/TaxIce/TaxIrbpnr vuelven a aumentar el inventario/crédito tributario
+        // (Debe). CostVarianceDebit/CostVarianceCredit también se invierten — la variación de costo
+        // expensada (o reconocida) al autorizar se revierte exactamente al cancelar.
+        new(
+            "Purchases",
+            "PurchaseReturnCancelled",
+            [
+                new("2.1.01.001", AccountNature.Credit, PostingAmountKind.AppliedToPayable),
+                new("1.1.03.004", AccountNature.Credit, PostingAmountKind.SupplierCredit),
+                new("5.1.02.001", AccountNature.Credit, PostingAmountKind.CostVarianceDebit),
+                new("1.1.04.001", AccountNature.Debit, PostingAmountKind.HistoricalCost),
+                new("1.1.05.001", AccountNature.Debit, PostingAmountKind.TaxVat),
+                new("1.1.04.001", AccountNature.Debit, PostingAmountKind.TaxIce),
+                new("1.1.04.001", AccountNature.Debit, PostingAmountKind.TaxIrbpnr),
+                new("4.2.01.001", AccountNature.Debit, PostingAmountKind.CostVarianceCredit),
             ]
         ),
         new(

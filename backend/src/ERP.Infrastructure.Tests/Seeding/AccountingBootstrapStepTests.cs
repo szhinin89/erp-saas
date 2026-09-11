@@ -36,8 +36,12 @@ public sealed class AccountingBootstrapStepTests
     /// PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01: pasa de 10 a 11 — agrega
     /// "Purchases"/"PurchaseReturn", que nunca había sido sembrada (mismo tipo de gap que
     /// Expenses/DocumentConfirmed: el traductor real existía desde P0-02 Fase 6, la regla no).
+    ///
+    /// PURCHASE-RETURN-CANCELLED-POSTING-RULE-01: pasa de 11 a 12 — agrega
+    /// "Purchases"/"PurchaseReturnCancelled", mismo tipo de gap (traductor real desde P0-02 Fase 10,
+    /// regla nunca sembrada).
     /// </summary>
-    private const int ExpectedPostingRulesCount = 11;
+    private const int ExpectedPostingRulesCount = 12;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -300,6 +304,7 @@ public sealed class AccountingBootstrapStepTests
                     ("Retentions", "DocumentIssued"),
                     ("Expenses", "DocumentConfirmed"),
                     ("Purchases", "PurchaseReturn"),
+                    ("Purchases", "PurchaseReturnCancelled"),
                 }
             );
 
@@ -473,6 +478,97 @@ public sealed class AccountingBootstrapStepTests
         (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId)).Code.Value
             .Should()
             .Be("1.1.04.001", because: "Haber = Inventario mercaderías, por el costo histórico de lo devuelto");
+    }
+
+    /// <summary>
+    /// PURCHASE-RETURN-CANCELLED-POSTING-RULE-01 — la PostingRule de
+    /// "Purchases"/"PurchaseReturnCancelled" nunca existió en MinimalPostingRules, aunque
+    /// PurchaseReturnCancelledPostingTranslator existe desde P0-02 Fase 10: cancelar una devolución
+    /// Authorized revertía Kardex/CxP/SupplierCredit con normalidad, pero el asiento reverso nunca
+    /// se generaba (fail-closed "RULE_NOT_FOUND" silencioso). Confirma el espejo exacto de
+    /// "Purchases"/"PurchaseReturn": Debe Inventario/IVA/ICE/IRBPNR/Variación de costo, Haber CxP/
+    /// Crédito proveedor/Variación de costo — cada línea invertida Debe↔Haber respecto a la regla de
+    /// autorización, nunca los montos.
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_purchases_purchasereturncancelled_con_debe_inventario_y_haber_cxp()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturnCancelled"
+            );
+
+        rule.IsActive.Should().BeTrue();
+        rule.Lines.Should().HaveCount(8);
+
+        var debitLines = rule.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
+        debitLines.Should().HaveCount(5);
+
+        var inventoryLine = debitLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.HistoricalCost).Which;
+        (await db.Accounts.SingleAsync(a => a.Id == inventoryLine.AccountId)).Code.Value
+            .Should()
+            .Be("1.1.04.001", because: "Debe = Inventario mercaderías, vuelve a aumentar al cancelar la devolución");
+
+        var creditLines = rule.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
+        creditLines.Should().HaveCount(3);
+
+        var payableLine = creditLines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.AppliedToPayable).Which;
+        (await db.Accounts.SingleAsync(a => a.Id == payableLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001", because: "Haber = CxP proveedores, vuelve a aumentar lo exigible al cancelar");
+    }
+
+    /// <summary>
+    /// PURCHASE-RETURN-CANCELLED-POSTING-RULE-01 — garantiza que la regla de cancelación es el
+    /// espejo EXACTO de la de autorización: mismas 8 líneas (mismo AmountKind, misma cuenta), con
+    /// la naturaleza (Debe/Haber) de cada una invertida — nunca una cuenta o monto distinto. Si una
+    /// futura edición de cualquiera de las dos reglas rompe esta simetría, este test lo detecta.
+    /// </summary>
+    [Fact]
+    public async Task PostingRule_purchasereturncancelled_es_el_espejo_exacto_de_purchasereturn()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var authorizedRule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturn"
+            );
+        var cancelledRule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "PurchaseReturnCancelled"
+            );
+
+        var accountCodesById = (await db.Accounts.ToListAsync()).ToDictionary(a => a.Id, a => a.Code.Value);
+
+        var authorizedShape = authorizedRule
+            .Lines.Select(l => (l.AmountKind, AccountCode: accountCodesById[l.AccountId], InvertedNature: l.Nature == AccountNature.Debit ? AccountNature.Credit : AccountNature.Debit))
+            .OrderBy(x => x.AmountKind)
+            .ToList();
+        var cancelledShape = cancelledRule
+            .Lines.Select(l => (l.AmountKind, AccountCode: accountCodesById[l.AccountId], l.Nature))
+            .OrderBy(x => x.AmountKind)
+            .ToList();
+
+        cancelledShape
+            .Select(x => (x.AmountKind, x.AccountCode, x.Nature))
+            .Should()
+            .BeEquivalentTo(
+                authorizedShape.Select(x => (x.AmountKind, x.AccountCode, x.InvertedNature)),
+                because: "el reverso contable de un asiento balanceado invierte la naturaleza de cada línea, nunca la cuenta ni el AmountKind"
+            );
     }
 
     /// <summary>
