@@ -99,11 +99,19 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// contable simple de 2 líneas (§19.1, doc comment del traductor): Debe CxP proveedores (reduce lo
 /// exigible de la factura destino), Haber "1.1.03.004 Anticipos a proveedores" (reduce el crédito a
 /// favor ya reconocido como activo — misma cuenta que <c>SupplierCredit</c> usa en
-/// "Purchases/PurchaseReturn"). <c>Purchases/SupplierCreditApplicationReversed</c>
-/// (<c>SupplierCreditApplicationReversedPostingTranslator</c>, mismo <c>PostingFact</c> de una sola
-/// línea) tiene el mismo gap — mirror exacto con Debe/Haber invertidos — pero queda deliberadamente
-/// fuera de este ticket (alcance angosto explícito: "no mezclar"), registrado aparte como su propio
-/// gap de seguimiento.
+/// "Purchases/PurchaseReturn").
+///
+/// PURCHASE-SUPPLIER-CREDIT-APPLICATION-REVERSED-POSTING-RULE-01: mismo gap, ahora para el
+/// reverso — <c>Purchases/SupplierCreditApplicationReversed</c>.
+/// <c>SupplierCreditApplicationReversedPostingTranslator</c> (P0-02 Fase 7) siempre existió y
+/// siempre publicó el mismo <c>PostingFact</c> de una sola línea por lado (<c>GrandTotal</c>), pero
+/// tampoco tuvo entrada en <c>MinimalPostingRules</c>. Reversar una aplicación de
+/// <c>SupplierCredit</c> (<c>ReverseSupplierCreditApplicationUseCases</c>) revertía el movimiento y
+/// la CxP destino con normalidad, pero el asiento reverso nunca se generaba (fail-closed
+/// "RULE_NOT_FOUND" silencioso). Espejo EXACTO de "Purchases/SupplierCreditApplied" con cada línea
+/// invertida Debe↔Haber (mismo AmountKind, misma cuenta): Debe "1.1.03.004 Anticipos a proveedores"
+/// (vuelve a aumentar el crédito a favor), Haber "2.1.01.001 CxP proveedores" (vuelve a aumentar lo
+/// exigible de la factura destino).
 /// </summary>
 public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 {
@@ -399,15 +407,33 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // reduce lo exigible de la factura destino), Haber "1.1.03.004 Anticipos a proveedores"
         // (se reduce el crédito a favor ya reconocido como activo — misma cuenta que
         // "Purchases"/"PurchaseReturn" usa para SupplierCredit).
-        // "Purchases"/"SupplierCreditApplicationReversed" (SupplierCreditApplicationReversedPostingTranslator,
-        // mismo PostingFact de una línea) tiene el mismo gap — mirror exacto Debe↔Haber invertido —
-        // pero queda deliberadamente fuera de esta regla: registrado aparte, no mezclado aquí.
         new(
             "Purchases",
             "SupplierCreditApplied",
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
                 new("1.1.03.004", AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
+        // PURCHASE-SUPPLIER-CREDIT-APPLICATION-REVERSED-POSTING-RULE-01 — mismo gap, ahora para el
+        // reverso: "Purchases"/"SupplierCreditApplicationReversed"
+        // (SupplierCreditApplicationReversedPostingTranslator existe desde P0-02 Fase 7, mismo
+        // PostingFact de una sola línea por lado en GrandTotal) nunca tuvo entrada en
+        // MinimalPostingRules — reversar una aplicación (ReverseSupplierCreditApplicationUseCases)
+        // revertía Kardex-equivalente/CxP con normalidad (credit.ReverseApplication +
+        // payable.ReverseSupplierCredit no dependen del posting) pero el asiento reverso nunca se
+        // generaba, fail-closed "RULE_NOT_FOUND" en silencio. Espejo EXACTO de
+        // "Purchases"/"SupplierCreditApplied" con cada línea invertida Debe↔Haber (mismo AmountKind,
+        // misma cuenta — el reverso contable de un asiento balanceado siempre invierte la naturaleza
+        // de cada línea, nunca recalcula montos): Debe "1.1.03.004 Anticipos a proveedores" (vuelve a
+        // aumentar el crédito a favor), Haber "2.1.01.001 CxP proveedores" (vuelve a aumentar lo
+        // exigible de la factura destino).
+        new(
+            "Purchases",
+            "SupplierCreditApplicationReversed",
+            [
+                new("1.1.03.004", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
         new(

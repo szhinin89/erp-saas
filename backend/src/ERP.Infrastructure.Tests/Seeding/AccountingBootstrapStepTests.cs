@@ -44,8 +44,12 @@ public sealed class AccountingBootstrapStepTests
     /// PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01: pasa de 12 a 13 — agrega
     /// "Purchases"/"SupplierCreditApplied", mismo tipo de gap (traductor real desde P0-02 Fase 7,
     /// regla nunca sembrada).
+    ///
+    /// PURCHASE-SUPPLIER-CREDIT-APPLICATION-REVERSED-POSTING-RULE-01: pasa de 13 a 14 — agrega
+    /// "Purchases"/"SupplierCreditApplicationReversed", mismo tipo de gap (traductor real desde
+    /// P0-02 Fase 7, regla nunca sembrada).
     /// </summary>
-    private const int ExpectedPostingRulesCount = 13;
+    private const int ExpectedPostingRulesCount = 14;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -310,6 +314,7 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "PurchaseReturn"),
                     ("Purchases", "PurchaseReturnCancelled"),
                     ("Purchases", "SupplierCreditApplied"),
+                    ("Purchases", "SupplierCreditApplicationReversed"),
                 }
             );
 
@@ -613,6 +618,92 @@ public sealed class AccountingBootstrapStepTests
         (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
             .Should()
             .Be("1.1.03.004", because: "Haber = Anticipos a proveedores, se reduce el crédito a favor ya reconocido como activo");
+    }
+
+    /// <summary>
+    /// PURCHASE-SUPPLIER-CREDIT-APPLICATION-REVERSED-POSTING-RULE-01 — la PostingRule de
+    /// "Purchases"/"SupplierCreditApplicationReversed" nunca existió en MinimalPostingRules, aunque
+    /// SupplierCreditApplicationReversedPostingTranslator existe desde P0-02 Fase 7. Confirma el
+    /// hecho de una sola línea por lado (GrandTotal): Debe "1.1.03.004 Anticipos a proveedores"
+    /// (vuelve a aumentar el crédito a favor), Haber CxP proveedores (vuelve a aumentar lo exigible
+    /// de la factura destino).
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_purchases_suppliercreditapplicationreversed_con_debe_anticipos_y_haber_cxp()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"
+            );
+
+        rule.IsActive.Should().BeTrue();
+        rule.Lines.Should().HaveCount(2);
+
+        var debitLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Debit).Which;
+        debitLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == debitLine.AccountId)).Code.Value
+            .Should()
+            .Be("1.1.03.004", because: "Debe = Anticipos a proveedores, vuelve a aumentar el crédito a favor al revertir la aplicación");
+
+        var creditLine = rule.Lines.Should().ContainSingle(l => l.Nature == AccountNature.Credit).Which;
+        creditLine.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        (await db.Accounts.SingleAsync(a => a.Id == creditLine.AccountId)).Code.Value
+            .Should()
+            .Be("2.1.01.001", because: "Haber = CxP proveedores, vuelve a aumentar lo exigible de la factura destino al revertir");
+    }
+
+    /// <summary>
+    /// PURCHASE-SUPPLIER-CREDIT-APPLICATION-REVERSED-POSTING-RULE-01 — garantiza que la regla de
+    /// reverso es el espejo EXACTO de la de aplicación: mismas 2 líneas (mismo AmountKind, misma
+    /// cuenta), con la naturaleza (Debe/Haber) de cada una invertida — nunca una cuenta o monto
+    /// distinto. Si una futura edición de cualquiera de las dos reglas rompe esta simetría, este
+    /// test lo detecta.
+    /// </summary>
+    [Fact]
+    public async Task PostingRule_suppliercreditapplicationreversed_es_el_espejo_exacto_de_suppliercreditapplied()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var appliedRule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplied"
+            );
+        var reversedRule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "SupplierCreditApplicationReversed"
+            );
+
+        var accountCodesById = (await db.Accounts.ToListAsync()).ToDictionary(a => a.Id, a => a.Code.Value);
+
+        var appliedShape = appliedRule
+            .Lines.Select(l => (l.AmountKind, AccountCode: accountCodesById[l.AccountId], InvertedNature: l.Nature == AccountNature.Debit ? AccountNature.Credit : AccountNature.Debit))
+            .OrderBy(x => x.AmountKind)
+            .ToList();
+        var reversedShape = reversedRule
+            .Lines.Select(l => (l.AmountKind, AccountCode: accountCodesById[l.AccountId], l.Nature))
+            .OrderBy(x => x.AmountKind)
+            .ToList();
+
+        reversedShape
+            .Select(x => (x.AmountKind, x.AccountCode, x.Nature))
+            .Should()
+            .BeEquivalentTo(
+                appliedShape.Select(x => (x.AmountKind, x.AccountCode, x.InvertedNature)),
+                because: "el reverso contable de un asiento balanceado invierte la naturaleza de cada línea, nunca la cuenta ni el AmountKind"
+            );
     }
 
     /// <summary>
