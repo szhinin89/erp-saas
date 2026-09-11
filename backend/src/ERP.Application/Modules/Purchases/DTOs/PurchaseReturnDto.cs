@@ -21,7 +21,15 @@ public sealed record PurchaseReturnDto(
     string? CancellationReason,
     IReadOnlyList<PurchaseReturnDetailDto> Lines,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — solo poblados por GetPurchaseReturnByIdHandler
+    // (la vista de detalle de solo lectura); el resto de handlers (create/update/authorize/cancel)
+    // siguen usando Map.ToDto sin tocarlos, así que estos quedan en null ahí — nunca afecta la
+    // lógica de autorización/cancelación/reversa, es puramente un dato de presentación adicional
+    // resuelto desde PurchaseReceptionDocument (mismo agregado que SupplierCreditNoteDocumentId
+    // ya referencia, ver RegisterAndLinkSupplierCreditNoteHandler).
+    string? SupplierCreditNoteInvoiceNumber = null,
+    string? SupplierCreditNoteAccessKey = null
 );
 
 /// <summary>P0-02 Fase 5 — proyección de lectura de <c>PurchaseReturnDetail</c>.</summary>
@@ -30,7 +38,13 @@ public sealed record PurchaseReturnDetailDto(
     Guid OriginalInvoiceDetailId,
     Guid ItemId,
     decimal Quantity,
-    Guid WarehouseId
+    Guid WarehouseId,
+    // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — solo poblados por GetPurchaseReturnByIdHandler,
+    // ver nota en PurchaseReturnDto. Nunca inventados: si el ítem/bodega no se pudo resolver (p. ej.
+    // eliminado), quedan en null y el frontend cae de vuelta al Id crudo.
+    string? ItemSku = null,
+    string? ItemName = null,
+    string? WarehouseName = null
 );
 
 /// <summary>P0-02 Fase 5 — resultado paginado de <c>GetPurchaseReturnListQuery</c>.</summary>

@@ -44,11 +44,30 @@ export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Pr
   });
 
   if (purchaseReturn.fiscalStatus === "SupplierCreditNoteRegistered") {
+    // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — número/clave legibles en vez del Id crudo del
+    // documento; si por alguna razón no se pudieron resolver, cae de vuelta al Id (nunca oculta
+    // que hay una NC vinculada).
+    const hasReadableInfo = Boolean(purchaseReturn.supplierCreditNoteInvoiceNumber);
     return (
       <ZHCard title="Nota de Crédito del proveedor">
         <p className="sr-reason-readonly">
-          Nota de Crédito vinculada — documento{" "}
-          {purchaseReturn.supplierCreditNoteDocumentId}.
+          {hasReadableInfo ? (
+            <>
+              Nota de Crédito vinculada — N.º{" "}
+              <strong>{purchaseReturn.supplierCreditNoteInvoiceNumber}</strong>
+              {purchaseReturn.supplierCreditNoteAccessKey && (
+                <>
+                  {" "}
+                  · Clave de acceso: <strong>{purchaseReturn.supplierCreditNoteAccessKey}</strong>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              Nota de Crédito vinculada — documento{" "}
+              {purchaseReturn.supplierCreditNoteDocumentId}.
+            </>
+          )}
         </p>
       </ZHCard>
     );

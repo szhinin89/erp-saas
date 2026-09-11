@@ -70,10 +70,34 @@ const DRAFT_RETURN = {
       itemId: "item-1",
       quantity: 2,
       warehouseId: "wh-1",
+      itemSku: null,
+      itemName: null,
+      warehouseName: null,
     },
   ],
   createdAt: "2026-08-01T10:00:00Z",
   updatedAt: null,
+  supplierCreditNoteInvoiceNumber: null,
+  supplierCreditNoteAccessKey: null,
+};
+
+const AUTHORIZED_RETURN_WITH_NAMES = {
+  ...DRAFT_RETURN,
+  status: "Authorized",
+  fiscalStatus: "NotApplicable",
+  returnNumber: "DEV-000001",
+  lines: [
+    {
+      id: "line-1",
+      originalInvoiceDetailId: "detail-1",
+      itemId: "item-1",
+      quantity: 2,
+      warehouseId: "wh-1",
+      itemSku: "SKU-001",
+      itemName: "Producto de prueba",
+      warehouseName: "Bodega Principal",
+    },
+  ],
 };
 
 const INVOICE = {
@@ -231,5 +255,70 @@ describe("PurchaseReturnDetailPage — autorizar devolución: confirmación y fe
     confirmSpy.mockRestore();
     promptSpy.mockRestore();
     alertSpy.mockRestore();
+  });
+});
+
+describe("PurchaseReturnDetailPage — nombres legibles en el detalle (PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01)", () => {
+  it("muestra SKU + nombre de producto y nombre de bodega cuando el backend los resuelve", async () => {
+    vi.mocked(purchaseReturnService.getById).mockResolvedValue(
+      AUTHORIZED_RETURN_WITH_NAMES,
+    );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("SKU-001 — Producto de prueba")).toBeTruthy();
+      expect(screen.getByText("Bodega Principal")).toBeTruthy();
+    });
+    expect(screen.queryByText("item-1")).toBeNull();
+    expect(screen.queryByText("wh-1")).toBeNull();
+  });
+
+  it("cae de vuelta al Id crudo si el backend no pudo resolver el nombre (nunca inventa un nombre)", async () => {
+    vi.mocked(purchaseReturnService.getById).mockResolvedValue({
+      ...AUTHORIZED_RETURN_WITH_NAMES,
+      lines: [
+        {
+          id: "line-1",
+          originalInvoiceDetailId: "detail-1",
+          itemId: "item-1",
+          quantity: 2,
+          warehouseId: "wh-1",
+          itemSku: null,
+          itemName: null,
+          warehouseName: null,
+        },
+      ],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("item-1")).toBeTruthy();
+      expect(screen.getByText("wh-1")).toBeTruthy();
+    });
+  });
+
+  it("re-consulta getById tras autorizar para refrescar nombres, en vez de usar la respuesta cruda de authorize", async () => {
+    vi.mocked(purchaseReturnService.getById).mockResolvedValueOnce(DRAFT_RETURN);
+    vi.mocked(purchaseReturnService.authorize).mockResolvedValue({
+      ...DRAFT_RETURN,
+      status: "Authorized",
+      returnNumber: "DEV-000001",
+    });
+    vi.mocked(purchaseReturnService.getById).mockResolvedValueOnce(
+      AUTHORIZED_RETURN_WITH_NAMES,
+    );
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Autorizar devolución" })).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Autorizar devolución" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("SKU-001 — Producto de prueba")).toBeTruthy();
+    });
+    expect(purchaseReturnService.getById).toHaveBeenCalledTimes(2);
   });
 });

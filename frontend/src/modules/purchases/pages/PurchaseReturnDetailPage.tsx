@@ -175,7 +175,11 @@ export function PurchaseReturnDetailPage() {
 
     setAuthorizing(true);
     try {
-      const dto = await purchaseReturnService.authorize(editing.id, crypto.randomUUID());
+      await purchaseReturnService.authorize(editing.id, crypto.randomUUID());
+      // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — vuelve a pedir el detalle en vez de usar
+      // directamente la respuesta de authorize: solo GetPurchaseReturnByIdQuery resuelve
+      // SKU/nombre de producto y nombre de bodega para las líneas recién visibles.
+      const dto = await purchaseReturnService.getById(editing.id);
       setEditing(dto);
       message.success("Devolución autorizada correctamente.");
     } catch (err: unknown) {
@@ -200,10 +204,13 @@ export function PurchaseReturnDetailPage() {
     });
     if (!confirmed) return;
     try {
-      const dto = await purchaseReturnService.cancel(editing.id, {
+      await purchaseReturnService.cancel(editing.id, {
         reason: values.reason,
         clientRequestId: crypto.randomUUID(),
       });
+      // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — mismo criterio que handleAuthorize: solo
+      // GetPurchaseReturnByIdQuery resuelve SKU/nombre de producto y nombre de bodega.
+      const dto = await purchaseReturnService.getById(editing.id);
       setEditing(dto);
       setCancelling(false);
       message.success("Devolución cancelada.");
@@ -242,9 +249,16 @@ export function PurchaseReturnDetailPage() {
   const isCancelled = editing.status === "Cancelled";
 
   const returnedLineColumns: ZHDataTableColumn<PurchaseReturnDto["lines"][number]>[] = [
-    { key: "product", header: "Producto", render: (line) => line.itemId },
+    {
+      key: "product",
+      header: "Producto",
+      render: (line) =>
+        line.itemName
+          ? `${line.itemSku ? `${line.itemSku} — ` : ""}${line.itemName}`
+          : line.itemId,
+    },
     { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => line.quantity },
-    { key: "warehouse", header: "Bodega", render: (line) => line.warehouseId },
+    { key: "warehouse", header: "Bodega", render: (line) => line.warehouseName ?? line.warehouseId },
   ];
 
   return (

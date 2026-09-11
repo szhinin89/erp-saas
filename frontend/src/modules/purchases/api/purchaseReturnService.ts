@@ -10,6 +10,11 @@ export interface PurchaseReturnDetailDto {
   itemId: string;
   quantity: number;
   warehouseId: string;
+  /** PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — solo presentes cuando el ítem/bodega se pudo
+   * resolver; si es null, el detalle cae de vuelta al Id crudo (nunca inventa un nombre). */
+  itemSku: string | null;
+  itemName: string | null;
+  warehouseName: string | null;
 }
 
 export interface PurchaseReturnDto {
@@ -33,6 +38,11 @@ export interface PurchaseReturnDto {
   lines: PurchaseReturnDetailDto[];
   createdAt: string;
   updatedAt: string | null;
+  /** PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — número/clave de la NC vinculada, resueltos desde
+   * el documento de recepción que respalda supplierCreditNoteDocumentId; null si no se pudo
+   * resolver o si aún no hay NC vinculada. */
+  supplierCreditNoteInvoiceNumber: string | null;
+  supplierCreditNoteAccessKey: string | null;
 }
 
 export interface PurchaseReturnListResultDto {
