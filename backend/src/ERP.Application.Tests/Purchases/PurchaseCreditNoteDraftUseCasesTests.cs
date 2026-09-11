@@ -301,6 +301,44 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
     }
 
     [Fact]
+    public async Task CreateDraft_rechaza_factura_Cancelled_con_mensaje_claro()
+    {
+        // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — si la resolución de
+        // "factura afectada" (PurchaseReceptionVerifier / GetBySupplierAndInvoiceNumberAsync)
+        // igual llegara a resolver una compra Cancelled (p. ej. un id viejo persistido en el
+        // frontend), este es el candado fail-closed que ya existía y debe seguir rechazando con
+        // un mensaje claro — nunca crear la NC contra una compra anulada.
+        var f = BuildFixture();
+        f.Invoice.Cancel("Anulada por error", UserId);
+        var m = new Mocks(f);
+        var handler = m.BuildCreateHandler();
+
+        var result = await handler.Handle(
+            new CreateDraftPurchaseCreditNoteCommand(
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000005",
+                null,
+                null,
+                null,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "Descuento por volumen",
+                OneLine()
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Solo se pueden registrar notas de crédito sobre facturas de compra confirmadas.");
+        m.CreditNoteRepo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public void CreateDraft_exige_ApplicationType_valido()
     {
         var validator = new CreateDraftPurchaseCreditNoteValidator();

@@ -63,6 +63,14 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
+    // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — usado por
+    // PurchaseReceptionVerifier para resolver la "factura afectada" que habilita "Procesar NC"
+    // desde Recepción: una compra Cancelled es historial, nunca debe poder ser la factura afectada
+    // de una NC nueva. Excluir Cancelled aquí es suficiente para desambiguar sin necesidad de un
+    // criterio de desempate explícito — uq_purchase_invoices_tenant_company_supplier_number ya es
+    // un índice único FILTRADO (status <> 3, ver RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01): a
+    // lo sumo una fila no-Cancelled puede existir para el mismo (supplier, invoiceNumber), así que
+    // nunca hay ambigüedad entre "cuál Confirmed elegir" — la que exista, si existe, ya es única.
     public Task<PurchaseInvoice?> GetBySupplierAndInvoiceNumberAsync(
         Guid tenantId,
         Guid supplierId,
@@ -71,7 +79,10 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     ) =>
         Scoped(tenantId)
             .FirstOrDefaultAsync(
-                x => x.SupplierId == supplierId && x.InvoiceNumber == invoiceNumber,
+                x =>
+                    x.SupplierId == supplierId
+                    && x.InvoiceNumber == invoiceNumber
+                    && x.Status != PurchaseStatus.Cancelled,
                 ct
             );
 

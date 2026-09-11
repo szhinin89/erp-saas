@@ -33,6 +33,8 @@ public interface IPurchaseInvoiceRepository
     /// nota de crédito afecta (<c>NUMERO_DOCUMENTO_MODIFICADO</c>) ya está ingresada en el ERP — a
     /// diferencia de <see cref="GetByAccessKeyAsync"/>, la NC no trae la clave de acceso de la
     /// factura afectada, solo su número, por lo que se busca por proveedor + número de documento.
+    /// PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — ignora Cancelled: una compra
+    /// anulada es historial, nunca puede ser la factura afectada de una NC nueva.
     /// </summary>
     Task<PurchaseInvoice?> GetBySupplierAndInvoiceNumberAsync(
         Guid tenantId,
