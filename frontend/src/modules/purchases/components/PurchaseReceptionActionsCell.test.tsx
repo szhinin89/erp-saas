@@ -73,6 +73,39 @@ describe("Purchase reception document actions", () => {
       "noopener,noreferrer",
     );
   });
+  it("offers reprocessing and the cancelled credit note history when the only prior NC was cancelled", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({
+      creditNoteExists: false,
+      creditNoteId: null,
+      cancelledCreditNoteId: "cn-cancelled-1",
+    });
+
+    expect(screen.getByText("NC anulada")).toBeTruthy();
+    expect(screen.queryByText("NC ya procesada")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Procesar NC" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Procesar nuevamente" }));
+    expect(open).toHaveBeenCalledWith(
+      "/purchases/credit-notes/new?invoiceId=invoice-1&receptionDocumentId=nc-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver NC anulada" }));
+    expect(open).toHaveBeenCalledWith(
+      "/purchases/credit-notes/cn-cancelled-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+  it("shows the plain first-time Procesar NC button when there is no prior credit note at all", () => {
+    show({ creditNoteExists: false, creditNoteId: null, cancelledCreditNoteId: null });
+
+    expect(screen.getByRole("button", { name: "Procesar NC" })).toBeTruthy();
+    expect(screen.queryByText("NC anulada")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ver NC anulada" })).toBeNull();
+  });
   it("prioritizes the already-processed state over affectedPurchaseExists", () => {
     show({
       creditNoteExists: true,

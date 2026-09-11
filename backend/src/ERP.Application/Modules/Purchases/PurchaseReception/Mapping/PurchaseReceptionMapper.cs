@@ -11,7 +11,8 @@ public static class PurchaseReceptionMapper
         PurchaseReceptionVerifiedItem item,
         PurchaseReceptionDocument document,
         bool creditNoteExists = false,
-        Guid? creditNoteId = null
+        Guid? creditNoteId = null,
+        Guid? cancelledCreditNoteId = null
     ) =>
         new(
             item.Record.SupplierRuc,
@@ -39,7 +40,8 @@ public static class PurchaseReceptionMapper
             document.ProcessingNotes,
             item.ExpenseExists,
             creditNoteExists,
-            creditNoteId
+            creditNoteId,
+            cancelledCreditNoteId
         );
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>

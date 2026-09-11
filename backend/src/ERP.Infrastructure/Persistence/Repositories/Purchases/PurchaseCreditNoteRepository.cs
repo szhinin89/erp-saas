@@ -97,13 +97,20 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
         );
     }
 
+    // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — una NC Cancelled nunca cuenta como
+    // duplicado: solo Draft/Authorized ("activa") bloquea un nuevo intento contra el mismo
+    // receptionDocumentId (regla de negocio — el índice único de BD refleja lo mismo con un filtro
+    // sobre Status, ver PurchaseCreditNoteConfiguration).
     public Task<bool> ExistsByReceptionDocumentIdAsync(
         Guid tenantId,
         Guid receptionDocumentId,
         CancellationToken ct = default
     ) =>
         _db.PurchaseCreditNotes.AnyAsync(
-            x => x.TenantId == tenantId && x.ReceptionDocumentId == receptionDocumentId,
+            x =>
+                x.TenantId == tenantId
+                && x.ReceptionDocumentId == receptionDocumentId
+                && x.Status != PurchaseCreditNoteStatus.Cancelled,
             ct
         );
 
@@ -114,7 +121,34 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
     ) =>
         _db
             .PurchaseCreditNotes.AsNoTracking()
-            .Where(x => x.TenantId == tenantId && x.ReceptionDocumentId == receptionDocumentId)
+            .Where(x =>
+                x.TenantId == tenantId
+                && x.ReceptionDocumentId == receptionDocumentId
+                && x.Status != PurchaseCreditNoteStatus.Cancelled
+            )
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
+
+    /// <summary>
+    /// PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la NC Cancelled más reciente para
+    /// este receptionDocumentId, si existe, para que la UI de Recepción ofrezca "Ver NC anulada"
+    /// (historial) sin bloquear "Procesar nuevamente". Puede haber más de una a lo largo del tiempo
+    /// (cada ciclo procesar→cancelar crea una NC nueva, nunca reutiliza la anterior) — se devuelve
+    /// siempre la última.
+    /// </summary>
+    public Task<Guid?> GetLatestCancelledIdByReceptionDocumentIdAsync(
+        Guid tenantId,
+        Guid receptionDocumentId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .PurchaseCreditNotes.AsNoTracking()
+            .Where(x =>
+                x.TenantId == tenantId
+                && x.ReceptionDocumentId == receptionDocumentId
+                && x.Status == PurchaseCreditNoteStatus.Cancelled
+            )
+            .OrderByDescending(x => x.CancelledAtUtc)
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 

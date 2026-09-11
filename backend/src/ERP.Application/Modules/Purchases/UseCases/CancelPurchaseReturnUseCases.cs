@@ -8,6 +8,7 @@ using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
 using System.Security.Cryptography;
@@ -60,6 +61,7 @@ public sealed class CancelPurchaseReturnHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
     private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
+    private readonly IPurchaseReceptionDocumentRepository? _receptionRepo;
 
     public CancelPurchaseReturnHandler(
         IPurchaseReturnRepository returnRepo,
@@ -71,7 +73,8 @@ public sealed class CancelPurchaseReturnHandler
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
         ICurrentUser u,
-        IPurchaseCreditNoteRepository? creditNoteRepo = null
+        IPurchaseCreditNoteRepository? creditNoteRepo = null,
+        IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
     {
         _returnRepo = returnRepo;
@@ -84,6 +87,7 @@ public sealed class CancelPurchaseReturnHandler
         _t = t;
         _u = u;
         _creditNoteRepo = creditNoteRepo;
+        _receptionRepo = receptionRepo;
     }
 
     public async Task<Result<PurchaseReturnDto>> Handle(
@@ -265,6 +269,17 @@ public sealed class CancelPurchaseReturnHandler
                 var creditNote = _creditNoteRepo is null ? null
                     : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
                 creditNote?.CancelLinkedReturn(purchaseReturn, uid);
+
+                // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la NC/XML de recepción que
+                // originó esta devolución queda libre para "Procesar NC" de nuevo (crea una NC/
+                // devolución nueva y limpia, nunca reutiliza la cancelada). Sin esto, el documento de
+                // recepción se quedaba permanentemente "Procesado" (PurchaseId apuntando a la factura
+                // afectada) aunque su única NC hubiera sido anulada — bloqueando cualquier reintento.
+                if (creditNote?.ReceptionDocumentId is { } receptionDocumentId && _receptionRepo is not null)
+                {
+                    var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
+                    receptionDoc?.UnmarkProcessed(uid);
+                }
             }
             catch (InvalidOperationException ex)
             {

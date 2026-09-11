@@ -10,6 +10,10 @@ using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
 using Moq;
 
@@ -161,10 +165,33 @@ public sealed class CancelPurchaseReturnUseCasesTests
         public Mock<IStockRepository> StockRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
+        public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
+        public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public List<decimal> AppendedQuantities { get; } = new();
 
-        public Mocks(Fixture f, SupplierCredit? credit = null)
+        public Mocks(
+            Fixture f,
+            SupplierCredit? credit = null,
+            PurchaseCreditNote? linkedCreditNote = null,
+            PurchaseReceptionDocument? linkedReception = null
+        )
         {
+            CreditNoteRepo
+                .Setup(r =>
+                    r.GetByLinkedPurchaseReturnIdAsync(
+                        TenantId,
+                        f.Return.Id,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(linkedCreditNote);
+            if (linkedReception is not null)
+                ReceptionRepo
+                    .Setup(r =>
+                        r.GetByIdAsync(TenantId, linkedReception.Id, It.IsAny<CancellationToken>())
+                    )
+                    .ReturnsAsync(linkedReception);
+
             ReturnRepo
                 .Setup(r =>
                     r.GetPurchaseInvoiceIdAsync(
@@ -297,7 +324,9 @@ public sealed class CancelPurchaseReturnUseCasesTests
                 Uow.Object,
                 DbEx.Object,
                 t.Object,
-                u.Object
+                u.Object,
+                CreditNoteRepo.Object,
+                ReceptionRepo.Object
             );
         }
     }
@@ -477,5 +506,135 @@ public sealed class CancelPurchaseReturnUseCasesTests
 
         second.IsSuccess.Should().BeFalse();
         second.Error.Should().Contain("ya está cancelada");
+    }
+
+    // ── PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 ────────────────────────────────
+
+    private static PurchaseReceptionDocument BuildProcessedReceptionDocument(Guid purchaseId)
+    {
+        var doc = PurchaseReceptionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            PurchaseReceptionSourceDocType.CreditNote,
+            "1791352688001",
+            "Proveedor Test",
+            SupplierId,
+            $"ACCESSKEY-{Guid.NewGuid():N}",
+            "001-001-000010350",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            null,
+            10m,
+            1.5m,
+            11.5m,
+            UserId
+        );
+        doc.AttachSriAuthorization(
+            "AUTH-1",
+            DateTime.UtcNow,
+            "<notaCredito/>",
+            DateTime.UtcNow,
+            [],
+            UserId,
+            docTypeCode: "04",
+            sriPaymentMethodCode: "20",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Pending,
+                0,
+                0,
+                null
+            )
+        );
+        doc.MarkProcessed(purchaseId, UserId);
+        return doc;
+    }
+
+    private static PurchaseCreditNote BuildLinkedActiveCreditNote(
+        Fixture f,
+        Guid receptionDocumentId
+    )
+    {
+        var line = f.Return.Lines.Single();
+        var note = PurchaseCreditNote.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            f.Invoice.Id,
+            receptionDocumentId,
+            PurchaseCreditNoteApplicationType.Return,
+            "001-001-000010350",
+            null,
+            null,
+            null,
+            f.Invoice.IssueDate,
+            "Devolucion",
+            [
+                new PurchaseCreditNote.DraftLineInput(
+                    "Producto",
+                    line.ReturnedSubtotal!.Value,
+                    line.VatCode,
+                    line.VatRate,
+                    line.ReturnedVatAmount!.Value,
+                    line.OriginalInvoiceDetailId,
+                    line.Quantity,
+                    line.ReturnedIceAmount ?? 0m,
+                    line.IrbpnrAmount
+                ),
+            ],
+            [],
+            UserId,
+            Guid.NewGuid(),
+            "create-note-hash"
+        );
+        note.LinkPurchaseReturn(f.Return.Id, UserId);
+        note.CompleteLinkedReturn(f.Return, UserId);
+        f.Return.RegisterLinkedCreditNote(note, UserId);
+        return note;
+    }
+
+    [Fact]
+    public async Task Cancelar_Authorized_con_NC_de_recepcion_vinculada_cancela_la_NC_y_libera_la_recepcion()
+    {
+        var (f, _) = BuildAuthorizedFixture(paidAmount: 0m);
+        var receptionDoc = BuildProcessedReceptionDocument(f.Invoice.Id);
+        var creditNote = BuildLinkedActiveCreditNote(f, receptionDoc.Id);
+        var m = new Mocks(f, linkedCreditNote: creditNote, linkedReception: receptionDoc);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new CancelPurchaseReturnCommand(f.Return.Id, "NC anulada por error", Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.Return.Status.Should().Be(PurchaseReturnStatus.Cancelled);
+        creditNote.Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
+
+        // El documento de recepción queda libre para "Procesar NC" de nuevo — nunca se borra, solo
+        // se revierte su vínculo con la compra consumida (mantiene historial vía la NC Cancelled).
+        receptionDoc.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        receptionDoc.PurchaseId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Cancelar_Authorized_sin_NC_de_recepcion_vinculada_no_toca_ninguna_recepcion()
+    {
+        // Devolución sin NC/XML de recepción de por medio (flujo "por líneas" normal) — no debe
+        // intentar cargar ni mutar ningún PurchaseReceptionDocument.
+        var (f, _) = BuildAuthorizedFixture(paidAmount: 0m);
+        var m = new Mocks(f);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new CancelPurchaseReturnCommand(f.Return.Id, "Ya no aplica", Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        m.ReceptionRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

@@ -220,6 +220,27 @@ public sealed class PurchaseReceptionDocument
         SetUpdated(updatedBy);
     }
 
+    /// <summary>
+    /// PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — revierte <see cref="MarkProcessed"/>:
+    /// vuelve a <c>Verified</c> y limpia <see cref="PurchaseId"/>. Único caso de uso hoy: una NC de
+    /// compra (<c>PurchaseCreditNote</c> tipo Return) vinculada a este documento fue cancelada junto
+    /// con su <c>PurchaseReturn</c> (<c>CancelPurchaseReturnUseCases</c>) — el documento debe volver
+    /// a estar disponible para "Procesar NC" (crea una NC/devolución nueva y limpia, nunca reutiliza
+    /// la cancelada). No es lo mismo que <see cref="Cancel"/> (anula el documento por completo, sin
+    /// vuelta atrás) — esto solo deshace el vínculo con la compra consumida, el documento sigue
+    /// existiendo y siendo reprocesable.
+    /// </summary>
+    public void UnmarkProcessed(Guid updatedBy)
+    {
+        if (Status != PurchaseReceptionDocumentStatus.Processed)
+            throw new InvalidOperationException(
+                "Solo se puede revertir un documento que esté en estado Procesado."
+            );
+        PurchaseId = null;
+        Status = PurchaseReceptionDocumentStatus.Verified;
+        SetUpdated(updatedBy);
+    }
+
     public void Cancel(Guid updatedBy)
     {
         if (Status == PurchaseReceptionDocumentStatus.Processed)

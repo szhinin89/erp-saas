@@ -148,8 +148,20 @@ export function PurchaseReceptionActionsCell({
     }
 
     if (row.affectedPurchaseExists && row.affectedPurchaseId) {
+      // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la única NC previa de esta
+      // recepción está Cancelled (nunca bloquea, ver creditNoteExists arriba): se ofrece
+      // "Procesar nuevamente" (idéntico flujo de creación, crea una NC/devolución nueva y
+      // limpia — nunca reutiliza la anulada) junto con "Ver NC anulada" para conservar el
+      // historial, en vez del botón "Procesar NC" de primera vez.
+      const isReprocessing = Boolean(row.cancelledCreditNoteId);
       return (
         <div className="pur-actions-cell">
+          {isReprocessing && (
+            <Badge
+              variant="warning"
+              label={t("purchases.creditNote.actions.ncCancelled", "NC anulada")}
+            />
+          )}
           <ZHBtn
             variant="primary"
             size="xs"
@@ -163,8 +175,26 @@ export function PurchaseReceptionActionsCell({
               )
             }
           >
-            {t("purchases.creditNote.actions.processNc", "Procesar NC")}
+            {isReprocessing
+              ? t("purchases.creditNote.actions.reprocessNc", "Procesar nuevamente")
+              : t("purchases.creditNote.actions.processNc", "Procesar NC")}
           </ZHBtn>
+          {isReprocessing && (
+            <ZHBtn
+              variant="secondary"
+              size="xs"
+              type="button"
+              onClick={() =>
+                window.open(
+                  `/purchases/credit-notes/${row.cancelledCreditNoteId}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+            >
+              {t("purchases.creditNote.actions.viewCancelledNc", "Ver NC anulada")}
+            </ZHBtn>
+          )}
           {consultXmlButton}
           {viewXmlButton}
         </div>

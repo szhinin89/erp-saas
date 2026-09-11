@@ -423,4 +423,71 @@ public sealed class PurchaseReceptionDocumentTests
 
         act.Should().Throw<InvalidOperationException>();
     }
+
+    // ── MarkProcessed / UnmarkProcessed (PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01) ──
+
+    private static PurchaseReceptionDocument VerifiedDocument()
+    {
+        var document = SampleDocument();
+        document.AttachSriAuthorization(
+            "AUTH-1",
+            DateTime.UtcNow,
+            "<factura/>",
+            DateTime.UtcNow,
+            [],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "20",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Pending,
+                0,
+                0,
+                null
+            )
+        );
+        return document;
+    }
+
+    [Fact]
+    public void UnmarkProcessed_reverts_to_Verified_and_clears_PurchaseId()
+    {
+        var document = VerifiedDocument();
+        var purchaseId = Guid.NewGuid();
+        document.MarkProcessed(purchaseId, UserId);
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Processed);
+        document.PurchaseId.Should().Be(purchaseId);
+
+        document.UnmarkProcessed(UserId);
+
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        document.PurchaseId.Should().BeNull();
+    }
+
+    [Fact]
+    public void UnmarkProcessed_allows_MarkProcessed_again_afterwards()
+    {
+        // El caso real: NC cancelada libera la recepción para "Procesar NC" de nuevo, que crea una
+        // NC/devolución nueva y limpia (nunca reutiliza la anulada) — el documento debe volver a
+        // aceptar MarkProcessed sin quejarse de un estado previo.
+        var document = VerifiedDocument();
+        document.MarkProcessed(Guid.NewGuid(), UserId);
+        document.UnmarkProcessed(UserId);
+
+        var newPurchaseId = Guid.NewGuid();
+        var act = () => document.MarkProcessed(newPurchaseId, UserId);
+
+        act.Should().NotThrow();
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Processed);
+        document.PurchaseId.Should().Be(newPurchaseId);
+    }
+
+    [Fact]
+    public void UnmarkProcessed_rejects_a_document_that_is_not_Processed()
+    {
+        var document = VerifiedDocument();
+
+        var act = () => document.UnmarkProcessed(UserId);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }

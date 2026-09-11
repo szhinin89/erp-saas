@@ -42,12 +42,24 @@ public interface IPurchaseCreditNoteRepository
 
     /// <summary>
     /// PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — descubrimiento mínimo, sin tracking, del
-    /// Id de la <see cref="Entities.PurchaseCreditNote"/> ya vinculada a esta recepción (si existe).
-    /// Usado por el listado de Recepción para ofrecer "Ver NC existente" en vez de reabrir el
-    /// formulario de creación — nunca carga el agregado completo, mismo criterio que
-    /// <see cref="GetPurchaseInvoiceIdAsync"/>.
+    /// Id de la <see cref="Entities.PurchaseCreditNote"/> ACTIVA (Draft/Authorized) ya vinculada a
+    /// esta recepción, si existe — una NC <c>Cancelled</c> nunca cuenta
+    /// (PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01). Usado por el listado de Recepción
+    /// para ofrecer "Ver NC existente" en vez de reabrir el formulario de creación — nunca carga el
+    /// agregado completo, mismo criterio que <see cref="GetPurchaseInvoiceIdAsync"/>.
     /// </summary>
     Task<Guid?> GetIdByReceptionDocumentIdAsync(
+        Guid tenantId,
+        Guid receptionDocumentId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — Id de la NC <c>Cancelled</c> más
+    /// reciente para esta recepción, si existe (nunca la activa) — para que la UI de Recepción
+    /// ofrezca "Ver NC anulada" (historial) mientras permite "Procesar nuevamente".
+    /// </summary>
+    Task<Guid?> GetLatestCancelledIdByReceptionDocumentIdAsync(
         Guid tenantId,
         Guid receptionDocumentId,
         CancellationToken ct = default

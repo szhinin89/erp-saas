@@ -92,10 +92,15 @@ export interface PurchaseReceptionItem {
    * "Consultar XML" (el TXT del SRI no lo trae); null hasta entonces o si el XML no lo declara. */
   supplierTradeName: string | null;
   /** PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — solo notas de crédito: si esta recepción
-   * ya está vinculada a un PurchaseCreditNote (1:1). False/undefined en Factura/ND. */
+   * ya está vinculada a un PurchaseCreditNote ACTIVA (Draft/Authorized). False/undefined en
+   * Factura/ND o cuando la única NC previa está Cancelled. */
   creditNoteExists?: boolean;
-  /** Id de la NC ya vinculada, para abrirla en `/purchases/credit-notes/<id>` — null si no aplica. */
+  /** Id de la NC activa vinculada, para abrirla en `/purchases/credit-notes/<id>` — null si no aplica. */
   creditNoteId?: string | null;
+  /** PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — Id de la NC Cancelled más reciente,
+   * solo presente cuando NO hay ninguna activa (creditNoteExists=false) — habilita "Procesar
+   * nuevamente" + "Ver NC anulada" en vez de "Procesar NC" de primera vez. */
+  cancelledCreditNoteId?: string | null;
 }
 
 export interface PurchaseReceptionImportResult {

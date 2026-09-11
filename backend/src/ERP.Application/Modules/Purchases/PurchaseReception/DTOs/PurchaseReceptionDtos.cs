@@ -34,11 +34,17 @@ public sealed record PurchaseReceptionItemDto(
     // Factura — false en NC/ND.
     bool ExpenseExists,
     // PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — si esta recepción (DocumentId) ya está
-    // vinculada a un PurchaseCreditNote (1:1, ReceptionDocumentId único). Solo aplica a notas de
-    // crédito — false/null en Factura/ND. Bloquea "Procesar NC" en la UI (el backend ya lo rechaza
-    // por constraint único; esto evita que el usuario llegue a intentarlo).
+    // vinculada a un PurchaseCreditNote ACTIVA (Draft/Authorized; 1:1 mientras esté activa,
+    // ReceptionDocumentId único filtrado). Solo aplica a notas de crédito — false/null en
+    // Factura/ND. Bloquea "Procesar NC" en la UI (el backend ya lo rechaza por constraint único;
+    // esto evita que el usuario llegue a intentarlo).
     bool CreditNoteExists = false,
-    Guid? CreditNoteId = null
+    Guid? CreditNoteId = null,
+    // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — Id de la NC Cancelled más reciente
+    // para esta recepción, cuando NO hay ninguna activa (CreditNoteExists=false) — historial para
+    // "Ver NC anulada". Null si nunca hubo una NC cancelada para esta recepción, o si hay una
+    // activa (en ese caso la UI muestra "NC ya procesada"/"Ver NC existente" en su lugar).
+    Guid? CancelledCreditNoteId = null
 );
 
 public sealed record PurchaseReceptionImportResultDto(

@@ -322,6 +322,180 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Duplicar_ReceptionDocumentId_con_la_primera_NC_Cancelled_no_colisiona()
+    {
+        // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — el índice único filtra Cancelled
+        // (status <> 3): una NC anulada nunca ocupa el slot único de su receptionDocumentId, así
+        // que "Procesar NC" de nuevo (crea una NC/devolución nueva y limpia) debe poder guardarse.
+        var ctx = await SeedTenantAsync();
+        var invoiceId1 = await CreateConfirmedInvoiceAsync(ctx);
+        var invoiceId2 = await CreateConfirmedInvoiceAsync(ctx);
+        var receptionDocumentId = await CreateReceptionDocumentAsync(ctx, $"AK-{Guid.NewGuid():N}");
+
+        Guid firstNoteId;
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = BuildDraft(
+                ctx,
+                invoiceId1,
+                _userId,
+                "001-001-000010350",
+                receptionDocumentId: receptionDocumentId
+            );
+            db1.PurchaseCreditNotes.Add(first);
+            await db1.SaveChangesAsync();
+            firstNoteId = first.Id;
+        }
+
+        await using (var dbCancel = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = await dbCancel.PurchaseCreditNotes.SingleAsync(c => c.Id == firstNoteId);
+            first.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            await dbCancel.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.PurchaseCreditNotes.Add(
+            BuildDraft(
+                ctx,
+                invoiceId2,
+                _userId,
+                "001-001-000010351",
+                receptionDocumentId: receptionDocumentId
+            )
+        );
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().NotThrowAsync();
+
+        await using var verify = CreateContext(ctx.TenantId, ctx.CompanyId);
+        var notesForReception = await verify
+            .PurchaseCreditNotes.Where(c => c.ReceptionDocumentId == receptionDocumentId)
+            .ToListAsync();
+        notesForReception.Should().HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
+        notesForReception.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
+        notesForReception.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Draft);
+    }
+
+    [Fact]
+    public async Task Duplicar_ReceptionDocumentId_con_dos_NC_activas_sigue_lanzando_DbUpdateException()
+    {
+        // Regresión explícita del filtro nuevo: excluir Cancelled NUNCA debe permitir dos NC
+        // activas (Draft/Authorized) para el mismo receptionDocumentId.
+        var ctx = await SeedTenantAsync();
+        var invoiceId1 = await CreateConfirmedInvoiceAsync(ctx);
+        var invoiceId2 = await CreateConfirmedInvoiceAsync(ctx);
+        var receptionDocumentId = await CreateReceptionDocumentAsync(ctx, $"AK-{Guid.NewGuid():N}");
+
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            db1.PurchaseCreditNotes.Add(
+                BuildDraft(
+                    ctx,
+                    invoiceId1,
+                    _userId,
+                    "001-001-000010352",
+                    receptionDocumentId: receptionDocumentId
+                )
+            );
+            await db1.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.PurchaseCreditNotes.Add(
+            BuildDraft(
+                ctx,
+                invoiceId2,
+                _userId,
+                "001-001-000010353",
+                receptionDocumentId: receptionDocumentId
+            )
+        );
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetIdByReceptionDocumentIdAsync_devuelve_el_Id_para_NC_Draft_o_Authorized(
+        bool authorize
+    )
+    {
+        // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — "GetIdByReceptionDocumentIdAsync
+        // debe considerar estado": tanto Draft como Authorized cuentan como "activa" y bloquean
+        // reprocesar (la UI de Recepción debe mostrar "NC ya procesada" en ambos casos).
+        var ctx = await SeedTenantAsync();
+        var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
+        var receptionDocumentId = await CreateReceptionDocumentAsync(ctx, $"AK-{Guid.NewGuid():N}");
+
+        Guid noteId;
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var note = BuildDraft(
+                ctx,
+                invoiceId,
+                _userId,
+                "001-001-000010360",
+                receptionDocumentId: receptionDocumentId
+            );
+            if (authorize)
+                note.Authorize(note.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db.PurchaseCreditNotes.Add(note);
+            await db.SaveChangesAsync();
+            noteId = note.Id;
+        }
+
+        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+
+        var found = await repo.GetIdByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId);
+        found.Should().Be(noteId);
+    }
+
+    [Fact]
+    public async Task GetIdByReceptionDocumentIdAsync_ignora_NC_Cancelled_y_expone_su_Id_como_historial()
+    {
+        var ctx = await SeedTenantAsync();
+        var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
+        var receptionDocumentId = await CreateReceptionDocumentAsync(ctx, $"AK-{Guid.NewGuid():N}");
+
+        Guid noteId;
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var note = BuildDraft(
+                ctx,
+                invoiceId,
+                _userId,
+                "001-001-000010361",
+                receptionDocumentId: receptionDocumentId
+            );
+            note.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db.PurchaseCreditNotes.Add(note);
+            await db.SaveChangesAsync();
+            noteId = note.Id;
+        }
+
+        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+
+        (await repo.GetIdByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId))
+            .Should()
+            .BeNull("una NC Cancelled nunca bloquea reprocesar");
+        (await repo.ExistsByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId))
+            .Should()
+            .BeFalse();
+        (await repo.GetLatestCancelledIdByReceptionDocumentIdAsync(ctx.TenantId, receptionDocumentId))
+            .Should()
+            .Be(noteId, "el historial se conserva para \"Ver NC anulada\"");
+    }
+
+    [Fact]
     public async Task Duplicar_AccessKey_en_el_mismo_tenant_lanza_DbUpdateException()
     {
         var ctx = await SeedTenantAsync();

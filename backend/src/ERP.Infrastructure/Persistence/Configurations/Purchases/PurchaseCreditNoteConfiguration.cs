@@ -223,11 +223,17 @@ public sealed class PurchaseCreditNoteConfiguration : IEntityTypeConfiguration<P
             .HasIndex(x => new { x.TenantId, x.Status })
             .HasDatabaseName("ix_purchase_credit_notes_tenant_status");
 
-        // Regla de duplicados §5.2 — 1 documento de recepción → máx. 1 PurchaseCreditNote.
+        // Regla de duplicados §5.2 — 1 documento de recepción → máx. 1 PurchaseCreditNote ACTIVA
+        // (Draft/Authorized). PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01: el filtro
+        // original ("IS NOT NULL") bloqueaba reprocesar una recepción para siempre en cuanto su
+        // única NC se cancelaba — status=3 (Cancelled) queda fuera de la unicidad, así que una
+        // recepción puede acumular historial de NC canceladas y aun así admitir una nueva NC activa.
+        // Nunca permite dos NC activas para el mismo receptionDocumentId (el filtro solo excluye
+        // Cancelled, Draft/Authorized siguen compitiendo por el mismo slot único).
         builder
             .HasIndex(x => new { x.TenantId, x.ReceptionDocumentId })
             .IsUnique()
-            .HasFilter("\"reception_document_id\" IS NOT NULL")
+            .HasFilter("\"reception_document_id\" IS NOT NULL AND \"status\" <> 3")
             .HasDatabaseName("uq_purchase_credit_notes_tenant_reception_document_id");
 
         // Regla de duplicados §5.2 — mirror de uq_purchase_invoices_tenant_access_key.
