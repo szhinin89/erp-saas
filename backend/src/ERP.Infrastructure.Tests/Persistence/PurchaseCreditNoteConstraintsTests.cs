@@ -416,6 +416,145 @@ public sealed class PurchaseCreditNoteConstraintsTests : IAsyncLifetime
         await act.Should().ThrowAsync<DbUpdateException>();
     }
 
+    [Fact]
+    public async Task Duplicar_AccessKey_con_la_primera_NC_Cancelled_no_colisiona()
+    {
+        // PURCHASE-CREDIT-NOTE-CANCELLED-ACCESSKEY-REPROCESS-01 — el índice único filtra Cancelled
+        // (status <> 3) igual que el de ReceptionDocumentId: una NC anulada nunca ocupa el slot
+        // único de su AccessKey — reprocesar la misma clave de acceso debe poder guardarse.
+        var ctx = await SeedTenantAsync();
+        var invoiceId1 = await CreateConfirmedInvoiceAsync(ctx);
+        var invoiceId2 = await CreateConfirmedInvoiceAsync(ctx);
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+
+        Guid firstNoteId;
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = BuildDraft(
+                ctx,
+                invoiceId1,
+                _userId,
+                "001-001-000010354",
+                accessKey: accessKey
+            );
+            db1.PurchaseCreditNotes.Add(first);
+            await db1.SaveChangesAsync();
+            firstNoteId = first.Id;
+        }
+
+        await using (var dbCancel = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = await dbCancel.PurchaseCreditNotes.SingleAsync(c => c.Id == firstNoteId);
+            first.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            await dbCancel.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.PurchaseCreditNotes.Add(
+            BuildDraft(ctx, invoiceId2, _userId, "001-001-000010355", accessKey: accessKey)
+        );
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().NotThrowAsync();
+
+        await using var verify = CreateContext(ctx.TenantId, ctx.CompanyId);
+        var notesForAccessKey = await verify
+            .PurchaseCreditNotes.Where(c => c.AccessKey == accessKey)
+            .ToListAsync();
+        notesForAccessKey.Should().HaveCount(2, "el historial se mantiene — la NC anulada nunca se borra");
+        notesForAccessKey.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Cancelled);
+        notesForAccessKey.Should().ContainSingle(c => c.Status == PurchaseCreditNoteStatus.Draft);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Duplicar_AccessKey_con_la_primera_NC_Draft_o_Authorized_sigue_lanzando_DbUpdateException(
+        bool authorize
+    )
+    {
+        // Regresión explícita del filtro nuevo: excluir Cancelled NUNCA debe permitir dos NC
+        // activas (Draft/Authorized) con el mismo AccessKey.
+        var ctx = await SeedTenantAsync();
+        var invoiceId1 = await CreateConfirmedInvoiceAsync(ctx);
+        var invoiceId2 = await CreateConfirmedInvoiceAsync(ctx);
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var first = BuildDraft(
+                ctx,
+                invoiceId1,
+                _userId,
+                "001-001-000010356",
+                accessKey: accessKey
+            );
+            if (authorize)
+                first.Authorize(first.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db1.PurchaseCreditNotes.Add(first);
+            await db1.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.PurchaseCreditNotes.Add(
+            BuildDraft(ctx, invoiceId2, _userId, "001-001-000010357", accessKey: accessKey)
+        );
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistsByAccessKeyAsync_devuelve_true_para_NC_Draft_o_Authorized(bool authorize)
+    {
+        var ctx = await SeedTenantAsync();
+        var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var note = BuildDraft(ctx, invoiceId, _userId, "001-001-000010358", accessKey: accessKey);
+            if (authorize)
+                note.Authorize(note.TotalAmount, _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db.PurchaseCreditNotes.Add(note);
+            await db.SaveChangesAsync();
+        }
+
+        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+
+        (await repo.ExistsByAccessKeyAsync(ctx.TenantId, accessKey)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExistsByAccessKeyAsync_ignora_NC_Cancelled()
+    {
+        var ctx = await SeedTenantAsync();
+        var invoiceId = await CreateConfirmedInvoiceAsync(ctx);
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+
+        await using (var db = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var note = BuildDraft(ctx, invoiceId, _userId, "001-001-000010359", accessKey: accessKey);
+            note.Cancel("Anulada por error", _userId, Guid.NewGuid(), $"hash-{Guid.NewGuid():N}");
+            db.PurchaseCreditNotes.Add(note);
+            await db.SaveChangesAsync();
+        }
+
+        var repo = new ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseCreditNoteRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+
+        (await repo.ExistsByAccessKeyAsync(ctx.TenantId, accessKey))
+            .Should()
+            .BeFalse("una NC Cancelled nunca bloquea reprocesar la misma clave de acceso");
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

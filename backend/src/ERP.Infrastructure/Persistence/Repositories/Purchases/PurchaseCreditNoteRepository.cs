@@ -152,13 +152,19 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
+    // PURCHASE-CREDIT-NOTE-CANCELLED-ACCESSKEY-REPROCESS-01 — mismo criterio que
+    // ExistsByReceptionDocumentIdAsync: una NC Cancelled es historial, no documento activo — nunca
+    // cuenta como duplicado de AccessKey. Solo Draft/Authorized bloquea.
     public Task<bool> ExistsByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
     ) =>
         _db.PurchaseCreditNotes.AnyAsync(
-            x => x.TenantId == tenantId && x.AccessKey == accessKey,
+            x =>
+                x.TenantId == tenantId
+                && x.AccessKey == accessKey
+                && x.Status != PurchaseCreditNoteStatus.Cancelled,
             ct
         );
 

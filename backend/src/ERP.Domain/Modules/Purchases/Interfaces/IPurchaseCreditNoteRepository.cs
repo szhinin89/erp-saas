@@ -65,6 +65,12 @@ public interface IPurchaseCreditNoteRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// PURCHASE-CREDIT-NOTE-CANCELLED-ACCESSKEY-REPROCESS-01 — solo cuenta como duplicado una NC
+    /// ACTIVA (Draft/Authorized) con este AccessKey; una NC <c>Cancelled</c> es historial, nunca
+    /// bloquea reprocesar la misma clave de acceso (mismo criterio que
+    /// <see cref="GetIdByReceptionDocumentIdAsync"/>).
+    /// </summary>
     Task<bool> ExistsByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
