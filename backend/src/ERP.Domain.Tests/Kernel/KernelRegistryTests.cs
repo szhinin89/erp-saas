@@ -105,7 +105,7 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_contains_sales_and_purchase_returns_list_entries_only()
+    public void Navigation_contains_sales_returns_list_but_not_purchase_returns_or_credit_note_subpaths()
     {
         var navigation = KernelRegistry.Navigation;
 
@@ -116,16 +116,25 @@ public sealed class KernelRegistryTests
         salesReturns!.ParentItemId.Should().Be(Guid.Parse("e4000000-0000-4000-9000-000000000010"));
         salesReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SalesPermissions.View);
 
-        var purchaseReturns = navigation.SingleOrDefault(n => n.RoutePath == "/purchases/returns");
-        purchaseReturns.Should().NotBeNull("el listado de devoluciones de compra debe estar en el menú");
-        purchaseReturns!.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
-        purchaseReturns.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
+        // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — la devolución de mercadería es un flujo
+        // dentro de "Notas de crédito de compra" (tipo Return), no un módulo principal para el
+        // usuario: ya no es un ítem de menú (ni el listado ni ningún sub-path). La ruta y la
+        // lógica de PurchaseReturn siguen existiendo/funcionando como acceso técnico/secundario
+        // (ej. botón "Ver devolución vinculada" desde el detalle de NC) — solo se retiró del menú.
+        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/returns"));
 
         navigation.Should().NotContain(n => n.RoutePath == "/sales/returns/new");
         navigation.Should().NotContain(n => n.RoutePath.StartsWith("/sales/returns/"));
-        navigation.Should().NotContain(n => n.RoutePath == "/purchases/returns/new");
-        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/returns/"));
-        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/credit-notes"));
+
+        // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — mismo patrón: el menú apunta
+        // exclusivamente al listado ("Nueva" es un botón dentro de esa pantalla), nunca directo a
+        // /new ni a un detalle /{id}.
+        var purchaseCreditNotes = navigation.SingleOrDefault(n => n.RoutePath == "/purchases/credit-notes");
+        purchaseCreditNotes.Should().NotBeNull("el listado de notas de crédito de compra debe estar en el menú");
+        purchaseCreditNotes!.ParentItemId.Should().Be(Guid.Parse("e3000000-0000-4000-9000-000000000010"));
+        purchaseCreditNotes.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.PurchasePermissions.View);
+        navigation.Should().NotContain(n => n.RoutePath == "/purchases/credit-notes/new");
+        navigation.Should().NotContain(n => n.RoutePath.StartsWith("/purchases/credit-notes/"));
     }
 
     [Fact]
@@ -268,7 +277,13 @@ public sealed class KernelRegistryTests
             "/purchases/operation-group",
             "/purchases",
             "/purchases/reception",
-            "/purchases/returns",
+            // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — "Devoluciones de compra" ya no es
+            // ítem de menú (flujo dentro de NC de compra, no módulo principal) — la ruta sigue
+            // existiendo como acceso técnico/secundario, solo se retiró del menú.
+            // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — listado de notas de crédito de
+            // compra; "Nueva" (modo manual de PurchaseCreditNoteFormPage) es un botón dentro de
+            // esa pantalla, nunca una entrada de menú propia.
+            "/purchases/credit-notes",
             "/finance/supplier-credits",
             "/expenses/group",
             "/expenses/documents",

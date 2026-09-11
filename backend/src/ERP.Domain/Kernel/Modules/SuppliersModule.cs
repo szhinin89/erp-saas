@@ -79,15 +79,27 @@ public static class SuppliersModule
     )]
     public const string Reception = "/purchases/reception";
 
+    // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — la devolución de mercadería es un flujo dentro
+    // de "Notas de crédito de compra" (tipo Return), no un módulo principal para el usuario; ya no
+    // es un ítem de menú (se quita el atributo [NavItem], nunca la ruta/lógica de PurchaseReturn:
+    // /purchases/returns y /purchases/returns/{id} siguen existiendo y funcionando como rutas
+    // técnicas/secundarias, ej. el botón "Ver devolución vinculada" desde el detalle de NC).
+    public const string Returns = "/purchases/returns";
+
+    // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — antes solo se llegaba a
+    // PurchaseCreditNoteFormPage desde Recepción XML/SRI o desde una factura/devolución puntual,
+    // sin punto de entrada propio en el menú. Mismo patrón que "Devoluciones de compra": el menú
+    // apunta al LISTADO (PurchaseCreditNoteListPage), nunca directo a /new — "Nueva" es un botón
+    // dentro de esa pantalla que abre el mismo formulario en modo manual.
     [NavItem(
-        "Devoluciones de compra",
+        "Notas de crédito de compra",
         Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.purchases.returns",
-        SortOrder = 30,
-        Id = "c1000000-0000-4000-9000-000000000003",
+        LabelKey = "app.nav.item.purchases.creditNotes",
+        SortOrder = 35,
+        Id = "c1000000-0000-4000-9000-000000000004",
         ParentId = "e3000000-0000-4000-9000-000000000010"
     )]
-    public const string Returns = "/purchases/returns";
+    public const string CreditNotes = "/purchases/credit-notes";
 
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Update (aplicar/reembolsar crédito —
     // ApplySupplierCreditModal.tsx/RegisterSupplierCreditRefundModal.tsx, SupplierCreditController)
