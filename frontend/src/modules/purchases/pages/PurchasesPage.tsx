@@ -1107,7 +1107,7 @@ export function PurchasesPage() {
                 type="button"
                 variant="destructive"
                 onClick={() => ctx.setModalCancelReason(true)}
-                disabled={ctx.fieldDisabled}
+                disabled={ctx.saving}
               >
                 <span className="material-symbols-outlined zh-icon-md">
                   block
