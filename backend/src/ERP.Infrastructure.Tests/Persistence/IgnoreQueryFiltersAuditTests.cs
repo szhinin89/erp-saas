@@ -40,6 +40,7 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/MasterDataClassificationBackfillService.cs", // CLASS-BP-CATALOGS-01: itera todas las (TenantId, CompanyId) existentes para el backfill de empresas ya creadas — mismo motivo que los *BootstrapStep
         "src/ERP.Infrastructure/Seeding/Steps/DocumentFlowPolicyBootstrapStep.cs", // DOCUMENT-FLOW-POLICY-01: bootstrap needs cross-tenant visibility, mismo motivo que ExpensesCatalogBootstrapStep; filtro explícito TenantId+CompanyId reaplicado en la query
         "src/ERP.Infrastructure/Seeding/DocumentFlowPolicyBackfillService.cs", // DOCUMENT-FLOW-POLICY-01: backfill dev-only de companies ya existentes — mismo motivo que ExpensesCatalogBackfillService
+        "src/ERP.Infrastructure/Seeding/PurchaseReturnPostingRemediationService.cs", // TECH-DEBT-INFRA-IGNOREQUERYFILTERS-AUDIT-ALLOWLIST-01: remedio de una sola vez para PurchaseReturn.Authorized sin JournalEntry (PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01) — hallazgo pre-existente, faltaba en esta allowlist desde ese ticket. Mismo patrón que AccountingChartBackfillService/DocumentFlowPolicyBackfillService: escaneo cross-tenant de solo lectura para descubrir filas a remediar, seguido de JobExecutionContext.Begin(TenantId, CompanyId) por fila antes de escribir vía IPostingEngine.PostAsync — nunca escribe sin scope explícito.
     };
 
     [Fact]
