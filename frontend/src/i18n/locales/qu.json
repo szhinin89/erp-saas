@@ -707,6 +707,8 @@
   "purchases.creditNote.actions.cancel": "Nota de Crédito Anulana",
   "purchases.creditNote.actions.processNc": "NC Rurana",
   "purchases.creditNote.actions.processCreditNote": "Nota de Crédito Rurana",
+  "purchases.creditNote.actions.ncAlreadyProcessed": "NC ñawpaqmanta rurasqaña",
+  "purchases.creditNote.actions.viewExistingNc": "Kaq NC Qhawana",
   "purchases.creditNote.actions.openCreditNote": "Nota de Crédito Kichana",
   "purchases.creditNote.actions.creditNoteButton": "Nota de Crédito",
   "purchases.creditNote.errors.affectedInvoiceRequired": "Llakichishka facturaqa NC-ta rurana ñawpaqta churashka kanan",

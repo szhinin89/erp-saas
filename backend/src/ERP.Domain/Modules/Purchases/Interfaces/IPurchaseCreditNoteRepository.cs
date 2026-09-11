@@ -40,6 +40,19 @@ public interface IPurchaseCreditNoteRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — descubrimiento mínimo, sin tracking, del
+    /// Id de la <see cref="Entities.PurchaseCreditNote"/> ya vinculada a esta recepción (si existe).
+    /// Usado por el listado de Recepción para ofrecer "Ver NC existente" en vez de reabrir el
+    /// formulario de creación — nunca carga el agregado completo, mismo criterio que
+    /// <see cref="GetPurchaseInvoiceIdAsync"/>.
+    /// </summary>
+    Task<Guid?> GetIdByReceptionDocumentIdAsync(
+        Guid tenantId,
+        Guid receptionDocumentId,
+        CancellationToken ct = default
+    );
+
     Task<bool> ExistsByAccessKeyAsync(
         Guid tenantId,
         string accessKey,

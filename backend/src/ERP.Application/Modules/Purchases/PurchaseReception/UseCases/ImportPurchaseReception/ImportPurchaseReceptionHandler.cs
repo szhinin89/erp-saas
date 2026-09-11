@@ -1,7 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using MediatR;
 
@@ -13,6 +15,7 @@ public sealed class ImportPurchaseReceptionHandler
     private readonly IPurchaseReceptionParser _parser;
     private readonly IPurchaseReceptionVerifier _verifier;
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
+    private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -22,6 +25,7 @@ public sealed class ImportPurchaseReceptionHandler
         IPurchaseReceptionParser parser,
         IPurchaseReceptionVerifier verifier,
         IPurchaseReceptionDocumentRepository documentRepo,
+        IPurchaseCreditNoteRepository creditNoteRepo,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -31,6 +35,7 @@ public sealed class ImportPurchaseReceptionHandler
         _parser = parser;
         _verifier = verifier;
         _documentRepo = documentRepo;
+        _creditNoteRepo = creditNoteRepo;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -107,7 +112,25 @@ public sealed class ImportPurchaseReceptionHandler
                 }
             }
 
-            itemDtos.Add(PurchaseReceptionMapper.ToDto(item, document));
+            // PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — solo aplica a notas de crédito;
+            // ReceptionDocumentId es único (1:1) en PurchaseCreditNote, así que a lo sumo una.
+            var creditNoteId =
+                item.Record.SourceDocType == PurchaseReceptionSourceDocType.CreditNote
+                    ? await _creditNoteRepo.GetIdByReceptionDocumentIdAsync(
+                        _tenant.TenantId,
+                        document.Id,
+                        cancellationToken
+                    )
+                    : null;
+
+            itemDtos.Add(
+                PurchaseReceptionMapper.ToDto(
+                    item,
+                    document,
+                    creditNoteExists: creditNoteId is not null,
+                    creditNoteId: creditNoteId
+                )
+            );
         }
 
         if (hasChanges)

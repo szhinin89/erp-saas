@@ -61,6 +61,28 @@ describe("Purchase reception document actions", () => {
     expect(view).toHaveBeenCalledWith("nc-1");
     expect(screen.queryByRole("button", { name: "Consultar XML" })).toBeNull();
   });
+  it("blocks reprocessing and offers the existing credit note when already linked", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ creditNoteExists: true, creditNoteId: "cn-1" });
+    expect(screen.queryByRole("button", { name: "Procesar NC" })).toBeNull();
+    expect(screen.getByText("NC ya procesada")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ver NC existente" }));
+    expect(open).toHaveBeenCalledWith(
+      "/purchases/credit-notes/cn-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+  it("prioritizes the already-processed state over affectedPurchaseExists", () => {
+    show({
+      creditNoteExists: true,
+      creditNoteId: "cn-1",
+      affectedPurchaseExists: false,
+      affectedPurchaseId: null,
+    });
+    expect(screen.getByText("NC ya procesada")).toBeTruthy();
+    expect(screen.queryByText("NC pendiente")).toBeNull();
+  });
   it("keeps invoice consultation and creation", () => {
     const { download } = show({ sourceDocType: "INVOICE" });
     fireEvent.click(screen.getByRole("button", { name: "Consultar XML" }));

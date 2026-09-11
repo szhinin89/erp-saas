@@ -415,6 +415,8 @@
   "purchases.creditNote.actions.cancel": "Cancel credit note",
   "purchases.creditNote.actions.processNc": "Process NC",
   "purchases.creditNote.actions.processCreditNote": "Process credit note",
+  "purchases.creditNote.actions.ncAlreadyProcessed": "Credit note already processed",
+  "purchases.creditNote.actions.viewExistingNc": "View existing credit note",
   "purchases.creditNote.actions.openCreditNote": "Open credit note",
   "purchases.creditNote.actions.creditNoteButton": "Credit note",
   "purchases.creditNote.errors.affectedInvoiceRequired": "The affected invoice must be entered before processing the credit note",

@@ -32,7 +32,13 @@ public sealed record PurchaseReceptionItemDto(
     // EXPENSES-FROM-RECEPTION-01 — si ya existe un Gasto con esta clave de acceso SRI (bloquea
     // "Crear compra" en la UI, mirror de PurchaseExists bloqueando "Crear gasto"). Solo aplica a
     // Factura — false en NC/ND.
-    bool ExpenseExists
+    bool ExpenseExists,
+    // PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — si esta recepción (DocumentId) ya está
+    // vinculada a un PurchaseCreditNote (1:1, ReceptionDocumentId único). Solo aplica a notas de
+    // crédito — false/null en Factura/ND. Bloquea "Procesar NC" en la UI (el backend ya lo rechaza
+    // por constraint único; esto evita que el usuario llegue a intentarlo).
+    bool CreditNoteExists = false,
+    Guid? CreditNoteId = null
 );
 
 public sealed record PurchaseReceptionImportResultDto(

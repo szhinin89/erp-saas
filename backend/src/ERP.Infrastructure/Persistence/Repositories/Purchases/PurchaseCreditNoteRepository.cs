@@ -107,6 +107,17 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
             ct
         );
 
+    public Task<Guid?> GetIdByReceptionDocumentIdAsync(
+        Guid tenantId,
+        Guid receptionDocumentId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .PurchaseCreditNotes.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.ReceptionDocumentId == receptionDocumentId)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
+
     public Task<bool> ExistsByAccessKeyAsync(
         Guid tenantId,
         string accessKey,

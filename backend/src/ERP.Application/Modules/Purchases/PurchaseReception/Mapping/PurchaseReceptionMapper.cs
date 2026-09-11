@@ -9,7 +9,9 @@ public static class PurchaseReceptionMapper
 {
     public static PurchaseReceptionItemDto ToDto(
         PurchaseReceptionVerifiedItem item,
-        PurchaseReceptionDocument document
+        PurchaseReceptionDocument document,
+        bool creditNoteExists = false,
+        Guid? creditNoteId = null
     ) =>
         new(
             item.Record.SupplierRuc,
@@ -35,7 +37,9 @@ public static class PurchaseReceptionMapper
             ToDocumentStatusCode(document.Status),
             ToProcessingStatusCode(document.ProcessingStatus),
             document.ProcessingNotes,
-            item.ExpenseExists
+            item.ExpenseExists,
+            creditNoteExists,
+            creditNoteId
         );
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>

@@ -91,6 +91,11 @@ export interface PurchaseReceptionItem {
   /** Nombre comercial del emisor (infoTributaria/nombreComercial) — solo disponible después de
    * "Consultar XML" (el TXT del SRI no lo trae); null hasta entonces o si el XML no lo declara. */
   supplierTradeName: string | null;
+  /** PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — solo notas de crédito: si esta recepción
+   * ya está vinculada a un PurchaseCreditNote (1:1). False/undefined en Factura/ND. */
+  creditNoteExists?: boolean;
+  /** Id de la NC ya vinculada, para abrirla en `/purchases/credit-notes/<id>` — null si no aplica. */
+  creditNoteId?: string | null;
 }
 
 export interface PurchaseReceptionImportResult {

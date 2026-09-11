@@ -113,6 +113,40 @@ export function PurchaseReceptionActionsCell({
   }
 
   if (row.sourceDocType === "CREDIT_NOTE") {
+    // PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — una recepción ya vinculada a una NC no
+    // debe volver a ofrecer "Procesar NC" (el backend la rechazaría por receptionDocumentId
+    // único): se prioriza sobre affectedPurchaseExists, que ya dejó de ser relevante una vez
+    // procesada.
+    if (row.creditNoteExists && row.creditNoteId) {
+      return (
+        <div className="pur-actions-cell">
+          <Badge
+            variant="success"
+            label={t(
+              "purchases.creditNote.actions.ncAlreadyProcessed",
+              "NC ya procesada",
+            )}
+          />
+          <ZHBtn
+            variant="secondary"
+            size="xs"
+            type="button"
+            onClick={() =>
+              window.open(
+                `/purchases/credit-notes/${row.creditNoteId}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            {t("purchases.creditNote.actions.viewExistingNc", "Ver NC existente")}
+          </ZHBtn>
+          {consultXmlButton}
+          {viewXmlButton}
+        </div>
+      );
+    }
+
     if (row.affectedPurchaseExists && row.affectedPurchaseId) {
       return (
         <div className="pur-actions-cell">

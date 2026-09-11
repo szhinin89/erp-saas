@@ -418,6 +418,8 @@
   "purchases.creditNote.actions.cancel": "Cancelar nota de crédito",
   "purchases.creditNote.actions.processNc": "Procesar NC",
   "purchases.creditNote.actions.processCreditNote": "Procesar nota de crédito",
+  "purchases.creditNote.actions.ncAlreadyProcessed": "NC ya procesada",
+  "purchases.creditNote.actions.viewExistingNc": "Ver NC existente",
   "purchases.creditNote.actions.openCreditNote": "Abrir nota de crédito",
   "purchases.creditNote.actions.creditNoteButton": "Nota de crédito",
   "purchases.creditNote.errors.affectedInvoiceRequired": "La factura afectada debe estar ingresada antes de procesar la NC",
