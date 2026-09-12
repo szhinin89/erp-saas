@@ -34,6 +34,16 @@ export const salesLineSchema = z.object({
   _name: z.string().optional(),
   _cost: z.number().optional(),
   _pvp: z.number().optional(),
+  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: snapshot tomado al agregar la línea desde el
+  // buscador (o al resolver el precio) — nunca se envía al backend, solo explica en pantalla
+  // de dónde salió _pvp/unitPrice. _basePrice != _pvp cuando la lista de precios default aplicó
+  // una regla; _discountDescription es null en ese caso.
+  _basePrice: z.number().optional(),
+  _priceListName: z.string().optional(),
+  _discountDescription: z.string().nullable().optional(),
+  // true cuando el usuario editó unitPrice a mano (dejó de reflejar el precio resuelto por la
+  // lista de precios) — se limpia si el ítem se vuelve a resolver desde cero.
+  _isManualPrice: z.boolean().optional(),
   _stockQty: z.number().optional(),
   _stockWarehouse: z.string().optional(),
   _tracksStock: z.boolean().optional(),

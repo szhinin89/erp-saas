@@ -163,6 +163,14 @@
 .sf-product__pricelist-value.zh-money-value .zh-money-value__symbol {
   color: inherit;
 }
+/* SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: explica por qué "Precio facturado" (col. 3) quedó por
+   debajo de este precio de lista — mismo tono de aviso que el buscador de productos
+   (.sf-result__discount-val, --color-warning). */
+.sf-product__pricelist-discount {
+  font-size: var(--text-help-size);
+  font-weight: 700;
+  color: var(--color-warning);
+}
 
 /* ── Columna 3: Descuento + Precio facturado (bloque compacto) ── */
 .sf-product__negotiated {

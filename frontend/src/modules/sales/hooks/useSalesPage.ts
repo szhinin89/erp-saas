@@ -818,6 +818,10 @@ export function useSalesPage() {
         _sku: item.sku,
         _name: item.description,
         _pvp: pvp,
+        _basePrice: pricing.basePrice,
+        _priceListName: pricing.priceListName,
+        _discountDescription: pricing.discountDescription,
+        _isManualPrice: false,
         _cost: cost,
         _stockQty: stockQty,
         _stockWarehouse: selectedWh?.name,
@@ -853,7 +857,17 @@ export function useSalesPage() {
       setValue(
         "lines",
         currentLines.map((l) =>
-          l._key === key ? { ...l, [field]: value } : l,
+          l._key === key
+            ? {
+                ...l,
+                [field]: value,
+                // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: editar el precio facturado a mano deja
+                // de reflejar el precio resuelto por la lista de precios — se marca para que la UI
+                // distinga "precio de lista/regla" de "precio manual" en vez de seguir mostrando
+                // el desglose de descuento como si siguiera vigente.
+                ...(field === "unitPrice" ? { _isManualPrice: true } : {}),
+              }
+            : l,
         ),
         { shouldDirty: true },
       );

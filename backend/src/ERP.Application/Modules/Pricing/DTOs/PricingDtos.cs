@@ -88,7 +88,11 @@ public sealed record PricingRuleSetResultDto(
     decimal? ExistingRuleValue = null
 );
 
-/// <summary>Resultado de PricingResolver — precio neto (sin impuestos, ver frontera con ISriTaxResolver).</summary>
+/// <summary>Resultado de PricingResolver — precio neto (sin impuestos, ver frontera con ISriTaxResolver).
+/// <c>RuleDescription</c> es el mismo texto humano que <see cref="PricingRuleSummaryDto.Description"/>
+/// (vía <see cref="Services.PricingCalculation.Summarize"/>) — null cuando <c>RuleApplied</c> también
+/// lo es (precio base sin ajuste), para que un consumidor de UI (p. ej. Ventas) pueda explicar de
+/// dónde salió el precio sin reimplementar el formato de <c>RuleApplied</c>.</summary>
 public sealed record PricingResult(
     Guid ItemId,
     Guid PriceListId,
@@ -97,5 +101,6 @@ public sealed record PricingResult(
     string CurrencyCode,
     decimal BasePrice,
     string? RuleApplied,
-    decimal UnitPrice
+    decimal UnitPrice,
+    string? RuleDescription = null
 );

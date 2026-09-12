@@ -215,6 +215,11 @@ public sealed record SalesReceiptTotalsDto(
 /// de venta, vía IPricingResolver (Pricing Engine v2) + ISriTaxResolver. UnitPrice
 /// es el precio neto SSOT — el frontend lo usa para inicializar la línea al
 /// seleccionar el producto; no debe calcularse localmente.
+/// SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: BasePrice/PriceListName/DiscountDescription
+/// se agregan solo para que la UI explique de dónde sale UnitPrice cuando difiere del precio
+/// base del ítem — no participan en ningún cálculo, son el mismo BasePrice/PriceListName/
+/// RuleDescription ya resueltos por PricingResolver (PricingResult), nunca recalculados aquí.
+/// DiscountDescription es null cuando UnitPrice == BasePrice (sin regla aplicada).
 /// </summary>
 public sealed record SalesItemPricingDto(
     Guid ItemId,
@@ -224,7 +229,10 @@ public sealed record SalesItemPricingDto(
     string? IceCode,
     string? IceName,
     decimal? MaxDiscountPercent,
-    string PriceListCode
+    string PriceListCode,
+    decimal BasePrice,
+    string PriceListName,
+    string? DiscountDescription
 );
 
 public sealed record SalesListDto(
@@ -280,6 +288,15 @@ public sealed record InvoiceItemMatch(
     Guid? MatchedPackagingLevelId
 );
 
+/// <summary>
+/// SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: SalePriceWithoutTax/FinalSalePrice siguen siendo el
+/// precio base sin resolver (ver comentario de InvoiceItemMatch) — DiscountedSalePriceWithoutTax/
+/// DiscountedFinalSalePrice son el mismo precio ya resuelto por la lista de precios default
+/// (PricingCalculation.Resolve, mismo cálculo que usa PricingResolver — no se reimplementa),
+/// solo para que el buscador pueda anticipar "este ítem trae descuento de lista" antes de
+/// seleccionarlo. Null cuando no hay lista de precios default vigente o no aplica ninguna regla
+/// (BasePrice == precio resuelto): en ese caso el precio final real es el ya mostrado arriba.
+/// </summary>
 public sealed record InvoiceItemSearchResultDto(
     Guid Id,
     string Sku,
@@ -298,5 +315,9 @@ public sealed record InvoiceItemSearchResultDto(
     string? IceCode,
     string BaseUomCode,
     IReadOnlyList<InvoiceItemPackagingLevelDto> PackagingLevels,
-    Guid? MatchedPackagingLevelId
+    Guid? MatchedPackagingLevelId,
+    string? PriceListName,
+    string? DiscountDescription,
+    decimal? DiscountedSalePriceWithoutTax,
+    decimal? DiscountedFinalSalePrice
 );

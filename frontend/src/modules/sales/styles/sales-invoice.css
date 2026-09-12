@@ -805,6 +805,16 @@
   font-size: var(--text-body-md-size);
 }
 
+/* SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: explica por qué "Precio final" difiere del precio
+   base mostrado arriba — mismo tono que .sf-search-highlight (--color-warning), reservado en
+   este módulo para "esto no es lo obvio, léelo". */
+.sf-result__discount-val {
+  font-size: var(--text-help-size);
+  font-weight: 700;
+  color: var(--color-warning);
+  text-align: right;
+}
+
 .sf-result__no-price {
   display: flex;
   flex-direction: column;

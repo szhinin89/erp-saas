@@ -36,6 +36,14 @@ export interface InvoiceItemSearchResultDto {
   /** Si el texto buscado coincidió con el barcode de una presentación específica (no la unidad
    * base), esa presentación debe autoseleccionarse al agregar la línea — ver useSalesPage.ts. */
   matchedPackagingLevelId: string | null;
+  /** SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: presentes solo cuando la lista de precios default
+   * aplica un descuento/recargo sobre este ítem — salePriceWithoutTax/finalSalePrice de arriba
+   * siguen siendo el precio base sin resolver. Null = sin ajuste, el precio final real es el
+   * ya mostrado arriba. */
+  priceListName: string | null;
+  discountDescription: string | null;
+  discountedSalePriceWithoutTax: number | null;
+  discountedFinalSalePrice: number | null;
 }
 
 export const invoiceItemSearchService = {

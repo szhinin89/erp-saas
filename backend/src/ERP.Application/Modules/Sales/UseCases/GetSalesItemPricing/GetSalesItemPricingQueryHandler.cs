@@ -95,7 +95,10 @@ public sealed class GetSalesItemPricingQueryHandler
                 iceCode,
                 iceName,
                 item.SaleConfig.MaxDiscountPercent,
-                pricingResult.Value!.PriceListCode
+                pricingResult.Value!.PriceListCode,
+                pricingResult.Value!.BasePrice,
+                pricingResult.Value!.PriceListName,
+                pricingResult.Value!.RuleDescription
             )
         );
     }

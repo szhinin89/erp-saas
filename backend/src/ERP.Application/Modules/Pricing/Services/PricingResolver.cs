@@ -79,6 +79,8 @@ public sealed class PricingResolver : IPricingResolver
             priceList,
             _strategies
         );
+        var ruleDescription =
+            ruleApplied is null ? null : PricingCalculation.Summarize(itemRule, priceList).Description;
 
         return Result<PricingResult>.Success(
             new PricingResult(
@@ -89,7 +91,8 @@ public sealed class PricingResolver : IPricingResolver
                 priceList.CurrencyCode,
                 basePrice,
                 ruleApplied,
-                unitPrice
+                unitPrice,
+                ruleDescription
             )
         );
     }

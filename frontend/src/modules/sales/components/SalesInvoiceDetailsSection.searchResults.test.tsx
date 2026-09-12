@@ -53,6 +53,10 @@ function makeResult(
     baseUomCode: "UNIT",
     packagingLevels: [],
     matchedPackagingLevelId: null,
+    priceListName: null,
+    discountDescription: null,
+    discountedSalePriceWithoutTax: null,
+    discountedFinalSalePrice: null,
     ...overrides,
   };
 }
@@ -222,5 +226,51 @@ describe("SalesInvoiceDetailsSection — resultados del buscador (jerarquía ret
     typeQuery("club");
     await screen.findByText("15865");
     expect(container.querySelectorAll("[style]").length).toBe(0);
+  });
+
+  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: mismo caso reportado — ítem con precio base $2.10 y
+  // lista de precios default con descuento 5% (1.995, redondeado a $2.00). El buscador debe
+  // mostrar el precio base, la lista/descuento aplicado, y "Precio final" ya con el descuento —
+  // no el precio que en realidad no se va a facturar.
+  it("producto con descuento de lista muestra precio base, la lista aplicada y el precio final ya descontado", async () => {
+    searchMock.mockResolvedValue([
+      makeResult({
+        salePriceWithoutTax: 2.1,
+        finalSalePrice: 2.1,
+        vatDisplay: "IVA 0%",
+        vatCode: "0",
+        priceListName: "Lista General",
+        discountDescription: "Descuento 5%",
+        discountedSalePriceWithoutTax: 1.995,
+        discountedFinalSalePrice: 1.995,
+      }),
+    ]);
+    renderSection();
+    typeQuery("club");
+    expect(await screen.findByText("Precio sin IVA")).not.toBeNull();
+    expect(getMoneyValueByText("$2.10")).not.toBeNull();
+    expect(screen.getByText("Lista General")).not.toBeNull();
+    expect(screen.getByText("Descuento 5%")).not.toBeNull();
+    const finalValue = getMoneyValueByText("$2.00");
+    expect(finalValue).not.toBeNull();
+    expect(finalValue.className).toContain("sf-result__price-val--final");
+  });
+
+  it("producto sin descuento de lista muestra precio base = precio final, sin explicación de descuento", async () => {
+    searchMock.mockResolvedValue([
+      makeResult({
+        salePriceWithoutTax: 24.3,
+        finalSalePrice: 27.95,
+        priceListName: null,
+        discountDescription: null,
+        discountedSalePriceWithoutTax: null,
+        discountedFinalSalePrice: null,
+      }),
+    ]);
+    renderSection();
+    typeQuery("club");
+    await screen.findByText("Precio sin IVA");
+    expect(getMoneyValueByText("$27.95")).not.toBeNull();
+    expect(screen.queryByText(/descuento/i)).toBeNull();
   });
 });

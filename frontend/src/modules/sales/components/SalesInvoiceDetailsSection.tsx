@@ -291,12 +291,25 @@ export function SalesInvoiceDetailsSection({
                   const badge = stockBadgeInfo(stockVal);
                   const hasPrice = item.salePriceWithoutTax != null;
                   const ivaLabel = parenthesizeRateLabel(item.vatDisplay);
+                  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: cuando la lista de precios default
+                  // aplica un descuento/recargo, "Precio final" debe mostrar el precio que
+                  // realmente se facturará (el mismo que resolverá /items/{id}/pricing al
+                  // agregar el ítem) — no el precio base sin resolver. discountedFinalSalePrice/
+                  // discountedSalePriceWithoutTax ya vienen calculados por el backend
+                  // (PricingCalculation, mismo motor que PricingResolver); nunca se recalculan acá.
+                  const hasDiscount = item.discountDescription != null;
+                  const effectiveNet = hasDiscount
+                    ? item.discountedSalePriceWithoutTax
+                    : item.salePriceWithoutTax;
+                  const effectiveFinal = hasDiscount
+                    ? item.discountedFinalSalePrice
+                    : item.finalSalePrice;
                   // Diferencia entre el total con impuestos y la base sin impuestos, ya
                   // calculados por el backend (SriTaxCalculator) — no se recalcula ninguna
                   // tasa acá, solo se resta lo que el servidor ya devolvió.
                   const ivaAmount =
-                    hasPrice && item.finalSalePrice != null
-                      ? item.finalSalePrice - item.salePriceWithoutTax!
+                    hasPrice && effectiveFinal != null && effectiveNet != null
+                      ? effectiveFinal - effectiveNet
                       : null;
 
                   return (
@@ -367,6 +380,19 @@ export function SalesInvoiceDetailsSection({
                                 className="sf-result__price-val"
                               />
                             </div>
+                            {hasDiscount && (
+                              // Explica por qué "Precio final" difiere del precio base de arriba
+                              // — mismo dato (priceListName + discountDescription) que la línea de
+                              // factura mostrará una vez agregado el ítem.
+                              <div className="sf-result__price-row sf-result__price-row--discount">
+                                <span className="sf-result__price-lbl">
+                                  {item.priceListName}
+                                </span>
+                                <span className="sf-result__discount-val">
+                                  {item.discountDescription}
+                                </span>
+                              </div>
+                            )}
                             <div className="sf-result__price-row">
                               <span className="sf-result__price-lbl">
                                 {ivaLabel}
@@ -381,13 +407,13 @@ export function SalesInvoiceDetailsSection({
                                 <span className="sf-result__price-val">—</span>
                               )}
                             </div>
-                            {item.finalSalePrice != null && (
+                            {effectiveFinal != null && (
                               <div className="sf-result__price-row sf-result__price-row--final">
                                 <span className="sf-result__price-lbl">
                                   Precio final
                                 </span>
                                 <ZHMoneyValue
-                                  value={item.finalSalePrice}
+                                  value={effectiveFinal}
                                   decimals={dc.salesUnitPrice}
                                   className="sf-result__price-val sf-result__price-val--final"
                                 />
@@ -534,6 +560,15 @@ function SalesProductCard({
   // line._cost ya no se muestra en el modo de venta POS por defecto (FIX06) — el dato sigue
   // existiendo en el modelo, solo se dejó de renderizar en esta tarjeta.
   const pvp = line._pvp;
+  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: "Precio lista" es el precio base del ítem
+  // (_basePrice, antes de que la lista de precios default aplique cualquier regla) — nunca el
+  // ya-descontado `pvp`, que es el que efectivamente terminó en `unitPrice`. Fallback a `pvp`
+  // solo para líneas recargadas de un borrador viejo sin el snapshot nuevo.
+  const listPrice = line._basePrice ?? pvp;
+  const discountDescription = line._isManualPrice
+    ? null
+    : (line._discountDescription ?? null);
+  const isManualPrice = line._isManualPrice === true;
   const stockQty = line._stockQty;
   const stockWarehouse = line._stockWarehouse;
   // Advertencia preventiva (UX) — solo con el dato de disponibilidad ya cargado en pantalla;
@@ -602,16 +637,24 @@ function SalesProductCard({
 
         {/* Col 2: Price List — costo nunca se muestra en el modo de venta POS por defecto */}
         <div className="sf-product__pricelist">
-          {pvp != null ? (
+          {listPrice != null ? (
             <div className="sf-product__pricelist-row">
               <ZHFieldLabel size="sm" className="sf-product__pricelist-label">
                 Precio lista
               </ZHFieldLabel>
               <ZHMoneyValue
-                value={pvp}
+                value={listPrice}
                 emphasis="strong"
                 className="sf-product__pricelist-value sf-product__pricelist-value--bold"
               />
+              {discountDescription && (
+                // Explica por qué "Precio facturado sin IVA" (col. 3) terminó por debajo de este
+                // valor — mismo dato que ya vio el usuario en el buscador antes de agregar el ítem.
+                <span className="sf-product__pricelist-discount">
+                  {line._priceListName ? `${line._priceListName}: ` : ""}
+                  {discountDescription}
+                </span>
+              )}
             </div>
           ) : (
             <span className="sales-invoice-details-empty-value">—</span>
@@ -663,6 +706,12 @@ function SalesProductCard({
                 disabled={disabled}
               />
             </ZHInputGroup>
+            {isManualPrice && (
+              // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: distingue "precio de lista/regla" de
+              // "precio editado a mano" — una vez editado, el desglose de descuento de la col. 2
+              // deja de aplicar (ya no es el precio vigente) y se reemplaza por este aviso.
+              <Badge label="Precio manual" variant="orange" upper size="md" />
+            )}
           </div>
         </div>
 

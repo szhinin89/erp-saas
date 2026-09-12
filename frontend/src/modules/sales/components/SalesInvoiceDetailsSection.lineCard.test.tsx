@@ -303,4 +303,52 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     const { container } = renderSection([baseLine()]);
     expect(container.querySelectorAll("[style]").length).toBe(0);
   });
+
+  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: mismo caso reportado — el buscador ya mostró
+  // "Precio base $2.10" / "Lista default -5%"; la línea agregada debe explicar lo mismo en vez
+  // de mostrar únicamente el precio ya descontado bajo la etiqueta "Precio lista".
+  it("con descuento de lista: 'Precio lista' muestra el precio base y explica la lista/descuento aplicado", () => {
+    const { container } = renderSection([
+      baseLine({
+        unitPrice: 2,
+        _pvp: 2,
+        _basePrice: 2.1,
+        _priceListName: "Lista General",
+        _discountDescription: "Descuento 5%",
+      }),
+    ]);
+    expect(moneyText(container, ".sf-product__pricelist-value")).toBe("$2.10");
+    expect(screen.getByText("Lista General: Descuento 5%")).not.toBeNull();
+  });
+
+  it("sin descuento de lista: 'Precio lista' es igual al precio facturado, sin explicación", () => {
+    renderSection([
+      baseLine({
+        unitPrice: 26,
+        _pvp: 26,
+        _basePrice: 26,
+        _discountDescription: null,
+      }),
+    ]);
+    expect(screen.queryByText(/descuento/i)).toBeNull();
+  });
+
+  it("editar el precio facturado a mano muestra el badge 'Precio manual' y oculta la explicación de descuento", () => {
+    const onUpdateLine = vi.fn();
+    renderSection(
+      [
+        baseLine({
+          unitPrice: 2,
+          _pvp: 2,
+          _basePrice: 2.1,
+          _priceListName: "Lista General",
+          _discountDescription: "Descuento 5%",
+          _isManualPrice: true,
+        }),
+      ],
+      { onUpdateLine },
+    );
+    expect(screen.getByText("Precio manual")).not.toBeNull();
+    expect(screen.queryByText(/descuento 5%/i)).toBeNull();
+  });
 });
