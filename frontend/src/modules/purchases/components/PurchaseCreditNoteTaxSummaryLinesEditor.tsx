@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove } from "react-hook-form";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
@@ -45,6 +46,15 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
 }: Readonly<Props>) {
   const { t } = useI18n();
 
+  // PURCHASE-CREDIT-NOTE-DISCOUNT-DECIMAL-INPUT-01 — el input estaba 100% controlado por
+  // `String(selected[idx].taxableBase)` (un número ya redondeado por `Number(raw)` en cada
+  // pulsación). Al escribir "3." el valor parseado es 3, y el siguiente render mostraba "3"
+  // otra vez — el punto decimal (y cualquier "0" final tras el punto, ej. "3.50" → "3.5")
+  // desaparecía en cada tecla, haciendo imposible teclear decimales. `rawInputById` guarda el
+  // texto tal como lo escribe el usuario por fila; el `useFieldArray` sigue recibiendo siempre
+  // el número ya parseado (sin cambios de comportamiento fuera de la edición en vivo del input).
+  const [rawInputById, setRawInputById] = useState<Record<string, string>>({});
+
   if (taxSummaries.length === 0) {
     return (
       <p className="pcn-lines-empty">
@@ -60,9 +70,10 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
     selected.findIndex((l) => l.sourcePurchaseInvoiceTaxSummaryId === sourceId);
 
   const handleBaseChange = (summary: PurchaseInvoiceTaxSummaryDto, raw: string) => {
+    setRawInputById((prev) => ({ ...prev, [summary.id]: raw }));
     const base = Number(raw);
     const idx = indexOf(summary.id);
-    if (!raw || base <= 0) {
+    if (!raw || Number.isNaN(base) || base <= 0) {
       if (idx >= 0) remove(idx);
       return;
     }
@@ -106,7 +117,8 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
         <tbody>
           {taxSummaries.map((summary) => {
             const idx = indexOf(summary.id);
-            const baseInput = idx >= 0 ? String(selected[idx].taxableBase) : "";
+            const baseInput =
+              rawInputById[summary.id] ?? (idx >= 0 ? String(selected[idx].taxableBase) : "");
             const exceeds = Number(baseInput || 0) > summary.availableTaxableBase;
             const preview = computeTaxPreview(
               Number(baseInput || 0),
@@ -137,6 +149,8 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
                 </td>
                 <td className="zh-text-align-right">
                   <ZhDecimalInput
+                    aria-label={`${t("purchases.creditNote.taxSummaryLines.discountBase", "Base descuento a aplicar")}: ${summary.vatName ?? summary.vatCode}`}
+                    aria-invalid={exceeds}
                     decimals={2}
                     positiveOnly
                     disabled={disabled || summary.availableTaxableBase <= 0}
