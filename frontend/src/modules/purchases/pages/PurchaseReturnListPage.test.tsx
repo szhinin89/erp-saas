@@ -48,6 +48,14 @@ function buildItem(overrides: Partial<PurchaseReturnDto> = {}): PurchaseReturnDt
     lines: [],
     createdAt: "2026-07-01T00:00:00Z",
     updatedAt: null,
+    supplierCreditNoteInvoiceNumber: null,
+    supplierCreditNoteAccessKey: null,
+    supplierCreditNoteIssueDate: null,
+    supplierCreditNoteAuthorizationDate: null,
+    supplierCreditNoteTotalAmount: null,
+    purchaseInvoiceNumber: null,
+    linkedPurchaseCreditNoteId: null,
+    linkedPurchaseCreditNoteStatus: null,
     ...overrides,
   };
 }

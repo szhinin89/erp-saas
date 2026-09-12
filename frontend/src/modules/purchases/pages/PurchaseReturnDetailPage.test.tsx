@@ -79,6 +79,12 @@ const DRAFT_RETURN = {
   updatedAt: null,
   supplierCreditNoteInvoiceNumber: null,
   supplierCreditNoteAccessKey: null,
+  supplierCreditNoteIssueDate: null,
+  supplierCreditNoteAuthorizationDate: null,
+  supplierCreditNoteTotalAmount: null,
+  purchaseInvoiceNumber: null,
+  linkedPurchaseCreditNoteId: null,
+  linkedPurchaseCreditNoteStatus: null,
 };
 
 const AUTHORIZED_RETURN_WITH_NAMES = {

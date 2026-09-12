@@ -39,6 +39,32 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         public Mock<IItemRepository> ItemRepo { get; } = new();
         public Mock<IWarehouseRepository> WarehouseRepo { get; } = new();
         public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
+        public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
+        public Mock<IPurchaseCreditNoteRepository> CreditNoteRepo { get; } = new();
+
+        public Mocks()
+        {
+            InvoiceRepo
+                .Setup(r =>
+                    r.GetJournalSourceSummariesByIdsAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<IReadOnlyCollection<Guid>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    new Dictionary<Guid, (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)>()
+                );
+            CreditNoteRepo
+                .Setup(r =>
+                    r.GetByLinkedPurchaseReturnIdAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync((PurchaseCreditNote?)null);
+        }
 
         public GetPurchaseReturnByIdHandler BuildHandler() =>
             new(
@@ -46,6 +72,8 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                 ItemRepo.Object,
                 WarehouseRepo.Object,
                 ReceptionRepo.Object,
+                InvoiceRepo.Object,
+                CreditNoteRepo.Object,
                 FixedTenant()
             );
     }
@@ -246,6 +274,116 @@ public sealed class GetPurchaseReturnByIdHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.SupplierCreditNoteInvoiceNumber.Should().Be("001-001-000000099");
         result.Value.SupplierCreditNoteAccessKey.Should().Be("AK-12345");
+        result.Value.SupplierCreditNoteIssueDate.Should().Be(receptionDoc.IssueDate);
+        result.Value.SupplierCreditNoteAuthorizationDate.Should().Be(receptionDoc.AuthorizationDate);
+        result.Value.SupplierCreditNoteTotalAmount.Should().Be(115m);
+    }
+
+    [Fact]
+    public async Task Handle_resuelve_el_numero_de_la_factura_afectada()
+    {
+        var purchaseReturn = BuildAuthorizedReturn();
+        var m = new Mocks();
+        m.ReturnRepo
+            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(purchaseReturn);
+        m.ItemRepo
+            .Setup(r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Array.Empty<Item>());
+        m.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Warehouse?)null);
+        m.InvoiceRepo
+            .Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(purchaseReturn.PurchaseInvoiceId)),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string InvoiceNumber, string SupplierName, string Status, DateOnly IssueDate)>
+                {
+                    [purchaseReturn.PurchaseInvoiceId] = ("001-001-000000042", "Proveedor Test", "Confirmed", DateOnly.FromDateTime(DateTime.UtcNow)),
+                }
+            );
+
+        var handler = m.BuildHandler();
+        var result = await handler.Handle(
+            new GetPurchaseReturnByIdQuery(purchaseReturn.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.PurchaseInvoiceNumber.Should().Be("001-001-000000042");
+    }
+
+    [Fact]
+    public async Task Handle_resuelve_la_PurchaseCreditNote_interna_vinculada_si_existe()
+    {
+        var purchaseReturn = BuildAuthorizedReturn();
+        var creditNote = PurchaseCreditNote.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            purchaseReturn.PurchaseInvoiceId,
+            receptionDocumentId: null,
+            ERP.Domain.Modules.Purchases.Enums.PurchaseCreditNoteApplicationType.Return,
+            "005-001-000000010",
+            accessKey: null,
+            authorizationNumber: null,
+            authorizationDate: null,
+            issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            reason: "Devolución de producto",
+            lines: new[]
+            {
+                new PurchaseCreditNote.DraftLineInput("Línea libre", 100m, "10", 15m, 15m),
+            },
+            taxSummaryLines: Array.Empty<PurchaseCreditNote.TaxSummaryDraftLineInput>(),
+            UserId,
+            Guid.NewGuid(),
+            "cn-create-hash"
+        );
+        creditNote.LinkPurchaseReturn(purchaseReturn.Id, UserId);
+
+        var m = new Mocks();
+        m.ReturnRepo
+            .Setup(r => r.GetByIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(purchaseReturn);
+        m.ItemRepo
+            .Setup(r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Array.Empty<Item>());
+        m.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Warehouse?)null);
+        m.CreditNoteRepo
+            .Setup(r =>
+                r.GetByLinkedPurchaseReturnIdAsync(TenantId, purchaseReturn.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(creditNote);
+
+        var handler = m.BuildHandler();
+        var result = await handler.Handle(
+            new GetPurchaseReturnByIdQuery(purchaseReturn.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.LinkedPurchaseCreditNoteId.Should().Be(creditNote.Id);
+        result.Value.LinkedPurchaseCreditNoteStatus.Should().Be("Draft");
     }
 
     [Fact]

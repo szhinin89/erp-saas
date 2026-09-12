@@ -29,7 +29,19 @@ public sealed record PurchaseReturnDto(
     // resuelto desde PurchaseReceptionDocument (mismo agregado que SupplierCreditNoteDocumentId
     // ya referencia, ver RegisterAndLinkSupplierCreditNoteHandler).
     string? SupplierCreditNoteInvoiceNumber = null,
-    string? SupplierCreditNoteAccessKey = null
+    string? SupplierCreditNoteAccessKey = null,
+    // PURCHASE-RETURN-CREDIT-NOTE-DETAIL-ENRICHMENT-01 — mismo criterio que los dos campos
+    // anteriores: solo poblados por GetPurchaseReturnByIdHandler, nunca inventados si no se
+    // pueden resolver (quedan en null).
+    DateOnly? SupplierCreditNoteIssueDate = null,
+    DateTime? SupplierCreditNoteAuthorizationDate = null,
+    decimal? SupplierCreditNoteTotalAmount = null,
+    string? PurchaseInvoiceNumber = null,
+    // Referencia opcional a la PurchaseCreditNote interna (FLOW-READY-02C) vinculada a esta
+    // devolución vía LinkPurchaseCreditNoteToReturn — flujo distinto al registro manual de
+    // SupplierCreditNoteDocumentId; una devolución puede tener una sin la otra, o ninguna.
+    Guid? LinkedPurchaseCreditNoteId = null,
+    string? LinkedPurchaseCreditNoteStatus = null
 );
 
 /// <summary>P0-02 Fase 5 — proyección de lectura de <c>PurchaseReturnDetail</c>.</summary>

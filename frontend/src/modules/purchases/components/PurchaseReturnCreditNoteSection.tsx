@@ -1,20 +1,27 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
-import { todayIso } from "../../../lib/formatters/dateFormatters";
+import { formatDate, formatDateTime, todayIso } from "../../../lib/formatters/dateFormatters";
 import {
   linkSupplierCreditNoteSchema,
   emptyLinkSupplierCreditNoteForm,
   type LinkSupplierCreditNoteFormValues,
 } from "../schemas/purchaseReturnSchema";
 import { purchaseReturnService, type PurchaseReturnDto } from "../api/purchaseReturnService";
+import {
+  getPurchaseCreditNoteStatusLabel,
+  PURCHASE_CREDIT_NOTE_STATUS_BADGE,
+} from "../utils/purchaseCreditNoteStatus";
 
 type Props = {
   purchaseReturn: PurchaseReturnDto;
@@ -33,6 +40,7 @@ type Props = {
  * el inicio (F-V1/F-V2).
  */
 export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Props) {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -44,31 +52,91 @@ export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Pr
   });
 
   if (purchaseReturn.fiscalStatus === "SupplierCreditNoteRegistered") {
-    // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — número/clave legibles en vez del Id crudo del
-    // documento; si por alguna razón no se pudieron resolver, cae de vuelta al Id (nunca oculta
-    // que hay una NC vinculada).
+    // PURCHASE-RETURN-CREDIT-NOTE-DETAIL-ENRICHMENT-01 — número/clave/fecha/total legibles en
+    // vez del Id crudo del documento; si por alguna razón no se pudo resolver ningún dato (p. ej.
+    // el documento de recepción fue eliminado), se muestra un fallback claro — nunca "documento ."
+    // vacío ni el GUID crudo.
     const hasReadableInfo = Boolean(purchaseReturn.supplierCreditNoteInvoiceNumber);
     return (
       <ZHCard title="Nota de Crédito del proveedor">
-        <p className="sr-reason-readonly">
-          {hasReadableInfo ? (
-            <>
-              Nota de Crédito vinculada — N.º{" "}
-              <strong>{purchaseReturn.supplierCreditNoteInvoiceNumber}</strong>
-              {purchaseReturn.supplierCreditNoteAccessKey && (
-                <>
-                  {" "}
-                  · Clave de acceso: <strong>{purchaseReturn.supplierCreditNoteAccessKey}</strong>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              Nota de Crédito vinculada — documento{" "}
-              {purchaseReturn.supplierCreditNoteDocumentId}.
-            </>
-          )}
-        </p>
+        {hasReadableInfo ? (
+          <div className="sr-general-grid">
+            <div>
+              <span className="sr-general-grid__label">N.º NC proveedor</span>
+              <span className="sr-general-grid__value">
+                {purchaseReturn.supplierCreditNoteInvoiceNumber}
+              </span>
+            </div>
+            <div>
+              <span className="sr-general-grid__label">Clave de acceso</span>
+              <span className="sr-general-grid__value">
+                {purchaseReturn.supplierCreditNoteAccessKey ?? "—"}
+              </span>
+            </div>
+            <div>
+              <span className="sr-general-grid__label">Fecha de emisión</span>
+              <span className="sr-general-grid__value">
+                {formatDate(purchaseReturn.supplierCreditNoteIssueDate)}
+              </span>
+            </div>
+            {purchaseReturn.supplierCreditNoteAuthorizationDate && (
+              <div>
+                <span className="sr-general-grid__label">Fecha de autorización</span>
+                <span className="sr-general-grid__value">
+                  {formatDateTime(purchaseReturn.supplierCreditNoteAuthorizationDate)}
+                </span>
+              </div>
+            )}
+            {purchaseReturn.supplierCreditNoteTotalAmount !== null && (
+              <div>
+                <span className="sr-general-grid__label">Total NC</span>
+                <span className="sr-general-grid__value">
+                  <ZHMoneyValue value={purchaseReturn.supplierCreditNoteTotalAmount} />
+                </span>
+              </div>
+            )}
+            <div>
+              <span className="sr-general-grid__label">Factura afectada</span>
+              <span className="sr-general-grid__value">
+                {purchaseReturn.purchaseInvoiceNumber ?? purchaseReturn.purchaseInvoiceId}
+              </span>
+            </div>
+            {purchaseReturn.linkedPurchaseCreditNoteId && (
+              <div>
+                <span className="sr-general-grid__label">NC de compra (interna)</span>
+                <span className="sr-general-grid__value">
+                  {purchaseReturn.linkedPurchaseCreditNoteStatus && (
+                    <Badge
+                      label={getPurchaseCreditNoteStatusLabel(
+                        purchaseReturn.linkedPurchaseCreditNoteStatus,
+                      )}
+                      variant={
+                        PURCHASE_CREDIT_NOTE_STATUS_BADGE[
+                          purchaseReturn.linkedPurchaseCreditNoteStatus
+                        ] ?? "gray"
+                      }
+                    />
+                  )}
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    onClick={() =>
+                      navigate(`/purchases/credit-notes/${purchaseReturn.linkedPurchaseCreditNoteId}`)
+                    }
+                  >
+                    Ver NC de compra
+                  </ZHBtn>
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="sr-reason-readonly">
+            {purchaseReturn.supplierCreditNoteDocumentId
+              ? "Nota de Crédito vinculada — NC no encontrada."
+              : "Sin nota de crédito vinculada."}
+          </p>
+        )}
       </ZHCard>
     );
   }

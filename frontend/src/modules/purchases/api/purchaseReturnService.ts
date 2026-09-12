@@ -43,6 +43,17 @@ export interface PurchaseReturnDto {
    * resolver o si aún no hay NC vinculada. */
   supplierCreditNoteInvoiceNumber: string | null;
   supplierCreditNoteAccessKey: string | null;
+  /** PURCHASE-RETURN-CREDIT-NOTE-DETAIL-ENRICHMENT-01 — mismo criterio que los dos campos
+   * anteriores: resueltos desde el documento de recepción, null si no se pudo resolver. */
+  supplierCreditNoteIssueDate: string | null;
+  supplierCreditNoteAuthorizationDate: string | null;
+  supplierCreditNoteTotalAmount: number | null;
+  /** Número de la factura de compra afectada por la devolución. */
+  purchaseInvoiceNumber: string | null;
+  /** PurchaseCreditNote interna (FLOW-READY-02C) vinculada vía LinkPurchaseCreditNoteToReturn —
+   * flujo distinto al registro manual de supplierCreditNoteDocumentId; puede no existir. */
+  linkedPurchaseCreditNoteId: string | null;
+  linkedPurchaseCreditNoteStatus: string | null;
 }
 
 export interface PurchaseReturnListResultDto {

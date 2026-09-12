@@ -28,6 +28,8 @@ public sealed class GetPurchaseReturnByIdHandler
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
+    private readonly IPurchaseInvoiceRepository _invoiceRepo;
+    private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly ICurrentTenant _t;
 
     public GetPurchaseReturnByIdHandler(
@@ -35,6 +37,8 @@ public sealed class GetPurchaseReturnByIdHandler
         IItemRepository itemRepo,
         IWarehouseRepository warehouseRepo,
         IPurchaseReceptionDocumentRepository receptionRepo,
+        IPurchaseInvoiceRepository invoiceRepo,
+        IPurchaseCreditNoteRepository creditNoteRepo,
         ICurrentTenant t
     )
     {
@@ -42,6 +46,8 @@ public sealed class GetPurchaseReturnByIdHandler
         _itemRepo = itemRepo;
         _warehouseRepo = warehouseRepo;
         _receptionRepo = receptionRepo;
+        _invoiceRepo = invoiceRepo;
+        _creditNoteRepo = creditNoteRepo;
         _t = t;
     }
 
@@ -99,18 +105,51 @@ public sealed class GetPurchaseReturnByIdHandler
 
         string? creditNoteInvoiceNumber = null;
         string? creditNoteAccessKey = null;
+        DateOnly? creditNoteIssueDate = null;
+        DateTime? creditNoteAuthorizationDate = null;
+        decimal? creditNoteTotalAmount = null;
         if (dto.SupplierCreditNoteDocumentId is { } documentId)
         {
             var document = await _receptionRepo.GetByIdAsync(tenantId, documentId, ct);
             creditNoteInvoiceNumber = document?.InvoiceNumber;
             creditNoteAccessKey = document?.AccessKey;
+            creditNoteIssueDate = document?.IssueDate;
+            creditNoteAuthorizationDate = document?.AuthorizationDate;
+            creditNoteTotalAmount = document?.TotalAmount;
         }
+
+        // PURCHASE-RETURN-CREDIT-NOTE-DETAIL-ENRICHMENT-01 — "Factura afectada": proyección
+        // liviana ya usada por CxP/contabilidad para no cargar el agregado PurchaseInvoice
+        // completo (mismo criterio que ItemSku/WarehouseName arriba).
+        var invoiceSummaries = await _invoiceRepo.GetJournalSourceSummariesByIdsAsync(
+            tenantId,
+            new[] { dto.PurchaseInvoiceId },
+            ct
+        );
+        var invoiceNumber = invoiceSummaries.TryGetValue(dto.PurchaseInvoiceId, out var invoiceSummary)
+            ? invoiceSummary.InvoiceNumber
+            : null;
+
+        // FLOW-READY-02C-R1.1 — la PurchaseCreditNote interna (creada/vinculada vía
+        // LinkPurchaseCreditNoteToReturn o PurchaseCreditNoteDraftUseCases) es un flujo distinto
+        // al registro manual de SupplierCreditNoteDocumentId; puede o no existir.
+        var linkedCreditNote = await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(
+            tenantId,
+            dto.Id,
+            ct
+        );
 
         return dto with
         {
             Lines = enrichedLines,
             SupplierCreditNoteInvoiceNumber = creditNoteInvoiceNumber,
             SupplierCreditNoteAccessKey = creditNoteAccessKey,
+            SupplierCreditNoteIssueDate = creditNoteIssueDate,
+            SupplierCreditNoteAuthorizationDate = creditNoteAuthorizationDate,
+            SupplierCreditNoteTotalAmount = creditNoteTotalAmount,
+            PurchaseInvoiceNumber = invoiceNumber,
+            LinkedPurchaseCreditNoteId = linkedCreditNote?.Id,
+            LinkedPurchaseCreditNoteStatus = linkedCreditNote?.Status.ToString(),
         };
     }
 }
