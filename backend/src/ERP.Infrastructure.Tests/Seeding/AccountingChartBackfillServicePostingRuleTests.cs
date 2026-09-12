@@ -146,6 +146,90 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
     }
 
     /// <summary>
+    /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — a diferencia del escenario 5(a)
+    /// (Retentions, 2 → 3 líneas, detectable por conteo), esta corrección cambia la CUENTA de 2
+    /// líneas existentes sin cambiar el conteo (sigue en 4) — EnsureAsync solo la detecta gracias a
+    /// <see cref="AccountingBootstrapStep.MatchesLegacyPurchaseCreditNoteAuthorizedForm"/>, no al
+    /// chequeo de conteo. Simula una company ya seedeada con la forma vieja (Subtotal/TaxIce
+    /// acreditando "1.1.04.001 Inventario mercaderias" en vez de "4.2.01.002 Descuentos obtenidos
+    /// en compras") y confirma que el backfill la detecta y corrige.
+    /// </summary>
+    [Fact]
+    public async Task EnsureAsync_detecta_y_corrige_company_con_regla_legacy_de_NC_descuento_acreditando_inventario()
+    {
+        var dbName = Guid.NewGuid().ToString();
+
+        await using (var db = NewDbContext(dbName))
+        {
+            await SeedActiveCompanyAsync(db);
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            // Reemplaza la regla vigente (4 líneas, Subtotal/TaxIce → 4.2.01.002) por la forma
+            // vieja EXACTA (Subtotal/TaxIce → 1.1.04.001), simulando una company sembrada antes de
+            // esta fase.
+            var rule = await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId
+                    && r.SourceModule == "Purchases"
+                    && r.FactType == "PurchaseCreditNoteAuthorized"
+                );
+            db.PostingRules.Remove(rule);
+            await db.SaveChangesAsync();
+
+            var payableAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001")
+            ).Id;
+            var inventoryAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.04.001")
+            ).Id;
+            var vatAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.05.001")
+            ).Id;
+
+            var legacyRule = PostingRule.Create(
+                _tenantId, _companyId, "Purchases", "PurchaseCreditNoteAuthorized", null, null, null, _actorId
+            );
+            legacyRule.AddLine(payableAccountId, AccountNature.Debit, PostingAmountKind.AppliedToPayable);
+            legacyRule.AddLine(inventoryAccountId, AccountNature.Credit, PostingAmountKind.Subtotal);
+            legacyRule.AddLine(inventoryAccountId, AccountNature.Credit, PostingAmountKind.TaxIce);
+            legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.TaxVat);
+            db.PostingRules.Add(legacyRule);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var service = NewService(db);
+            await service.EnsureAsync();
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var corrected = await verifyDb
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "PurchaseCreditNoteAuthorized"
+            );
+        corrected.Lines.Should().HaveCount(4);
+        var discountAccountId = (
+            await verifyDb.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "4.2.01.002")
+        ).Id;
+        var inventoryAccountIdAfter = (
+            await verifyDb.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.04.001")
+        ).Id;
+        corrected.Lines.Where(l => l.AmountKind is PostingAmountKind.Subtotal or PostingAmountKind.TaxIce)
+            .Should()
+            .OnlyContain(l => l.AccountId == discountAccountId);
+        corrected.Lines.Should().NotContain(l => l.AccountId == inventoryAccountIdAfter);
+    }
+
+    /// <summary>
     /// Escenario 5(b): company activa completamente sin ninguna PostingRule sembrada recibe el
     /// seed completo (todas las reglas de <c>MinimalPostingRules</c>, incluida la de Retentions ya
     /// con sus 3 líneas) vía backfill — comportamiento ya existente, confirmado tal cual sigue

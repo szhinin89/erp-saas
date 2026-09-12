@@ -142,7 +142,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // intermedio) — se agregan las 10 cuentas agrupadoras intermedias faltantes
     // (3.1.01/3.1.02/3.1.03/4.2.01/5.1.01/6.1.01/6.2.01/6.3.01/6.4.01/6.5.01), todas
     // AllowsPosting=false y ninguna referenciada por MinimalPostingRules.
-    public const int RetailChartAccountCount = 102;
+    public const int RetailChartAccountCount = 103;
 
     private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
@@ -208,6 +208,12 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         new("4.2", "Otros ingresos", "4", AccountType.Income, AccountNature.Credit, false),
         new("4.2.01", "Ajustes y diferencias positivas", "4.2", AccountType.Income, AccountNature.Credit, false),
         new("4.2.01.001", "Ingresos por ajustes positivos de inventario", "4.2.01", AccountType.Income, AccountNature.Credit, true),
+        // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01: NC de compra tipo Descuento/Promoción
+        // reduce CxP pero nunca mueve inventario/Kardex (a diferencia de NC tipo Devolución, que sí
+        // afecta "1.1.04.001 Inventario mercaderias" vía PurchaseReturn) — necesitaba una cuenta
+        // propia de contrapartida, nunca inventario. Mismo grupo económico que "4.2.01.001" (ajuste/
+        // diferencia reconocida sin mover inventario), llena el hueco de numeración ya reservado.
+        new("4.2.01.002", "Descuentos obtenidos en compras", "4.2.01", AccountType.Income, AccountNature.Credit, true),
         new("4.2.01.003", "Diferencias positivas de caja", "4.2.01", AccountType.Income, AccountNature.Credit, true),
         new("5", "Costos", null, AccountType.Cost, AccountNature.Debit, false),
         new("5.1", "Costo de ventas", "5", AccountType.Cost, AccountNature.Debit, false),
@@ -328,13 +334,25 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
+        // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01: Subtotal/TaxIce acreditaban
+        // "1.1.04.001 Inventario mercaderias" — incorrecto para este FactType. Esta regla es
+        // EXCLUSIVA de PurchaseCreditNoteApplicationType.Discount (ver remarks del traductor:
+        // Return nunca se autoriza aquí, su efecto contable es "Purchases"/"PurchaseReturn" arriba,
+        // que sí mueve inventario porque PurchaseReturn sí mueve Kardex); un descuento/promoción
+        // nunca mueve inventario ni Kardex, así que su contrapartida no puede ser una cuenta de
+        // inventario. Ambas líneas pasan a "4.2.01.002 Descuentos obtenidos en compras" (mismo
+        // AmountKind/Nature, solo cambia la cuenta) — TaxVat se mantiene en "1.1.05.001 IVA credito
+        // tributario" (correcto: sí es una reversión de crédito tributario, no de inventario).
+        // Una company que ya tenía sembrada la forma vieja se corrige vía
+        // TryCorrectLegacyPurchaseCreditNoteAuthorizedRule (mismo criterio exacto-o-nada que
+        // TryCorrectLegacyRetentionsDocumentIssuedRule) — nunca reescribe asientos ya posteados.
         new(
             "Purchases",
             "PurchaseCreditNoteAuthorized",
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
-                new("1.1.04.001", AccountNature.Credit, PostingAmountKind.Subtotal),
-                new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
+                new("4.2.01.002", AccountNature.Credit, PostingAmountKind.Subtotal),
+                new("4.2.01.002", AccountNature.Credit, PostingAmountKind.TaxIce),
                 new("1.1.05.001", AccountNature.Credit, PostingAmountKind.TaxVat),
             ]
         ),
@@ -534,6 +552,48 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     private static readonly MinimalPostingRuleLine LegacyRetentionsDocumentIssuedVatLine =
         new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention);
 
+    // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — forma vieja sembrada antes de esta fase
+    // para "Purchases"/"PurchaseCreditNoteAuthorized" (Subtotal/TaxIce acreditando por error
+    // "1.1.04.001 Inventario mercaderias"). Usada exclusivamente para reconocer con precisión (nunca
+    // adivinar) qué companies tienen esa forma vieja exacta y corregirlas — ver
+    // TryCorrectLegacyPurchaseCreditNoteAuthorizedRule. No se usa para nada más.
+    private static readonly IReadOnlyList<MinimalPostingRuleLine> LegacyPurchaseCreditNoteAuthorizedLines =
+    [
+        new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
+        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.Subtotal),
+        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
+        new("1.1.05.001", AccountNature.Credit, PostingAmountKind.TaxVat),
+    ];
+
+    // Las dos líneas viejas (Haber Inventario) que deben eliminarse y ser reemplazadas por las
+    // mismas dos líneas apuntando a "4.2.01.002 Descuentos obtenidos en compras" — mismo
+    // AmountKind/Nature, solo cambia la cuenta. AppliedToPayable/TaxVat no cambian.
+    private static readonly IReadOnlyList<MinimalPostingRuleLine> LegacyPurchaseCreditNoteAuthorizedInventoryLines =
+    [
+        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.Subtotal),
+        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
+    ];
+
+    /// <summary>
+    /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — a diferencia del gap de líneas de
+    /// Retentions/DocumentIssued (2 → 3 líneas, detectable por conteo), esta corrección cambia la
+    /// CUENTA de 2 líneas existentes sin cambiar cuántas hay (sigue en 4) — <c>RequiredPostingRuleLineCounts</c>
+    /// nunca la detectaría. <see cref="AccountingChartBackfillService.EnsureAsync"/> usa este método
+    /// (por código de cuenta, no por Id — el backfill no necesariamente ya resolvió el Id de cada
+    /// cuenta) para decidir si una company activa con esta regla ya sembrada necesita re-ejecutar el
+    /// bootstrap (que aplicará <see cref="TryCorrectLegacyPurchaseCreditNoteAuthorizedRule"/>).
+    /// </summary>
+    internal static bool MatchesLegacyPurchaseCreditNoteAuthorizedForm(
+        IReadOnlyCollection<(string AccountCode, AccountNature Nature, PostingAmountKind AmountKind)> lines
+    )
+    {
+        var currentSet = lines.ToHashSet();
+        var legacySet = LegacyPurchaseCreditNoteAuthorizedLines
+            .Select(l => (l.AccountCode, l.Nature, l.AmountKind))
+            .ToHashSet();
+        return currentSet.Count == legacySet.Count && currentSet.SetEquals(legacySet);
+    }
+
     // RETENTIONS-POSTING-RULE-SEED-01H: expone las claves (SourceModule, FactType) requeridas para
     // que AccountingChartBackfillService pueda detectar con precisión si a una company activa ya
     // seedeada le falta específicamente una regla nueva (p. ej. esta misma fase agregando
@@ -692,7 +752,24 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                     )
                 : null;
 
-        if (missingRules.Count == 0 && legacyRule is null)
+        // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — mismo criterio exacto que
+        // legacyRule/Retentions arriba: null si la regla no existe o ya tiene la forma vigente.
+        var legacyCreditNoteRule =
+            existingRuleKeySet.Contains(("Purchases", "PurchaseCreditNoteAuthorized"))
+                ? await _db
+                    .PostingRules.IgnoreQueryFilters()
+                    .Include(r => r.Lines)
+                    .FirstOrDefaultAsync(
+                        r =>
+                            r.TenantId == tenantId
+                            && r.CompanyId == companyId
+                            && r.SourceModule == "Purchases"
+                            && r.FactType == "PurchaseCreditNoteAuthorized",
+                        cancellationToken
+                    )
+                : null;
+
+        if (missingRules.Count == 0 && legacyRule is null && legacyCreditNoteRule is null)
         {
             LogPostingRulesSkipped(companyId);
             return;
@@ -759,8 +836,13 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             accountByCode,
             companyId
         );
+        var correctedLegacyCreditNoteRule = TryCorrectLegacyPurchaseCreditNoteAuthorizedRule(
+            legacyCreditNoteRule,
+            accountByCode,
+            companyId
+        );
 
-        if (seededRulesCount == 0 && !correctedLegacyRule)
+        if (seededRulesCount == 0 && !correctedLegacyRule && !correctedLegacyCreditNoteRule)
         {
             LogPostingRulesSkipped(companyId);
             return;
@@ -771,6 +853,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             LogPostingRulesSeeded(seededRulesCount, companyId);
         if (correctedLegacyRule)
             LogLegacyRetentionsRuleCorrected(companyId);
+        if (correctedLegacyCreditNoteRule)
+            LogLegacyPurchaseCreditNoteAuthorizedRuleCorrected(companyId);
     }
 
     /// <summary>
@@ -831,6 +915,62 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         return true;
     }
 
+    /// <summary>
+    /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — corrige <paramref name="rule"/> de la
+    /// forma vieja (Subtotal/TaxIce acreditando por error "1.1.04.001 Inventario mercaderias") a la
+    /// forma vigente (mismas líneas, cuenta "4.2.01.002 Descuentos obtenidos en compras") SOLO si
+    /// sus líneas actuales coinciden EXACTAMENTE con
+    /// <see cref="LegacyPurchaseCreditNoteAuthorizedLines"/> — cualquier otra forma (ya corregida,
+    /// o modificada manualmente por un admin) se deja intacta, nunca se adivina ni se sobreescribe
+    /// (mismo criterio que <see cref="TryCorrectLegacyRetentionsDocumentIssuedRule"/>). Nunca toca
+    /// JournalEntry ya posteados con la regla vieja — solo la configuración de la regla, para que
+    /// autorizaciones futuras usen la cuenta correcta. Devuelve <c>false</c> sin tocar nada si
+    /// <paramref name="rule"/> es <c>null</c>, si no coincide con la forma vieja, o si la cuenta
+    /// nueva no está disponible (inactiva/sin AllowsPosting).
+    /// </summary>
+    private bool TryCorrectLegacyPurchaseCreditNoteAuthorizedRule(
+        PostingRule? rule,
+        Dictionary<string, AccountSeedLookup> accountByCode,
+        Guid companyId
+    )
+    {
+        if (rule is null)
+            return false;
+
+        var currentLines = rule
+            .Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind))
+            .ToHashSet();
+        var legacyLines = LegacyPurchaseCreditNoteAuthorizedLines
+            .Select(l => (accountByCode[l.AccountCode].Id, l.Nature, l.AmountKind))
+            .ToHashSet();
+
+        if (currentLines.Count != legacyLines.Count || !currentLines.SetEquals(legacyLines))
+            return false;
+
+        if (
+            !accountByCode.TryGetValue("4.2.01.002", out var discountAccount)
+            || !discountAccount.IsActive
+            || !discountAccount.AllowsPosting
+        )
+        {
+            LogPostingRuleSkippedInvalidAccount(
+                "Purchases",
+                "PurchaseCreditNoteAuthorized",
+                "4.2.01.002",
+                companyId
+            );
+            return false;
+        }
+
+        var inventoryAccount = accountByCode["1.1.04.001"];
+        foreach (var oldLine in LegacyPurchaseCreditNoteAuthorizedInventoryLines)
+        {
+            rule.RemoveLine(inventoryAccount.Id, oldLine.Nature, oldLine.AmountKind);
+            rule.AddLine(discountAccount.Id, oldLine.Nature, oldLine.AmountKind);
+        }
+        return true;
+    }
+
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "Seeded {Count} retail chart-of-accounts entries for company {CompanyId}."
@@ -873,6 +1013,13 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             + "IVA/Renta separated) for company {CompanyId}."
     )]
     private partial void LogLegacyRetentionsRuleCorrected(Guid companyId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Corrected legacy Purchases/PurchaseCreditNoteAuthorized posting rule (Subtotal/TaxIce "
+            + "moved from Inventory to Purchase Discounts account) for company {CompanyId}."
+    )]
+    private partial void LogLegacyPurchaseCreditNoteAuthorizedRuleCorrected(Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

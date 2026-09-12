@@ -359,6 +359,50 @@ public sealed class AccountingBootstrapStepTests
     }
 
     /// <summary>
+    /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — el seed de una company nueva crea la
+    /// PostingRule "Purchases"/"PurchaseCreditNoteAuthorized" con Subtotal/TaxIce acreditando
+    /// "4.2.01.002 Descuentos obtenidos en compras" — nunca "1.1.04.001 Inventario mercaderias" (NC
+    /// por descuento no mueve inventario ni Kardex, a diferencia de NC por devolución).
+    /// </summary>
+    [Fact]
+    public async Task Seed_crea_postingrule_purchasecreditnoteauthorized_acreditando_descuentos_no_inventario()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using var db = NewDbContext(dbName);
+        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId
+                && r.SourceModule == "Purchases"
+                && r.FactType == "PurchaseCreditNoteAuthorized"
+            );
+        rule.Lines.Should().HaveCount(4);
+
+        var discountAccountId = (
+            await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "4.2.01.002")
+        ).Id;
+
+        var subtotalLine = rule.Lines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.Subtotal).Which;
+        subtotalLine.Nature.Should().Be(AccountNature.Credit);
+        subtotalLine.AccountId.Should().Be(discountAccountId);
+
+        var iceLine = rule.Lines.Should().ContainSingle(l => l.AmountKind == PostingAmountKind.TaxIce).Which;
+        iceLine.Nature.Should().Be(AccountNature.Credit);
+        iceLine.AccountId.Should().Be(discountAccountId);
+
+        var accountCodesById = await db.Accounts
+            .Where(a => a.CompanyId == _companyId)
+            .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
+        rule.Lines.Select(l => accountCodesById[l.AccountId])
+            .Should()
+            .NotContain("1.1.04.001", "NC por descuento nunca debe tocar Inventario mercaderias");
+    }
+
+    /// <summary>
     /// RETENTIONS-POSTING-RULE-SEED-01H / RETENTIONS-TAX-COMPONENT-POSTING-02C — el seed crea la
     /// PostingRule de Retentions con las 3 líneas exactas del ejemplo conceptual de
     /// docs/decisions/RETENTIONS-MODULE-DESIGN-01.md § "Impacto contable" separado por componente

@@ -121,7 +121,33 @@ public sealed partial class AccountingChartBackfillService
                     && actualLineCount >= required.Value
             );
 
-            if (!hasAllRetailAccounts || !hasAllPostingRules)
+            // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — esta corrección cambia la CUENTA
+            // de 2 líneas sin cambiar el conteo (sigue en 4), así que hasAllPostingRules (arriba)
+            // nunca la detecta. Solo se consulta el contenido real de la regla si la clave existe
+            // (evita la query extra para el resto de companies).
+            var hasLegacyCreditNoteAuthorizedForm = false;
+            if (existingRuleLineCounts.ContainsKey(("Purchases", "PurchaseCreditNoteAuthorized")))
+            {
+                var creditNoteRuleLines = await (
+                    from r in _db.PostingRules.IgnoreQueryFilters()
+                    from l in r.Lines
+                    join a in _db.Accounts.IgnoreQueryFilters() on l.AccountId equals a.Id
+                    where
+                        r.TenantId == company.TenantId
+                        && r.CompanyId == company.Id
+                        && r.SourceModule == "Purchases"
+                        && r.FactType == "PurchaseCreditNoteAuthorized"
+                    select new { Code = a.Code.Value, l.Nature, l.AmountKind }
+                ).ToListAsync(cancellationToken);
+                hasLegacyCreditNoteAuthorizedForm =
+                    AccountingBootstrapStep.MatchesLegacyPurchaseCreditNoteAuthorizedForm(
+                        creditNoteRuleLines
+                            .Select(l => (l.Code, l.Nature, l.AmountKind))
+                            .ToArray()
+                    );
+            }
+
+            if (!hasAllRetailAccounts || !hasAllPostingRules || hasLegacyCreditNoteAuthorizedForm)
                 companiesPendingBackfill.Add((company.Id, company.TenantId));
         }
 
