@@ -25,6 +25,7 @@ import { accountingApi, type AccountDto } from "../../accounting/api/accountingA
 import {
   sriLookupFacade,
   type SriTaxSupportLookup,
+  type SriVatRateLookup,
 } from "../../items/facades/sriLookupFacade";
 import { paymentTermService, type PaymentTermDto } from "../../masterData/api/paymentTermService";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
@@ -56,10 +57,12 @@ import {
   documentToHeader,
   documentToLines,
   documentToSupplier,
+  findVatCodeForRate,
   flattenExpenseSubcategories,
   hasConfiguredExpenseSubcategory,
   newExpenseDraftLine,
   parseExpenseNumber,
+  type VatRateByCode,
 } from "../utils/expenseDocumentDraftModel";
 import {
   buildRetentionIntentRequest,
@@ -115,6 +118,7 @@ export function ExpenseDocumentFormPage() {
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
   const [sriTaxSupports, setSriTaxSupports] = useState<SriTaxSupportLookup[]>([]);
+  const [vatRates, setVatRates] = useState<SriVatRateLookup[]>([]);
   const [document, setDocument] = useState<ExpenseDocumentDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -138,7 +142,21 @@ export function ExpenseDocumentFormPage() {
     () => new Map(accounts.map((account) => [account.id, account])),
     [accounts],
   );
-  const totals = useMemo(() => calculateExpenseDocumentTotals(lines), [lines]);
+  const vatRateByCode: VatRateByCode = useMemo(
+    () => new Map(vatRates.map((rate) => [rate.code, rate.percentage])),
+    [vatRates],
+  );
+  const totals = useMemo(
+    () => calculateExpenseDocumentTotals(lines, vatRateByCode),
+    [lines, vatRateByCode],
+  );
+  const receptionMismatch = useMemo(() => {
+    if (!reception) return null;
+    const tolerance = 0.01;
+    const diff = Number((totals.grandTotal - reception.total).toFixed(2));
+    if (Math.abs(diff) <= tolerance) return null;
+    return { calculatedTotal: totals.grandTotal, receivedTotal: reception.total, diff };
+  }, [reception, totals.grandTotal]);
   const canSave = isNew ? canCreate : canUpdate;
   const isDraft = document?.status ? document.status === "Draft" : true;
   const disabled = loading || saving || !isDraft || !canSave || (!!fromReceptionId && !reception);
@@ -157,15 +175,23 @@ export function ExpenseDocumentFormPage() {
         accountingApi.listAccounts(),
         paymentTermService.list(),
         sriLookupFacade.taxSupportCodes(),
+        sriLookupFacade.vatRates(),
         id ? expenseDocumentService.getById(id) : Promise.resolve(null),
       ] as const;
-      const [categoryTree, accountRows, paymentTermRows, sriTaxSupportRows, expenseDocument] =
-        await Promise.all(requests);
+      const [
+        categoryTree,
+        accountRows,
+        paymentTermRows,
+        sriTaxSupportRows,
+        vatRateRows,
+        expenseDocument,
+      ] = await Promise.all(requests);
 
       setTree(categoryTree);
       setAccounts(accountRows);
       setPaymentTerms(paymentTermRows);
       setSriTaxSupports(sriTaxSupportRows);
+      setVatRates(vatRateRows);
       if (expenseDocument) {
         setDocument(expenseDocument);
         setHeader(documentToHeader(expenseDocument, toDateTimeLocalInputValue));
@@ -190,7 +216,13 @@ export function ExpenseDocumentFormPage() {
           identificationNumber: source.supplierTaxId, isActive: true,
           hasSupplierRole: true, supplierConfig: null,
         } : null);
-        setLines([newExpenseDraftLine()]);
+        const initialLine = newExpenseDraftLine();
+        if (source && source.subtotal > 0) {
+          const impliedRate = (source.vatAmount / source.subtotal) * 100;
+          const matchedCode = findVatCodeForRate(vatRateRows, impliedRate);
+          if (matchedCode) initialLine.vatCode = matchedCode;
+        }
+        setLines([initialLine]);
       }
       setRetention(emptyRetentionIntentState());
       setRetentionRefreshKey((key) => key + 1);
@@ -265,12 +297,22 @@ export function ExpenseDocumentFormPage() {
 
     setHeaderErrors(nextHeader);
     setLineErrors(nextLines);
-    return Object.keys(nextHeader).length === 0 && Object.keys(nextLines).length === 0;
+    return (
+      Object.keys(nextHeader).length === 0 &&
+      Object.keys(nextLines).length === 0 &&
+      !receptionMismatch
+    );
   };
 
   const handleSave = async () => {
     if (!validate()) {
-      message.error("Revise los datos requeridos del borrador.");
+      if (receptionMismatch) {
+        message.error(
+          "El total calculado no cuadra con el total del XML recibido. Corrija cantidad, valor unitario o código IVA antes de guardar.",
+        );
+      } else {
+        message.error("Revise los datos requeridos del borrador.");
+      }
       return;
     }
 
@@ -468,10 +510,20 @@ export function ExpenseDocumentFormPage() {
       <div className="exp-doc-form-layout">
         <div className="exp-doc-form-main">
           <ZHCard bodyClassName="exp-doc-card-body">
-            {reception && <p>
-              Factura recibida: subtotal {reception.subtotal.toFixed(2)}, IVA {reception.vatAmount.toFixed(2)}, total {reception.total.toFixed(2)}.
-              Complete el detalle y seleccione la subcategoría de cada gasto.
-            </p>}
+            {reception && (
+              <p>
+                Factura recibida: subtotal {reception.subtotal.toFixed(2)}, IVA{" "}
+                {reception.vatAmount.toFixed(2)}, total {reception.total.toFixed(2)}.
+                Complete el detalle y seleccione la subcategoría de cada gasto.
+              </p>
+            )}
+            {receptionMismatch && (
+              <ZHFormAlert
+                type="warning"
+                message="El total calculado no cuadra con el XML recibido."
+                detail={`IVA XML recibido: ${reception!.vatAmount.toFixed(2)} — Total XML recibido: ${receptionMismatch.receivedTotal.toFixed(2)} — Total calculado en pantalla: ${receptionMismatch.calculatedTotal.toFixed(2)}. Revise cantidad, valor unitario y código IVA de cada línea antes de guardar.`}
+              />
+            )}
             <ExpenseDocumentHeader
               value={header}
               supplier={supplier}
@@ -491,6 +543,8 @@ export function ExpenseDocumentFormPage() {
               lines={lines}
               tree={tree}
               accountsById={accountsById}
+              vatRates={vatRates}
+              vatRateByCode={vatRateByCode}
               disabled={disabled || loading || !catalogReady}
               errors={lineErrors}
               onChange={setLines}
@@ -517,7 +571,7 @@ export function ExpenseDocumentFormPage() {
               onCancel={() => navigate("/expenses/documents")}
               onSave={handleSave}
               hideDraft
-              disableSave={disabled || loading || !catalogReady}
+              disableSave={disabled || loading || !catalogReady || !!receptionMismatch}
               labels={{ save: saving ? "Guardando..." : "Guardar borrador" }}
               buttonSize="md"
             />

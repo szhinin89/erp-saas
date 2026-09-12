@@ -18,15 +18,7 @@ export interface ExpenseLineTotals {
   total: number;
 }
 
-const VAT_RATE_HINTS: Record<string, number> = {
-  "0": 0,
-  "2": 15,
-  "3": 0,
-  "6": 0,
-  "7": 0,
-  "10": 15,
-  "20": 5,
-};
+export type VatRateByCode = Map<string, number>;
 
 export function newExpenseDraftLine(): ExpenseDraftLineState {
   return {
@@ -54,6 +46,7 @@ function roundMoney(value: number): number {
 
 export function calculateExpenseLineTotals(
   line: ExpenseDraftLineState,
+  vatRateByCode: VatRateByCode,
 ): ExpenseLineTotals {
   const subtotal = roundMoney(
     parseExpenseNumber(line.quantity) * parseExpenseNumber(line.unitPrice),
@@ -63,7 +56,7 @@ export function calculateExpenseLineTotals(
     subtotal,
   );
   const taxableBase = roundMoney(Math.max(0, subtotal - discount));
-  const vatRate = VAT_RATE_HINTS[line.vatCode.trim()] ?? 0;
+  const vatRate = vatRateByCode.get(line.vatCode.trim()) ?? 0;
   const vat = roundMoney((taxableBase * vatRate) / 100);
   return {
     subtotal,
@@ -74,10 +67,13 @@ export function calculateExpenseLineTotals(
   };
 }
 
-export function calculateExpenseDocumentTotals(lines: ExpenseDraftLineState[]) {
+export function calculateExpenseDocumentTotals(
+  lines: ExpenseDraftLineState[],
+  vatRateByCode: VatRateByCode,
+) {
   return lines.reduce(
     (acc, line) => {
-      const totals = calculateExpenseLineTotals(line);
+      const totals = calculateExpenseLineTotals(line, vatRateByCode);
       acc.subtotal = roundMoney(acc.subtotal + totals.subtotal);
       acc.totalDiscount = roundMoney(acc.totalDiscount + totals.discount);
       acc.totalTax = roundMoney(acc.totalTax + totals.vat);
@@ -86,6 +82,17 @@ export function calculateExpenseDocumentTotals(lines: ExpenseDraftLineState[]) {
     },
     { subtotal: 0, totalDiscount: 0, totalTax: 0, grandTotal: 0 },
   );
+}
+
+export function findVatCodeForRate(
+  vatRates: { code: string; percentage: number }[],
+  impliedRatePercent: number,
+  tolerance = 0.05,
+): string | null {
+  const match = vatRates.find(
+    (rate) => Math.abs(rate.percentage - impliedRatePercent) <= tolerance,
+  );
+  return match ? match.code : null;
 }
 
 export function documentToSupplier(

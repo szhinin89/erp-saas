@@ -91,6 +91,7 @@ vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
 vi.mock("../../items/facades/sriLookupFacade", () => ({
   sriLookupFacade: {
     taxSupportCodes: vi.fn(),
+    vatRates: vi.fn(),
   },
 }));
 
@@ -264,6 +265,7 @@ beforeEach(() => {
   vi.mocked(expenseCategoryService.getTree).mockResolvedValue([]);
   vi.mocked(emissionPointsService.list).mockResolvedValue([EMISSION_POINT]);
   vi.mocked(sriLookupFacade.taxSupportCodes).mockResolvedValue([]);
+  vi.mocked(sriLookupFacade.vatRates).mockResolvedValue([]);
   vi.mocked(expenseDocumentService.getExpenseRetention).mockResolvedValue(null);
 });
 

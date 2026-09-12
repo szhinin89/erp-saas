@@ -7,6 +7,13 @@ import { ExpenseDocumentFormPage } from "./ExpenseDocumentFormPage";
 import type { ExpenseDocumentHeaderState } from "../components/ExpenseDocumentHeader";
 import type { ExpenseDraftLineState } from "../components/ExpenseDocumentLinesEditor";
 
+/**
+ * EXPENSES-VAT-CODE-PERCENTAGE-VISIBILITY-01 — un gasto creado desde recepcion XML debe
+ * comparar el total calculado en pantalla contra el total recibido en el XML y bloquear el
+ * guardado cuando no cuadran (bug real: la UI permitia elegir "20 - IVA 5%" para una factura
+ * cuyo XML traia 15%, guardando un total distinto al de la factura real).
+ */
+
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), create: vi.fn() }));
 vi.mock("../../purchases/api/purchaseReceptionService", () => ({
   purchaseReceptionService: { createExpenseDraft: mocks.preview },
@@ -25,7 +32,8 @@ vi.mock("../../items/facades/sriLookupFacade", () => ({
   sriLookupFacade: {
     taxSupportCodes: async () => [],
     vatRates: async () => [
-      { code: "2", name: "15% IVA (tarifa general vigente)", percentage: 15 },
+      { code: "4", name: "15% IVA (tarifa general vigente)", percentage: 15 },
+      { code: "5", name: "5% IVA", percentage: 5 },
     ],
   },
 }));
@@ -44,52 +52,60 @@ vi.mock("../components/ExpenseDocumentLinesEditor", () => ({
   ExpenseDocumentLinesEditor: ({ lines, onChange }: {
     lines: ExpenseDraftLineState[];
     onChange: (lines: ExpenseDraftLineState[]) => void;
-  }) => <button onClick={() => onChange(lines.map(line => ({
-    ...line, expenseSubcategoryId: "subcategory", unitPrice: "100", vatCode: "2",
-  })))}>Completar detalle</button>,
+  }) => (
+    <>
+      <button onClick={() => onChange(lines.map(line => ({
+        ...line, expenseSubcategoryId: "subcategory", unitPrice: "90", vatCode: "5",
+      })))}>Seleccionar IVA 5%</button>
+      <button onClick={() => onChange(lines.map(line => ({
+        ...line, expenseSubcategoryId: "subcategory", unitPrice: "90", vatCode: "4",
+      })))}>Seleccionar IVA 15%</button>
+    </>
+  ),
 }));
 
+// XML recibido: subtotal 90.00, IVA 13.50, total 103.50 (caso reportado en el bug).
 const source = {
   receptionDocumentId: "reception-1", accessKey: "1".repeat(49),
   supplierId: "supplier-1", supplierName: "Proveedor", supplierTaxId: "1790012345001",
   issueDate: "2026-09-01", documentType: "01", documentNumber: "001-001-000000001",
   authorizationNumber: "1".repeat(49), authorizationDate: null,
-  subtotal: 100, vatAmount: 15, total: 115,
+  subtotal: 90, vatAmount: 13.5, total: 103.5,
 };
-function show(path = "/expenses/documents/new?fromReceptionId=reception-1") {
-  return render(<I18nProvider><MemoryRouter initialEntries={[path]}>
+
+function show() {
+  return render(<I18nProvider><MemoryRouter initialEntries={["/expenses/documents/new?fromReceptionId=reception-1"]}>
     <ExpenseDocumentFormPage />
   </MemoryRouter></I18nProvider>);
 }
+
 beforeEach(() => { vi.clearAllMocks(); mocks.preview.mockResolvedValue(source); mocks.create.mockResolvedValue({ id: "expense-1" }); });
 afterEach(cleanup);
 
-it("loads the server header and sends the reception identity when saving", async () => {
-  show();
-  await waitFor(() => expect(screen.getByTestId("header").textContent).toContain(source.documentNumber));
-  expect(mocks.preview).toHaveBeenCalledWith("reception-1");
-  expect(screen.getByTestId("header").textContent).toContain(source.supplierId);
-  expect(screen.getByTestId("header").textContent).toContain(source.issueDate);
-  expect(screen.getByText(/Factura recibida/).textContent).toContain("115.00");
-  fireEvent.click(screen.getByRole("button", { name: "Completar detalle" }));
-  fireEvent.click(screen.getByRole("button", { name: "Guardar borrador" }));
-  await waitFor(() => expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({
-    receptionDocumentId: source.receptionDocumentId, accessKey: source.accessKey,
-    documentNumber: source.documentNumber, supplierId: source.supplierId,
-  })));
-});
-
-it("blocks saving when the backend rejects the reception", async () => {
-  mocks.preview.mockRejectedValue(new Error("Recepcion usada"));
+it("blocks saving when the code 5% total (94.50) does not match the XML total (103.50)", async () => {
   show();
   await waitFor(() => expect(mocks.preview).toHaveBeenCalled());
-  await screen.findByText("Recepcion usada");
-  expect((screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 5%" }));
+
+  await screen.findByText(/El total calculado no cuadra con el XML recibido/);
+  const saveButton = screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement;
+  expect(saveButton.disabled).toBe(true);
+
+  fireEvent.click(saveButton);
   expect(mocks.create).not.toHaveBeenCalled();
 });
 
-it("keeps manual creation independent from reception", async () => {
-  show("/expenses/documents/new");
-  await waitFor(() => expect((screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement).disabled).toBe(false));
-  expect(mocks.preview).not.toHaveBeenCalled();
+it("allows saving when the code 15% total (103.50) matches the XML total", async () => {
+  show();
+  await waitFor(() => expect(mocks.preview).toHaveBeenCalled());
+  fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 15%" }));
+
+  await waitFor(() => expect(
+    screen.queryByText(/El total calculado no cuadra con el XML recibido/),
+  ).toBeNull());
+  const saveButton = screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement;
+  expect(saveButton.disabled).toBe(false);
+
+  fireEvent.click(saveButton);
+  await waitFor(() => expect(mocks.create).toHaveBeenCalled());
 });

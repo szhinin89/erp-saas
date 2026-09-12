@@ -7,10 +7,12 @@ import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import type { AccountDto } from "../../accounting/api/accountingApi";
+import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 import {
   calculateExpenseLineTotals,
   newExpenseDraftLine,
+  type VatRateByCode,
 } from "../utils/expenseDocumentDraftModel";
 import { ExpenseSubcategorySelector } from "./ExpenseSubcategorySelector";
 
@@ -34,6 +36,8 @@ interface Props {
   lines: ExpenseDraftLineState[];
   tree: ExpenseCategoryTreeNodeDto[];
   accountsById: Map<string, AccountDto>;
+  vatRates: SriVatRateLookup[];
+  vatRateByCode: VatRateByCode;
   disabled?: boolean;
   errors?: ExpenseLineFieldErrors;
   onChange: (lines: ExpenseDraftLineState[]) => void;
@@ -43,6 +47,8 @@ export function ExpenseDocumentLinesEditor({
   lines,
   tree,
   accountsById,
+  vatRates,
+  vatRateByCode,
   disabled,
   errors,
   onChange,
@@ -82,8 +88,12 @@ export function ExpenseDocumentLinesEditor({
 
       <div className="exp-doc-lines">
         {lines.map((line, index) => {
-          const lineTotals = calculateExpenseLineTotals(line);
+          const lineTotals = calculateExpenseLineTotals(line, vatRateByCode);
           const lineErrors = errors?.[line.key] ?? {};
+          const currentCode = line.vatCode.trim();
+          const hasCurrentCodeInCatalog = vatRates.some(
+            (rate) => rate.code === currentCode,
+          );
           return (
             <div className="exp-doc-line" key={line.key}>
               <div className="exp-doc-line__top">
@@ -197,12 +207,16 @@ export function ExpenseDocumentLinesEditor({
                       updateLine(line.key, { vatCode: event.target.value })
                     }
                   >
-                    <option value="0">0 - IVA 0%</option>
-                    <option value="2">2 - IVA vigente</option>
-                    <option value="10">10 - IVA vigente</option>
-                    <option value="20">20 - IVA 5%</option>
-                    <option value="6">6 - No objeto</option>
-                    <option value="7">7 - Exento</option>
+                    {vatRates.map((rate) => (
+                      <option key={rate.code} value={rate.code}>
+                        {rate.code} - {rate.name}
+                      </option>
+                    ))}
+                    {currentCode && !hasCurrentCodeInCatalog && (
+                      <option value={currentCode}>
+                        {currentCode} - Codigo IVA no vigente (verificar)
+                      </option>
+                    )}
                   </ZhSelect>
                 </ZHField>
               </div>
