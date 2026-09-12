@@ -67,6 +67,9 @@ export interface JournalEntryLineDto {
   debit: number;
   credit: number;
   sortOrder: number;
+  /** ACCOUNTING-JOURNAL-LINE-DESCRIPTIONS-EXPENSES-PAYABLES-01 — presentación legible resuelta en
+   * lectura (nunca persistida); usar `displayDescription ?? description` al renderizar. */
+  displayDescription?: string | null;
 }
 
 export interface JournalEntryDetailDto {

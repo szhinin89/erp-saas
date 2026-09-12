@@ -139,6 +139,17 @@ public sealed record GetJournalEntriesResponse(
 /// se resuelven contra el Plan de Cuentas de la Company (mismo criterio de resolución de lookups
 /// ya usado en Items para UOM/ItemType) — nunca se guardan desnormalizados en JournalEntryLine.
 /// </summary>
+/// <summary>
+/// ACCOUNTING-JOURNAL-LINE-DESCRIPTIONS-EXPENSES-PAYABLES-01 — <see cref="DisplayDescription"/> es
+/// un campo de presentación puramente aditivo (nunca persistido, nunca sustituye
+/// <see cref="Description"/> en el asiento real): cuando la línea automática lleva el texto
+/// técnico que <c>JournalFactory</c> genera por defecto (<c>"{SourceModule} — {FactType} —
+/// {SourceEventId}"</c>) y el origen documental ya se resolvió (Expenses/Payables), aquí viaja la
+/// versión legible ("Gasto 001-500-000007861 — Proveedor S.A."); si la línea tiene una descripción
+/// propia de negocio (p.ej. "serv nube"), <c>DisplayDescription</c> queda null y el consumidor
+/// usa <see cref="Description"/> tal cual. El frontend muestra
+/// <c>displayDescription ?? description ?? "—"</c>.
+/// </summary>
 public sealed record JournalEntryLineDto(
     Guid Id,
     Guid AccountId,
@@ -147,7 +158,8 @@ public sealed record JournalEntryLineDto(
     string? Description,
     decimal Debit,
     decimal Credit,
-    short SortOrder
+    short SortOrder,
+    string? DisplayDescription = null
 );
 
 /// <summary>

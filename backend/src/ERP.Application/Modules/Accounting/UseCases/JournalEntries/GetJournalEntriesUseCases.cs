@@ -292,6 +292,19 @@ file static class Map
         );
     }
 
+    /// <summary>
+    /// ACCOUNTING-JOURNAL-LINE-DESCRIPTIONS-EXPENSES-PAYABLES-01 — módulos cuyas líneas
+    /// automáticas reciben descripción legible en lugar del texto técnico de <c>JournalFactory</c>.
+    /// Alcance deliberadamente acotado a Expenses/Payables (mismo alcance que el ticket que lo
+    /// pidió); Sales/Purchases quedan fuera por ahora — extenderlo es aditivo (agregar el módulo
+    /// aquí), nunca requiere tocar JournalFactory ni el posting.
+    /// </summary>
+    private static readonly HashSet<string> LineDisplayDescriptionModules = new(StringComparer.Ordinal)
+    {
+        "Expenses",
+        "Payables",
+    };
+
     public static JournalEntryDetailDto ToDetailDto(
         JournalEntry e,
         IReadOnlyDictionary<Guid, Account> accountsById,
@@ -300,11 +313,33 @@ file static class Map
         JournalEntry? reverseEntry
     )
     {
+        var isReversalEntry = e.SourceModule == "Accounting" && e.SourceEventType == "Reversal";
+
+        // JournalEntry.Reverse() copia el Description de cada línea del asiento original tal cual
+        // (ver JournalEntry.cs), así que el texto técnico que una línea de reverso puede llevar es
+        // el del ORIGINAL (SourceModule/SourceEventType/SourceEventId), nunca "Accounting"/
+        // "Reversal" — mismo criterio ya usado por GetJournalEntryByIdHandler.WithReversalPrefix
+        // para el origen documental heredado.
+        var technicalDescriptionSourceEntry = isReversalEntry ? originalEntry : e;
+        var technicalLineDescription = technicalDescriptionSourceEntry is null
+            ? null
+            : $"{technicalDescriptionSourceEntry.SourceModule} — {technicalDescriptionSourceEntry.SourceEventType} — {technicalDescriptionSourceEntry.SourceEventId}";
+        var appliesLineDisplayOverride =
+            source is not null
+            && technicalDescriptionSourceEntry is not null
+            && LineDisplayDescriptionModules.Contains(technicalDescriptionSourceEntry.SourceModule);
+
         var lines = e
             .Lines.OrderBy(l => l.SortOrder)
             .Select(l =>
             {
                 accountsById.TryGetValue(l.AccountId, out var account);
+                // Solo la línea automática que aún lleva el texto técnico se reemplaza — una
+                // descripción propia de negocio (p.ej. "serv nube") nunca se toca.
+                var displayDescription =
+                    appliesLineDisplayOverride && l.Description == technicalLineDescription
+                        ? BuildLineDisplayDescription(source!)
+                        : null;
                 return new JournalEntryLineDto(
                     l.Id,
                     l.AccountId,
@@ -313,7 +348,8 @@ file static class Map
                     l.Description,
                     l.Debit,
                     l.Credit,
-                    l.SortOrder
+                    l.SortOrder,
+                    displayDescription
                 );
             })
             .ToList();
@@ -354,4 +390,16 @@ file static class Map
             source?.SourceRoute
         );
     }
+
+    /// <summary>
+    /// ACCOUNTING-JOURNAL-LINE-DESCRIPTIONS-EXPENSES-PAYABLES-01 — mismo texto que la tarjeta
+    /// "Documento origen" ya muestra por separado (Tipo + Número + Proveedor/Cliente), compactado
+    /// en una sola línea para la columna Descripción: "Gasto 001-500-000007861 — Proveedor S.A."
+    /// (o "Reverso de Gasto ..." cuando <paramref name="source"/> ya viene con ese prefijo desde
+    /// <c>GetJournalEntryByIdHandler.WithReversalPrefix</c>).
+    /// </summary>
+    private static string BuildLineDisplayDescription(JournalEntrySourceInfo source) =>
+        string.IsNullOrWhiteSpace(source.SourcePartyName)
+            ? $"{source.SourceDocumentType} {source.SourceDocumentNumber}"
+            : $"{source.SourceDocumentType} {source.SourceDocumentNumber} — {source.SourcePartyName}";
 }

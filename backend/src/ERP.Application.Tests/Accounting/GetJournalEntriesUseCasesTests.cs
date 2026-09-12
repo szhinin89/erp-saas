@@ -459,4 +459,324 @@ public sealed class GetJournalEntriesUseCasesTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle(x => x.Id == entry.Id);
     }
+
+    // ── ACCOUNTING-JOURNAL-LINE-DESCRIPTIONS-EXPENSES-PAYABLES-01 ───────────
+
+    private static JournalEntry ExpenseConfirmedEntry(
+        Guid debitAccountId,
+        Guid creditAccountId,
+        Guid expenseId,
+        int entryNumber = 1
+    )
+    {
+        var entry = JournalEntry.Create(
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            Guid.NewGuid(),
+            2026,
+            "Expenses",
+            "DocumentConfirmed",
+            expenseId,
+            $"Expenses — DocumentConfirmed — {expenseId}",
+            CreatedBy
+        );
+        // Línea automática de JournalFactory: mismo texto técnico que Description del asiento.
+        entry.AddLine(debitAccountId, $"Expenses — DocumentConfirmed — {expenseId}", 100m, 0m);
+        // Línea con descripción propia de negocio (viene de PostingAllocation.Description) — nunca
+        // debe reemplazarse.
+        entry.AddLine(creditAccountId, "serv nube", 0m, 100m);
+        entry.Post(CreatedBy, entryNumber);
+        return entry;
+    }
+
+    private static JournalEntry SupplierPaymentEntry(
+        string factType,
+        Guid debitAccountId,
+        Guid creditAccountId,
+        Guid paymentId,
+        int entryNumber = 1
+    )
+    {
+        var entry = JournalEntry.Create(
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 8, 1),
+            Guid.NewGuid(),
+            2026,
+            "Payables",
+            factType,
+            paymentId,
+            $"Payables — {factType} — {paymentId}",
+            CreatedBy
+        );
+        entry.AddLine(debitAccountId, $"Payables — {factType} — {paymentId}", 200m, 0m);
+        entry.AddLine(creditAccountId, $"Payables — {factType} — {paymentId}", 0m, 200m);
+        entry.Post(CreatedBy, entryNumber);
+        return entry;
+    }
+
+    [Fact]
+    public async Task GetJournalEntryById_de_gasto_confirmado_muestra_descripcion_legible_en_linea_automatica_y_conserva_la_de_negocio()
+    {
+        var debitAccount = NewAccount("5.1.01", "Gastos generales");
+        var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
+        var expenseId = Guid.NewGuid();
+        var entry = ExpenseConfirmedEntry(debitAccount.Id, creditAccount.Id, expenseId);
+
+        var m = new Mocks();
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entry);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
+        m.SourceResolver
+            .Setup(r =>
+                r.ResolveManyAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyList<JournalEntrySourceRequest>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, JournalEntrySourceInfo>
+                {
+                    [entry.Id] = new(
+                        "Gasto",
+                        "001-500-000007861",
+                        entry.EntryDate,
+                        "SYSTEMM-T MALDONADO & TORAL CIA LTDA.",
+                        "Confirmado",
+                        $"/expenses/documents/{expenseId}"
+                    ),
+                }
+            );
+
+        var handler = new GetJournalEntryByIdHandler(
+            m.JournalEntries.Object,
+            m.Accounts.Object,
+            m.SourceResolver.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        var lines = result.Value!.Lines;
+        lines.Should().HaveCount(2);
+        lines[0].Description.Should().Be($"Expenses — DocumentConfirmed — {expenseId}");
+        lines[0].DisplayDescription.Should().Be(
+            "Gasto 001-500-000007861 — SYSTEMM-T MALDONADO & TORAL CIA LTDA."
+        );
+        // Descripción de negocio ("serv nube") nunca se reemplaza.
+        lines[1].Description.Should().Be("serv nube");
+        lines[1].DisplayDescription.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetJournalEntryById_de_reverso_de_gasto_muestra_descripcion_de_linea_con_prefijo_Reverso_de_Gasto()
+    {
+        var debitAccount = NewAccount("5.1.01", "Gastos generales");
+        var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
+        var expenseId = Guid.NewGuid();
+        var original = ExpenseConfirmedEntry(debitAccount.Id, creditAccount.Id, expenseId);
+        var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado");
+
+        var m = new Mocks();
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reversal);
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(original);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
+        // El reverso lleva SourceModule="Accounting" — no resuelve por sí mismo; solo el original
+        // ("Expenses"/"DocumentConfirmed") resuelve, y ese origen se hereda con prefijo.
+        m.SourceResolver
+            .Setup(r =>
+                r.ResolveManyAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyList<JournalEntrySourceRequest>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, JournalEntrySourceInfo>
+                {
+                    [original.Id] = new(
+                        "Gasto",
+                        "001-500-000007861",
+                        original.EntryDate,
+                        "SYSTEMM-T MALDONADO & TORAL CIA LTDA.",
+                        "Anulado",
+                        $"/expenses/documents/{expenseId}"
+                    ),
+                }
+            );
+
+        var handler = new GetJournalEntryByIdHandler(
+            m.JournalEntries.Object,
+            m.Accounts.Object,
+            m.SourceResolver.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(new GetJournalEntryByIdQuery(reversal.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        var lines = result.Value!.Lines;
+        lines.Should().HaveCount(2);
+        // La línea automática copiada del original (mismo Description técnico) recibe el prefijo.
+        var autoLine = lines.Single(l => l.Description == $"Expenses — DocumentConfirmed — {expenseId}");
+        autoLine.DisplayDescription.Should().Be(
+            "Reverso de Gasto 001-500-000007861 — SYSTEMM-T MALDONADO & TORAL CIA LTDA."
+        );
+        // La línea de negocio copiada también verbatim nunca se reemplaza.
+        var businessLine = lines.Single(l => l.Description == "serv nube");
+        businessLine.DisplayDescription.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetJournalEntryById_de_pago_a_proveedor_confirmado_muestra_descripcion_legible_en_lineas()
+    {
+        var debitAccount = NewAccount("2.1.01", "Cuentas por pagar");
+        var creditAccount = NewAccount("1.1.01", "Bancos");
+        var paymentId = Guid.NewGuid();
+        var entry = SupplierPaymentEntry("SupplierPaymentConfirmed", debitAccount.Id, creditAccount.Id, paymentId);
+
+        var m = new Mocks();
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entry);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
+        m.SourceResolver
+            .Setup(r =>
+                r.ResolveManyAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyList<JournalEntrySourceRequest>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, JournalEntrySourceInfo>
+                {
+                    [entry.Id] = new(
+                        "Pago a proveedor",
+                        "00000003",
+                        entry.EntryDate,
+                        "SISTEC",
+                        "Confirmado",
+                        $"/supplier-payments/{paymentId}"
+                    ),
+                }
+            );
+
+        var handler = new GetJournalEntryByIdHandler(
+            m.JournalEntries.Object,
+            m.Accounts.Object,
+            m.SourceResolver.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Lines.Should().AllSatisfy(l =>
+            l.DisplayDescription.Should().Be("Pago a proveedor 00000003 — SISTEC")
+        );
+    }
+
+    [Fact]
+    public async Task GetJournalEntryById_de_pago_a_proveedor_reversado_muestra_Reversa_de_pago_a_proveedor_en_lineas()
+    {
+        var debitAccount = NewAccount("1.1.01", "Bancos");
+        var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
+        var paymentId = Guid.NewGuid();
+        var entry = SupplierPaymentEntry("SupplierPaymentReversed", debitAccount.Id, creditAccount.Id, paymentId);
+
+        var m = new Mocks();
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entry);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
+        m.SourceResolver
+            .Setup(r =>
+                r.ResolveManyAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyList<JournalEntrySourceRequest>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, JournalEntrySourceInfo>
+                {
+                    [entry.Id] = new(
+                        "Reversa de pago a proveedor",
+                        "00000003",
+                        entry.EntryDate,
+                        "SISTEC",
+                        "Reversado",
+                        $"/supplier-payments/{paymentId}"
+                    ),
+                }
+            );
+
+        var handler = new GetJournalEntryByIdHandler(
+            m.JournalEntries.Object,
+            m.Accounts.Object,
+            m.SourceResolver.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Lines.Should().AllSatisfy(l =>
+            l.DisplayDescription.Should().Be("Reversa de pago a proveedor 00000003 — SISTEC")
+        );
+    }
+
+    [Fact]
+    public async Task GetJournalEntryById_sin_origen_resuelto_no_fabrica_descripcion_y_mantiene_el_texto_tecnico()
+    {
+        var debitAccount = NewAccount("5.1.01", "Gastos generales");
+        var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
+        var expenseId = Guid.NewGuid();
+        var entry = ExpenseConfirmedEntry(debitAccount.Id, creditAccount.Id, expenseId);
+
+        var m = new Mocks();
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, entry.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entry);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
+        // SourceResolver por defecto en Mocks() ya devuelve un diccionario vacío — simula un gasto
+        // borrado/de otra empresa/tenant, exactamente el mismo fail-closed que ya cubren los tests
+        // de ExpensesJournalSourceResolver (JournalEntrySourceResolverTests.cs).
+
+        var handler = new GetJournalEntryByIdHandler(
+            m.JournalEntries.Object,
+            m.Accounts.Object,
+            m.SourceResolver.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(new GetJournalEntryByIdQuery(entry.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Lines.Should().AllSatisfy(l => l.DisplayDescription.Should().BeNull());
+        result.Value.Lines[0].Description.Should().Be($"Expenses — DocumentConfirmed — {expenseId}");
+    }
 }

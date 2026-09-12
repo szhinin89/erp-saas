@@ -237,7 +237,7 @@ export function JournalEntryDetailPage() {
                   <td>
                     <strong>{l.accountCode}</strong> — {l.accountName}
                   </td>
-                  <td>{l.description ?? "—"}</td>
+                  <td>{l.displayDescription ?? l.description ?? "—"}</td>
                   <td className="zh-table-cell--num">
                     <ZHMoneyValue value={l.debit > 0 ? l.debit : null} />
                   </td>
