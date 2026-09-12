@@ -179,6 +179,16 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
                     )
                 )
                 .ReturnsAsync(false);
+            CreditNoteRepo
+                .Setup(r =>
+                    r.GetCreditedTaxableBaseByPurchaseTaxSummaryIdsAsync(
+                        TenantId,
+                        It.IsAny<IReadOnlyCollection<Guid>>(),
+                        It.IsAny<Guid?>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(new Dictionary<Guid, decimal>());
         }
 
         public CreateDraftPurchaseCreditNoteHandler BuildCreateHandler() =>
@@ -297,6 +307,145 @@ public sealed class PurchaseCreditNoteDraftUseCasesTests
         m.CreditNoteRepo.Verify(
             r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()),
             Times.Once
+        );
+    }
+
+    // PURCHASE-CREDIT-NOTE-DISCOUNT-SEQUENCE-NO-MATCH-01 — smoke test rápido (repos mockeados) de
+    // que CreateDraftPurchaseCreditNoteHandler acepta descuento por resumen fiscal con IVA 0%. La
+    // causa raíz real ("Sequence contains no matching element") solo se manifestaba en el GET
+    // posterior (GetPurchaseCreditNoteByIdHandler releyendo desde PostgreSQL real) — cubierto por
+    // PurchaseCreditNoteDiscountIntegrationTests (ERP.Infrastructure.Tests), no reproducible con
+    // mocks porque ahí la NC nunca se relee del "repositorio".
+    [Fact]
+    public async Task CreateDraft_descuento_por_resumen_fiscal_con_IVA_0_por_ciento_se_guarda_correctamente()
+    {
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var handler = m.BuildCreateHandler();
+        var summary = f.Invoice.TaxSummaries[0];
+
+        var result = await handler.Handle(
+            new CreateDraftPurchaseCreditNoteCommand(
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000005",
+                null,
+                null,
+                null,
+                f.Invoice.IssueDate,
+                "Descuento",
+                Array.Empty<PurchaseCreditNoteDraftLineInput>(),
+                new[] { new PurchaseCreditNoteTaxSummaryLineInput(summary.Id, 3.00m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.TaxSummaries.Should().ContainSingle();
+        result.Value.TaxSummaries[0].TaxableBase.Should().Be(3.00m);
+        result.Value.TaxSummaries[0].VatAmount.Should().Be(0m);
+        result.Value.LinkedPurchaseReturnId.Should().BeNull();
+        m.ReturnRepo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseReturn>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    /// <summary>Factura con una sola línea IVA 15% (sin ICE) — evita la mezcla ICE+IRBPNR de
+    /// <c>BuildFixture(secondLine: true)</c>, que distorsionaría el cálculo esperado de IVA.</summary>
+    private static Fixture BuildFixtureWithVat15(decimal totalAmount = 100m)
+    {
+        var invoice = PurchaseInvoice.CreateDraft(
+            TenantId, CompanyId, BranchId, SupplierId, "Proveedor Test", "1234567890001",
+            "01", "001-001-000000002", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
+            PaymentTermId, "Contado", 1, 30, globalWarehouseId: WarehouseId
+        );
+        var line = PurchaseInvoiceDetail.Create(
+            invoice.Id, TenantId, "Producto gravado", quantity: 1, unitPrice: totalAmount,
+            vatCode: "2", uomCode: "UNIT", itemId: Guid.NewGuid(), warehouseId: WarehouseId
+        );
+        line.ApplyTaxes("2", 15m, "IVA", null, 0m, null);
+        invoice.ReplaceLines(new[] { line }, UserId);
+        invoice.Confirm(UserId);
+
+        var payable = AccountsPayable.CreateFromOrigin(
+            TenantId, CompanyId, BranchId, SupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, invoice.Id,
+            "01", invoice.InvoiceNumber, invoice.IssueDate, invoice.IssueDate, UserId
+        );
+        payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount * 1.15m);
+
+        return new Fixture(invoice, payable);
+    }
+
+    [Fact]
+    public async Task CreateDraft_descuento_por_resumen_fiscal_con_IVA_15_por_ciento_calcula_IVA()
+    {
+        var f = BuildFixtureWithVat15(totalAmount: 100m);
+        var m = new Mocks(f);
+        var handler = m.BuildCreateHandler();
+        var summary = f.Invoice.TaxSummaries.Should().ContainSingle().Which;
+
+        var result = await handler.Handle(
+            new CreateDraftPurchaseCreditNoteCommand(
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000006",
+                null,
+                null,
+                null,
+                f.Invoice.IssueDate,
+                "Descuento",
+                Array.Empty<PurchaseCreditNoteDraftLineInput>(),
+                new[] { new PurchaseCreditNoteTaxSummaryLineInput(summary.Id, 20m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var resultSummary = result.Value!.TaxSummaries.Should().ContainSingle().Which;
+        resultSummary.TaxableBase.Should().Be(20m);
+        resultSummary.VatAmount.Should().Be(3m); // 20 * 15% = 3.00
+        m.ReturnRepo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseReturn>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CreateDraft_descuento_rechaza_resumen_fiscal_inexistente_con_mensaje_claro()
+    {
+        var f = BuildFixture();
+        var m = new Mocks(f);
+        var handler = m.BuildCreateHandler();
+
+        var result = await handler.Handle(
+            new CreateDraftPurchaseCreditNoteCommand(
+                Guid.NewGuid(),
+                f.Invoice.Id,
+                null,
+                PurchaseCreditNoteApplicationType.Discount,
+                "001-001-000000007",
+                null,
+                null,
+                null,
+                f.Invoice.IssueDate,
+                "Descuento",
+                Array.Empty<PurchaseCreditNoteDraftLineInput>(),
+                new[] { new PurchaseCreditNoteTaxSummaryLineInput(Guid.NewGuid(), 3.00m) }
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no pertenece a la factura afectada");
+        m.CreditNoteRepo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseCreditNote>(), It.IsAny<CancellationToken>()),
+            Times.Never
         );
     }
 

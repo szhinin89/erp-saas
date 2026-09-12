@@ -26,12 +26,20 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
         _db
             .PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
             .Include(x => x.Lines)
+            // PURCHASE-CREDIT-NOTE-DISCOUNT-SEQUENCE-NO-MATCH-01 — sin ThenInclude(Taxes), cada
+            // PurchaseCreditNoteTaxSummary vuelve con su colección Taxes vacía; VatCode/VatRate/
+            // VatName (CreditNoteMap.ToDto) son _taxes.First(...) — sobre una lista vacía eso
+            // lanza "Sequence contains no matching element" (InvalidOperationException), que el
+            // middleware global reporta como DOMAIN_RULE_VIOLATION sin contexto útil.
             .Include(x => x.TaxSummaries)
+            .ThenInclude(s => s.Taxes)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public Task<PurchaseCreditNote?> GetByLinkedPurchaseReturnIdAsync(Guid tenantId, Guid returnId, CancellationToken ct = default) =>
         _db.PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
-            .Include(x => x.Lines).Include(x => x.TaxSummaries)
+            .Include(x => x.Lines)
+            .Include(x => x.TaxSummaries)
+            .ThenInclude(s => s.Taxes)
             .FirstOrDefaultAsync(x => x.LinkedPurchaseReturnId == returnId, ct);
 
     public Task AddAsync(PurchaseCreditNote creditNote, CancellationToken ct = default) =>
@@ -47,6 +55,7 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
         _db
             .PurchaseCreditNotes.Include(x => x.Lines)
             .Include(x => x.TaxSummaries)
+            .ThenInclude(s => s.Taxes)
             .FirstOrDefaultAsync(
                 x => x.TenantId == tenantId && x.CreateClientRequestId == createClientRequestId,
                 ct
