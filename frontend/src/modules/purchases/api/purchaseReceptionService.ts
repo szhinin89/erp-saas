@@ -109,6 +109,45 @@ export interface PurchaseReceptionItem {
   cancelledExpenseId?: string | null;
 }
 
+/** Status por documento del lote de descarga de XML SRI. */
+export type BatchDownloadXmlItemStatus =
+  | "Downloaded"
+  | "SkippedAlreadyHasXml"
+  | "NotFoundInSri"
+  | "SriError"
+  | "ValidationError"
+  | "Error";
+
+/**
+ * Resumen mínimo por documento — nunca XML ni líneas — suficiente para refrescar los badges de la
+ * fila de Recepción sin abrir "Ver XML". Campos ausentes/`null` cuando el documento no existe
+ * (`status === "Error"`).
+ */
+export interface BatchDownloadXmlItemResult {
+  documentId: string;
+  status: BatchDownloadXmlItemStatus;
+  message: string;
+  documentStatus: PurchaseReceptionItem["documentStatus"] | null;
+  processingStatus: ProcessingStatus | null;
+  hasXml: boolean;
+  purchaseExists: boolean;
+  purchaseId: string | null;
+  expenseExists: boolean;
+  expenseId: string | null;
+  creditNoteExists: boolean;
+  creditNoteId: string | null;
+  cancelledCreditNoteId: string | null;
+}
+
+export interface BatchDownloadXmlResult {
+  total: number;
+  processed: number;
+  downloaded: number;
+  skipped: number;
+  failed: number;
+  items: BatchDownloadXmlItemResult[];
+}
+
 export interface PurchaseReceptionImportResult {
   items: PurchaseReceptionItem[];
   totalParsed: number;
@@ -313,6 +352,17 @@ export const purchaseReceptionService = {
 
   downloadXml(documentId: string): Promise<DownloadXmlResult> {
     return apiPost<DownloadXmlResult>(`${BASE}/${documentId}/download-xml`, {});
+  },
+
+  /**
+   * PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — descarga en lote solo documentos sin XML.
+   * `onlyMissingXml` siempre debe ser `true` (el backend rechaza `false`).
+   */
+  downloadXmlPending(documentIds: string[]): Promise<BatchDownloadXmlResult> {
+    return apiPost<BatchDownloadXmlResult>(`${BASE}/documents/download-xml-pending`, {
+      documentIds,
+      onlyMissingXml: true,
+    });
   },
 
   createExpenseDraft(documentId: string): Promise<ExpenseReceptionDraft> {

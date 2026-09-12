@@ -3635,5 +3635,16 @@
   "inventory.adjustmentReasons.table.sortOrder": "Orden",
   "inventory.adjustmentReasons.table.actions": "Acciones",
   "app.nav.item.inventory.adjustments": "Ajustes de inventario",
-  "app.nav.item.inventory.adjustment-reasons": "Motivos de ajuste"
+  "app.nav.item.inventory.adjustment-reasons": "Motivos de ajuste",
+  "zh.batchProgress.processedOfTotal": "{{processed}} / {{total}}",
+  "zh.batchProgress.succeeded": "Alli Rurashka",
+  "zh.batchProgress.skipped": "Illak",
+  "zh.batchProgress.failed": "Mana Alli",
+  "purchases.reception.actions.downloadPendingXml": "XML Shuyakukta Uraykuna",
+  "purchases.reception.messages.noPendingXml": "Mana tiyanchu XML shuyakuk uraykunapak.",
+  "purchases.reception.batchXml.title": "XML Shuyakukta Uraykuy",
+  "purchases.reception.batchXml.currentLabel": "Consultando documento {{current}} de {{total}}...",
+  "purchases.reception.batchXml.summarySuccess": "Descarga completada: {{downloaded}} descargados, {{skipped}} omitidos.",
+  "purchases.reception.batchXml.summaryWarning": "Descarga completada con errores: {{downloaded}} descargados, {{skipped}} omitidos, {{failed}} fallidos.",
+  "purchases.reception.batchXml.summaryError": "No se pudo completar la descarga: {{failed}} de {{total}} documentos fallaron."
 }

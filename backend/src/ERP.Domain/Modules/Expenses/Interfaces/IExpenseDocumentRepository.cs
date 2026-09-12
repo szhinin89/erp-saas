@@ -39,6 +39,18 @@ public interface IExpenseDocumentRepository
     Task<bool> ExistsByAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
 
     /// <summary>
+    /// PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — Id del gasto ACTIVO (Draft/Confirmed) con
+    /// este AccessKey, si existe (nunca uno <c>Cancelled</c>) — mismo criterio que
+    /// <see cref="ExistsByAccessKeyAsync"/>, pero devolviendo el Id en vez de solo un booleano,
+    /// para refrescar la fila de Recepción sin abrir el documento.
+    /// </summary>
+    Task<Guid?> GetActiveIdByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — solo cuenta un gasto ACTIVO vinculado a esta
     /// recepción; uno <c>Cancelled</c> nunca bloquea reprocesar la misma recepción.
     /// </summary>

@@ -8,6 +8,7 @@ import {
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhBatchProgress } from "../../../components/zh/progress/ZhBatchProgress";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import {
   formatDate,
@@ -323,6 +324,37 @@ export function PurchaseReceptionPage() {
               "no se cargaron porque todavía no están soportados en esta fase.",
             )}`}
           />
+        </div>
+      )}
+
+      {ctx.result && (
+        <div className="pg-section pur-reception-batch-xml">
+          <ZHBtn
+            variant="secondary"
+            size="xs"
+            type="button"
+            disabled={ctx.batchXmlRunning}
+            onClick={ctx.handleDownloadPendingXml}
+          >
+            {t(
+              "purchases.reception.actions.downloadPendingXml",
+              "Descargar XML pendientes",
+            )}
+          </ZHBtn>
+          {ctx.batchXmlProgress && (
+            <ZhBatchProgress
+              title={t(
+                "purchases.reception.batchXml.title",
+                "Descarga de XML pendientes",
+              )}
+              status={ctx.batchXmlProgress.status}
+              total={ctx.batchXmlProgress.total}
+              processed={ctx.batchXmlProgress.processed}
+              succeeded={ctx.batchXmlProgress.downloaded}
+              skipped={ctx.batchXmlProgress.skipped}
+              failed={ctx.batchXmlProgress.failed}
+            />
+          )}
         </div>
       )}
 

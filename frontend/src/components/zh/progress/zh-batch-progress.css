@@ -1,0 +1,119 @@
+/* ZhBatchProgress — prefijo zh-batch-progress-* */
+
+.zh-batch-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.zh-batch-progress-title {
+  margin: 0;
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+}
+
+.zh-batch-progress-bar {
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.zh-batch-progress-fill {
+  height: 100%;
+  width: var(--batch-progress, 0%);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.zh-batch-progress--success .zh-batch-progress-fill {
+  background: var(--color-success);
+}
+
+.zh-batch-progress--warning .zh-batch-progress-fill {
+  background: var(--color-warning);
+}
+
+.zh-batch-progress--error .zh-batch-progress-fill {
+  background: var(--color-error);
+}
+
+.zh-batch-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.zh-batch-progress-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.zh-batch-progress-percent {
+  font-weight: var(--text-label-md-weight);
+  font-variant-numeric: tabular-nums;
+}
+
+.zh-batch-progress-tallies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-help-size);
+}
+
+.zh-batch-progress-tally {
+  font-variant-numeric: tabular-nums;
+}
+
+.zh-batch-progress-tally--success {
+  color: var(--color-success);
+}
+
+.zh-batch-progress-tally--neutral {
+  color: var(--color-text-secondary);
+}
+
+.zh-batch-progress-tally--error {
+  color: var(--color-error);
+}
+
+.zh-batch-progress-current {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.zh-batch-progress-message {
+  margin: 0;
+  font-size: var(--text-help-size);
+}
+
+.zh-batch-progress--success .zh-batch-progress-message {
+  color: var(--color-success);
+}
+
+.zh-batch-progress--warning .zh-batch-progress-message {
+  color: var(--color-warning);
+}
+
+.zh-batch-progress--error .zh-batch-progress-message {
+  color: var(--color-error);
+}
+
+/* ── Compacto — sin desglose de tallies, para inline junto a un botón ── */
+
+.zh-batch-progress--compact {
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+}
+
+.zh-batch-progress--compact .zh-batch-progress-title {
+  font-size: var(--text-help-size);
+}

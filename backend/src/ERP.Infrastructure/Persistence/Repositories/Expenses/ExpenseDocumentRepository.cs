@@ -106,6 +106,16 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
         Scoped(tenantId)
             .AnyAsync(x => x.AccessKey == accessKey && x.Status != ExpenseStatus.Cancelled, ct);
 
+    public Task<Guid?> GetActiveIdByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .Where(x => x.AccessKey == accessKey && x.Status != ExpenseStatus.Cancelled)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct);
+
     public Task<bool> ExistsByReceptionDocumentIdAsync(Guid tenantId, Guid receptionDocumentId, CancellationToken ct = default) =>
         Scoped(tenantId)
             .AnyAsync(

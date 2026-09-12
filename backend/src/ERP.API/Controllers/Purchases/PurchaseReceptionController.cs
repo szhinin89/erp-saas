@@ -8,6 +8,7 @@ using ERP.Application.Modules.Inventory.ItemMatching.UseCases.GetLineMatch;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.UnmatchItem;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.BatchDownloadPurchaseReceptionXml;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreateExpenseDraftFromReception;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
@@ -68,6 +69,29 @@ public sealed class PurchaseReceptionController : ControllerBase
     public async Task<IActionResult> DownloadXml(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new DownloadPurchaseReceptionXmlCommand(id), ct)
+        );
+
+    /// <summary>
+    /// PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — descarga en lote el XML autorizado en el SRI
+    /// solo para documentos que aún no lo tienen. Reutiliza <see cref="DownloadXml"/> por
+    /// documento (mismo caso de uso, sin lógica duplicada); no crea compras, gastos ni notas de
+    /// crédito.
+    /// </summary>
+    [HttpPost("documents/download-xml-pending")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<BatchDownloadPurchaseReceptionXmlResultDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> DownloadXmlPending(
+        [FromBody] BatchDownloadPurchaseReceptionXmlRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new BatchDownloadPurchaseReceptionXmlCommand(body.DocumentIds, body.OnlyMissingXml),
+                ct
+            )
         );
 
     [HttpPost("{id:guid}/create-draft")]
@@ -168,3 +192,8 @@ public sealed class PurchaseReceptionController : ControllerBase
 }
 
 public sealed record MatchItemRequest(Guid ItemId, Guid? PackagingLevelId = null);
+
+public sealed record BatchDownloadPurchaseReceptionXmlRequest(
+    IReadOnlyList<Guid> DocumentIds,
+    bool OnlyMissingXml = true
+);

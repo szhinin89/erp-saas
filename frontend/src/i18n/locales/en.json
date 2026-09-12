@@ -3634,5 +3634,16 @@
   "inventory.adjustmentReasons.table.sortOrder": "Sort order",
   "inventory.adjustmentReasons.table.actions": "Actions",
   "app.nav.item.inventory.adjustments": "Inventory adjustments",
-  "app.nav.item.inventory.adjustment-reasons": "Adjustment reasons"
+  "app.nav.item.inventory.adjustment-reasons": "Adjustment reasons",
+  "zh.batchProgress.processedOfTotal": "{{processed}} / {{total}}",
+  "zh.batchProgress.succeeded": "Succeeded",
+  "zh.batchProgress.skipped": "Skipped",
+  "zh.batchProgress.failed": "Failed",
+  "purchases.reception.actions.downloadPendingXml": "Download pending XML",
+  "purchases.reception.messages.noPendingXml": "There is no pending XML to download.",
+  "purchases.reception.batchXml.title": "Downloading pending XML",
+  "purchases.reception.batchXml.currentLabel": "Checking document {{current}} of {{total}}...",
+  "purchases.reception.batchXml.summarySuccess": "Download complete: {{downloaded}} downloaded, {{skipped}} skipped.",
+  "purchases.reception.batchXml.summaryWarning": "Download completed with errors: {{downloaded}} downloaded, {{skipped}} skipped, {{failed}} failed.",
+  "purchases.reception.batchXml.summaryError": "Could not complete the download: {{failed}} of {{total}} documents failed."
 }

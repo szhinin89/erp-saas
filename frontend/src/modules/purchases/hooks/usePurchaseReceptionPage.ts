@@ -6,6 +6,17 @@ import {
   type PurchaseReceptionXmlView,
 } from "../api/purchaseReceptionService";
 import { message } from "../../../lib/messages";
+import { useI18n } from "../../../i18n/i18n";
+import type { ZhBatchProgressStatus } from "../../../components/zh/progress/ZhBatchProgress";
+
+export interface BatchXmlProgressState {
+  status: ZhBatchProgressStatus;
+  total: number;
+  processed: number;
+  downloaded: number;
+  skipped: number;
+  failed: number;
+}
 
 const PAGE_SIZE = 20;
 
@@ -17,6 +28,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 export function usePurchaseReceptionPage() {
+  const { t } = useI18n();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +169,138 @@ export function usePurchaseReceptionPage() {
     string | null
   >(null);
 
+  // PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — descarga en lote, un único request batch.
+  const [batchXmlRunning, setBatchXmlRunning] = useState(false);
+  const [batchXmlProgress, setBatchXmlProgress] =
+    useState<BatchXmlProgressState | null>(null);
+
+  const handleDownloadPendingXml = async () => {
+    const pendingIds = (result?.items ?? [])
+      .filter((item) => item.documentStatus === "IMPORTED")
+      .map((item) => item.documentId);
+
+    if (pendingIds.length === 0) {
+      message.info(
+        t(
+          "purchases.reception.messages.noPendingXml",
+          "No hay XML pendientes por descargar.",
+        ),
+      );
+      return;
+    }
+
+    setBatchXmlRunning(true);
+    setBatchXmlProgress({
+      status: "running",
+      total: pendingIds.length,
+      processed: 0,
+      downloaded: 0,
+      skipped: 0,
+      failed: 0,
+    });
+
+    try {
+      const batchResult =
+        await purchaseReceptionService.downloadXmlPending(pendingIds);
+
+      const itemsById = new Map(
+        batchResult.items.map((item) => [item.documentId, item] as const),
+      );
+      const failedIds = batchResult.items
+        .filter((i) => i.status !== "Downloaded" && i.status !== "SkippedAlreadyHasXml")
+        .map((i) => i.documentId);
+      const resolvedIds = batchResult.items
+        .filter((i) => i.status === "Downloaded" || i.status === "SkippedAlreadyHasXml")
+        .map((i) => i.documentId);
+
+      // Refresca los badges (documento/proceso/compra/gasto/NC) de cada fila procesada con el
+      // resumen mínimo que ya trae el batch — sin abrir "Ver XML" fila por fila.
+      setResult((prev) => {
+        if (prev === null) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((item) => {
+            const batchItem = itemsById.get(item.documentId);
+            if (batchItem?.documentStatus == null) return item;
+            return {
+              ...item,
+              documentStatus: batchItem.documentStatus,
+              processingStatus: batchItem.processingStatus ?? item.processingStatus,
+              purchaseExists: batchItem.purchaseExists,
+              purchaseId: batchItem.purchaseId,
+              expenseExists: batchItem.expenseExists,
+              creditNoteExists: batchItem.creditNoteExists,
+              creditNoteId: batchItem.creditNoteId,
+              cancelledCreditNoteId: batchItem.cancelledCreditNoteId,
+            };
+          }),
+        };
+      });
+      // Reutiliza el mismo estado de error por fila que ya usa la consulta individual — la
+      // fila queda con su indicador "Error consulta" existente sin introducir UI nueva.
+      setXmlRowState((prev) => {
+        const next = { ...prev };
+        for (const id of failedIds) next[id] = "error";
+        for (const id of resolvedIds) delete next[id];
+        return next;
+      });
+
+      let status: ZhBatchProgressStatus = "success";
+      if (batchResult.failed > 0) {
+        status = batchResult.downloaded > 0 ? "warning" : "error";
+      }
+      setBatchXmlProgress({
+        status,
+        total: batchResult.total,
+        processed: batchResult.processed,
+        downloaded: batchResult.downloaded,
+        skipped: batchResult.skipped,
+        failed: batchResult.failed,
+      });
+
+      if (status === "success") {
+        message.success(
+          t("purchases.reception.batchXml.summarySuccess", {
+            downloaded: batchResult.downloaded,
+            skipped: batchResult.skipped,
+          }),
+        );
+      } else if (status === "warning") {
+        message.warning(
+          t("purchases.reception.batchXml.summaryWarning", {
+            downloaded: batchResult.downloaded,
+            skipped: batchResult.skipped,
+            failed: batchResult.failed,
+          }),
+        );
+      } else {
+        message.error(
+          t("purchases.reception.batchXml.summaryError", {
+            failed: batchResult.failed,
+            total: batchResult.total,
+          }),
+        );
+      }
+    } catch (err) {
+      setBatchXmlProgress({
+        status: "error",
+        total: pendingIds.length,
+        processed: 0,
+        downloaded: 0,
+        skipped: 0,
+        failed: pendingIds.length,
+      });
+      message.error(
+        extractErrorMessage(
+          err,
+          "No se pudo completar la descarga de XML pendientes.",
+        ),
+      );
+    } finally {
+      setBatchXmlRunning(false);
+    }
+  };
+
   const processCreditNote = async (row: PurchaseReceptionItem) => {
     setResolvingCreditNoteId(row.documentId);
     try {
@@ -227,6 +371,9 @@ export function usePurchaseReceptionPage() {
     closeXmlView,
     resolvingCreditNoteId,
     processCreditNote,
+    batchXmlRunning,
+    batchXmlProgress,
+    handleDownloadPendingXml: () => void handleDownloadPendingXml(),
     // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
     // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor
     // existe + compra no existe todavía => PENDING).
