@@ -375,7 +375,7 @@ export function SalesPage() {
                     />
                   </div>
                 )}
-                <div>
+                <div className="sf-emission__full">
                   <ZHFieldLabel size="sm" className="sf-emission__label">
                     Tipo Documento
                   </ZHFieldLabel>
@@ -390,15 +390,24 @@ export function SalesPage() {
                       ctx.setValue("docTypeCode", e.target.value)
                     }
                     disabled={ctx.fieldDisabled}
+                    title={
+                      ctx.sriDocTypes.find(
+                        (dt) =>
+                          dt.code ===
+                          (ctx.readOnly
+                            ? (ctx.editing?.docTypeCode ?? "")
+                            : ctx.formWatch.docTypeCode),
+                      )?.name
+                    }
                   >
                     {ctx.sriDocTypes.map((dt) => (
-                      <option key={dt.code} value={dt.code}>
+                      <option key={dt.code} value={dt.code} title={dt.name}>
                         {dt.code} — {dt.name}
                       </option>
                     ))}
                   </ZhSelect>
                 </div>
-                <div>
+                <div className="sf-emission__full">
                   <ZHFieldLabel size="sm" className="sf-emission__label">
                     Forma Pago SRI
                   </ZHFieldLabel>
@@ -413,9 +422,18 @@ export function SalesPage() {
                       ctx.setValue("sriPaymentMethodCode", e.target.value)
                     }
                     disabled={ctx.fieldDisabled}
+                    title={
+                      ctx.sriPaymentMethods.find(
+                        (pm) =>
+                          pm.code ===
+                          (ctx.readOnly
+                            ? (ctx.editing?.sriPaymentMethodCode ?? "")
+                            : ctx.formWatch.sriPaymentMethodCode),
+                      )?.name
+                    }
                   >
                     {ctx.sriPaymentMethods.map((pm) => (
-                      <option key={pm.code} value={pm.code}>
+                      <option key={pm.code} value={pm.code} title={pm.name}>
                         {pm.code} — {pm.name}
                       </option>
                     ))}

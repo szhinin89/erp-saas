@@ -137,6 +137,15 @@
   gap: 6px 8px;
   align-items: start;
 }
+/* SALES-DOCUMENT-TYPE-LABEL-TRUNCATION-01: Tipo Documento y Forma Pago SRI muestran
+   texto más largo ("01 — Factura", "20 — Otros con utilización del sistema financiero")
+   que el resto de pares etiqueta/valor de la grilla — a media celda (1fr de 2) el <select>
+   nativo recorta el texto sin puntos suspensivos. Ocupan el ancho completo para que el
+   label se lea entero; el resto de campos (Sucursal/Caja/Punto/Tipo Emisión/Nro.) sigue
+   en 2 columnas. */
+.sf-emission__full {
+  grid-column: 1 / -1;
+}
 /* SALES-DS-VISUAL-REAL-17: el JSX ahora renderiza estas etiquetas con `ZHFieldLabel size="sm"`
    (antes un <span> con esta clase imitando el token) — font-size/font-weight ELIMINADOS de
    aquí porque son exactamente los que ya aporta `.zh-field-label--sm` (--text-label-sm-size /
