@@ -5,6 +5,7 @@ using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
 using System.Security.Cryptography;
@@ -22,20 +23,19 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 /// <see cref="AuthorizePurchaseCreditNoteHandler"/>). Idempotente por <c>ClientRequestId</c>.
 /// </summary>
 /// <remarks>
-/// DECISIÓN PENDIENTE DOCUMENTADA (regla obligatoria #6 del encargo): si la nota de crédito estaba
-/// <c>Authorized</c> y tenía un <c>ReceptionDocumentId</c> vinculado, ese
-/// <c>PurchaseReceptionDocument</c> ya fue marcado <c>Processed</c> al autorizar
-/// (<see cref="AuthorizePurchaseCreditNoteHandler"/>). <c>PurchaseReceptionDocument</c> (entidad
-/// FROZEN de Recepción) NO expone ningún método de reversa de <c>MarkProcessed</c> — su único
-/// método de baja, <c>Cancel()</c>, lanza <c>InvalidOperationException</c> explícitamente si el
-/// documento ya está <c>Processed</c> ("No se puede anular un documento ya procesado"). Este
-/// handler, siguiendo la instrucción explícita de "no inventar sin auditoría", NO intenta revertir
-/// ese estado — el documento de recepción permanece <c>Processed</c> incluso después de cancelar la
-/// nota de crédito que lo procesó. Esto deja un documento de recepción "huérfano" (procesado, pero
-/// cuya nota de crédito fue cancelada) sin forma de reprocesarlo por este módulo. Requiere una
-/// decisión de negocio explícita en una fase futura (p. ej. un método
-/// <c>PurchaseReceptionDocument.ReopenAfterCancelledProcessing</c>, con su propia auditoría/ADR) —
-/// no se implementa aquí.
+/// PURCHASE-CREDIT-NOTE-DISCOUNT-CANCEL-RELEASES-RECEPTION-01 — si la NC estaba <c>Authorized</c>
+/// y tenía un <c>ReceptionDocumentId</c> vinculado, ese <c>PurchaseReceptionDocument</c> ya fue
+/// marcado <c>Processed</c> al autorizar (<see cref="AuthorizePurchaseCreditNoteHandler"/>). Al
+/// cancelar, se revierte con <c>PurchaseReceptionDocument.UnmarkProcessed</c> (vuelve a
+/// <c>Verified</c>, limpia <c>PurchaseId</c>) — el documento queda libre para "Procesar NC" de
+/// nuevo, sin borrar el XML ni la NC cancelada (que permanece como historial). Este método YA
+/// existía (agregado por PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 para el camino
+/// Return, invocado desde <c>CancelPurchaseReturnUseCases</c>) — este handler es el único que
+/// cancela una NC tipo <c>Discount</c> directamente (el tipo <c>Return</c> ya vinculado a un
+/// <c>PurchaseReturn</c> se rechaza más abajo, redirigiendo a cancelar la devolución), así que antes
+/// de esta fase el camino Discount nunca liberaba su documento de recepción. Draft nunca llega a
+/// marcar <c>Processed</c> (eso solo ocurre en Authorize), así que solo se revierte cuando
+/// <c>wasAuthorized</c> es verdadero — cancelar un Draft no necesita ni puede revertir nada.
 /// </remarks>
 public sealed record CancelPurchaseCreditNoteCommand(
     Guid PurchaseCreditNoteId,
@@ -69,6 +69,7 @@ public sealed class CancelPurchaseCreditNoteHandler
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IPurchaseReturnRepository _lockRepo;
+    private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
@@ -79,6 +80,7 @@ public sealed class CancelPurchaseCreditNoteHandler
         IPurchaseInvoiceRepository invoiceRepo,
         IAccountsPayableRepository payableRepo,
         IPurchaseReturnRepository lockRepo,
+        IPurchaseReceptionDocumentRepository receptionRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
@@ -89,6 +91,7 @@ public sealed class CancelPurchaseCreditNoteHandler
         _invoiceRepo = invoiceRepo;
         _payableRepo = payableRepo;
         _lockRepo = lockRepo;
+        _receptionRepo = receptionRepo;
         _uow = uow;
         _dbEx = dbEx;
         _t = t;
@@ -189,9 +192,16 @@ public sealed class CancelPurchaseCreditNoteHandler
                 if (creditNote.AppliedToPayableAmount is > 0m)
                     payable.ReverseCreditNote(creditNote.AppliedToPayableAmount.Value, uid);
 
-                // Ver DECISIÓN PENDIENTE DOCUMENTADA en el comentario XML de este archivo — el
-                // PurchaseReceptionDocument vinculado (si existe) NO se revierte: no existe método
-                // de reversa de MarkProcessed en esa entidad FROZEN y no se inventa uno aquí.
+                // PURCHASE-CREDIT-NOTE-DISCOUNT-CANCEL-RELEASES-RECEPTION-01 — libera el documento
+                // de recepción vinculado (si existe) para que "Procesar NC" pueda volver a crear una
+                // NC nueva y limpia; nunca reutiliza ni borra la NC/XML cancelados (quedan como
+                // historial). Mismo mecanismo ya usado por CancelPurchaseReturnUseCases para el
+                // camino Return.
+                if (creditNote.ReceptionDocumentId is { } receptionDocumentId)
+                {
+                    var receptionDoc = await _receptionRepo.GetByIdAsync(tid, receptionDocumentId, ct);
+                    receptionDoc?.UnmarkProcessed(uid);
+                }
             }
 
             var cancelHash = ComputeCancelPayloadHash(creditNote.Id, cmd.ClientRequestId, cmd.Reason);

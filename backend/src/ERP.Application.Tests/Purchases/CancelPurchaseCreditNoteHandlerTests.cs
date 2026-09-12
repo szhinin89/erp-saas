@@ -7,6 +7,9 @@ using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -30,10 +33,11 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
     private sealed record Fixture(
         PurchaseInvoice Invoice,
         AccountsPayable Payable,
-        PurchaseCreditNote CreditNote
+        PurchaseCreditNote CreditNote,
+        PurchaseReceptionDocument? ReceptionDoc
     );
 
-    private static Fixture BuildFixture(bool authorized, decimal totalAmount = 1000m)
+    private static Fixture BuildFixture(bool authorized, decimal totalAmount = 1000m, bool withReception = false)
     {
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -74,13 +78,26 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         );
         payable.AddInstallment(1, invoice.IssueDate.AddDays(30), totalAmount);
 
+        PurchaseReceptionDocument? receptionDoc = null;
+        if (withReception)
+        {
+            receptionDoc = PurchaseReceptionDocument.Create(
+                TenantId, CompanyId, BranchId, PurchaseReceptionSourceDocType.CreditNote,
+                supplierRuc: "1710034065001", supplierName: "Proveedor Test", supplierId: SupplierId,
+                accessKey: $"AK-{Guid.NewGuid():N}", invoiceNumber: "001-001-000000099",
+                issueDate: DateOnly.FromDateTime(DateTime.UtcNow), authorizationDate: DateTime.UtcNow,
+                subtotal: 100m, vatAmount: 15m, totalAmount: 115m, createdBy: UserId
+            );
+            receptionDoc.MarkVerified(UserId);
+        }
+
         var creditNote = PurchaseCreditNote.CreateDraft(
             TenantId,
             CompanyId,
             BranchId,
             SupplierId,
             invoice.Id,
-            null,
+            receptionDoc?.Id,
             PurchaseCreditNoteApplicationType.Discount,
             "001-001-000000005",
             null,
@@ -99,9 +116,10 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         {
             creditNote.Authorize(payable.OutstandingAmount, UserId, Guid.NewGuid(), "auth-hash");
             payable.ApplyCreditNote(creditNote.AppliedToPayableAmount!.Value, UserId);
+            receptionDoc?.MarkProcessed(invoice.Id, UserId);
         }
 
-        return new Fixture(invoice, payable, creditNote);
+        return new Fixture(invoice, payable, creditNote, receptionDoc);
     }
 
     private sealed class Mocks
@@ -110,11 +128,19 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         public Mock<IPurchaseInvoiceRepository> InvoiceRepo { get; } = new();
         public Mock<IAccountsPayableRepository> PayableRepo { get; } = new();
         public Mock<IPurchaseReturnRepository> LockRepo { get; } = new();
+        public Mock<IPurchaseReceptionDocumentRepository> ReceptionRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
         public Mocks(Fixture f)
         {
+            if (f.ReceptionDoc is not null)
+            {
+                ReceptionRepo
+                    .Setup(r => r.GetByIdAsync(TenantId, f.ReceptionDoc.Id, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(f.ReceptionDoc);
+            }
+
             CreditNoteRepo
                 .Setup(r =>
                     r.GetPurchaseInvoiceIdAsync(TenantId, f.CreditNote.Id, It.IsAny<CancellationToken>())
@@ -146,6 +172,7 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
                 InvoiceRepo.Object,
                 PayableRepo.Object,
                 LockRepo.Object,
+                ReceptionRepo.Object,
                 Uow.Object,
                 DbEx.Object,
                 FixedTenant(),
@@ -204,6 +231,54 @@ public sealed class CancelPurchaseCreditNoteHandlerTests
         result.IsSuccess.Should().BeTrue();
         f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
         f.Payable.CreditNoteAmount.Should().Be(0m);
+    }
+
+    // ── PURCHASE-CREDIT-NOTE-DISCOUNT-CANCEL-RELEASES-RECEPTION-01 ──────
+
+    [Fact]
+    public async Task Cancel_NC_Discount_Authorized_libera_documento_de_recepcion_para_reproceso()
+    {
+        var f = BuildFixture(authorized: true, withReception: true);
+        f.ReceptionDoc.Should().NotBeNull();
+        f.ReceptionDoc!.Status.Should().Be(PurchaseReceptionDocumentStatus.Processed);
+        f.ReceptionDoc.PurchaseId.Should().Be(f.Invoice.Id);
+
+        var m = new Mocks(f);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new CancelPurchaseCreditNoteCommand(f.CreditNote.Id, "Corrección", Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
+        f.ReceptionDoc.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        f.ReceptionDoc.PurchaseId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Cancel_NC_Discount_Draft_con_recepcion_vinculada_no_falla_ni_intenta_liberar()
+    {
+        var f = BuildFixture(authorized: false, withReception: true);
+        f.ReceptionDoc.Should().NotBeNull();
+        f.ReceptionDoc!.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified); // nunca llegó a Processed
+
+        var m = new Mocks(f);
+        var handler = m.BuildHandler();
+
+        var result = await handler.Handle(
+            new CancelPurchaseCreditNoteCommand(f.CreditNote.Id, "Ya no aplica", Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
+        f.ReceptionDoc.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        m.ReceptionRepo.Verify(
+            r => r.GetByIdAsync(TenantId, f.ReceptionDoc.Id, It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     // ── 13. Cancel no toca inventario/contabilidad (estructural) ────────
