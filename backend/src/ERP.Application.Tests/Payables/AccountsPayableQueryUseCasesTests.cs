@@ -219,12 +219,14 @@ public sealed class AccountsPayableQueryUseCasesTests
         payable.RegisterPayment(50m, UserId);
 
         var m = new Mocks();
-        m.Repo.Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())).ReturnsAsync(payable);
+        m.Repo
+            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, payable.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payable);
         m.Partners
             .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, string> { [supplierId] = "Proveedor Tres" });
 
-        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant);
+        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant, m.Company);
         var result = await handler.Handle(new GetAccountsPayableByIdQuery(payable.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -240,10 +242,10 @@ public sealed class AccountsPayableQueryUseCasesTests
     {
         var m = new Mocks();
         m.Repo
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AccountsPayable?)null);
 
-        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant);
+        var handler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant, m.Company);
         var result = await handler.Handle(new GetAccountsPayableByIdQuery(Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -271,7 +273,9 @@ public sealed class AccountsPayableQueryUseCasesTests
                 )
             )
             .ReturnsAsync((new List<AccountsPayable> { payable }, 1));
-        m.Repo.Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())).ReturnsAsync(payable);
+        m.Repo
+            .Setup(r => r.GetByIdForCompanyAsync(TenantId, CompanyId, payable.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(payable);
         m.Partners
             .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, string> { [supplierId] = "Proveedor Cuatro" });
@@ -284,7 +288,7 @@ public sealed class AccountsPayableQueryUseCasesTests
         listResult.Value.Items[0].OutstandingAmount.Should().Be(expectedOutstanding);
         listResult.Value.Items[0].OutstandingAmount.Should().Be(180m);
 
-        var detailHandler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant);
+        var detailHandler = new GetAccountsPayableByIdHandler(m.Repo.Object, m.Partners.Object, m.Tenant, m.Company);
         var detailResult = await detailHandler.Handle(
             new GetAccountsPayableByIdQuery(payable.Id),
             CancellationToken.None

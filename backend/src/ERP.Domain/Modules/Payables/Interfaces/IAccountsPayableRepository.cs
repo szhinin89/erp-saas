@@ -8,6 +8,25 @@ public interface IAccountsPayableRepository
     Task<AccountsPayable?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// PAYABLES-GET-BY-ID-COMPANY-SCOPE-01 — variante company-scoped de <see cref="GetByIdAsync"/>
+    /// para el detalle expuesto por <c>PayablesController.GetById</c>
+    /// (<see cref="AccountsPayable.CompanyId"/> es la unidad de aislamiento de CxP, no
+    /// <see cref="AccountsPayable"/>.<c>BranchId</c> — ver PAYABLES-BRANCH-SCOPE-DECISION-01).
+    /// <see cref="GetByIdAsync"/> solo filtra por tenant y sigue existiendo para los consumidores
+    /// que ya recargan una CxP cuyo origen (compra/gasto) ya fue validado como propio de la
+    /// empresa activa por otro camino (p. ej. <c>ApplySupplierCreditUseCases</c>); esta variante es
+    /// para el único endpoint de lectura directa por Id expuesto sin ese contexto adicional, donde
+    /// un Id de otra empresa del mismo tenant no debe ser accesible — fail-closed: si el Id
+    /// pertenece a otra empresa, retorna <c>null</c> (mapeado a NotFound), nunca la entidad.
+    /// </summary>
+    Task<AccountsPayable?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Natural key real (uq_accounts_payables_tenant_company_origin) — usado por
     /// <c>AccountsPayableService.CreateFromOriginAsync</c> para la idempotencia: nunca crear un
     /// segundo <see cref="AccountsPayable"/> para el mismo documento de origen.

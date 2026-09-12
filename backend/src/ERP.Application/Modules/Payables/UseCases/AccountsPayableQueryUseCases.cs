@@ -162,16 +162,19 @@ public sealed class GetAccountsPayableByIdHandler
     private readonly IAccountsPayableRepository _repo;
     private readonly IBusinessPartnerRepository _partners;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
 
     public GetAccountsPayableByIdHandler(
         IAccountsPayableRepository repo,
         IBusinessPartnerRepository partners,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c
     )
     {
         _repo = repo;
         _partners = partners;
         _t = t;
+        _c = c;
     }
 
     public async Task<Result<AccountsPayableDetailDto>> Handle(
@@ -179,7 +182,10 @@ public sealed class GetAccountsPayableByIdHandler
         CancellationToken ct
     )
     {
-        var p = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
+        // PAYABLES-GET-BY-ID-COMPANY-SCOPE-01 — CxP es company-scoped, no branch-scoped
+        // (PAYABLES-BRANCH-SCOPE-DECISION-01): sigue sin exigir sucursal activa, pero un Id de
+        // otra empresa del mismo tenant nunca debe resolver aquí — fail-closed a NotFound.
+        var p = await _repo.GetByIdForCompanyAsync(_t.TenantId, _c.CompanyId, q.Id, ct);
         if (p is null)
             return Result<AccountsPayableDetailDto>.NotFound("Cuenta por pagar no encontrada.");
 

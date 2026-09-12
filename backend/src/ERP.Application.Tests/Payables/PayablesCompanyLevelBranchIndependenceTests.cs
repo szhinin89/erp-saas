@@ -36,6 +36,13 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         public Task<AccountsPayable?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
             Task.FromResult(Store.FirstOrDefault(p => p.TenantId == tenantId && p.Id == id));
 
+        public Task<AccountsPayable?> GetByIdForCompanyAsync(
+            Guid tenantId, Guid companyId, Guid id, CancellationToken ct = default
+        ) =>
+            Task.FromResult(
+                Store.FirstOrDefault(p => p.TenantId == tenantId && p.CompanyId == companyId && p.Id == id)
+            );
+
         public Task<AccountsPayable?> GetByOriginAsync(
             Guid tenantId, Guid companyId, AccountsPayableOriginType originType, Guid originId,
             CancellationToken ct = default
@@ -162,11 +169,13 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
 
         // Notar: GetAccountsPayableByIdHandler no recibe ICurrentBranch en su constructor —
         // prueba en tiempo de compilación de que la query ya no exige sucursal activa
-        // (ICompanyScopedRequest, no IBranchScopedRequest).
+        // (ICompanyScopedRequest, no IBranchScopedRequest). Sí recibe ICurrentCompany — la CxP es
+        // de la Empresa A activa, en una sucursal (B) distinta a la que "originó" el documento.
         var handler = new GetAccountsPayableByIdHandler(
             repo,
             partners.Object,
-            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId)
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
         );
 
         var result = await handler.Handle(new GetAccountsPayableByIdQuery(payable.Id), CancellationToken.None);
@@ -200,6 +209,63 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Total.Should().Be(1);
         result.Value.Items.Should().OnlyContain(i => i.TotalAmount == 100m);
+    }
+
+    /// <summary>
+    /// PAYABLES-GET-BY-ID-COMPANY-SCOPE-01 — <c>GetAccountsPayableByIdQuery</c> (detalle por Id,
+    /// expuesto directamente por <c>GET /api/v1/payables/{id}</c>) debe rechazar, fail-closed, un
+    /// Id que pertenece a otra empresa del mismo tenant — antes del fix, el repositorio solo
+    /// filtraba por <c>TenantId</c>, por lo que un Id de Empresa B adivinado/conocido devolvía la
+    /// CxP igual estando activo en Empresa A.
+    /// </summary>
+    [Fact]
+    public async Task Detalle_CxP_de_otra_empresa_no_es_accesible_por_Id_devuelve_NotFound()
+    {
+        var repo = new FakeAccountsPayableRepository();
+        var payableCompanyB = BuildPayable(CompanyBId, BranchAId, 999m);
+        repo.Store.Add(payableCompanyB);
+
+        var partners = NamesMock();
+
+        var handler = new GetAccountsPayableByIdHandler(
+            repo,
+            partners.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId) // activo en Empresa A
+        );
+
+        var result = await handler.Handle(new GetAccountsPayableByIdQuery(payableCompanyB.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse("el Id pertenece a la Empresa B, nunca a la Empresa A activa");
+    }
+
+    /// <summary>
+    /// Contraparte del test anterior: la empresa dueña del documento sí puede consultarlo por Id —
+    /// el fix no debe romper el acceso legítimo, solo bloquear el cruce entre empresas.
+    /// </summary>
+    [Fact]
+    public async Task Detalle_CxP_de_la_propia_empresa_sigue_siendo_accesible_por_Id()
+    {
+        var repo = new FakeAccountsPayableRepository();
+        var payableCompanyB = BuildPayable(CompanyBId, BranchAId, 999m);
+        repo.Store.Add(payableCompanyB);
+
+        var partners = NamesMock();
+        partners
+            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
+
+        var handler = new GetAccountsPayableByIdHandler(
+            repo,
+            partners.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyBId) // activo en Empresa B, dueña del documento
+        );
+
+        var result = await handler.Handle(new GetAccountsPayableByIdQuery(payableCompanyB.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Id.Should().Be(payableCompanyB.Id);
     }
 
     /// <summary>

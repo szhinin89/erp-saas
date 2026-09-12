@@ -32,6 +32,7 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
 
     private Guid _tenantId;
     private Guid _companyId;
+    private Guid _companyBId;
     private Guid _branchId;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -41,6 +42,7 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
     private Guid _purchasePendingId;
     private Guid _purchasePaidId;
     private Guid _expensePendingId;
+    private Guid _companyBPayableId;
 
     public async Task InitializeAsync()
     {
@@ -51,11 +53,13 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
         var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var companyB = Company.CreateManaged(tenant.Id, "1790012345002", "Test S.A. Dos", createdBy: _userId);
         db.Tenants.Add(tenant);
-        db.Companies.Add(company);
+        db.Companies.AddRange(company, companyB);
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
+        _companyBId = companyB.Id;
 
         var branch = Branch.Create(
             tenantId: _tenantId,
@@ -85,9 +89,38 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
             createdBy: _userId,
             companyId: _companyId
         );
-        db.Branches.Add(branch);
+        var branchB = Branch.Create(
+            tenantId: _tenantId,
+            name: "Matriz B",
+            address: "Av. Secundaria 456",
+            code: "B02",
+            description: null,
+            reference: null,
+            postalCode: null,
+            phone: null,
+            secondaryPhone: null,
+            email: null,
+            website: null,
+            managerName: null,
+            managerPosition: null,
+            managerEmail: null,
+            managerPhone: null,
+            countryId: null,
+            provinceId: null,
+            cantonId: null,
+            parishId: null,
+            latitude: null,
+            longitude: null,
+            openingDate: null,
+            internalNotes: null,
+            isMainBranch: true,
+            createdBy: _userId,
+            companyId: _companyBId
+        );
+        db.Branches.AddRange(branch, branchB);
         await db.SaveChangesAsync();
         _branchId = branch.Id;
+        var branchBId = branchB.Id;
 
         var acme = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Acme Distribuidora", _userId);
         var globex = BusinessPartner.Create(_tenantId, "05", "1710034073", 1, "Globex Corp", _userId);
@@ -123,18 +156,27 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         expensePending.AddInstallment(1, new DateOnly(2026, 10, 1), 150m);
         _expensePendingId = expensePending.Id;
 
-        db.Set<AccountsPayable>().AddRange(purchasePending, purchasePaid, expensePending);
+        var companyBPayable = AccountsPayable.CreateFromOrigin(
+            _tenantId, _companyBId, branchBId, _globexSupplierId,
+            AccountsPayableOriginType.PurchaseInvoice, Guid.NewGuid(),
+            "01", "001-001-000000099", issueDate, issueDate, _userId
+        );
+        companyBPayable.AddInstallment(1, new DateOnly(2026, 9, 20), 999m);
+        _companyBPayableId = companyBPayable.Id;
+
+        db.Set<AccountsPayable>()
+            .AddRange(purchasePending, purchasePaid, expensePending, companyBPayable);
         await db.SaveChangesAsync();
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
-    private ErpDbContext CreateContext() =>
+    private ErpDbContext CreateContext(Guid? activeCompanyId = null) =>
         new(
             new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
             new FixedCurrentTenant(_tenantId),
             new NoOpPublisher(),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(activeCompanyId ?? _companyId)
         );
 
     [Fact]
@@ -258,6 +300,71 @@ public sealed class AccountsPayableSearchTests : IAsyncLifetime
         pending.Installments.Should().ContainSingle();
         pending.TotalAmount.Should().Be(500m);
         pending.OutstandingAmount.Should().Be(500m);
+    }
+
+    /// <summary>
+    /// PAYABLES-GET-BY-ID-COMPANY-SCOPE-01 — traducción EF/Postgres real de
+    /// <c>GetByIdForCompanyAsync</c>: la Empresa A no puede leer por Id una CxP de la Empresa B
+    /// (mismo tenant), pero sí la suya propia. Complementa el test con fake repo en
+    /// <c>PayablesCompanyLevelBranchIndependenceTests</c> (que prueba el handler) verificando que el
+    /// filtro realmente se traduce a SQL contra Postgres, no solo en memoria.
+    /// </summary>
+    [Fact]
+    public async Task GetByIdForCompanyAsync_no_cruza_empresas_del_mismo_tenant()
+    {
+        // Empresa A activa (ambiente del DbContext = _companyId, igual que en producción una
+        // solicitud autenticada en Empresa A): ve su propia CxP, nunca la de Empresa B.
+        await using (var dbCompanyA = CreateContext(_companyId))
+        {
+            var repoCompanyA = new AccountsPayableRepository(dbCompanyA);
+
+            var propia = await repoCompanyA.GetByIdForCompanyAsync(_tenantId, _companyId, _purchasePendingId, default);
+            propia.Should().NotBeNull();
+            propia.Id.Should().Be(_purchasePendingId);
+
+            var deOtraEmpresa = await repoCompanyA.GetByIdForCompanyAsync(
+                _tenantId, _companyId, _companyBPayableId, default
+            );
+            deOtraEmpresa.Should().BeNull("el Id pertenece a la Empresa B, nunca a la Empresa A");
+        }
+
+        // Empresa B activa (ambiente del DbContext = _companyBId): ve su propia CxP.
+        await using (var dbCompanyB = CreateContext(_companyBId))
+        {
+            var repoCompanyB = new AccountsPayableRepository(dbCompanyB);
+
+            var suyaPropia = await repoCompanyB.GetByIdForCompanyAsync(
+                _tenantId, _companyBId, _companyBPayableId, default
+            );
+            suyaPropia.Should().NotBeNull();
+            suyaPropia.Id.Should().Be(_companyBPayableId);
+        }
+    }
+
+    /// <summary>
+    /// Verificación de honestidad del hallazgo original PAYABLES-GET-BY-ID-COMPANY-SCOPE-01:
+    /// <see cref="AccountsPayable"/> implementa <c>ICompanyOperationalEntity</c>, por lo que
+    /// <c>EnterpriseQueryFilterConfigurator</c> YA aplica un filtro global de EF Core
+    /// (Tenant + Company, atado a <c>ErpDbContext.FilterCompanyId</c>/ambient <c>ICurrentCompany</c>)
+    /// sobre CUALQUIER query contra <c>AccountsPayables</c> — incluyendo el <c>GetByIdAsync</c>
+    /// original que solo filtraba explícitamente por Tenant. Este test prueba, contra Postgres real,
+    /// que el método viejo YA era seguro en producción (el filtro global lo protegía de forma
+    /// transparente); el filtro explícito agregado en <c>GetByIdForCompanyAsync</c> es defensa en
+    /// profundidad (mismo patrón que ya usa <c>SearchAsync</c>), no la corrección de un cruce real.
+    /// </summary>
+    [Fact]
+    public async Task GetByIdAsync_original_ya_estaba_protegido_por_el_filtro_global_de_EnterpriseQueryFilterConfigurator()
+    {
+        // Ambiente = Empresa A, pidiendo por Id una CxP que pertenece a la Empresa B.
+        await using var db = CreateContext(_companyId);
+        var repo = new AccountsPayableRepository(db);
+
+        var result = await repo.GetByIdAsync(_tenantId, _companyBPayableId, default);
+
+        result.Should().BeNull(
+            "el filtro global de EF Core (ICompanyOperationalEntity) ya bloquea el cruce de " +
+            "empresas aunque el método solo filtre explícitamente por TenantId"
+        );
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

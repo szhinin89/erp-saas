@@ -17,6 +17,17 @@ public sealed class AccountsPayableRepository : IAccountsPayableRepository
             .Where(x => x.TenantId == tenantId)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public Task<AccountsPayable?> GetByIdForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db.AccountsPayables
+            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
     public Task<AccountsPayable?> GetByOriginAsync(
         Guid tenantId,
         Guid companyId,
