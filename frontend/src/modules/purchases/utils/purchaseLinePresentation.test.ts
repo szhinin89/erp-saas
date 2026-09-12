@@ -103,7 +103,7 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       }),
     );
 
-    expect(vm.status.label).toBe("Ítem + PACA x 12.0000");
+    expect(vm.inventory.presentationLabel).toBe("Nombre de presentación no disponible");
     expect(vm.inventory.hasPresentation).toBe(true);
     expect(vm.inventory.conversionDetail).toBe("2.0000 PACA -> 24.0000 UNIT");
   });
@@ -1202,5 +1202,43 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
         }),
       ).toBeNull();
     });
+  });
+});
+
+
+describe("reception presentation labels", () => {
+  it.each([false, true])("keeps manual and saved unit labels free of technical codes (saved=%s)", (saved) => {
+    const vm = buildPurchaseLinePresentation(line({
+      packagingLevelId: "internal-packaging-id",
+      quantity: 4, unitPrice: 1.96,
+      conversionFactor: saved ? 1 : undefined,
+      quantityInBaseUom: saved ? 4 : undefined,
+      baseUomCode: "19", uomCode: "19",
+      context: { ...context, baseUomCode: "19", packagingLevels: [{
+        id: "internal-packaging-id", name: "UNIDAD X1", baseQuantity: 1,
+        uomCode: "19", isBaseUnit: true, isPurchaseDefault: true,
+      }] },
+    }));
+    expect(vm.inventory.presentationLabel).toBe("UNIDAD X1");
+    expect(vm.inventory.presentation).toBe("UNIDAD X1");
+    expect(vm.inventory.conversionFactorLabel).toBe("1 unidad");
+    expect(vm.inventory.baseQuantity).toBe("4.0000 unidades");
+    expect(vm.inventory.baseUnitCost).toBe("$1.9600");
+  });
+  it("explains a box factor separately from its name", () => {
+    const vm = buildPurchaseLinePresentation(line({ packagingLevelId: "paca-12" }));
+    expect(vm.inventory.presentationLabel).toBe("PACA");
+    expect(vm.inventory.conversionFactorLabel).toBe("12 unidades por presentaci\u00f3n");
+    expect(vm.inventory.baseQuantityValue).toBe(24);
+    expect(vm.inventory.baseUnitCostValue).toBeCloseTo(9.29 / 12);
+  });
+  it("does not expose persisted UOM codes while detail context loads", () => {
+    const vm = buildPurchaseLinePresentation(line({ context: undefined,
+      packagingLevelId: "internal-packaging-id", baseUomCode: "19", uomCode: "19",
+      conversionFactor: 12, quantityInBaseUom: 24,
+    }));
+    expect(vm.inventory.presentationLabel).not.toContain("19");
+    expect(vm.inventory.presentationLabel).not.toContain("internal-packaging-id");
+    expect(vm.inventory.conversionFactorLabel).toBe("12 unidades por presentaci\u00f3n");
   });
 });

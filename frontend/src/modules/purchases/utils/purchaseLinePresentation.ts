@@ -86,6 +86,7 @@ export interface PurchaseLinePresentationVM {
     presentation: string;
     hasPresentation: boolean;
     presentationLabel: string;
+    conversionFactorLabel: string;
     conversionDetail: string;
     /** Redacción legible de la conversión (p. ej. "1 PACA X12 = 12 unidades") —
      * "" cuando no hay presentación con nombre legible y factor > 1; nunca
@@ -188,11 +189,14 @@ export function buildPurchaseLinePresentation(
       ? quantity * conversionFactor
       : line.quantityInBaseUom;
   const hasPresentation = !!line.packagingLevelId;
-  const presentationLabel =
-    selectedPackaging?.name ??
-    (hasPresentation && conversionFactor > 1
-      ? `${presentationUom} x ${formatMoney(conversionFactor, decimals.quantity)}`
-      : presentationUom);
+  // The DTO supplies UOM codes, not readable names. Never use them as labels.
+  const presentationLabel = selectedPackaging?.name?.trim() ||
+    (t?.("purchases.lines.presentationNameUnavailable", "Nombre de presentación no disponible") ??
+      "Nombre de presentación no disponible");
+  const conversionFactorLabel = conversionFactor === 1
+    ? (t?.("purchases.lines.oneBaseUnit", "1 unidad") ?? "1 unidad")
+    : (t?.("purchases.lines.unitsPerPresentation", { factor: conversionFactor }) ??
+      `${conversionFactor} unidades por presentación`);
   // Palabra genérica para expresar cantidades en unidad base al usuario —
   // nunca el código técnico crudo (p. ej. "04"/"19"): el DTO de contexto no
   // trae un nombre legible de UOM, solo el código, así que no se muestra
@@ -330,13 +334,10 @@ export function buildPurchaseLinePresentation(
       matchStatus: line.itemMatchStatus ?? null,
     },
     inventory: {
-      presentation:
-        selectedPackaging?.name ??
-        (conversionFactor > 1
-          ? `${presentationUom} x ${formatMoney(conversionFactor, decimals.quantity)}`
-          : presentationUom),
+      presentation: presentationLabel,
       hasPresentation,
       presentationLabel,
+      conversionFactorLabel: hasItem ? conversionFactorLabel : UNKNOWN,
       conversionDetail: hasItem
         ? `${formatMoney(quantity, decimals.quantity)} ${presentationUom} -> ${formatMoney(quantityInBase, decimals.quantity)} ${baseUom}`
         : UNKNOWN,

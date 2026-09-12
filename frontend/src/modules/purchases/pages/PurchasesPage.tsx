@@ -2203,7 +2203,7 @@ function PurchaseLineCard({
             {packagingLevels.length > 0 && (
               <div>
                 <ZHFieldLabel size="sm">
-                  {t("purchases.lines.presentation", "Presentación")}
+                  {t("purchases.lines.receivedPresentation", "Presentación recibida")}
                 </ZHFieldLabel>
                 <ZhSelect
                   density="compact"
@@ -2216,7 +2216,7 @@ function PurchaseLineCard({
                   </option>
                   {packagingLevels.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} x {p.baseQuantity} {ctxData?.baseUomCode}
+                      {p.name}
                     </option>
                   ))}
                 </ZhSelect>
@@ -2255,15 +2255,15 @@ function PurchaseLineCard({
                 value={<ZHDataValue variant="numeric">{vm.inventory.presentationLabel}</ZHDataValue>}
               />
             )}
-            {vm.item.hasItem && !!vm.inventory.equivalenceDetail && (
+            {vm.item.hasItem && (
               <ZHInfoRow
                 wide
                 label={
                   <ZHFieldLabel size="sm">
-                    {t("purchases.lines.baseConversion", "Equivalencia")}
+                    {t("purchases.lines.conversionFactor", "Factor de conversión")}
                   </ZHFieldLabel>
                 }
-                value={<ZHDataValue variant="numeric">{vm.inventory.equivalenceDetail}</ZHDataValue>}
+                value={<ZHDataValue variant="numeric">{vm.inventory.conversionFactorLabel}</ZHDataValue>}
               />
             )}
             <ZHInfoRow
