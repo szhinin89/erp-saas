@@ -26,7 +26,6 @@ import { supplierPaymentService } from "../api/supplierPaymentService";
 import { SupplierPaymentHeader } from "../components/SupplierPaymentHeader";
 import { SupplierPayablesPortfolio } from "../components/SupplierPayablesPortfolio";
 import { SupplierPaymentMethodLinesEditor } from "../components/SupplierPaymentMethodLinesEditor";
-import { SupplierPaymentApplicationsEditor } from "../components/SupplierPaymentApplicationsEditor";
 import { SupplierPaymentAllocationPreview } from "../components/SupplierPaymentAllocationPreview";
 import { SupplierPaymentConfirmModal } from "../components/SupplierPaymentConfirmModal";
 import { computeAutomaticAllocations } from "../utils/allocation";
@@ -47,8 +46,6 @@ const EMPTY_METHOD_LINE = {
   checkDate: "",
   notes: "",
 };
-
-const EMPTY_APPLICATION_LINE = { accountsPayableInstallmentId: "", amountApplied: 0 };
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -84,7 +81,7 @@ export function SupplierPaymentFormPage() {
       paymentDate: todayIso(),
       receiptNumber: "",
       methodLines: [EMPTY_METHOD_LINE],
-      applicationLines: [EMPTY_APPLICATION_LINE],
+      applicationLines: [],
     },
   });
   const { handleSubmit, watch, setValue, setError } = form;
@@ -108,7 +105,7 @@ export function SupplierPaymentFormPage() {
       .then(setInstallments)
       .catch(() => setInstallments([]))
       .finally(() => setInstallmentsLoading(false));
-    setValue("applicationLines", [EMPTY_APPLICATION_LINE]);
+    setValue("applicationLines", []);
     businessPartnerFacade
       .getBusinessPartner(supplierId)
       .then((bp) => setSupplierName(bp.tradeName?.trim() || bp.legalName))
@@ -177,9 +174,16 @@ export function SupplierPaymentFormPage() {
     setSaving(true);
     setModalError(null);
     try {
+      // SUPPLIER-PAYMENT-REMOVE-DUPLICATED-APPLICATION-LINES-FLOW-01 — la cartera pendiente
+      // (SupplierPayablesPortfolio) ya elimina/omite las cuotas sin monto al construir
+      // applicationLines, pero el submit filtra de nuevo por defensa en profundidad: nunca debe
+      // viajar al backend una línea con amountApplied <= 0.
+      const validApplicationLines = pendingValues.applicationLines.filter(
+        (l) => l.amountApplied > 0,
+      );
       const allocations = computeAutomaticAllocations(
         pendingValues.methodLines,
-        pendingValues.applicationLines,
+        validApplicationLines,
       );
       const totalAmount = pendingValues.methodLines.reduce((sum, l) => sum + (l.amount || 0), 0);
 
@@ -197,7 +201,7 @@ export function SupplierPaymentFormPage() {
           checkDate: l.checkDate?.trim() || null,
           notes: l.notes?.trim() || null,
         })),
-        applicationLines: pendingValues.applicationLines.map((l) => ({
+        applicationLines: validApplicationLines.map((l) => ({
           accountsPayableInstallmentId: l.accountsPayableInstallmentId,
           amountApplied: l.amountApplied,
         })),
@@ -254,10 +258,6 @@ export function SupplierPaymentFormPage() {
             destinations={destinations}
             disabled={saving}
           />
-        </ZHCard>
-
-        <ZHCard title="Cuotas a pagar">
-          <SupplierPaymentApplicationsEditor installments={installments} disabled={saving} />
         </ZHCard>
 
         <ZHCard title="Distribución medio ↔ cuota (automática)">

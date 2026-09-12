@@ -34,9 +34,15 @@ function todayIso(): string {
  * duplicado; el usuario puede seguir editando la cuota/monto desde cualquiera de las dos secciones.
  */
 export function SupplierPayablesPortfolio({ installments, loading, disabled }: Props) {
-  const { control, watch } = useFormContext<RegisterSupplierPaymentFormValues>();
+  const {
+    control,
+    watch,
+    formState: { errors },
+  } = useFormContext<RegisterSupplierPaymentFormValues>();
   const { replace } = useFieldArray({ control, name: "applicationLines" });
   const applicationLines = watch("applicationLines") ?? [];
+  const applicationLinesError =
+    typeof errors.applicationLines?.message === "string" ? errors.applicationLines.message : null;
 
   // SUPPLIER-PAYMENT-PORTFOLIO-DECIMAL-INPUT-01 — el input de "Monto a aplicar" estaba 100%
   // controlado por el número ya parseado (`value={value}`), que `ZhDecimalInput` reformatea con
@@ -198,7 +204,14 @@ export function SupplierPayablesPortfolio({ installments, loading, disabled }: P
   ];
 
   if (installments.length === 0 && !loading) {
-    return <p className="sp-line-hint">Este proveedor no tiene cuentas por pagar pendientes.</p>;
+    return (
+      <div className="sp-portfolio">
+        <p className="sp-line-hint">Este proveedor no tiene cuentas por pagar pendientes.</p>
+        {applicationLinesError && (
+          <p className="zh-field-hint zh-field-hint--error">{applicationLinesError}</p>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -241,6 +254,10 @@ export function SupplierPayablesPortfolio({ installments, loading, disabled }: P
       </div>
 
       <ZHDataTable columns={columns} rows={installments} rowKey={(r) => r.installmentId} loading={loading} />
+
+      {applicationLinesError && (
+        <p className="zh-field-hint zh-field-hint--error">{applicationLinesError}</p>
+      )}
     </div>
   );
 }
