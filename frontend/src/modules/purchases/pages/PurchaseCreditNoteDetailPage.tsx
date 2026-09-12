@@ -31,14 +31,26 @@ import {
   getPurchaseCreditNoteStatusLabel,
   PURCHASE_CREDIT_NOTE_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/purchaseCreditNoteStatus";
+import {
+  getPurchaseReturnStatusLabel,
+  PURCHASE_RETURN_STATUS_BADGE,
+} from "../utils/purchaseReturnStatus";
 import "../styles/purchase-credit-note.css";
 
 /**
- * Detalle de una nota de crédito de compra (descuento/promoción, v1): edición del borrador,
- * autorización y cancelación — mismo patrón de página que `PurchaseReturnDetailPage.tsx`. Nunca
- * muestra ni pide item/bodega/cantidad (§0.1/§2.2 del diseño — esta entidad nunca mueve
- * inventario). El bloqueo por excedente de saldo es siempre responsabilidad del backend; aquí solo
- * se muestra una advertencia preventiva si ya se conoce `invoiceBalanceDue`.
+ * Detalle de una nota de crédito de compra: edición del borrador, autorización y cancelación
+ * (descuento/promoción, v1) — mismo patrón de página que `PurchaseReturnDetailPage.tsx`. Nunca
+ * muestra ni pide item/bodega/cantidad para editar (§0.1/§2.2 del diseño — esta entidad nunca
+ * mueve inventario). El bloqueo por excedente de saldo es siempre responsabilidad del backend;
+ * aquí solo se muestra una advertencia preventiva si ya se conoce `invoiceBalanceDue`.
+ *
+ * PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — UX only: para NC tipo Devolución, esta pantalla
+ * es la única parada de revisión (Recepción XML ingresa/procesa, aquí se revisa). Muestra en una
+ * sola pantalla los datos ya resueltos por el backend de la `PurchaseReturn` vinculada (N.º,
+ * estado, total autorizado, producto/bodega reales de cada línea) para que el usuario no necesite
+ * abrir `/purchases/returns/{id}` — el enlace sigue existiendo solo como referencia secundaria.
+ * Solo lectura/composición visual: no cambia autorización, cancelación, Kardex, CxP, contabilidad
+ * ni la lógica de `PurchaseReturn`.
  */
 export function PurchaseCreditNoteDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -95,7 +107,10 @@ export function PurchaseCreditNoteDetailPage() {
             generic: t("purchases.creditNote.errors.loadFailed", "No se pudo cargar la nota de crédito."),
           }),
         );
-        navigate("/purchases");
+        // PURCHASE-CREDIT-NOTE-DETAIL-ROUTING-AUDIT-01 — este detalle pertenece al módulo Notas
+        // de Crédito de Compra: cualquier fallback vuelve a su propio listado, nunca a Facturas
+        // de compra (/purchases).
+        navigate("/purchases/credit-notes");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -303,8 +318,22 @@ export function PurchaseCreditNoteDetailPage() {
   // mediante el PurchaseReturn vinculado (backend rechaza Authorize() para este tipo).
   const isDiscountType = editing.applicationType === "Discount";
   if (!isDiscountType) {
+    // PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — SKU/nombre real del ítem y bodega (resueltos
+    // por el backend desde la PurchaseInvoiceDetail de origen) en vez de solo la descripción libre
+    // congelada al crear la NC; cae de vuelta a la descripción si no se pudo resolver.
+    discountLineColumns[0] = {
+      key: "description",
+      header: "Producto",
+      render: (line) =>
+        line.itemName
+          ? `${line.itemSku ? `${line.itemSku} — ` : ""}${line.itemName}`
+          : line.description,
+    };
     discountLineColumns.splice(1, 0, {
       key: "quantity", header: "Cantidad devuelta", align: "right", render: (line) => line.quantity ?? "—",
+    });
+    discountLineColumns.splice(2, 0, {
+      key: "warehouse", header: "Bodega", render: (line) => line.warehouseName ?? "—",
     });
     discountLineColumns.splice(discountLineColumns.length - 1, 0,
       { key: "ice", header: "ICE", align: "right", render: (line) => <ZHMoneyValue value={line.iceAmount ?? 0} currencySymbol="" /> },
@@ -323,7 +352,13 @@ export function PurchaseCreditNoteDetailPage() {
           : undefined
       }
       action={
-        <ZHBtn type="button" variant="ghost" onClick={() => navigate("/purchases")}>
+        // PURCHASE-CREDIT-NOTE-DETAIL-ROUTING-AUDIT-01 — "Volver" pertenece al módulo Notas de
+        // Crédito de Compra: debe regresar a su propio listado, nunca a Facturas de compra.
+        <ZHBtn
+          type="button"
+          variant="ghost"
+          onClick={() => navigate("/purchases/credit-notes")}
+        >
           {t("common.back", "Volver")}
         </ZHBtn>
       }
@@ -371,6 +406,19 @@ export function PurchaseCreditNoteDetailPage() {
             </div>
           )}
         </div>
+        {/* PURCHASE-CREDIT-NOTE-DETAIL-ROUTING-AUDIT-01 — "Ver factura afectada" faltaba por
+            completo (solo se mostraba el número como texto en el subtítulo, sin navegación). No
+            existe una ruta /purchases/{id} dedicada — PurchasesPage.tsx abre una factura puntual
+            vía ?invoiceId= (mismo mecanismo que "Ver documento origen" desde Kardex). */}
+        <div className="pcn-actions-row">
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            onClick={() => navigate(`/purchases?invoiceId=${editing.purchaseInvoiceId}`)}
+          >
+            {t("purchases.creditNote.actions.viewAffectedInvoice", "Ver factura afectada")}
+          </ZHBtn>
+        </div>
         {!isDiscountType && (
           <>
             <ZHPageNotice
@@ -381,15 +429,54 @@ export function PurchaseCreditNoteDetailPage() {
               )}
             />
             {editing.linkedPurchaseReturnId && (
-              <div className="pcn-actions-row">
-                <ZHBtn
-                  type="button"
-                  variant="ghost"
-                  onClick={() => navigate(`/purchases/returns/${editing.linkedPurchaseReturnId}`)}
-                >
-                  {t("purchases.creditNote.actions.viewLinkedReturn", "Ver devolución vinculada")}
-                </ZHBtn>
-              </div>
+              <>
+                {/* PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — datos ya resueltos por el
+                    backend de la PurchaseReturn vinculada, visibles sin salir de esta pantalla. */}
+                <div className="pcn-summary-grid">
+                  {editing.linkedPurchaseReturnNumber && (
+                    <div>
+                      <span className="pcn-summary-grid__label">N.º devolución</span>
+                      <span className="pcn-summary-grid__value">
+                        {editing.linkedPurchaseReturnNumber}
+                      </span>
+                    </div>
+                  )}
+                  {editing.linkedPurchaseReturnStatus && (
+                    <div>
+                      <span className="pcn-summary-grid__label">Estado devolución</span>
+                      <span className="pcn-summary-grid__value">
+                        <Badge
+                          label={getPurchaseReturnStatusLabel(editing.linkedPurchaseReturnStatus, t)}
+                          variant={
+                            PURCHASE_RETURN_STATUS_BADGE[editing.linkedPurchaseReturnStatus] ??
+                            "gray"
+                          }
+                        />
+                      </span>
+                    </div>
+                  )}
+                  {editing.linkedPurchaseReturnAuthorizedGrandTotal !== null && (
+                    <div>
+                      <span className="pcn-summary-grid__label">Total devolución</span>
+                      <span className="pcn-summary-grid__value">
+                        <ZHMoneyValue
+                          value={editing.linkedPurchaseReturnAuthorizedGrandTotal}
+                          currencySymbol=""
+                        />
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="pcn-actions-row">
+                  <ZHBtn
+                    type="button"
+                    variant="ghost"
+                    onClick={() => navigate(`/purchases/returns/${editing.linkedPurchaseReturnId}`)}
+                  >
+                    {t("purchases.creditNote.actions.viewLinkedReturn", "Ver devolución vinculada")}
+                  </ZHBtn>
+                </div>
+              </>
             )}
           </>
         )}

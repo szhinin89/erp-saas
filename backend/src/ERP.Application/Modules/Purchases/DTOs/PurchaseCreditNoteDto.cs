@@ -37,7 +37,15 @@ public sealed record PurchaseCreditNoteDto(
     string? InvoiceNumber = null,
     string? SupplierName = null,
     decimal? InvoiceBalanceDue = null,
-    string? ReceptionDocumentAccessKey = null
+    string? ReceptionDocumentAccessKey = null,
+    // PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — solo poblados por GetPurchaseCreditNoteByIdHandler
+    // (vista de detalle de solo lectura) cuando ApplicationType es "Return" y hay una PurchaseReturn
+    // vinculada; nunca inventados (null si no aplica) y nunca tocan la lógica de PurchaseReturn — es
+    // puramente el dato ya autorizado/calculado por ese agregado, leído para que el usuario entienda
+    // el caso completo sin abrir /purchases/returns/{id}.
+    string? LinkedPurchaseReturnNumber = null,
+    string? LinkedPurchaseReturnStatus = null,
+    decimal? LinkedPurchaseReturnAuthorizedGrandTotal = null
 );
 
 /// <summary>FLOW-READY-02C.2 — proyección de lectura de <c>PurchaseCreditNoteDetail</c> (línea libre, legado).</summary>
@@ -52,7 +60,14 @@ public sealed record PurchaseCreditNoteDetailDto(
     Guid? PurchaseInvoiceDetailId = null,
     decimal? Quantity = null,
     decimal IceAmount = 0m,
-    decimal IrbpnrAmount = 0m
+    decimal IrbpnrAmount = 0m,
+    // PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — solo poblados por GetPurchaseCreditNoteByIdHandler
+    // para líneas tipo Devolución (resueltos desde el ItemId/WarehouseId de la PurchaseInvoiceDetail
+    // referenciada por PurchaseInvoiceDetailId); null si no se pudo resolver (nunca inventado), mismo
+    // criterio que ItemSku/ItemName/WarehouseName en PurchaseReturnDetailDto.
+    string? ItemSku = null,
+    string? ItemName = null,
+    string? WarehouseName = null
 );
 
 /// <summary>

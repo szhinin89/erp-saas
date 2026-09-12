@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { PurchaseCreditNoteDto } from "../api/purchaseCreditNoteService";
 import { I18nProvider } from "../../../i18n/i18n";
 
@@ -72,8 +72,21 @@ function buildDto(overrides: Partial<PurchaseCreditNoteDto> = {}): PurchaseCredi
     supplierName: "Proveedor Demo",
     invoiceBalanceDue: 200,
     receptionDocumentAccessKey: null,
+    linkedPurchaseReturnNumber: null,
+    linkedPurchaseReturnStatus: null,
+    linkedPurchaseReturnAuthorizedGrandTotal: null,
     ...overrides,
   };
+}
+
+function LocationMarker({ label }: { label: string }) {
+  const location = useLocation();
+  return (
+    <div>
+      {label}: {location.pathname}
+      {location.search}
+    </div>
+  );
 }
 
 function renderPage() {
@@ -82,6 +95,15 @@ function renderPage() {
       <MemoryRouter initialEntries={["/purchases/credit-notes/cn-1"]}>
         <Routes>
           <Route path="/purchases/credit-notes/:id" element={<PurchaseCreditNoteDetailPage />} />
+          <Route
+            path="/purchases/credit-notes"
+            element={<LocationMarker label="Listado NC" />}
+          />
+          <Route path="/purchases" element={<LocationMarker label="Facturas de compra" />} />
+          <Route
+            path="/purchases/returns/:id"
+            element={<LocationMarker label="Devolución" />}
+          />
         </Routes>
       </MemoryRouter>
     </I18nProvider>,
@@ -152,5 +174,147 @@ describe("PurchaseCreditNoteDetailPage — valores de solo lectura migrados a ZH
     container.querySelectorAll(".zh-money-value").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
+  });
+});
+
+// PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — el usuario no debe necesitar abrir
+// /purchases/returns/{id} para entender el caso completo de una NC tipo Devolución.
+describe("PurchaseCreditNoteDetailPage — pantalla única de revisión (NC tipo Devolución)", () => {
+  it("muestra N.º/estado/total de la devolución vinculada y producto/bodega reales sin salir de la pantalla", async () => {
+    getByIdMock.mockResolvedValue(
+      buildDto({
+        applicationType: "Return",
+        linkedPurchaseReturnId: "ret-1",
+        linkedPurchaseReturnNumber: "DEV-000001",
+        linkedPurchaseReturnStatus: "Authorized",
+        linkedPurchaseReturnAuthorizedGrandTotal: 115,
+        appliedToPayableAmount: 115,
+        lines: [
+          {
+            id: "line-1",
+            purchaseInvoiceDetailId: "detail-1",
+            quantity: 2,
+            iceAmount: 0,
+            irbpnrAmount: 0,
+            description: "Producto legado",
+            subtotal: 100,
+            vatCode: "2",
+            vatRate: 15,
+            vatAmount: 15,
+            totalAmount: 115,
+            itemSku: "SKU-001",
+            itemName: "Producto de prueba",
+            warehouseName: "Bodega Principal",
+          },
+        ],
+        taxSummaries: [],
+      }),
+    );
+
+    const { container } = renderPage();
+
+    await screen.findAllByText("NC-001", { exact: false });
+
+    expect(screen.getByText("DEV-000001")).toBeTruthy();
+    expect(screen.getByText("Autorizada")).toBeTruthy();
+    expect(screen.getByText("SKU-001 — Producto de prueba")).toBeTruthy();
+    expect(screen.getByText("Bodega Principal")).toBeTruthy();
+    expect(screen.queryByText("Producto legado")).toBeNull();
+
+    const table = container.querySelector("table.pcn-lines-table");
+    expect(table?.textContent).toContain("Bodega");
+  });
+
+  it("cae de vuelta a la descripción libre si el backend no pudo resolver producto/bodega", async () => {
+    getByIdMock.mockResolvedValue(
+      buildDto({
+        applicationType: "Return",
+        linkedPurchaseReturnId: "ret-1",
+        linkedPurchaseReturnNumber: null,
+        linkedPurchaseReturnStatus: "Draft",
+        linkedPurchaseReturnAuthorizedGrandTotal: null,
+        lines: [
+          {
+            id: "line-1",
+            purchaseInvoiceDetailId: "detail-1",
+            quantity: 2,
+            iceAmount: 0,
+            irbpnrAmount: 0,
+            description: "Producto legado",
+            subtotal: 100,
+            vatCode: "2",
+            vatRate: 15,
+            vatAmount: 15,
+            totalAmount: 115,
+            itemSku: null,
+            itemName: null,
+            warehouseName: null,
+          },
+        ],
+        taxSummaries: [],
+      }),
+    );
+
+    renderPage();
+
+    await screen.findAllByText("NC-001", { exact: false });
+
+    expect(screen.getByText("Producto legado")).toBeTruthy();
+    expect(screen.getAllByText("Borrador").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// PURCHASE-CREDIT-NOTE-DETAIL-ROUTING-AUDIT-01 — este detalle pertenece al módulo Notas de
+// Crédito de Compra: ningún botón/fallback debe llevar a Facturas de compra (/purchases) salvo
+// para abrir la factura afectada puntual (única forma real de llegar a ella en esta app).
+describe("PurchaseCreditNoteDetailPage — navegación (PURCHASE-CREDIT-NOTE-DETAIL-ROUTING-AUDIT-01)", () => {
+  it('botón "Volver" navega a /purchases/credit-notes, nunca a /purchases', async () => {
+    getByIdMock.mockResolvedValue(buildDto());
+
+    renderPage();
+    await screen.findAllByText("NC-001", { exact: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Volver" }));
+
+    expect(await screen.findByText(/Listado NC: \/purchases\/credit-notes/)).toBeTruthy();
+    expect(screen.queryByText(/Facturas de compra:/)).toBeNull();
+  });
+
+  it('botón "Ver factura afectada" navega a la factura afectada (/purchases?invoiceId=)', async () => {
+    getByIdMock.mockResolvedValue(buildDto({ purchaseInvoiceId: "inv-42" }));
+
+    renderPage();
+    await screen.findAllByText("NC-001", { exact: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver factura afectada" }));
+
+    expect(
+      await screen.findByText("Facturas de compra: /purchases?invoiceId=inv-42"),
+    ).toBeTruthy();
+  });
+
+  it('botón "Ver devolución vinculada" navega a la devolución vinculada', async () => {
+    getByIdMock.mockResolvedValue(
+      buildDto({
+        applicationType: "Return",
+        linkedPurchaseReturnId: "ret-99",
+      }),
+    );
+
+    renderPage();
+    await screen.findAllByText("NC-001", { exact: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver devolución vinculada" }));
+
+    expect(await screen.findByText("Devolución: /purchases/returns/ret-99")).toBeTruthy();
+  });
+
+  it("un error al cargar la NC no cae de vuelta a Facturas de compra", async () => {
+    getByIdMock.mockRejectedValue(new Error("network error"));
+
+    renderPage();
+
+    expect(await screen.findByText(/Listado NC: \/purchases\/credit-notes/)).toBeTruthy();
+    expect(screen.queryByText(/Facturas de compra:/)).toBeNull();
   });
 });

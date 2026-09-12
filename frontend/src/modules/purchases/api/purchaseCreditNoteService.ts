@@ -17,6 +17,11 @@ export interface PurchaseCreditNoteDetailDto {
   vatRate: number | null;
   vatAmount: number;
   totalAmount: number;
+  /** PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — solo poblados para líneas tipo Devolución,
+   * resueltos desde la PurchaseInvoiceDetail referenciada; null si no se pudo resolver. */
+  itemSku?: string | null;
+  itemName?: string | null;
+  warehouseName?: string | null;
 }
 
 /** FLOW-READY-02C-R1.1 — cómo se aplica la nota de crédito contra la factura afectada. */
@@ -74,6 +79,12 @@ export interface PurchaseCreditNoteDto {
   supplierName: string | null;
   invoiceBalanceDue: number | null;
   receptionDocumentAccessKey: string | null;
+  /** PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — solo poblados cuando applicationType es
+   * "Return" y hay una PurchaseReturn vinculada; null si no aplica. Permiten mostrar el caso
+   * completo (N.º devolución, estado, total) sin abrir /purchases/returns/{id}. */
+  linkedPurchaseReturnNumber: string | null;
+  linkedPurchaseReturnStatus: string | null;
+  linkedPurchaseReturnAuthorizedGrandTotal: number | null;
 }
 
 export interface PurchaseCreditNoteListItemDto {
