@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { ExpenseDocumentFormPage } from "./ExpenseDocumentFormPage";
-import type { ExpenseDocumentHeaderState } from "../components/ExpenseDocumentHeader";
 import type { ExpenseDraftLineState } from "../components/ExpenseDocumentLinesEditor";
 
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), create: vi.fn() }));
@@ -23,6 +22,7 @@ vi.mock("../../accounting/api/accountingApi", () => ({
 vi.mock("../../masterData/api/paymentTermService", () => ({ paymentTermService: { list: async () => [] } }));
 vi.mock("../../items/facades/sriLookupFacade", () => ({
   sriLookupFacade: {
+    docTypes: async () => [{ code: "01", name: "Factura", shortName: "FAC", isElectronic: true }],
     taxSupportCodes: async () => [],
     vatRates: async () => [
       { code: "2", name: "15% IVA (tarifa general vigente)", percentage: 15 },
@@ -36,10 +36,6 @@ vi.mock("../api/expenseCategoryService", () => ({
 }));
 vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("../components/ExpenseRetentionSection", () => ({ ExpenseRetentionSection: () => null }));
-vi.mock("../components/ExpenseDocumentHeader", () => ({
-  ExpenseDocumentHeader: ({ value }: { value: ExpenseDocumentHeaderState }) =>
-    <output data-testid="header">{JSON.stringify(value)}</output>,
-}));
 vi.mock("../components/ExpenseDocumentLinesEditor", () => ({
   ExpenseDocumentLinesEditor: ({ lines, onChange }: {
     lines: ExpenseDraftLineState[];
@@ -66,16 +62,19 @@ afterEach(cleanup);
 
 it("loads the server header and sends the reception identity when saving", async () => {
   show();
-  await waitFor(() => expect(screen.getByTestId("header").textContent).toContain(source.documentNumber));
+  await waitFor(() => expect((screen.getByLabelText(/^Numero/) as HTMLInputElement).value).toBe(source.documentNumber));
+  const docType = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
+  expect(docType.value).toBe("01");
+  expect(docType.selectedOptions[0].textContent).toBe("01 - Factura");
   expect(mocks.preview).toHaveBeenCalledWith("reception-1");
-  expect(screen.getByTestId("header").textContent).toContain(source.supplierId);
-  expect(screen.getByTestId("header").textContent).toContain(source.issueDate);
+  expect(screen.getByText(source.supplierTaxId)).toBeTruthy();
+  expect((screen.getByLabelText(/^Emision/) as HTMLInputElement).value).toBe(source.issueDate);
   expect(screen.getByText(/Factura recibida/).textContent).toContain("115.00");
   fireEvent.click(screen.getByRole("button", { name: "Completar detalle" }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar borrador" }));
   await waitFor(() => expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({
     receptionDocumentId: source.receptionDocumentId, accessKey: source.accessKey,
-    documentNumber: source.documentNumber, supplierId: source.supplierId,
+    documentType: "01", documentNumber: source.documentNumber, supplierId: source.supplierId,
   })));
 });
 

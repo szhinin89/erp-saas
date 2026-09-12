@@ -11,7 +11,7 @@ import { ZHPickerSelectedValue } from "../../../components/zh/ZHPickerSelectedVa
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
-import type { SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
+import type { SriDocTypeLookup, SriTaxSupportLookup } from "../../items/facades/sriLookupFacade";
 
 export interface ExpenseDocumentHeaderState {
   supplierId: string;
@@ -41,6 +41,7 @@ interface Props {
   supplier: SupplierPickerRow | null;
   paymentTerms: PaymentTermDto[];
   sriTaxSupports: SriTaxSupportLookup[];
+  sriDocTypes: SriDocTypeLookup[];
   disabled?: boolean;
   errors?: ExpenseDocumentHeaderErrors;
   onChange: (patch: Partial<ExpenseDocumentHeaderState>) => void;
@@ -52,6 +53,7 @@ export function ExpenseDocumentHeader({
   supplier,
   paymentTerms,
   sriTaxSupports,
+  sriDocTypes,
   disabled,
   errors,
   onChange,
@@ -98,13 +100,23 @@ export function ExpenseDocumentHeader({
         </ZHField>
 
         <ZHField label="Tipo de documento" required fieldError={errors?.documentType}>
-          <ZhTextInput
+          <ZhSelect
             value={value.documentType}
-            mode="uppercase"
-            maxLength={5}
             disabled={disabled}
             onChange={(event) => onChange({ documentType: event.target.value })}
-          />
+          >
+            <option value="">Seleccione un tipo de documento</option>
+            {value.documentType && !sriDocTypes.some((type) => type.code === value.documentType) && (
+              <option value={value.documentType}>
+                {value.documentType} - Tipo de documento no encontrado en catálogo
+              </option>
+            )}
+            {sriDocTypes.map((type) => (
+              <option key={type.code} value={type.code}>
+                {type.code} - {type.name}
+              </option>
+            ))}
+          </ZhSelect>
         </ZHField>
 
         <ZHField label="Numero" required fieldError={errors?.documentNumber}>

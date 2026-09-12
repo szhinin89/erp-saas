@@ -24,6 +24,7 @@ import {
 import { accountingApi, type AccountDto } from "../../accounting/api/accountingApi";
 import {
   sriLookupFacade,
+  type SriDocTypeLookup,
   type SriTaxSupportLookup,
   type SriVatRateLookup,
 } from "../../items/facades/sriLookupFacade";
@@ -117,6 +118,7 @@ export function ExpenseDocumentFormPage() {
   const [tree, setTree] = useState<ExpenseCategoryTreeNodeDto[]>([]);
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
+  const [sriDocTypes, setSriDocTypes] = useState<SriDocTypeLookup[]>([]);
   const [sriTaxSupports, setSriTaxSupports] = useState<SriTaxSupportLookup[]>([]);
   const [vatRates, setVatRates] = useState<SriVatRateLookup[]>([]);
   const [document, setDocument] = useState<ExpenseDocumentDetailDto | null>(null);
@@ -174,6 +176,7 @@ export function ExpenseDocumentFormPage() {
         canReadCatalog ? expenseCategoryService.getTree(false) : Promise.resolve([]),
         accountingApi.listAccounts(),
         paymentTermService.list(),
+        sriLookupFacade.docTypes(),
         sriLookupFacade.taxSupportCodes(),
         sriLookupFacade.vatRates(),
         id ? expenseDocumentService.getById(id) : Promise.resolve(null),
@@ -182,6 +185,7 @@ export function ExpenseDocumentFormPage() {
         categoryTree,
         accountRows,
         paymentTermRows,
+        sriDocTypeRows,
         sriTaxSupportRows,
         vatRateRows,
         expenseDocument,
@@ -190,6 +194,7 @@ export function ExpenseDocumentFormPage() {
       setTree(categoryTree);
       setAccounts(accountRows);
       setPaymentTerms(paymentTermRows);
+      setSriDocTypes(sriDocTypeRows);
       setSriTaxSupports(sriTaxSupportRows);
       setVatRates(vatRateRows);
       if (expenseDocument) {
@@ -256,7 +261,7 @@ export function ExpenseDocumentFormPage() {
     if (!header.accountingDate)
       nextHeader.accountingDate = "Ingrese la fecha contable.";
     if (!header.documentType.trim())
-      nextHeader.documentType = "Ingrese el tipo de documento.";
+      nextHeader.documentType = "Seleccione un tipo de documento.";
     if (!header.documentNumber.trim())
       nextHeader.documentNumber = "Ingrese el numero de documento.";
     if (header.dueDate && header.issueDate && header.dueDate < header.issueDate)
@@ -528,6 +533,7 @@ export function ExpenseDocumentFormPage() {
               value={header}
               supplier={supplier}
               paymentTerms={paymentTerms}
+              sriDocTypes={sriDocTypes}
               sriTaxSupports={sriTaxSupports}
               disabled={disabled || loading}
               errors={headerErrors}

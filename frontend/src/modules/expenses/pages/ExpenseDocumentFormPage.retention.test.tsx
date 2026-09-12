@@ -90,6 +90,7 @@ vi.mock("../../emissionPoints/api/emissionPointsService", () => ({
 // por Compras — mockeado aquí solo para aislar el test de la llamada de red real.
 vi.mock("../../items/facades/sriLookupFacade", () => ({
   sriLookupFacade: {
+    docTypes: async () => [{ code: "01", name: "Factura", shortName: "FAC", isElectronic: true }],
     taxSupportCodes: vi.fn(),
     vatRates: vi.fn(),
   },
@@ -467,5 +468,17 @@ describe("ExpenseDocumentFormPage — sección de retención", () => {
       expect(document.querySelectorAll("input.zh-numeric-input").length).toBeGreaterThan(0),
     );
     expect(document.querySelectorAll('input[type="number"]').length).toBe(0);
+  });
+});
+
+
+it.each(["Confirmed", "Cancelled"] as const)("shows the catalog label read-only for %s", async (status) => {
+  vi.mocked(expenseDocumentService.getById).mockResolvedValue({ ...DRAFT_DOCUMENT, status });
+  renderPage();
+  await waitFor(() => {
+    const select = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
+    expect(select.disabled).toBe(true);
+    expect(select.value).toBe("01");
+    expect(select.selectedOptions[0].textContent).toBe("01 - Factura");
   });
 });

@@ -30,6 +30,7 @@ vi.mock("../../accounting/api/accountingApi", () => ({
 vi.mock("../../masterData/api/paymentTermService", () => ({ paymentTermService: { list: async () => [] } }));
 vi.mock("../../items/facades/sriLookupFacade", () => ({
   sriLookupFacade: {
+    docTypes: async () => [{ code: "01", name: "Factura", shortName: "FAC", isElectronic: true }],
     taxSupportCodes: async () => [],
     vatRates: async () => [
       { code: "4", name: "15% IVA (tarifa general vigente)", percentage: 15 },

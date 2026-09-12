@@ -47,6 +47,7 @@ function renderHeader(overrides: Partial<ExpenseDocumentHeaderState> = {}) {
       value={{ ...BASE_HEADER, ...overrides }}
       supplier={null}
       paymentTerms={[]}
+      sriDocTypes={[{ code: "01", name: "Factura", shortName: "FAC", isElectronic: true }]}
       sriTaxSupports={SRI_TAX_SUPPORTS}
       onChange={onChange}
       onSupplierChange={vi.fn()}
@@ -105,7 +106,8 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
         value={{ ...BASE_HEADER, taxSupportCode: "02" }}
         supplier={null}
         paymentTerms={[]}
-        sriTaxSupports={SRI_TAX_SUPPORTS}
+        sriDocTypes={[{ code: "01", name: "Factura", shortName: "FAC", isElectronic: true }]}
+      sriTaxSupports={SRI_TAX_SUPPORTS}
         disabled
         onChange={vi.fn()}
         onSupplierChange={vi.fn()}
@@ -113,7 +115,30 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
     );
 
     const select = screen.getByLabelText(/^Código sustento tributario/) as HTMLSelectElement;
+    const docType = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
+    expect(docType.disabled).toBe(true);
+    expect(docType.selectedOptions[0].textContent).toBe("01 - Factura");
     expect(select.disabled).toBe(true);
     expect(select.value).toBe("02");
+  });
+});
+
+
+describe("ExpenseDocumentHeader - tipos de documento SRI", () => {
+  it("muestra código y nombre y conserva el código seleccionado", () => {
+    renderHeader();
+    const select = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
+    expect(select.value).toBe("01");
+    expect(select.selectedOptions[0].textContent).toBe("01 - Factura");
+  });
+
+  it("conserva un código histórico ausente del catálogo", () => {
+    const { onChange } = renderHeader({ documentType: "99" });
+    const select = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
+    expect(select.value).toBe("99");
+    expect(select.selectedOptions[0].textContent).toBe("99 - Tipo de documento no encontrado en catálogo");
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.change(select, { target: { value: "01" } });
+    expect(onChange).toHaveBeenCalledWith({ documentType: "01" });
   });
 });
