@@ -41,7 +41,18 @@ function samplePayment(): SupplierPaymentDto {
         notes: null,
       },
     ],
-    applicationLines: [{ id: "al-1", accountsPayableInstallmentId: "inst-1", amountApplied: 300 }],
+    applicationLines: [
+      {
+        id: "al-1",
+        accountsPayableInstallmentId: "inst-1",
+        amountApplied: 300,
+        documentNumber: "001-001-000031760",
+        installmentNumber: 1,
+        dueDate: "2026-09-03",
+        issueDate: "2026-08-01",
+        originType: "PurchaseInvoice",
+      },
+    ],
     allocations: [],
     createdAt: "2026-08-28T10:00:00Z",
   };

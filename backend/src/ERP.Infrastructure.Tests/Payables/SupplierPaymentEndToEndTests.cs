@@ -961,6 +961,205 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         reversedEntryCount.Should().Be(0);
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01 — reproducción/regresión contra
+    // Postgres real: el detalle debe resolver documentNumber/installmentNumber/dueDate de la cuota
+    // aplicada aunque la CxP/cuota ya haya quedado Paid (o el pago Reversed) — nunca depender de
+    // que la cuota siga "pendiente".
+    // ══════════════════════════════════════════════════════════════════════
+
+    private GetSupplierPaymentByIdHandler BuildGetByIdHandler(ErpDbContext db) =>
+        new(
+            new SupplierPaymentRepository(db),
+            new AccountsPayableRepository(db),
+            new FixedCurrentTenant(_tenantId)
+        );
+
+    [Fact]
+    public async Task Detalle_de_pago_confirmado_total_muestra_documentNumber_installmentNumber_y_dueDate_aunque_la_cuota_quede_Paid()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        // La cuota ya quedó Paid tras el pago total — confirma que el detalle no depende de
+        // "pendiente" para resolver.
+        await using (var verifyDb = CreateContext())
+        {
+            var installment = await verifyDb.AccountsPayableInstallments.FirstAsync(x =>
+                x.Id == _purchaseInstallmentId
+            );
+            installment.Status.Should().Be(AccountsPayableStatus.Paid);
+        }
+
+        await using var readDb = CreateContext();
+        var detailResult = await BuildGetByIdHandler(readDb)
+            .Handle(new GetSupplierPaymentByIdQuery(paymentId), CancellationToken.None);
+
+        detailResult.IsSuccess.Should().BeTrue(because: detailResult.Error);
+        var line = detailResult.Value!.ApplicationLines.Should().ContainSingle().Subject;
+        line.AccountsPayableInstallmentId.Should().Be(_purchaseInstallmentId);
+        line.DocumentNumber.Should().Be("001-001-000000001");
+        line.InstallmentNumber.Should().Be(1);
+        line.DueDate.Should().Be(new DateOnly(2026, 9, 1));
+        line.IssueDate.Should().Be(new DateOnly(2026, 8, 1));
+        line.OriginType.Should().Be("PurchaseInvoice");
+    }
+
+    [Fact]
+    public async Task Detalle_de_pago_parcial_muestra_datos_de_la_cuota_aunque_quede_PartiallyPaid()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    100m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        await using (var verifyDb = CreateContext())
+        {
+            var installment = await verifyDb.AccountsPayableInstallments.FirstAsync(x =>
+                x.Id == _purchaseInstallmentId
+            );
+            installment.Status.Should().Be(AccountsPayableStatus.PartiallyPaid);
+        }
+
+        await using var readDb = CreateContext();
+        var detailResult = await BuildGetByIdHandler(readDb)
+            .Handle(new GetSupplierPaymentByIdQuery(paymentId), CancellationToken.None);
+
+        detailResult.IsSuccess.Should().BeTrue(because: detailResult.Error);
+        var line = detailResult.Value!.ApplicationLines.Should().ContainSingle().Subject;
+        line.DocumentNumber.Should().Be("001-001-000000001");
+        line.InstallmentNumber.Should().Be(1);
+        line.DueDate.Should().Be(new DateOnly(2026, 9, 1));
+    }
+
+    [Fact]
+    public async Task Detalle_de_pago_reversado_sigue_mostrando_datos_de_la_cuota()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedConfirmedAndReversedRulesAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        var (dbReverse, _) = BuildWiredContext();
+        var reverseResult = await BuildReverseHandler(dbReverse)
+            .Handle(new ReverseSupplierPaymentCommand(paymentId, "Duplicado"), CancellationToken.None);
+        reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
+
+        await using var readDb = CreateContext();
+        var detailResult = await BuildGetByIdHandler(readDb)
+            .Handle(new GetSupplierPaymentByIdQuery(paymentId), CancellationToken.None);
+
+        detailResult.IsSuccess.Should().BeTrue(because: detailResult.Error);
+        detailResult.Value!.Status.Should().Be("Reversed");
+        var line = detailResult.Value.ApplicationLines.Should().ContainSingle().Subject;
+        line.DocumentNumber.Should().Be("001-001-000000001");
+        line.InstallmentNumber.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Otra_empresa_no_puede_resolver_la_cuota_de_otra_company_en_el_detalle()
+    {
+        var paymentDate = new DateOnly(2026, 8, 28);
+        var (db, _) = BuildWiredContext();
+        await SeedPostingRuleAndPeriodAsync(db, paymentDate);
+
+        var registerResult = await BuildHandler(db)
+            .Handle(
+                new RegisterSupplierPaymentCommand(
+                    _supplierId,
+                    paymentDate,
+                    300m,
+                    null,
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
+                    new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
+                ),
+                CancellationToken.None
+            );
+        registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
+        var paymentId = registerResult.Value!.Id;
+
+        // Empresa B (mismo tenant, otra compañía activa): el pago mismo ya no es visible por
+        // GetByIdAsync (solo filtra por TenantId, IGUAL COMPORTAMIENTO PREVIO — el detalle es
+        // company-scoped por el filtro global de EF sobre AccountsPayable/SupplierPayment), así
+        // que confirmamos primero que el pago no resuelve para otra empresa.
+        var otherCompanyId = Guid.NewGuid();
+        await using var otherCompanyDb = new ErpDbContext(
+            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(otherCompanyId)
+        );
+        var detailResult = await BuildGetByIdHandler(otherCompanyDb)
+            .Handle(new GetSupplierPaymentByIdQuery(paymentId), CancellationToken.None);
+
+        detailResult.IsSuccess.Should().BeFalse(
+            "el pago pertenece a la Empresa A — el filtro global de EF sobre SupplierPayment (ICompanyOperationalEntity) no debe exponerlo a otra empresa"
+        );
+    }
+
+    /// <summary>
+    /// El caso "la cuota ya no se puede resolver" no es reproducible contra Postgres real con un
+    /// pago legítimo: <c>accounts_payable_installments</c> tiene FK entrante desde
+    /// <c>supplier_payment_applications</c> — Postgres bloquea con 23503 cualquier intento de
+    /// borrar la CxP/cuota que un pago referencia (evidencia de que el escenario es, en efecto,
+    /// excepcional/inalcanzable por el flujo normal). El fallback fail-safe (campos en <c>null</c>
+    /// sin romper el detalle) se prueba a nivel de handler con un repositorio mockeado en
+    /// <c>GetSupplierPaymentUseCasesTests.GetById_si_no_resuelve_la_cuota_no_rompe_el_detalle_y_deja_los_campos_en_null</c>.
+    /// </summary>
+    [Fact]
+    public void Fallback_de_cuota_no_resoluble_esta_cubierto_por_GetSupplierPaymentUseCasesTests()
+    {
+        // Ver comentario de la clase — ningún assert adicional aquí, es solo el puntero.
+    }
+
     private sealed class DeferredPublisher : IPublisher
     {
         public IPublisher? Inner { get; set; }

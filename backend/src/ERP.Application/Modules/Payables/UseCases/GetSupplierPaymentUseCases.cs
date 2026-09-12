@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using MediatR;
@@ -56,11 +57,17 @@ public sealed class GetSupplierPaymentByIdHandler
     : IRequestHandler<GetSupplierPaymentByIdQuery, Result<SupplierPaymentDto>>
 {
     private readonly ISupplierPaymentRepository _repo;
+    private readonly IAccountsPayableRepository _accountsPayables;
     private readonly ICurrentTenant _t;
 
-    public GetSupplierPaymentByIdHandler(ISupplierPaymentRepository repo, ICurrentTenant t)
+    public GetSupplierPaymentByIdHandler(
+        ISupplierPaymentRepository repo,
+        IAccountsPayableRepository accountsPayables,
+        ICurrentTenant t
+    )
     {
         _repo = repo;
+        _accountsPayables = accountsPayables;
         _t = t;
     }
 
@@ -73,7 +80,54 @@ public sealed class GetSupplierPaymentByIdHandler
         if (payment is null)
             return Result<SupplierPaymentDto>.NotFound("Pago a proveedor no encontrado.");
 
-        return Result<SupplierPaymentDto>.Success(SupplierPaymentDtoMapper.ToDto(payment));
+        var displayInfo = await ResolveInstallmentDisplayInfoAsync(payment, ct);
+        return Result<SupplierPaymentDto>.Success(SupplierPaymentDtoMapper.ToDto(payment, displayInfo));
+    }
+
+    /// <summary>
+    /// SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01 — proyección de solo lectura:
+    /// resuelve, por cada cuota aplicada, el documento/cuota origen contra <c>AccountsPayable</c>
+    /// (mismo repositorio/método — <see cref="IAccountsPayableRepository.GetByInstallmentIdAsync"/>
+    /// — que ya usa <c>RegisterSupplierPaymentUseCases</c> para validar la cuota al registrar el
+    /// pago). Si una cuota ya no puede resolverse (caso excepcional, nunca esperado en operación
+    /// normal), se omite silenciosamente — el detalle del pago nunca debe romperse por esto, el
+    /// frontend cae a un fallback técnico con el Id crudo.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, InstallmentDisplayInfo>> ResolveInstallmentDisplayInfoAsync(
+        SupplierPayment payment,
+        CancellationToken ct
+    )
+    {
+        var result = new Dictionary<Guid, InstallmentDisplayInfo>();
+        var payablesByInstallment = new Dictionary<Guid, AccountsPayable>();
+
+        foreach (var line in payment.ApplicationLines)
+        {
+            var installmentId = line.AccountsPayableInstallmentId;
+            if (result.ContainsKey(installmentId))
+                continue;
+
+            if (!payablesByInstallment.TryGetValue(installmentId, out var payable))
+            {
+                payable = await _accountsPayables.GetByInstallmentIdAsync(_t.TenantId, installmentId, ct);
+                if (payable is not null)
+                    payablesByInstallment[installmentId] = payable;
+            }
+
+            var installment = payable?.Installments.FirstOrDefault(i => i.Id == installmentId);
+            if (payable is null || installment is null)
+                continue;
+
+            result[installmentId] = new InstallmentDisplayInfo(
+                payable.DocumentNumber,
+                installment.InstallmentNumber,
+                installment.DueDate,
+                payable.IssueDate,
+                payable.OriginType.ToString()
+            );
+        }
+
+        return result;
     }
 }
 

@@ -29,6 +29,23 @@ const PERMISSIONS = {
   reverse: "supplier-payments.reverse",
 } as const;
 
+/**
+ * SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01 — "001-001-000031760 — Cuota #1 —
+ * Vence 03/09/2026" en vez del GUID crudo de `accountsPayableInstallmentId`. El backend resuelve
+ * estos campos contra la CxP dueña de la cuota (`GetSupplierPaymentByIdHandler`); caen a `null` en
+ * el caso excepcional de que la cuota ya no se pueda resolver — solo entonces se muestra el Id
+ * crudo, como fallback técnico, nunca como caso normal.
+ */
+function formatApplicationLineLabel(
+  line: SupplierPaymentDto["applicationLines"][number],
+): string {
+  if (!line.documentNumber || line.installmentNumber === null) {
+    return `Cuota ${line.accountsPayableInstallmentId}`;
+  }
+  const base = `${line.documentNumber} — Cuota #${line.installmentNumber}`;
+  return line.dueDate ? `${base} — Vence ${formatDate(line.dueDate)}` : base;
+}
+
 export function SupplierPaymentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -134,7 +151,7 @@ export function SupplierPaymentDetailPage() {
     {
       key: "installment",
       header: "Cuota",
-      render: (line) => <span className="sp-line-hint">{line.accountsPayableInstallmentId}</span>,
+      render: (line) => formatApplicationLineLabel(line),
     },
     {
       key: "amountApplied",

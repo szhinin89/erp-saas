@@ -72,7 +72,18 @@ function payment(over: Partial<SupplierPaymentDto> = {}): SupplierPaymentDto {
         notes: null,
       },
     ],
-    applicationLines: [{ id: "al-1", accountsPayableInstallmentId: "inst-1", amountApplied: 300 }],
+    applicationLines: [
+      {
+        id: "al-1",
+        accountsPayableInstallmentId: "inst-1",
+        amountApplied: 300,
+        documentNumber: "001-001-000031760",
+        installmentNumber: 1,
+        dueDate: "2026-09-03",
+        issueDate: "2026-08-01",
+        originType: "PurchaseInvoice",
+      },
+    ],
     allocations: [],
     createdAt: "2026-08-28T10:00:00Z",
     ...over,
@@ -192,5 +203,66 @@ describe("SupplierPaymentDetailPage — acción de reversa", () => {
     expect(
       screen.getAllByText("Reversar pago").some((el) => el.closest("button")),
     ).toBe(true);
+  });
+});
+
+describe("SupplierPaymentDetailPage — nombres legibles en Cuotas aplicadas (SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01)", () => {
+  it('muestra "001-001-000031760 — Cuota #1 — Vence 03/09/2026" cuando el backend resuelve la cuota', async () => {
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(payment({ status: "Confirmed" }));
+
+    renderPage();
+
+    expect(
+      await screen.findByText("001-001-000031760 — Cuota #1 — Vence 03/09/2026"),
+    ).toBeTruthy();
+  });
+
+  it("no muestra el GUID crudo cuando vienen datos legibles", async () => {
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(payment({ status: "Confirmed" }));
+
+    renderPage();
+
+    await screen.findByText("001-001-000031760 — Cuota #1 — Vence 03/09/2026");
+    expect(screen.queryByText("inst-1")).toBeNull();
+  });
+
+  it("cae al fallback técnico con el Id crudo si el backend no pudo resolver la cuota", async () => {
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(
+      payment({
+        applicationLines: [
+          {
+            id: "al-1",
+            accountsPayableInstallmentId: "inst-orfana",
+            amountApplied: 300,
+            documentNumber: null,
+            installmentNumber: null,
+            dueDate: null,
+            issueDate: null,
+            originType: null,
+          },
+        ],
+      }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText("Cuota inst-orfana")).toBeTruthy();
+  });
+
+  it("un pago reversado sigue mostrando los datos legibles de la cuota aplicada", async () => {
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(
+      payment({
+        status: "Reversed",
+        reversedAtUtc: "2026-08-29T10:00:00Z",
+        reversedBy: "user-1",
+        reverseReason: "Duplicado",
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText("001-001-000031760 — Cuota #1 — Vence 03/09/2026"),
+    ).toBeTruthy();
   });
 });

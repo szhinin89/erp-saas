@@ -359,6 +359,7 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         // compilación que en AccountsPayable.
         var handler = new GetSupplierPaymentByIdHandler(
             repo,
+            Mock.Of<IAccountsPayableRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId)
         );
 

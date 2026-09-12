@@ -56,11 +56,22 @@ export interface SupplierPaymentMethodLineDto {
   notes: string | null;
 }
 
-/** Espejo exacto de SupplierPaymentApplicationLineDto — backend. */
+/**
+ * Espejo exacto de SupplierPaymentApplicationLineDto — backend.
+ * SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01 — los campos de proyección
+ * (`documentNumber`/`installmentNumber`/`dueDate`/`issueDate`/`originType`) son de solo lectura,
+ * resueltos por el backend contra la CxP dueña de la cuota — pueden venir `null` en el caso
+ * excepcional de que la cuota ya no se pueda resolver (nunca rompe el detalle).
+ */
 export interface SupplierPaymentApplicationLineDto {
   id: string;
   accountsPayableInstallmentId: string;
   amountApplied: number;
+  documentNumber: string | null;
+  installmentNumber: number | null;
+  dueDate: string | null;
+  issueDate: string | null;
+  originType: string | null;
 }
 
 /** Espejo exacto de SupplierPaymentAllocationLineDto — backend. */

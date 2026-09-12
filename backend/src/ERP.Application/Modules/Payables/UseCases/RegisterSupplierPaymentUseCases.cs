@@ -68,10 +68,26 @@ public sealed record SupplierPaymentMethodLineDto(
     string? Notes
 );
 
+/// <summary>
+/// SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01 — <c>SupplierPaymentApplicationLine</c>
+/// (dominio) solo guarda <see cref="AccountsPayableInstallmentId"/>/<see cref="AmountApplied"/>, sin
+/// snapshot de documento — los campos de solo lectura de abajo (<see cref="DocumentNumber"/>,
+/// <see cref="InstallmentNumber"/>, <see cref="DueDate"/>, <see cref="IssueDate"/>,
+/// <see cref="OriginType"/>) se resuelven en el momento de la consulta contra
+/// <see cref="ERP.Domain.Modules.Payables.Entities.AccountsPayable"/>/
+/// <c>AccountsPayableInstallment</c> (mismo dato que ya expone <c>PayablesController</c>, nunca un
+/// duplicado). Quedan <c>null</c> — nunca rompen el detalle — si la cuota ya no puede resolverse
+/// (caso excepcional); el frontend cae a un fallback técnico con el Id crudo en ese caso.
+/// </summary>
 public sealed record SupplierPaymentApplicationLineDto(
     Guid Id,
     Guid AccountsPayableInstallmentId,
-    decimal AmountApplied
+    decimal AmountApplied,
+    string? DocumentNumber = null,
+    int? InstallmentNumber = null,
+    DateOnly? DueDate = null,
+    DateOnly? IssueDate = null,
+    string? OriginType = null
 );
 
 public sealed record SupplierPaymentAllocationLineDto(
@@ -486,9 +502,31 @@ public sealed class RegisterSupplierPaymentCommandHandler
 // SUPPLIER-PAYMENTS-FRONTEND-15E: internal (no longer file-scoped) para que
 // GetSupplierPaymentUseCases.cs (misma capa, mismo namespace) reutilice el mismo mapeo — sin
 // duplicar la fuente de verdad de "cómo se ve un SupplierPaymentDto".
+/// <summary>
+/// SUPPLIER-PAYMENT-DETAIL-APPLICATION-LINE-DISPLAY-NAMES-01 — datos de solo lectura de la cuota
+/// (documento origen + cuota), resueltos contra <c>AccountsPayable</c>/<c>AccountsPayableInstallment</c>
+/// para proyectar <see cref="SupplierPaymentApplicationLineDto"/> sin exponer el GUID crudo.
+/// </summary>
+internal sealed record InstallmentDisplayInfo(
+    string DocumentNumber,
+    int InstallmentNumber,
+    DateOnly DueDate,
+    DateOnly IssueDate,
+    string OriginType
+);
+
 internal static class SupplierPaymentDtoMapper
 {
-    public static SupplierPaymentDto ToDto(SupplierPayment p) =>
+    /// <summary>
+    /// <paramref name="installmentDisplayInfo"/> es opcional (ausente para las respuestas de
+    /// Register/Reverse, que no lo necesitan porque el frontend navega de inmediato al detalle,
+    /// que sí lo resuelve) — sin él, <see cref="SupplierPaymentApplicationLineDto"/> simplemente
+    /// deja sus campos de proyección en <c>null</c> (fallback técnico en el frontend).
+    /// </summary>
+    public static SupplierPaymentDto ToDto(
+        SupplierPayment p,
+        IReadOnlyDictionary<Guid, InstallmentDisplayInfo>? installmentDisplayInfo = null
+    ) =>
         new(
             p.Id,
             p.SupplierId,
@@ -512,11 +550,21 @@ internal static class SupplierPaymentDtoMapper
                 ))
                 .ToList(),
             p.ApplicationLines
-                .Select(l => new SupplierPaymentApplicationLineDto(
-                    l.Id,
-                    l.AccountsPayableInstallmentId,
-                    l.AmountApplied
-                ))
+                .Select(l =>
+                {
+                    InstallmentDisplayInfo? info = null;
+                    installmentDisplayInfo?.TryGetValue(l.AccountsPayableInstallmentId, out info);
+                    return new SupplierPaymentApplicationLineDto(
+                        l.Id,
+                        l.AccountsPayableInstallmentId,
+                        l.AmountApplied,
+                        info?.DocumentNumber,
+                        info?.InstallmentNumber,
+                        info?.DueDate,
+                        info?.IssueDate,
+                        info?.OriginType
+                    );
+                })
                 .ToList(),
             p.AllocationLines
                 .Select(l => new SupplierPaymentAllocationLineDto(
