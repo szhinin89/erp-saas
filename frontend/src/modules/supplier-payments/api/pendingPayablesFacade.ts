@@ -6,6 +6,10 @@ import { payablesService } from "../../payables/api/payablesService";
  * listado (`GET /api/v1/payables`) solo trae totales por cabecera; el detalle
  * (`GET /api/v1/payables/{id}`) es la única fuente con el Id real de cada cuota, que es lo que
  * `SupplierPaymentApplicationLineRequest.accountsPayableInstallmentId` necesita.
+ *
+ * SUPPLIER-PAYMENT-PROVIDER-PORTFOLIO-VISIBILITY-01 — se agregan `issueDate`/`totalAmount`/
+ * `paidAmount`/`status` (ya presentes en el detalle de CxP) para alimentar la cartera visible
+ * de `/supplier-payments/new`; no cambia el origen de datos ni agrega un endpoint nuevo.
  */
 export interface PendingInstallmentOption {
   installmentId: string;
@@ -13,8 +17,12 @@ export interface PendingInstallmentOption {
   documentType: string;
   documentNumber: string;
   installmentNumber: number;
+  issueDate: string;
   dueDate: string;
+  totalAmount: number;
+  paidAmount: number;
   outstandingAmount: number;
+  status: string;
 }
 
 export const pendingPayablesFacade = {
@@ -28,7 +36,7 @@ export const pendingPayablesFacade = {
 
     const details = await Promise.all(headers.map((h) => payablesService.getById(h.id)));
 
-    return details.flatMap((d) =>
+    const rows = details.flatMap((d) =>
       d.installments
         .filter(
           (i) => i.status !== "paid" && i.status !== "cancelled" && i.outstandingAmount > 0,
@@ -39,9 +47,20 @@ export const pendingPayablesFacade = {
           documentType: d.documentType,
           documentNumber: d.documentNumber,
           installmentNumber: i.installmentNumber,
+          issueDate: d.issueDate,
           dueDate: i.dueDate,
+          totalAmount: i.amount,
+          paidAmount: i.paidAmount,
           outstandingAmount: i.outstandingAmount,
+          status: i.status,
         })),
+    );
+
+    return rows.sort(
+      (a, b) =>
+        a.dueDate.localeCompare(b.dueDate) ||
+        a.issueDate.localeCompare(b.issueDate) ||
+        a.documentNumber.localeCompare(b.documentNumber),
     );
   },
 };

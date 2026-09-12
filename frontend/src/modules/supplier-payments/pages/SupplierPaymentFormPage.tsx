@@ -24,6 +24,7 @@ import {
 } from "../api/pendingPayablesFacade";
 import { supplierPaymentService } from "../api/supplierPaymentService";
 import { SupplierPaymentHeader } from "../components/SupplierPaymentHeader";
+import { SupplierPayablesPortfolio } from "../components/SupplierPayablesPortfolio";
 import { SupplierPaymentMethodLinesEditor } from "../components/SupplierPaymentMethodLinesEditor";
 import { SupplierPaymentApplicationsEditor } from "../components/SupplierPaymentApplicationsEditor";
 import { SupplierPaymentAllocationPreview } from "../components/SupplierPaymentAllocationPreview";
@@ -66,6 +67,7 @@ export function SupplierPaymentFormPage() {
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
   const [destinations, setDestinations] = useState<CompanyFinancialDestinationDto[]>([]);
   const [installments, setInstallments] = useState<PendingInstallmentOption[]>([]);
+  const [installmentsLoading, setInstallmentsLoading] = useState(false);
   const [supplierName, setSupplierName] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<RegisterSupplierPaymentFormValues | null>(
@@ -96,13 +98,16 @@ export function SupplierPaymentFormPage() {
   useEffect(() => {
     if (!supplierId) {
       setInstallments([]);
+      setInstallmentsLoading(false);
       setSupplierName("");
       return;
     }
+    setInstallmentsLoading(true);
     pendingPayablesFacade
       .listPendingInstallments(supplierId)
       .then(setInstallments)
-      .catch(() => setInstallments([]));
+      .catch(() => setInstallments([]))
+      .finally(() => setInstallmentsLoading(false));
     setValue("applicationLines", [EMPTY_APPLICATION_LINE]);
     businessPartnerFacade
       .getBusinessPartner(supplierId)
@@ -232,6 +237,16 @@ export function SupplierPaymentFormPage() {
         <ZHCard title="Datos del pago">
           <SupplierPaymentHeader disabled={saving} />
         </ZHCard>
+
+        {supplierId && (
+          <ZHCard title="Cartera pendiente del proveedor">
+            <SupplierPayablesPortfolio
+              installments={installments}
+              loading={installmentsLoading}
+              disabled={saving}
+            />
+          </ZHCard>
+        )}
 
         <ZHCard title="Medios de pago">
           <SupplierPaymentMethodLinesEditor

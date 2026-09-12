@@ -202,6 +202,55 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
         result.Value.Items.Should().OnlyContain(i => i.TotalAmount == 100m);
     }
 
+    /// <summary>
+    /// SUPPLIER-PAYMENT-PROVIDER-PORTFOLIO-VISIBILITY-01 — mismo proveedor con CxP en Empresa A y
+    /// Empresa B (escenario real: un proveedor compartido en el tenant que factura a ambas
+    /// compañías). Reproduce el filtro exacto que usa <c>pendingPayablesFacade</c>
+    /// (<c>GetAccountsPayablesListQuery(SupplierId: ...)</c>): confirma que operar en Empresa A
+    /// solo expone su CxP y que, tras "cambiar" a Empresa B (nueva instancia de
+    /// <see cref="ICurrentCompany"/>, igual que ocurre al cambiar de empresa activa en sesión),
+    /// solo se expone la de Empresa B — nunca ambas combinadas ni la de la empresa anterior.
+    /// </summary>
+    [Fact]
+    public async Task Mismo_proveedor_con_CxP_en_dos_empresas_solo_muestra_la_de_la_empresa_activa_al_filtrar_por_proveedor()
+    {
+        var repo = new FakeAccountsPayableRepository();
+        repo.Store.Add(BuildPayable(CompanyAId, BranchAId, 100m));
+        repo.Store.Add(BuildPayable(CompanyBId, BranchAId, 250m));
+
+        var partners = NamesMock();
+        partners
+            .Setup(p => p.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [SupplierId] = "Proveedor" });
+
+        var query = new GetAccountsPayablesListQuery(SupplierId: SupplierId);
+
+        var handlerCompanyA = new GetAccountsPayablesListHandler(
+            repo,
+            partners.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyAId)
+        );
+        var resultA = await handlerCompanyA.Handle(query, CancellationToken.None);
+
+        resultA.IsSuccess.Should().BeTrue(resultA.Error);
+        resultA.Value!.Total.Should().Be(1, "operando en Empresa A solo debe verse su propia CxP del proveedor");
+        resultA.Value.Items.Should().OnlyContain(i => i.TotalAmount == 100m && i.SupplierId == SupplierId);
+
+        // "Cambiar de empresa" = nueva instancia de ICurrentCompany con Empresa B activa.
+        var handlerCompanyB = new GetAccountsPayablesListHandler(
+            repo,
+            partners.Object,
+            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyBId)
+        );
+        var resultB = await handlerCompanyB.Handle(query, CancellationToken.None);
+
+        resultB.IsSuccess.Should().BeTrue(resultB.Error);
+        resultB.Value!.Total.Should().Be(1, "tras cambiar a Empresa B solo debe verse su propia CxP del proveedor");
+        resultB.Value.Items.Should().OnlyContain(i => i.TotalAmount == 250m && i.SupplierId == SupplierId);
+    }
+
     // ── SupplierPayment: branch-independent + company isolation ──────────
 
     [Fact]
