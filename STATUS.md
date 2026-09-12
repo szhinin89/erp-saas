@@ -1,6 +1,56 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-10** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-12** · Kernel refactor: **2026-06-05**.
+
+## CLOSE-PURCHASES-EXPENSES-PAYABLES-READY-01 — Cierre funcional (2026-09-12)
+
+**Estado: LISTO / CERRADO** para Compras, Gastos, CxP y Pagos proveedor en el alcance siguiente. Consolida la validación funcional comunicada por el responsable del proyecto, las validaciones históricas de este documento y la cobertura existente identificada en la [matriz de QA](docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md). No equivale a una nueva ejecución de todas las suites ni a certificar el despliegue de cada ambiente.
+
+| Bloque | Alcance funcional cerrado |
+|---|---|
+| Compras | Compra normal; recepción XML; vinculación de producto/presentación/inventario; costos/Kardex; notas de crédito de compra; devolución a proveedor; NC por descuento; presentación e inventario con nombres legibles y factor separado. |
+| Gastos | Gasto manual y desde recepción XML; IVA real de catálogo SRI; tipo de documento de catálogo SRI; generación de CxP; anulación controlada. Sin hardcodes peligrosos pendientes detectados en los puntos revisados de IVA/tipo documental; no es una auditoría exhaustiva nueva del frontend. |
+| CxP / Pagos proveedor | CxP desde compras y gastos; pago parcial y total; reversa; bloqueo de anulación con pagos activos; anulación luego de reversar los pagos, sujeta a las demás validaciones del documento; aislamiento por empresa. |
+| Contabilidad relacionada | Asientos de compra, gasto, pago, reversa y anulación; reportes que conservan el neteo de asientos Reversed; documento origen legible y descripciones de líneas sin GUID técnico. Cierre limitado a estos flujos, no al módulo contable completo. |
+
+### Guardrails / No romper
+
+- No reintroducir catálogos SRI hardcodeados en frontend: IVA desde `sri-vat-rates` y tipo de documento desde `sri-doc-types`.
+- Cuentas contables desde reglas/configuración, nunca decididas por el frontend.
+- No mostrar GUIDs/códigos técnicos en pantallas operativas si existe nombre legible. En presentación, no usar códigos UOM como sustituto del nombre cuando falta contexto.
+- No permitir anular gastos/compras/CxP con pagos activos. Reversar primero; mantener las demás restricciones de anulación.
+- No cambiar posting/Kardex/CxP sin pruebas E2E o de integración del flujo afectado.
+- No excluir asientos `Reversed` de reportes financieros si rompe el neteo contable: conservar original y contrapartida según las reglas del reporte.
+
+### Commits relevantes verificados en git
+
+| Commit | Cambio |
+|---|---|
+| `9a327417` | fix(expenses): show document type names from SRI catalog |
+| `f2c508a5` | fix(purchases): show readable presentation and inventory labels |
+| `9a46a1ef` | fix(expenses): use SRI document type constant for credit notes |
+| `3f7d8298` | fix(expenses): show real VAT percentages and validate XML totals |
+| `772be348` | fix(accounting): resolve source documents for expenses and supplier payments |
+| `567b4851` | fix(accounting): show readable line descriptions for expenses and supplier payments |
+| `901e6551` | fix(supplier-payments): show legible installment info in payment detail |
+| `e6e44296` | fix(payables): scope AccountsPayable detail-by-id to the active company |
+| `21e1d9a6` | feat(supplier-payments): show provider's pending payables portfolio |
+| `cab0ae53` | fix(purchases): release reception when cancelling discount credit note |
+| `9a0f3b02` | fix(accounting): post purchase credit note discounts to income |
+| `eeac4930` | fix(accounting): include reversed entries in reports |
+| `d81cbc7d` | fix(inventory): persist purchase cancellation stock movement type |
+| `8f6cf51a` | fix(purchases): enable cancel action for confirmed purchases |
+
+### Pendientes no bloqueantes
+
+- Saldos iniciales banco/caja/capital.
+- Cierre contable de utilidad/pérdida a patrimonio.
+- Mejoras futuras de UX, incluida la recuperación del nombre de presentaciones históricas ausentes del contexto; actualmente se muestra un mensaje legible de indisponibilidad.
+- Liquidación de compra SRI 03 y recepción física sin factura son ampliaciones fuera de este cierre. Conciliación bancaria y flujo de efectivo conservan su alcance futuro.
+
+Estos pendientes no reabren Compras/Gastos/CxP. El registro histórico del 2026-09-10 conserva una migración pendiente de aplicar a la BD de la aplicación: su aplicación no se verificó en este ticket documental y debe comprobarse antes de operar ese ambiente.
+
+**Evidencia reciente ejecutada:** para `f2c508a5`, 252 tests de Compras en 24 archivos aprobados; `tsc --noEmit`, build y `git diff --check` correctos; lint con 0 errores y 30 advertencias. No hubo comprobación visual en navegador de ese ticket. Las demás ejecuciones previas se mantienen con su fecha y alcance original abajo; la matriz QA distingue cobertura existente de una ejecución nueva.
 
 ---
 

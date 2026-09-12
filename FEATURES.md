@@ -4,6 +4,8 @@
 
 ## Módulos producto (scope: empresa — `company_id`)
 
+**Cierre funcional 2026-09-12 — LISTO / CERRADO:** Compras (normal/XML, presentación e inventario, costos/Kardex, NC por devolución/descuento), Gastos (manual/XML, catálogos SRI reales, CxP y anulación), CxP y Pagos proveedor (parcial/total, reversa, bloqueo con pagos activos y aislamiento por empresa). Incluye contabilidad de esos flujos, reportes con reversos y trazabilidad legible. Alcance, evidencia, commits, guardrails y pendientes no bloqueantes: [STATUS — cierre funcional](STATUS.md#close-purchases-expenses-payables-ready-01--cierre-funcional-2026-09-12); [matriz QA](docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md). No implica cierre contable global ni implementación de ampliaciones SRI fuera del alcance.
+
 | Dominio | Rutas / API | Notas |
 |---------|-------------|-------|
 | Auth & acceso | `/login`, `/api/auth/*`, `/api/me` | JWT + refresh rotation, RBAC |

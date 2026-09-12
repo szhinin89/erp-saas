@@ -2,6 +2,8 @@
 
 **Arquitectura:** [`FRONTEND_ARCHITECTURE_BASELINE.md`](./FRONTEND_ARCHITECTURE_BASELINE.md)
 
+**Compras / Gastos / CxP / Pagos proveedor:** cierre funcional LISTO / CERRADO registrado el 2026-09-12. Consultar la [matriz de protección y regresión](QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md) y el [SSOT de estado](../STATUS.md). Las casillas de este checklist son una plantilla de ejecución, no evidencia de pruebas realizadas ni bloqueos del cierre.
+
 Ejecutar en **Chrome/Edge** con ventanas **≥1280px** y **≤980px** (DevTools responsive).
 
 Marcar: ✅ OK · ⚠️ defecto menor · ❌ bloqueante
