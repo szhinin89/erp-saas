@@ -3,12 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
-import type { SalesInvoiceDto } from "../api/salesService";
-import type { PaymentMethodDto } from "../api/paymentMethodService";
+import type { SalesInvoiceDto, PaymentMethodDto } from "../api/salesService";
 
-// ── Mocks de componentes pesados: esta suite prueba el ajuste de contraste de
-// las filas complementarias del método de pago (monto/referencia/crédito)
-// debajo del tile activo (SALES-DS-TOGGLE-TILE-10A). ──
+// SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: la sección "Formas de Cobro" deriva automáticamente
+// el código SRI (formaPago) de cada forma de cobro seleccionada desde PaymentMethod.sriPaymentMethodCode
+// (mapeo real, nunca hardcodeado) — el cajero nunca necesita adivinar ni editar manualmente el
+// select "Forma Pago SRI" de cabecera para que el XML salga correcto.
 vi.mock("../components/CustomerPicker", () => ({ CustomerPicker: () => null }));
 vi.mock("../components/SalesInvoiceDetailsSection", () => ({
   SalesInvoiceDetailsSection: () => null,
@@ -32,7 +32,6 @@ vi.mock("../../../components/zh/ZHConfirmModal", () => ({
 vi.mock("../../../components/zh/ZHElectronicEnvironmentBanner", () => ({
   ZHElectronicEnvironmentBanner: () => null,
 }));
-
 vi.mock("../hooks/useRideActions", () => ({
   useRideActions: () => ({
     ridePending: false,
@@ -109,17 +108,33 @@ function buildPaymentMethod(
 ): PaymentMethodDto {
   return {
     id: "pm-cash",
-    code: "01",
+    code: "EFECTIVO",
     name: "Efectivo",
     isActive: true,
     requiresReference: false,
     isCreditAllowed: false,
     sortOrder: 1,
     detailType: "None",
-    sriPaymentMethodCode: null,
+    sriPaymentMethodCode: "01",
     ...overrides,
   };
 }
+
+const CASH = buildPaymentMethod();
+const TRANSFER = buildPaymentMethod({
+  id: "pm-transfer",
+  code: "TRANSFERENCIA",
+  name: "Transferencia",
+  requiresReference: true,
+  detailType: "Transfer",
+  sriPaymentMethodCode: "20",
+});
+const UNMAPPED = buildPaymentMethod({
+  id: "pm-other",
+  code: "OTRO",
+  name: "Otro",
+  sriPaymentMethodCode: null,
+});
 
 function buildCtx(
   overrides: Partial<SalesPageContext> = {},
@@ -141,7 +156,7 @@ function buildCtx(
     register: vi.fn(),
     control: {},
     errors: {},
-    formWatch: { docTypeCode: "", sriPaymentMethodCode: "", customerId: "" },
+    formWatch: { docTypeCode: "01", sriPaymentMethodCode: "01", customerId: "cust-1" },
     setValue: vi.fn(),
     getValues: vi.fn(),
     reset: vi.fn(),
@@ -158,7 +173,7 @@ function buildCtx(
     setInvoicePayments: vi.fn(),
     payKey: 0,
     setPayKey: vi.fn(),
-    paymentMethods: [buildPaymentMethod()],
+    paymentMethods: [CASH, TRANSFER, UNMAPPED],
     paidTotal: 0,
 
     customerProfile: null,
@@ -172,7 +187,10 @@ function buildCtx(
     vatRatesMap: {},
     iceRatesMap: {},
     sriDocTypes: [],
-    sriPaymentMethods: [],
+    sriPaymentMethods: [
+      { code: "01", name: "Sin utilización del sistema financiero" },
+      { code: "20", name: "Otros con utilización del sistema financiero" },
+    ],
     sriIdTypes: [],
 
     hasCashSession: true,
@@ -271,7 +289,7 @@ function buildCtx(
   return { ...base, ...overrides } as unknown as SalesPageContext;
 }
 
-describe("SalesPage — contraste de filas complementarias del método de pago (SALES-DS-TOGGLE-TILE-10A)", () => {
+describe("SalesPage — mapeo automático PaymentMethod → Forma Pago SRI (SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -280,127 +298,89 @@ describe("SalesPage — contraste de filas complementarias del método de pago (
     cleanup();
   });
 
-  it("renderiza la fila de monto (input) cuando un método simple tiene pago registrado", () => {
+  it("al agregar Efectivo con monto, muestra el SRI 01 derivado del mapeo", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    expect(container.querySelector(".sales-payment-dollar")).toBeTruthy();
-    const input = container.querySelector<HTMLInputElement>(
-      ".sales-payment-input",
-    );
-    expect(input).toBeTruthy();
-  });
-
-  it("renderiza el monto de referencia cuando un método con referencia tiene pago registrado", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        paymentMethods: [
-          buildPaymentMethod({
-            id: "pm-card",
-            code: "19",
-            name: "Tarjeta",
-            requiresReference: true,
-            detailType: "Card",
-          }),
-        ],
-        payments: [
-          { _key: 1, paymentMethodId: "pm-card", amount: 50, reference: "ref-1" },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    const refAmount = container.querySelector(".sales-payment-ref-amount");
-    expect(refAmount).toBeTruthy();
-    expect(container.querySelector(".sales-payment-ref-count")).toBeTruthy();
-  });
-
-  it("renderiza el monto de crédito cuando el método de crédito tiene pago registrado", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        paymentMethods: [
-          buildPaymentMethod({
-            id: "pm-credit",
-            code: "20",
-            name: "Crédito",
-            isCreditAllowed: true,
-          }),
-        ],
-        payments: [
-          { _key: 1, paymentMethodId: "pm-credit", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
-
-    expect(container.querySelector(".sales-payment-credit-amount")).toBeTruthy();
-  });
-
-  it("el método activo sigue usando aria-pressed=true tras el ajuste de contraste", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
+        payments: [{ _key: 1, paymentMethodId: CASH.id, amount: 10, reference: null }],
       }),
     );
     renderSalesPage();
-
-    const tile = screen.getByText("Efectivo").closest("button")!;
-    expect(tile.getAttribute("aria-pressed")).toBe("true");
-  });
-
-  it("no existe ningún elemento con clase sales-payment-method--active en el DOM", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
-      }),
-    );
-    const { container } = renderSalesPage();
 
     expect(
-      container.querySelector(".sales-payment-method--active"),
-    ).toBeNull();
+      screen.getByText((_, el) => el?.textContent === "SRI 01 — Sin utilización del sistema financiero"),
+    ).toBeTruthy();
   });
 
-  it("no existe ningún elemento con clase sales-payment-method__btn en el DOM", () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
-    const { container } = renderSalesPage();
-
-    expect(container.querySelector(".sales-payment-method__btn")).toBeNull();
-  });
-
-  it("no hay estilos inline en el área de método de pago", () => {
+  it("al agregar Transferencia con monto, muestra el SRI 20 derivado del mapeo", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({
-        payments: [
-          { _key: 1, paymentMethodId: "pm-cash", amount: 115, reference: null },
-        ],
+        payments: [{ _key: 1, paymentMethodId: TRANSFER.id, amount: 20, reference: null }],
       }),
     );
-    const { container } = renderSalesPage();
-
-    container
-      .querySelectorAll(".sales-payment-grid, .sales-payment-grid *")
-      .forEach((el) => {
-        expect(el.getAttribute("style")).toBeNull();
-      });
-  });
-
-  it("el botón Emitir (EmitButton) sigue presente y no fue tocado por el ajuste de contraste", () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
 
-    const emitBtn = screen.getByText(/Emitir Factura/).closest("button")!;
-    expect(emitBtn).toBeTruthy();
-    expect(emitBtn.getAttribute("style")).toBeNull();
+    expect(
+      screen.getByText((_, el) => el?.textContent === "SRI 20 — Otros con utilización del sistema financiero"),
+    ).toBeTruthy();
+  });
+
+  it("al cambiar de método de cobro, el resumen SRI mostrado cambia acorde", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        payments: [{ _key: 1, paymentMethodId: CASH.id, amount: 10, reference: null }],
+      }),
+    );
+    const view = render(
+      <MemoryRouter>
+        <SalesPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByText(/SRI 01/).length).toBeGreaterThan(0);
+
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        payments: [{ _key: 1, paymentMethodId: TRANSFER.id, amount: 10, reference: null }],
+      }),
+    );
+    view.rerender(
+      <MemoryRouter>
+        <SalesPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByText(/SRI 20/).length).toBeGreaterThan(0);
+  });
+
+  it("si la forma de cobro no tiene mapeo ni el header trae default de empresa, muestra advertencia", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        formWatch: {
+          docTypeCode: "01",
+          sriPaymentMethodCode: "",
+          customerId: "cust-1",
+        } as unknown as SalesPageContext["formWatch"],
+        payments: [{ _key: 1, paymentMethodId: UNMAPPED.id, amount: 5, reference: null }],
+      }),
+    );
+    renderSalesPage();
+
+    expect(screen.getByText(/Sin forma de pago SRI configurada/)).toBeTruthy();
+  });
+
+  it("no fuerza al cajero a editar manualmente el select de cabecera Forma Pago SRI", () => {
+    const setValue = vi.fn();
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        setValue,
+        payments: [{ _key: 1, paymentMethodId: CASH.id, amount: 10, reference: null }],
+      }),
+    );
+    renderSalesPage();
+
+    // El badge se calcula en el render, sin disparar ninguna escritura automática sobre
+    // "sriPaymentMethodCode" — el select de cabecera queda intacto como modo avanzado opcional.
+    expect(setValue).not.toHaveBeenCalledWith(
+      "sriPaymentMethodCode",
+      expect.anything(),
+    );
   });
 });

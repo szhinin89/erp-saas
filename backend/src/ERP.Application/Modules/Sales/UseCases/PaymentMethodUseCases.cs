@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Interfaces;
 using FluentValidation;
 using MediatR;
 
@@ -17,7 +18,8 @@ public sealed record PaymentMethodDto(
     bool RequiresReference,
     bool IsCreditAllowed,
     int SortOrder,
-    PaymentMethodDetailType DetailType
+    PaymentMethodDetailType DetailType,
+    string? SriPaymentMethodCode
 );
 
 // ── Queries ─────────────────────────────────────────────────────────────
@@ -38,7 +40,8 @@ public sealed record CreatePaymentMethodCommand(
     bool RequiresReference = false,
     bool IsCreditAllowed = false,
     int SortOrder = 0,
-    PaymentMethodDetailType DetailType = PaymentMethodDetailType.None
+    PaymentMethodDetailType DetailType = PaymentMethodDetailType.None,
+    string? SriPaymentMethodCode = null
 ) : IRequest<Result<PaymentMethodDto>>, ICompanyScopedRequest;
 
 public sealed record UpdatePaymentMethodCommand(
@@ -47,7 +50,8 @@ public sealed record UpdatePaymentMethodCommand(
     bool RequiresReference,
     bool IsCreditAllowed,
     int SortOrder,
-    PaymentMethodDetailType DetailType
+    PaymentMethodDetailType DetailType,
+    string? SriPaymentMethodCode = null
 ) : IRequest<Result<PaymentMethodDto>>, ICompanyScopedRequest;
 
 public sealed record TogglePaymentMethodCommand(Guid Id)
@@ -56,9 +60,14 @@ public sealed record TogglePaymentMethodCommand(Guid Id)
 
 // ── Validators ──────────────────────────────────────────────────────────
 
+/// <summary>
+/// SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: SriPaymentMethodCode se valida de forma async contra
+/// el catálogo real <c>global.sri_payment_method</c> (mismo patrón que
+/// UpdateSupplierRoleConfigValidator) — nunca un HashSet fijo de códigos en Domain/Application.
+/// </summary>
 public sealed class CreatePaymentMethodValidator : AbstractValidator<CreatePaymentMethodCommand>
 {
-    public CreatePaymentMethodValidator()
+    public CreatePaymentMethodValidator(ISriCatalogLookupRepository catalogRepo)
     {
         RuleFor(x => x.Code)
             .NotEmpty()
@@ -68,15 +77,27 @@ public sealed class CreatePaymentMethodValidator : AbstractValidator<CreatePayme
             .NotEmpty()
             .MaximumLength(PaymentMethod.MaxNameLength)
             .WithMessage("El nombre es obligatorio (máx 100 caracteres).");
+        RuleFor(x => x.SriPaymentMethodCode)
+            .MustAsync((v, ct) => catalogRepo.PaymentMethodCodeExistsActiveAsync(v!, ct))
+            .WithMessage(
+                "SriPaymentMethodCode no corresponde a un código activo del catálogo sri_payment_method."
+            )
+            .When(x => x.SriPaymentMethodCode is not null);
     }
 }
 
 public sealed class UpdatePaymentMethodValidator : AbstractValidator<UpdatePaymentMethodCommand>
 {
-    public UpdatePaymentMethodValidator()
+    public UpdatePaymentMethodValidator(ISriCatalogLookupRepository catalogRepo)
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(PaymentMethod.MaxNameLength);
+        RuleFor(x => x.SriPaymentMethodCode)
+            .MustAsync((v, ct) => catalogRepo.PaymentMethodCodeExistsActiveAsync(v!, ct))
+            .WithMessage(
+                "SriPaymentMethodCode no corresponde a un código activo del catálogo sri_payment_method."
+            )
+            .When(x => x.SriPaymentMethodCode is not null);
     }
 }
 
@@ -113,7 +134,8 @@ public sealed class GetPaymentMethodsHandler
             pm.RequiresReference,
             pm.IsCreditAllowed,
             pm.SortOrder,
-            pm.DetailType
+            pm.DetailType,
+            pm.SriPaymentMethodCode
         );
 }
 
@@ -178,7 +200,8 @@ public sealed class CreatePaymentMethodHandler
             cmd.IsCreditAllowed,
             cmd.SortOrder,
             _u.UserId,
-            cmd.DetailType
+            cmd.DetailType,
+            cmd.SriPaymentMethodCode
         );
 
         await _repo.AddAsync(pm, ct);
@@ -220,7 +243,8 @@ public sealed class UpdatePaymentMethodHandler
             cmd.IsCreditAllowed,
             cmd.SortOrder,
             _u.UserId,
-            cmd.DetailType
+            cmd.DetailType,
+            cmd.SriPaymentMethodCode
         );
         await _repo.SaveChangesAsync(ct);
         return Result<PaymentMethodDto>.Success(GetPaymentMethodsHandler.ToDto(pm));

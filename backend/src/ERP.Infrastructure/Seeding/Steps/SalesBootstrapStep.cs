@@ -26,27 +26,40 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
     private const string DefaultPaymentTermName = "Contado";
     private const string ConsumidorFinalName = "Consumidor Final";
 
+    /// <summary>
+    /// SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: SriPaymentMethodCode aquí es solo el valor
+    /// INICIAL sembrado para cada forma de cobro Tipo A — no es lógica productiva hardcodeada.
+    /// Cada empresa puede reconfigurar el mapeo en cualquier momento (UpdatePaymentMethodCommand,
+    /// validado contra el catálogo real <c>global.sri_payment_method</c>); la resolución de
+    /// formaPago al emitir SIEMPRE lee <see cref="PaymentMethod.SriPaymentMethodCode"/> desde BD,
+    /// nunca esta tabla. Códigos según catálogo SRI Ecuador: 01 Sin utilización del sistema
+    /// financiero, 19 Tarjeta de crédito, 20 Otros con utilización del sistema financiero.
+    /// "CREDITO" (venta a plazo, no es un instrumento de cobro real) queda sin mapeo — al
+    /// momento del cobro real se registra con la forma de pago efectiva.
+    /// </summary>
     private static readonly (
         string Code,
         string Name,
         bool RequiresRef,
         bool CreditAllowed,
         int Sort,
-        PaymentMethodDetailType DetailType
+        PaymentMethodDetailType DetailType,
+        string? SriPaymentMethodCode
     )[] DefaultPaymentMethods =
     [
-        ("EFECTIVO", "Efectivo", false, false, 1, PaymentMethodDetailType.None),
-        ("TARJETA", "Tarjeta de Crédito", true, false, 2, PaymentMethodDetailType.Card),
+        ("EFECTIVO", "Efectivo", false, false, 1, PaymentMethodDetailType.None, "01"),
+        ("TARJETA", "Tarjeta de Crédito", true, false, 2, PaymentMethodDetailType.Card, "19"),
         (
             "TRANSFERENCIA",
             "Transferencia Bancaria",
             true,
             false,
             3,
-            PaymentMethodDetailType.Transfer
+            PaymentMethodDetailType.Transfer,
+            "20"
         ),
-        ("CHEQUE", "Cheque", true, false, 4, PaymentMethodDetailType.Check),
-        ("CREDITO", "Crédito", false, true, 5, PaymentMethodDetailType.None),
+        ("CHEQUE", "Cheque", true, false, 4, PaymentMethodDetailType.Check, "20"),
+        ("CREDITO", "Crédito", false, true, 5, PaymentMethodDetailType.None, null),
     ];
 
     private readonly ErpDbContext _db;
@@ -93,7 +106,15 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         var added = 0;
 
         foreach (
-            var (code, name, requiresRef, creditAllowed, sort, detailType) in DefaultPaymentMethods
+            var (
+                code,
+                name,
+                requiresRef,
+                creditAllowed,
+                sort,
+                detailType,
+                sriPaymentMethodCode
+            ) in DefaultPaymentMethods
         )
         {
             if (existingSet.Contains(code))
@@ -110,7 +131,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
                 creditAllowed,
                 sort,
                 actorId,
-                detailType
+                detailType,
+                sriPaymentMethodCode
             );
             _db.PaymentMethods.Add(pm);
             added++;

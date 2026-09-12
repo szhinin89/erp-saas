@@ -14,6 +14,22 @@ export interface PaymentMethodsSectionProps {
   ctx: SalesPageContext;
 }
 
+/**
+ * SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: resuelve el código SRI ("formaPago" del XML) que
+ * corresponde a una forma de cobro concreta — SIEMPRE PaymentMethod.sriPaymentMethodCode primero
+ * (mapeo configurado en Configuración → Métodos de Pago), y solo si esa forma de cobro no tiene
+ * mapeo propio cae al default de empresa (ctx.formWatch.sriPaymentMethodCode, ya resuelto por el
+ * backend/precargado en el header). Ningún código SRI se hardcodea aquí — ambos valores vienen de
+ * catálogo/config real. Undefined = ni mapeo propio ni default de empresa configurados.
+ */
+function resolveSriPaymentMethodCode(
+  ctx: SalesPageContext,
+  paymentMethodId: string,
+): string | undefined {
+  const pm = ctx.paymentMethods.find((p) => p.id === paymentMethodId);
+  return pm?.sriPaymentMethodCode || ctx.formWatch.sriPaymentMethodCode || undefined;
+}
+
 // ── Payment Methods Section ─────────────────────────────────────────────
 export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
   return (
@@ -219,6 +235,30 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                       />
                     </span>
                   )}
+                  {hasValue &&
+                    !isCredit &&
+                    (() => {
+                      const sriCode = resolveSriPaymentMethodCode(ctx, pm.id);
+                      const sriName = ctx.sriPaymentMethods.find(
+                        (s) => s.code === sriCode,
+                      )?.name;
+                      return sriCode ? (
+                        <span
+                          className="sales-payment-sri-hint"
+                          title={`Forma de pago SRI derivada automáticamente de "${pm.name}" (SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01)`}
+                        >
+                          SRI {sriCode}
+                          {sriName ? ` — ${sriName}` : ""}
+                        </span>
+                      ) : (
+                        <span
+                          className="sales-payment-sri-hint sales-payment-sri-hint--warning"
+                          title="Configure el mapeo SRI de esta forma de cobro en Configuración → Métodos de Pago, o un default de empresa en Configuración → Ventas."
+                        >
+                          ⚠ Sin forma de pago SRI configurada
+                        </span>
+                      );
+                    })()}
                 </div>
               );
             })}

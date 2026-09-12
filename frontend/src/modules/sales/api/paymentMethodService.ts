@@ -12,6 +12,9 @@ export type PaymentMethodDto = {
   isCreditAllowed: boolean;
   sortOrder: number;
   detailType: PaymentMethodDetailType;
+  /** SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: código del catálogo sri_payment_method mapeado a
+   * esta forma de cobro (null = sin mapeo propio, la emisión cae al default de empresa). */
+  sriPaymentMethodCode: string | null;
 };
 
 export type CreatePaymentMethodPayload = {
@@ -21,6 +24,7 @@ export type CreatePaymentMethodPayload = {
   isCreditAllowed?: boolean;
   sortOrder?: number;
   detailType?: PaymentMethodDetailType;
+  sriPaymentMethodCode?: string | null;
 };
 
 export type UpdatePaymentMethodPayload = {
@@ -30,6 +34,7 @@ export type UpdatePaymentMethodPayload = {
   isCreditAllowed: boolean;
   sortOrder: number;
   detailType: PaymentMethodDetailType;
+  sriPaymentMethodCode?: string | null;
 };
 
 const BASE = "/api/v1/payment-methods";

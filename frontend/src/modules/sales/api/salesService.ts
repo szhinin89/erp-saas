@@ -106,6 +106,9 @@ export interface PaymentMethodDto {
   isCreditAllowed: boolean;
   sortOrder: number;
   detailType: PaymentMethodDetailType;
+  /** SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: código del catálogo sri_payment_method mapeado a
+   * esta forma de cobro (null = sin mapeo propio, la emisión cae al default de empresa). */
+  sriPaymentMethodCode: string | null;
 }
 
 export interface SalesPaymentScheduleDto {

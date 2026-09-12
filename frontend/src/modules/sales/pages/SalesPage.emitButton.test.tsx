@@ -333,6 +333,7 @@ describe("SalesPage — EmitButton migrado a ZHBtn variant=cta (SALES-DS-CTA-11)
             isCreditAllowed: false,
             sortOrder: 1,
             detailType: "None",
+            sriPaymentMethodCode: null,
           },
         ],
       }),

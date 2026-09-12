@@ -41,6 +41,11 @@ public sealed class PaymentMethodConfiguration : IEntityTypeConfiguration<Paymen
             .HasMaxLength(20)
             .IsRequired()
             .HasDefaultValue(PaymentMethodDetailType.None);
+        builder
+            .Property(x => x.SriPaymentMethodCode)
+            .HasColumnName("sri_payment_method_code")
+            .HasMaxLength(5)
+            .IsRequired(false);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

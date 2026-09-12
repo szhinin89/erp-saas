@@ -36,6 +36,7 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
     private readonly ICompanyRepository _companyRepository;
     private readonly ISriSettingsRepository _sriSettingsRepository;
     private readonly ISriDocTypeCatalogResolver _docTypeCatalogResolver;
+    private readonly IPaymentMethodRepository _paymentMethodRepository;
 
     public SalesInvoiceElectronicDocumentDataProvider(
         ISalesInvoiceRepository invoiceRepository,
@@ -43,7 +44,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
         IEstablishmentRepository establishmentRepository,
         ICompanyRepository companyRepository,
         ISriSettingsRepository sriSettingsRepository,
-        ISriDocTypeCatalogResolver docTypeCatalogResolver
+        ISriDocTypeCatalogResolver docTypeCatalogResolver,
+        IPaymentMethodRepository paymentMethodRepository
     )
     {
         _invoiceRepository = invoiceRepository;
@@ -52,6 +54,7 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
         _companyRepository = companyRepository;
         _sriSettingsRepository = sriSettingsRepository;
         _docTypeCatalogResolver = docTypeCatalogResolver;
+        _paymentMethodRepository = paymentMethodRepository;
     }
 
     public ElectronicDocumentType DocumentType => ElectronicDocumentType.Invoice;
@@ -82,6 +85,40 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
 
         if (invoice.Payments.Count == 0)
             errors.Add("La factura no tiene formas de cobro registradas.");
+
+        // SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: cada línea de cobro deriva su propio formaPago
+        // SRI desde el mapeo configurado en PaymentMethod.SriPaymentMethodCode (fuente única) — el
+        // header invoice.SriPaymentMethodCode (default de empresa) es solo el fallback cuando la
+        // forma de cobro usada no tiene mapeo propio. Nunca se fuerza el mismo código a todas las
+        // líneas como antes: eso emitía un XML con formaPago inconsistente con el cobro real.
+        var resolvedPaymentSriCodes = new Dictionary<Guid, string>();
+        if (invoice.Payments.Count > 0)
+        {
+            var paymentMethods = await _paymentMethodRepository.ListAsync(
+                reference.TenantId,
+                onlyActive: false,
+                ct
+            );
+            var paymentMethodsById = paymentMethods.ToDictionary(pm => pm.Id);
+
+            foreach (var payment in invoice.Payments)
+            {
+                var sriCode = paymentMethodsById.TryGetValue(
+                    payment.PaymentMethodId,
+                    out var paymentMethod
+                )
+                    ? paymentMethod.SriPaymentMethodCode
+                    : null;
+                sriCode ??= invoice.SriPaymentMethodCode;
+
+                if (string.IsNullOrWhiteSpace(sriCode))
+                    errors.Add(
+                        $"La forma de cobro '{payment.PaymentMethodName}' no tiene una forma de pago SRI mapeada ni existe un default de empresa configurado."
+                    );
+                else
+                    resolvedPaymentSriCodes[payment.Id] = sriCode;
+            }
+        }
 
         foreach (var line in invoice.Lines)
         {
@@ -176,7 +213,7 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
             ),
             Payments: invoice
                 .Payments.Select(p => new ElectronicDocumentPayment(
-                    PaymentMethodCode: invoice.SriPaymentMethodCode!,
+                    PaymentMethodCode: resolvedPaymentSriCodes[p.Id],
                     Amount: p.Amount,
                     Term: null,
                     TimeUnit: null

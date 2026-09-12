@@ -42,12 +42,21 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<ISriSettingsRepository> SriSettingsRepo { get; } = new();
         public Mock<ISriDocTypeCatalogResolver> DocTypeResolver { get; } = new();
+        public Mock<IPaymentMethodRepository> PaymentMethodRepo { get; } = new();
 
         public Mocks()
         {
             DocTypeResolver
                 .Setup(r => r.IsActiveElectronicDocTypeAsync("01", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
+            // Sin PaymentMethod.SriPaymentMethodCode configurado por defecto — las pruebas de este
+            // fixture ejercitan el fallback al header invoice.SriPaymentMethodCode (comportamiento
+            // preexistente antes de SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01).
+            PaymentMethodRepo
+                .Setup(r =>
+                    r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(Array.Empty<PaymentMethod>());
         }
 
         public SalesInvoiceElectronicDocumentDataProvider BuildProvider() =>
@@ -57,7 +66,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
                 EstablishmentRepo.Object,
                 CompanyRepo.Object,
                 SriSettingsRepo.Object,
-                DocTypeResolver.Object
+                DocTypeResolver.Object,
+                PaymentMethodRepo.Object
             );
 
         public void SeedHappyPath(SalesInvoice invoice)
@@ -522,6 +532,214 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         detail.Taxes.Select(t => t.TaxCode).Should().BeEquivalentTo(new[] { "VAT", "ICE", "IRBPNR" });
         // Orden VAT → ICE → IRBPNR, mismo orden en que se sincronizan/fijan en el dominio.
         detail.Taxes.Select(t => t.TaxCode).Should().ContainInOrder("VAT", "ICE", "IRBPNR");
+    }
+
+    // ── SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01 ────────────────────────────────────────────
+
+    private static SalesInvoice BuildAuthorizedInvoiceWithPayments(
+        string invoiceNumber,
+        string headerSriPaymentMethodCode,
+        params (Guid PaymentMethodId, string Code, string Name, decimal Amount)[] payments
+    )
+    {
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", 1, 0);
+        var invoice = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: invoiceNumber,
+            issueDate: new DateOnly(2026, 7, 20),
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
+            sriPaymentMethodCode: headerSriPaymentMethodCode,
+            emissionPointId: EmissionPointId
+        );
+        var line = SalesInvoiceDetail.Create(
+            invoice.Id,
+            TenantId,
+            "Producto Test",
+            quantity: 1m,
+            unitPrice: payments.Sum(p => p.Amount),
+            vatCode: "2",
+            uomCode: "UNIT",
+            snapshotSku: "SKU-001"
+        );
+        line.ApplyTaxes("2", 0m, "IVA 0%", null, 0m, null);
+        invoice.ReplaceLines(new[] { line }, UserId);
+
+        var salesPayments = payments
+            .Select(p => SalesInvoicePayment.Create(invoice.Id, TenantId, p.PaymentMethodId, p.Code, p.Name, p.Amount))
+            .ToList();
+        invoice.ReplacePayments(salesPayments, UserId);
+        invoice.Authorize(UserId);
+        return invoice;
+    }
+
+    [Fact]
+    public async Task GetDataAsync_efectivo_deriva_SRI_01_desde_mapeo_de_PaymentMethod()
+    {
+        var cash = PaymentMethod.Create(
+            TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId,
+            sriPaymentMethodCode: "01"
+        );
+        var invoice = BuildAuthorizedInvoiceWithPayments(
+            "001-001-000000070",
+            headerSriPaymentMethodCode: "20",
+            (cash.Id, "EFECTIVO", "Efectivo", 10m)
+        );
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        m.PaymentMethodRepo
+            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { cash });
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Payments.Should().ContainSingle(p => p.PaymentMethodCode == "01");
+    }
+
+    [Fact]
+    public async Task GetDataAsync_tarjeta_credito_deriva_SRI_19()
+    {
+        var card = PaymentMethod.Create(
+            TenantId, "TARJETA", "Tarjeta de Crédito", true, false, 2, UserId,
+            sriPaymentMethodCode: "19"
+        );
+        var invoice = BuildAuthorizedInvoiceWithPayments(
+            "001-001-000000071",
+            headerSriPaymentMethodCode: "01",
+            (card.Id, "TARJETA", "Tarjeta de Crédito", 10m)
+        );
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        m.PaymentMethodRepo
+            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { card });
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Payments.Should().ContainSingle(p => p.PaymentMethodCode == "19");
+    }
+
+    [Fact]
+    public async Task GetDataAsync_pagos_mixtos_generan_formaPago_separada_por_linea()
+    {
+        var cash = PaymentMethod.Create(
+            TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId,
+            sriPaymentMethodCode: "01"
+        );
+        var transfer = PaymentMethod.Create(
+            TenantId, "TRANSFERENCIA", "Transferencia", true, false, 3, UserId,
+            sriPaymentMethodCode: "20"
+        );
+        var invoice = BuildAuthorizedInvoiceWithPayments(
+            "001-001-000000072",
+            headerSriPaymentMethodCode: "01",
+            (cash.Id, "EFECTIVO", "Efectivo", 6m),
+            (transfer.Id, "TRANSFERENCIA", "Transferencia", 4m)
+        );
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        m.PaymentMethodRepo
+            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { cash, transfer });
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Payments.Should().HaveCount(2);
+        result.Value.Payments.Should().Contain(p => p.PaymentMethodCode == "01" && p.Amount == 6m);
+        result.Value.Payments.Should().Contain(p => p.PaymentMethodCode == "20" && p.Amount == 4m);
+    }
+
+    [Fact]
+    public async Task GetDataAsync_sin_mapeo_propio_cae_al_default_de_empresa()
+    {
+        // CREDITO sin SriPaymentMethodCode configurado (parámetro omitido = null).
+        var credito = PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 5, UserId);
+        var invoice = BuildAuthorizedInvoiceWithPayments(
+            "001-001-000000073",
+            headerSriPaymentMethodCode: "01",
+            (credito.Id, "CREDITO", "Crédito", 10m)
+        );
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        m.PaymentMethodRepo
+            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { credito });
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Payments.Should().ContainSingle(p => p.PaymentMethodCode == "01");
+    }
+
+    [Fact]
+    public async Task GetDataAsync_sin_mapeo_ni_default_de_empresa_bloquea_emision()
+    {
+        var otro = PaymentMethod.Create(TenantId, "OTRO", "Otro", false, false, 9, UserId);
+        var invoice = BuildAuthorizedInvoiceWithPayments(
+            "001-001-000000074",
+            headerSriPaymentMethodCode: "01",
+            (otro.Id, "OTRO", "Otro", 10m)
+        );
+        // Fuerza header vacío tras construir la factura (SriPaymentMethodCode ya validado como
+        // obligatorio en CreateDraft — se simula el escenario límite vía reflexión, único punto
+        // donde el dominio no puede bloquearlo en construcción porque el header sí es obligatorio
+        // desde el alta; lo que se está probando es la resiliencia del data provider si esa
+        // invariante llegara a romperse).
+        typeof(SalesInvoice)
+            .GetProperty(nameof(SalesInvoice.SriPaymentMethodCode))!
+            .SetValue(invoice, null);
+
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        m.PaymentMethodRepo
+            .Setup(r => r.ListAsync(TenantId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { otro });
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Otro");
+    }
+
+    [Fact]
+    public async Task GetDataAsync_no_cruza_tenant_al_resolver_PaymentMethod()
+    {
+        var otherTenantCash = PaymentMethod.Create(
+            Guid.NewGuid(), "EFECTIVO", "Efectivo", false, false, 1, UserId,
+            sriPaymentMethodCode: "99"
+        );
+        var invoice = BuildAuthorizedInvoiceWithPayments(
+            "001-001-000000075",
+            headerSriPaymentMethodCode: "01",
+            (otherTenantCash.Id, "EFECTIVO", "Efectivo", 10m)
+        );
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        // PaymentMethodRepo.Setup por defecto en Mocks() ya devuelve vacío para TenantId real de
+        // la factura — solo configuramos explícitamente un tenant distinto, simulando un
+        // PaymentMethod con el mismo Id pero perteneciente a OTRO tenant (nunca debe filtrarse).
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        // Nunca "99" (del PaymentMethod de otro tenant) — cae al default de empresa "01" porque
+        // ListAsync(TenantId real) devuelve vacío (setup por defecto de Mocks()).
+        result.Value!.Payments.Should().ContainSingle(p => p.PaymentMethodCode == "01");
     }
 
     [Fact]

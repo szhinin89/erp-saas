@@ -17,6 +17,18 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
     /// <summary>Esquema de detalle que la UI debe capturar para este método (tarjeta/transferencia/cheque/ninguno).</summary>
     public PaymentMethodDetailType DetailType { get; private set; }
 
+    /// <summary>
+    /// SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: código del catálogo real <c>global.sri_payment_method</c>
+    /// (formaPago del comprobante electrónico) que corresponde a esta forma de cobro interna —
+    /// SSOT único de la relación PaymentMethod → SriPaymentMethodCode. Nullable: un método sin
+    /// mapeo configurado cae al default de empresa (<c>invoice.default_payment_method_code</c>)
+    /// al momento de emitir — nunca se asume un código por nombre/heurística. Validado contra el
+    /// catálogo activo en <see cref="ERP.Application.Modules.Sales.UseCases.CreatePaymentMethodValidator"/>/
+    /// <see cref="ERP.Application.Modules.Sales.UseCases.UpdatePaymentMethodValidator"/>, nunca contra
+    /// un HashSet fijo en Domain.
+    /// </summary>
+    public string? SriPaymentMethodCode { get; private set; }
+
     private PaymentMethod() { }
 
     public static PaymentMethod Create(
@@ -27,7 +39,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         bool isCreditAllowed,
         int sortOrder,
         Guid createdBy,
-        PaymentMethodDetailType detailType = PaymentMethodDetailType.None
+        PaymentMethodDetailType detailType = PaymentMethodDetailType.None,
+        string? sriPaymentMethodCode = null
     )
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -55,6 +68,9 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
             IsCreditAllowed = isCreditAllowed,
             SortOrder = sortOrder,
             DetailType = detailType,
+            SriPaymentMethodCode = string.IsNullOrWhiteSpace(sriPaymentMethodCode)
+                ? null
+                : sriPaymentMethodCode.Trim(),
         };
         pm.SetCreated(createdBy);
         return pm;
@@ -77,7 +93,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         bool isCreditAllowed,
         int sortOrder,
         Guid createdBy,
-        PaymentMethodDetailType detailType = PaymentMethodDetailType.None
+        PaymentMethodDetailType detailType = PaymentMethodDetailType.None,
+        string? sriPaymentMethodCode = null
     )
     {
         var pm = Create(
@@ -88,7 +105,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
             isCreditAllowed,
             sortOrder,
             createdBy,
-            detailType
+            detailType,
+            sriPaymentMethodCode
         );
         pm.MarkAsSystemSeeded();
         return pm;
@@ -100,7 +118,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         bool isCreditAllowed,
         int sortOrder,
         Guid updatedBy,
-        PaymentMethodDetailType detailType
+        PaymentMethodDetailType detailType,
+        string? sriPaymentMethodCode = null
     )
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -111,6 +130,9 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         IsCreditAllowed = isCreditAllowed;
         SortOrder = sortOrder;
         DetailType = detailType;
+        SriPaymentMethodCode = string.IsNullOrWhiteSpace(sriPaymentMethodCode)
+            ? null
+            : sriPaymentMethodCode.Trim();
         SetUpdated(updatedBy);
     }
 }

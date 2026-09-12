@@ -39,6 +39,16 @@ vi.mock("../../../lib/messages", () => ({
   },
 }));
 
+vi.mock("../../items/facades/sriLookupFacade", () => ({
+  sriLookupFacade: {
+    paymentMethods: vi.fn().mockResolvedValue([
+      { code: "01", name: "Sin utilización del sistema financiero" },
+      { code: "19", name: "Tarjeta de crédito" },
+      { code: "20", name: "Otros con utilización del sistema financiero" },
+    ]),
+  },
+}));
+
 const ACTIVE_PM: PaymentMethodDto = {
   id: "pm-1",
   code: "EFECTIVO",
@@ -48,6 +58,7 @@ const ACTIVE_PM: PaymentMethodDto = {
   isCreditAllowed: false,
   sortOrder: 1,
   detailType: "None",
+  sriPaymentMethodCode: "01",
 };
 
 afterEach(() => cleanup());

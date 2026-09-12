@@ -115,6 +115,7 @@ function buildPaymentMethod(
     isCreditAllowed: false,
     sortOrder: 1,
     detailType: "None",
+    sriPaymentMethodCode: null,
     ...overrides,
   };
 }

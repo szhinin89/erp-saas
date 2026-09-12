@@ -17,6 +17,8 @@ import type {
   UpdatePaymentMethodPayload,
 } from "../api/paymentMethodService";
 import { paymentMethodService } from "../api/paymentMethodService";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
+import { useAsync } from "../../../hooks/useAsync";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import "../../../styles/shared/items-catalog.css";
@@ -48,6 +50,13 @@ export function PaymentMethodsPage() {
   const [fSortOrder, setFSortOrder] = useState(0);
   const [fDetailType, setFDetailType] =
     useState<PaymentMethodDetailType>("None");
+  const [fSriPaymentMethodCode, setFSriPaymentMethodCode] = useState("");
+
+  // SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: catálogo real sri_payment_method — nunca códigos
+  // hardcodeados en el frontend. Sin mapeo (valor "") la emisión usa el default de empresa
+  // (Configuración de Empresa → Ventas).
+  const sriPaymentMethodsState = useAsync(() => sriLookupFacade.paymentMethods());
+  const sriPaymentMethods = sriPaymentMethodsState.data ?? [];
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -80,6 +89,7 @@ export function PaymentMethodsPage() {
     setFIsCredit(false);
     setFSortOrder(0);
     setFDetailType("None");
+    setFSriPaymentMethodCode("");
     setEditing(null);
     setError("");
   };
@@ -91,6 +101,7 @@ export function PaymentMethodsPage() {
     setFIsCredit(pm.isCreditAllowed);
     setFSortOrder(pm.sortOrder);
     setFDetailType(pm.detailType);
+    setFSriPaymentMethodCode(pm.sriPaymentMethodCode ?? "");
     setTab("nuevo");
   };
 
@@ -106,6 +117,7 @@ export function PaymentMethodsPage() {
           isCreditAllowed: fIsCredit,
           sortOrder: fSortOrder,
           detailType: fDetailType,
+          sriPaymentMethodCode: fSriPaymentMethodCode || null,
         };
         await paymentMethodService.update(editing.id, p);
       } else {
@@ -116,6 +128,7 @@ export function PaymentMethodsPage() {
           isCreditAllowed: fIsCredit,
           sortOrder: fSortOrder,
           detailType: fDetailType,
+          sriPaymentMethodCode: fSriPaymentMethodCode || null,
         };
         await paymentMethodService.create(p);
       }
@@ -196,6 +209,22 @@ export function PaymentMethodsPage() {
       key: "detailType",
       header: "Detalle",
       render: (pm) => DETAIL_TYPE_OPTIONS.find((o) => o.value === pm.detailType)?.label ?? pm.detailType,
+    },
+    {
+      key: "sriPaymentMethodCode",
+      header: "Forma Pago SRI",
+      render: (pm) => {
+        if (!pm.sriPaymentMethodCode)
+          return (
+            <span className="zh-text-muted zh-text-xs">
+              Sin mapear (usa default de empresa)
+            </span>
+          );
+        const sri = sriPaymentMethods.find(
+          (s) => s.code === pm.sriPaymentMethodCode,
+        );
+        return `${pm.sriPaymentMethodCode} — ${sri?.name ?? "?"}`;
+      },
     },
     { key: "sortOrder", header: "Orden", render: (pm) => pm.sortOrder },
     {
@@ -329,6 +358,30 @@ export function PaymentMethodsPage() {
                     </option>
                   ))}
                 </ZhSelect>
+              </div>
+            </div>
+            <div className="zh-field">
+              <label className="zh-field-label">Forma Pago SRI</label>
+              <div className="zh-field-control">
+                <ZhSelect
+                  value={fSriPaymentMethodCode}
+                  onChange={(e) => setFSriPaymentMethodCode(e.target.value)}
+                  disabled={sriPaymentMethodsState.loading}
+                >
+                  <option value="">
+                    — Sin mapear (usa default de empresa) —
+                  </option>
+                  {sriPaymentMethods.map((sri) => (
+                    <option key={sri.code} value={sri.code}>
+                      {sri.code} — {sri.name}
+                    </option>
+                  ))}
+                </ZhSelect>
+                <p className="zh-text-muted zh-text-xs zh-mt-4">
+                  Código SRI que se usará como formaPago en el XML electrónico
+                  cuando el cajero cobre con esta forma de cobro
+                  (SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01).
+                </p>
               </div>
             </div>
           </div>
