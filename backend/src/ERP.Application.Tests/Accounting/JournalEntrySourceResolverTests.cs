@@ -1,6 +1,8 @@
 using ERP.Application.Modules.Accounting.Queries;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
@@ -407,6 +409,352 @@ public sealed class JournalEntrySourceResolverTests
                 ),
             Times.Once
         );
+    }
+}
+
+/// <summary>
+/// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — ExpensesJournalSourceResolver
+/// resuelve FactType "DocumentConfirmed" contra ExpenseDocument (número, proveedor, estado
+/// traducido, fecha, ruta a /expenses/documents/{id}). Cubre resolución exitosa, documento
+/// inexistente/otra empresa (fail-closed vía Scoped(tenantId) del repositorio real) y traducción
+/// de cada valor de ExpenseStatus.
+/// </summary>
+public sealed class ExpensesJournalSourceResolverTests
+{
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid OtherTenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+
+    [Fact]
+    public async Task Resuelve_gasto_confirmado_con_numero_proveedor_estado_y_ruta()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var expenseId = Guid.NewGuid();
+        var repo = new Mock<IExpenseDocumentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(expenseId)),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string, string, string, DateOnly)>
+                {
+                    [expenseId] = ("001-500-000007861", "Proveedor XYZ", "Confirmed", new DateOnly(2026, 8, 1)),
+                }
+            );
+
+        var resolver = new ExpensesJournalSourceResolver(repo.Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            CancellationToken.None
+        );
+
+        result.Should().ContainKey(journalEntryId);
+        var info = result[journalEntryId];
+        info.SourceDocumentType.Should().Be("Gasto");
+        info.SourceDocumentNumber.Should().Be("001-500-000007861");
+        info.SourcePartyName.Should().Be("Proveedor XYZ");
+        info.SourceStatus.Should().Be("Confirmado");
+        info.SourceDocumentDate.Should().Be(new DateOnly(2026, 8, 1));
+        info.SourceRoute.Should().Be($"/expenses/documents/{expenseId}");
+    }
+
+    [Theory]
+    [InlineData("Draft", "Borrador")]
+    [InlineData("Confirmed", "Confirmado")]
+    [InlineData("Cancelled", "Anulado")]
+    public async Task Traduce_cada_estado_de_ExpenseStatus_a_espanol(string rawStatus, string expected)
+    {
+        var journalEntryId = Guid.NewGuid();
+        var expenseId = Guid.NewGuid();
+        var repo = new Mock<IExpenseDocumentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string, string, string, DateOnly)>
+                {
+                    [expenseId] = ("001-500-000007861", "Proveedor XYZ", rawStatus, new DateOnly(2026, 8, 1)),
+                }
+            );
+
+        var resolver = new ExpensesJournalSourceResolver(repo.Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            CancellationToken.None
+        );
+
+        result[journalEntryId].SourceStatus.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task Gasto_inexistente_o_de_otra_empresa_no_rompe_y_queda_sin_resolver()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var expenseId = Guid.NewGuid();
+        var repo = new Mock<IExpenseDocumentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (string, string, string, DateOnly)>()); // fail-closed: Scoped(tenantId) del repo real ya excluye otra empresa/tenant
+
+        var resolver = new ExpensesJournalSourceResolver(repo.Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            CancellationToken.None
+        );
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Ignora_FactType_no_soportado_sin_consultar_el_repositorio()
+    {
+        var repo = new Mock<IExpenseDocumentRepository>();
+        var resolver = new ExpensesJournalSourceResolver(repo.Object);
+
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[]
+            {
+                new JournalEntrySourceRequest(Guid.NewGuid(), "Expenses", "SomeOtherFact", Guid.NewGuid()),
+            },
+            CancellationToken.None
+        );
+
+        result.Should().BeEmpty();
+        repo.Verify(
+            r => r.GetJournalSourceSummariesByIdsAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Aisla_por_tenant_no_filtra_gasto_de_otro_tenant()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var expenseId = Guid.NewGuid();
+        var repo = new Mock<IExpenseDocumentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    OtherTenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string, string, string, DateOnly)>
+                {
+                    [expenseId] = ("001-500-000007861", "Proveedor de otro tenant", "Confirmed", new DateOnly(2026, 8, 1)),
+                }
+            );
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (string, string, string, DateOnly)>());
+
+        var resolver = new ExpensesJournalSourceResolver(repo.Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Expenses", "DocumentConfirmed", expenseId) },
+            CancellationToken.None
+        );
+
+        result.Should().BeEmpty();
+    }
+}
+
+/// <summary>
+/// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — PayablesJournalSourceResolver
+/// resuelve "SupplierPaymentConfirmed" y "SupplierPaymentReversed" contra SupplierPayment, ambos
+/// con el mismo SourceEventId (SupplierPayment.Id). companyId se pasa explícito porque
+/// ISupplierPaymentRepository no scopea por empresa activa (a diferencia de IExpenseDocumentRepository).
+/// </summary>
+public sealed class PayablesJournalSourceResolverTests
+{
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid OtherCompanyId = Guid.NewGuid();
+    private static readonly Guid SupplierId = Guid.NewGuid();
+
+    private static Mock<IBusinessPartnerRepository> PartnerRepo(string? name = "Proveedor ACME")
+    {
+        var repo = new Mock<IBusinessPartnerRepository>();
+        repo.Setup(r => r.GetNamesByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                name is null
+                    ? new Dictionary<Guid, string>()
+                    : new Dictionary<Guid, string> { [SupplierId] = name }
+            );
+        return repo;
+    }
+
+    [Fact]
+    public async Task SupplierPaymentConfirmed_resuelve_Pago_a_proveedor_con_numero_visible_y_ruta()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var repo = new Mock<ISupplierPaymentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    CompanyId,
+                    It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(paymentId)),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string, Guid, string, DateOnly)>
+                {
+                    [paymentId] = ("00000003", SupplierId, "Confirmed", new DateOnly(2026, 8, 1)),
+                }
+            );
+
+        var resolver = new PayablesJournalSourceResolver(repo.Object, PartnerRepo().Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentConfirmed", paymentId) },
+            CancellationToken.None
+        );
+
+        result.Should().ContainKey(journalEntryId);
+        var info = result[journalEntryId];
+        info.SourceDocumentType.Should().Be("Pago a proveedor");
+        info.SourceDocumentNumber.Should().Be("00000003");
+        info.SourcePartyName.Should().Be("Proveedor ACME");
+        info.SourceStatus.Should().Be("Confirmado");
+        info.SourceRoute.Should().Be($"/supplier-payments/{paymentId}");
+    }
+
+    [Fact]
+    public async Task SupplierPaymentReversed_resuelve_Reversa_de_pago_a_proveedor_estado_Reversado()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var repo = new Mock<ISupplierPaymentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string, Guid, string, DateOnly)>
+                {
+                    [paymentId] = ("00000003", SupplierId, "Reversed", new DateOnly(2026, 8, 5)),
+                }
+            );
+
+        var resolver = new PayablesJournalSourceResolver(repo.Object, PartnerRepo().Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentReversed", paymentId) },
+            CancellationToken.None
+        );
+
+        result[journalEntryId].SourceDocumentType.Should().Be("Reversa de pago a proveedor");
+        result[journalEntryId].SourceStatus.Should().Be("Reversado");
+        result[journalEntryId].SourceRoute.Should().Be($"/supplier-payments/{paymentId}");
+    }
+
+    [Fact]
+    public async Task Pago_inexistente_o_de_otra_empresa_no_rompe_y_queda_sin_resolver()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var repo = new Mock<ISupplierPaymentRepository>();
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (string, Guid, string, DateOnly)>());
+
+        var resolver = new PayablesJournalSourceResolver(repo.Object, PartnerRepo(null).Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentConfirmed", paymentId) },
+            CancellationToken.None
+        );
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Aisla_por_empresa_pago_de_otra_company_nunca_se_filtra()
+    {
+        var journalEntryId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var repo = new Mock<ISupplierPaymentRepository>();
+        // El repositorio real filtra por (tenantId, companyId) — simulamos ese comportamiento:
+        // solo responde para OtherCompanyId, nunca para CompanyId, aunque el Id de pago coincida.
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    OtherCompanyId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, (string, Guid, string, DateOnly)>
+                {
+                    [paymentId] = ("00000003", SupplierId, "Confirmed", new DateOnly(2026, 8, 1)),
+                }
+            );
+        repo.Setup(r =>
+                r.GetJournalSourceSummariesByIdsAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new Dictionary<Guid, (string, Guid, string, DateOnly)>());
+
+        var resolver = new PayablesJournalSourceResolver(repo.Object, PartnerRepo().Object);
+        var result = await resolver.ResolveAsync(
+            TenantId,
+            CompanyId,
+            new[] { new JournalEntrySourceRequest(journalEntryId, "Payables", "SupplierPaymentConfirmed", paymentId) },
+            CancellationToken.None
+        );
+
+        result.Should().BeEmpty();
     }
 }
 

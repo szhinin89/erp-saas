@@ -94,6 +94,12 @@ public sealed class PayablesCompanyLevelBranchIndependenceTests
             Guid tenantId, Guid companyId, Guid supplierId, string receiptNumber, CancellationToken ct = default
         ) => throw new NotImplementedException();
 
+        public Task<
+            IReadOnlyDictionary<Guid, (string DisplayNumber, Guid SupplierId, string Status, DateOnly PaymentDate)>
+        > GetJournalSourceSummariesByIdsAsync(
+            Guid tenantId, Guid companyId, IReadOnlyCollection<Guid> ids, CancellationToken ct = default
+        ) => throw new NotImplementedException();
+
         public Task AddAsync(SupplierPayment payment, CancellationToken ct = default)
         {
             Store.Add(payment);

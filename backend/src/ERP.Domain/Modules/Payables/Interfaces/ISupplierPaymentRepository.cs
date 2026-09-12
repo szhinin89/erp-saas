@@ -35,6 +35,28 @@ public interface ISupplierPaymentRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — proyección liviana
+    /// para resolver el origen documental humano de un JournalEntry (número visible, proveedor,
+    /// estado, fecha) — mismo criterio que
+    /// <c>ISalesInvoiceRepository.GetJournalSourceSummariesByIdsAsync</c>. Con <c>companyId</c>
+    /// explícito porque, a diferencia de <c>IExpenseDocumentRepository</c>, este repositorio no
+    /// scopea por empresa activa vía <c>ForOperationalScope</c> (mismo motivo documentado en
+    /// <see cref="ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceModuleResolver"/>
+    /// para <c>IPaymentRepository</c>).
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string DisplayNumber, Guid SupplierId, string Status, DateOnly PaymentDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(SupplierPayment payment, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

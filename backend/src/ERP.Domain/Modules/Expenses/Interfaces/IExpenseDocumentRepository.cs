@@ -67,6 +67,25 @@ public interface IExpenseDocumentRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — proyección liviana
+    /// para resolver el origen documental humano de un JournalEntry (número, proveedor, estado,
+    /// fecha) — mismo criterio que
+    /// <c>ISalesInvoiceRepository.GetJournalSourceSummariesByIdsAsync</c>. Sin parámetro
+    /// <c>companyId</c> porque <c>Scoped(tenantId)</c> (<c>ForOperationalScope</c>) ya filtra por
+    /// la empresa activa.
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string DocumentNumber, string SupplierName, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(ExpenseDocument document, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

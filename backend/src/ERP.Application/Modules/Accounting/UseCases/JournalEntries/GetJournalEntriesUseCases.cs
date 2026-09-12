@@ -186,13 +186,29 @@ public sealed class GetJournalEntryByIdHandler
         var source =
             ownSource
             ?? (originalEntry is not null && sources.TryGetValue(originalEntry.Id, out var inherited)
-                ? inherited
+                ? WithReversalPrefix(inherited, entry)
                 : null);
 
         return Result<JournalEntryDetailDto>.Success(
             Map.ToDetailDto(entry, accountsById, source, originalEntry, reverseEntry)
         );
     }
+
+    /// <summary>
+    /// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — cuando el propio
+    /// asiento es un reverso (SourceModule="Accounting"/SourceEventType="Reversal", ver
+    /// JournalEntry.Reverse()) y hereda el origen ya resuelto del asiento original, se antepone
+    /// "Reverso de " al tipo de documento humano para que la tarjeta diga "Reverso de Gasto ..."
+    /// en vez de repetir el mismo texto que el asiento original — el resto de la info (número,
+    /// proveedor/cliente, fecha, ruta) se mantiene igual para conservar el link al documento real.
+    /// </summary>
+    private static JournalEntrySourceInfo WithReversalPrefix(
+        JournalEntrySourceInfo inherited,
+        JournalEntry entry
+    ) =>
+        entry.SourceModule == "Accounting" && entry.SourceEventType == "Reversal"
+            ? inherited with { SourceDocumentType = $"Reverso de {inherited.SourceDocumentType}" }
+            : inherited;
 }
 
 public sealed class GetJournalEntriesBySourceHandler

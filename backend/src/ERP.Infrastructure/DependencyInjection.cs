@@ -391,6 +391,14 @@ public static class DependencyInjection
             ERP.Application.Modules.Accounting.Queries.FinanceJournalSourceResolver
         >();
         services.AddScoped<
+            ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceModuleResolver,
+            ERP.Application.Modules.Accounting.Queries.ExpensesJournalSourceResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceModuleResolver,
+            ERP.Application.Modules.Accounting.Queries.PayablesJournalSourceResolver
+        >();
+        services.AddScoped<
             ERP.Application.Modules.Accounting.Queries.IJournalEntrySourceResolver,
             ERP.Application.Modules.Accounting.Queries.JournalEntrySourceResolver
         >();

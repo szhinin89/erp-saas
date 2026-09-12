@@ -141,6 +141,39 @@ public sealed class ExpenseDocumentRepository : IExpenseDocumentRepository
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string DocumentNumber, string SupplierName, string Status, DateOnly IssueDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        if (ids.Count == 0)
+            return new Dictionary<Guid, (string, string, string, DateOnly)>();
+
+        var rows = await Scoped(tenantId)
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.DocumentNumber,
+                x.SupplierName,
+                x.Status,
+                x.IssueDate,
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (x.DocumentNumber, x.SupplierName, x.Status.ToString(), x.IssueDate)
+        );
+    }
+
     public Task AddAsync(ExpenseDocument document, CancellationToken ct = default) =>
         _db.ExpenseDocuments.AddAsync(document, ct).AsTask();
 

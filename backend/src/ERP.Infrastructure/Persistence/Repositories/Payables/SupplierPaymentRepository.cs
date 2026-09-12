@@ -65,6 +65,46 @@ public sealed class SupplierPaymentRepository : ISupplierPaymentRepository
             ct
         );
 
+    public async Task<
+        IReadOnlyDictionary<
+            Guid,
+            (string DisplayNumber, Guid SupplierId, string Status, DateOnly PaymentDate)
+        >
+    > GetJournalSourceSummariesByIdsAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        if (ids.Count == 0)
+            return new Dictionary<Guid, (string, Guid, string, DateOnly)>();
+
+        var rows = await _db.SupplierPayments
+            .AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && ids.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.SystemNumber,
+                x.ReceiptNumber,
+                x.SupplierId,
+                x.Status,
+                x.PaymentDate,
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (
+                string.IsNullOrWhiteSpace(x.ReceiptNumber) ? x.SystemNumber : x.ReceiptNumber!,
+                x.SupplierId,
+                x.Status.ToString(),
+                x.PaymentDate
+            )
+        );
+    }
+
     public Task AddAsync(SupplierPayment payment, CancellationToken ct = default) =>
         _db.SupplierPayments.AddAsync(payment, ct).AsTask();
 

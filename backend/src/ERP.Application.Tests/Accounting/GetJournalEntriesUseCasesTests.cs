@@ -355,6 +355,83 @@ public sealed class GetJournalEntriesUseCasesTests
         // Origen heredado del original, aunque el propio SourceModule del reverso sea "Accounting".
         result.Value.SourceDocumentNumber.Should().Be("001-001-000000123");
         result.Value.SourcePartyName.Should().Be("Cliente de prueba");
+        // ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — el tipo heredado se
+        // antepone con "Reverso de " para distinguirlo del asiento original en la misma tarjeta.
+        result.Value.SourceDocumentType.Should().Be("Reverso de Factura de venta");
+        result.Value.SourceRoute.Should().Be("/sales?invoiceId=" + original.SourceEventId);
+    }
+
+    // ── ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 ──
+
+    [Fact]
+    public async Task GetJournalEntryById_de_reverso_de_gasto_muestra_Reverso_de_Gasto_con_link_al_gasto()
+    {
+        var debitAccount = NewAccount("5.1.01", "Gastos generales");
+        var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
+        var expenseId = Guid.NewGuid();
+        var original = JournalEntry.Create(
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            Guid.NewGuid(),
+            2026,
+            "Expenses",
+            "DocumentConfirmed",
+            expenseId,
+            "Asiento de gasto",
+            CreatedBy
+        );
+        original.AddLine(debitAccount.Id, "Gasto", 100m, 0m);
+        original.AddLine(creditAccount.Id, "CxP", 0m, 100m);
+        original.Post(CreatedBy, 1);
+        var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado");
+
+        var m = new Mocks();
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reversal.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reversal);
+        m.JournalEntries
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(original);
+        m.Accounts
+            .Setup(r => r.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { debitAccount, creditAccount });
+        m.SourceResolver
+            .Setup(r =>
+                r.ResolveManyAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<IReadOnlyList<JournalEntrySourceRequest>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, JournalEntrySourceInfo>
+                {
+                    [original.Id] = new(
+                        "Gasto",
+                        "001-500-000007861",
+                        original.EntryDate,
+                        "Proveedor de prueba",
+                        "Anulado",
+                        $"/expenses/documents/{expenseId}"
+                    ),
+                }
+            );
+
+        var handler = new GetJournalEntryByIdHandler(
+            m.JournalEntries.Object,
+            m.Accounts.Object,
+            m.SourceResolver.Object,
+            m.Tenant.Object,
+            m.Company.Object
+        );
+        var result = await handler.Handle(new GetJournalEntryByIdQuery(reversal.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.SourceDocumentType.Should().Be("Reverso de Gasto");
+        result.Value.SourceDocumentNumber.Should().Be("001-500-000007861");
+        result.Value.SourceRoute.Should().Be($"/expenses/documents/{expenseId}");
     }
 
     [Fact]

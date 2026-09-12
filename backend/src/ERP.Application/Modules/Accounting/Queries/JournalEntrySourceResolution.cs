@@ -1,5 +1,9 @@
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Expenses.Enums;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 
@@ -383,4 +387,163 @@ public sealed class FinanceJournalSourceResolver : IJournalEntrySourceModuleReso
         }
         return result;
     }
+}
+
+/// <summary>
+/// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — Expenses resuelve
+/// FactType "DocumentConfirmed" (único hecho contable emitido hoy por el módulo, ver
+/// <c>ExpenseDocumentConfirmedPostingTranslator</c>). El reverso de un gasto se postea con
+/// <c>SourceModule="Accounting"</c>/<c>SourceEventType="Reversal"</c> (ver
+/// <c>JournalEntry.Reverse()</c>), no con un FactType propio de Expenses — ese caso lo resuelve
+/// <c>GetJournalEntryByIdHandler</c> heredando el origen del asiento original ya resuelto aquí, sin
+/// necesidad de un segundo FactType en este resolver. <c>SourceStatus</c> se traduce a español
+/// porque este contrato es siempre texto humano (mismo criterio que "Factura de venta"/"Factura de
+/// compra" en los resolvers hermanos).
+/// </summary>
+public sealed class ExpensesJournalSourceResolver : IJournalEntrySourceModuleResolver
+{
+    private const string DocumentConfirmedFactType = "DocumentConfirmed";
+
+    private readonly IExpenseDocumentRepository _expenseDocumentRepository;
+
+    public ExpensesJournalSourceResolver(IExpenseDocumentRepository expenseDocumentRepository)
+    {
+        _expenseDocumentRepository = expenseDocumentRepository;
+    }
+
+    public string SourceModule => "Expenses";
+
+    public async Task<IReadOnlyDictionary<Guid, JournalEntrySourceInfo>> ResolveAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyList<JournalEntrySourceRequest> requests,
+        CancellationToken ct
+    )
+    {
+        var expenseRequests = requests
+            .Where(r => r.SourceEventType == DocumentConfirmedFactType)
+            .ToList();
+        if (expenseRequests.Count == 0)
+            return new Dictionary<Guid, JournalEntrySourceInfo>();
+
+        var expenseIds = expenseRequests.Select(r => r.SourceEventId).Distinct().ToList();
+        var summaries = await _expenseDocumentRepository.GetJournalSourceSummariesByIdsAsync(
+            tenantId,
+            expenseIds,
+            ct
+        );
+
+        var result = new Dictionary<Guid, JournalEntrySourceInfo>();
+        foreach (var request in expenseRequests)
+        {
+            if (!summaries.TryGetValue(request.SourceEventId, out var summary))
+                continue; // Gasto no encontrado (borrado/otra empresa) — se omite, no se inventa.
+
+            result[request.JournalEntryId] = new JournalEntrySourceInfo(
+                "Gasto",
+                summary.DocumentNumber,
+                summary.IssueDate,
+                summary.SupplierName,
+                TranslateStatus(summary.Status),
+                $"/expenses/documents/{request.SourceEventId}"
+            );
+        }
+        return result;
+    }
+
+    private static string TranslateStatus(string status) =>
+        status switch
+        {
+            nameof(ExpenseStatus.Draft) => "Borrador",
+            nameof(ExpenseStatus.Confirmed) => "Confirmado",
+            nameof(ExpenseStatus.Cancelled) => "Anulado",
+            _ => status,
+        };
+}
+
+/// <summary>
+/// ACCOUNTING-JOURNAL-SOURCE-DOCUMENT-RESOLUTION-EXPENSES-PAYABLES-01 — Payables resuelve
+/// FactType "SupplierPaymentConfirmed" y "SupplierPaymentReversed" — a diferencia de Expenses, el
+/// reverso de un pago a proveedor postea su propio FactType directamente (ver
+/// <c>SupplierPaymentReversedPostingTranslator</c>), ambos con el mismo <c>SourceEventId</c>
+/// (<c>SupplierPayment.Id</c>) — mismo criterio que "InvoiceIssued"/"CostOfGoodsSold" en
+/// <see cref="SalesJournalSourceResolver"/>. <c>companyId</c> se usa explícitamente porque
+/// <see cref="ISupplierPaymentRepository"/> no scopea por empresa activa vía
+/// <c>ForOperationalScope</c> (mismo motivo que <see cref="FinanceJournalSourceResolver"/> para
+/// <c>IPaymentRepository</c>).
+/// </summary>
+public sealed class PayablesJournalSourceResolver : IJournalEntrySourceModuleResolver
+{
+    private const string SupplierPaymentConfirmedFactType = "SupplierPaymentConfirmed";
+    private const string SupplierPaymentReversedFactType = "SupplierPaymentReversed";
+
+    private readonly ISupplierPaymentRepository _supplierPaymentRepository;
+    private readonly IBusinessPartnerRepository _businessPartnerRepository;
+
+    public PayablesJournalSourceResolver(
+        ISupplierPaymentRepository supplierPaymentRepository,
+        IBusinessPartnerRepository businessPartnerRepository
+    )
+    {
+        _supplierPaymentRepository = supplierPaymentRepository;
+        _businessPartnerRepository = businessPartnerRepository;
+    }
+
+    public string SourceModule => "Payables";
+
+    public async Task<IReadOnlyDictionary<Guid, JournalEntrySourceInfo>> ResolveAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyList<JournalEntrySourceRequest> requests,
+        CancellationToken ct
+    )
+    {
+        var paymentRequests = requests
+            .Where(r =>
+                r.SourceEventType is SupplierPaymentConfirmedFactType or SupplierPaymentReversedFactType
+            )
+            .ToList();
+        if (paymentRequests.Count == 0)
+            return new Dictionary<Guid, JournalEntrySourceInfo>();
+
+        var paymentIds = paymentRequests.Select(r => r.SourceEventId).Distinct().ToList();
+        var summaries = await _supplierPaymentRepository.GetJournalSourceSummariesByIdsAsync(
+            tenantId,
+            companyId,
+            paymentIds,
+            ct
+        );
+
+        var supplierIds = summaries.Values.Select(s => s.SupplierId).Distinct().ToList();
+        var supplierNames = await _businessPartnerRepository.GetNamesByIdsAsync(supplierIds, ct);
+
+        var result = new Dictionary<Guid, JournalEntrySourceInfo>();
+        foreach (var request in paymentRequests)
+        {
+            if (!summaries.TryGetValue(request.SourceEventId, out var summary))
+                continue; // Pago no encontrado (borrado/otra empresa) — se omite, no se inventa.
+
+            supplierNames.TryGetValue(summary.SupplierId, out var supplierName);
+
+            result[request.JournalEntryId] = new JournalEntrySourceInfo(
+                request.SourceEventType == SupplierPaymentReversedFactType
+                    ? "Reversa de pago a proveedor"
+                    : "Pago a proveedor",
+                summary.DisplayNumber,
+                summary.PaymentDate,
+                supplierName,
+                TranslateStatus(summary.Status),
+                $"/supplier-payments/{request.SourceEventId}"
+            );
+        }
+        return result;
+    }
+
+    private static string TranslateStatus(string status) =>
+        status switch
+        {
+            nameof(SupplierPaymentStatus.Confirmed) => "Confirmado",
+            nameof(SupplierPaymentStatus.Reversed) => "Reversado",
+            _ => status,
+        };
 }
