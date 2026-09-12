@@ -28,6 +28,8 @@ const data: PurchaseReceptionXmlView = {
   modifiedDocumentType: null,
   modifiedDocumentDate: null,
   modificationReason: null,
+  affectedPurchaseExists: false,
+  affectedPurchaseId: null,
   subtotal: 74.39,
   discountAmount: 0,
   iceAmount: 6.45,
