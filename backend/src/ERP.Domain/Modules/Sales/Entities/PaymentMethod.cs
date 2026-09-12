@@ -135,4 +135,24 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
             : sriPaymentMethodCode.Trim();
         SetUpdated(updatedBy);
     }
+
+    /// <summary>
+    /// SALES-PAYMENT-METHOD-SRI-MAPPING-EFECTIVO-WRONG-CODE-01: backfill idempotente para filas
+    /// creadas antes de que existiera SriPaymentMethodCode — asigna el código SOLO si el campo
+    /// sigue null. Nunca pisa un mapeo ya configurado (manual o de un backfill previo), a
+    /// diferencia de <see cref="Update"/> que sí reemplaza el valor porque representa una edición
+    /// explícita del usuario. Usado exclusivamente por <c>PaymentMethodSriMappingBackfillService</c>
+    /// (operación de despliegue, no un flujo de usuario).
+    /// </summary>
+    public bool BackfillSriPaymentMethodCode(string sriPaymentMethodCode, Guid updatedBy)
+    {
+        if (SriPaymentMethodCode is not null)
+            return false;
+        if (string.IsNullOrWhiteSpace(sriPaymentMethodCode))
+            return false;
+
+        SriPaymentMethodCode = sriPaymentMethodCode.Trim();
+        SetUpdated(updatedBy);
+        return true;
+    }
 }

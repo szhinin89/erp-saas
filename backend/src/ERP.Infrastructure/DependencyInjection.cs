@@ -932,6 +932,7 @@ public static class DependencyInjection
         services.AddScoped<ICompanyBootstrapStep, MasterDataClassificationBootstrapStep>();
         services.AddScoped<MasterDataClassificationBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, SalesBootstrapStep>();
+        services.AddScoped<PaymentMethodSriMappingBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, CajaBootstrapStep>();
         services.AddScoped<AccountingBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep>(sp =>

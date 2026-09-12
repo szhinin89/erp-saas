@@ -430,6 +430,28 @@ if (args.Contains("backfill-master-data-classifications"))
     return;
 }
 
+// Comando de una sola vez (SALES-PAYMENT-METHOD-SRI-MAPPING-EFECTIVO-WRONG-CODE-01): backfill
+// idempotente de PaymentMethod.SriPaymentMethodCode para tenants creados antes de
+// SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01 — SalesBootstrapStep solo siembra formas de cobro para
+// empresas NUEVAS. Nunca pisa un mapeo ya configurado manualmente; solo aplica el código sugerido
+// si existe y está activo en el catálogo real global.sri_payment_method. No es un endpoint HTTP ni
+// un IGlobalBootstrapStep — operación de despliegue explícita:
+// `dotnet run -- backfill-payment-method-sri-mapping`. Sale sin iniciar el host web.
+if (args.Contains("backfill-payment-method-sri-mapping"))
+{
+    using var paymentMethodBackfillScope = app.Services.CreateScope();
+    var paymentMethodBackfillService =
+        paymentMethodBackfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.PaymentMethodSriMappingBackfillService>();
+    var paymentMethodResult = await paymentMethodBackfillService.RunAsync();
+    Console.WriteLine(
+        $"[backfill-payment-method-sri-mapping] Filas sin mapeo encontradas: {paymentMethodResult.CandidatesFound}. "
+            + $"Actualizadas: {paymentMethodResult.RowsUpdated}. "
+            + $"Sin código sugerido (p. ej. Crédito): {paymentMethodResult.SkippedNoMapping}. "
+            + $"Con código sugerido inactivo en catálogo: {paymentMethodResult.SkippedInactiveCatalog}."
+    );
+    return;
+}
+
 // Comando de una sola vez (ACCOUNTING-CHART-CANONICAL-HIERARCHY-01): corrige ParentAccountId de
 // cuentas existentes para que coincida con el padre canónico implicado por su código, en TODAS
 // las companies activas — incluida Production. Deliberadamente NO gateado por IsProduction() ni
