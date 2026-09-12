@@ -229,8 +229,18 @@ export function SalesPage() {
             {/* Checklist + Next Step (only in draft mode) */}
             {ctx.isDraft && !ctx.readOnly && <SalesFormChecklist ctx={ctx} />}
 
-            {/* Cliente — prioridad visual sobre Datos de Emisión: es el primer dato
-                obligatorio y accionable del cajero (SALES-POS-UI-REFINE-01). */}
+            {/* Configuración de venta — SALES-POS-SIDEBAR-SECTION-ORDER-01: antes del contexto
+                base de emisión (Sucursal/Caja/Punto/Tipo Documento/Tipo Emisión) para que el
+                cajero vea primero si la venta está correctamente configurada, antes de elegir
+                cliente. SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: tarjeta compacta (sin badge
+                cuando está OK, solo aviso si hay que revisar/falta algo) reemplaza el bloque
+                completo de Datos de Emisión que antes vivía siempre expandido acá; el detalle
+                completo (Sucursal/Caja/Punto/Tipo Emisión/Tipo Documento/Forma Pago SRI por
+                Defecto/Nro.) se movió al modal de SalesEmissionConfigSection — mismo form/ctx,
+                sin segunda fuente de verdad. */}
+            <SalesEmissionConfigSection ctx={ctx} />
+
+            {/* Cliente */}
             <div className="sf-sidebar__section">
               <div className="sf-sidebar__header zh-section-title">
                 <span className="material-symbols-outlined sf-sidebar__header-icon">
@@ -306,14 +316,6 @@ export function SalesPage() {
                   />
                 ))}
             </div>
-
-            {/* Configuración de venta — SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: tarjeta
-                compacta (estado Lista/Revisar/Incompleta + resumen de 1-2 líneas) reemplaza el
-                bloque completo de Datos de Emisión que antes vivía siempre expandido acá; el
-                detalle completo (Sucursal/Caja/Punto/Tipo Emisión/Tipo Documento/Forma Pago SRI
-                por Defecto/Nro.) se movió al modal de SalesEmissionConfigSection — mismo
-                form/ctx, sin segunda fuente de verdad. */}
-            <SalesEmissionConfigSection ctx={ctx} />
 
             {/* Resumen Impuestos + Total */}
             <div className="sf-sidebar__section sales-form-tax-section">

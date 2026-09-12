@@ -6,9 +6,14 @@ import type { SalesPageContext } from "../hooks/useSalesPage";
 
 // SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: el panel principal de /sales ya no expande Sucursal
 // / Caja / Punto de emisión / Tipo Emisión / Tipo Documento / Forma Pago SRI por Defecto — solo
-// una tarjeta compacta "Configuración de venta" con estado (Lista/Revisar/Incompleta) + un botón
-// que abre el detalle completo en un modal. El modal lee/escribe el mismo ctx.formWatch/setValue
-// que antes usaba el panel inline — sin segunda fuente de verdad.
+// una tarjeta compacta "Configuración de venta" con un botón que abre el detalle completo en un
+// modal. El modal lee/escribe el mismo ctx.formWatch/setValue que antes usaba el panel inline —
+// sin segunda fuente de verdad.
+//
+// SALES-POS-SILENT-OK-STATUS-AND-ALERTS-01: patrón "silencioso cuando todo está bien" — un estado
+// "ready" no muestra ningún badge/aviso ("Lista"/"Emisión OK"), solo el resumen; "review"/
+// "incomplete" sí muestran un aviso amarillo/rojo ("Revisar configuración"/"Falta configuración")
+// con la causa, porque ahí sí hay algo que revisar o resolver.
 
 afterEach(() => cleanup());
 
@@ -71,21 +76,35 @@ describe("SalesEmissionConfigSection — tarjeta compacta (panel principal)", ()
     expect(screen.getByText("Emisión física · Punto 001")).toBeTruthy();
   });
 
-  it('estado "Lista" cuando todos los datos requeridos están presentes', () => {
+  it('estado OK (ready): no muestra badge "LISTA" ni ningún aviso de "Emisión OK" — solo resumen + botón', () => {
     render(<SalesEmissionConfigSection ctx={buildCtx()} />);
-    expect(screen.getByText("Lista")).toBeTruthy();
+    expect(screen.queryByText("Lista")).toBeNull();
+    expect(screen.queryByText("LISTA")).toBeNull();
+    expect(screen.queryByText(/emisión ok/i)).toBeNull();
+    expect(screen.queryByText("Falta configuración")).toBeNull();
+    expect(screen.queryByText("Revisar configuración")).toBeNull();
+    expect(screen.getByText("Factura · Caja Principal · Sucursal Principal")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Configuración" })).toBeTruthy();
   });
 
-  it('estado "Incompleta" cuando falta un dato requerido (sin caja abierta)', () => {
+  it('estado OK (ready): no muestra ningún badge verde en la tarjeta', () => {
+    const { container } = render(<SalesEmissionConfigSection ctx={buildCtx()} />);
+    expect(container.querySelector(".badge--success")).toBeNull();
+  });
+
+  it('estado incompleto: aviso rojo "Falta configuración" cuando falta un dato requerido (sin caja abierta)', () => {
     render(
       <SalesEmissionConfigSection
         ctx={buildCtx({ hasCashSession: false, myCashSession: null })}
       />,
     );
-    expect(screen.getByText("Incompleta")).toBeTruthy();
+    expect(screen.getByText("Falta configuración")).toBeTruthy();
+    expect(
+      screen.getByText(/Caja abierta \(Sucursal \/ Caja \/ Punto de emisión\)/),
+    ).toBeTruthy();
   });
 
-  it('estado "Revisar" cuando una forma de cobro usada cae al default SRI (fallback, no bloquea)', () => {
+  it('estado advertencia: aviso amarillo "Revisar configuración" con la causa, cuando una forma de cobro usada cae al default SRI (no bloquea)', () => {
     render(
       <SalesEmissionConfigSection
         ctx={buildCtx({
@@ -106,7 +125,12 @@ describe("SalesEmissionConfigSection — tarjeta compacta (panel principal)", ()
         })}
       />,
     );
-    expect(screen.getByText("Revisar")).toBeTruthy();
+    expect(screen.getByText("Revisar configuración")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Alguna forma de cobro no tiene mapeo SRI propio y usa la Forma Pago SRI por defecto.",
+      ),
+    ).toBeTruthy();
   });
 
   it("no bloquea/alarma mientras la sesión de caja todavía se está verificando (hasCashSession null)", () => {
@@ -116,7 +140,8 @@ describe("SalesEmissionConfigSection — tarjeta compacta (panel principal)", ()
       />,
     );
     expect(screen.getByText("Cargando…")).toBeTruthy();
-    expect(screen.queryByText("Incompleta")).toBeNull();
+    expect(screen.queryByText("Falta configuración")).toBeNull();
+    expect(screen.queryByText("Revisar configuración")).toBeNull();
   });
 
   // SALES-POS-EMISSION-CONFIG-DUPLICATED-ACTIONS-01: un solo botón — no hay un modo "ver" y un
@@ -232,6 +257,48 @@ describe("SalesEmissionConfigSection — modal de detalle", () => {
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText(/Falta para poder emitir/)).toBeTruthy();
     expect(within(dialog).getByText(/Caja abierta/)).toBeTruthy();
+  });
+
+  it("cuando hay una advertencia (fallback en uso), el modal muestra la causa", () => {
+    render(
+      <SalesEmissionConfigSection
+        ctx={buildCtx({
+          paymentMethods: [
+            {
+              id: "pm-1",
+              code: "OTRO",
+              name: "Otro",
+              isActive: true,
+              requiresReference: false,
+              isCreditAllowed: false,
+              sortOrder: 1,
+              detailType: "None",
+              sriPaymentMethodCode: null,
+            },
+          ],
+          payments: [{ _key: 1, paymentMethodId: "pm-1", amount: 10, reference: null }],
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByText(
+        "Alguna forma de cobro no tiene mapeo SRI propio y usa la Forma Pago SRI por defecto.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("cuando todo está OK, el modal no muestra ningún badge de estado — solo los datos", () => {
+    const { container } = render(<SalesEmissionConfigSection ctx={buildCtx()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByText(/^Lista$/)).toBeNull();
+    // El único badge que sí puede aparecer es el de Tipo de Emisión (dato informativo, no de
+    // estado de configuración) — no debe existir ningún .badge--success de estado "Lista".
+    expect(container.querySelectorAll(".sf-config-modal__status").length).toBe(0);
   });
 
   it("no introduce estilos inline", () => {

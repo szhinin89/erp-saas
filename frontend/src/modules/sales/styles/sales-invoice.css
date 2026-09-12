@@ -183,10 +183,6 @@
   flex-direction: column;
   gap: 4px;
 }
-.sf-config-card__top {
-  display: flex;
-  align-items: center;
-}
 .sf-config-card__summary {
   font-size: var(--text-body-sm-size);
   font-weight: 600;
@@ -196,22 +192,16 @@
   font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
 }
-.sf-config-card__issue-teaser {
-  font-size: var(--text-label-sm-size);
-  font-weight: 600;
-  color: var(--color-warning);
+/* SALES-POS-SILENT-OK-STATUS-AND-ALERTS-01: el ZHPageNotice de warning/error de esta tarjeta
+   reutiliza su propio padding/color — solo se ajusta el espacio respecto al resumen de arriba. */
+.sf-config-card .zh-page-notice {
+  margin-top: 2px;
 }
 .sf-config-card__actions {
   display: flex;
   gap: 8px;
   margin-top: 6px;
   flex-wrap: wrap;
-}
-
-/* ── Configuración de venta (modal de detalle) ───────────────────── */
-.sf-config-modal__status {
-  display: flex;
-  margin-bottom: 12px;
 }
 
 /* ── Invoice Summary ──────────────────────────────────────────── */

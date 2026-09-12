@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { Badge, type BadgeVariant } from "../../../components/PageShell";
+import { Badge } from "../../../components/PageShell";
 import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHFieldHelp } from "../../../components/zh/help";
@@ -11,17 +11,7 @@ import type { SalesPageContext } from "../hooks/useSalesPage";
 import {
   computeSalesConfigStatus,
   type SalesConfigStatus,
-  type SalesConfigStatusLevel,
 } from "../utils/salesEmissionConfigStatus";
-
-const STATUS_META: Record<
-  SalesConfigStatusLevel,
-  { label: string; icon: string; variant: BadgeVariant }
-> = {
-  ready: { label: "Lista", icon: "check_circle", variant: "success" },
-  review: { label: "Revisar", icon: "warning", variant: "warning" },
-  incomplete: { label: "Incompleta", icon: "cancel", variant: "error" },
-};
 
 function buildSummaryLine(ctx: SalesPageContext): string | null {
   const docTypeCode = ctx.readOnly
@@ -53,15 +43,16 @@ function buildHintLine(ctx: SalesPageContext): string | null {
 }
 
 // ── Compact card (main panel) ───────────────────────────────────────────
+// SALES-POS-SILENT-OK-STATUS-AND-ALERTS-01: patrón "silencioso cuando todo está bien" — un
+// estado "ready" no muestra ningún badge/aviso (nada que llame la atención sin motivo), solo el
+// resumen. Solo "review"/"incomplete" muestran un ZHPageNotice (amarillo/rojo) con la causa,
+// porque ahí sí hay algo que el cajero debería revisar o resolver.
 export function SalesEmissionConfigSection({ ctx }: { ctx: SalesPageContext }) {
   const [open, setOpen] = useState(false);
   const loading = ctx.hasCashSession === null;
   const status = computeSalesConfigStatus(ctx);
-  const meta = STATUS_META[status.level];
   const summaryLine = buildSummaryLine(ctx);
   const hintLine = buildHintLine(ctx);
-  const issueTeaser = [...status.missing, ...status.warnings].slice(0, 2).join(" · ");
-  const issueOverflow = status.missing.length + status.warnings.length - 2;
 
   return (
     <div className="sf-sidebar__section">
@@ -77,19 +68,23 @@ export function SalesEmissionConfigSection({ ctx }: { ctx: SalesPageContext }) {
           <Badge variant="neutral" label="Cargando…" size="md" />
         ) : (
           <>
-            <div className="sf-config-card__top">
-              <Badge variant={meta.variant} label={meta.label} upper size="md" />
-            </div>
             {summaryLine && (
               <div className="sf-config-card__summary">{summaryLine}</div>
             )}
             {hintLine && <div className="sf-config-card__hint">{hintLine}</div>}
-            {status.level !== "ready" && issueTeaser && (
-              <div className="sf-config-card__issue-teaser">
-                {status.level === "incomplete" ? "Falta: " : "Revisar: "}
-                {issueTeaser}
-                {issueOverflow > 0 ? ` (+${issueOverflow})` : ""}
-              </div>
+            {status.level === "incomplete" && (
+              <ZHPageNotice
+                variant="error"
+                message="Falta configuración"
+                detail={status.missing.join(", ")}
+              />
+            )}
+            {status.level === "review" && (
+              <ZHPageNotice
+                variant="warning"
+                message="Revisar configuración"
+                detail={status.warnings.join(" ")}
+              />
             )}
           </>
         )}
@@ -132,7 +127,6 @@ function SalesEmissionConfigModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const meta = STATUS_META[status.level];
   const emissionType = ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
 
   return (
@@ -148,9 +142,9 @@ function SalesEmissionConfigModal({
         </ZHBtn>
       }
     >
-      <div className="sf-config-modal__status">
-        <Badge variant={meta.variant} label={meta.label} upper size="md" />
-      </div>
+      {/* SALES-POS-SILENT-OK-STATUS-AND-ALERTS-01: sin badge de estado "Lista" — si todo está OK
+          no hay nada que avisar, el modal solo muestra los datos. Los avisos (missing/warnings)
+          siguen apareciendo tal cual cuando corresponde. */}
       {status.missing.length > 0 && (
         <ZHPageNotice
           variant="error"
