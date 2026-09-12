@@ -207,6 +207,7 @@
   "app.nav.item.purchases.invoices": "Facturas de compra",
   "app.nav.item.purchases.reception": "Recepción electrónica (TXT)",
   "app.nav.item.purchases.returns": "Devoluciones de compra",
+  "app.nav.item.purchases.creditNotes": "Notas de crédito de compra",
   "app.nav.item.purchases.operation": "Compras",
   "app.nav.item.purchases.configuration": "Configuración",
   "app.nav.item.purchases.reports": "Reportes",

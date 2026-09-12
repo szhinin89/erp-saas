@@ -306,12 +306,13 @@ export interface PurchaseItemPackagingLevelDto {
 }
 
 export const purchaseService = {
-  list: (search?: string, status?: string, page = 1, pageSize = 25) => {
+  list: (search?: string, status?: string, page = 1, pageSize = 25, supplierId?: string) => {
     const params = new URLSearchParams();
     if (search?.trim()) params.set("search", search.trim());
     if (status?.trim()) params.set("status", status.trim());
     params.set("pageNumber", String(page));
     params.set("pageSize", String(pageSize));
+    if (supplierId) params.set("supplierId", supplierId);
     return apiGet<PurchaseListResponse>(`${BASE}?${params}`);
   },
   getById: (id: string) => apiGet<PurchaseInvoiceDto>(`${BASE}/${id}`),

@@ -62,11 +62,12 @@ public sealed class PurchasesController : ControllerBase
         [FromQuery] string? status = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 25,
+        [FromQuery] Guid? supplierId = null,
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new GetPurchaseListQuery(search, status, pageNumber, pageSize),
+                new GetPurchaseListQuery(search, status, pageNumber, pageSize, supplierId),
                 ct
             ),
             "OK"

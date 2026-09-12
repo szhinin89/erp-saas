@@ -137,6 +137,10 @@ const PurchaseReturnDetailPage = lazyNamedPage(
   () => import("../modules/purchases/pages/PurchaseReturnDetailPage"),
   "PurchaseReturnDetailPage",
 );
+const PurchaseCreditNoteListPage = lazyNamedPage(
+  () => import("../modules/purchases/pages/PurchaseCreditNoteListPage"),
+  "PurchaseCreditNoteListPage",
+);
 const PurchaseCreditNoteFormPage = lazyNamedPage(
   () => import("../modules/purchases/pages/PurchaseCreditNoteFormPage"),
   "PurchaseCreditNoteFormPage",
@@ -266,6 +270,11 @@ export const catalogRoutes = [
     key="purchase-returns-detail"
     path="/purchases/returns/:id"
     element={<PurchaseReturnDetailPage />}
+  />,
+  <Route
+    key="purchase-credit-notes"
+    path="/purchases/credit-notes"
+    element={<PurchaseCreditNoteListPage />}
   />,
   <Route
     key="purchase-credit-notes-new"

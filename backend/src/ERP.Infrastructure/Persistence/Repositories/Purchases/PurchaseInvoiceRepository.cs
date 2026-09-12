@@ -145,6 +145,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         string? status,
         int page,
         int pageSize,
+        Guid? supplierId = null,
         CancellationToken ct = default
     )
     {
@@ -161,6 +162,9 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             var s = search.Trim();
             q = q.Where(x => x.InvoiceNumber.Contains(s));
         }
+
+        if (supplierId is { } sid)
+            q = q.Where(x => x.SupplierId == sid);
 
         var total = await q.CountAsync(ct);
         var items = await q.OrderByDescending(x => x.IssueDate)

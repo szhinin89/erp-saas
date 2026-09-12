@@ -353,7 +353,10 @@ public sealed record GetPurchaseListQuery(
     string? Search = null,
     string? Status = null,
     int PageNumber = 1,
-    int PageSize = 25
+    int PageSize = 25,
+    // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — solo lectura: acota por proveedor para el
+    // selector manual de factura afectada (search solo matchea InvoiceNumber, no proveedor).
+    Guid? SupplierId = null
 ) : IRequest<Result<PurchaseListResponse>>, IBranchScopedRequest;
 
 public sealed record PurchaseListResponse(
@@ -1453,6 +1456,7 @@ public sealed class GetPurchaseListHandler
             q.Status,
             q.PageNumber,
             q.PageSize,
+            q.SupplierId,
             ct
         );
         var dtos = items
