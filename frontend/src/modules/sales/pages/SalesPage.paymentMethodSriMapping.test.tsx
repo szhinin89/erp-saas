@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import type { SalesInvoiceDto, PaymentMethodDto } from "../api/salesService";
@@ -382,5 +382,57 @@ describe("SalesPage — mapeo automático PaymentMethod → Forma Pago SRI (SALE
       "sriPaymentMethodCode",
       expect.anything(),
     );
+  });
+});
+
+describe("SalesPage — label de cabecera aclara que Forma Pago SRI es solo el default/respaldo (SALES-SRI-PAYMENT-FALLBACK-LABEL-01)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("muestra el label actualizado 'Forma Pago SRI por Defecto'", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
+    renderSalesPage();
+
+    expect(screen.getByText("Forma Pago SRI por Defecto")).toBeTruthy();
+    // El label anterior ("Forma Pago SRI" a secas, sin "por Defecto") ya no debe existir suelto.
+    expect(screen.queryByText("Forma Pago SRI")).toBeNull();
+  });
+
+  it("expone un ícono de ayuda junto al label con el tooltip esperado", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
+    renderSalesPage();
+
+    const helpIcon = screen.getByLabelText("Forma Pago SRI por defecto");
+    expect(helpIcon).toBeTruthy();
+  });
+
+  it("el tooltip explica que el default solo aplica sin mapeo SRI en la forma de cobro", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
+    renderSalesPage();
+
+    const helpIcon = screen.getByLabelText("Forma Pago SRI por defecto");
+    fireEvent.mouseEnter(helpIcon);
+
+    expect(
+      screen.getByText(
+        "Se usa solo si una forma de cobro no tiene mapeo SRI configurado.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("no cambia el comportamiento del select: sigue permitiendo elegir y disparar setValue", () => {
+    const setValue = vi.fn();
+    useSalesPageMock.mockReturnValue(buildCtx({ setValue }));
+    renderSalesPage();
+
+    const select = screen.getByDisplayValue("01 — Sin utilización del sistema financiero");
+    fireEvent.change(select, { target: { value: "20" } });
+
+    expect(setValue).toHaveBeenCalledWith("sriPaymentMethodCode", "20");
   });
 });

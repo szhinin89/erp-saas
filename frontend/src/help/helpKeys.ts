@@ -3,6 +3,7 @@ export const HELP_KEYS = {
   SALES_CUSTOMER_CONSUMER_FINAL: "sales.customer.consumerFinal",
   SALES_EMISSION_SECTION: "sales.emission.section",
   SALES_EMISSION_TYPE: "sales.emission.type",
+  SALES_SRI_PAYMENT_METHOD_DEFAULT: "sales.emission.sriPaymentMethodDefault",
   SALES_CASH_SESSION: "sales.cashSession",
   SALES_PAYMENTS_SECTION: "sales.payments.section",
   SALES_PAYMENTS_CASH_RECEIVED: "sales.payments.cashReceived",

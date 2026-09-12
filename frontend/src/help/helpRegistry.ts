@@ -18,6 +18,11 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short: "Física o Electrónica según la configuración SRI del punto de emisión.",
     long: "Lo determina la configuración del punto de emisión, no se puede cambiar desde esta pantalla.",
   },
+  [HELP_KEYS.SALES_SRI_PAYMENT_METHOD_DEFAULT]: {
+    title: "Forma Pago SRI por defecto",
+    short: "Se usa solo si una forma de cobro no tiene mapeo SRI configurado.",
+    long: "Cada forma de cobro (Efectivo, Tarjeta, Transferencia, etc.) puede tener su propio código SRI configurado en Métodos de Pago. Este valor de cabecera es el respaldo que se aplica únicamente cuando esa forma de cobro no tiene su propio mapeo.",
+  },
   [HELP_KEYS.SALES_CASH_SESSION]: {
     title: "Caja",
     short: "Caja asociada a su sesión activa; se abre desde el módulo de Caja antes de facturar.",

@@ -409,8 +409,11 @@ export function SalesPage() {
                 </div>
                 <div className="sf-emission__full">
                   <ZHFieldLabel size="sm" className="sf-emission__label">
-                    Forma Pago SRI
+                    Forma Pago SRI por Defecto
                   </ZHFieldLabel>
+                  <ZHFieldHelp
+                    helpKey={HELP_KEYS.SALES_SRI_PAYMENT_METHOD_DEFAULT}
+                  />
                   <ZhSelect
                     className="zh-select--compact zh-mb-4"
                     value={
