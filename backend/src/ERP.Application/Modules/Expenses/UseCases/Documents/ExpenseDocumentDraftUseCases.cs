@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.DocTypes.Constants;
+using ERP.Domain.Modules.SriCatalogs.Constants;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -260,7 +261,7 @@ public sealed class CreateExpenseDraftHandler
             );
         }
 
-        if (cmd.DocumentType == "04")
+        if (cmd.DocumentType == SriDocumentTypeCodes.CreditNote)
             return Result<ExpenseDocumentDetailDto>.ValidationFailure("Una nota de crédito no puede crear un gasto.");
         if (cmd.ReceptionDocumentId is null && !string.IsNullOrWhiteSpace(cmd.AccessKey))
         {
