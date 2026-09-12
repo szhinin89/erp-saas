@@ -394,9 +394,19 @@ describe("SalesPage — label de cabecera aclara que Forma Pago SRI es solo el d
     cleanup();
   });
 
-  it("muestra el label actualizado 'Forma Pago SRI por Defecto'", () => {
+  // SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: Tipo Documento / Forma Pago SRI por Defecto ya
+  // no viven expandidos en el panel principal — se movieron al modal de detalle de
+  // "Configuración de venta" (mismo form/ctx, sin segunda fuente de verdad). Los tests abren ese
+  // modal ("Configuración" — único botón, ver SALES-POS-EMISSION-CONFIG-DUPLICATED-ACTIONS-01)
+  // antes de buscar el label/select.
+  function openConfigModal() {
+    fireEvent.click(screen.getByRole("button", { name: "Configuración" }));
+  }
+
+  it("muestra el label actualizado 'Forma Pago SRI por Defecto' dentro del modal de configuración", () => {
     useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
+    openConfigModal();
 
     expect(screen.getByText("Forma Pago SRI por Defecto")).toBeTruthy();
     // El label anterior ("Forma Pago SRI" a secas, sin "por Defecto") ya no debe existir suelto.
@@ -406,6 +416,7 @@ describe("SalesPage — label de cabecera aclara que Forma Pago SRI es solo el d
   it("expone un ícono de ayuda junto al label con el tooltip esperado", () => {
     useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
+    openConfigModal();
 
     const helpIcon = screen.getByLabelText("Forma Pago SRI por defecto");
     expect(helpIcon).toBeTruthy();
@@ -414,6 +425,7 @@ describe("SalesPage — label de cabecera aclara que Forma Pago SRI es solo el d
   it("el tooltip explica que el default solo aplica sin mapeo SRI en la forma de cobro", () => {
     useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
+    openConfigModal();
 
     const helpIcon = screen.getByLabelText("Forma Pago SRI por defecto");
     fireEvent.mouseEnter(helpIcon);
@@ -429,6 +441,7 @@ describe("SalesPage — label de cabecera aclara que Forma Pago SRI es solo el d
     const setValue = vi.fn();
     useSalesPageMock.mockReturnValue(buildCtx({ setValue }));
     renderSalesPage();
+    openConfigModal();
 
     const select = screen.getByDisplayValue("01 — Sin utilización del sistema financiero");
     fireEvent.change(select, { target: { value: "20" } });

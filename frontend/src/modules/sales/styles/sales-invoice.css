@@ -173,6 +173,47 @@
 /* .sf-customer-card / .sf-customer-card__name / __taxid / __address / __email
    ELIMINADOS (SALES-DS-CLEANUP-13) — sin consumidores TSX. */
 
+/* ── Configuración de venta (tarjeta compacta) ───────────────────
+   SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: reemplaza el bloque completo "Datos de Emisión"
+   (.sf-emission, arriba) en el panel principal — ese markup sigue existiendo tal cual dentro del
+   modal de detalle (SalesEmissionConfigSection), esta tarjeta es solo el resumen de 1-3 líneas +
+   estado + acciones que se ve siempre en el sidebar. */
+.sf-config-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sf-config-card__top {
+  display: flex;
+  align-items: center;
+}
+.sf-config-card__summary {
+  font-size: var(--text-body-sm-size);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.sf-config-card__hint {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+.sf-config-card__issue-teaser {
+  font-size: var(--text-label-sm-size);
+  font-weight: 600;
+  color: var(--color-warning);
+}
+.sf-config-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Configuración de venta (modal de detalle) ───────────────────── */
+.sf-config-modal__status {
+  display: flex;
+  margin-bottom: 12px;
+}
+
 /* ── Invoice Summary ──────────────────────────────────────────── */
 .sf-summary__discount-total {
   display: flex;

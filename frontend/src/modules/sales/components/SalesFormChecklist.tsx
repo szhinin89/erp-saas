@@ -2,6 +2,7 @@ import type { SalesPageContext } from "../hooks/useSalesPage";
 import { PAYMENT_EXCEEDS_TOLERANCE } from "../constants/tolerances";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
+import { computeSalesConfigStatus } from "../utils/salesEmissionConfigStatus";
 
 export interface SalesFormChecklistProps {
   ctx: SalesPageContext;
@@ -25,6 +26,14 @@ export function SalesFormChecklist({ ctx }: SalesFormChecklistProps) {
     !ctx.cashInsufficient &&
     !ctx.hasInsufficientStock;
 
+  // SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: cliente y caja abierta ya tienen su propio mensaje
+  // puntual arriba — solo se agregan acá los demás faltantes bloqueantes de "Configuración de
+  // venta" (Tipo Documento / Tipo Emisión / Bodega / Forma Pago SRI por Defecto) que
+  // computeSalesConfigStatus ya resuelve sin duplicar esa lógica.
+  const otherConfigMissing = computeSalesConfigStatus(ctx).missing.filter(
+    (m) => !m.startsWith("Cliente") && !m.startsWith("Caja abierta"),
+  );
+
   const nextStep = !hasCustomer
     ? "Seleccione un cliente para comenzar."
     : !hasLines
@@ -35,17 +44,19 @@ export function SalesFormChecklist({ ctx }: SalesFormChecklistProps) {
           ? ctx.cashSessionCheckError
             ? "No se pudo verificar la caja — reintente arriba antes de emitir."
             : "Debe abrir una caja antes de emitir."
-          : paymentExceeds
-            ? "El cobro excede el total — ajuste las formas de pago."
-            : total > 0 && !paymentOk
-              ? "Configure las formas de cobro para poder emitir."
-              : ctx.cashInsufficient
-                ? "El monto recibido en efectivo es menor al total a cobrar."
-                : canSaveDraft && !ctx.editing
-                  ? "Guarde el borrador primero. Luego podrá emitir la factura."
-                  : canEmit && ctx.editing
-                    ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
-                    : null;
+          : otherConfigMissing.length > 0
+            ? "Revise la configuración de venta."
+            : paymentExceeds
+              ? "El cobro excede el total — ajuste las formas de pago."
+              : total > 0 && !paymentOk
+                ? "Configure las formas de cobro para poder emitir."
+                : ctx.cashInsufficient
+                  ? "El monto recibido en efectivo es menor al total a cobrar."
+                  : canSaveDraft && !ctx.editing
+                    ? "Guarde el borrador primero. Luego podrá emitir la factura."
+                    : canEmit && ctx.editing
+                      ? "Factura lista para emitir."
+                      : null;
 
   // SALES-POS-CHECKLIST-COMPACT-01: se retiró la lista completa de requisitos
   // (Cliente seleccionado / Productos agregados / Caja abierta / Formas de cobro) — el botón
@@ -64,7 +75,7 @@ export function SalesFormChecklist({ ctx }: SalesFormChecklistProps) {
           Listo para emitir
           <ZHFieldHelp helpKey={HELP_KEYS.SALES_CHECKLIST} />
         </div>
-        <div>La factura cumple los requisitos para emitir.</div>
+        <div>Factura lista para emitir.</div>
       </div>
     </div>
   ) : (

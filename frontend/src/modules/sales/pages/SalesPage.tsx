@@ -5,13 +5,12 @@ import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
-import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
+import { ZhTextInput } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
-import { ZHSectionHelp, ZHFieldHelp } from "../../../components/zh/help";
+import { ZHSectionHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
@@ -24,6 +23,7 @@ import { SalesElectronicDiagnosticDrawer } from "../components/SalesElectronicDi
 import { SalesIssueModal } from "../components/SalesIssueModal";
 import { CashSessionNotice } from "../components/CashSessionNotice";
 import { SalesFormChecklist } from "../components/SalesFormChecklist";
+import { SalesEmissionConfigSection } from "../components/SalesEmissionConfigSection";
 import { EmitButton } from "../components/EmitButton";
 import { PaymentMethodsSection } from "../components/PaymentMethodsSection";
 import { remainingToCollect } from "../components/paymentRemaining";
@@ -71,8 +71,6 @@ export function SalesPage() {
       : s === "Authorized"
         ? "success"
         : "error";
-  const emissionType =
-    ctx.myCashSession?.emissionType ?? ctx.editing?.emissionType;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Nro. Factura" sigue siendo el
   // identificador funcional del documento; "N°" es solo el índice visual de fila (primera
@@ -309,151 +307,13 @@ export function SalesPage() {
                 ))}
             </div>
 
-            {/* Datos de Emisión — informativo/no accionable (el servidor resuelve Caja/Punto/
-                Sucursal desde ICurrentCashSession), compactado en grilla de 2 columnas
-                (SALES-POS-UI-REFINE-01) para ceder espacio prioritario a Cliente arriba. */}
-            <div className="sf-sidebar__section">
-              <div className="sf-sidebar__header zh-section-title">
-                <span className="material-symbols-outlined sf-sidebar__header-icon">
-                  apartment
-                </span>
-                Datos de Emisión
-                <ZHFieldHelp helpKey={HELP_KEYS.SALES_EMISSION_SECTION} />
-              </div>
-              <div className="sf-emission">
-                {/* Caja / Punto de emisión / Sucursal: solo informativos — el servidor los
-                    resuelve desde ICurrentCashSession (la caja abierta del usuario), nunca
-                    seleccionables manualmente. */}
-                {ctx.branchName && (
-                  <div>
-                    <ZHFieldLabel size="sm" className="sf-emission__label">
-                      {"Sucursal:"}
-                    </ZHFieldLabel>
-                    <span className="sf-emission__value">{ctx.branchName}</span>
-                  </div>
-                )}
-                {ctx.myCashSession && (
-                  <div>
-                    <ZHFieldLabel size="sm" className="sf-emission__label">
-                      {"Caja:"}
-                    </ZHFieldLabel>
-                    <ZHFieldHelp helpKey={HELP_KEYS.SALES_CASH_SESSION} />
-                    <span className="sf-emission__value">
-                      {ctx.myCashSession.cashRegisterCodeSnapshot} —{" "}
-                      {ctx.myCashSession.cashRegisterNameSnapshot}
-                    </span>
-                  </div>
-                )}
-                {ctx.myCashSession && (
-                  <div>
-                    <ZHFieldLabel size="sm" className="sf-emission__label">
-                      {"Punto:"}
-                    </ZHFieldLabel>
-                    <span className="sf-emission__value">
-                      {ctx.myCashSession.emissionPointCodeSnapshot}
-                    </span>
-                  </div>
-                )}
-                {/* Tipo de Emisión: fuente única EmissionPoint.EmissionType, resuelta en vivo por
-                    el backend a través de CashSessionDto.emissionType (myCashSession) — se
-                    prefiere sobre el snapshot de la factura (ctx.editing) para que se vea de
-                    inmediato al abrir la pantalla, antes de crear ningún borrador. */}
-                {emissionType && (
-                  <div>
-                    <ZHFieldLabel size="sm" className="sf-emission__label">
-                      {"Tipo Emisión:"}
-                    </ZHFieldLabel>
-                    <ZHFieldHelp helpKey={HELP_KEYS.SALES_EMISSION_TYPE} />
-                    <Badge
-                      variant={
-                        emissionType === "Electronic" ? "success" : "info"
-                      }
-                      label={
-                        emissionType === "Electronic" ? "Electrónica" : "Física"
-                      }
-                      size="md"
-                    />
-                  </div>
-                )}
-                <div className="sf-emission__full">
-                  <ZHFieldLabel size="sm" className="sf-emission__label">
-                    Tipo Documento
-                  </ZHFieldLabel>
-                  <ZhSelect
-                    className="zh-select--compact zh-mb-4"
-                    value={
-                      ctx.readOnly
-                        ? (ctx.editing?.docTypeCode ?? "")
-                        : ctx.formWatch.docTypeCode
-                    }
-                    onChange={(e) =>
-                      ctx.setValue("docTypeCode", e.target.value)
-                    }
-                    disabled={ctx.fieldDisabled}
-                    title={
-                      ctx.sriDocTypes.find(
-                        (dt) =>
-                          dt.code ===
-                          (ctx.readOnly
-                            ? (ctx.editing?.docTypeCode ?? "")
-                            : ctx.formWatch.docTypeCode),
-                      )?.name
-                    }
-                  >
-                    {ctx.sriDocTypes.map((dt) => (
-                      <option key={dt.code} value={dt.code} title={dt.name}>
-                        {dt.code} — {dt.name}
-                      </option>
-                    ))}
-                  </ZhSelect>
-                </div>
-                <div className="sf-emission__full">
-                  <ZHFieldLabel size="sm" className="sf-emission__label">
-                    Forma Pago SRI por Defecto
-                  </ZHFieldLabel>
-                  <ZHFieldHelp
-                    helpKey={HELP_KEYS.SALES_SRI_PAYMENT_METHOD_DEFAULT}
-                  />
-                  <ZhSelect
-                    className="zh-select--compact zh-mb-4"
-                    value={
-                      ctx.readOnly
-                        ? (ctx.editing?.sriPaymentMethodCode ?? "")
-                        : ctx.formWatch.sriPaymentMethodCode
-                    }
-                    onChange={(e) =>
-                      ctx.setValue("sriPaymentMethodCode", e.target.value)
-                    }
-                    disabled={ctx.fieldDisabled}
-                    title={
-                      ctx.sriPaymentMethods.find(
-                        (pm) =>
-                          pm.code ===
-                          (ctx.readOnly
-                            ? (ctx.editing?.sriPaymentMethodCode ?? "")
-                            : ctx.formWatch.sriPaymentMethodCode),
-                      )?.name
-                    }
-                  >
-                    {ctx.sriPaymentMethods.map((pm) => (
-                      <option key={pm.code} value={pm.code} title={pm.name}>
-                        {pm.code} — {pm.name}
-                      </option>
-                    ))}
-                  </ZhSelect>
-                </div>
-                {ctx.editing && (
-                  <div className="zh-mt-4">
-                    <ZHFieldLabel size="sm" className="sf-emission__label">
-                      {"Nro:"}
-                    </ZHFieldLabel>
-                    <span className="sf-emission__value zh-font-mono">
-                      {ctx.editing.invoiceNumber}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Configuración de venta — SALES-POS-EMISSION-PANEL-SIMPLIFICATION-01: tarjeta
+                compacta (estado Lista/Revisar/Incompleta + resumen de 1-2 líneas) reemplaza el
+                bloque completo de Datos de Emisión que antes vivía siempre expandido acá; el
+                detalle completo (Sucursal/Caja/Punto/Tipo Emisión/Tipo Documento/Forma Pago SRI
+                por Defecto/Nro.) se movió al modal de SalesEmissionConfigSection — mismo
+                form/ctx, sin segunda fuente de verdad. */}
+            <SalesEmissionConfigSection ctx={ctx} />
 
             {/* Resumen Impuestos + Total */}
             <div className="sf-sidebar__section sales-form-tax-section">
