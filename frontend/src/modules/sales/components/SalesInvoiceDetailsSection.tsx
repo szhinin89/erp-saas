@@ -1,33 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import { invoiceItemSearchService } from "../api/invoiceItemSearchService";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
 import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";
-import { Badge } from "../../../components/PageShell";
-import { ZHRowDeleteAction } from "../../../components/zh/ZHRowDeleteAction";
-import { ZHLineCard } from "../../../components/zh/ZHLineCard";
-import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
-import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { SalesItemSearchResultsGrid } from "./SalesItemSearchResultsGrid";
-import {
-  lineNet,
-  calcLineTax,
-  formatVatLabel,
-  lineExceedsStock,
-  stockBadgeInfo,
-  parenthesizeRateLabel,
-  stockExceededMessage,
-  presentationEquivalenceLabel,
-} from "../utils/salesCalc";
+import { SalesInvoiceLinesGrid } from "./SalesInvoiceLinesGrid";
+import { formatVatLabel } from "../utils/salesCalc";
 import "../styles/sales-product-card.css";
 
 export type LineWithKey = SalesLineFormValues;
@@ -47,7 +29,7 @@ interface SalesInvoiceDetailsSectionProps {
   ) => void;
   /** SALES-PRESENTATIONS-03: cambio de presentación (unidad/caja/pack) de una línea. Opcional
    * para no forzar a todo consumidor existente a pasarlo — sin este callback, el selector de
-   * presentación simplemente no se renderiza (ver SalesProductCard). */
+   * presentación simplemente no se renderiza (ver SalesInvoiceLineGridRow). */
   onUpdateLinePresentation?: (key: number, packagingLevelId: string) => void;
   warehouses: WarehouseDto[];
   selectedWarehouseId: string;
@@ -290,427 +272,24 @@ export function SalesInvoiceDetailsSection({
         />
       </div>
 
-      {/* Sin encabezado de tabla (SALES-RETAIL-READY-01-FIX06B): cada tarjeta de línea ya se
-          autodescribe con sus propias etiquetas internas (Precio lista, Dto. %, Precio
-          Facturado, Stock, Ubicación, Cantidad, Base sin IVA, IVA, Total línea) — un encabezado
-          global repitiendo esas mismas etiquetas en formato de tabla era justamente lo que hacía
-          sentir la línea como fila técnica en vez de ficha retail. */}
-
-      {/* Product lines */}
+      {/* Product lines — grilla horizontal con cabecera de columnas visible
+          (SALES-INVOICE-LINES-GRID-UX-01B), mismo patrón que el buscador de arriba. */}
       <div className="sf-products">
-        {lines.map((l, idx) => (
-          <SalesProductCard
-            key={l._key}
-            index={idx}
-            line={l}
-            backendLine={backendLines?.[idx]}
-            disabled={disabled}
-            readOnly={readOnly}
-            vatLabel={vatLabel(l.vatCode)}
-            vatRates={vatRates}
-            warehouses={warehouses}
-            selectedWarehouseId={selectedWarehouseId}
-            onUpdate={onUpdateLine}
-            onUpdateWarehouse={onUpdateLineWarehouse}
-            onUpdatePresentation={onUpdateLinePresentation}
-            onRemove={onRemoveLine}
-          />
-        ))}
-        {lines.length === 0 && (
-          <div className="sf-products-empty">
-            <span className="material-symbols-outlined sf-products-empty__icon">
-              add_shopping_cart
-            </span>
-            <p>Busca un producto arriba para agregarlo a la factura</p>
-          </div>
-        )}
+        <SalesInvoiceLinesGrid
+          lines={lines}
+          backendLines={backendLines}
+          disabled={disabled}
+          readOnly={readOnly}
+          vatLabel={vatLabel}
+          vatRates={vatRates}
+          warehouses={warehouses}
+          selectedWarehouseId={selectedWarehouseId}
+          onUpdate={onUpdateLine}
+          onUpdateWarehouse={onUpdateLineWarehouse}
+          onUpdatePresentation={onUpdateLinePresentation}
+          onRemove={onRemoveLine}
+        />
       </div>
     </>
-  );
-}
-
-function SalesProductCard({
-  line,
-  backendLine,
-  disabled,
-  readOnly,
-  vatLabel,
-  vatRates,
-  warehouses,
-  selectedWarehouseId,
-  onUpdate,
-  onUpdateWarehouse,
-  onUpdatePresentation,
-  onRemove,
-  index,
-}: {
-  line: LineWithKey;
-  backendLine?: SalesInvoiceDetailDto;
-  disabled: boolean;
-  readOnly: boolean;
-  vatLabel: string;
-  vatRates?: Record<string, number>;
-  warehouses: WarehouseDto[];
-  selectedWarehouseId: string;
-  onUpdate: (key: number, field: string, value: unknown) => void;
-  onUpdateWarehouse: (
-    key: number,
-    warehouseId: string,
-    option?: ItemWarehouseAvailabilityDto,
-  ) => void;
-  onUpdatePresentation?: (key: number, packagingLevelId: string) => void;
-  onRemove: (key: number) => void;
-  /** Posición de la línea en la factura (0-based) — solo para el número visible "N." junto al
-   * botón eliminar; no participa en ningún cálculo. */
-  index: number;
-}) {
-  const dc = getDecimalConfig();
-  const previewNet = lineNet(line);
-  const previewTax = calcLineTax(line, vatRates);
-  const total =
-    backendLine?.taxInclusiveTotal ??
-    previewNet + previewTax.vat + previewTax.ice;
-
-  // Base e IVA de línea: cuando ya existe backendLine (factura guardada/emitida), se usan sus
-  // valores — misma fuente que ya usaba `total` — para que Base/IVA/Total nunca queden
-  // desalineados entre sí (mismo criterio que evitó el bug de FIX04 con la cantidad). En un
-  // borrador nuevo sin backendLine, los tres salen del mismo cálculo local (previewNet/previewTax).
-  const baseAmount = backendLine?.taxableBase ?? previewNet;
-  const vatAmount = backendLine?.vatAmount ?? previewTax.vat;
-  const ivaTotalsLabel = parenthesizeRateLabel(vatLabel);
-
-  const sku = line._sku ?? backendLine?.snapshotSku ?? "";
-  const name = line._name ?? backendLine?.snapshotItemName ?? line.description;
-  // line._cost ya no se muestra en el modo de venta POS por defecto (FIX06) — el dato sigue
-  // existiendo en el modelo, solo se dejó de renderizar en esta tarjeta.
-  const pvp = line._pvp;
-  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: "Precio lista" es el precio base del ítem
-  // (_basePrice, antes de que la lista de precios default aplique cualquier regla) — nunca el
-  // ya-descontado `pvp`, que es el que efectivamente terminó en `unitPrice`. Fallback a `pvp`
-  // solo para líneas recargadas de un borrador viejo sin el snapshot nuevo.
-  const listPrice = line._basePrice ?? pvp;
-  const discountDescription = line._isManualPrice
-    ? null
-    : (line._discountDescription ?? null);
-  const isManualPrice = line._isManualPrice === true;
-  const stockQty = line._stockQty;
-  const stockWarehouse = line._stockWarehouse;
-  // Advertencia preventiva (UX) — solo con el dato de disponibilidad ya cargado en pantalla;
-  // el backend sigue siendo quien bloquea la emisión (ver lineExceedsStock, salesCalc.ts).
-  const exceedsStock = lineExceedsStock(line);
-  // SALES-PRESENTATIONS-03: selector solo visible cuando el ítem tiene más de una presentación
-  // (unidad base + al menos una caja/pack) — con una sola (o ninguna) presentación, no se
-  // muestra selector: el producto se vende en unidad base sin ruido visual, igual que hoy.
-  const packagingOptions = line._packagingLevels ?? [];
-  const hasPresentations = packagingOptions.length > 1 && !!onUpdatePresentation;
-  const selectedPresentation = packagingOptions.find(
-    (p) => p.id === line.packagingLevelId,
-  );
-  const presentationTag = selectedPresentation
-    ? `${selectedPresentation.name} x ${selectedPresentation.baseQuantity} ${line.baseUomCode ?? ""}`.trim()
-    : null;
-  const equivalenceLabel = presentationEquivalenceLabel(line);
-
-  return (
-    // DS-LINE-CARD-UNIFY-01: wrapper externo unificado (ZHLineCard) en vez de la caja
-    // completamente local que tenía la línea antes — mismo criterio de rail izquierdo que
-    // Compras, pero sin depender de sus clases pdl-* ni tocar ese módulo. El rail (número +
-    // basurero) y el contenido interno de la línea siguen siendo clases propias de Ventas
-    // (sf-product-card / sf-product__*), estilizadas con overrides scoped en sales-product-card.css.
-    <ZHLineCard
-      className="sf-product-card"
-      rail={
-        <>
-          <span className="sf-product__rail-index">
-            {String(index + 1).padStart(2, "0")}
-          </span>
-          {!readOnly && (
-            // Basurero = eliminar el producto de la factura; una X se reserva para
-            // cerrar/cancelar modales o paneles, nunca para esta acción destructiva.
-            <ZHRowDeleteAction
-              compact
-              showText={false}
-              title="Eliminar producto de la factura"
-              label="Eliminar producto de la factura"
-              onClick={() => onRemove(line._key)}
-              disabled={disabled}
-              className="sf-product__delete-btn"
-            />
-          )}
-        </>
-      }
-    >
-      <div className="sf-product">
-        {/* Col 1: Product Info — SKU en la primera fila (el número de línea vive en el rail
-            izquierdo de ZHLineCard), sin badge de IVA junto al nombre (pedido explícito del
-            usuario, FIX06H): la tasa ya se ve en la columna de totales ("IVA (15%)"), `vatLabel`
-            se sigue usando solo para formatear esa etiqueta más abajo. */}
-        <div className="sf-product__info">
-          <div className="sf-product__title-row">
-            {sku && <span className="sf-product__code zh-code-value">{sku}</span>}
-          </div>
-          <div className="sf-product__name zh-row-title" title={name}>
-            {name}
-          </div>
-          {presentationTag && (
-            // Presentación vendida, junto al nombre — nunca reemplaza el nombre del producto
-            // (regla 10: "nombre producto amplio", la presentación es secundaria).
-            <div className="sf-product__presentation-tag">{presentationTag}</div>
-          )}
-        </div>
-
-        {/* Col 2: Price List — costo nunca se muestra en el modo de venta POS por defecto */}
-        <div className="sf-product__pricelist">
-          {listPrice != null ? (
-            <div className="sf-product__pricelist-row">
-              <ZHFieldLabel size="sm" className="sf-product__pricelist-label">
-                Precio lista
-              </ZHFieldLabel>
-              <ZHMoneyValue
-                value={listPrice}
-                emphasis="strong"
-                className="sf-product__pricelist-value sf-product__pricelist-value--bold"
-              />
-              {discountDescription && (
-                // Explica por qué "Precio facturado sin IVA" (col. 3) terminó por debajo de este
-                // valor — mismo dato que ya vio el usuario en el buscador antes de agregar el ítem.
-                <span className="sf-product__pricelist-discount">
-                  {line._priceListName ? `${line._priceListName}: ` : ""}
-                  {discountDescription}
-                </span>
-              )}
-            </div>
-          ) : (
-            <span className="sales-invoice-details-empty-value">—</span>
-          )}
-        </div>
-
-        {/* Col 3: Discount + Invoiced Price */}
-        <div className="sf-product__negotiated">
-          <div className="sf-product__disc-block">
-            <ZHFieldLabel size="sm" className="sf-product__disc-label">
-              Dto. %
-            </ZHFieldLabel>
-            <ZhDecimalInput
-              // Input no controlado (defaultValue) por diseño — se remonta cuando line.discountPct
-              // cambia por una vía distinta a este mismo input (p. ej. al recargar una línea), para
-              // que el DOM nunca quede desincronizado del valor real. Sin key, React reutiliza el
-              // nodo y el usuario seguiría viendo el valor viejo (mismo bug que quantity, ver abajo).
-              key={line.discountPct ?? 0}
-              className="sf-product__disc-input"
-              density="compact"
-              decimals={dc.percentage}
-              positiveOnly
-              defaultValue={line.discountPct ?? 0}
-              onBlur={(e) =>
-                onUpdate(
-                  line._key,
-                  "discountPct",
-                  Math.min(100, Math.max(0, Number(e.target.value) || 0)),
-                )
-              }
-              disabled={disabled}
-            />
-          </div>
-          <div className="sf-product__price-block">
-            <ZHFieldLabel size="sm" className="sf-product__price-label">
-              Precio facturado sin IVA
-            </ZHFieldLabel>
-            <ZHInputGroup className="sf-product__price-wrap" prefix="$">
-              <ZhDecimalInput
-                key={line.unitPrice}
-                className="sf-product__price-input"
-                density="compact"
-                decimals={dc.salesUnitPrice}
-                positiveOnly
-                defaultValue={line.unitPrice}
-                onBlur={(e) =>
-                  onUpdate(line._key, "unitPrice", Number(e.target.value) || 0)
-                }
-                disabled={disabled}
-              />
-            </ZHInputGroup>
-            {isManualPrice && (
-              // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: distingue "precio de lista/regla" de
-              // "precio editado a mano" — una vez editado, el desglose de descuento de la col. 2
-              // deja de aplicar (ya no es el precio vigente) y se reemplaza por este aviso.
-              <Badge label="Precio manual" variant="orange" upper size="md" />
-            )}
-          </div>
-        </div>
-
-        {/* Col 4: Stock */}
-        <div className="sf-product__stock-box">
-          <span className="material-symbols-outlined sf-product__stock-icon">
-            assignment
-          </span>
-          <div className="sf-product__stock-data">
-            <ZHFieldLabel size="sm" className="sf-product__stock-label">
-              Stock
-            </ZHFieldLabel>
-            <ZHFieldHelp helpKey={HELP_KEYS.SALES_STOCK} />
-            <div
-              className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
-            >
-              {stockQty != null ? stockQty : "—"}
-              {stockQty != null && (
-                <span className="sf-product__stock-uom"> UDS</span>
-              )}
-              {line._tracksStock && stockQty != null && (
-                <Badge
-                  label={
-                    exceedsStock ? "Cantidad excede stock" : stockBadgeInfo(stockQty).label
-                  }
-                  variant={
-                    exceedsStock ? "red" : stockBadgeInfo(stockQty).variant
-                  }
-                  size="md"
-                />
-              )}
-            </div>
-            {exceedsStock && (
-              <div className="sf-product__stock-warning">
-                {stockExceededMessage(line)}
-              </div>
-            )}
-            {line._tracksStock && (
-              <>
-                <ZHFieldLabel size="sm" className="sf-product__stock-label">
-                  Ubicación
-                </ZHFieldLabel>
-                {!readOnly ? (
-                  <ZhWarehouseSelector
-                    value={line.warehouseId ?? null}
-                    onChange={(id, option) =>
-                      onUpdateWarehouse(line._key, id, option)
-                    }
-                    itemId={line.itemId}
-                    fallbackWarehouses={warehouses}
-                    defaultWarehouseId={selectedWarehouseId}
-                    disabled={disabled}
-                    placeholder="Seleccione bodega"
-                  />
-                ) : (
-                  <div className="sf-product__stock-wh">
-                    {warehouses.find((w) => w.id === line.warehouseId)?.name ??
-                      stockWarehouse ??
-                      "—"}
-                  </div>
-                )}
-                {line.itemId && (
-                  // Reutiliza el Kardex ya existente (mismo destino que "Ver Movimiento de
-                  // Inventario" en el listado de facturas) — sin endpoint ni componente nuevo.
-                  // Nueva pestaña: no debe abandonar la venta en curso.
-                  <Link
-                    to={`/inventory/kardex?productId=${line.itemId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="zh-inline-action sf-product__stock-global-link"
-                  >
-                    <span className="material-symbols-outlined zh-icon-sm">
-                      open_in_new
-                    </span>
-                    Ver stock global
-                  </Link>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Col 5: Quantity — NO usa density="compact" (a diferencia de Dto %/Precio Facturado,
-            SALES-DS-VISUAL-REAL-17): su tamaño 21px es una excepción documentada y verificada en
-            navegador real (ver nota FIX06F más abajo en el bloque .sf-product__qty-input,
-            sales-product-card.css) para que "2.0000" no se recorte — es el campo protagonista de
-            la ficha por diseño, igual que Total línea. Comparte el mismo border/focus-ring que
-            los otros dos inputs (1.5px solid + box-shadow var(--color-focus-ring)); solo difiere
-            en tamaño/padding por esa razón funcional, no por inconsistencia sin resolver. */}
-        <div className="sf-product__qty">
-          {hasPresentations && (
-            // SALES-PRESENTATIONS-03: selector de presentación (unidad/caja/pack) — mismo patrón
-            // inline con ZhSelect que Compras (PurchasesPage.tsx PurchaseLineCard), sin componente
-            // nuevo. Solo visible cuando el ítem tiene más de una presentación configurada.
-            <>
-              <ZHFieldLabel size="sm" className="sf-product__qty-label">
-                Presentación
-              </ZHFieldLabel>
-              <ZhSelect
-                density="compact"
-                className="sf-product__presentation-select"
-                value={line.packagingLevelId ?? ""}
-                onChange={(e) =>
-                  onUpdatePresentation?.(line._key, e.target.value)
-                }
-                disabled={disabled}
-              >
-                {packagingOptions
-                  .filter((p) => p.isBaseUnit)
-                  .map((p) => (
-                    <option key={p.id} value="">
-                      {p.name}
-                    </option>
-                  ))}
-                {packagingOptions
-                  .filter((p) => !p.isBaseUnit)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} x {p.baseQuantity} {line.baseUomCode}
-                    </option>
-                  ))}
-              </ZhSelect>
-            </>
-          )}
-          <ZHFieldLabel size="sm" className="sf-product__qty-label">
-            Cantidad
-          </ZHFieldLabel>
-          <ZhDecimalInput
-            // key={line.quantity}: fuerza el remontaje del input cuando la cantidad cambia desde
-            // afuera de este blur (reescaneo del mismo producto en useSalesPage.addLineWithItem,
-            // que incrementa line.quantity directamente). Sin esto, el input no controlado
-            // (defaultValue) conserva el valor mostrado en el primer render — el subtotal (que sí
-            // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
-            key={line.quantity}
-            className="sf-product__qty-input"
-            decimals={dc.quantity}
-            positiveOnly
-            defaultValue={line.quantity}
-            onBlur={(e) =>
-              onUpdate(line._key, "quantity", Number(e.target.value) || 1)
-            }
-            disabled={disabled}
-          />
-          {equivalenceLabel && (
-            <div className="sf-product__presentation-equivalence">
-              {equivalenceLabel}
-            </div>
-          )}
-        </div>
-
-        {/* Col 6: Subtotal — el dato más fuerte del bloque es el Total línea */}
-        <div className="sf-product__subtotal">
-          <div className="sf-product__subtotal-row">
-            <ZHFieldLabel size="sm" className="sf-product__subtotal-label">
-              Base sin IVA
-            </ZHFieldLabel>
-            <ZHMoneyValue value={baseAmount} className="sf-product__subtotal-value" />
-          </div>
-          <div className="sf-product__subtotal-row">
-            <ZHFieldLabel size="sm" className="sf-product__subtotal-label">
-              {ivaTotalsLabel}
-            </ZHFieldLabel>
-            <ZHMoneyValue value={vatAmount} className="sf-product__subtotal-value" />
-          </div>
-          <ZHFieldLabel size="sm" className="sf-product__total-label">
-            Total línea
-          </ZHFieldLabel>
-          <ZHMoneyValue
-            value={total}
-            emphasis="total"
-            className="sf-product__total-amount"
-          />
-          <div className="sf-product__tax-incl">Imp. incluidos</div>
-        </div>
-      </div>
-    </ZHLineCard>
   );
 }

@@ -174,6 +174,31 @@ export function stockBadgeInfo(stockQty: number): StockBadgeInfo {
   return { label: "Disponible", variant: "green" };
 }
 
+// SALES-INVOICE-LINES-GRID-UX-01: compartido entre el buscador de productos
+// (SalesItemSearchResultsGrid) y las líneas ya agregadas a la factura (SalesInvoiceDetailsSection)
+// — discountDescription viene del backend (PricingCalculation.Summarize) con el formato
+// "Descuento 5% (regla general)" / "Recargo 3% (excepción)" / "Precio fijo 10 (…)" / etc. — el
+// sufijo entre paréntesis identifica el origen de la regla para diagnóstico interno, no aporta
+// nada al cajero como dato principal (pidió explícitamente no verlo ahí, solo en title/tooltip).
+// Esta función es solo presentación: reduce el texto completo a la insignia corta que se lee
+// como una operación — "-5%" para descuentos, "+3%" para recargos, "Ajuste aplicado" para el
+// resto (precio fijo/ajuste no porcentual, donde no hay un delta simple que mostrar sin inventar
+// un signo) — nunca recalcula ni reinterpreta el valor.
+export function discountBadgeText(description: string): string {
+  const withoutSource = description
+    .replace(/\s*\((?:regla general|excepción)\)\s*$/i, "")
+    .trim();
+  if (/^descuento/i.test(withoutSource)) {
+    const match = /([\d.,]+%?)\s*$/.exec(withoutSource);
+    return match ? `-${match[1]}` : withoutSource;
+  }
+  if (/^recargo/i.test(withoutSource)) {
+    const match = /([\d.,]+%?)\s*$/.exec(withoutSource);
+    return match ? `+${match[1]}` : withoutSource;
+  }
+  return "Ajuste aplicado";
+}
+
 /** "IVA 15%" (tal como lo entrega el backend en InvoiceItemSearchResultDto.vatDisplay) →
  * "IVA (15%)" para el desglose de precio del buscador — transformación de texto pura, no
  * reinterpreta ni recalcula la tasa. Si el texto no tiene el formato esperado (p. ej. "Sin

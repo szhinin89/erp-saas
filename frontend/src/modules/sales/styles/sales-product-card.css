@@ -1,11 +1,20 @@
 /* ============================================================
-   Sales Product Card — ficha retail POS integrada por columnas
-   (SALES-RETAIL-READY-01-FIX06C). Una sola tarjeta blanca por línea,
-   con columnas separadas por divisores verticales suaves (no cajas
-   grises independientes) — igual estructura que una ficha de venta
-   retail: producto | precio lista | dto/facturado | stock/ubicación
-   | cantidad | base+IVA+total. Sin encabezado de tabla: cada
-   columna se autodescribe con su propia etiqueta interna.
+   Sales Invoice Lines Grid — grilla horizontal compacta con cabecera de
+   columnas (SALES-INVOICE-LINES-GRID-COMPACT-DENSITY-01C / ROW-SEPARATORS-
+   ALIGNMENT-01F), mismo patrón visual y densidad que el buscador de
+   productos (SalesItemSearchResultsGrid, .sf-search-columns-header/.sf-result
+   en sales-invoice.css): un solo contenedor de tabla (.sfl-table) con la
+   cabecera pegada arriba y las filas una debajo de otra. Separación
+   horizontal (entre filas) marcada — border-bottom en cada fila, es lo que
+   distingue un registro del siguiente. Separación vertical (entre columnas)
+   solo por espacio (`column-gap`, --sfl-col-gap) — sin bordes verticales por
+   celda, para no verse como una hoja de cálculo. Sin gap entre filas, sin
+   sombra ni radio por fila, sin apariencia de tarjetas independientes.
+   --sfl-cols/--sfl-col-gap (definidas en .sf-products) son la ÚNICA fuente
+   de anchos/espaciado de columna — tanto el header (.sfl-header) como cada
+   fila (.sf-product) las referencian, así quedan siempre alineados por
+   construcción, nunca por coincidencia. Columnas: Línea | Producto | Precio
+   lista | Descuento | Precio facturado | Stock/Ubicación | Cantidad | Total.
    ============================================================ */
 
 /* ── Products Container ───────────────────────────────────────── */
@@ -16,40 +25,167 @@
   flex-direction: column;
   gap: 14px;
   background: var(--color-surface-container-low);
+  --sfl-cols:
+    56px
+    minmax(220px, 1.3fr)
+    minmax(130px, 0.65fr)
+    minmax(96px, 0.5fr)
+    minmax(150px, 0.7fr)
+    minmax(210px, 0.95fr)
+    minmax(120px, 0.5fr)
+    minmax(180px, 0.75fr);
+  /* SALES-INVOICE-LINES-GRID-ROW-SEPARATORS-ALIGNMENT-01F: separación entre columnas por
+     `column-gap`, no por `border-right` — mismo criterio que el buscador (.sf-result,
+     sales-invoice.css, que separa columnas con column-gap y ningún borde vertical). Una sola
+     variable, igual que --sfl-cols, para que cabecera (.sfl-header) y fila (.sf-product) usen
+     exactamente el mismo espaciado y no se desalineen entre sí. */
+  --sfl-col-gap: var(--space-3);
 }
 
-/* ── Wrapper externo (DS-LINE-CARD-UNIFY-01) ──────────────────────
-   La caja de la ficha (fondo/borde/sombra/radio) ahora vive en el elemento `ZHLineCard`
-   (`.zh-line-card` en zh-ui.css), no en `.sf-product`. Este selector scoped
-   (`.sf-product-card.zh-line-card`) es el único lugar donde Ventas sobreescribe el look-and-feel
-   genérico del componente DS — no se toca la regla base `.zh-line-card` (queda disponible tal
-   cual para otros módulos que la adopten después, ej. Compras). */
+/* ── Tabla de líneas (SALES-INVOICE-LINES-GRID-COMPACT-DENSITY-01C) ──────────
+   Único contenedor con borde/radio — la cabecera y las filas viven dentro, sin gap entre
+   ellas, para que se vean como una sola grilla continua (criterio del buscador) en vez de
+   tarjetas sueltas. Sin `overflow:hidden`: el selector de bodega (ZhWarehouseSelector) abre un
+   panel desplegable posicionado en absoluto dentro de una fila — recortarlo lo dejaría
+   invisible (mismo motivo por el que antes tampoco lo tenía cada tarjeta individual). El radio
+   visual de las esquinas lo aportan `.sfl-header` (arriba) y `.sf-product-card:last-child`
+   (abajo) directamente, no un recorte del contenedor. */
+.sfl-table {
+  display: flex;
+  flex-direction: column;
+  /* SALES-INVOICE-LINES-GRID-ROW-SEPARATORS-ALIGNMENT-01F: el perímetro exterior vuelve a
+     --color-border (sutil) — el contraste fuerte se reserva para el separador entre filas
+     (border-bottom de .sf-product-card, más abajo), que es el que de verdad ayuda a distinguir
+     un registro del siguiente. Un borde exterior igual de marcado sumaba a la sensación de
+     "celdas/hoja de cálculo" que pidió corregir el usuario. */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+/* ── Cabecera de columnas (SALES-INVOICE-LINES-GRID-HEADER-BLUE-01I) ──────────────────────
+   Mismo grid-template-columns/column-gap (var(--sfl-cols)/var(--sfl-col-gap)) que cada fila
+   (.sf-product) — nunca un valor propio que pueda desalinearse. Pegada al conjunto de filas: sin
+   margen ni borde propio aparte del inferior, el radio exterior lo aporta .sfl-table. Fondo
+   primario + texto on-primary — el mismo par de tokens que ya usa `.sf-tax-table thead th`
+   (sales-invoice.css, la tabla Impuesto/Base/Valor que citó el usuario como referencia): nunca
+   valores hardcodeados nuevos, se reutiliza el criterio de cabecera de tabla ya establecido. Las
+   filas (.sf-product-card) NO cambian de color — siguen con var(--color-surface); el contraste
+   fuerte queda reservado solo a esta banda de cabecera. */
+.sfl-header {
+  display: grid;
+  grid-template-columns: var(--sfl-cols);
+  column-gap: var(--sfl-col-gap);
+  align-items: center;
+  padding: 6px 14px;
+  background: var(--color-primary);
+  /* El límite cabecera→cuerpo ya lo da el salto de color (azul → superficie blanca de la primera
+     fila) — no hace falta un border-bottom adicional; uno del mismo tono que el fondo sería
+     invisible, y uno distinto competiría con el propio bloque de color. */
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.sfl-header__cell {
+  position: relative;
+  font-size: var(--text-label-sm-size);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-on-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Divisores verticales suaves entre columnas (SALES-INVOICE-LINES-GRID-SOFT-VERTICAL-
+   DIVIDERS-01G) ──────────────────────────────────────────────────────────────────────
+   Reemplaza el `border-right` completo (que se sentía "tipo Excel", ver ALIGNMENT-01F) por una
+   línea parcial vía `::after`: no toca arriba/abajo (solo el 56% central de la altura de la
+   celda), color suave del Design System (--color-border, el más discreto disponible) y omitida
+   en la última columna (`:not(:last-child)`). Se centra exactamente en el `column-gap`
+   compartido (--sfl-col-gap) para no desplazar ningún dato — mismo selector aplicado a
+   `.sfl-header__cell` (cabecera) y a `.sf-product > *` (cada celda de fila) para que ambas
+   "sientan" la misma grilla de columnas, sin duplicar el criterio en dos lugares. El separador
+   horizontal entre filas (border-bottom, ver .sf-product-card) sigue siendo el más notorio — este
+   es solo una ayuda de lectura por columna, no un borde de celda. */
+.sfl-header__cell:not(:last-child)::after,
+.sf-product > *:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 22%;
+  bottom: 22%;
+  right: calc(var(--sfl-col-gap) / -2);
+  width: 1px;
+  background: var(--color-border);
+  pointer-events: none;
+}
+/* SALES-INVOICE-LINES-GRID-HEADER-BLUE-01I: --color-border (gris muy claro) queda invisible
+   sobre el nuevo fondo azul de la cabecera — mismo divisor parcial/centrado, pero con
+   --color-on-primary semitransparente (color-mix, no un tono nuevo) para que siga siendo
+   discreto sobre ese fondo, igual criterio que el resto de la fila sobre fondo claro. */
+.sfl-header__cell:not(:last-child)::after {
+  background: color-mix(in srgb, var(--color-on-primary) 35%, transparent);
+}
+
+/* ── Fila (antes "tarjeta" independiente — DS-LINE-CARD-UNIFY-01) ──────────
+   SALES-INVOICE-LINES-GRID-COMPACT-DENSITY-01C: ya no es una tarjeta con borde completo +
+   radio + sombra propia — es una fila de tabla continua, igual densidad que `.sf-result` (el
+   buscador): solo `border-bottom` como divisor entre filas (sin borde arriba/lados propio,
+   sin gap vertical entre filas — lo definido en .sf-products no aplica dentro de .sfl-table),
+   sin sombra (ni siquiera en hover, para no volver a sugerir "tarjeta flotante"). El acento de
+   color a la izquierda se mantiene pero más fino (3px, igual que el buscador) — es solo un
+   detalle visual, no aumenta la altura de la fila. `ZHLineCard` ya no recibe `rail`, así que
+   `.zh-line-card` solo aporta el `display:flex` de un único hijo (el body) — el borde/fondo real
+   los define este selector. */
 .sf-product-card.zh-line-card {
   width: 100%;
   max-width: none;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-primary);
-  border-radius: var(--radius-lg);
+  border: none;
+  /* SALES-INVOICE-LINES-GRID-ROW-SEPARATORS-01E: separador entre filas más marcado
+     (--color-outline-variant, ver nota en .sfl-table) — antes casi invisible con --color-border,
+     costaba distinguir dónde terminaba una línea y empezaba la siguiente. */
+  border-bottom: 1px solid var(--color-outline-variant);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0;
   /* Sin overflow:hidden a propósito: el selector de bodega (ZhWarehouseSelector) abre un panel
-     desplegable posicionado en absoluto dentro de esta tarjeta — recortarlo lo dejaría invisible. */
+     desplegable posicionado en absoluto dentro de esta fila — recortarlo lo dejaría invisible. */
   overflow: visible;
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
-  min-height: 128px;
-  transition: box-shadow 0.15s;
+  box-shadow: none;
+  min-height: 64px;
+  /* SALES-INVOICE-LINES-GRID-HOVER-FOCUS-01D: solo transiciona el fondo — ya no hay
+     box-shadow/border-left que animar (border-left queda fijo en var(--color-primary), no es un
+     indicador de estado; el feedback de hover/focus es 100% el fondo). */
+  transition: background-color 0.12s ease;
 }
-.sf-product-card.zh-line-card:hover {
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-text-primary) 7%, transparent);
+.sfl-table .sf-product-card.zh-line-card:last-child {
+  border-bottom: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
-/* ── Rail izquierdo (contenido del slot `rail` de ZHLineCard) ──
-   Patrón visual alineado con el rail de acciones de Compras: número arriba, basurero debajo,
-   sin texto visible (SALES-RETAIL-LINE-CARD-01). `.zh-line-card__rail` (zh-ui.css) solo aporta
-   el layout flex; el padding/gap/divisor son específicos de Ventas. */
-.sf-product-card .zh-line-card__rail {
-  gap: 8px;
-  padding: 12px 6px;
-  border-right: 1px solid var(--color-border);
+/* ── Hover / focus de fila (SALES-INVOICE-LINES-GRID-HOVER-FOCUS-01D) ────────────────
+   Mismo criterio visual que el buscador (.sf-result:hover/.sf-result--focused,
+   sales-invoice.css): fondo sutil al pasar el mouse o al enfocar cualquier control interno
+   (input de cantidad/descuento/precio, selector de bodega, botón eliminar, link "Ver stock
+   global") — nunca cursor:pointer en la fila completa (no es una fila seleccionable/clickeable
+   como el resultado del buscador, es una fila editable: el click en espacio vacío no debe hacer
+   nada). `:focus-within` es justamente lo que evita tener que gestionar un estado de "línea
+   activa" a mano — la fila se ve activa mientras el foco real esté en cualquiera de sus
+   controles, y dejar de estarlo cuando el foco sale, sin JS ni clases adicionales. */
+.sf-product-card.zh-line-card:hover,
+.sf-product-card.zh-line-card:focus-within {
+  background: var(--color-surface-container-low);
+}
+
+/* ── Columna Línea (número + eliminar) ────────────────────────────────
+   SALES-INVOICE-LINES-GRID-UX-01B: antes vivía en el slot `rail` de ZHLineCard, separado del
+   grid interno — eso impedía compartir un único grid-template-columns con la cabecera. Ahora es
+   la primera columna real del mismo grid que las demás (ZHLineCard ya no recibe `rail`; el
+   número+basurero se renderizan como el primer hijo directo de `.sf-product`, ver
+   SalesInvoiceLineGridRow). Compacta, centrada, sin label (la cabecera ya dice "Línea"). */
+.sf-product__line-cell {
+  align-items: center;
+  gap: 6px;
 }
 .sf-product__rail-index {
   flex-shrink: 0;
@@ -58,48 +194,45 @@
   color: var(--color-text-secondary);
 }
 .sf-product__delete-btn.prd-icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
 }
 .sf-product__delete-btn .material-symbols-outlined {
-  font-size: 22px;
+  font-size: 20px;
   color: var(--color-error);
 }
 
 /* ── Product Card (grid interno, columna body de ZHLineCard) ──────
-   Grid de una sola fila traducido de code.html (SALES-RETAIL-READY-01-FIX06F): cada columna
-   tiene un piso mínimo (para que el total y la cantidad nunca se corten) y una fracción `fr`
-   proporcional al peso relativo que tiene en el blueprint — a diferencia de FIX06E (px rígidos,
-   se cortaban en pantallas angostas) o FIX06B/C (fr sin piso, se deformaban en pantallas anchas),
-   minmax() da lo mejor de ambos: nunca baja del mínimo legible, y el aire sobrante se reparte
-   proporcionalmente en vez de acumularse en una sola columna. Ya no incluye la columna de rail
-   (extraída al slot `rail` de ZHLineCard, DS-LINE-CARD-UNIFY-01). */
+   SALES-INVOICE-LINES-GRID-UX-01B: 8 columnas (Línea + los 7 datos) — grid-template-columns
+   viene de var(--sfl-cols), definida una sola vez en .sf-products y compartida con la cabecera
+   (.sfl-header) para que ambos queden alineados por construcción. Cada columna tiene un piso
+   mínimo (para que el total y la cantidad nunca se corten) y una fracción `fr` proporcional al
+   peso relativo que tiene en el blueprint — minmax() nunca baja del mínimo legible, y el aire
+   sobrante se reparte proporcionalmente en vez de acumularse en una sola columna. */
 .sf-product {
   display: grid;
-  grid-template-columns:
-    minmax(300px, 1.3fr)
-    minmax(140px, 0.55fr)
-    minmax(220px, 0.85fr)
-    minmax(260px, 1fr)
-    minmax(132px, 0.45fr)
-    minmax(210px, 0.75fr);
-  gap: 0;
+  grid-template-columns: var(--sfl-cols);
+  column-gap: var(--sfl-col-gap);
+  row-gap: 0;
   align-items: stretch;
   height: 100%;
 }
 
-/* Cada columna directa de la ficha: mismo padding y divisor vertical suave, salvo la última
-   (Total línea) — evita repetir estas 4 declaraciones en cada columna por separado. */
+/* Cada columna directa de la fila: mismo padding, sin `border-right` de celda completa.
+   SALES-INVOICE-LINES-GRID-ROW-SEPARATORS-ALIGNMENT-01F: se quitó el `border-right` entre
+   columnas (era lo que daba la sensación de "hoja de cálculo" con celdas propias) — la
+   separación entre columnas es espacio (`column-gap`) más el divisor parcial vía `::after`
+   (SOFT-VERTICAL-DIVIDERS-01G, ver regla `.sf-product > *:not(:last-child)::after` arriba),
+   nunca un borde de arriba a abajo. `position: relative` es lo que permite posicionar ese
+   pseudo-elemento dentro de la celda. El separador que sí debe notarse es el horizontal, entre
+   filas (border-bottom de .sf-product-card). */
 .sf-product > * {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 20px 18px;
-  border-right: 1px solid var(--color-border);
+  padding: 8px 4px;
   min-width: 0;
-}
-.sf-product > *:last-child {
-  border-right: none;
 }
 
 /* ── Columna 1: Producto (SKU + nombre) ────────
@@ -112,11 +245,23 @@
   align-items: baseline;
   gap: 8px;
 }
+/* Chip monoespaciado — mismo criterio visual que el código del buscador (.sf-result__sku,
+   sales-invoice.css) en vez de texto de color suelto (SALES-INVOICE-LINES-GRID-UX-01). */
 .sf-product__code {
+  display: inline-block;
   font-size: var(--text-badge-size);
-  font-weight: 800;
-  color: var(--color-primary);
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  line-height: 1.6;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sf-product__name {
   font-size: var(--text-title-sm-size);
@@ -163,34 +308,34 @@
 .sf-product__pricelist-value.zh-money-value .zh-money-value__symbol {
   color: inherit;
 }
-/* SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: explica por qué "Precio facturado" (col. 3) quedó por
-   debajo de este precio de lista — mismo tono de aviso que el buscador de productos
-   (.sf-result__discount-val, --color-warning). */
-.sf-product__pricelist-discount {
+/* SALES-INVOICE-LINES-GRID-UX-01: nombre de la lista de precios, debajo del valor — dato
+   secundario y discreto (el detalle del descuento/regla ya no vive acá, ver Col. Descuento). */
+.sf-product__pricelist-name {
   font-size: var(--text-help-size);
-  font-weight: 700;
-  color: var(--color-warning);
+  color: var(--color-text-secondary);
 }
 
-/* ── Columna 3: Descuento + Precio facturado (bloque compacto) ── */
-.sf-product__negotiated {
-  flex-direction: row;
+/* ── Columna Descuento — % editable + insignia corta de la regla aplicada (si existe) ──
+   Antes compartía columna con Precio facturado en un bloque "negociado" — ahora es su propia
+   columna, mismo criterio de separación que el buscador (SalesItemSearchResultsGrid). */
+.sf-product__discount {
   align-items: center;
-  justify-content: space-around;
-  gap: 10px;
-}
-
-.sf-product__disc-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 /* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
 .sf-product__disc-label.zh-field-label {
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+/* Insignia corta ("-5%"/"+3%"/"Ajuste aplicado") — mismo tono/peso que el buscador
+   (.sf-result__discount-tag, sales-invoice.css); el texto completo de la regla ("regla
+   general"/"excepción") solo vive en el title de la columna, nunca como texto principal. */
+.sf-product__discount-tag {
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  color: var(--color-warning);
+  white-space: nowrap;
 }
 /* font-size ELIMINADO (SALES-DS-VISUAL-REAL-17) — el TSX ahora pasa `density="compact"`
    (ZhDecimalInput) para este input, que aporta el font-size 13px vía `.zh-input--compact`
@@ -436,6 +581,13 @@
 
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1100px) {
+  /* La cabecera solo tiene sentido mientras las filas son un grid real de una sola línea — en
+     este breakpoint las filas pasan a envolver en tarjeta (2 columnas), así que ya no hay
+     columnas fijas con las que alinearla (mismo criterio que ocultar el thead de una tabla
+     responsive). */
+  .sfl-header {
+    display: none;
+  }
   .sf-product-card.zh-line-card {
     min-height: 0;
   }
@@ -445,9 +597,10 @@
     min-height: 0;
   }
   .sf-product > * {
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-outline-variant);
   }
+  /* 8 columnas (Línea + 7 datos) — a 2 por fila, la última fila queda completa (2 elementos), así
+     que se necesitan los últimos 2 hijos del DOM para perder el borde inferior. */
   .sf-product > *:nth-last-child(-n + 2) {
     border-bottom: none;
   }
@@ -457,7 +610,7 @@
     grid-template-columns: 1fr;
   }
   .sf-product > *:nth-last-child(-n + 2) {
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-outline-variant);
   }
   .sf-product > *:last-child {
     border-bottom: none;

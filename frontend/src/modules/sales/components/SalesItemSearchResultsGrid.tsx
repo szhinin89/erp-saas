@@ -6,7 +6,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
-import { stockBadgeInfo } from "../utils/salesCalc";
+import { stockBadgeInfo, discountBadgeText } from "../utils/salesCalc";
 
 // SALES-ITEM-SEARCH-RESULTS-GRID-COMPONENT-01: extraído de SalesInvoiceDetailsSection —
 // componente local del módulo Sales/POS (no Design System global) porque su layout depende de
@@ -14,30 +14,8 @@ import { stockBadgeInfo } from "../utils/salesCalc";
 // por PricingResolver, botón Agregar, highlight de búsqueda). Solo presentación: no hace fetch,
 // no recalcula precios/descuentos/IVA/stock, no conoce emisión/XML/CxC/contabilidad — todo eso
 // sigue siendo responsabilidad del padre (SalesInvoiceDetailsSection) y del backend.
-
-// ── Descuento compacto del buscador (SALES-ITEM-SEARCH-RESULT-COMPACT-HORIZONTAL-01) ──
-// item.discountDescription viene del backend (PricingCalculation.Summarize) con el formato
-// "Descuento 5% (regla general)" / "Recargo 3% (excepción)" / "Precio fijo 10 (…)" / etc. — el
-// sufijo entre paréntesis identifica el origen de la regla para diagnóstico interno, no aporta
-// nada al cajero en la fila principal del buscador (pidió explícitamente no verlo ahí). Esta
-// función es solo presentación: reduce el texto completo (que sigue disponible vía title/
-// tooltip) a la insignia corta que se lee como una operación — "-5%" para descuentos, "+3%"
-// para recargos, "Ajuste aplicado" para el resto (precio fijo/ajuste no porcentual, donde no hay
-// un delta simple que mostrar sin inventar un signo) — nunca recalcula ni reinterpreta el valor.
-function discountBadgeText(description: string): string {
-  const withoutSource = description
-    .replace(/\s*\((?:regla general|excepción)\)\s*$/i, "")
-    .trim();
-  if (/^descuento/i.test(withoutSource)) {
-    const match = /([\d.,]+%?)\s*$/.exec(withoutSource);
-    return match ? `-${match[1]}` : withoutSource;
-  }
-  if (/^recargo/i.test(withoutSource)) {
-    const match = /([\d.,]+%?)\s*$/.exec(withoutSource);
-    return match ? `+${match[1]}` : withoutSource;
-  }
-  return "Ajuste aplicado";
-}
+// discountBadgeText vive en salesCalc.ts (SALES-INVOICE-LINES-GRID-UX-01): mismo criterio de
+// insignia corta reutilizado también por las líneas ya agregadas a la factura.
 
 // ── Resaltado de coincidencias ────────────────────────────────────────────────
 function highlightMatch(text: string, query: string): ReactNode {

@@ -99,14 +99,17 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
   });
 
   it("muestra la cantidad", () => {
-    renderSection([baseLine({ quantity: 2 })]);
-    expect(screen.getByText("Cantidad")).not.toBeNull();
+    // "Cantidad" también es texto de la cabecera de columnas (SALES-INVOICE-LINES-GRID-UX-01B) —
+    // se verifica el label propio de la fila por selector, no por texto ambiguo.
+    const { container } = renderSection([baseLine({ quantity: 2 })]);
+    expect(container.querySelector(".sf-product__qty-label")?.textContent).toBe(
+      "Cantidad",
+    );
     expect(screen.getByDisplayValue("2.0000")).not.toBeNull();
   });
 
-  it("muestra el precio lista", () => {
+  it("muestra el precio lista bajo la columna Precio lista", () => {
     const { container } = renderSection([baseLine({ _pvp: 26 })]);
-    expect(screen.getByText("Precio lista")).not.toBeNull();
     expect(moneyText(container, ".sf-product__pricelist-value")).toBe("$26.00");
   });
 
@@ -304,10 +307,34 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     expect(container.querySelectorAll("[style]").length).toBe(0);
   });
 
-  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: mismo caso reportado — el buscador ya mostró
-  // "Precio base $2.10" / "Lista default -5%"; la línea agregada debe explicar lo mismo en vez
-  // de mostrar únicamente el precio ya descontado bajo la etiqueta "Precio lista".
-  it("con descuento de lista: 'Precio lista' muestra el precio base y explica la lista/descuento aplicado", () => {
+  it("el botón eliminar sigue siendo accesible por rol/nombre (no solo por title)", () => {
+    renderSection([baseLine()]);
+    expect(
+      screen.getByRole("button", { name: /eliminar producto de la factura/i }),
+    ).not.toBeNull();
+  });
+
+  // SALES-INVOICE-LINES-GRID-UX-01: el texto técnico de origen de la regla ("regla general"/
+  // "excepción") nunca es dato principal en pantalla — solo vive en el title de la columna
+  // Descuento (atributo, no textContent, así que queryByText nunca lo encuentra ahí).
+  it("no muestra 'regla general' ni 'excepción' como texto principal en la línea", () => {
+    renderSection([
+      baseLine({
+        _priceListName: "Lista General",
+        _discountDescription: "Descuento 5% (regla general)",
+      }),
+    ]);
+    expect(screen.queryByText(/regla general/i)).toBeNull();
+    expect(screen.queryByText(/excepción/i)).toBeNull();
+    expect(screen.getByText("-5%")).not.toBeNull();
+  });
+
+  // SALES-INVOICE-LINES-GRID-UX-01 (reemplaza el criterio de SALES-PRICE-LIST-DISCOUNT-
+  // VISIBILITY-01): "Precio lista" muestra el precio base + nombre de lista secundario; el
+  // descuento/regla aplicado ya no se explica ahí como texto suelto — pasa a la columna
+  // Descuento como insignia corta ("-5%"), con el texto completo de la regla en el title
+  // (mismo criterio que SalesItemSearchResultsGrid, el buscador).
+  it("con descuento de lista: 'Precio lista' muestra el precio base + nombre de lista, y la columna Descuento muestra la insignia con el detalle en el title", () => {
     const { container } = renderSection([
       baseLine({
         unitPrice: 2,
@@ -318,11 +345,21 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
       }),
     ]);
     expect(moneyText(container, ".sf-product__pricelist-value")).toBe("$2.10");
-    expect(screen.getByText("Lista General: Descuento 5%")).not.toBeNull();
+    expect(screen.getByText("Lista General")).not.toBeNull();
+    expect(container.querySelector(".sf-product__discount-tag")?.textContent).toBe(
+      "-5%",
+    );
+    expect(container.querySelector(".sf-product__discount")?.getAttribute("title")).toBe(
+      "Descuento 5% — Lista: Lista General",
+    );
+    // El texto completo de la regla ya no aparece suelto en pantalla — solo en el title.
+    expect(screen.queryByText("Lista General: Descuento 5%")).toBeNull();
   });
 
-  it("sin descuento de lista: 'Precio lista' es igual al precio facturado, sin explicación", () => {
-    renderSection([
+  it("sin descuento de lista: la columna Descuento no muestra insignia ni title (solo el input % en 0)", () => {
+    // "Descuento" también es texto de la cabecera de columnas (SALES-INVOICE-LINES-GRID-UX-01B)
+    // — se verifica la ausencia de la insignia/tooltip por selector, no por texto ambiguo.
+    const { container } = renderSection([
       baseLine({
         unitPrice: 26,
         _pvp: 26,
@@ -330,7 +367,8 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
         _discountDescription: null,
       }),
     ]);
-    expect(screen.queryByText(/descuento/i)).toBeNull();
+    expect(container.querySelector(".sf-product__discount-tag")).toBeNull();
+    expect(container.querySelector(".sf-product__discount")?.getAttribute("title")).toBeNull();
   });
 
   it("editar el precio facturado a mano muestra el badge 'Precio manual' y oculta la explicación de descuento", () => {
