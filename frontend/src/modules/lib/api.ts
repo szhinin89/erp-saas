@@ -118,7 +118,11 @@ api.interceptors.response.use(
     originalRequest._retry = true;
 
     try {
-      const newAccessToken = await refreshSessionToken();
+      // force:true — el token en memoria en este punto es el mismo que el backend acaba de
+      // rechazar con 401; sin forzar, refreshSessionToken() lo devolvía tal cual sin llamar a
+      // /auth/refresh y el reintento de abajo fallaba otra vez con el mismo 401
+      // (SALES-SAVE-401-AFTER-IDLE-SESSION-01, ver nota en authRefreshManager.ts).
+      const newAccessToken = await refreshSessionToken({ force: true });
       originalRequest.headers = {
         ...originalRequest.headers,
         Authorization: `Bearer ${newAccessToken}`,

@@ -104,9 +104,14 @@ function handleBroadcast(event: AuthBroadcastEvent): void {
   }
 }
 
-function waitForRemoteRefresh(timeoutMs = LOCK_TIMEOUT_MS): Promise<string> {
-  const existing = getAccessToken();
-  if (existing) return Promise.resolve(existing);
+function waitForRemoteRefresh(
+  timeoutMs = LOCK_TIMEOUT_MS,
+  force = false,
+): Promise<string> {
+  if (!force) {
+    const existing = getAccessToken();
+    if (existing) return Promise.resolve(existing);
+  }
 
   return new Promise<string>((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -211,14 +216,16 @@ async function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 async function runRefresh(
-  options: { bootstrapRetry?: boolean } = {},
+  options: { bootstrapRetry?: boolean; force?: boolean } = {},
 ): Promise<string> {
-  const existing = getAccessToken();
-  if (existing) return existing;
+  if (!options.force) {
+    const existing = getAccessToken();
+    if (existing) return existing;
+  }
 
   if (remoteRefreshPending) {
     try {
-      return await waitForRemoteRefresh();
+      return await waitForRemoteRefresh(LOCK_TIMEOUT_MS, options.force);
     } catch {
       /* continuar con refresh local */
     }
@@ -245,6 +252,18 @@ async function runRefresh(
 export type RefreshSessionOptions = {
   /** Reintento único tras 401 benigno (cookie actualizada por otra pestaña). */
   bootstrapRetry?: boolean;
+  /**
+   * Fuerza una llamada real a /auth/refresh aunque ya exista un access token en memoria.
+   * Necesario para quien pide el refresh reaccionando a un 401 (interceptor de `api.ts`): el
+   * token en memoria en ese momento ES el mismo que el backend acaba de rechazar por vencido,
+   * así que "ya existe uno" no significa "sigue siendo válido". Sin este flag,
+   * refreshSessionToken() devolvía ese mismo token vencido sin tocar la red, el reintento
+   * fallaba con el mismo 401, y como el request ya había agotado su único reintento
+   * (`_retry`), el error se propagaba sin haber refrescado nada
+   * (SALES-SAVE-401-AFTER-IDLE-SESSION-01). El caso normal (bootstrap en
+   * restoreSessionFromCookie, cache entre requests concurrentes) sigue sin `force` — ahí un
+   * token en memoria sí es válido, no hay ninguna respuesta 401 que lo haya invalidado. */
+  force?: boolean;
 };
 
 /**
@@ -253,8 +272,10 @@ export type RefreshSessionOptions = {
 export function refreshSessionToken(
   options: RefreshSessionOptions = {},
 ): Promise<string> {
-  const existing = getAccessToken();
-  if (existing) return Promise.resolve(existing);
+  if (!options.force) {
+    const existing = getAccessToken();
+    if (existing) return Promise.resolve(existing);
+  }
 
   if (inFlightRefresh) return inFlightRefresh;
 

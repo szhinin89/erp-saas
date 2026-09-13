@@ -1,7 +1,20 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "./api";
 import { useActiveBranchStore } from "../../store/activeBranchStore";
+import { refreshSessionToken } from "../../lib/session/refreshSessionToken";
+import { fullLogout } from "../../lib/session/fullLogout";
+import {
+  clearAccessToken,
+  setAccessToken,
+} from "../../lib/session/authTokenMemory";
+
+vi.mock("../../lib/session/refreshSessionToken", () => ({
+  refreshSessionToken: vi.fn(),
+}));
+vi.mock("../../lib/session/fullLogout", () => ({
+  fullLogout: vi.fn(),
+}));
 
 /**
  * ZH-AUTH-BRANCH-CONTEXT-EXPENSES-AUDIT-12: el interceptor de respuesta debe limpiar
@@ -95,5 +108,116 @@ describe("api response interceptor — branch/company scope recovery", () => {
     await expect(rejected({ config: { url: "/x", headers: {} } })).rejects.toBeTruthy();
 
     expect(useActiveBranchStore.getState().branch).toEqual(activeBranch);
+  });
+});
+
+/**
+ * SALES-SAVE-401-AFTER-IDLE-SESSION-01: POST /api/v1/sales devolvía 401 tras la pantalla abierta
+ * un rato porque refreshSessionToken() (llamado acá reaccionando al 401) veía el access token
+ * vencido todavía en memoria y lo devolvía tal cual, sin llamar a /auth/refresh — el reintento de
+ * abajo repetía el mismo 401 con el mismo token. Eso también explicaba los dos POST /sales por
+ * intento en los logs: el original + ese reintento fallido, no un doble submit del formulario
+ * (ver EmitButton/useSalesPage.confirmIssue, ya protegidos contra doble clic por
+ * canEmit/issuePhase/saving). El fix (authRefreshManager.ts, `force: true`) hace que este
+ * refresh reaccionando a un 401 siempre llame a la red — se prueba acá a nivel de interceptor.
+ */
+describe("api response interceptor — refresh y reintento tras 401", () => {
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    setAccessToken("stale-expired-token");
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...originalLocation, href: "" },
+    });
+  });
+
+  afterEach(() => {
+    vi.mocked(refreshSessionToken).mockReset();
+    vi.mocked(fullLogout).mockReset();
+    clearAccessToken();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
+
+  it("ante un 401 llama a refreshSessionToken con force:true y reintenta una sola vez con el nuevo token", async () => {
+    // Emula lo que hace la implementación real (postRefresh, authRefreshManager.ts):
+    // actualiza el token en memoria además de resolver el valor — así el interceptor de
+    // request (que lee getAccessToken()) también ve el token nuevo en el reintento.
+    vi.mocked(refreshSessionToken).mockImplementation(async () => {
+      setAccessToken("fresh-token");
+      return "fresh-token";
+    });
+    const originalAdapter = api.defaults.adapter;
+    const adapterSpy = vi.fn().mockResolvedValue({
+      data: "ok",
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {},
+    });
+    api.defaults.adapter = adapterSpy;
+
+    try {
+      const rejected = getResponseErrorHandler();
+      const error = makeError(401, { code: "UNAUTHORIZED" }, "/api/v1/sales");
+
+      const result = await rejected(error);
+
+      expect(refreshSessionToken).toHaveBeenCalledTimes(1);
+      expect(refreshSessionToken).toHaveBeenCalledWith({ force: true });
+      // Un solo reintento de red — no dos POST /sales por el mismo click.
+      expect(adapterSpy).toHaveBeenCalledTimes(1);
+      const retriedConfig = adapterSpy.mock.calls[0][0] as {
+        headers: Record<string, string>;
+      };
+      expect(retriedConfig.headers.Authorization).toBe("Bearer fresh-token");
+      expect((result as { data: string }).data).toBe("ok");
+    } finally {
+      api.defaults.adapter = originalAdapter;
+    }
+  });
+
+  it("no reintenta un request que ya fue reintentado (_retry=true) — evita loop y un segundo POST", async () => {
+    const rejected = getResponseErrorHandler();
+    const error = makeError(401, { code: "UNAUTHORIZED" }, "/api/v1/sales");
+    (error.config as { _retry?: boolean })._retry = true;
+
+    await expect(rejected(error)).rejects.toBe(error);
+    expect(refreshSessionToken).not.toHaveBeenCalled();
+  });
+
+  it("si el refresh falla, no reintenta infinito, limpia la sesión y redirige a login", async () => {
+    const refreshError = { response: { status: 401 } };
+    vi.mocked(refreshSessionToken).mockRejectedValue(refreshError);
+    const originalAdapter = api.defaults.adapter;
+    const adapterSpy = vi.fn();
+    api.defaults.adapter = adapterSpy;
+
+    try {
+      const rejected = getResponseErrorHandler();
+      const error = makeError(401, { code: "UNAUTHORIZED" }, "/api/v1/sales");
+
+      await expect(rejected(error)).rejects.toBe(refreshError);
+      expect(adapterSpy).not.toHaveBeenCalled();
+      expect(fullLogout).toHaveBeenCalledTimes(1);
+      expect(window.location.href).toBe("/login");
+    } finally {
+      api.defaults.adapter = originalAdapter;
+    }
+  });
+
+  it("si el refresh falla con 429 (rate limit), no cierra la sesión — deja reintentar más tarde", async () => {
+    const refreshError = { response: { status: 429 } };
+    vi.mocked(refreshSessionToken).mockRejectedValue(refreshError);
+
+    const rejected = getResponseErrorHandler();
+    const error = makeError(401, { code: "UNAUTHORIZED" }, "/api/v1/sales");
+
+    await expect(rejected(error)).rejects.toBe(refreshError);
+    expect(fullLogout).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
   });
 });

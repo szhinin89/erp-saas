@@ -92,4 +92,43 @@ describe("authRefreshManager", () => {
     expect(token).toBe("cached");
     expect(axios.post).not.toHaveBeenCalled();
   });
+
+  // SALES-SAVE-401-AFTER-IDLE-SESSION-01: el interceptor 401 de api.ts llama a
+  // refreshSessionToken() con el mismo token (vencido) que el backend acaba de rechazar
+  // todavía en memoria — sin `force`, el chequeo de arriba lo devolvía tal cual sin tocar la
+  // red, y el reintento del request original fallaba otra vez con el mismo 401.
+  it("con force:true llama a /auth/refresh aunque ya haya un token en memoria", async () => {
+    setAccessToken("stale-expired-token");
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { data: { token: "fresh-token" } },
+    });
+
+    const token = await refreshSessionToken({ force: true });
+
+    expect(token).toBe("fresh-token");
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(getAccessToken()).toBe("fresh-token");
+  });
+
+  it("con force:true, llamadas concurrentes siguen deduplicándose en una sola petición", async () => {
+    setAccessToken("stale-expired-token");
+    vi.mocked(axios.post).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(
+            () => resolve({ data: { data: { token: "fresh-token" } } }),
+            30,
+          );
+        }),
+    );
+
+    const [a, b] = await Promise.all([
+      refreshSessionToken({ force: true }),
+      refreshSessionToken({ force: true }),
+    ]);
+
+    expect(a).toBe("fresh-token");
+    expect(b).toBe("fresh-token");
+    expect(axios.post).toHaveBeenCalledTimes(1);
+  });
 });
