@@ -20,10 +20,14 @@
 /* ── Products Container ───────────────────────────────────────── */
 .sf-products {
   flex: 1;
-  padding: 20px 20px 24px;
+  /* SALES-INVOICE-LINES-GRID-CONTAINER-SPACING-01J: padding superior reducido a --space-3 (era
+     20px) para que la grilla arranque pegada al buscador de arriba (.sf-searchbar, mismo padding
+     vertical) en vez de flotar separada; lateral/inferior se mantienen sobre el token equivalente
+     (--space-5/--space-4) sin cambiar el ancho ni la alineación izquierda con el buscador. */
+  padding: var(--space-1) var(--space-1) var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
   background: var(--color-surface-container-low);
   --sfl-cols:
     56px
@@ -382,24 +386,29 @@
   text-align: right;
 }
 
-/* ── Columna 4: Stock / Ubicación ────────────────────────────── */
+/* ── Columna 4: Stock / Ubicación (SALES-INVOICE-LINES-STOCK-LOCATION-COLUMN-UX-01K) ──
+   Reorganizada en 3 grupos verticales apilados dentro de .sf-product__stock-data: (1) resumen
+   de stock — cabecera discreta (label + ayuda) + cantidad/unidad/badge como dato principal en
+   una sola línea; (2) ubicación — label + selector de bodega; (3) "Ver stock global", discreto.
+   Ya no hay ícono grande "assignment" a la izquierda (era decorativo, sin dato propio, y
+   competía visualmente con la cantidad) — la columna ya no necesita `flex-direction:row` de
+   dos bloques (ícono + data), es una sola columna vertical de principio a fin. */
 .sf-product__stock-box {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 8px;
-}
-.sf-product__stock-icon {
-  font-size: 20px;
-  color: var(--color-secondary);
-  flex-shrink: 0;
-  margin-top: 2px;
+  flex-direction: column;
 }
 .sf-product__stock-data {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
   min-width: 0;
-  gap: 1px;
+  gap: 2px;
+}
+/* Cabecera del resumen de stock: label "Stock" + ayuda contextual en una sola fila discreta,
+   en vez de apiladas como si fueran dos datos independientes. */
+.sf-product__stock-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 /* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio (antes 9px, el
    valor más chico de toda la ficha sin ninguna razón funcional distinta a los demás labels
@@ -408,18 +417,30 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-secondary);
+}
+/* Grupo 2 (Ubicación): separación superior respecto al grupo de stock — antes la venía dando
+   el margin-top del label "Ubicación" (:not(:first-child)), ahora vive en el propio wrapper
+   para no depender del orden de los hijos. */
+.sf-product__stock-location {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   margin-top: 6px;
 }
-.sf-product__stock-label.zh-field-label:first-child {
-  margin-top: 0;
+/* Grupo 1 (resumen): cantidad + unidad + badge de estado en una sola línea — el dato principal
+   de toda la columna, sin compartir protagonismo con ningún ícono. */
+.sf-product__stock-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .sf-product__stock-qty {
   font-size: var(--text-title-sm-size);
   font-weight: 800;
   color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: inline-flex;
+  align-items: baseline;
 }
 .sf-product__stock-qty--empty {
   color: var(--color-text-secondary);
@@ -440,8 +461,9 @@
   color: var(--color-error);
   margin-top: 2px;
 }
+/* Grupo 3 (acción secundaria): discreto, sin competir con el resumen de stock ni la bodega. */
 .sf-product__stock-global-link {
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: var(--text-label-sm-size);
 }
 

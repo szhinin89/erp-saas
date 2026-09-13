@@ -144,6 +144,35 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     expect(link?.getAttribute("target")).toBe("_blank");
   });
 
+  // SALES-INVOICE-LINES-STOCK-LOCATION-COLUMN-UX-01K: cantidad+unidad+badge agrupados en una
+  // sola línea de resumen, selector de bodega debajo, link "Ver stock global" al final, y sin el
+  // ícono decorativo "assignment" que antes competía visualmente con la cantidad. Ningún dato se
+  // perdió — solo se reordenó el markup existente.
+  it("agrupa cantidad, unidad y badge de stock en un solo resumen, sin el ícono decorativo", () => {
+    const { container } = renderSection([baseLine({ _stockQty: 5 })]);
+    const summary = container.querySelector(".sf-product__stock-summary");
+    expect(summary).not.toBeNull();
+    expect(summary?.querySelector(".sf-product__stock-qty")?.textContent).toBe(
+      "5 UDS",
+    );
+    expect(summary?.textContent).toContain("Stock bajo");
+    expect(container.querySelector(".sf-product__stock-icon")).toBeNull();
+  });
+
+  it("mantiene el selector de bodega y la ayuda contextual de stock disponibles", () => {
+    const { container } = renderSection([baseLine()]);
+    expect(
+      container.querySelector(".sf-product__stock-location .zh-wh-selector"),
+    ).not.toBeNull();
+    expect(container.querySelector(".sf-product__stock-header .zh-help-field")).not.toBeNull();
+  });
+
+  it("no usa estilos inline en la columna Stock / Ubicación", () => {
+    const { container } = renderSection([baseLine()]);
+    const stockBox = container.querySelector(".sf-product__stock-box");
+    expect(stockBox?.querySelectorAll("[style]").length ?? 0).toBe(0);
+  });
+
   it("muestra la base sin IVA", () => {
     const { container } = renderSection([baseLine()]);
     expect(screen.getByText("Base sin IVA")).not.toBeNull();

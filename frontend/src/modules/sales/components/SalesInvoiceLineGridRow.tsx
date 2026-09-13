@@ -275,24 +275,31 @@ export function SalesInvoiceLineGridRow({
           )}
         </div>
 
-        {/* Col 6: Stock / Ubicación — cantidad+badge, bodega y "Ver stock global" agrupados en una
-            sola columna ordenada (mismo dato, solo consolidado). */}
+        {/* Col 6: Stock / Ubicación — reorganizada en 3 grupos verticales claros
+            (SALES-INVOICE-LINES-STOCK-LOCATION-COLUMN-UX-01K): (1) resumen de stock —
+            cantidad+unidad como dato principal junto al badge de estado, con el label "Stock" y
+            su ayuda reducidos a una cabecera discreta; (2) ubicación — selector de bodega, con
+            label "Ubicación" igual de discreto; (3) acción secundaria — "Ver stock global". Se
+            quitó el ícono grande "assignment" (era puramente decorativo, sin dato propio, y
+            competía visualmente con la cantidad) — ningún dato se eliminó, solo se reordenó y
+            compactó el markup existente. */}
         <div className="sf-product__stock-box">
-          <span className="material-symbols-outlined sf-product__stock-icon">
-            assignment
-          </span>
           <div className="sf-product__stock-data">
-            <ZHFieldLabel size="sm" className="sf-product__stock-label">
-              Stock
-            </ZHFieldLabel>
-            <ZHFieldHelp helpKey={HELP_KEYS.SALES_STOCK} />
-            <div
-              className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
-            >
-              {stockQty != null ? stockQty : "—"}
-              {stockQty != null && (
-                <span className="sf-product__stock-uom"> UDS</span>
-              )}
+            <div className="sf-product__stock-header">
+              <ZHFieldLabel size="sm" className="sf-product__stock-label">
+                Stock
+              </ZHFieldLabel>
+              <ZHFieldHelp helpKey={HELP_KEYS.SALES_STOCK} />
+            </div>
+            <div className="sf-product__stock-summary">
+              <span
+                className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
+              >
+                {stockQty != null ? stockQty : "—"}
+                {stockQty != null && (
+                  <span className="sf-product__stock-uom"> UDS</span>
+                )}
+              </span>
               {line._tracksStock && stockQty != null && (
                 <Badge
                   label={
@@ -312,28 +319,30 @@ export function SalesInvoiceLineGridRow({
             )}
             {line._tracksStock && (
               <>
-                <ZHFieldLabel size="sm" className="sf-product__stock-label">
-                  Ubicación
-                </ZHFieldLabel>
-                {!readOnly ? (
-                  <ZhWarehouseSelector
-                    value={line.warehouseId ?? null}
-                    onChange={(id, option) =>
-                      onUpdateWarehouse(line._key, id, option)
-                    }
-                    itemId={line.itemId}
-                    fallbackWarehouses={warehouses}
-                    defaultWarehouseId={selectedWarehouseId}
-                    disabled={disabled}
-                    placeholder="Seleccione bodega"
-                  />
-                ) : (
-                  <div className="sf-product__stock-wh">
-                    {warehouses.find((w) => w.id === line.warehouseId)?.name ??
-                      stockWarehouse ??
-                      "—"}
-                  </div>
-                )}
+                <div className="sf-product__stock-location">
+                  <ZHFieldLabel size="sm" className="sf-product__stock-label">
+                    Ubicación
+                  </ZHFieldLabel>
+                  {!readOnly ? (
+                    <ZhWarehouseSelector
+                      value={line.warehouseId ?? null}
+                      onChange={(id, option) =>
+                        onUpdateWarehouse(line._key, id, option)
+                      }
+                      itemId={line.itemId}
+                      fallbackWarehouses={warehouses}
+                      defaultWarehouseId={selectedWarehouseId}
+                      disabled={disabled}
+                      placeholder="Seleccione bodega"
+                    />
+                  ) : (
+                    <div className="sf-product__stock-wh">
+                      {warehouses.find((w) => w.id === line.warehouseId)?.name ??
+                        stockWarehouse ??
+                        "—"}
+                    </div>
+                  )}
+                </div>
                 {line.itemId && (
                   // Reutiliza el Kardex ya existente (mismo destino que "Ver Movimiento de
                   // Inventario" en el listado de facturas) — sin endpoint ni componente nuevo.
