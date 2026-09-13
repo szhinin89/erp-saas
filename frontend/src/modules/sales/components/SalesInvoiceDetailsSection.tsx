@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { SalesInvoiceDetailDto } from "../api/salesService";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
@@ -15,10 +14,10 @@ import { ZHLineCard } from "../../../components/zh/ZHLineCard";
 import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
-import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { SalesItemSearchResultsGrid } from "./SalesItemSearchResultsGrid";
 import {
   lineNet,
   calcLineTax,
@@ -30,23 +29,6 @@ import {
   presentationEquivalenceLabel,
 } from "../utils/salesCalc";
 import "../styles/sales-product-card.css";
-
-// ── Resaltado de coincidencias ────────────────────────────────────────────────
-function highlightMatch(text: string, query: string): ReactNode {
-  const q = query.trim();
-  if (!q) return text;
-  const idx = text.toLowerCase().indexOf(q.toLowerCase());
-  if (idx === -1) return text;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark className="sf-search-highlight">
-        {text.slice(idx, idx + q.length)}
-      </mark>
-      {text.slice(idx + q.length)}
-    </>
-  );
-}
 
 export type LineWithKey = SalesLineFormValues;
 
@@ -236,8 +218,6 @@ export function SalesInvoiceDetailsSection({
     })();
   };
 
-  const dc = getDecimalConfig();
-
   const vatLabel = (code: string) => {
     if (!code) return "Sin IVA configurado";
     const rate = vatRates?.[code];
@@ -286,172 +266,16 @@ export function SalesInvoiceDetailsSection({
                   Sin resultados para &ldquo;{query}&rdquo;
                 </div>
               ) : (
-                results.map((item, i) => {
-                  const stockVal = item.availableStock ?? 0;
-                  const badge = stockBadgeInfo(stockVal);
-                  const hasPrice = item.salePriceWithoutTax != null;
-                  const ivaLabel = parenthesizeRateLabel(item.vatDisplay);
-                  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: cuando la lista de precios default
-                  // aplica un descuento/recargo, "Precio final" debe mostrar el precio que
-                  // realmente se facturará (el mismo que resolverá /items/{id}/pricing al
-                  // agregar el ítem) — no el precio base sin resolver. discountedFinalSalePrice/
-                  // discountedSalePriceWithoutTax ya vienen calculados por el backend
-                  // (PricingCalculation, mismo motor que PricingResolver); nunca se recalculan acá.
-                  const hasDiscount = item.discountDescription != null;
-                  const effectiveNet = hasDiscount
-                    ? item.discountedSalePriceWithoutTax
-                    : item.salePriceWithoutTax;
-                  const effectiveFinal = hasDiscount
-                    ? item.discountedFinalSalePrice
-                    : item.finalSalePrice;
-                  // Diferencia entre el total con impuestos y la base sin impuestos, ya
-                  // calculados por el backend (SriTaxCalculator) — no se recalcula ninguna
-                  // tasa acá, solo se resta lo que el servidor ya devolvió.
-                  const ivaAmount =
-                    hasPrice && effectiveFinal != null && effectiveNet != null
-                      ? effectiveFinal - effectiveNet
-                      : null;
-
-                  return (
-                    <div
-                      key={item.id}
-                      ref={(el) => {
-                        resultRefs.current[i] = el;
-                      }}
-                      role="option"
-                      aria-selected={i === focusIdx}
-                      className={`sf-result${i === focusIdx ? " sf-result--focused" : ""}`}
-                      onClick={() => void selectItem(item)}
-                      onMouseEnter={() => setFocusIdx(i)}
-                    >
-                      {/* Info: SKU + estado de stock, nombre, disponibilidad */}
-                      <div className="sf-result__main">
-                        <div className="sf-result__header-row">
-                          <span className="sf-result__sku zh-code-value">{item.sku}</span>
-                          {item.tracksStock && (
-                            <Badge
-                              label={badge.label}
-                              variant={badge.variant}
-                              upper
-                              size="md"
-                            />
-                          )}
-                        </div>
-                        <div className="sf-result__name">
-                          {highlightMatch(item.description, query)}
-                        </div>
-                        {item.tracksStock ? (
-                          item.availableStock != null ? (
-                            <div className="sf-result__stock-line">
-                              STOCK:{" "}
-                              <strong>
-                                {item.availableStock.toFixed(dc.quantity)}
-                              </strong>{" "}
-                              {item.uomAbbrev}
-                            </div>
-                          ) : (
-                            // Dato de disponibilidad no cargado (distinto de "confirmado en 0")
-                            // — no se inventa un número, se reutiliza la misma etiqueta que ya
-                            // usa el badge de stock (stockBadgeInfo) para el caso sin datos.
-                            <div className="sf-result__stock-line sf-result__stock-line--muted">
-                              {stockBadgeInfo(0).label}
-                            </div>
-                          )
-                        ) : (
-                          <div className="sf-result__stock-line sf-result__stock-line--muted">
-                            No controla inventario
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Precio: Precio sin IVA / IVA (tasa) / Precio final — costo nunca se
-                          muestra en venta. Las etiquetas se ven en mayúsculas por CSS
-                          (.sf-result__price-lbl, text-transform: uppercase), no por el string. */}
-                      <div className="sf-result__prices">
-                        {hasPrice ? (
-                          <>
-                            <div className="sf-result__price-row">
-                              <span className="sf-result__price-lbl">
-                                Precio sin IVA
-                              </span>
-                              <ZHMoneyValue
-                                value={item.salePriceWithoutTax!}
-                                decimals={dc.salesUnitPrice}
-                                className="sf-result__price-val"
-                              />
-                            </div>
-                            {hasDiscount && (
-                              // Explica por qué "Precio final" difiere del precio base de arriba
-                              // — mismo dato (priceListName + discountDescription) que la línea de
-                              // factura mostrará una vez agregado el ítem.
-                              <div className="sf-result__price-row sf-result__price-row--discount">
-                                <span className="sf-result__price-lbl">
-                                  {item.priceListName}
-                                </span>
-                                <span className="sf-result__discount-val">
-                                  {item.discountDescription}
-                                </span>
-                              </div>
-                            )}
-                            <div className="sf-result__price-row">
-                              <span className="sf-result__price-lbl">
-                                {ivaLabel}
-                              </span>
-                              {ivaAmount != null ? (
-                                <ZHMoneyValue
-                                  value={ivaAmount}
-                                  decimals={dc.salesUnitPrice}
-                                  className="sf-result__price-val"
-                                />
-                              ) : (
-                                <span className="sf-result__price-val">—</span>
-                              )}
-                            </div>
-                            {effectiveFinal != null && (
-                              <div className="sf-result__price-row sf-result__price-row--final">
-                                <span className="sf-result__price-lbl">
-                                  Precio final
-                                </span>
-                                <ZHMoneyValue
-                                  value={effectiveFinal}
-                                  decimals={dc.salesUnitPrice}
-                                  className="sf-result__price-val sf-result__price-val--final"
-                                />
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="sf-result__no-price">
-                            <span className="sf-result__no-price-title">
-                              Sin precio
-                            </span>
-                            <span className="sf-result__no-price-sub">
-                              Sin precio configurado
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <ZHFieldHelp helpKey={HELP_KEYS.SALES_PRICING} />
-
-                      <ZHBtn
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        className="sf-result__add-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void selectItem(item);
-                        }}
-                      >
-                        <span className="material-symbols-outlined zh-icon-sm">
-                          add_shopping_cart
-                        </span>
-                        Agregar
-                      </ZHBtn>
-                    </div>
-                  );
-                })
+                <SalesItemSearchResultsGrid
+                  results={results}
+                  searchTerm={query}
+                  focusIndex={focusIdx}
+                  onAdd={(item) => void selectItem(item)}
+                  onHoverIndex={setFocusIdx}
+                  registerResultRef={(i, el) => {
+                    resultRefs.current[i] = el;
+                  }}
+                />
               )}
             </div>
           )}

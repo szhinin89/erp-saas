@@ -670,7 +670,8 @@
    cobro actual usa .sales-summary-box/.sales-summary-row (ver SalesPage.css). */
 
 /* ═══════════════════════════════════════════════════════════════
-   Buscador de productos — 5 columnas compactas
+   Buscador de productos — grilla horizontal con encabezado de columnas
+   (SALES-ITEM-SEARCH-RESULT-TABLE-UX-01)
    Prefijo sf-result__ — sin impacto en otros módulos
    ═══════════════════════════════════════════════════════════════ */
 
@@ -714,16 +715,49 @@
   cursor: wait;
 }
 
-/* ── Fila de resultado (SALES-RETAIL-READY-01-FIX05) ───────────
-   Estructura: [info: sku+estado, nombre, stock] | [precios: sin IVA/IVA/final] | [Agregar].
-   Es un <div role="option"> (no <button>) porque contiene un botón "Agregar" propio —
-   un <button> dentro de otro <button> es HTML inválido. El click en toda la fila y el
-   Enter del buscador (manejados fuera, en el input) siguen disparando la misma acción. */
+/* ── Grilla de resultados (SALES-ITEM-SEARCH-RESULT-TABLE-UX-01) ───────
+   Mismas 7 columnas para el encabezado y cada fila: Código | Producto | Stock | Precio reg. |
+   Promo | Precio final | Agregar. Reemplaza la tarjeta de 2 filas anterior (código+nombre+
+   Agregar / Stock+precio con labels inline) y, antes de esa, la ficha vertical original
+   (Precio sin IVA/IVA/Precio final apilados) — mismos datos del DTO, nunca recalculados, solo
+   cambia la presentación a una grilla real con encabezado, como pidió el usuario (referencia
+   visual de un buscador tipo tabla de retail). */
+.sf-search-columns-header,
 .sf-result {
+  display: grid;
+  grid-template-columns: 88px minmax(120px, 2fr) 118px 76px 64px 88px 92px;
+  align-items: center;
+  column-gap: var(--space-3);
+}
+
+.sf-search-columns-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 16px;
+  background: var(--color-surface-container-low);
+  border-bottom: 1px solid var(--color-border);
+}
+.sf-search-columns-header__cell {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 10px 16px;
+  gap: 2px;
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.sf-search-columns-header__cell--add {
+  justify-content: flex-end;
+}
+
+/* Es un <div role="option"> (no <button>) porque contiene un botón "Agregar" propio — un
+   <button> dentro de otro <button> es HTML inválido. El click en toda la fila y el Enter del
+   buscador (manejados fuera, en el input) siguen disparando la misma acción. */
+.sf-result {
+  padding: 8px 16px;
   border: none;
   border-bottom: 1px solid var(--color-border);
   border-left: 3px solid transparent;
@@ -735,7 +769,6 @@
   transition:
     background 0.12s ease,
     border-left-color 0.12s ease;
-  min-height: 64px;
 }
 .sf-result:last-child {
   border-bottom: none;
@@ -746,19 +779,28 @@
   border-left-color: var(--color-primary);
 }
 
-/* ── Zona info: SKU + estado de stock, nombre, disponibilidad ── */
-.sf-result__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.sf-result__header-row {
+.sf-result__col {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  min-width: 0;
 }
+.sf-result__col-stock {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.sf-result__col-price-normal,
+.sf-result__col-price-final {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.sf-result__col-promo {
+  justify-content: flex-start;
+}
+.sf-result__col-add {
+  justify-content: flex-end;
+}
+
 .sf-result__sku {
   display: inline-block;
   font-size: var(--text-badge-size);
@@ -770,12 +812,15 @@
   border-radius: var(--radius-sm);
   padding: 1px 6px;
   line-height: 1.6;
-  max-width: 120px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .sf-result__name {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   font-size: var(--text-body-lg-size);
   font-weight: 600;
   color: var(--color-text-primary);
@@ -784,88 +829,80 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sf-result__stock-line {
+.sf-result__add-btn {
+  white-space: nowrap;
+}
+
+.sf-result__meta-sub {
   font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.sf-result__stock-line strong {
-  color: var(--color-text-primary);
-  font-weight: 700;
-}
-
-/* ── Zona precio: Sin IVA / IVA / Final ────────────────────────
-   Sin costo — información interna, nunca se muestra en el buscador de venta. */
-.sf-result__prices {
-  flex-shrink: 0;
-  width: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding-right: var(--space-3);
-  border-right: 1px solid var(--color-border);
-}
-.sf-result__price-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-}
-.sf-result__price-row--final {
-  margin-top: 2px;
-  padding-top: 2px;
-  border-top: 1px solid var(--color-border);
-}
-.sf-result__price-lbl {
+.sf-result__stock-qty {
   font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  text-transform: uppercase;
-  letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
-.sf-result__price-val {
-  font-size: var(--text-help-size);
-  font-weight: 600;
+.sf-result__stock-qty--muted {
+  font-style: italic;
 }
-.sf-result__price-val--final {
-  color: var(--color-success);
-  font-weight: 800;
+/* SALES-ITEM-SEARCH-RESULT-PRICE-HIERARCHY-01: orden de lectura Normal → Promo → Final — el
+   precio normal (tachado cuando hay descuento) es solo comparación visual, nunca el dato
+   destacado; "Precio final" (.sf-result__price-final) es siempre el más grande/marcado de los
+   dos, con o sin descuento. Sin descuento, el precio normal se muestra sin tachar
+   (--flat) porque normal == final. */
+.sf-result__price-normal {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  white-space: nowrap;
+}
+.sf-result__price-normal--flat {
+  text-decoration: none;
+}
+.sf-result__price-final {
   font-size: var(--text-body-md-size);
+  font-weight: 800;
+  color: var(--color-success);
+  white-space: nowrap;
 }
-
-/* SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: explica por qué "Precio final" difiere del precio
-   base mostrado arriba — mismo tono que .sf-search-highlight (--color-warning), reservado en
-   este módulo para "esto no es lo obvio, léelo". */
-.sf-result__discount-val {
-  font-size: var(--text-help-size);
+/* El descuento sigue visible, ahora como una insignia corta ("-5%"/"+3%"/"Ajuste aplicado") en
+   su propia columna Promo — el texto técnico de origen de la regla ("regla general"/
+   "excepción") y el nombre de la lista ya no se muestran acá, quedan completos en el title de
+   la celda (SALES-ITEM-SEARCH-RESULT-TABLE-UX-01 / PRICE-HIERARCHY-01). */
+.sf-result__discount-tag {
+  font-size: var(--text-label-sm-size);
   font-weight: 700;
   color: var(--color-warning);
-  text-align: right;
+  white-space: nowrap;
+}
+.sf-result__promo-empty {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
 }
 
-.sf-result__no-price {
-  display: flex;
+.sf-result__col-no-price {
+  grid-column: span 3;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: flex-start;
 }
-.sf-result__no-price-title {
+.sf-result__no-price {
   font-size: var(--text-label-sm-size);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
-}
-.sf-result__no-price-sub {
-  font-size: var(--text-label-sm-size);
-  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
-/* ── Botón Agregar ──────────────────────────────────────────── */
-.sf-result__add-btn {
-  flex-shrink: 0;
-  white-space: nowrap;
+@media (max-width: 900px) {
+  .sf-search-columns-header,
+  .sf-result {
+    grid-template-columns: 72px minmax(100px, 1.6fr) 96px 64px 52px 76px 80px;
+    column-gap: var(--space-2);
+  }
+  .sf-search-columns-header__cell:nth-child(3),
+  .sf-search-columns-header__cell:nth-child(4) {
+    font-size: 10px;
+  }
 }

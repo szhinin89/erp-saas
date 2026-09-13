@@ -4,9 +4,12 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
 
-// SALES-RETAIL-READY-01-FIX05 — jerarquía visual de los resultados del buscador POS: nombre,
-// código, estado/stock, desglose Precio sin IVA / IVA / Precio final (FIX05A), sin costo, botón
-// Agregar. La imagen del usuario se usó solo como referencia de jerarquía — no se copió literal.
+// SALES-ITEM-SEARCH-RESULTS-GRID-COMPONENT-01: la grilla de resultados (encabezado de columnas,
+// precio normal/promo/final, stock, highlight, etc.) se extrajo a SalesItemSearchResultsGrid
+// (ver SalesItemSearchResultsGrid.test.tsx para esa cobertura). Este archivo se reduce a la
+// integración mínima con el buscador: que SalesInvoiceDetailsSection renderiza la grilla con los
+// resultados correctos y que el flujo de búsqueda/selección (click, Enter, escaneo por barcode)
+// sigue funcionando igual que antes de la extracción.
 
 const searchMock = vi.fn();
 vi.mock("../api/invoiceItemSearchService", () => ({
@@ -19,17 +22,6 @@ afterEach(() => {
   cleanup();
   searchMock.mockReset();
 });
-
-// Precio sin IVA / IVA / Precio final ahora renderizan con ZHMoneyValue
-// (SALES-DS-MONEY-12): símbolo y monto quedan en <span> hermanos, así que el
-// texto completo ("$24.30") ya no vive en un único nodo de texto — se ubica
-// por la clase zh-money-value en vez de por texto plano.
-function getMoneyValueByText(text: string): HTMLElement {
-  return screen.getByText((_, element) => {
-    if (!element || !element.classList.contains("zh-money-value")) return false;
-    return element.textContent === text;
-  });
-}
 
 function makeResult(
   overrides: Partial<InvoiceItemSearchResultDto> = {},
@@ -86,108 +78,20 @@ function typeQuery(query: string) {
   return input;
 }
 
-describe("SalesInvoiceDetailsSection — resultados del buscador (jerarquía retail)", () => {
-  it("muestra el nombre del producto", async () => {
-    // El texto de coincidencia queda resaltado en <mark> (highlightMatch), así que el nombre
-    // completo no vive en un único nodo de texto — se valida vía el textContent del contenedor.
+describe("SalesInvoiceDetailsSection — integración con el buscador de productos", () => {
+  it("renderiza la grilla de resultados (encabezado + fila) para la búsqueda actual", async () => {
     searchMock.mockResolvedValue([makeResult()]);
     const { container } = renderSection();
     typeQuery("club");
     await screen.findByText("15865");
+    expect(container.querySelector(".sf-search-columns-header")).not.toBeNull();
+    expect(container.querySelector(".sf-result")).not.toBeNull();
     expect(container.querySelector(".sf-result__name")?.textContent).toBe(
       "CLUB 850CC RB CAJA X12",
     );
   });
 
-  it("muestra el código/SKU", async () => {
-    searchMock.mockResolvedValue([makeResult()]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText("15865")).not.toBeNull();
-  });
-
-  it("muestra el stock disponible", async () => {
-    searchMock.mockResolvedValue([makeResult({ availableStock: 5 })]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText(/STOCK:/)).not.toBeNull();
-    expect(screen.getByText("5.0000")).not.toBeNull();
-  });
-
-  it("muestra la etiqueta Precio sin IVA (SALES-RETAIL-READY-01-FIX05A)", async () => {
-    searchMock.mockResolvedValue([makeResult()]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText("Precio sin IVA")).not.toBeNull();
-    expect(getMoneyValueByText("$24.30")).not.toBeNull();
-  });
-
-  it("muestra la etiqueta IVA (15%)", async () => {
-    searchMock.mockResolvedValue([makeResult()]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText("IVA (15%)")).not.toBeNull();
-    expect(getMoneyValueByText("$3.65")).not.toBeNull();
-  });
-
-  it("muestra la etiqueta Precio final con el precio final destacado (SALES-RETAIL-READY-01-FIX05A)", async () => {
-    searchMock.mockResolvedValue([makeResult()]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText("Precio final")).not.toBeNull();
-    const finalValue = getMoneyValueByText("$27.95");
-    expect(finalValue).not.toBeNull();
-    expect(finalValue.className).toContain("sf-result__price-val--final");
-  });
-
-  it("no muestra Costo en el resultado del buscador", async () => {
-    searchMock.mockResolvedValue([makeResult({ averageCost: 18.5 })]);
-    renderSection();
-    typeQuery("club");
-    await screen.findByText("Precio sin IVA");
-    expect(screen.queryByText(/costo/i)).toBeNull();
-    expect(screen.queryByText("$18.50")).toBeNull();
-  });
-
-  it("producto con stock bajo (≤5) muestra STOCK BAJO", async () => {
-    searchMock.mockResolvedValue([makeResult({ availableStock: 2 })]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText(/stock bajo/i)).not.toBeNull();
-  });
-
-  it("producto sin stock (dato real 0) muestra el badge SIN STOCK y la cantidad real 0.0000, nunca un guion", async () => {
-    searchMock.mockResolvedValue([makeResult({ availableStock: 0 })]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText(/sin stock/i)).not.toBeNull();
-    expect(await screen.findByText(/STOCK:/)).not.toBeNull();
-    expect(screen.getByText("0.0000")).not.toBeNull();
-  });
-
-  it("producto sin dato de disponibilidad (null, no confirmado en 0) no inventa stock — muestra 'Sin stock' en vez de 'STOCK: — UN' (SALES-RETAIL-READY-01-FIX05A)", async () => {
-    searchMock.mockResolvedValue([makeResult({ availableStock: null })]);
-    renderSection();
-    typeQuery("club");
-    await screen.findByText("15865");
-    // No debe mostrarse el guion "—" como si fuera un valor de stock.
-    expect(screen.queryByText(/STOCK:/)).toBeNull();
-    expect(screen.queryByText("—")).toBeNull();
-    expect(screen.getAllByText(/sin stock/i).length).toBeGreaterThan(0);
-  });
-
-  it("producto sin precio configurado (null) muestra SIN PRECIO / Sin precio configurado, nunca $0.00", async () => {
-    searchMock.mockResolvedValue([
-      makeResult({ salePriceWithoutTax: null, finalSalePrice: null }),
-    ]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText("Sin precio")).not.toBeNull();
-    expect(screen.getByText("Sin precio configurado")).not.toBeNull();
-    expect(screen.queryByText("$0.00")).toBeNull();
-  });
-
-  it("el botón Agregar ejecuta la misma acción que seleccionar la fila", async () => {
+  it("el botón Agregar de la grilla ejecuta onAddItemLine", async () => {
     searchMock.mockResolvedValue([makeResult()]);
     const { onAddItemLine } = renderSection();
     typeQuery("club");
@@ -220,57 +124,19 @@ describe("SalesInvoiceDetailsSection — resultados del buscador (jerarquía ret
     );
   });
 
-  it("no introduce estilos inline en los resultados", async () => {
+  it("sin resultados no renderiza la grilla, solo el mensaje de 'sin resultados'", async () => {
+    searchMock.mockResolvedValue([]);
+    const { container } = renderSection();
+    typeQuery("xyz");
+    await screen.findByText(/Sin resultados para/i);
+    expect(container.querySelector(".sf-search-columns-header")).toBeNull();
+  });
+
+  it("no introduce estilos inline en la sección de resultados", async () => {
     searchMock.mockResolvedValue([makeResult()]);
     const { container } = renderSection();
     typeQuery("club");
     await screen.findByText("15865");
     expect(container.querySelectorAll("[style]").length).toBe(0);
-  });
-
-  // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: mismo caso reportado — ítem con precio base $2.10 y
-  // lista de precios default con descuento 5% (1.995, redondeado a $2.00). El buscador debe
-  // mostrar el precio base, la lista/descuento aplicado, y "Precio final" ya con el descuento —
-  // no el precio que en realidad no se va a facturar.
-  it("producto con descuento de lista muestra precio base, la lista aplicada y el precio final ya descontado", async () => {
-    searchMock.mockResolvedValue([
-      makeResult({
-        salePriceWithoutTax: 2.1,
-        finalSalePrice: 2.1,
-        vatDisplay: "IVA 0%",
-        vatCode: "0",
-        priceListName: "Lista General",
-        discountDescription: "Descuento 5%",
-        discountedSalePriceWithoutTax: 1.995,
-        discountedFinalSalePrice: 1.995,
-      }),
-    ]);
-    renderSection();
-    typeQuery("club");
-    expect(await screen.findByText("Precio sin IVA")).not.toBeNull();
-    expect(getMoneyValueByText("$2.10")).not.toBeNull();
-    expect(screen.getByText("Lista General")).not.toBeNull();
-    expect(screen.getByText("Descuento 5%")).not.toBeNull();
-    const finalValue = getMoneyValueByText("$2.00");
-    expect(finalValue).not.toBeNull();
-    expect(finalValue.className).toContain("sf-result__price-val--final");
-  });
-
-  it("producto sin descuento de lista muestra precio base = precio final, sin explicación de descuento", async () => {
-    searchMock.mockResolvedValue([
-      makeResult({
-        salePriceWithoutTax: 24.3,
-        finalSalePrice: 27.95,
-        priceListName: null,
-        discountDescription: null,
-        discountedSalePriceWithoutTax: null,
-        discountedFinalSalePrice: null,
-      }),
-    ]);
-    renderSection();
-    typeQuery("club");
-    await screen.findByText("Precio sin IVA");
-    expect(getMoneyValueByText("$27.95")).not.toBeNull();
-    expect(screen.queryByText(/descuento/i)).toBeNull();
   });
 });
