@@ -163,6 +163,8 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             Mock.Of<ISriTaxResolver>(),
             Mock.Of<IPricingResolver>(),
             companyTaxRepo.Object,
+            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository>(),
+            Mock.Of<ERP.Application.Common.Interfaces.IAverageCostService>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == activeBranchId),

@@ -47,6 +47,18 @@ export const salesLineSchema = z.object({
   _stockQty: z.number().optional(),
   _stockWarehouse: z.string().optional(),
   _tracksStock: z.boolean().optional(),
+  // SALES-HISTORICAL-PRICING-SNAPSHOT-01: snapshot histórico persistido, hidratado SOLO al
+  // cargar una factura ya guardada (loadForEdit) — deliberadamente distinto de los efímeros de
+  // captura de arriba (_basePrice/_priceListName/_discountDescription/_stockWarehouse), que
+  // reflejan precio/stock EN VIVO al momento de agregar el ítem desde el buscador. Mezclar ambos
+  // conceptos en el mismo campo haría que una factura guardada mostrara datos en vivo (el bug
+  // original de esta auditoría) o que una venta nueva mostrara "congelado" antes de existir.
+  _listPriceAtSale: z.number().nullable().optional(),
+  _priceListNameAtSale: z.string().nullable().optional(),
+  _pricingSourceAtSale: z.string().nullable().optional(),
+  _discountDescriptionAtSale: z.string().nullable().optional(),
+  _warehouseNameAtSale: z.string().nullable().optional(),
+  _unitCostAtSale: z.number().nullable().optional(),
   /** Presentaciones disponibles del ítem (snapshot tomado al agregar la línea desde el
    * buscador) — solo para poblar el selector, nunca se envía al backend. */
   _packagingLevels: z

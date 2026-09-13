@@ -1,11 +1,15 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
+using ERP.Domain.Common;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases;
@@ -210,6 +214,8 @@ public sealed class CreateSalesDraftHandler
     private readonly ISriTaxResolver _tax;
     private readonly IPricingResolver _pricing;
     private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
+    private readonly IWarehouseRepository _warehouseRepo;
+    private readonly IAverageCostService _costService;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -229,6 +235,8 @@ public sealed class CreateSalesDraftHandler
         ISriTaxResolver tax,
         IPricingResolver pricing,
         ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
+        IWarehouseRepository warehouseRepo,
+        IAverageCostService costService,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -248,6 +256,8 @@ public sealed class CreateSalesDraftHandler
         _tax = tax;
         _pricing = pricing;
         _companyTaxRepo = companyTaxRepo;
+        _warehouseRepo = warehouseRepo;
+        _costService = costService;
         _t = t;
         _c = c;
         _b = b;
@@ -324,6 +334,8 @@ public sealed class CreateSalesDraftHandler
             _itemRepo,
             _tax,
             _pricing,
+            _warehouseRepo,
+            _costService,
             preferences.SalesPos,
             companyResponsibleCodes,
             ct
@@ -515,6 +527,8 @@ public sealed class UpdateSalesDraftHandler
     private readonly ISriTaxResolver _tax;
     private readonly IPricingResolver _pricing;
     private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
+    private readonly IWarehouseRepository _warehouseRepo;
+    private readonly IAverageCostService _costService;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -532,6 +546,8 @@ public sealed class UpdateSalesDraftHandler
         ISriTaxResolver tax,
         IPricingResolver pricing,
         ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
+        IWarehouseRepository warehouseRepo,
+        IAverageCostService costService,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -549,6 +565,8 @@ public sealed class UpdateSalesDraftHandler
         _tax = tax;
         _pricing = pricing;
         _companyTaxRepo = companyTaxRepo;
+        _warehouseRepo = warehouseRepo;
+        _costService = costService;
         _t = t;
         _c = c;
         _b = b;
@@ -653,6 +671,8 @@ public sealed class UpdateSalesDraftHandler
                 _itemRepo,
                 _tax,
                 _pricing,
+                _warehouseRepo,
+                _costService,
                 preferences.SalesPos,
                 companyResponsibleCodes,
                 ct
@@ -959,11 +979,17 @@ file static class SalesLineBuilder
         IItemRepository itemRepo,
         ISriTaxResolver tax,
         IPricingResolver pricingResolver,
+        IWarehouseRepository warehouseRepo,
+        IAverageCostService costService,
         SalesPosPreferences salesPosPreferences,
         IReadOnlyCollection<string> companyResponsibleCodes,
         CancellationToken ct
     )
     {
+        // SALES-HISTORICAL-PRICING-SNAPSHOT-01: nombre de bodega resuelto UNA vez por bodega
+        // distinta usada en el Draft (evita relecturas repetidas cuando varias líneas despachan
+        // de la misma bodega) — solo LEE el catálogo, nunca lo modifica.
+        var warehouseNameCache = new Dictionary<Guid, string?>();
         var lines = new List<SalesInvoiceDetail>();
         foreach (var l in inputs)
         {
@@ -1006,6 +1032,12 @@ file static class SalesLineBuilder
             decimal conversionFactor = 1m;
             Guid? packagingLevelId = null;
             Guid? warehouseId = null;
+            // SALES-HISTORICAL-PRICING-SNAPSHOT-01: resultado del Pricing Engine v2 para esta
+            // línea (si el ítem lo resolvió con éxito) — usado más abajo, tras crear la línea, para
+            // congelar ListPriceAtSale/PriceListId/PriceListName/PricingSource. Independiente del
+            // resultado de la validación de piso de descuento (que solo consume resolvedPrice).
+            PricingResult? pricingResultValue = null;
+            bool tracksStockForCost = false;
 
             if (l.ItemId.HasValue)
             {
@@ -1056,6 +1088,7 @@ file static class SalesLineBuilder
                             )
                         );
                     warehouseId = l.WarehouseId;
+                    tracksStockForCost = true;
                 }
 
                 // Configuración Tributaria CLOSED: el Item es la única fuente de verdad —
@@ -1092,6 +1125,7 @@ file static class SalesLineBuilder
                 var pricingResult = await pricingResolver.ResolveAsync(item.Id, ct: ct);
                 if (pricingResult.IsSuccess)
                 {
+                    pricingResultValue = pricingResult.Value;
                     var resolvedPrice = pricingResult.Value!.UnitPrice * conversionFactor;
                     var maxDiscountPercent = item.SaleConfig.MaxDiscountPercent;
                     if (maxDiscountPercent.HasValue)
@@ -1139,6 +1173,97 @@ file static class SalesLineBuilder
             var taxResult = await SalesTaxHelper.ResolveTaxesAsync(line, tax, irbpnrCode, ct);
             if (taxResult is not null)
                 return new(null!, taxResult);
+
+            // SALES-HISTORICAL-PRICING-SNAPSHOT-01 — snapshot comercial histórico, resuelto con
+            // los mismos datos reales ya usados arriba (pricing/costing/bodega vigentes en este
+            // instante del Draft) — nunca inventado, nunca recalculado en Authorize (ver
+            // AuthorizeSalesInvoiceHandler, que jamás llama SetHistoricalSnapshot).
+            string? warehouseName = null;
+            if (warehouseId.HasValue)
+            {
+                if (!warehouseNameCache.TryGetValue(warehouseId.Value, out warehouseName))
+                {
+                    var warehouse = await warehouseRepo.GetByIdAsync(tid, warehouseId.Value, ct);
+                    warehouseName = warehouse?.Name;
+                    warehouseNameCache[warehouseId.Value] = warehouseName;
+                }
+            }
+
+            // Costo: solo lectura de IAverageCostService (Kardex) — 0 significa "sin stock
+            // registrado" (ver contrato de ObtenerCostoPromedioAsync), tratado igual que "sin
+            // dato" para no persistir un costo cero engañoso.
+            decimal? unitCostAtSale = null;
+            decimal? totalCostAtSale = null;
+            if (tracksStockForCost && l.ItemId.HasValue && warehouseId.HasValue)
+            {
+                var averageCost = await costService.ObtenerCostoPromedioAsync(
+                    tid,
+                    l.ItemId.Value,
+                    warehouseId.Value,
+                    ct
+                );
+                if (averageCost > 0m)
+                {
+                    unitCostAtSale = Math.Round(
+                        averageCost,
+                        FiscalPrecision.UnitCost,
+                        MidpointRounding.AwayFromZero
+                    );
+                    totalCostAtSale = Math.Round(
+                        unitCostAtSale.Value * line.QuantityInBaseUom,
+                        FiscalPrecision.UnitCost,
+                        MidpointRounding.AwayFromZero
+                    );
+                }
+            }
+
+            // ListPriceAtSale = precio resuelto por el Pricing Engine v2 (ya escalado a la unidad
+            // vendida) ANTES de cualquier edición manual del precio facturado — puede diferir de
+            // line.UnitPrice si el usuario sobrescribió el precio propuesto.
+            decimal? listPriceAtSale =
+                pricingResultValue is not null
+                    ? Math.Round(
+                        pricingResultValue.UnitPrice * conversionFactor,
+                        FiscalPrecision.UnitCost,
+                        MidpointRounding.AwayFromZero
+                    )
+                    : null;
+            var pricingSource =
+                pricingResultValue is not null
+                    ? (pricingResultValue.RuleApplied ?? "BaseSalePrice")
+                    : null;
+
+            // DiscountSource/DiscountDescription: el único mecanismo de descuento de línea hoy es
+            // manual (l.DiscountPct — ver comentario más arriba, "SalesLineBuilder"); cuando no hay
+            // descuento manual pero el precio sí quedó ajustado por una regla del Pricing Engine,
+            // se documenta esa regla como el origen (RuleDescription, mismo texto humano que ya
+            // usa el buscador de ítems).
+            string? discountSource = null;
+            string? discountDescription = null;
+            if (l.DiscountPct > 0)
+            {
+                discountSource = "Manual";
+                discountDescription =
+                    $"Descuento manual de {l.DiscountPct:0.##}% aplicado en la línea.";
+            }
+            else if (pricingResultValue?.RuleApplied is not null)
+            {
+                discountSource = "PricingRule";
+                discountDescription = pricingResultValue.RuleDescription;
+            }
+
+            line.SetHistoricalSnapshot(
+                warehouseName,
+                unitCostAtSale,
+                totalCostAtSale,
+                listPriceAtSale,
+                pricingResultValue?.PriceListId,
+                pricingResultValue?.PriceListName,
+                pricingSource,
+                discountSource,
+                discountDescription
+            );
+
             lines.Add(line);
         }
         return new(lines, null);

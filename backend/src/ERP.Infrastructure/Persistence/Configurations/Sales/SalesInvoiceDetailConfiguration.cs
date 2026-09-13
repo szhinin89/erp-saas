@@ -102,6 +102,45 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
         builder.Property(x => x.IsFrozen).HasColumnName("is_frozen").IsRequired();
 
+        // ── SALES-HISTORICAL-PRICING-SNAPSHOT-01 — snapshot comercial histórico, aditivo
+        // (solo columnas nuevas sobre sales_invoice_details, ninguna existente se toca). Tipos
+        // numeric alineados a las columnas hermanas ya existentes en esta misma entidad:
+        // ListPriceAtSale/UnitCostAtSale/TotalCostAtSale siguen el mismo numeric(18,6) que
+        // UnitPrice/DiscountAmount (docs/architecture/data-standards.md — "Precios unitarios").
+        builder
+            .Property(x => x.WarehouseName)
+            .HasColumnName("warehouse_name")
+            .HasMaxLength(SalesInvoiceDetail.WarehouseNameMaxLen);
+        builder
+            .Property(x => x.UnitCostAtSale)
+            .HasColumnName("unit_cost_at_sale")
+            .HasColumnType("numeric(18,6)");
+        builder
+            .Property(x => x.TotalCostAtSale)
+            .HasColumnName("total_cost_at_sale")
+            .HasColumnType("numeric(18,6)");
+        builder
+            .Property(x => x.ListPriceAtSale)
+            .HasColumnName("list_price_at_sale")
+            .HasColumnType("numeric(18,6)");
+        builder.Property(x => x.PriceListId).HasColumnName("price_list_id");
+        builder
+            .Property(x => x.PriceListName)
+            .HasColumnName("price_list_name")
+            .HasMaxLength(SalesInvoiceDetail.PriceListNameMaxLen);
+        builder
+            .Property(x => x.PricingSource)
+            .HasColumnName("pricing_source")
+            .HasMaxLength(SalesInvoiceDetail.PricingSourceMaxLen);
+        builder
+            .Property(x => x.DiscountSource)
+            .HasColumnName("discount_source")
+            .HasMaxLength(SalesInvoiceDetail.DiscountSourceMaxLen);
+        builder
+            .Property(x => x.DiscountDescription)
+            .HasColumnName("discount_description")
+            .HasMaxLength(SalesInvoiceDetail.DiscountDescriptionMaxLen);
+
         builder.Ignore(x => x.LineSubtotal);
         builder.Ignore(x => x.TaxableBase);
         builder.Ignore(x => x.TaxInclusiveTotal);
@@ -127,6 +166,16 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
             .HasOne<Warehouse>()
             .WithMany()
             .HasForeignKey(x => x.WarehouseId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // SALES-HISTORICAL-PRICING-SNAPSHOT-01 — FK opcional a PriceList (Pricing Engine v2,
+        // ADR-021): solo referencia informativa del snapshot, nunca gobierna el precio de la
+        // línea (ya congelado en UnitPrice/ListPriceAtSale).
+        builder
+            .HasOne<ERP.Domain.Modules.Pricing.Entities.PriceList>()
+            .WithMany()
+            .HasForeignKey(x => x.PriceListId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 

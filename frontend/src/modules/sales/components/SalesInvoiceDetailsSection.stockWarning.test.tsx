@@ -34,7 +34,13 @@ function renderSection(lines: SalesLineFormValues[]) {
     <MemoryRouter>
       <SalesInvoiceDetailsSection
         lines={lines}
-        readOnly
+        // SALES-HISTORICAL-PRICING-SNAPSHOT-01: esta advertencia preventiva es de CAPTURA en
+        // vivo (stock consultado al agregar el ítem, antes de guardar) — readOnly (factura ya
+        // guardada) deliberadamente deja de mostrar cualquier dato de stock en vivo (incluida
+        // esta advertencia), reemplazado por bodega usada + "Stock actual no consultado". Antes
+        // de esta fase, este test ejercía la advertencia con readOnly=true porque loadForEdit
+        // nunca poblaba _stockQty — coincidía por accidente, nunca reflejaba el flujo real.
+        readOnly={false}
         disabled={false}
         onRemoveLine={vi.fn()}
         onUpdateLine={vi.fn()}

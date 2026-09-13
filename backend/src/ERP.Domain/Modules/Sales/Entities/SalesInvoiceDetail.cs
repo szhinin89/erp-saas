@@ -16,6 +16,11 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     public const int UomCodeMaxLen = 10;
     public const int VatNameMaxLen = 100;
     public const int IceNameMaxLen = 100;
+    public const int WarehouseNameMaxLen = 150;
+    public const int PriceListNameMaxLen = 150;
+    public const int PricingSourceMaxLen = 50;
+    public const int DiscountSourceMaxLen = 50;
+    public const int DiscountDescriptionMaxLen = 300;
 
     // ── Identity ────────────────────────────────────────────────────────
     public Guid Id { get; private set; }
@@ -31,6 +36,49 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     // ── Bodega de despacho — obligatoria para ítems que controlan inventario;
     // una misma factura puede despachar líneas desde bodegas distintas. ──────
     public Guid? WarehouseId { get; private set; }
+
+    // ── SALES-HISTORICAL-PRICING-SNAPSHOT-01 ────────────────────────────
+    // Snapshot comercial histórico de la línea, congelado en el Draft (nunca recalculado en
+    // Authorize — ver AuthorizeSalesInvoiceHandler, que solo toca impuestos vía ApplyTaxes).
+    // Todos nullable: una línea creada antes de esta fase, o sin dato disponible al momento de
+    // vender (p. ej. sin costo Kardex resuelto), queda null — nunca se fabrica un valor al leer.
+    /// <summary>Nombre de la bodega de despacho al momento de vender (independiente de que la
+    /// bodega luego cambie de nombre o se desactive).</summary>
+    public string? WarehouseName { get; private set; }
+
+    /// <summary>Costo unitario promedio (Kardex) vigente al momento de vender — solo lectura de
+    /// <c>IAverageCostService</c>, nunca escribe/recalcula el costeo promedio.</summary>
+    public decimal? UnitCostAtSale { get; private set; }
+
+    /// <summary>Costo total de la línea (UnitCostAtSale × QuantityInBaseUom) al momento de vender.</summary>
+    public decimal? TotalCostAtSale { get; private set; }
+
+    /// <summary>Precio base/lista resuelto por <c>IPricingResolver</c> ANTES del descuento manual
+    /// de línea (<see cref="DiscountPct"/>/<see cref="DiscountAmount"/>) — puede diferir de
+    /// <see cref="UnitPrice"/> si el usuario editó el precio a mano tras la resolución.</summary>
+    public decimal? ListPriceAtSale { get; private set; }
+
+    /// <summary>FK opcional a <c>PriceList</c> (Pricing Engine v2) — la lista efectivamente
+    /// resuelta para esta línea al momento de vender.</summary>
+    public Guid? PriceListId { get; private set; }
+
+    /// <summary>Nombre visible de la lista de precios usada (snapshot — sobrevive a que la lista
+    /// cambie de nombre después).</summary>
+    public string? PriceListName { get; private set; }
+
+    /// <summary>Origen del precio resuelto (p. ej. <c>PricingResult.RuleApplied</c> del Pricing
+    /// Engine v2 — null cuando fue el precio base sin ajuste).</summary>
+    public string? PricingSource { get; private set; }
+
+    /// <summary>Origen del descuento aplicado a la línea (p. ej. "Manual" — descuento de línea
+    /// ingresado por el cajero; este dominio no tiene hoy descuentos automáticos por regla/
+    /// promoción, ver <see cref="DiscountPct"/>).</summary>
+    public string? DiscountSource { get; private set; }
+
+    /// <summary>Texto comercial legible del descuento aplicado (p. ej. "Descuento manual 5%") —
+    /// distinto de <see cref="PricingSource"/>/<c>RuleDescription</c> del Pricing Engine, que
+    /// describe el origen del PRECIO, no del descuento manual de línea.</summary>
+    public string? DiscountDescription { get; private set; }
 
     // ── UoM ─────────────────────────────────────────────────────────────
     public Guid? PackagingLevelId { get; private set; }
@@ -303,6 +351,41 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         RecalcDiscount();
         RecalcTaxes();
         SyncVatIntoCollection();
+    }
+
+    // ── Historical Commercial Snapshot (SALES-HISTORICAL-PRICING-SNAPSHOT-01) ──────────────
+    /// <summary>
+    /// Congela en la línea el snapshot comercial resuelto en el momento de capturar/recalcular el
+    /// Draft (pricing/costing/bodega vigentes en ese instante) — llamado únicamente desde
+    /// <c>SalesLineBuilder</c> (Create/Update Draft). <b>Nunca</b> se invoca desde Authorize: una
+    /// vez fijado aquí, el valor queda tal cual hasta que la línea se reemplace (nueva línea del
+    /// mismo Draft) o se congele (<see cref="Freeze"/>, que no lo modifica). Todos los parámetros
+    /// nullable — ausencia de dato real nunca se rellena con un valor inventado.
+    /// </summary>
+    public void SetHistoricalSnapshot(
+        string? warehouseName,
+        decimal? unitCostAtSale,
+        decimal? totalCostAtSale,
+        decimal? listPriceAtSale,
+        Guid? priceListId,
+        string? priceListName,
+        string? pricingSource,
+        string? discountSource,
+        string? discountDescription
+    )
+    {
+        EnsureNotFrozen();
+        WarehouseName = string.IsNullOrWhiteSpace(warehouseName) ? null : warehouseName.Trim();
+        UnitCostAtSale = unitCostAtSale;
+        TotalCostAtSale = totalCostAtSale;
+        ListPriceAtSale = listPriceAtSale;
+        PriceListId = priceListId;
+        PriceListName = string.IsNullOrWhiteSpace(priceListName) ? null : priceListName.Trim();
+        PricingSource = string.IsNullOrWhiteSpace(pricingSource) ? null : pricingSource.Trim();
+        DiscountSource = string.IsNullOrWhiteSpace(discountSource) ? null : discountSource.Trim();
+        DiscountDescription = string.IsNullOrWhiteSpace(discountDescription)
+            ? null
+            : discountDescription.Trim();
     }
 
     // ── Sort ────────────────────────────────────────────────────────────

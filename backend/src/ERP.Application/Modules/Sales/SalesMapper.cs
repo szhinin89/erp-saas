@@ -127,6 +127,15 @@ internal static class SalesMapper
             l.Notes,
             l.SortOrder,
             l.PackagingLevelId,
-            l.BaseUomCode
+            l.BaseUomCode,
+            l.WarehouseName,
+            l.UnitCostAtSale,
+            l.TotalCostAtSale,
+            l.ListPriceAtSale,
+            l.PriceListId,
+            l.PriceListName,
+            l.PricingSource,
+            l.DiscountSource,
+            l.DiscountDescription
         );
 }

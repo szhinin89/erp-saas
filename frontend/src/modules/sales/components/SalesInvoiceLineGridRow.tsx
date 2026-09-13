@@ -101,17 +101,28 @@ export function SalesInvoiceLineGridRow({
   // line._cost ya no se muestra en el modo de venta POS por defecto (FIX06) — el dato sigue
   // existiendo en el modelo, solo se dejó de renderizar en esta tarjeta.
   const pvp = line._pvp;
+  // SALES-HISTORICAL-PRICING-SNAPSHOT-01: en readOnly (factura ya guardada) los valores "en vivo"
+  // de captura (_basePrice/_priceListName/_discountDescription/_stockWarehouse) nunca están
+  // poblados — loadForEdit los deja vacíos a propósito (ver useSalesPage.ts) para no mezclar
+  // precio/stock en vivo con el snapshot histórico persistido. En readOnly se usan exclusivamente
+  // los campos *AtSale; en captura (nueva venta) se sigue igual que antes.
   // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: "Precio lista" es el precio base del ítem
   // (_basePrice, antes de que la lista de precios default aplique cualquier regla) — nunca el
   // ya-descontado `pvp`, que es el que efectivamente terminó en `unitPrice`. Fallback a `pvp`
   // solo para líneas recargadas de un borrador viejo sin el snapshot nuevo.
-  const listPrice = line._basePrice ?? pvp;
-  const discountDescription = line._isManualPrice
-    ? null
-    : (line._discountDescription ?? null);
-  const isManualPrice = line._isManualPrice === true;
-  const stockQty = line._stockQty;
-  const stockWarehouse = line._stockWarehouse;
+  const listPrice = readOnly ? line._listPriceAtSale : (line._basePrice ?? pvp);
+  const priceListName = readOnly ? line._priceListNameAtSale : line._priceListName;
+  const discountDescription = readOnly
+    ? (line._discountDescriptionAtSale ?? null)
+    : line._isManualPrice
+      ? null
+      : (line._discountDescription ?? null);
+  const isManualPrice = !readOnly && line._isManualPrice === true;
+  const stockQty = readOnly ? undefined : line._stockQty;
+  const stockWarehouse = readOnly
+    ? (line._warehouseNameAtSale ?? undefined)
+    : line._stockWarehouse;
+  const unitCostAtSale = readOnly ? line._unitCostAtSale : undefined;
   // Advertencia preventiva (UX) — solo con el dato de disponibilidad ya cargado en pantalla;
   // el backend sigue siendo quien bloquea la emisión (ver lineExceedsStock, salesCalc.ts).
   const exceedsStock = lineExceedsStock(line);
@@ -132,8 +143,8 @@ export function SalesInvoiceLineGridRow({
   // que el buscador — el texto completo de la regla ("Descuento 5% (regla general)") solo va en
   // el title de la columna Descuento; en pantalla se ve la insignia corta (discountBadgeText).
   const discountTitle = discountDescription
-    ? line._priceListName
-      ? `${discountDescription} — Lista: ${line._priceListName}`
+    ? priceListName
+      ? `${discountDescription} — Lista: ${priceListName}`
       : discountDescription
     : undefined;
 
@@ -198,12 +209,17 @@ export function SalesInvoiceLineGridRow({
                 emphasis="strong"
                 className="sf-product__pricelist-value sf-product__pricelist-value--bold"
               />
-              {line._priceListName && (
+              {priceListName && (
                 <span className="sf-product__pricelist-name">
-                  {line._priceListName}
+                  {priceListName}
                 </span>
               )}
             </div>
+          ) : readOnly ? (
+            // SALES-HISTORICAL-PRICING-SNAPSHOT-01: factura guardada sin snapshot de precio de
+            // lista (anterior a esta fase, o línea sin ítem) — "No disponible" es explícito,
+            // nunca el "—" ambiguo que sugería un dato omitido por error.
+            <span className="sales-invoice-details-empty-value">No disponible</span>
           ) : (
             <span className="sales-invoice-details-empty-value">—</span>
           )}
@@ -290,29 +306,54 @@ export function SalesInvoiceLineGridRow({
               <ZHFieldHelp helpKey={HELP_KEYS.SALES_STOCK} />
             </div>
             <div className="sf-product__stock-summary">
-              <span
-                className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
-              >
-                {stockQty != null ? stockQty : "—"}
-                {stockQty != null && (
-                  <span className="sf-product__stock-uom"> UDS</span>
-                )}
-              </span>
-              {line._tracksStock && stockQty != null && (
-                <Badge
-                  label={
-                    exceedsStock ? "Cantidad excede stock" : stockBadgeInfo(stockQty).label
-                  }
-                  variant={
-                    exceedsStock ? "red" : stockBadgeInfo(stockQty).variant
-                  }
-                  size="md"
-                />
+              {readOnly ? (
+                // SALES-HISTORICAL-PRICING-SNAPSHOT-01: una factura guardada nunca vuelve a
+                // consultar stock en vivo — "Stock —" (dato ambiguo, parecía un valor omitido por
+                // error) se reemplaza por un texto explícito de que esto es una consulta bajo
+                // demanda (link "Ver stock global" más abajo), no un dato ya cargado en pantalla.
+                <span className="sf-product__stock-qty sf-product__stock-qty--empty">
+                  Stock actual no consultado
+                </span>
+              ) : (
+                <>
+                  <span
+                    className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
+                  >
+                    {stockQty ?? "—"}
+                    {stockQty != null && (
+                      <span className="sf-product__stock-uom"> UDS</span>
+                    )}
+                  </span>
+                  {line._tracksStock && stockQty != null && (
+                    <Badge
+                      label={
+                        exceedsStock ? "Cantidad excede stock" : stockBadgeInfo(stockQty).label
+                      }
+                      variant={
+                        exceedsStock ? "red" : stockBadgeInfo(stockQty).variant
+                      }
+                      size="md"
+                    />
+                  )}
+                </>
               )}
             </div>
-            {exceedsStock && (
+            {!readOnly && exceedsStock && (
               <div className="sf-product__stock-warning">
                 {stockExceededMessage(line)}
+              </div>
+            )}
+            {readOnly && unitCostAtSale != null && (
+              // Costo al vender (SALES-HISTORICAL-PRICING-SNAPSHOT-01) — texto secundario, sin
+              // rediseñar el bloque de stock existente (el ticket pide no tocar el layout visual).
+              <div className="sf-product__stock-location">
+                <ZHFieldLabel size="sm" className="sf-product__stock-label">
+                  Costo al vender
+                </ZHFieldLabel>
+                <ZHMoneyValue
+                  value={unitCostAtSale}
+                  className="sf-product__stock-wh"
+                />
               </div>
             )}
             {line._tracksStock && (
@@ -321,7 +362,13 @@ export function SalesInvoiceLineGridRow({
                   <ZHFieldLabel size="sm" className="sf-product__stock-label">
                     Ubicación
                   </ZHFieldLabel>
-                  {!readOnly ? (
+                  {readOnly ? (
+                    <div className="sf-product__stock-wh">
+                      {stockWarehouse ??
+                        warehouses.find((w) => w.id === line.warehouseId)?.name ??
+                        "No disponible"}
+                    </div>
+                  ) : (
                     <ZhWarehouseSelector
                       value={line.warehouseId ?? null}
                       onChange={(id, option) =>
@@ -333,12 +380,6 @@ export function SalesInvoiceLineGridRow({
                       disabled={disabled}
                       placeholder="Seleccione bodega"
                     />
-                  ) : (
-                    <div className="sf-product__stock-wh">
-                      {warehouses.find((w) => w.id === line.warehouseId)?.name ??
-                        stockWarehouse ??
-                        "—"}
-                    </div>
                   )}
                 </div>
                 {line.itemId && (

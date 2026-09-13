@@ -940,6 +940,80 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
     }
 
+    // ── SALES-HISTORICAL-PRICING-SNAPSHOT-01 ────────────────────────────
+
+    [Fact]
+    public async Task Authorize_congela_el_snapshot_historico_del_draft_sin_recalcularlo()
+    {
+        // El snapshot comercial histórico (bodega/costo/precio de lista/origen del precio y del
+        // descuento) se fija exclusivamente en el Draft (SalesLineBuilder) — Authorize solo
+        // recalcula impuestos (ApplyTaxes) y congela la línea (Freeze); nunca debe tocar estos
+        // campos, aunque el maestro de precios/costos haya cambiado después de crear el borrador.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today);
+        var line = inv.Lines.Single();
+        var priceListId = Guid.NewGuid();
+        line.SetHistoricalSnapshot(
+            warehouseName: "Bodega Principal",
+            unitCostAtSale: 6.5m,
+            totalCostAtSale: 6.5m,
+            listPriceAtSale: 100m,
+            priceListId: priceListId,
+            priceListName: "Lista General",
+            pricingSource: "BaseSalePrice",
+            discountSource: null,
+            discountDescription: null
+        );
+
+        var (handler, _, _) = BuildHandler(inv, today);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+
+        var frozenLine = inv.Lines.Single();
+        frozenLine.WarehouseName.Should().Be("Bodega Principal");
+        frozenLine.UnitCostAtSale.Should().Be(6.5m);
+        frozenLine.TotalCostAtSale.Should().Be(6.5m);
+        frozenLine.ListPriceAtSale.Should().Be(100m);
+        frozenLine.PriceListId.Should().Be(priceListId);
+        frozenLine.PriceListName.Should().Be("Lista General");
+        frozenLine.PricingSource.Should().Be("BaseSalePrice");
+        frozenLine.DiscountSource.Should().BeNull();
+        frozenLine.DiscountDescription.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Authorize_de_una_linea_sin_snapshot_previo_no_fabrica_valores()
+    {
+        // Línea creada antes de esta fase (o sin dato disponible al capturar el Draft): todos los
+        // campos históricos quedan null desde Create() — Authorize no debe rellenarlos con nada.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today);
+        var (handler, _, _) = BuildHandler(inv, today);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var frozenLine = inv.Lines.Single();
+        frozenLine.WarehouseName.Should().BeNull();
+        frozenLine.UnitCostAtSale.Should().BeNull();
+        frozenLine.TotalCostAtSale.Should().BeNull();
+        frozenLine.ListPriceAtSale.Should().BeNull();
+        frozenLine.PriceListId.Should().BeNull();
+        frozenLine.PriceListName.Should().BeNull();
+        frozenLine.PricingSource.Should().BeNull();
+        frozenLine.DiscountSource.Should().BeNull();
+        frozenLine.DiscountDescription.Should().BeNull();
+    }
+
     [Fact]
     public async Task Accepts_issue_date_equal_to_company_local_today()
     {

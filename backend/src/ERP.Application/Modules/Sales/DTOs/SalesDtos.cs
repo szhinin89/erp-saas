@@ -148,7 +148,19 @@ public sealed record SalesInvoiceDetailDto(
     string? Notes,
     short SortOrder,
     Guid? PackagingLevelId,
-    string BaseUomCode
+    string BaseUomCode,
+    // ── SALES-HISTORICAL-PRICING-SNAPSHOT-01 — snapshot comercial histórico, congelado en el
+    // Draft y nunca recalculado en Authorize. Todos nullable: null = dato no disponible al
+    // momento de vender (nunca se fabrica un valor al leer). ──────────────────────────────
+    string? WarehouseName,
+    decimal? UnitCostAtSale,
+    decimal? TotalCostAtSale,
+    decimal? ListPriceAtSale,
+    Guid? PriceListId,
+    string? PriceListName,
+    string? PricingSource,
+    string? DiscountSource,
+    string? DiscountDescription
 );
 
 public sealed record SalesReceiptPrintPayloadDto(

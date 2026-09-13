@@ -33,6 +33,18 @@ export interface SalesInvoiceDetailDto {
   taxInclusiveTotal: number;
   notes: string | null;
   sortOrder: number;
+  // SALES-HISTORICAL-PRICING-SNAPSHOT-01 — snapshot comercial histórico, congelado en el Draft y
+  // nunca recalculado al autorizar. Todos nullable: null = dato no disponible al momento de
+  // vender (nunca se fabrica un valor al leer una factura guardada).
+  warehouseName: string | null;
+  unitCostAtSale: number | null;
+  totalCostAtSale: number | null;
+  listPriceAtSale: number | null;
+  priceListId: string | null;
+  priceListName: string | null;
+  pricingSource: string | null;
+  discountSource: string | null;
+  discountDescription: string | null;
 }
 
 export interface CardDetailDto {

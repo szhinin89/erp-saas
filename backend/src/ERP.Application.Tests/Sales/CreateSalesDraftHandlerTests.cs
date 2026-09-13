@@ -44,6 +44,8 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPricingResolver> Pricing { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
+        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
+        public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
@@ -158,6 +160,8 @@ public sealed class CreateSalesDraftHandlerTests
                 Tax.Object,
                 Pricing.Object,
                 CompanyTaxRepo.Object,
+                WarehouseRepo.Object,
+                CostService.Object,
                 Tenant.Object,
                 Company.Object,
                 Branch.Object,
@@ -800,6 +804,186 @@ public sealed class CreateSalesDraftHandlerTests
             "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
         );
         f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── SALES-HISTORICAL-PRICING-SNAPSHOT-01 ────────────────────────────
+
+    [Fact]
+    public async Task Congela_el_snapshot_comercial_historico_con_bodega_costo_y_pricing_resueltos()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var item = Item.Create(
+            TenantId,
+            "SKU-HIST",
+            "Item con historial",
+            "Item con historial",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(),
+            ItemStockConfig.Create(tracksStock: true),
+            UserId
+        );
+        f.ItemRepo
+            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+
+        var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
+            TenantId,
+            BranchId,
+            "Bodega Central",
+            "BOD-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            UserId,
+            CompanyId
+        );
+        f.WarehouseRepo
+            .Setup(r => r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(warehouse);
+
+        var priceListId = Guid.NewGuid();
+        f.Pricing
+            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<PricingResult>.Success(
+                    new PricingResult(
+                        item.Id,
+                        priceListId,
+                        "MAYORISTA",
+                        "Lista Mayorista",
+                        "USD",
+                        BasePrice: 100m,
+                        RuleApplied: "PercentDiscount:5 (lista)",
+                        UnitPrice: 95m,
+                        RuleDescription: "Descuento 5% (regla general)"
+                    )
+                )
+            );
+
+        f.CostService
+            .Setup(s =>
+                s.ObtenerCostoPromedioAsync(
+                    TenantId,
+                    item.Id,
+                    warehouse.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(60.5m);
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput>
+            {
+                new(item.Id, "Item con historial", 3m, 95m, "10", WarehouseId: warehouse.Id),
+            }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+
+        line.WarehouseName.Should().Be("Bodega Central");
+        line.UnitCostAtSale.Should().Be(60.5m);
+        line.TotalCostAtSale.Should().Be(60.5m * line.QuantityInBaseUom);
+        line.ListPriceAtSale.Should().Be(95m);
+        line.PriceListId.Should().Be(priceListId);
+        line.PriceListName.Should().Be("Lista Mayorista");
+        line.PricingSource.Should().Be("PercentDiscount:5 (lista)");
+        line.DiscountSource.Should().Be("PricingRule");
+        line.DiscountDescription.Should().Be("Descuento 5% (regla general)");
+
+        // GET /api/v1/sales/{id} — GetSalesInvoiceByIdHandler debe exponer exactamente lo ya
+        // congelado en la línea (SalesMapper.MapDetail), sin recalcular nada.
+        var repo = new Mock<ISalesInvoiceRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, captured.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(captured);
+        var edocRepo =
+            new Mock<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository>();
+        edocRepo
+            .Setup(r =>
+                r.GetBySourceAsync(TenantId, "Sales", captured.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument?)null);
+
+        var getHandler = new GetSalesInvoiceByIdHandler(
+            repo.Object,
+            edocRepo.Object,
+            f.Tenant.Object,
+            f.Branch.Object
+        );
+        var getResult = await getHandler.Handle(
+            new GetSalesInvoiceByIdQuery(captured.Id),
+            CancellationToken.None
+        );
+
+        getResult.IsSuccess.Should().BeTrue(getResult.Error);
+        var lineDto = getResult.Value!.Lines.Single();
+        lineDto.WarehouseName.Should().Be("Bodega Central");
+        lineDto.UnitCostAtSale.Should().Be(60.5m);
+        lineDto.ListPriceAtSale.Should().Be(95m);
+        lineDto.PriceListName.Should().Be("Lista Mayorista");
+        lineDto.PricingSource.Should().Be("PercentDiscount:5 (lista)");
+        lineDto.DiscountSource.Should().Be("PricingRule");
+        lineDto.DiscountDescription.Should().Be("Descuento 5% (regla general)");
+    }
+
+    [Fact]
+    public async Task Descuento_manual_de_linea_marca_DiscountSource_Manual_con_texto_legible()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput>
+            {
+                new(null, "Producto Test", 1, 100m, "10", DiscountPct: 5m),
+            }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.DiscountSource.Should().Be("Manual");
+        line.DiscountDescription.Should().Be("Descuento manual de 5% aplicado en la línea.");
+        // Sin ItemId no hay Pricing Engine resuelto — ListPriceAtSale/PricingSource quedan null,
+        // nunca inventados.
+        line.ListPriceAtSale.Should().BeNull();
+        line.PricingSource.Should().BeNull();
+        // Línea sin ItemId: el ítem no controla inventario aquí (no aplica bodega/costo) —
+        // ningún dato de stock se fabrica.
+        line.WarehouseName.Should().BeNull();
+        line.UnitCostAtSale.Should().BeNull();
+        line.TotalCostAtSale.Should().BeNull();
     }
 
     [Fact]

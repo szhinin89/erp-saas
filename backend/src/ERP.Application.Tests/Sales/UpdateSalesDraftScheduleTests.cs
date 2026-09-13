@@ -39,6 +39,8 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPricingResolver> Pricing { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
+        public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
+        public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
@@ -107,6 +109,8 @@ public sealed class UpdateSalesDraftScheduleTests
                 Tax.Object,
                 Pricing.Object,
                 CompanyTaxRepo.Object,
+                WarehouseRepo.Object,
+                CostService.Object,
                 Tenant.Object,
                 Company.Object,
                 Branch.Object,

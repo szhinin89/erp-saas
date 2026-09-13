@@ -1156,6 +1156,17 @@ export function useSalesPage() {
           // El backend solo persiste warehouseId para ítems que controlan stock
           // (SalesLineBuilder) — su presencia es una señal segura de _tracksStock.
           _tracksStock: l.warehouseId != null,
+          // SALES-HISTORICAL-PRICING-SNAPSHOT-01: snapshot histórico tal como quedó persistido en
+          // el Draft — nunca recalculado aquí. Null cuando el backend no tuvo el dato disponible
+          // al momento de vender (factura anterior a esta fase, o sin costo Kardex resuelto);
+          // SalesInvoiceLineGridRow (modo readOnly) debe mostrar eso como "no disponible", nunca
+          // fabricar un valor.
+          _listPriceAtSale: l.listPriceAtSale,
+          _priceListNameAtSale: l.priceListName,
+          _pricingSourceAtSale: l.pricingSource,
+          _discountDescriptionAtSale: l.discountDescription,
+          _warehouseNameAtSale: l.warehouseName,
+          _unitCostAtSale: l.unitCostAtSale,
         }));
 
         const mappedPayments: SalesPaymentFormValues[] = (
