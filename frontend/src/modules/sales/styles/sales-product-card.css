@@ -290,15 +290,9 @@
 /* Compuestas con .zh-field-label/.zh-money-value (DS-LINE-ATOM-MIGRATION-01): bump de
    especificidad (2 clases) para que este look aprobado gane siempre sobre los estilos base
    del átomo global, sin depender del orden de carga de los CSS (mismo criterio que
-   `.sf-product-card.zh-line-card`). */
-/* Tamaño/peso heredados de .zh-field-label--sm (ZHFieldLabel size="sm", 12px/600) — solo se
-   mantiene localmente la convención POS de mayúsculas + tracking, ya documentada en todo el
-   módulo, no un tamaño propio (SALES-DS-VISUAL-BASELINE-15). */
-.sf-product__pricelist-label.zh-field-label {
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+   `.sf-product-card.zh-line-card`). .sf-product__pricelist-label ELIMINADO
+   (SALES-PAGE-CLEANUP-DUPLICATES-SAFETY-01) — sin consumidor TSX: la columna "Precio lista" no
+   lleva label propio (la cabecera de la grilla ya lo dice, ver SALES-INVOICE-LINES-GRID-UX-01B). */
 .sf-product__pricelist-value.zh-money-value {
   font-size: var(--text-title-sm-size);
   font-weight: 700;
@@ -326,7 +320,12 @@
   align-items: center;
   gap: 6px;
 }
-/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
+/* Compuesta con .zh-field-label (DS-LINE-ATOM-MIGRATION-01): bump de especificidad (2 clases)
+   para que este look gane siempre sobre el átomo global, sin depender del orden de carga de
+   los CSS. Tamaño/peso heredados de .zh-field-label--sm (ZHFieldLabel size="sm", 12px/600) —
+   solo se mantiene localmente la convención POS de mayúsculas + tracking, ya documentada en
+   todo el módulo (SALES-DS-VISUAL-BASELINE-15); las demás reglas ".zh-field-label" de esta
+   ficha (stock, precio facturado, cantidad, etc.) repiten este mismo criterio. */
 .sf-product__disc-label.zh-field-label {
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -369,7 +368,7 @@
   align-items: center;
   gap: 4px;
 }
-/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
+/* Ver nota de .sf-product__disc-label.zh-field-label — mismo criterio. */
 .sf-product__price-label.zh-field-label {
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -410,7 +409,7 @@
   align-items: center;
   gap: 4px;
 }
-/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio (antes 9px, el
+/* Ver nota de .sf-product__disc-label.zh-field-label — mismo criterio (antes 9px, el
    valor más chico de toda la ficha sin ninguna razón funcional distinta a los demás labels
    compactos). */
 .sf-product__stock-label.zh-field-label {
@@ -477,7 +476,7 @@
   padding-left: 10px;
   padding-right: 10px;
 }
-/* Ver nota de .sf-product__pricelist-label.zh-field-label — mismo criterio. */
+/* Ver nota de .sf-product__disc-label.zh-field-label — mismo criterio. */
 .sf-product__qty-label.zh-field-label {
   color: var(--color-text-secondary);
   text-transform: uppercase;

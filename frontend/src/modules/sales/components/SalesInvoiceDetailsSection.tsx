@@ -12,10 +12,8 @@ import { SalesInvoiceLinesGrid } from "./SalesInvoiceLinesGrid";
 import { formatVatLabel } from "../utils/salesCalc";
 import "../styles/sales-product-card.css";
 
-export type LineWithKey = SalesLineFormValues;
-
 interface SalesInvoiceDetailsSectionProps {
-  lines: LineWithKey[];
+  lines: SalesLineFormValues[];
   backendLines?: SalesInvoiceDetailDto[];
   readOnly: boolean;
   disabled: boolean;

@@ -3,10 +3,8 @@ import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import type { WarehouseDto, ItemWarehouseAvailabilityDto } from "../../inventory/types";
 import { SalesInvoiceLineGridRow } from "./SalesInvoiceLineGridRow";
 
-export type LineWithKey = SalesLineFormValues;
-
 interface SalesInvoiceLinesGridProps {
-  lines: LineWithKey[];
+  lines: SalesLineFormValues[];
   backendLines?: SalesInvoiceDetailDto[];
   disabled: boolean;
   readOnly: boolean;

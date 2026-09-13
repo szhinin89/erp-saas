@@ -25,10 +25,8 @@ import {
   discountBadgeText,
 } from "../utils/salesCalc";
 
-export type LineWithKey = SalesLineFormValues;
-
 interface SalesInvoiceLineGridRowProps {
-  line: LineWithKey;
+  line: SalesLineFormValues;
   backendLine?: SalesInvoiceDetailDto;
   disabled: boolean;
   readOnly: boolean;
