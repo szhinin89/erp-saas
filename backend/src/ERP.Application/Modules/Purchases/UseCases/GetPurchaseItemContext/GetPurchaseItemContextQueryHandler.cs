@@ -1,5 +1,5 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
@@ -19,7 +19,7 @@ public sealed class GetPurchaseItemContextQueryHandler
     private readonly ISriTaxResolver _taxResolver;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
-    private readonly IDecimalConfigRepository _decimalConfigRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
 
     public GetPurchaseItemContextQueryHandler(
         IItemRepository itemRepo,
@@ -28,7 +28,7 @@ public sealed class GetPurchaseItemContextQueryHandler
         ISriTaxResolver taxResolver,
         ICurrentTenant tenant,
         ICurrentCompany company,
-        IDecimalConfigRepository decimalConfigRepo
+        ICompanyPrecisionPolicyProvider precisionPolicyProvider
     )
     {
         _itemRepo = itemRepo;
@@ -37,7 +37,7 @@ public sealed class GetPurchaseItemContextQueryHandler
         _taxResolver = taxResolver;
         _tenant = tenant;
         _company = company;
-        _decimalConfigRepo = decimalConfigRepo;
+        _precisionPolicyProvider = precisionPolicyProvider;
     }
 
     public async Task<Result<PurchaseItemContextDto>> Handle(
@@ -46,7 +46,9 @@ public sealed class GetPurchaseItemContextQueryHandler
     )
     {
         var tid = _tenant.TenantId;
-        var decimalConfig = await _decimalConfigRepo.GetAsync(tid, _company.CompanyId, ct);
+        // COMPANY-PRECISION-POLICY-SSOT-01: reemplaza IDecimalConfigRepository (legacy) — ver
+        // ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.
+        var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
 
         // 1. ITEM — incluye empaques para que Compras pueda seleccionar presentación sin
         // duplicar un sistema UOM paralelo.
@@ -141,11 +143,11 @@ public sealed class GetPurchaseItemContextQueryHandler
                 AvailableStock = availableQty,
                 ReservedStock = reservedQty,
 
-                AverageCost = Math.Round(averageCost, decimalConfig.PurchaseUnitPrice),
-                LastPurchaseCost = Math.Round(lastCost, decimalConfig.PurchaseUnitPrice),
+                AverageCost = Math.Round(averageCost, precision.AverageCostDecimals),
+                LastPurchaseCost = Math.Round(lastCost, precision.UnitCostDecimals),
 
-                Pvp = Math.Round(pvp, decimalConfig.SalesUnitPrice),
-                PreviousPrice = Math.Round(pvp, decimalConfig.SalesUnitPrice),
+                Pvp = Math.Round(pvp, precision.SalesUnitPriceDecimals),
+                PreviousPrice = Math.Round(pvp, precision.SalesUnitPriceDecimals),
                 MaxDiscountPercent = maxDiscount,
 
                 PurchaseVatCode = item.TaxConfig.PurchaseVatCode,
@@ -155,8 +157,8 @@ public sealed class GetPurchaseItemContextQueryHandler
                 HasVat = hasVat,
                 HasIce = hasIce,
 
-                CostMargin = Math.Round(costMargin, decimalConfig.TotalAmount),
-                CostMarginPercent = Math.Round(costMarginPct, decimalConfig.Percentage),
+                CostMargin = Math.Round(costMargin, precision.MoneyDecimals),
+                CostMarginPercent = Math.Round(costMarginPct, precision.PercentageDecimals),
             }
         );
     }

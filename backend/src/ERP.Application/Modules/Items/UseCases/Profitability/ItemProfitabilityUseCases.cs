@@ -1,5 +1,5 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -58,7 +58,7 @@ public sealed class GetItemProfitabilityHandler
     private readonly IPricingResolver _pricingResolver;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
-    private readonly IDecimalConfigRepository _decimalConfigRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
 
     public GetItemProfitabilityHandler(
         IItemRepository itemRepo,
@@ -66,7 +66,7 @@ public sealed class GetItemProfitabilityHandler
         IPricingResolver pricingResolver,
         ICurrentTenant t,
         ICurrentCompany c,
-        IDecimalConfigRepository decimalConfigRepo
+        ICompanyPrecisionPolicyProvider precisionPolicyProvider
     )
     {
         _itemRepo = itemRepo;
@@ -74,7 +74,7 @@ public sealed class GetItemProfitabilityHandler
         _pricingResolver = pricingResolver;
         _t = t;
         _c = c;
-        _decimalConfigRepo = decimalConfigRepo;
+        _precisionPolicyProvider = precisionPolicyProvider;
     }
 
     public async Task<Result<ItemProfitabilityDto>> Handle(
@@ -87,13 +87,14 @@ public sealed class GetItemProfitabilityHandler
         if (item is null)
             return Result<ItemProfitabilityDto>.NotFound("Producto no encontrado.");
 
-        var decimalConfig = await _decimalConfigRepo.GetAsync(tid, _c.CompanyId, ct);
+        // COMPANY-PRECISION-POLICY-SSOT-01: reemplaza IDecimalConfigRepository (legacy).
+        var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
         var (totalQty, totalVal) = await _stockRepo.GetAggregatedStockAsync(tid, q.ItemId, ct);
         var avgCost =
             totalQty > 0
                 ? Math.Round(
                     totalVal / totalQty,
-                    decimalConfig.PurchaseUnitPrice,
+                    precision.AverageCostDecimals,
                     MidpointRounding.AwayFromZero
                 )
                 : 0m;
@@ -102,8 +103,8 @@ public sealed class GetItemProfitabilityHandler
         var (marginAmt, marginPct, status) = CalcMargin(
             avgCost,
             salePrice,
-            decimalConfig.TotalAmount,
-            decimalConfig.Percentage
+            precision.MoneyDecimals,
+            precision.PercentageDecimals
         );
 
         return Result<ItemProfitabilityDto>.Success(
@@ -169,7 +170,7 @@ public sealed class SimulateItemPricingHandler
     private readonly IPricingResolver _pricingResolver;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
-    private readonly IDecimalConfigRepository _decimalConfigRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
 
     public SimulateItemPricingHandler(
         IItemRepository itemRepo,
@@ -177,7 +178,7 @@ public sealed class SimulateItemPricingHandler
         IPricingResolver pricingResolver,
         ICurrentTenant t,
         ICurrentCompany c,
-        IDecimalConfigRepository decimalConfigRepo
+        ICompanyPrecisionPolicyProvider precisionPolicyProvider
     )
     {
         _itemRepo = itemRepo;
@@ -185,7 +186,7 @@ public sealed class SimulateItemPricingHandler
         _pricingResolver = pricingResolver;
         _t = t;
         _c = c;
-        _decimalConfigRepo = decimalConfigRepo;
+        _precisionPolicyProvider = precisionPolicyProvider;
     }
 
     public async Task<Result<PriceSimulationDto>> Handle(
@@ -203,13 +204,14 @@ public sealed class SimulateItemPricingHandler
         if (item is null)
             return Result<PriceSimulationDto>.NotFound("Producto no encontrado.");
 
-        var decimalConfig = await _decimalConfigRepo.GetAsync(tid, _c.CompanyId, ct);
+        // COMPANY-PRECISION-POLICY-SSOT-01: reemplaza IDecimalConfigRepository (legacy).
+        var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
         var (totalQty, totalVal) = await _stockRepo.GetAggregatedStockAsync(tid, q.ItemId, ct);
         var avgCost =
             totalQty > 0
                 ? Math.Round(
                     totalVal / totalQty,
-                    decimalConfig.PurchaseUnitPrice,
+                    precision.AverageCostDecimals,
                     MidpointRounding.AwayFromZero
                 )
                 : 0m;
@@ -221,14 +223,14 @@ public sealed class SimulateItemPricingHandler
         var (curAmt, curPct, _) = GetItemProfitabilityHandler.CalcMargin(
             avgCost,
             currentPrice,
-            decimalConfig.TotalAmount,
-            decimalConfig.Percentage
+            precision.MoneyDecimals,
+            precision.PercentageDecimals
         );
         var (simAmt, simPct, simStatus) = GetItemProfitabilityHandler.CalcMargin(
             avgCost,
             q.NewPvp,
-            decimalConfig.TotalAmount,
-            decimalConfig.Percentage
+            precision.MoneyDecimals,
+            precision.PercentageDecimals
         );
 
         return Result<PriceSimulationDto>.Success(
@@ -244,7 +246,7 @@ public sealed class SimulateItemPricingHandler
                 simPct,
                 Math.Round(
                     simAmt - curAmt,
-                    decimalConfig.TotalAmount,
+                    precision.MoneyDecimals,
                     MidpointRounding.AwayFromZero
                 ),
                 simStatus

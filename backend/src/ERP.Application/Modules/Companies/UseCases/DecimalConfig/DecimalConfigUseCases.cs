@@ -3,6 +3,11 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.DecimalConfig;
 
+// LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar para
+// cálculo nuevo. Sigue vigente solo porque el endpoint legacy /api/v1/config/decimals
+// (DecimalConfigController) y su pantalla frontend (DecimalSettingsSection.tsx, ya no enlazada
+// desde companySettingsTabs.ts) siguen existiendo hasta que se elimine explícitamente en un
+// ticket posterior. Nuevos consumidores deben usar ICompanyPrecisionPolicyProvider.
 public sealed record DecimalConfigDto(
     int SalesUnitPrice,
     int PurchaseUnitPrice,

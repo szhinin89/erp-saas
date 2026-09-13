@@ -56,6 +56,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
+    private readonly ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
 
     public AuthorizeSalesInvoiceHandler(
         ISalesInvoiceRepository repo,
@@ -78,7 +79,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        IOperationalPreferencesResolver preferences
+        IOperationalPreferencesResolver preferences,
+        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider
     )
     {
         _repo = repo;
@@ -102,6 +104,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _b = b;
         _u = u;
         _preferences = preferences;
+        _precisionPolicyProvider = precisionPolicyProvider;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -405,7 +408,12 @@ public sealed class AuthorizeSalesInvoiceHandler
             // SALES-CASH-REAL-MONEY-01 — propaga el mismo cashApplied ya calculado arriba (línea
             // ~214-222, base de SalesSettlementPolicy) al evento de dominio, para que Caja registre
             // el dinero real cobrado y nunca AuthorizedGrandTotal/GrandTotal.
-            inv.Authorize(uid, cashApplied);
+            // COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre pago-vs-total resuelta desde
+            // CompanyPrecisionPolicy de la empresa activa (reemplaza el default hardcodeado
+            // SalesSettlementPolicy.Tolerance como fuente de cálculo — la constante sigue viviendo
+            // en Domain solo como fallback si la policy no pudiera resolverse).
+            var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
+            inv.Authorize(uid, cashApplied, precision.SettlementToleranceAmount);
         }
         catch (InvalidOperationException ex)
         {

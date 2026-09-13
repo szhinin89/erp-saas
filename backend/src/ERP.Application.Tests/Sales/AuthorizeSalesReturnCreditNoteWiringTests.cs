@@ -3,6 +3,7 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -250,7 +251,8 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-                Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
+                Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
+                PrecisionPolicyTestDouble.Mock()
             );
         }
     }

@@ -218,6 +218,7 @@ public class ErpDbContext : DbContext
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
     public DbSet<OrgSetting> OrgSettings => Set<OrgSetting>();
     public DbSet<ConfigurationChangeLog> ConfigurationChangeLogs => Set<ConfigurationChangeLog>();
+    public DbSet<CompanyPrecisionPolicy> CompanyPrecisionPolicies => Set<CompanyPrecisionPolicy>();
 
     // ── Communications BC ───────────────────────────────────────────────
     public DbSet<CommunicationOutbox> CommunicationOutbox => Set<CommunicationOutbox>();

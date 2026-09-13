@@ -87,6 +87,7 @@ public sealed class AuthorizeSalesReturnHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly ILogger<AuthorizeSalesReturnHandler> _logger;
+    private readonly ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
 
     public AuthorizeSalesReturnHandler(
         ISalesReturnRepository returnRepo,
@@ -103,7 +104,8 @@ public sealed class AuthorizeSalesReturnHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        ILogger<AuthorizeSalesReturnHandler> logger
+        ILogger<AuthorizeSalesReturnHandler> logger,
+        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider
     )
     {
         _returnRepo = returnRepo;
@@ -121,6 +123,7 @@ public sealed class AuthorizeSalesReturnHandler
         _b = b;
         _u = u;
         _logger = logger;
+        _precisionPolicyProvider = precisionPolicyProvider;
     }
 
     public async Task<Result<SalesReturnDto>> Handle(
@@ -229,7 +232,10 @@ public sealed class AuthorizeSalesReturnHandler
                 }
             }
 
-            salesReturn.Authorize(uid);
+            // COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre reembolso-vs-total resuelta
+            // desde CompanyPrecisionPolicy de la empresa activa.
+            var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
+            salesReturn.Authorize(uid, precision.SettlementToleranceAmount);
 
             // 6. Reversión de inventario (Kardex) — documento origen es la propia devolución,
             // nunca la factura (una factura puede tener múltiples devoluciones parciales en el

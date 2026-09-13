@@ -7,6 +7,7 @@ import { restoreSessionFromCookie } from "../lib/session/restoreSessionFromCooki
 import { getAccessToken } from "../lib/session/authTokenMemory";
 import { initializeAuthBroadcastListener } from "../lib/session/authRefreshManager";
 import { loadDecimalConfig } from "../lib/config/decimal.config";
+import { loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
 
 type Props = { children: ReactNode };
 
@@ -59,7 +60,14 @@ export function SessionBootstrap({ children }: Props) {
       void useSessionStore.getState().refresh();
       // Config de decimales por empresa — debe estar disponible antes de que
       // cualquier módulo (Ventas, Compras, Items) formatee o valide montos.
+      // LEGACY (COMPANY-PRECISION-POLICY-SSOT-01): decimal.config.ts sigue siendo la fuente
+      // consumida por la mayoría de pantallas de Ventas/Compras/Items — no migrado en este
+      // ticket (ver reporte de gaps). precisionPolicy.config.ts es la nueva SSOT y se precarga
+      // en paralelo para que la pantalla "Precisión operativa" y los nuevos consumidores
+      // (GetPurchaseItemContext, ItemProfitability, Sales/Returns Authorize — todos backend) no
+      // dependan de un primer GET bajo demanda.
       void loadDecimalConfig();
+      void loadPrecisionPolicy();
       // Estado LOCAL de facturación electrónica (certificado/ambiente/URL) — alimenta
       // ZHElectronicEnvironmentBanner en cualquier pantalla emisora sin que cada una dispare su
       // propia petición. ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: refresh() nunca

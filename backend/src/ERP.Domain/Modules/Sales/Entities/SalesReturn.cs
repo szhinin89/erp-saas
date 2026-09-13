@@ -172,7 +172,12 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     }
 
     // ── Authorize (final — immutable after this) ─────────────────────────
-    public void Authorize(Guid updatedBy)
+    /// <param name="settlementTolerance">
+    /// COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre reembolso-vs-total resuelta por
+    /// Application desde CompanyPrecisionPolicy.SettlementToleranceAmount de la empresa del
+    /// documento. Si no se provee, cae al default histórico <see cref="SalesSettlementPolicy.Tolerance"/>.
+    /// </param>
+    public void Authorize(Guid updatedBy, decimal? settlementTolerance = null)
     {
         EnsureDraft();
         if (_lines.Count == 0)
@@ -201,7 +206,8 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
         // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6B) — misma tolerancia única de
         // SalesSettlementPolicy usada en SalesInvoice.Authorize(), en vez de un umbral 0.01m propio.
         var allocationSum = _refundAllocations.Sum(a => a.Amount);
-        if (Math.Abs(allocationSum - AuthorizedGrandTotal.Value) > SalesSettlementPolicy.Tolerance)
+        var effectiveTolerance = settlementTolerance ?? SalesSettlementPolicy.Tolerance;
+        if (Math.Abs(allocationSum - AuthorizedGrandTotal.Value) > effectiveTolerance)
             throw new InvalidOperationException(
                 $"El total de las asignaciones de reembolso (${allocationSum:F2}) no coincide con el total devuelto (${AuthorizedGrandTotal.Value:F2}). "
                     + "Ajusta las asignaciones de reembolso hasta que coincidan con el total."

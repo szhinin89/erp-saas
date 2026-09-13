@@ -909,6 +909,15 @@ public static class DependencyInjection
             ICompanySpecialTaxResponsibilityRepository,
             ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanySpecialTaxResponsibilityRepository
         >();
+        // COMPANY-PRECISION-POLICY-SSOT-01
+        services.AddScoped<
+            ERP.Application.Modules.Companies.ICompanyPrecisionPolicyRepository,
+            ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider,
+            ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyProvider
+        >();
 
         // ── Finance BC ───────────────────────────────────────────────────────
         services.AddScoped<

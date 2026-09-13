@@ -81,6 +81,9 @@ public static class OrgSettingKeys
     /// configurable, sin relación con este namespace). Mezclar ambos es exactamente el error que
     /// esta migración corrige: antes de esta entrega existían dos sistemas de decimales sin
     /// frontera documentada; ahora la frontera es "Presentation" = UI, "FiscalPrecision" = legal.
+    ///
+    /// LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar
+    /// para cálculo nuevo. Ver <see cref="ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy"/>.
     /// </summary>
     public static class Presentation
     {

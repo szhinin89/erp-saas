@@ -24,6 +24,9 @@ namespace ERP.Infrastructure.Persistence.Repositories.CompanyConfig;
 /// un dato crítico de documento/fiscal/inventario). La escritura, en cambio, se valida antes de
 /// llegar aquí (<c>UpdateDecimalConfigCommandValidator</c>) — este repositorio no reintroduce el
 /// clamp silencioso que tenía la implementación anterior sobre GeneralParameter.
+///
+/// LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar para
+/// cálculo nuevo. Ver CompanyPrecisionPolicyProvider/CompanyPrecisionPolicyRepository.
 /// </summary>
 public sealed class DecimalConfigRepository : IDecimalConfigRepository
 {

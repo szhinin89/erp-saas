@@ -1045,6 +1045,7 @@
   "settings.company.tabs.operation": "Operation",
   "settings.company.tabs.documents": "Documents",
   "settings.company.tabs.decimals": "Precision / Decimals",
+  "settings.company.tabs.precisionPolicy": "Operational precision",
   "settings.company.tabs.sales": "Sales",
   "settings.company.tabs.readiness": "Operational readiness",
   "settings.company.sales.title": "Sales Settings",

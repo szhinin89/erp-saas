@@ -421,7 +421,17 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     /// real, nunca <see cref="AuthorizedGrandTotal"/>. Null solo por compatibilidad de tests/otros
     /// callers que no lo necesiten; el handler de producción siempre lo pasa.
     /// </summary>
-    public void Authorize(Guid updatedBy, decimal? cashApplied = null)
+    /// <param name="settlementTolerance">
+    /// COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre pago-vs-total resuelta por
+    /// Application desde CompanyPrecisionPolicy.SettlementToleranceAmount de la empresa del
+    /// documento (el dominio no lee infraestructura). Si no se provee (compatibilidad con
+    /// llamadores existentes/tests), cae al default histórico <see cref="SalesSettlementPolicy.Tolerance"/>.
+    /// </param>
+    public void Authorize(
+        Guid updatedBy,
+        decimal? cashApplied = null,
+        decimal? settlementTolerance = null
+    )
     {
         EnsureDraft();
         if (_lines.Count == 0)
@@ -473,7 +483,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         // SalesInvoicePayment.Amount, cash_movements, journal_entries, ni SalesReceivable (que ya
         // usa PendingBalance real, sin redondear a la tolerancia).
         var paymentSum = _payments.Sum(p => p.Amount);
-        if (Math.Abs(paymentSum - AuthorizedGrandTotal.Value) > SalesSettlementPolicy.Tolerance)
+        var effectiveTolerance = settlementTolerance ?? SalesSettlementPolicy.Tolerance;
+        if (Math.Abs(paymentSum - AuthorizedGrandTotal.Value) > effectiveTolerance)
             throw new InvalidOperationException(
                 $"El total de los pagos ingresados (${paymentSum:F2}) no coincide con el total de la factura (${AuthorizedGrandTotal.Value:F2}). "
                     + "Ajusta los montos en 'Formas de pago' hasta que coincidan con el total, o agrega el valor faltante."

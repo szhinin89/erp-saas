@@ -1,9 +1,10 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases.GetPurchaseItemContext;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -35,15 +36,13 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
         public Mock<ISriTaxResolver> TaxResolver { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
-        public Mock<IDecimalConfigRepository> DecimalConfigRepo { get; } = new();
+        public ICompanyPrecisionPolicyProvider PrecisionPolicyProvider { get; } =
+            PrecisionPolicyTestDouble.Mock();
 
         public Fixture()
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
-            DecimalConfigRepo
-                .Setup(r => r.GetAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DecimalConfigDto(2, 2, 4, 2, 2));
             StockRepo
                 .Setup(r =>
                     r.GetStockAsync(TenantId, WarehouseId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
@@ -74,7 +73,7 @@ public sealed class GetPurchaseItemContextQueryHandlerTests
                 TaxResolver.Object,
                 Tenant.Object,
                 Company.Object,
-                DecimalConfigRepo.Object
+                PrecisionPolicyProvider
             );
     }
 

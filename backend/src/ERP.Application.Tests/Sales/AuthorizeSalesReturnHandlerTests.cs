@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Caja.Entities;
@@ -307,7 +308,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             CompanyCtx(),
             BranchCtx(),
             UserCtx(),
-            Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
+            Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, stockRepo, returnRepo);
@@ -699,7 +701,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             CompanyCtx(),
             BranchCtx(),
             UserCtx(),
-            Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
+            Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -1100,7 +1103,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 new FixedCurrentCompany(_companyId),
                 new FixedCurrentBranch(_branchId),
                 new FixedCurrentUser(_createdBy),
-                Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
+                Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
+                PrecisionPolicyTestDouble.Mock()
             );
 
         [Fact]

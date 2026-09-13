@@ -3,6 +3,7 @@ using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
@@ -317,7 +318,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            preferences.Object
+            preferences.Object,
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, companyClock, receivableRepo);
@@ -431,7 +433,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            preferences.Object
+            preferences.Object,
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, stockRepo);
@@ -651,7 +654,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            preferences.Object
+            preferences.Object,
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, stockRepo);
@@ -705,7 +709,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            Mock.Of<IOperationalPreferencesResolver>()
+            Mock.Of<IOperationalPreferencesResolver>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(

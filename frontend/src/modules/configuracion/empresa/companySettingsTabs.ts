@@ -4,7 +4,7 @@ import { BrandingSettingsSection } from "./sections/BrandingSettingsSection";
 import { FiscalSettingsSection } from "./sections/FiscalSettingsSection";
 import { OperationSettingsSection } from "./sections/OperationSettingsSection";
 import { DocumentsSettingsSection } from "./sections/DocumentsSettingsSection";
-import { DecimalSettingsSection } from "./sections/DecimalSettingsSection";
+import { PrecisionPolicySettingsSection } from "./sections/PrecisionPolicySettingsSection";
 import { CompanySalesSettingsSection } from "./sections/CompanySalesSettingsSection";
 import { OperationalReadinessSection } from "./sections/OperationalReadinessSection";
 
@@ -69,9 +69,9 @@ export const companySettingsTabs: CompanySettingsTab[] = [
   },
   {
     id: "decimals",
-    labelKey: "settings.company.tabs.decimals",
+    labelKey: "settings.company.tabs.precisionPolicy",
     icon: "decimal_increase",
-    component: DecimalSettingsSection,
+    component: PrecisionPolicySettingsSection,
     enabled: true,
   },
   {

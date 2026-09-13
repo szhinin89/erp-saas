@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -412,7 +413,8 @@ public sealed class SalesReturnRefundHandlerTests
             company,
             branch,
             user,
-            Mock.Of<ILogger<AuthorizeSalesReturnHandler>>()
+            Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, uow, stockRepo);

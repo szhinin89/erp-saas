@@ -3,6 +3,9 @@ using ERP.Domain.Configuration.Enums;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
+// LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar para
+// cálculo nuevo. Sigue vigente solo como respaldo del endpoint legacy /api/v1/config/decimals
+// (DecimalConfigController) mientras se termina de migrar el frontend (ver reporte del ticket).
 /// <summary>
 /// Definitions para OrgSettingKeys.Presentation — decimales de PRESENTACIÓN (CONFIG-FOUNDATION-P1-01).
 /// Nunca fiscales: FiscalPrecision es constante System, sin relación con este módulo.

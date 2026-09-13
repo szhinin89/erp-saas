@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-13T03:39:38.493Z",
+  "generatedAt": "2026-09-13T23:36:49.654Z",
   "summary": {
-    "total": 130,
-    "allowed": 130,
+    "total": 131,
+    "allowed": 131,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -482,6 +482,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/config/precision-policy",
+      "files": [
+        "frontend/src/lib/config/precisionPolicy.config.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/dashboard/kpis",
       "files": [
         "frontend/src/modules/dashboard/api/dashboardService.ts"
@@ -901,6 +909,7 @@
     {
       "endpoint": "/api/v1/sales",
       "files": [
+        "frontend/src/modules/lib/api.test.ts",
         "frontend/src/modules/sales/api/invoiceItemSearchService.ts",
         "frontend/src/modules/sales/api/salesDefaultsService.ts",
         "frontend/src/modules/sales/api/salesItemPricingService.ts",
