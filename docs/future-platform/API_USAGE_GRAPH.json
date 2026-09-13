@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-07T19:25:22.275Z",
+  "generatedAt": "2026-09-13T03:39:38.493Z",
   "summary": {
-    "total": 129,
-    "allowed": 129,
+    "total": 130,
+    "allowed": 130,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -570,6 +570,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/electronic-invoicing/status?checkConnectivity=true",
+      "files": [
+        "frontend/src/modules/configuracion/facturacionElectronica/api/electronicInvoicingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/expenses/categories",
       "files": [
         "frontend/src/modules/expenses/api/expenseCategoryService.ts"
@@ -762,7 +770,6 @@
       "files": [
         "frontend/src/modules/payables/api/payablesService.ts",
         "frontend/src/modules/supplier-payments/api/pendingPayablesFacade.ts",
-        "frontend/src/modules/supplier-payments/components/SupplierPaymentApplicationsEditor.tsx",
         "frontend/src/routes/payablesRoutes.legacyCleanup.test.tsx"
       ],
       "legacy": false,
