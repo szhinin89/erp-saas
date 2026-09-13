@@ -41,6 +41,8 @@ public sealed class SalesDraftSpecialTaxTests
         public Mock<ISalesInvoiceRepository> Repo { get; } = new();
         public Mock<IBusinessPartnerRepository> BpRepo { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> RoleRepo { get; } = new();
+        public Mock<IBusinessPartnerContactRepository> BpContactRepo { get; } = new();
+        public Mock<IBusinessPartnerLocationRepository> BpLocationRepo { get; } = new();
         public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<IPaymentMethodRepository> PmRepo { get; } = new();
         public Mock<IItemRepository> ItemRepo { get; } = new();
@@ -109,6 +111,13 @@ public sealed class SalesDraftSpecialTaxTests
                 .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(bp);
 
+            BpContactRepo
+                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
+            BpLocationRepo
+                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
+
             var role = BusinessPartnerRole.Create(TenantId, bp.Id, RoleType.Customer, UserId);
             RoleRepo
                 .Setup(r =>
@@ -158,6 +167,8 @@ public sealed class SalesDraftSpecialTaxTests
                 Repo.Object,
                 BpRepo.Object,
                 RoleRepo.Object,
+                BpContactRepo.Object,
+                BpLocationRepo.Object,
                 PtResolver.Object,
                 PmRepo.Object,
                 ItemRepo.Object,

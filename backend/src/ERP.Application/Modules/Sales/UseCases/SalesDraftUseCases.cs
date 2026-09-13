@@ -201,12 +201,53 @@ public sealed class UpdateSalesDraftValidator : AbstractValidator<UpdateSalesDra
 
 // ── Handlers ────────────────────────────────────────────────────────────
 
+/// <summary>
+/// SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6E) — resuelve Email/Address reales del
+/// cliente para poblar <see cref="CustomerSnapshot"/> completo (antes solo se invocaba
+/// CustomerSnapshot.Create con 3 argumentos posicionales, dejando Email/Address siempre NULL
+/// aunque las columnas y el value object ya los soportaban). BusinessPartner no contiene estos
+/// datos directamente (ver comentario de scope en BusinessPartner.cs): Email vive en
+/// BusinessPartnerContact.Contact.Email (contacto primario) y Address en
+/// BusinessPartnerLocation.Address.AddressLine (ubicación primaria) — con fallback al Email de
+/// la ubicación primaria si no hay contacto primario con email. Nunca bloquea la creación de la
+/// factura si no existen: ambos quedan null.
+/// </summary>
+internal static class CustomerSnapshotContactResolver
+{
+    public static async Task<(string? Email, string? Address)> ResolveAsync(
+        IBusinessPartnerContactRepository contactRepo,
+        IBusinessPartnerLocationRepository locationRepo,
+        Guid businessPartnerId,
+        CancellationToken ct
+    )
+    {
+        string? email = null;
+        string? address = null;
+
+        var contacts = await contactRepo.GetByBusinessPartnerAsync(businessPartnerId, true, ct);
+        var primaryContact =
+            contacts.FirstOrDefault(c => c.IsPrimary) ?? contacts.FirstOrDefault();
+        email = primaryContact?.Contact.Email;
+
+        var locations = await locationRepo.GetByBusinessPartnerAsync(businessPartnerId, true, ct);
+        var primaryLocation =
+            locations.FirstOrDefault(l => l.IsPrimary) ?? locations.FirstOrDefault();
+        address = primaryLocation?.Address.AddressLine;
+        if (string.IsNullOrWhiteSpace(email))
+            email = primaryLocation?.Email;
+
+        return (email, address);
+    }
+}
+
 public sealed class CreateSalesDraftHandler
     : IRequestHandler<CreateSalesDraftCommand, Result<SalesInvoiceDto>>
 {
     private readonly ISalesInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
+    private readonly IBusinessPartnerContactRepository _bpContactRepo;
+    private readonly IBusinessPartnerLocationRepository _bpLocationRepo;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IPaymentMethodRepository _pmRepo;
     private readonly IItemRepository _itemRepo;
@@ -228,6 +269,8 @@ public sealed class CreateSalesDraftHandler
         ISalesInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
+        IBusinessPartnerContactRepository bpContactRepo,
+        IBusinessPartnerLocationRepository bpLocationRepo,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IPaymentMethodRepository pmRepo,
         IItemRepository itemRepo,
@@ -249,6 +292,8 @@ public sealed class CreateSalesDraftHandler
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
+        _bpContactRepo = bpContactRepo;
+        _bpLocationRepo = bpLocationRepo;
         _ptResolver = ptResolver;
         _pmRepo = pmRepo;
         _itemRepo = itemRepo;
@@ -426,10 +471,18 @@ public sealed class CreateSalesDraftHandler
             }
         }
 
+        var (customerEmail, customerAddress) = await CustomerSnapshotContactResolver.ResolveAsync(
+            _bpContactRepo,
+            _bpLocationRepo,
+            cmd.CustomerId,
+            ct
+        );
         var customerSnapshot = CustomerSnapshot.Create(
             bp.Name.LegalName,
             bp.Identification.Number,
-            bp.Identification.Type
+            bp.Identification.Type,
+            customerEmail,
+            customerAddress
         );
 
         var paymentTermSnapshot = PaymentTermSnapshot.Create(
@@ -521,6 +574,8 @@ public sealed class UpdateSalesDraftHandler
     private readonly ISalesInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
+    private readonly IBusinessPartnerContactRepository _bpContactRepo;
+    private readonly IBusinessPartnerLocationRepository _bpLocationRepo;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IPaymentMethodRepository _pmRepo;
     private readonly IItemRepository _itemRepo;
@@ -540,6 +595,8 @@ public sealed class UpdateSalesDraftHandler
         ISalesInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
+        IBusinessPartnerContactRepository bpContactRepo,
+        IBusinessPartnerLocationRepository bpLocationRepo,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IPaymentMethodRepository pmRepo,
         IItemRepository itemRepo,
@@ -559,6 +616,8 @@ public sealed class UpdateSalesDraftHandler
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
+        _bpContactRepo = bpContactRepo;
+        _bpLocationRepo = bpLocationRepo;
         _ptResolver = ptResolver;
         _pmRepo = pmRepo;
         _itemRepo = itemRepo;
@@ -638,10 +697,18 @@ public sealed class UpdateSalesDraftHandler
 
         try
         {
+            var (customerEmail, customerAddress) = await CustomerSnapshotContactResolver.ResolveAsync(
+                _bpContactRepo,
+                _bpLocationRepo,
+                cmd.CustomerId,
+                ct
+            );
             var customerSnapshot = CustomerSnapshot.Create(
                 bp.Name.LegalName,
                 bp.Identification.Number,
-                bp.Identification.Type
+                bp.Identification.Type,
+                customerEmail,
+                customerAddress
             );
 
             inv.UpdateDraft(
@@ -1242,6 +1309,24 @@ file static class SalesLineBuilder
             // descuento manual pero el precio sí quedó ajustado por una regla del Pricing Engine,
             // se documenta esa regla como el origen (RuleDescription, mismo texto humano que ya
             // usa el buscador de ítems).
+            //
+            // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6D) — causa raíz corregida: antes se
+            // poblaba DiscountSource=PricingRule solo con pricingResultValue.RuleApplied != null,
+            // sin verificar si el precio final REALMENTE bajó frente a ListPriceAtSale. Una regla
+            // puede existir en el catálogo (RuleApplied != null) sin producir ninguna rebaja
+            // económica real (ej. regla que resuelve al mismo precio de lista) — en ese caso
+            // decir "Descuento X% (regla)" es una mentira comercial (bug confirmado con evidencia
+            // real de BD: discount_description no vacío con list_price_at_sale == unit_price).
+            // effectivePricingDiscount usa la misma precisión de precio unitario (FiscalPrecision.
+            // UnitCost, 6 decimales) que ListPriceAtSale/UnitPrice ya usan en este mismo método.
+            var effectivePricingDiscount = listPriceAtSale.HasValue
+                ? Math.Round(
+                    listPriceAtSale.Value - l.UnitPrice,
+                    FiscalPrecision.UnitCost,
+                    MidpointRounding.AwayFromZero
+                )
+                : 0m;
+
             string? discountSource = null;
             string? discountDescription = null;
             if (l.DiscountPct > 0)
@@ -1250,7 +1335,7 @@ file static class SalesLineBuilder
                 discountDescription =
                     $"Descuento manual de {l.DiscountPct:0.##}% aplicado en la línea.";
             }
-            else if (pricingResultValue?.RuleApplied is not null)
+            else if (pricingResultValue?.RuleApplied is not null && effectivePricingDiscount > 0)
             {
                 discountSource = "PricingRule";
                 discountDescription = pricingResultValue.RuleDescription;

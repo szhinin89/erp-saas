@@ -2,6 +2,7 @@ using ERP.Domain.Common;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
+using ERP.Domain.Modules.Sales.Policies;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using ERP.Domain.Modules.SriCatalogs.Constants;
 
@@ -247,6 +248,22 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         PaymentTerm = paymentTerm ?? throw new ArgumentNullException(nameof(paymentTerm));
     }
 
+    // ── SRI Payment Method sync (SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01, Fase 6C) ─
+    /// <summary>
+    /// Sincroniza <see cref="SriPaymentMethodCode"/> de cabecera con el código real del único
+    /// método de pago no-crédito usado en la venta — decidido en Application
+    /// (<c>AuthorizeSalesInvoiceHandler</c>), que es quien conoce <c>PaymentMethod.SriPaymentMethodCode</c>
+    /// (fuera del alcance del dominio de Sales). Solo permitido en Draft, para que quede congelado
+    /// junto con el resto del snapshot de autorización en el mismo <c>Authorize()</c>. No-op si
+    /// <paramref name="code"/> es null/blank — nunca borra un valor previo por ausencia de mapping.
+    /// </summary>
+    public void SyncSriPaymentMethodCode(string? code)
+    {
+        EnsureDraft();
+        if (!string.IsNullOrWhiteSpace(code))
+            SriPaymentMethodCode = OptionalCode.Normalize(code);
+    }
+
     // ── Formas de cobro (N pagos por factura) ─────────────────────────
     public void ReplacePayments(IEnumerable<SalesInvoicePayment> payments, Guid updatedBy)
     {
@@ -448,8 +465,15 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 "No puedes emitir esta factura porque su total es $0 o negativo. Revisa las cantidades, precios y descuentos de las líneas antes de emitir."
             );
 
+        // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6B) — tolerancia única: antes existía un
+        // umbral propio de 0.01m aquí, distinto de SalesSettlementPolicy.Tolerance (0.02m) usada
+        // para decidir si la CxC queda saldada. Se unifica en SalesSettlementPolicy.Tolerance como
+        // única fuente de verdad para "¿los pagos cubren el total dentro de tolerancia?" — esta
+        // comparación solo decide si SE PUEDE emitir la factura; nunca redondea ni altera
+        // SalesInvoicePayment.Amount, cash_movements, journal_entries, ni SalesReceivable (que ya
+        // usa PendingBalance real, sin redondear a la tolerancia).
         var paymentSum = _payments.Sum(p => p.Amount);
-        if (Math.Abs(paymentSum - AuthorizedGrandTotal.Value) > 0.01m)
+        if (Math.Abs(paymentSum - AuthorizedGrandTotal.Value) > SalesSettlementPolicy.Tolerance)
             throw new InvalidOperationException(
                 $"El total de los pagos ingresados (${paymentSum:F2}) no coincide con el total de la factura (${AuthorizedGrandTotal.Value:F2}). "
                     + "Ajusta los montos en 'Formas de pago' hasta que coincidan con el total, o agrega el valor faltante."

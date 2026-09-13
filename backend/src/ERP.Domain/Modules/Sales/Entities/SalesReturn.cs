@@ -1,6 +1,7 @@
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
+using ERP.Domain.Modules.Sales.Policies;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
@@ -197,8 +198,10 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
                 "No puedes autorizar esta devolución porque su total es $0 o negativo. Revisa las cantidades de las líneas antes de autorizar."
             );
 
+        // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6B) — misma tolerancia única de
+        // SalesSettlementPolicy usada en SalesInvoice.Authorize(), en vez de un umbral 0.01m propio.
         var allocationSum = _refundAllocations.Sum(a => a.Amount);
-        if (Math.Abs(allocationSum - AuthorizedGrandTotal.Value) > 0.01m)
+        if (Math.Abs(allocationSum - AuthorizedGrandTotal.Value) > SalesSettlementPolicy.Tolerance)
             throw new InvalidOperationException(
                 $"El total de las asignaciones de reembolso (${allocationSum:F2}) no coincide con el total devuelto (${AuthorizedGrandTotal.Value:F2}). "
                     + "Ajusta las asignaciones de reembolso hasta que coincidan con el total."

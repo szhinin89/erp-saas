@@ -37,6 +37,8 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<ISalesInvoiceRepository> Repo { get; } = new();
         public Mock<IBusinessPartnerRepository> BpRepo { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> RoleRepo { get; } = new();
+        public Mock<IBusinessPartnerContactRepository> BpContactRepo { get; } = new();
+        public Mock<IBusinessPartnerLocationRepository> BpLocationRepo { get; } = new();
         public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<IPaymentMethodRepository> PmRepo { get; } = new();
         public Mock<IItemRepository> ItemRepo { get; } = new();
@@ -116,6 +118,13 @@ public sealed class CreateSalesDraftHandlerTests
                 .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(bp);
 
+            BpContactRepo
+                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
+            BpLocationRepo
+                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
+
             var role = BusinessPartnerRole.Create(TenantId, bp.Id, RoleType.Customer, UserId);
             RoleRepo
                 .Setup(r =>
@@ -153,6 +162,8 @@ public sealed class CreateSalesDraftHandlerTests
                 Repo.Object,
                 BpRepo.Object,
                 RoleRepo.Object,
+                BpContactRepo.Object,
+                BpLocationRepo.Object,
                 PtResolver.Object,
                 PmRepo.Object,
                 ItemRepo.Object,
@@ -954,6 +965,81 @@ public sealed class CreateSalesDraftHandlerTests
         lineDto.DiscountDescription.Should().Be("Descuento 5% (regla general)");
     }
 
+    // ── SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6D) — descuento de regla confiable ──
+
+    [Fact]
+    public async Task Regla_del_catalogo_sin_rebaja_real_no_marca_DiscountSource_PricingRule()
+    {
+        // Caso exacto del bug confirmado en auditoría: RuleApplied != null (la regla existe en el
+        // catálogo del Pricing Engine), pero BasePrice == UnitPrice — no hubo ninguna rebaja
+        // económica real. Antes de este fix, discount_description quedaba poblado ("Descuento 5%
+        // (regla general)") aunque list_price_at_sale == unit_price.
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var item = Item.Create(
+            TenantId,
+            "SKU-NO-REBAJA",
+            "Item sin rebaja real",
+            "Item sin rebaja real",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(),
+            ItemStockConfig.Create(tracksStock: false),
+            UserId
+        );
+        f.ItemRepo
+            .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+
+        f.Pricing
+            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<PricingResult>.Success(
+                    new PricingResult(
+                        item.Id,
+                        Guid.NewGuid(),
+                        "MAYORISTA",
+                        "Lista Mayorista",
+                        "USD",
+                        BasePrice: 2.00m,
+                        RuleApplied: "PercentDiscount:5 (lista)",
+                        UnitPrice: 2.00m,
+                        RuleDescription: "Descuento 5% (regla general)"
+                    )
+                )
+            );
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput>
+            {
+                new(item.Id, "Item sin rebaja real", 1m, 2.00m, "10"),
+            }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.ListPriceAtSale.Should().Be(2.00m);
+        line.UnitPrice.Should().Be(2.00m);
+        // PricingSource conserva la trazabilidad técnica de la regla (sin cambios) — solo
+        // DiscountSource/DiscountDescription (semántica comercial) no deben mentir.
+        line.PricingSource.Should().Be("PercentDiscount:5 (lista)");
+        line.DiscountSource.Should().BeNull();
+        line.DiscountDescription.Should().BeNull();
+    }
+
     [Fact]
     public async Task Descuento_manual_de_linea_marca_DiscountSource_Manual_con_texto_legible()
     {
@@ -991,6 +1077,97 @@ public sealed class CreateSalesDraftHandlerTests
         line.WarehouseName.Should().BeNull();
         line.UnitCostAtSale.Should().BeNull();
         line.TotalCostAtSale.Should().BeNull();
+    }
+
+    // ── SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6E) — CustomerSnapshot completo ──
+
+    [Fact]
+    public async Task Cliente_con_contacto_y_ubicacion_primarios_congela_email_y_direccion_en_el_snapshot()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        var bp = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Cliente Con Datos", UserId);
+        f.BpRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bp);
+
+        // El resolver se invoca con cmd.CustomerId (la constante CustomerId de la clase), no con
+        // bp.Id — BpRepo.GetByIdAsync está mockeado con It.IsAny<Guid>() y siempre devuelve `bp`,
+        // pero BpContactRepo/BpLocationRepo se consultan por el Id real pedido en el comando.
+        var contact = BusinessPartnerContact.Create(
+            TenantId,
+            CustomerId,
+            "Juan",
+            ContactRole.Billing,
+            UserId,
+            email: "juan@cliente-test.com",
+            isPrimary: true
+        );
+        f.BpContactRepo
+            .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { contact });
+
+        var location = BusinessPartnerLocation.Create(
+            TenantId,
+            CustomerId,
+            "Matriz",
+            LocationType.Matrix,
+            LocationPurpose.Fiscal,
+            "Av. Siempre Viva 123",
+            UserId,
+            isPrimary: true
+        );
+        f.BpLocationRepo
+            .Setup(r => r.GetByBusinessPartnerAsync(CustomerId, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { location });
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Customer.Email.Should().Be("juan@cliente-test.com");
+        captured.Customer.Address.Should().Be("Av. Siempre Viva 123");
+    }
+
+    [Fact]
+    public async Task Cliente_sin_contacto_ni_ubicacion_congela_snapshot_sin_fallar()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        // Fixture por defecto ya deja BpContactRepo/BpLocationRepo devolviendo listas vacías.
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Customer.Email.Should().BeNull();
+        captured.Customer.Address.Should().BeNull();
     }
 
     [Fact]

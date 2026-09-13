@@ -1729,4 +1729,254 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         captured!.OriginalAmount.Should().Be(creditAmount, "la CxC debe ser por el saldo pendiente, nunca por el total del documento cuando hubo abono parcial en efectivo");
         captured.OriginalAmount.Should().NotBe(total);
     }
+
+    // ── SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6C) — SRI payment method coherente ──
+
+    /// <summary>Mismo criterio que <see cref="CreateDraftInvoice"/> pero exponiendo
+    /// <c>sriPaymentMethodCode</c> de cabecera para probar la sincronización al autorizar.</summary>
+    private static SalesInvoice CreateDraftInvoiceWithHeaderSriCode(
+        DateOnly issueDate,
+        string? headerSriPaymentMethodCode,
+        decimal unitPrice = 100m,
+        int installments = 1,
+        int daysBetween = 0
+    )
+    {
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(
+            PaymentTermId,
+            installments > 1 || daysBetween > 0 ? "Crédito" : "Contado",
+            installments: installments,
+            daysBetween: daysBetween
+        );
+
+        var inv = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "DRAFT-SRI-SYNC",
+            issueDate: issueDate,
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
+            emissionPointId: null,
+            sriPaymentMethodCode: headerSriPaymentMethodCode
+        );
+
+        var line = SalesInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: unitPrice,
+            vatCode: "10",
+            uomCode: "UNIT"
+        );
+        inv.ReplaceLines(new[] { line }, UserId);
+
+        return inv;
+    }
+
+    [Fact]
+    public async Task EfectivoUnico_SincronizaCabeceraConCodigoSriRealDelMetodo()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "20", unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var cashMethodId = Guid.NewGuid();
+        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, cashMethodId, "01", "Efectivo", total);
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(
+                    TenantId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    false,
+                    false,
+                    1,
+                    UserId,
+                    sriPaymentMethodCode: "01"
+                )
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.SriPaymentMethodCode.Should().Be("01", "el único pago real fue EFECTIVO — la cabecera debe reflejar su código SRI real, nunca el valor previo desalineado.");
+    }
+
+    [Fact]
+    public async Task TransferenciaUnica_SincronizaCabeceraConCodigoSriRealDelMetodo()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var transferMethodId = Guid.NewGuid();
+        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, transferMethodId, "16", "Transferencia", total);
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(
+                    TenantId,
+                    "TRANSFERENCIA",
+                    "Transferencia",
+                    true,
+                    false,
+                    2,
+                    UserId,
+                    sriPaymentMethodCode: "16"
+                )
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.SriPaymentMethodCode.Should().Be("16");
+    }
+
+    [Fact]
+    public async Task MixtoEfectivoTarjeta_NoFuerzaCabeceraAUnValorUnico()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "05", unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+        var half = Math.Round(total / 2, 2, MidpointRounding.AwayFromZero);
+
+        var cashMethodId = Guid.NewGuid();
+        var cardMethodId = Guid.NewGuid();
+        var cashPayment = SalesInvoicePayment.Create(inv.Id, TenantId, cashMethodId, "01", "Efectivo", half);
+        var cardPayment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            cardMethodId,
+            "19",
+            "Tarjeta",
+            total - half
+        );
+        inv.ReplacePayments(new[] { cashPayment, cardPayment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId, sriPaymentMethodCode: "01")
+            );
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cardMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(TenantId, "TARJETA", "Tarjeta", true, false, 2, UserId, sriPaymentMethodCode: "19")
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.SriPaymentMethodCode.Should().Be("05", "pago mixto (2 métodos reales distintos) nunca debe forzar la cabecera a un único código — el XML ya resuelve el código por pago individual.");
+    }
+
+    [Fact]
+    public async Task CreditoPuro_NoFuerzaCabeceraAUnCodigoDeDineroReal()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        // installments=1/daysBetween=0 (Contado) con un único pago vía método Crédito: cae en el
+        // caso "crédito puro" de este guard — la consistencia PaymentTerm↔PaymentMethod se valida
+        // en otro guard (paymentModality.IsConsistent), fuera del alcance de esta prueba.
+        var inv = CreateDraftInvoiceWithHeaderSriCode(
+            today,
+            headerSriPaymentMethodCode: "01",
+            unitPrice: 100m,
+            installments: 1,
+            daysBetween: 30
+        );
+        var total = ExpectedGrandTotal(100m);
+
+        var creditMethodId = Guid.NewGuid();
+        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, creditMethodId, "20", "Crédito", total);
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, creditMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 3, UserId, sriPaymentMethodCode: "20")
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            paymentMethodIsCreditAllowed: true
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        // La sincronización de cabecera NUNCA se dispara para crédito puro — nunca debe reflejar
+        // un código de "dinero real" cuando no entró dinero real.
+        inv.SriPaymentMethodCode.Should().Be("01");
+    }
+
+    [Fact]
+    public async Task SinMappingSriDelMetodoUnico_ConservaElFallbackDeCabecera()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var unmappedMethodId = Guid.NewGuid();
+        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, unmappedMethodId, "99", "Otro", total);
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, unmappedMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(TenantId, "OTRO", "Otro", false, false, 4, UserId)
+            // sriPaymentMethodCode omitido a propósito: método sin mapeo SRI configurado.
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.SriPaymentMethodCode.Should().Be("01", "sin mapping SRI configurado para el único método usado, la cabecera conserva su fallback previo en vez de sincronizar un valor incorrecto o vaciarlo.");
+    }
 }

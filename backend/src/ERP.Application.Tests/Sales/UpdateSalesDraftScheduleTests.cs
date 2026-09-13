@@ -33,6 +33,8 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<ISalesInvoiceRepository> Repo { get; } = new();
         public Mock<IBusinessPartnerRepository> BpRepo { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> RoleRepo { get; } = new();
+        public Mock<IBusinessPartnerContactRepository> BpContactRepo { get; } = new();
+        public Mock<IBusinessPartnerLocationRepository> BpLocationRepo { get; } = new();
         public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<IPaymentMethodRepository> PmRepo { get; } = new();
         public Mock<IItemRepository> ItemRepo { get; } = new();
@@ -74,6 +76,12 @@ public sealed class UpdateSalesDraftScheduleTests
 
             var bp = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Cliente Test", UserId);
             BpRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(bp);
+            BpContactRepo
+                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
+            BpLocationRepo
+                .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
 
             PtResolver
                 .Setup(r => r.ResolveForSaleAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
@@ -103,6 +111,8 @@ public sealed class UpdateSalesDraftScheduleTests
                 Repo.Object,
                 BpRepo.Object,
                 RoleRepo.Object,
+                BpContactRepo.Object,
+                BpLocationRepo.Object,
                 PtResolver.Object,
                 PmRepo.Object,
                 ItemRepo.Object,

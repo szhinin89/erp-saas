@@ -143,6 +143,15 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
         var bpRepo = new Mock<IBusinessPartnerRepository>();
         bpRepo.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(bp);
 
+        var bpContactRepo = new Mock<IBusinessPartnerContactRepository>();
+        bpContactRepo
+            .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<BusinessPartnerContact>());
+        var bpLocationRepo = new Mock<IBusinessPartnerLocationRepository>();
+        bpLocationRepo
+            .Setup(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<BusinessPartnerLocation>());
+
         var companyTaxRepo = new Mock<ICompanySpecialTaxResponsibilityRepository>();
         companyTaxRepo
             .Setup(r =>
@@ -157,6 +166,8 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             repo.Object,
             bpRepo.Object,
             Mock.Of<IBusinessPartnerRoleRepository>(),
+            bpContactRepo.Object,
+            bpLocationRepo.Object,
             Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IPaymentMethodRepository>(),
             Mock.Of<IItemRepository>(),

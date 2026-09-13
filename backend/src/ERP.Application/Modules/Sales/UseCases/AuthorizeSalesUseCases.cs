@@ -213,9 +213,16 @@ public sealed class AuthorizeSalesInvoiceHandler
         // genera por ese saldo, nunca por el total del documento.
         var isCreditByPaymentMethod = false;
         var cashApplied = 0m;
+        // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6C) — cachea los PaymentMethod ya
+        // resueltos en este mismo recorrido (antes solo se usaban para cashApplied/isCredit) para
+        // reutilizarlos más abajo al sincronizar SriPaymentMethodCode de cabecera, sin repetir la
+        // consulta.
+        var resolvedPaymentMethods = new Dictionary<Guid, Domain.Modules.Sales.Entities.PaymentMethod>();
         foreach (var payment in inv.Payments)
         {
             var method = await _paymentMethodRepo.GetByIdAsync(tid, payment.PaymentMethodId, ct);
+            if (method is not null)
+                resolvedPaymentMethods[payment.PaymentMethodId] = method;
             if (method?.IsCreditAllowed == true)
                 isCreditByPaymentMethod = true;
             else
@@ -354,6 +361,42 @@ public sealed class AuthorizeSalesInvoiceHandler
             inv.SetInvoiceNumber($"{est.Code}-{ep.Code}-{sequential}");
 
             emissionPointType = ep.EmissionType;
+        }
+
+        // ── Sincronizar código de pago SRI de cabecera (SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01,
+        // Fase 6C) ───────────────────────────────────────────────────
+        // Causa raíz: sales_invoices.sri_payment_method_code se fijaba una sola vez al crear el
+        // borrador (SalesInvoice.CreateDraft) y nunca se revalidaba contra los pagos reales
+        // registrados en 'Formas de pago' — podía quedar "20" en cabecera aunque el único pago
+        // real fuera EFECTIVO ("01"). Regla: si TODA la venta se pagó con un único método de pago
+        // real (no-Crédito), la cabecera debe coincidir exactamente con el código SRI real de ese
+        // método. Pagos mixtos (2+ métodos distintos, cualquier combinación, incluida Crédito) o
+        // crédito puro NO se tocan — el XML ya resuelve el código por pago individual
+        // (SalesInvoiceElectronicDocumentDataProvider, sin cambios) y la cabecera queda solo como
+        // fallback/default, nunca "falseando" qué se cobró.
+        var distinctPaymentMethodIds = inv.Payments.Select(p => p.PaymentMethodId).Distinct().ToList();
+        if (distinctPaymentMethodIds.Count == 1
+            && resolvedPaymentMethods.TryGetValue(distinctPaymentMethodIds[0], out var onlyMethod)
+            && !onlyMethod.IsCreditAllowed)
+        {
+            if (!string.IsNullOrWhiteSpace(onlyMethod.SriPaymentMethodCode))
+            {
+                inv.SyncSriPaymentMethodCode(onlyMethod.SriPaymentMethodCode);
+            }
+            else
+            {
+                // Trazabilidad explícita (regla 3 del ticket): sin mapping SRI, se conserva el
+                // fallback existente en vez de sincronizar silenciosamente un valor incorrecto.
+                _logger.LogWarning(
+                    "Factura {InvoiceId} (tenant {TenantId}): el único método de pago real usado "
+                        + "({PaymentMethodId}) no tiene SriPaymentMethodCode mapeado — la cabecera "
+                        + "conserva su valor previo ({FallbackCode}) como fallback.",
+                    cmd.InvoiceId,
+                    tid,
+                    onlyMethod.Id,
+                    inv.SriPaymentMethodCode
+                );
+            }
         }
 
         // ── Autorizar (congela líneas + snapshot totales) ───────────
