@@ -60,8 +60,12 @@ export function SessionBootstrap({ children }: Props) {
       // Config de decimales por empresa — debe estar disponible antes de que
       // cualquier módulo (Ventas, Compras, Items) formatee o valide montos.
       void loadDecimalConfig();
-      // Estado de facturación electrónica — alimenta ZHElectronicEnvironmentBanner en
-      // cualquier pantalla emisora sin que cada una dispare su propia petición.
+      // Estado LOCAL de facturación electrónica (certificado/ambiente/URL) — alimenta
+      // ZHElectronicEnvironmentBanner en cualquier pantalla emisora sin que cada una dispare su
+      // propia petición. ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: refresh() nunca
+      // hace ping externo al SRI (por eso no genera el ruido/latencia de SocketException 10054
+      // en cada bootstrap) — la conectividad real solo se verifica en Ventas
+      // (electronicInvoicingStatusStore.refreshConnectivity, ver useSalesPage.ts).
       void useElectronicInvoicingStatusStore.getState().refresh();
     } else {
       useSessionStore.getState().clear();

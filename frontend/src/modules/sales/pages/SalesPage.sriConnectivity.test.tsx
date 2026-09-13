@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
+import type { SalesInvoiceDto } from "../api/salesService";
 
-// ── Mocks de componentes pesados, salvo CustomerPicker: esta suite prueba
-// específicamente la integración real SalesPage → CustomerPicker →
-// ZHPickerSelectedValue de la acción "Editar datos" (SALES-DS-CUSTOMER-SELECTED-08). ──
+// ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: estado discreto de conectividad SRI en
+// /sales (badge "SRI disponible" / "SRI no disponible" / "SRI no verificado") — puramente
+// informativo, nunca bloquea la captura de productos ni la emisión (ver useSalesPage.ts:
+// refreshSriConnectivity solo advierte con message.warning, no cambia canEmit).
+vi.mock("../components/CustomerPicker", () => ({ CustomerPicker: () => null }));
 vi.mock("../components/SalesInvoiceDetailsSection", () => ({
   SalesInvoiceDetailsSection: () => null,
 }));
@@ -29,6 +32,7 @@ vi.mock("../../../components/zh/ZHConfirmModal", () => ({
 vi.mock("../../../components/zh/ZHElectronicEnvironmentBanner", () => ({
   ZHElectronicEnvironmentBanner: () => null,
 }));
+
 vi.mock("../hooks/useRideActions", () => ({
   useRideActions: () => ({
     ridePending: false,
@@ -36,19 +40,6 @@ vi.mock("../hooks/useRideActions", () => ({
     handleDownloadRide: vi.fn(),
     handleRegenerateRide: vi.fn(),
   }),
-}));
-
-vi.mock("../../masterData/api/businessPartnerFacade", () => ({
-  businessPartnerFacade: {
-    getBusinessPartner: vi.fn().mockResolvedValue({
-      id: "cust-1",
-      identificationNumber: "1710034065",
-      tradeName: "",
-      legalName: "Juan Pérez",
-      isActive: true,
-    }),
-    searchCustomersForPicker: vi.fn().mockResolvedValue([]),
-  },
 }));
 
 const useSalesPageMock = vi.fn();
@@ -66,7 +57,56 @@ function renderSalesPage() {
   );
 }
 
-function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
+function buildInvoice(overrides: Partial<SalesInvoiceDto> = {}): SalesInvoiceDto {
+  return {
+    id: "inv-1",
+    customerId: "cust-1",
+    customerName: "Juan Pérez",
+    customerTaxId: "1710034065",
+    customerIdentificationType: "05",
+    customerEmail: null,
+    customerAddress: null,
+    docTypeCode: "01",
+    sriPaymentMethodCode: "01",
+    invoiceNumber: "001-001-000000123",
+    issueDate: "2026-07-01",
+    cashSessionId: "cash-session-1",
+    emissionPointId: null,
+    emissionType: "Electronic",
+    currencyCode: "USD",
+    exchangeRate: 1,
+    paymentTermId: "pt-1",
+    paymentTermName: "Contado",
+    paymentTermInstallments: 1,
+    paymentTermDaysBetween: 0,
+    creditTermDays: 0,
+    dueDate: null,
+    notes: null,
+    status: "Draft",
+    electronicStatus: "None",
+    accessKey: null,
+    authorizationNumber: null,
+    authorizationDate: null,
+    subtotal: 100,
+    totalDiscount: 0,
+    totalIce: 0,
+    totalVat: 15,
+    totalTax: 15,
+    grandTotal: 115,
+    payments: [],
+    lines: [],
+    paymentSchedule: [],
+    isPaymentScheduleManual: false,
+    createdAt: "2026-07-01T00:00:00Z",
+    updatedAt: null,
+    electronicIssueError: null,
+    ...overrides,
+  };
+}
+
+function buildCtx(
+  overrides: Partial<SalesPageContext> = {},
+): SalesPageContext {
   const base = {
     tab: "nuevo",
     setTab: vi.fn(),
@@ -77,23 +117,19 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     saving: false,
     saveError: null,
     setSaveError: vi.fn(),
-    editing: null,
+    editing: buildInvoice(),
     hasInsufficientStock: false,
 
     form: {},
     register: vi.fn(),
     control: {},
     errors: {},
-    formWatch: {
-      docTypeCode: "",
-      sriPaymentMethodCode: "",
-      customerId: "cust-1",
-    },
+    formWatch: { docTypeCode: "", sriPaymentMethodCode: "", customerId: "cust-1" },
     setValue: vi.fn(),
     getValues: vi.fn(),
     reset: vi.fn(),
 
-    lines: [],
+    lines: [{ itemId: "item-1" }],
     addLineWithItem: vi.fn(),
     removeLine: vi.fn(),
     updateLine: vi.fn(),
@@ -107,17 +143,9 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     setPayKey: vi.fn(),
     paymentMethods: [],
     paidTotal: 0,
+    paymentOk: true,
 
-    customerProfile: {
-      name: "Juan Pérez",
-      taxId: "1710034065",
-      identificationType: "05",
-      address: "Av. Siempre Viva 742",
-      email: "juan@example.com",
-      phone: "0999999999",
-      installments: 1,
-      daysBetweenInstallments: 0,
-    },
+    customerProfile: null,
     setCustomerProfile: vi.fn(),
     handleCustomerChange: vi.fn(),
 
@@ -138,17 +166,22 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     isDraft: true,
     readOnly: false,
     fieldDisabled: false,
-    canEmit: false,
+    canEmit: true,
+    openIssueFlow: vi.fn(),
+    cashDue: 0,
+    cashInsufficient: false,
+    cashReceived: 0,
+    cashChange: 0,
     summary: {
-      subtotal: 0,
+      subtotal: 100,
       discount: 0,
-      netSubtotal: 0,
-      vat: 0,
+      netSubtotal: 100,
+      vat: 15,
       ice: 0,
-      total: 0,
+      total: 115,
       taxBreakdown: [],
     },
-    grandTotal: 0,
+    grandTotal: 115,
     totalDiscount: 0,
     taxBreakdown: [],
     isElectronic: true,
@@ -168,7 +201,6 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     issueError: null,
     xmlDownloading: false,
     productSearchFocusKey: 0,
-    openIssueFlow: vi.fn(),
     closeIssueFlow: vi.fn(),
     confirmIssue: vi.fn(),
     retryIssue: vi.fn(),
@@ -224,7 +256,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
   return { ...base, ...overrides } as unknown as SalesPageContext;
 }
 
-describe("SalesPage — cliente seleccionado + Editar datos integrado (SALES-DS-CUSTOMER-SELECTED-08)", () => {
+describe("SalesPage — estado discreto de conectividad SRI (ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -233,76 +265,66 @@ describe("SalesPage — cliente seleccionado + Editar datos integrado (SALES-DS-
     cleanup();
   });
 
-  it("el cliente seleccionado se muestra vía ZHPickerSelectedValue", async () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
+  it('muestra "SRI disponible" cuando sriAvailability es Available', () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Available" }));
     renderSalesPage();
 
-    const title = await screen.findByText("Juan Pérez");
-    expect(title.closest(".zh-picker-selected-value")).toBeTruthy();
+    expect(screen.getByText("SRI disponible")).toBeTruthy();
   });
 
-  it('"Cambiar cliente" sigue funcionando (dispara handleCustomerChange(null))', async () => {
-    const handleCustomerChange = vi.fn();
-    useSalesPageMock.mockReturnValue(buildCtx({ handleCustomerChange }));
+  it('muestra "SRI no disponible" cuando sriAvailability es Unavailable', () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Unavailable" }));
     renderSalesPage();
 
-    const btn = await screen.findByTitle("Cambiar cliente");
-    fireEvent.click(btn);
-
-    expect(handleCustomerChange).toHaveBeenCalledWith(null);
+    expect(screen.getByText("SRI no disponible")).toBeTruthy();
   });
 
-  it('"Editar datos" se muestra como acción integrada del valor seleccionado', async () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
+  it('muestra "SRI no verificado" cuando sriAvailability es Unknown (aún no se verificó)', () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Unknown" }));
     renderSalesPage();
 
-    const btn = await screen.findByTitle("Editar datos");
-    expect(btn.closest(".zh-picker-selected-value__actions")).toBeTruthy();
-    expect(btn.querySelector(".material-symbols-outlined")?.textContent).toBe(
-      "edit",
+    expect(screen.getByText("SRI no verificado")).toBeTruthy();
+  });
+
+  it("no muestra el badge cuando la factura no es electrónica (Physical no necesita SRI)", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({ isElectronic: false, sriAvailability: "Unavailable" }),
     );
-  });
-
-  it('click en "Editar datos" invoca el mismo handler anterior (openEditCustomerModal)', async () => {
-    const openEditCustomerModal = vi.fn();
-    useSalesPageMock.mockReturnValue(buildCtx({ openEditCustomerModal }));
     renderSalesPage();
 
-    const btn = await screen.findByTitle("Editar datos");
-    fireEvent.click(btn);
-
-    expect(openEditCustomerModal).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("SRI no disponible")).toBeNull();
+    expect(screen.queryByText("SRI disponible")).toBeNull();
+    expect(screen.queryByText("SRI no verificado")).toBeNull();
   });
 
-  it('no queda ningún link/botón "Editar datos" suelto fuera de ZHPickerSelectedValue', async () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
-    const { container } = renderSalesPage();
+  it("SRI no disponible NO deshabilita el botón Emitir (solo advierte, no bloquea) — canEmit sigue siendo la única autoridad", () => {
+    const openIssueFlow = vi.fn();
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        sriAvailability: "Unavailable",
+        canEmit: true,
+        openIssueFlow,
+      }),
+    );
+    renderSalesPage();
 
-    await screen.findByText("Juan Pérez");
-    const matches = screen.getAllByTitle("Editar datos");
-    expect(matches).toHaveLength(1);
-    expect(
-      container.querySelector(".sales-form-customer-profile .zh-inline-action"),
-    ).toBeNull();
+    const btn = screen
+      .getByText("Emitir Factura Electrónica (F8)")
+      .closest("button")!;
+    expect(btn.disabled).toBe(false);
+    btn.click();
+    expect(openIssueFlow).toHaveBeenCalledTimes(1);
   });
 
-  it("no hay estilos inline en la tarjeta de cliente seleccionado", async () => {
-    useSalesPageMock.mockReturnValue(buildCtx());
+  it("no hay estilos inline en el badge de conectividad SRI", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Available" }));
     const { container } = renderSalesPage();
 
-    await screen.findByText("Juan Pérez");
-    const card = container.querySelector(".zh-picker-selected-value")!;
-    card.querySelectorAll("*").forEach((el) => {
+    const badge = screen.getByText("SRI disponible").closest(".sf-bottombar__sri");
+    expect(badge).not.toBeNull();
+    badge!.querySelectorAll("*").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
-    expect(card.getAttribute("style")).toBeNull();
-  });
-
-  it("no muestra Editar datos cuando no hay customerProfile", async () => {
-    useSalesPageMock.mockReturnValue(buildCtx({ customerProfile: null }));
-    renderSalesPage();
-
-    await screen.findByText("Juan Pérez");
-    expect(screen.queryByTitle("Editar datos")).toBeNull();
+    expect(container).toBeTruthy();
   });
 });

@@ -41,16 +41,27 @@ public sealed class ElectronicInvoicingController : ControllerBase
     /// Estado liviano de facturación electrónica para UI transversal (banner de ambiente) —
     /// visible para cualquier usuario autenticado de la empresa, sin requerir el permiso de
     /// Configuración SRI: no expone datos sensibles, solo ambiente/estado de emisión.
+    ///
+    /// ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: por defecto (<c>checkConnectivity</c>
+    /// ausente u <c>false</c>) NO hace ping externo al SRI — solo resuelve estado local
+    /// (certificado/ambiente/URL). Es el modo que usa el bootstrap global de sesión
+    /// (SessionBootstrap) y el cambio de empresa: nunca deben disparar una llamada de red al SRI.
+    /// Pasar <c>?checkConnectivity=true</c> fuerza el ping real — usado explícitamente por Ventas
+    /// al entrar a /sales y antes de emitir (con caché corto en el frontend), nunca por pantallas
+    /// que solo necesitan mostrar el banner de ambiente.
     /// </summary>
     [HttpGet("status")]
     [ProducesResponseType(
         typeof(ApiResponse<ElectronicInvoicingStatusDto>),
         StatusCodes.Status200OK
     )]
-    public async Task<IActionResult> GetStatus(CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetStatus(
+        [FromQuery] bool checkConnectivity = false,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(
-            new GetElectronicInvoicingStatusQuery(),
+            new GetElectronicInvoicingStatusQuery(checkConnectivity),
             cancellationToken
         );
         return this.ToOkOrBadRequest(result);

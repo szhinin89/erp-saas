@@ -36,6 +36,18 @@ import "../../../styles/shared/erp-form-core.css";
 import "../../electronicDocuments/monitor/components/electronic-documents-monitor.css";
 import "./SalesPage.css";
 
+/** ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: solo presentación — el valor real
+ * (`sriAvailability`) lo calcula el backend, nunca se recalcula acá. "Unknown" cubre tanto "aún
+ * no se verificó" como el caso sin datos todavía cargados. */
+const SRI_AVAILABILITY_BADGE: Record<
+  "Available" | "Unavailable" | "Unknown",
+  { label: string; variant: BadgeVariant }
+> = {
+  Available: { label: "SRI disponible", variant: "success" },
+  Unavailable: { label: "SRI no disponible", variant: "warning" },
+  Unknown: { label: "SRI no verificado", variant: "neutral" },
+};
+
 export function SalesPage() {
   const ctx = useSalesPage();
   const ride = useRideActions();
@@ -426,6 +438,15 @@ export function SalesPage() {
                 <span className="sf-bottombar__sri-key zh-code-value">
                   {ctx.editing?.accessKey ?? "— se genera al emitir —"}
                 </span>
+                {/* ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: estado discreto de
+                    conectividad SRI, verificado al entrar a esta pantalla (ver
+                    refreshSriConnectivity en useSalesPage.ts) — nunca bloquea la captura de
+                    productos ni la emisión, solo informa. */}
+                <Badge
+                  label={SRI_AVAILABILITY_BADGE[ctx.sriAvailability].label}
+                  variant={SRI_AVAILABILITY_BADGE[ctx.sriAvailability].variant}
+                  size="md"
+                />
               </div>
             )}
 

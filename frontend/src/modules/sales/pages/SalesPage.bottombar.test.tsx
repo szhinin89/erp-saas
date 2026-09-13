@@ -182,6 +182,7 @@ function buildCtx(
     totalDiscount: 0,
     taxBreakdown: [],
     isElectronic: true,
+    sriAvailability: "Unknown",
     selectedPt: null,
 
     fetchList: vi.fn(),

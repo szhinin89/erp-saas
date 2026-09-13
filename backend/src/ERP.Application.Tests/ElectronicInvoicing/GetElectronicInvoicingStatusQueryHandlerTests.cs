@@ -72,8 +72,13 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
 
         public FakeConnectivityChecker(bool reachable) => _reachable = reachable;
 
-        public Task<bool> PingAsync(string wsdlUrl, CancellationToken ct = default) =>
-            Task.FromResult(_reachable);
+        public int CallCount { get; private set; }
+
+        public Task<bool> PingAsync(string wsdlUrl, CancellationToken ct = default)
+        {
+            CallCount++;
+            return Task.FromResult(_reachable);
+        }
     }
 
     private static SriCertificateStatus ValidCertExpiringIn(int days) =>
@@ -234,6 +239,105 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             CancellationToken.None
         );
 
+        result.Value!.Status.Should().Be(ElectronicInvoicingStatus.SriUnavailable);
+        result.Value.SriAvailability.Should().Be(SriAvailability.Unavailable);
+        result.Value.CanIssue.Should().BeFalse();
+    }
+
+    // ── ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01 ────────────────────────────
+    // Estado local (config/certificado) ≠ conectividad externa SRI: el bootstrap global pide
+    // CheckConnectivity=false y nunca debe disparar el ping; un check explícito (Ventas al
+    // entrar a /sales, o antes de emitir) sí lo dispara.
+
+    [Fact]
+    public async Task Handle_without_connectivity_check_never_calls_ping_and_reports_ready_with_unknown_availability()
+    {
+        var settings = NewSettings(environment: 2);
+        var connectivityChecker = new FakeConnectivityChecker(reachable: true);
+        var handler = new GetElectronicInvoicingStatusQueryHandler(
+            new FakeSriSettingsRepository(settings),
+            new FixedCurrentCompany(settings.CompanyId),
+            new FakeCertificateStatusResolver(ValidCert),
+            connectivityChecker,
+            NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
+        );
+
+        var result = await handler.Handle(
+            new GetElectronicInvoicingStatusQuery(CheckConnectivity: false),
+            CancellationToken.None
+        );
+
+        connectivityChecker.CallCount.Should().Be(0);
+        result.Value!.Status.Should().Be(ElectronicInvoicingStatus.Ready);
+        result.Value.SriAvailability.Should().Be(SriAvailability.Unknown);
+        // Nada local lo impide — CanIssue no depende de una conectividad que no se verificó.
+        result.Value.CanIssue.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_without_connectivity_check_and_incomplete_config_still_skips_ping()
+    {
+        var settings = NewSettings(environment: 1);
+        var connectivityChecker = new FakeConnectivityChecker(reachable: true);
+        var handler = new GetElectronicInvoicingStatusQueryHandler(
+            new FakeSriSettingsRepository(settings),
+            new FixedCurrentCompany(settings.CompanyId),
+            new FakeCertificateStatusResolver(InvalidCert),
+            connectivityChecker,
+            NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
+        );
+
+        var result = await handler.Handle(
+            new GetElectronicInvoicingStatusQuery(CheckConnectivity: false),
+            CancellationToken.None
+        );
+
+        connectivityChecker.CallCount.Should().Be(0);
+        result.Value!.Status.Should().Be(ElectronicInvoicingStatus.Incomplete);
+    }
+
+    [Fact]
+    public async Task Handle_with_explicit_connectivity_check_calls_ping_exactly_once()
+    {
+        var settings = NewSettings(environment: 2);
+        var connectivityChecker = new FakeConnectivityChecker(reachable: true);
+        var handler = new GetElectronicInvoicingStatusQueryHandler(
+            new FakeSriSettingsRepository(settings),
+            new FixedCurrentCompany(settings.CompanyId),
+            new FakeCertificateStatusResolver(ValidCert),
+            connectivityChecker,
+            NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
+        );
+
+        var result = await handler.Handle(
+            new GetElectronicInvoicingStatusQuery(CheckConnectivity: true),
+            CancellationToken.None
+        );
+
+        connectivityChecker.CallCount.Should().Be(1);
+        result.Value!.SriAvailability.Should().Be(SriAvailability.Available);
+    }
+
+    [Fact]
+    public async Task Handle_with_explicit_connectivity_check_and_ping_failure_reports_sri_unavailable_not_exception()
+    {
+        var settings = NewSettings(environment: 2);
+        var connectivityChecker = new FakeConnectivityChecker(reachable: false);
+        var handler = new GetElectronicInvoicingStatusQueryHandler(
+            new FakeSriSettingsRepository(settings),
+            new FixedCurrentCompany(settings.CompanyId),
+            new FakeCertificateStatusResolver(ValidCert),
+            connectivityChecker,
+            NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
+        );
+
+        var result = await handler.Handle(
+            new GetElectronicInvoicingStatusQuery(CheckConnectivity: true),
+            CancellationToken.None
+        );
+
+        connectivityChecker.CallCount.Should().Be(1);
+        result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(ElectronicInvoicingStatus.SriUnavailable);
         result.Value.SriAvailability.Should().Be(SriAvailability.Unavailable);
         result.Value.CanIssue.Should().BeFalse();

@@ -66,6 +66,8 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { cajaSessionLookupFacade } from "../../caja/facades/cajaSessionLookupFacade";
 import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
+import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
+import type { ElectronicInvoicingStatusDto } from "../../configuracion/facturacionElectronica/api/electronicInvoicingService";
 import { message } from "../../../lib/messages";
 import {
   salesInvoiceSchema,
@@ -192,6 +194,23 @@ export function buildSalesErrorNotice(
 
 function issueErrorStatus(e: unknown): number | undefined {
   return (e as { response?: { status?: number } })?.response?.status;
+}
+
+/** Mensaje mostrado al cajero cuando el SRI no responde justo antes de emitir. No bloquea la
+ * emisión (ver `SRI_UNAVAILABLE_ISSUE_WARNING` / uso en `confirmIssue`): el backend
+ * (`AuthorizeSalesInvoiceHandler`) ya autoriza la venta y reintenta el envío al SRI de forma
+ * tolerante, así que este aviso es informativo, no un error que revierta el flujo. */
+export const SRI_UNAVAILABLE_ISSUE_WARNING =
+  "No se pudo conectar con el SRI. Intente nuevamente o revise la configuración.";
+
+/** ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: true cuando el último check de
+ * conectividad SRI (ya resuelto por `electronicInvoicingStatusStore.refreshConnectivity`, nunca
+ * recalculado acá) indica que el servicio no respondió. Pura — no decide bloquear ni recalcula
+ * nada, solo lee el campo ya calculado por el backend. */
+export function shouldWarnSriUnavailable(
+  status: ElectronicInvoicingStatusDto | null,
+): boolean {
+  return status?.sriAvailability === "Unavailable";
 }
 
 /** Identificación SRI estándar (tipo 07) del "Consumidor Final" — mismo literal que
@@ -493,6 +512,21 @@ export function useSalesPage() {
   // ya creada fuera de una sesión de caja activa (ej. sin sesión abierta en este navegador).
   const isElectronic =
     (myCashSession?.emissionType ?? editing?.emissionType) === "Electronic";
+
+  // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: conectividad SRI acotada a Ventas —
+  // el bootstrap global (SessionBootstrap) ya no hace ping al SRI, solo esta pantalla, y solo
+  // cuando el punto de emisión activo es electrónico (una venta física no necesita el SRI). El
+  // propio store cachea el resultado (SRI_CONNECTIVITY_TTL_MS) y deduplica llamadas
+  // concurrentes, así que refreshSriConnectivity() puede llamarse sin miedo a multiplicar pings;
+  // el efecto solo depende de isElectronic, no de cliente/producto/cantidad, para no repetir la
+  // llamada por cada edición del formulario.
+  const sriStatus = useElectronicInvoicingStatusStore((s) => s.status);
+  const refreshSriConnectivity = useElectronicInvoicingStatusStore(
+    (s) => s.refreshConnectivity,
+  );
+  useEffect(() => {
+    if (isElectronic) void refreshSriConnectivity();
+  }, [isElectronic, refreshSriConnectivity]);
 
   const selectedPt = useMemo(
     () => paymentTermsList.find((p) => p.id === formWatch.paymentTermId),
@@ -1272,6 +1306,20 @@ export function useSalesPage() {
     setIssueStepIndex(0); // Validando
     setSaving(true);
     try {
+      // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: si el último check de
+      // conectividad no existe o venció (SRI_CONNECTIVITY_TTL_MS), se refresca acá antes de
+      // emitir — refreshConnectivity() ya es no-op si el check sigue vigente, así que esto no
+      // agrega un ping por cada clic en "Emitir". Solo advierte (no bloquea): el backend
+      // (AuthorizeSalesInvoiceHandler) autoriza la venta igual y reintenta el envío al SRI de
+      // forma tolerante — bloquear la caja por una falla externa del SRI sería un cambio de
+      // política de emisión que este ticket no pidió.
+      if (isElectronic) {
+        await refreshSriConnectivity();
+        if (shouldWarnSriUnavailable(useElectronicInvoicingStatusStore.getState().status)) {
+          message.warning(SRI_UNAVAILABLE_ISSUE_WARNING);
+        }
+      }
+
       let invoiceId = editing?.id;
 
       if (!editing || isDirty) {
@@ -1390,6 +1438,8 @@ export function useSalesPage() {
     }
   }, [
     issuePhase,
+    isElectronic,
+    refreshSriConnectivity,
     editing,
     isDirty,
     trigger,
@@ -1766,6 +1816,9 @@ export function useSalesPage() {
     totalDiscount,
     taxBreakdown,
     isElectronic,
+    // Estado discreto de conectividad SRI (ver refreshSriConnectivity arriba) — "Available" /
+    // "Unavailable" / "Unknown" ("no verificado", incl. antes de que resuelva el primer check).
+    sriAvailability: sriStatus?.sriAvailability ?? "Unknown",
     selectedPt,
     isCreditTerm,
 

@@ -58,7 +58,11 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
                 return Result<ElectronicInvoicingStatusDto>.Success(NotConfiguredDto());
 
             return Result<ElectronicInvoicingStatusDto>.Success(
-                await ResolveConfiguredStatusAsync(settings, cancellationToken)
+                await ResolveConfiguredStatusAsync(
+                    settings,
+                    request.CheckConnectivity,
+                    cancellationToken
+                )
             );
         }
         catch (Exception ex)
@@ -70,6 +74,7 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
 
     private async Task<ElectronicInvoicingStatusDto> ResolveConfiguredStatusAsync(
         SriSettings settings,
+        bool checkConnectivity,
         CancellationToken cancellationToken
     )
     {
@@ -160,6 +165,37 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
             );
         }
 
+        var readyStatus =
+            environment == "Production"
+                ? ElectronicInvoicingStatus.Ready
+                : ElectronicInvoicingStatus.Testing;
+
+        // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: el ping externo al WSDL del SRI
+        // (Debug log de HttpClientFactory aparte — SocketException 10054 es ruido tolerado de un
+        // servicio de terceros) solo se ejecuta cuando lo pide explícitamente el llamador — nunca
+        // en el bootstrap global (SessionBootstrap ya no lo solicita). Sin el check, el estado
+        // local (certificado + ambiente + URL, todos ya validados arriba) es toda la verdad
+        // disponible: se reporta Ready/Testing con SriAvailability.Unknown — "no verificado", no
+        // "disponible" ni "no disponible" — y CanIssue=true porque nada local lo impide; la
+        // conectividad real se valida aparte, en Ventas, antes de emitir (ver
+        // electronicInvoicingStatusStore.refreshConnectivity en el frontend).
+        if (!checkConnectivity)
+        {
+            return new ElectronicInvoicingStatusDto(
+                Status: readyStatus,
+                Configured: true,
+                environment,
+                environmentName,
+                emissionType,
+                CertificateInstalled: true,
+                CertificateValid: true,
+                CertificateExpiresAt: certStatus.NotAfterUtc,
+                CertificateDaysRemaining: daysRemaining,
+                SriAvailability: SriAvailability.Unknown,
+                CanIssue: true
+            );
+        }
+
         // Solo se comprueba conectividad SRI cuando el resto ya es válido — evita una llamada
         // de red desperdiciada cuando el estado ya está determinado por otra causa.
         var reachable = await _connectivityChecker.PingAsync(settings.WsdlUrl, cancellationToken);
@@ -180,12 +216,8 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
             );
         }
 
-        var status =
-            environment == "Production"
-                ? ElectronicInvoicingStatus.Ready
-                : ElectronicInvoicingStatus.Testing;
         return new ElectronicInvoicingStatusDto(
-            Status: status,
+            Status: readyStatus,
             Configured: true,
             environment,
             environmentName,

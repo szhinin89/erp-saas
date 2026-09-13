@@ -215,6 +215,7 @@ function buildCtx(overrides: Partial<SalesPageContext> = {}): SalesPageContext {
     totalDiscount: 0,
     taxBreakdown: [{ rate: 15, label: "IVA 15%", base: 100, tax: 15 }],
     isElectronic: true,
+    sriAvailability: "Unknown",
     selectedPt: null,
 
     fetchList: vi.fn(),

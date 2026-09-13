@@ -122,7 +122,20 @@ export const electronicInvoicingService = {
       { password },
     ),
 
-  /** Estado liviano para UI transversal (banner de ambiente) — cualquier usuario autenticado. */
-  getStatus: () =>
-    apiGet<ElectronicInvoicingStatusDto>("/api/v1/electronic-invoicing/status"),
+  /**
+   * Estado liviano para UI transversal (banner de ambiente) — cualquier usuario autenticado.
+   *
+   * ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: por defecto (`checkConnectivity`
+   * ausente) NO hace ping externo al SRI — solo resuelve estado local (certificado/ambiente/URL).
+   * Es el modo correcto para bootstrap global (`electronicInvoicingStatusStore.refresh`).
+   * `checkConnectivity: true` fuerza el ping real — usado solo por
+   * `electronicInvoicingStatusStore.refreshConnectivity` (Ventas al entrar a /sales y antes de
+   * emitir, con caché corto), nunca por el bootstrap.
+   */
+  getStatus: (params?: { checkConnectivity?: boolean }) =>
+    apiGet<ElectronicInvoicingStatusDto>(
+      params?.checkConnectivity
+        ? "/api/v1/electronic-invoicing/status?checkConnectivity=true"
+        : "/api/v1/electronic-invoicing/status",
+    ),
 };
