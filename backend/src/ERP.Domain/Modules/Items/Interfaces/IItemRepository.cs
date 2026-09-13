@@ -15,6 +15,21 @@ public interface IItemRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Carga ligera + únicamente la colección SpecialTaxConfigurations (ICE/IRBPNR) — para
+    /// consumidores que solo necesitan datos escalares del ítem (código, config de venta/tax)
+    /// más esa colección puntual, sin pagar el costo de las 7 colecciones que carga
+    /// <see cref="GetByIdAsync"/> (Variants+Attributes/Barcodes, Images, UnitConversions,
+    /// Substitutes, PackagingLevels, SupplierCodes). Un único Include: nunca dispara el warning
+    /// de EF Core "multiple collection navigation" (SALES-ITEM-PRICING-EF-MULTIPLE-COLLECTION-
+    /// WARNING-01).
+    /// </summary>
+    Task<Item?> GetByIdWithSpecialTaxConfigurationsAsync(
+        Guid id,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Carga ligera en batch (una sola query, sin N+1) — para read-models que necesitan varios ítems por Id.</summary>
     Task<IReadOnlyList<Item>> GetByIdsLightAsync(
         IReadOnlyCollection<Guid> ids,

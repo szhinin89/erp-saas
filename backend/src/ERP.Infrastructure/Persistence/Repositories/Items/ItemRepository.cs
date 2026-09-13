@@ -41,6 +41,22 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default
     ) => await Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
+    // SALES-ITEM-PRICING-EF-MULTIPLE-COLLECTION-WARNING-01: un único Include (una sola
+    // colección) — nunca dispara el warning de EF Core "loads related collections for more
+    // than one collection navigation" que sí dispara GetByIdAsync (7 colecciones). Se agregó
+    // porque GetSalesItemPricingQueryHandler solo necesita SpecialTaxConfigurations (para ICE)
+    // además de los escalares que ya trae GetByIdLightAsync — pedir las otras 6 colecciones
+    // (Variants/Images/UnitConversions/Substitutes/PackagingLevels/SupplierCodes) era trabajo
+    // y payload de red desperdiciados en el hot path de "seleccionar un producto para venta".
+    public async Task<Item?> GetByIdWithSpecialTaxConfigurationsAsync(
+        Guid id,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await Scoped(tenantId)
+            .Include(x => x.SpecialTaxConfigurations)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task<IReadOnlyList<Item>> GetByIdsLightAsync(
         IReadOnlyCollection<Guid> ids,
         Guid tenantId,

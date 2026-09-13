@@ -40,10 +40,18 @@ public sealed class GetSalesItemPricingQueryHandler
         CancellationToken ct
     )
     {
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — GetByIdAsync (no Light): se necesita
-        // SpecialTaxConfigurations para resolver ICE, ya no disponible vía TaxConfig.ExciseTaxCode
-        // (legacy compatibility mirror, ya no se lee para decisiones nuevas).
-        var item = await _itemRepo.GetByIdAsync(request.ItemId, _tenant.TenantId, ct);
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.2/Fase 3) — se necesita SpecialTaxConfigurations
+        // para resolver ICE, ya no disponible vía TaxConfig.ExciseTaxCode (legacy compatibility
+        // mirror, ya no se lee para decisiones nuevas). SALES-ITEM-PRICING-EF-MULTIPLE-COLLECTION-
+        // WARNING-01: se usa GetByIdWithSpecialTaxConfigurationsAsync (un solo Include) en vez de
+        // GetByIdAsync (7 Includes) — este handler no lee Variants/Images/UnitConversions/
+        // Substitutes/PackagingLevels/SupplierCodes, y cargarlos disparaba el warning de EF Core
+        // de múltiples colecciones (riesgo de cartesian explosion) sin ningún beneficio.
+        var item = await _itemRepo.GetByIdWithSpecialTaxConfigurationsAsync(
+            request.ItemId,
+            _tenant.TenantId,
+            ct
+        );
         if (item is null)
             return Result<SalesItemPricingDto>.NotFound("Ítem no encontrado.");
 
