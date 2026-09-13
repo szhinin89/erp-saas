@@ -383,6 +383,72 @@ describe("SalesPage — valores monetarios read-only migrados a ZHMoneyValue (SA
     expect(moneyValue?.textContent).toBe("$115.00");
   });
 
+  // SALES-PAYMENT-TOLERANCE-NOTE-01: el pago mostrado sigue siendo el monto real cobrado (nunca
+  // se falsea como si se hubiera cobrado el total exacto); cuando la diferencia contra el total
+  // cae dentro de INVOICE_PAYMENT_TOLERANCE (0.02), se aclara con una nota corta.
+  it("muestra la nota de tolerancia cuando el pago difiere del total dentro de INVOICE_PAYMENT_TOLERANCE", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        readOnly: true,
+        grandTotal: 4.0,
+        editing: buildInvoice({
+          grandTotal: 4.0,
+          payments: [
+            {
+              id: "p1",
+              paymentMethodId: "pm-cash",
+              paymentMethodCode: "01",
+              paymentMethodName: "Efectivo",
+              amount: 3.99,
+              reference: null,
+              cardDetail: null,
+              transferDetail: null,
+              chequeDetail: null,
+            },
+          ],
+        }),
+      }),
+    );
+    const { container } = renderSalesPage();
+
+    // El chip sigue mostrando el monto real cobrado, no el total.
+    const chip = container.querySelector(".sales-payment-chip__amount");
+    expect(chip?.querySelector(".zh-money-value")?.textContent).toBe("$3.99");
+
+    const note = container.querySelector(".sales-payment-tolerance-note");
+    expect(note?.textContent).toBe(
+      "Diferencia $0.01 dentro de tolerancia — saldada",
+    );
+  });
+
+  it("no muestra la nota de tolerancia cuando el pago coincide exactamente con el total", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        readOnly: true,
+        grandTotal: 4.0,
+        editing: buildInvoice({
+          grandTotal: 4.0,
+          payments: [
+            {
+              id: "p1",
+              paymentMethodId: "pm-cash",
+              paymentMethodCode: "01",
+              paymentMethodName: "Efectivo",
+              amount: 4.0,
+              reference: null,
+              cardDetail: null,
+              transferDetail: null,
+              chequeDetail: null,
+            },
+          ],
+        }),
+      }),
+    );
+    const { container } = renderSalesPage();
+
+    expect(container.querySelector(".sales-payment-tolerance-note")).toBeNull();
+  });
+
   it("resumen de cobro (Total cobrado / Pendiente) usa ZHMoneyValue", () => {
     useSalesPageMock.mockReturnValue(
       buildCtx({

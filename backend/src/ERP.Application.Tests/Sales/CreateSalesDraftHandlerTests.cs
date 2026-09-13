@@ -905,7 +905,13 @@ public sealed class CreateSalesDraftHandlerTests
         line.WarehouseName.Should().Be("Bodega Central");
         line.UnitCostAtSale.Should().Be(60.5m);
         line.TotalCostAtSale.Should().Be(60.5m * line.QuantityInBaseUom);
-        line.ListPriceAtSale.Should().Be(95m);
+        // BUGFIX-SALES-LIST-PRICE-AT-SALE-BASE-PRICE-01: ListPriceAtSale es el PVP/precio base
+        // ANTES de cualquier descuento (BasePrice=100), nunca el precio ya descontado por la
+        // regla (UnitPrice=95) — antes de este fix ambos quedaban en 95, ocultando que sí hubo
+        // un descuento de regla real.
+        line.ListPriceAtSale.Should().Be(100m);
+        line.UnitPrice.Should().Be(95m);
+        line.ListPriceAtSale.Should().NotBe(line.UnitPrice);
         line.PriceListId.Should().Be(priceListId);
         line.PriceListName.Should().Be("Lista Mayorista");
         line.PricingSource.Should().Be("PercentDiscount:5 (lista)");
@@ -940,7 +946,8 @@ public sealed class CreateSalesDraftHandlerTests
         var lineDto = getResult.Value!.Lines.Single();
         lineDto.WarehouseName.Should().Be("Bodega Central");
         lineDto.UnitCostAtSale.Should().Be(60.5m);
-        lineDto.ListPriceAtSale.Should().Be(95m);
+        // La query de detalle expone exactamente lo persistido en el Draft — sin recalcular.
+        lineDto.ListPriceAtSale.Should().Be(100m);
         lineDto.PriceListName.Should().Be("Lista Mayorista");
         lineDto.PricingSource.Should().Be("PercentDiscount:5 (lista)");
         lineDto.DiscountSource.Should().Be("PricingRule");

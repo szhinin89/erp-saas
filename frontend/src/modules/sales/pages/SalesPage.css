@@ -91,6 +91,15 @@
 .sales-payment-chip .zh-money-value {
   font-size: inherit;
 }
+/* SALES-PAYMENT-TOLERANCE-NOTE-01: aclara un descuadre menor (dentro de
+   INVOICE_PAYMENT_TOLERANCE) entre el cobro real mostrado arriba y el total de la factura —
+   nunca reemplaza el monto real, solo da contexto. flex-basis 100% para que ocupe su propia
+   fila debajo de los chips (el contenedor es flex-wrap). */
+.sales-payment-tolerance-note {
+  flex-basis: 100%;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
 
 /* Formas de cobro — grilla editable */
 .sales-payment-grid {

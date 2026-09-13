@@ -340,6 +340,27 @@
   color: var(--color-warning);
   white-space: nowrap;
 }
+/* SALES-DISCOUNT-SOURCE-DISTINCTION-01: variante readOnly — "Manual X%" (descuento manual de
+   línea) y "Regla -X%" (Pricing Engine v2) apilados, nunca combinados en un solo número. */
+.sf-product__discount-readonly {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.sf-product__discount-manual {
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+/* Referencia secundaria (caso "ambos": descuento manual + precio lista ya venía de una regla) —
+   mismo tono que .sf-product__pricelist-name, deliberadamente más discreta que el badge normal. */
+.sf-product__discount-tag--muted {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  white-space: normal;
+}
 /* font-size ELIMINADO (SALES-DS-VISUAL-REAL-17) — el TSX ahora pasa `density="compact"`
    (ZhDecimalInput) para este input, que aporta el font-size 13px vía `.zh-input--compact`
    (zh-ui.css) en vez de repetirlo aquí; mismo criterio para .sf-product__price-input más abajo.

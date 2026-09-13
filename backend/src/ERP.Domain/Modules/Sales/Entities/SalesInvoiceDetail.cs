@@ -53,9 +53,11 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     /// <summary>Costo total de la línea (UnitCostAtSale × QuantityInBaseUom) al momento de vender.</summary>
     public decimal? TotalCostAtSale { get; private set; }
 
-    /// <summary>Precio base/lista resuelto por <c>IPricingResolver</c> ANTES del descuento manual
-    /// de línea (<see cref="DiscountPct"/>/<see cref="DiscountAmount"/>) — puede diferir de
-    /// <see cref="UnitPrice"/> si el usuario editó el precio a mano tras la resolución.</summary>
+    /// <summary>Precio base/lista (PVP) resuelto por <c>IPricingResolver</c> ANTES de CUALQUIER
+    /// descuento — automático (regla del Pricing Engine v2) o manual de línea
+    /// (<see cref="DiscountPct"/>/<see cref="DiscountAmount"/>) — y antes de cualquier edición
+    /// manual del precio facturado. Puede ser mayor que <see cref="UnitPrice"/> cuando aplicó un
+    /// descuento (de regla y/o manual); son iguales solo cuando no hubo ningún descuento.</summary>
     public decimal? ListPriceAtSale { get; private set; }
 
     /// <summary>FK opcional a <c>PriceList</c> (Pricing Engine v2) — la lista efectivamente

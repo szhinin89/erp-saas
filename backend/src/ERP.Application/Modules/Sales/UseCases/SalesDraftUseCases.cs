@@ -1217,13 +1217,17 @@ file static class SalesLineBuilder
                 }
             }
 
-            // ListPriceAtSale = precio resuelto por el Pricing Engine v2 (ya escalado a la unidad
-            // vendida) ANTES de cualquier edición manual del precio facturado — puede diferir de
-            // line.UnitPrice si el usuario sobrescribió el precio propuesto.
+            // ListPriceAtSale = precio base/lista (BasePrice) resuelto por el Pricing Engine v2 (ya
+            // escalado a la unidad vendida) ANTES de cualquier descuento — automático (regla del
+            // Pricing Engine) o manual — así como antes de cualquier edición manual del precio
+            // facturado. UnitPrice (pricingResultValue) es el precio YA con el descuento de regla
+            // aplicado, por lo que NO sirve como ancla de "precio lista" (bug corregido: antes se
+            // tomaba UnitPrice, dejando ListPriceAtSale == UnitPrice incluso cuando sí hubo
+            // descuento de regla).
             decimal? listPriceAtSale =
                 pricingResultValue is not null
                     ? Math.Round(
-                        pricingResultValue.UnitPrice * conversionFactor,
+                        pricingResultValue.BasePrice * conversionFactor,
                         FiscalPrecision.UnitCost,
                         MidpointRounding.AwayFromZero
                     )

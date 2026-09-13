@@ -1165,6 +1165,7 @@ export function useSalesPage() {
           _priceListNameAtSale: l.priceListName,
           _pricingSourceAtSale: l.pricingSource,
           _discountDescriptionAtSale: l.discountDescription,
+          _discountSourceAtSale: l.discountSource,
           _warehouseNameAtSale: l.warehouseName,
           _unitCostAtSale: l.unitCostAtSale,
         }));

@@ -118,6 +118,27 @@ export function SalesInvoiceLineGridRow({
       ? null
       : (line._discountDescription ?? null);
   const isManualPrice = !readOnly && line._isManualPrice === true;
+  // SALES-DISCOUNT-SOURCE-DISTINCTION-01: en readOnly, DiscountPct (col. Descuento) es
+  // EXCLUSIVAMENTE descuento manual de línea (confirmado en backend, SalesDraftUseCases.cs —
+  // nunca se mezcla con el descuento de una PricingRule). discountDescriptionAtSale/
+  // discountSourceAtSale documentan el descuento de regla cuando aplica. Ambos NO deben mostrarse
+  // como si fueran el mismo concepto (p. ej. "Dto.% 0.00" junto a "-5%" de regla).
+  const discountSourceAtSale = readOnly ? (line._discountSourceAtSale ?? null) : null;
+  const manualDiscountPct = readOnly ? (line.discountPct ?? 0) : 0;
+  const hasManualDiscount = readOnly && manualDiscountPct > 0;
+  const hasRuleDiscount =
+    readOnly && discountSourceAtSale === "PricingRule" && !!discountDescription;
+  // Caso "ambos": hubo descuento manual de línea Y el precio base/lista salió de una regla del
+  // Pricing Engine v2 (pricingSourceAtSale != "BaseSalePrice"). El backend hoy solo documenta el
+  // texto humano de la regla (discountDescription) cuando NO hay descuento manual (discountSource
+  // prioriza "Manual" — ver comentario en SalesDraftUseCases.cs), así que aquí solo se referencia
+  // la lista de precios (dato real ya disponible), sin fabricar un porcentaje que el backend no
+  // entregó.
+  const hasRuleOnListPrice =
+    readOnly &&
+    !hasRuleDiscount &&
+    line._pricingSourceAtSale != null &&
+    line._pricingSourceAtSale !== "BaseSalePrice";
   const stockQty = readOnly ? undefined : line._stockQty;
   const stockWarehouse = readOnly
     ? (line._warehouseNameAtSale ?? undefined)
@@ -232,33 +253,64 @@ export function SalesInvoiceLineGridRow({
             comparten columna a propósito: el % manual es lo que el cajero puede tocar, la
             insignia es solo informativa de por qué el precio facturado quedó como quedó. */}
         <div className="sf-product__discount" title={discountTitle}>
-          <ZHFieldLabel size="sm" className="sf-product__disc-label">
-            Dto. %
-          </ZHFieldLabel>
-          <ZhDecimalInput
-            // Input no controlado (defaultValue) por diseño — se remonta cuando line.discountPct
-            // cambia por una vía distinta a este mismo input (p. ej. al recargar una línea), para
-            // que el DOM nunca quede desincronizado del valor real. Sin key, React reutiliza el
-            // nodo y el usuario seguiría viendo el valor viejo (mismo bug que quantity, ver abajo).
-            key={line.discountPct ?? 0}
-            className="sf-product__disc-input"
-            density="compact"
-            decimals={dc.percentage}
-            positiveOnly
-            defaultValue={line.discountPct ?? 0}
-            onBlur={(e) =>
-              onUpdate(
-                line._key,
-                "discountPct",
-                Math.min(100, Math.max(0, Number(e.target.value) || 0)),
-              )
-            }
-            disabled={disabled}
-          />
-          {discountDescription && (
-            <span className="sf-product__discount-tag">
-              {discountBadgeText(discountDescription)}
-            </span>
+          {readOnly ? (
+            // SALES-DISCOUNT-SOURCE-DISTINCTION-01: "Manual" (DiscountPct) y "Regla" (Pricing
+            // Engine v2) son conceptos distintos — nunca se combinan en un solo número. Cuando no
+            // hay descuento manual, el "0.00%" no se muestra como dato principal (se oculta).
+            <div className="sf-product__discount-readonly">
+              {hasManualDiscount && (
+                <span className="sf-product__discount-manual">
+                  Manual {manualDiscountPct.toFixed(dc.percentage)}%
+                </span>
+              )}
+              {hasRuleDiscount && (
+                <span className="sf-product__discount-tag">
+                  Regla {discountBadgeText(discountDescription!)}
+                </span>
+              )}
+              {hasManualDiscount && hasRuleOnListPrice && (
+                <span className="sf-product__discount-tag sf-product__discount-tag--muted">
+                  + regla en precio lista{priceListName ? ` (${priceListName})` : ""}
+                </span>
+              )}
+              {!hasManualDiscount && !hasRuleDiscount && (
+                <span className="sales-invoice-details-empty-value">
+                  Sin descuento
+                </span>
+              )}
+            </div>
+          ) : (
+            <>
+              <ZHFieldLabel size="sm" className="sf-product__disc-label">
+                Dto. %
+              </ZHFieldLabel>
+              <ZhDecimalInput
+                // Input no controlado (defaultValue) por diseño — se remonta cuando
+                // line.discountPct cambia por una vía distinta a este mismo input (p. ej. al
+                // recargar una línea), para que el DOM nunca quede desincronizado del valor real.
+                // Sin key, React reutiliza el nodo y el usuario seguiría viendo el valor viejo
+                // (mismo bug que quantity, ver abajo).
+                key={line.discountPct ?? 0}
+                className="sf-product__disc-input"
+                density="compact"
+                decimals={dc.percentage}
+                positiveOnly
+                defaultValue={line.discountPct ?? 0}
+                onBlur={(e) =>
+                  onUpdate(
+                    line._key,
+                    "discountPct",
+                    Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+                  )
+                }
+                disabled={disabled}
+              />
+              {discountDescription && (
+                <span className="sf-product__discount-tag">
+                  {discountBadgeText(discountDescription)}
+                </span>
+              )}
+            </>
           )}
         </div>
 

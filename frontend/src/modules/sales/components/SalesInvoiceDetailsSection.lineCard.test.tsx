@@ -418,4 +418,63 @@ describe("SalesInvoiceDetailsSection — ficha de línea de venta retail (FIX06)
     expect(screen.getByText("Precio manual")).not.toBeNull();
     expect(screen.queryByText(/descuento 5%/i)).toBeNull();
   });
+
+  // SALES-DISCOUNT-SOURCE-DISTINCTION-01 (readOnly): "Manual" (DiscountPct) y "Regla" (Pricing
+  // Engine v2) son conceptos distintos y no deben mezclarse en un solo número/badge.
+  describe("readOnly — distinción descuento manual vs. descuento de regla", () => {
+    it("línea con descuento de regla (sin descuento manual): muestra el precio lista correcto y la insignia de regla, sin mezclarla con 'Dto.% 0.00'", () => {
+      const { container } = renderSection(
+        [
+          baseLine({
+            unitPrice: 95,
+            discountPct: 0,
+            _listPriceAtSale: 100,
+            _priceListNameAtSale: "Lista Mayorista",
+            _discountDescriptionAtSale: "Descuento 5% (regla general)",
+            _discountSourceAtSale: "PricingRule",
+          }),
+        ],
+        { readOnly: true },
+      );
+
+      expect(moneyText(container, ".sf-product__pricelist-value")).toBe(
+        "$100.00",
+      );
+      expect(
+        container.querySelector(".sf-product__discount-tag")?.textContent,
+      ).toBe("Regla -5%");
+      // Sin descuento manual, el "0.00%" nunca se muestra como dato principal.
+      expect(
+        container.querySelector(".sf-product__discount-manual"),
+      ).toBeNull();
+      expect(screen.queryByDisplayValue("0.00")).toBeNull();
+      // SALES-HISTORICAL-PRICING-SNAPSHOT-01: una factura guardada (readOnly) nunca vuelve a
+      // consultar/mostrar stock en vivo.
+      expect(screen.getByText("Stock actual no consultado")).not.toBeNull();
+    });
+
+    it("línea con descuento manual (sin descuento de regla): muestra 'Manual' claramente", () => {
+      const { container } = renderSection(
+        [
+          baseLine({
+            unitPrice: 95,
+            discountPct: 5,
+            _listPriceAtSale: null,
+            _discountDescriptionAtSale: "Descuento manual de 5% aplicado en la línea.",
+            _discountSourceAtSale: "Manual",
+            _pricingSourceAtSale: null,
+          }),
+        ],
+        { readOnly: true },
+      );
+
+      expect(
+        container.querySelector(".sf-product__discount-manual")?.textContent,
+      ).toBe("Manual 5.00%");
+      // No debe aparecer una insignia de regla cuando el origen es exclusivamente manual.
+      expect(
+        container.querySelector(".sf-product__discount-tag"),
+      ).toBeNull();
+    });
+  });
 });

@@ -5,8 +5,9 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
-import { formatMoney } from "../../../lib/sanitizers";
+import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { remainingToCollect } from "./paymentRemaining";
 
@@ -65,6 +66,33 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 </span>
               </div>
             ))}
+          {(() => {
+            // SALES-PAYMENT-TOLERANCE-NOTE-01: el monto mostrado arriba es SIEMPRE el cobro real
+            // (nunca se falsea mostrando el total como si se hubiera cobrado exacto). Cuando la
+            // suma de pagos difiere del total dentro de INVOICE_PAYMENT_TOLERANCE (settlement ya
+            // resuelto y correcto en backend, SalesSettlementPolicy.Tolerance), se aclara esa
+            // diferencia en vez de dejarla como un descuadre visual sin contexto. Si la diferencia
+            // excede la tolerancia, no se muestra nota — sigue viéndose como pendiente/no saldada
+            // según la lógica ya existente (no se toca esa lógica).
+            const decimals = getDecimalConfig().totalAmount;
+            const factor = 10 ** decimals;
+            const total = ctx.grandTotal;
+            const paid = (ctx.editing?.payments ?? []).reduce(
+              (s, p) => s + (p.amount || 0),
+              0,
+            );
+            const diff = Math.round((total - paid) * factor) / factor;
+            const absDiff = Math.abs(diff);
+            if (total <= 0 || absDiff === 0 || absDiff > INVOICE_PAYMENT_TOLERANCE) {
+              return null;
+            }
+            return (
+              <div className="sales-payment-tolerance-note">
+                Diferencia {formatMoneyWithSymbol(absDiff, decimals)} dentro de
+                tolerancia — saldada
+              </div>
+            );
+          })()}
         </div>
       ) : (
         <>

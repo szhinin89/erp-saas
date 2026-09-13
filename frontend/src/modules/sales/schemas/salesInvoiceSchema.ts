@@ -57,6 +57,11 @@ export const salesLineSchema = z.object({
   _priceListNameAtSale: z.string().nullable().optional(),
   _pricingSourceAtSale: z.string().nullable().optional(),
   _discountDescriptionAtSale: z.string().nullable().optional(),
+  // "Manual" | "PricingRule" — origen del descuento reflejado en _discountDescriptionAtSale (ver
+  // SalesInvoiceDetail.DiscountSource backend). Permite distinguir en UI un descuento manual de
+  // línea (DiscountPct) de un descuento resuelto por el Pricing Engine v2, sin adivinar a partir
+  // del texto de la descripción.
+  _discountSourceAtSale: z.string().nullable().optional(),
   _warehouseNameAtSale: z.string().nullable().optional(),
   _unitCostAtSale: z.number().nullable().optional(),
   /** Presentaciones disponibles del ítem (snapshot tomado al agregar la línea desde el
