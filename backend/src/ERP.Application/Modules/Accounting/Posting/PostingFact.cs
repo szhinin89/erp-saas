@@ -68,5 +68,15 @@ public sealed record PostingFact(
     // comportamiento. Usados por RetentionDocumentIssuedPostingTranslator junto con RetainedAmount
     // (que sigue representando el total, para el Debe de CxP proveedor).
     decimal? RetainedVatAmount = null,
-    decimal? RetainedIncomeAmount = null
+    decimal? RetainedIncomeAmount = null,
+    // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — separa "cuánto dinero
+    // real entró" (Caja/Bancos) de "cuánto queda pendiente por cobrar" (CxC) dentro del mismo
+    // PostingFact de venta, para que la PostingRule pueda tener una línea de Debe condicional para
+    // cada uno (JournalFactory ya omite automáticamente la línea cuyo monto resuelto es 0 — mismo
+    // mecanismo reutilizado, ninguno nuevo). Mismo criterio aditivo que todos los campos anteriores:
+    // opcionales, agregados al final, null por defecto — ningún call site existente cambia de
+    // comportamiento. Ya resueltos por Sales (SalesSettlementPolicy.Calculate, vía
+    // AuthorizeSalesInvoiceHandler) — Accounting los consume tal cual, nunca los recalcula.
+    decimal? CashApplied = null,
+    decimal? PendingBalance = null
 );

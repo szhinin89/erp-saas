@@ -562,6 +562,109 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         totalDebit.Should().Be(inv.GrandTotal);
     }
 
+    /// <summary>
+    /// SALES-INVOICE-ROUNDING-SUBTOTAL-GRANDTOTAL-01 (Fase 6A) — reproduce contra PostgreSQL REAL
+    /// (Testcontainers, no un stub) el caso exacto de la auditoría previa: dos líneas de
+    /// UnitPrice=1.995 (numeric 18,6), cada una redondeando su TaxableBase a 2.00 individualmente.
+    /// Antes del fix, AuthorizedSubtotal sumaba LineSubtotal crudo (1.995+1.995=3.99) mientras
+    /// AuthorizedGrandTotal ya sumaba TaxInclusiveTotal redondeado por línea (2.00+2.00=4.00) — el
+    /// asiento real quedaba con un residuo de sub-centavo, tragado en silencio por la tolerancia
+    /// temporal del Lote 2. Este test confirma, leyendo de vuelta desde columnas numeric(18,2)
+    /// reales: (1) AuthorizedSubtotal - AuthorizedTotalDiscount + AuthorizedTotalTax ==
+    /// AuthorizedGrandTotal exactamente, y (2) el JournalEntry persistido balancea con diferencia
+    /// EXACTA de 0.00 (ya sin la tolerancia de 1 centavo, revertida en este mismo lote).
+    /// </summary>
+    [Fact]
+    public async Task Dos_lineas_UnitPrice_1_995_genera_asiento_balanceado_sin_residuo_de_subcentavo()
+    {
+        var issueDate = new DateOnly(2026, 9, 13);
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(db, issueDate);
+
+        var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
+        var paymentTerm = PaymentTermSnapshot.Create(
+            Guid.NewGuid(),
+            "Contado",
+            installments: 1,
+            daysBetween: 0
+        );
+        var inv = SalesInvoice.CreateDraft(
+            _tenantId,
+            _companyId,
+            _branchId,
+            _customerId,
+            customer,
+            invoiceNumber: "001-001-000000099",
+            issueDate: issueDate,
+            createdBy: _createdBy,
+            paymentTerm: paymentTerm,
+            cashSessionId: _cashSessionId,
+            emissionPointId: null
+        );
+
+        var line1 = SalesInvoiceDetail.Create(
+            inv.Id,
+            _tenantId,
+            "Producto fracción de centavo 1",
+            quantity: 1,
+            unitPrice: 1.995m,
+            vatCode: "0",
+            uomCode: "UNIT"
+        );
+        line1.ApplyTaxes("0", 0m, "IVA 0%", null, 0m, null);
+        var line2 = SalesInvoiceDetail.Create(
+            inv.Id,
+            _tenantId,
+            "Producto fracción de centavo 2",
+            quantity: 1,
+            unitPrice: 1.995m,
+            vatCode: "0",
+            uomCode: "UNIT"
+        );
+        line2.ApplyTaxes("0", 0m, "IVA 0%", null, 0m, null);
+        inv.ReplaceLines(new[] { line1, line2 }, _createdBy);
+
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            _tenantId,
+            Guid.NewGuid(),
+            "01",
+            "Efectivo",
+            4.00m
+        );
+        inv.ReplacePayments(new[] { payment }, _createdBy);
+
+        db.SalesInvoices.Add(inv);
+        await db.SaveChangesAsync();
+
+        inv.Authorize(_createdBy);
+        await db.SaveChangesAsync();
+
+        await using var verifyDb = CreateContext();
+        var persisted = await verifyDb.SalesInvoices.FirstAsync(x => x.Id == inv.Id);
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.SourceEventId == inv.Id);
+
+        persisted.AuthorizedSubtotal.Should().Be(4.00m);
+        persisted.AuthorizedGrandTotal.Should().Be(4.00m);
+        (
+            persisted.AuthorizedSubtotal!.Value
+            - persisted.AuthorizedTotalDiscount!.Value
+            + persisted.AuthorizedTotalTax!.Value
+        )
+            .Should()
+            .Be(persisted.AuthorizedGrandTotal!.Value);
+
+        entry.Should().NotBeNull();
+        entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
+        var totalDebit = entry.Lines.Sum(l => l.Debit);
+        var totalCredit = entry.Lines.Sum(l => l.Credit);
+        (totalDebit - totalCredit)
+            .Should()
+            .Be(0.00m, "sin la tolerancia temporal del Lote 2, el asiento debe balancear EXACTO");
+    }
+
     [Fact]
     public async Task Autorizar_SalesInvoice_genera_JournalEntry_Posted()
     {
@@ -589,8 +692,15 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         entry.SourceEventType.Should().Be("InvoiceIssued");
     }
 
+    // SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 — este test documentaba el comportamiento
+    // ANTES del fix: un fallo del Posting Engine dejaba la factura Authorized sin ningún asiento
+    // (log-and-continue), exactamente el hallazgo real (facturas 001-001-000000001/000000002 en
+    // BD dev sin JournalEntry InvoiceIssued). Ahora SalesInvoiceAuthorizedPostingTranslator lanza
+    // SalesInvoicePostingFailedException, que ErpDbContext.SaveChangesAsync propaga y revierte —
+    // la factura permanece en Draft (rollback completo de esa transacción), sin asiento y sin
+    // quedar autorizada silenciosamente.
     [Fact]
-    public async Task Fallo_de_Posting_no_revierte_la_autorizacion()
+    public async Task Fallo_de_Posting_revierte_la_autorizacion_completa()
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -604,13 +714,16 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         var act = async () => await db.SaveChangesAsync();
 
         await act.Should()
-            .NotThrowAsync(
-                because: "el fallo del Posting Engine no debe revertir la autorización de la factura"
+            .ThrowAsync<
+                ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException
+            >(
+                because: "el asiento Sales/InvoiceIssued es obligatorio — un fallo del Posting "
+                    + "Engine debe revertir la autorización completa, nunca dejarla a medias"
             );
 
         await using var verifyDb = CreateContext();
         var persisted = await verifyDb.SalesInvoices.FirstAsync(x => x.Id == inv.Id);
-        persisted.Status.Should().Be(ERP.Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+        persisted.Status.Should().Be(ERP.Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
 
         var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
             x.SourceEventId == inv.Id

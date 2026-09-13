@@ -101,6 +101,13 @@ internal sealed class JournalFactory
             PostingAmountKind.HistoricalCost => fact.HistoricalCostTotal ?? 0m,
             // FLOW-READY-02F.2 — IRBPNR (Compras); mismo criterio: campo nullable nuevo de PostingFact.
             PostingAmountKind.TaxIrbpnr => fact.TotalIrbpnr ?? 0m,
+            // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — cada uno
+            // resuelve su propio campo nullable nuevo; una venta 100% contado resuelve
+            // PendingBalance en 0 (línea de CxC omitida arriba en Create) y una venta 100% crédito
+            // resuelve CashApplied en 0 (línea de Caja omitida) — nunca se contabiliza una línea en
+            // cero, mismo mecanismo ya usado por Retention/RetentionVat/RetentionIncome.
+            PostingAmountKind.CashApplied => fact.CashApplied ?? 0m,
+            PostingAmountKind.PendingBalance => fact.PendingBalance ?? 0m,
             _ => 0m,
         };
 }

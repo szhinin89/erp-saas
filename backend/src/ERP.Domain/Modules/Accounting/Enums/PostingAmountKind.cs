@@ -35,4 +35,11 @@ public enum PostingAmountKind
     // usándose para el Debe de CxP proveedor (el total retenido, sin desglosar).
     RetentionVat,
     RetentionIncome,
+
+    // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — separa el Debe de
+    // "Sales/InvoiceIssued" (antes 100% CxC, sin importar cuánto se cobró realmente) en dos montos
+    // independientes: dinero real cobrado (Caja/Bancos) y saldo pendiente (CxC). Mismo criterio
+    // aditivo: se agregan al final, nunca se reasignan los valores existentes.
+    CashApplied,
+    PendingBalance,
 }

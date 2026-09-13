@@ -868,7 +868,11 @@ public sealed class AccountingBootstrapStepTests
         var rules = await verifyDb.PostingRules.Where(r => r.CompanyId == _companyId).ToListAsync();
         rules.Should()
             .NotContain(r => r.SourceModule == "Finance" && r.FactType == "CollectionApplied");
-        rules.Should().Contain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
+        // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — "1.1.01.001 Caja
+        // general" ahora también es la cuenta de la línea Debe CashApplied de "Sales"/
+        // "InvoiceIssued" (antes solo la usaba "Finance"/"CollectionApplied"), así que una cuenta
+        // "1.1.01.001" no postable ahora bloquea AMBAS reglas fail-closed, no solo CollectionApplied.
+        rules.Should().NotContain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
     }
 
     [Fact]
@@ -1152,6 +1156,144 @@ public sealed class AccountingBootstrapStepTests
         rules.Should().ContainSingle();
         var finalLineIds = rules[0].Lines.Select(l => l.Id).OrderBy(id => id).ToList();
         finalLineIds.Should().BeEquivalentTo(originalLineIds, because: "no debe agregar, quitar ni recrear líneas ya correctas");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — corrección de la
+    // regla legacy de Sales/InvoiceIssued (1 línea Debe GrandTotal->CxC) a la forma vigente
+    // (2 líneas Debe condicionales: Caja/CxC).
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Una company que ya tenía sembrada la forma vieja exacta (una sola línea de Debe, 100%
+    /// GrandTotal a "1.1.03.001 CxC clientes") recibe la corrección al volver a correr
+    /// <c>ExecuteAsync</c> — queda con 2 líneas de Debe (Caja/CashApplied, CxC/PendingBalance) en
+    /// vez de 1, sin tocar las 3 líneas de Haber (Subtotal/TaxVat/TaxIce).
+    /// </summary>
+    [Fact]
+    public async Task Empresa_con_regla_legacy_de_SalesInvoiceIssued_recibe_correccion_a_Caja_y_CxC()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        Guid[] creditLineIds;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var rule = await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                );
+            db.PostingRules.Remove(rule);
+            await db.SaveChangesAsync();
+
+            var receivableAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "1.1.03.001")
+            ).Id;
+            var salesAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "4.1.01.001")
+            ).Id;
+            var vatAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.02.001")
+            ).Id;
+            var iceAccountId = (
+                await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.03.001")
+            ).Id;
+
+            var legacyRule = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
+                _tenantId, _companyId, "Sales", "InvoiceIssued", null, null, null, _actorId
+            );
+            legacyRule.AddLine(receivableAccountId, AccountNature.Debit, PostingAmountKind.GrandTotal);
+            legacyRule.AddLine(salesAccountId, AccountNature.Credit, PostingAmountKind.Subtotal);
+            legacyRule.AddLine(vatAccountId, AccountNature.Credit, PostingAmountKind.TaxVat);
+            legacyRule.AddLine(iceAccountId, AccountNature.Credit, PostingAmountKind.TaxIce);
+            db.PostingRules.Add(legacyRule);
+            await db.SaveChangesAsync();
+            creditLineIds = legacyRule
+                .Lines.Where(l => l.Nature == AccountNature.Credit)
+                .Select(l => l.Id)
+                .ToArray();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var corrected = await verifyDb
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+            );
+
+        corrected.Lines.Should().HaveCount(5);
+        var debitLines = corrected.Lines.Where(l => l.Nature == AccountNature.Debit).ToList();
+        debitLines.Should().HaveCount(2);
+        debitLines.Select(l => l.AmountKind)
+            .Should()
+            .BeEquivalentTo(new[] { PostingAmountKind.CashApplied, PostingAmountKind.PendingBalance });
+
+        var creditLines = corrected.Lines.Where(l => l.Nature == AccountNature.Credit).ToList();
+        creditLines.Select(l => l.Id)
+            .Should()
+            .BeEquivalentTo(creditLineIds, because: "las líneas de Haber (Subtotal/TaxVat/TaxIce) no se tocan");
+
+        var cashAccountId = debitLines.Single(l => l.AmountKind == PostingAmountKind.CashApplied).AccountId;
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == cashAccountId)).Code.Value.Should().Be("1.1.01.001");
+        var receivableLine = debitLines.Single(l => l.AmountKind == PostingAmountKind.PendingBalance);
+        (await verifyDb.Accounts.SingleAsync(a => a.Id == receivableLine.AccountId)).Code.Value
+            .Should()
+            .Be("1.1.03.001");
+    }
+
+    /// <summary>
+    /// Una company que ya tiene la forma vigente (5 líneas) no se modifica al volver a correr
+    /// <c>ExecuteAsync</c> — mismos Ids de línea, sin duplicar ni re-insertar nada (idempotencia).
+    /// </summary>
+    [Fact]
+    public async Task Empresa_con_regla_SalesInvoiceIssued_ya_vigente_no_se_modifica()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        List<Guid> originalLineIds;
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+            var rule = await db
+                .PostingRules.Include(r => r.Lines)
+                .SingleAsync(r =>
+                    r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+                );
+            originalLineIds = rule.Lines.Select(l => l.Id).OrderBy(id => id).ToList();
+        }
+
+        await using (var db = NewDbContext(dbName))
+        {
+            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        }
+
+        await using var verifyDb = NewDbContext(dbName);
+        var rules = await verifyDb
+            .PostingRules.Include(r => r.Lines)
+            .Where(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Sales" && r.FactType == "InvoiceIssued"
+            )
+            .ToListAsync();
+
+        rules.Should().ContainSingle();
+        var finalLineIds = rules[0].Lines.Select(l => l.Id).OrderBy(id => id).ToList();
+        finalLineIds.Should()
+            .BeEquivalentTo(originalLineIds, because: "no debe agregar, quitar ni recrear líneas ya correctas");
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

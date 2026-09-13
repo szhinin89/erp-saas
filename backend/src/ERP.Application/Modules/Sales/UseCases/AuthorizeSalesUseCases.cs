@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.DTOs;
+using ERP.Application.Modules.Sales.Exceptions;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
@@ -358,7 +359,10 @@ public sealed class AuthorizeSalesInvoiceHandler
         // ── Autorizar (congela líneas + snapshot totales) ───────────
         try
         {
-            inv.Authorize(uid);
+            // SALES-CASH-REAL-MONEY-01 — propaga el mismo cashApplied ya calculado arriba (línea
+            // ~214-222, base de SalesSettlementPolicy) al evento de dominio, para que Caja registre
+            // el dinero real cobrado y nunca AuthorizedGrandTotal/GrandTotal.
+            inv.Authorize(uid, cashApplied);
         }
         catch (InvalidOperationException ex)
         {
@@ -440,7 +444,37 @@ public sealed class AuthorizeSalesInvoiceHandler
             inv.GrandTotal
         );
 
-        await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+        try
+        {
+            // SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2: SaveChangesWithSequenceRetryAsync ->
+            // ErpDbContext.SaveChangesAsync publica SalesInvoiceAuthorizedEvent DENTRO de su propia
+            // transacción, ANTES del commit (ver remarks de ese método). Si
+            // SalesInvoiceAuthorizedPostingTranslator no puede generar el asiento obligatorio
+            // Sales/InvoiceIssued, lanza SalesInvoicePostingFailedException (en vez de solo un
+            // warning) — la transacción completa hace rollback: ni la factura, ni el movimiento de
+            // caja, ni el egreso de Kardex, ni el asiento de costo (mismo evento,
+            // SalesInvoiceCogsPostingTranslator) llegan a persistirse. El usuario reintenta la
+            // autorización. Mismo patrón ya usado por ConfirmExpenseDocumentHandler
+            // (ExpensePostingFailedException) y RegisterSupplierPaymentUseCases
+            // (SupplierPaymentPostingFailedException) — "no autorizar sin asiento".
+            await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+        }
+        catch (SalesInvoicePostingFailedException ex)
+        {
+            _logger.LogWarning(
+                "Sales invoice {InvoiceNumber} ({InvoiceId}) authorization rolled back — posting failed: {Code} {Message}",
+                inv.InvoiceNumber,
+                inv.Id,
+                ex.Code,
+                ex.Message
+            );
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                "No se pudo contabilizar la venta. La autorización fue revertida — intenta nuevamente "
+                    + "o contacta a soporte si el problema persiste. Detalle: "
+                    + ex.Message,
+                ex.Code
+            );
+        }
 
         _logger.LogInformation(
             "Sales invoice {InvoiceNumber} ({InvoiceId}) authorized successfully",

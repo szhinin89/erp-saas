@@ -27,6 +27,7 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
     ) =>
         Scoped(tenantId)
             .Include(x => x.Lines.OrderBy(l => l.SortOrder))
+            .ThenInclude(l => l.Taxes)
             .Include(x => x.Payments)
             .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);

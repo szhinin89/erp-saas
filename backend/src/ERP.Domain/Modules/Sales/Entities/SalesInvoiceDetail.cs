@@ -145,6 +145,29 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
 
     // ── Calculated (NOT persisted) ──────────────────────────────────────
     public decimal LineSubtotal => Quantity * UnitPrice;
+
+    /// <summary>
+    /// SALES-INVOICE-ROUNDING-SUBTOTAL-GRANDTOTAL-01 (Fase 6A) — Subtotal BRUTO (antes de
+    /// descuento) de la línea, derivado de <see cref="TaxableBase"/> (ya redondeada a 2
+    /// decimales por línea, mismo criterio que <see cref="TaxInclusiveTotal"/>) sumándole de
+    /// vuelta <see cref="DiscountAmount"/> — en vez de <see cref="LineSubtotal"/> crudo
+    /// (Quantity*UnitPrice, sin redondear). Con esto, <c>SalesInvoice.Subtotal -
+    /// SalesInvoice.TotalDiscount</c> es SIEMPRE exactamente igual a la suma de
+    /// <see cref="TaxableBase"/> de todas las líneas — el mismo bloque que alimenta
+    /// <see cref="TaxInclusiveTotal"/>/GrandTotal — cerrando el descuadre de sub-centavo que
+    /// producía <c>UnitPrice</c> con fracción de centavo (numeric 18,6, p. ej. 1.995): antes,
+    /// Subtotal usaba <see cref="LineSubtotal"/> sin redondear (1.995) mientras GrandTotal ya
+    /// redondeaba por línea (2.00), sin relación aritmética entre ambos. Se conserva
+    /// deliberadamente la semántica BRUTA (antes de descuento) de "Subtotal" — no se adopta
+    /// Subtotal = suma de TaxableBase directamente (semánticamente ya neto de descuento) porque
+    /// esto rompería el "waterfall" Subtotal → Descuento → IVA → Total que consumen el recibo
+    /// impreso (<c>SalesReceiptPrintPayloadDto.Totals</c>/<c>printAgentClient.ts</c>) y el XML SRI
+    /// (<c>totalSinImpuestos</c> vía <c>SalesInvoiceElectronicDocumentDataProvider</c>) — ninguno
+    /// de los dos se toca en este lote (frozen fuera de alcance), y ambos siguen leyendo un
+    /// Subtotal bruto sin ningún cambio de contrato.
+    /// </summary>
+    public decimal LineSubtotalRounded => TaxableBase + DiscountAmount;
+
     public decimal TaxableBase =>
         Math.Round(
             LineSubtotal - DiscountAmount,

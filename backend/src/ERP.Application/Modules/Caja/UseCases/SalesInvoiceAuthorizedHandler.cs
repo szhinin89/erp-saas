@@ -40,9 +40,26 @@ public sealed class SalesInvoiceAuthorizedHandler
             return;
         }
 
+        // SALES-CASH-REAL-MONEY-01 — Caja registra exclusivamente el dinero real recibido
+        // (e.CashApplied: suma de pagos con método NO marcado IsCreditAllowed, ya calculada y
+        // propagada por AuthorizeSalesInvoiceHandler/SalesInvoice.Authorize), nunca e.GrandTotal
+        // (que incluye la porción a crédito, si la hubiera). Una venta a crédito puro llega aquí
+        // con CashApplied == 0 — no se crea movimiento de caja en absoluto (ni siquiera de $0):
+        // no hubo dinero real que registrar, y un movimiento de $0 solo ensuciaría el arqueo.
+        if (e.CashApplied <= 0)
+        {
+            _logger.LogInformation(
+                "Sales invoice {InvoiceNumber} ({InvoiceId}) authorized with CashApplied={CashApplied} (credit sale) — no cash movement created.",
+                e.InvoiceNumber,
+                e.InvoiceId,
+                e.CashApplied
+            );
+            return;
+        }
+
         session.RecordMovement(
             CashMovementType.SaleIncome,
-            e.GrandTotal,
+            e.CashApplied,
             $"Venta {e.InvoiceNumber}",
             e.UserId,
             CashReferenceType.SalesInvoice,
@@ -55,7 +72,7 @@ public sealed class SalesInvoiceAuthorizedHandler
             e.InvoiceNumber,
             e.InvoiceId,
             session.Id,
-            e.GrandTotal
+            e.CashApplied
         );
     }
 }

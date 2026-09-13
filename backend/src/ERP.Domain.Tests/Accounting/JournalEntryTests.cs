@@ -106,6 +106,26 @@ public sealed class JournalEntryTests
         act.Should().Throw<InvalidOperationException>().WithMessage("*no está balanceado*");
     }
 
+    /// <summary>
+    /// SALES-INVOICE-ROUNDING-SUBTOTAL-GRANDTOTAL-01 (Fase 6A) — la tolerancia temporal de 1
+    /// centavo introducida en el Lote 2 (para destrabar el bug real de Subtotal/GrandTotal de
+    /// Ventas) se revirtió a igualdad EXACTA una vez corregida la causa raíz
+    /// (SalesInvoiceDetail.LineSubtotalRounded). Este test prueba explícitamente que un residuo
+    /// de sub-centavo — el mismo tipo de diferencia que antes se toleraba en silencio — vuelve a
+    /// bloquear el asiento, igual que cualquier otro descuadre real.
+    /// </summary>
+    [Fact]
+    public void EnsureBalanced_con_diferencia_de_un_centavo_lanza_tras_revertir_tolerancia()
+    {
+        var entry = CreateEntry();
+        entry.AddLine(DebitAccountId, null, 100.00m, 0m);
+        entry.AddLine(CreditAccountId, null, 0m, 99.99m);
+
+        var act = () => entry.EnsureBalanced();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*no está balanceado*");
+    }
+
     // Fase 3.5.6 — endurecimiento: AddLine() es el único punto público de entrada para agregar
     // líneas al aggregate; estos tests confirman que la validación de JournalEntryLine.Create()
     // (ya cubierta de forma aislada en JournalEntryLineTests) también se cumple al pasar por el

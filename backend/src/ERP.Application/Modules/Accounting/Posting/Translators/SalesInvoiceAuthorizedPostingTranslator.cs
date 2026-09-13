@@ -1,6 +1,6 @@
+using ERP.Application.Modules.Sales.Exceptions;
 using ERP.Domain.Modules.Sales.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
@@ -8,6 +8,21 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// Traduce SalesInvoiceAuthorizedEvent (Sales) a PostingFact e invoca IPostingEngine — no crea
 /// JournalEntry, no resuelve cuentas, no contiene lógica financiera (ADR-026 §8, Fase 3.2).
 /// </summary>
+/// <remarks>
+/// SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 — el asiento <c>Sales/InvoiceIssued</c> es
+/// obligatorio (ingreso + IVA/ICE/IRBPNR + CxC de toda venta autorizada), a diferencia de
+/// <see cref="SalesInvoiceCogsPostingTranslator"/> (costo de venta: un fallo ahí nunca debe
+/// revertir la venta ya autorizada — "log-and-continue" es una decisión deliberada de ESE
+/// traductor, documentada en su propio remarks, no se toca aquí). Antes de este lote, un fallo de
+/// <see cref="IPostingEngine.PostAsync"/> aquí solo generaba <c>LogWarning</c> — evidencia real
+/// (BD dev, 2026-09-13, log <c>erp-20260913.txt</c>): dos facturas autorizadas
+/// (001-001-000000001, 001-001-000000002) sin ningún <c>JournalEntry</c> InvoiceIssued, con el
+/// warning "El asiento no está balanceado" tragado silenciosamente. Mismo criterio ya establecido
+/// por <c>ExpenseDocumentConfirmedPostingTranslator</c>/<c>SupplierPaymentConfirmedPostingTranslator</c>:
+/// lanzar <see cref="SalesInvoicePostingFailedException"/> (nunca solo loguear) para que la
+/// transacción completa de autorización se revierta (ADR-026 §8: Publish() ocurre dentro de
+/// <c>ErpDbContext.SaveChangesAsync</c>, antes del commit).
+/// </remarks>
 public sealed class SalesInvoiceAuthorizedPostingTranslator
     : INotificationHandler<SalesInvoiceAuthorizedEvent>
 {
@@ -15,19 +30,23 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
     private const string FactTypeName = "InvoiceIssued";
 
     private readonly IPostingEngine _postingEngine;
-    private readonly ILogger<SalesInvoiceAuthorizedPostingTranslator> _logger;
 
-    public SalesInvoiceAuthorizedPostingTranslator(
-        IPostingEngine postingEngine,
-        ILogger<SalesInvoiceAuthorizedPostingTranslator> logger
-    )
+    public SalesInvoiceAuthorizedPostingTranslator(IPostingEngine postingEngine)
     {
         _postingEngine = postingEngine;
-        _logger = logger;
     }
 
     public async Task Handle(SalesInvoiceAuthorizedEvent e, CancellationToken ct)
     {
+        // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — mismo cálculo que
+        // SalesSettlementPolicy.Calculate (Sales, dominio): PendingBalance = GrandTotal -
+        // CashApplied, nunca negativo. e.CashApplied ya es el dinero real cobrado (ver
+        // SalesInvoiceAuthorizedEvent.CashApplied) — nunca se recalcula aquí, solo se deriva el
+        // complemento para separar la línea de Debe Caja/Bancos de la línea de Debe CxC.
+        var pendingBalance = e.GrandTotal - e.CashApplied;
+        if (pendingBalance < 0)
+            pendingBalance = 0;
+
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
@@ -40,20 +59,17 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
             e.TotalIce,
             e.TotalDiscount,
             e.GrandTotal,
-            TotalIrbpnr: e.TotalIrbpnr
+            TotalIrbpnr: e.TotalIrbpnr,
+            CashApplied: e.CashApplied,
+            PendingBalance: pendingBalance
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);
 
         if (!result.IsSuccess)
-        {
-            _logger.LogWarning(
-                "Posting failed for SalesInvoice {InvoiceId} ({InvoiceNumber}): {Code} — {Error}",
-                e.InvoiceId,
-                e.InvoiceNumber,
-                result.Code,
-                result.Error
+            throw new SalesInvoicePostingFailedException(
+                result.Error ?? "No se pudo contabilizar la venta.",
+                result.Code
             );
-        }
     }
 }

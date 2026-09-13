@@ -121,4 +121,139 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
 
         await act.Should().NotThrowAsync();
     }
+
+    // ── SALES-CASH-REAL-MONEY-01 — Caja registra dinero real (CashApplied), no GrandTotal ────
+
+    [Fact]
+    public async Task Contado_completo_registra_el_monto_realmente_pagado_no_GrandTotal()
+    {
+        // $4.00 pagado $3.99 (tolerancia) — caja debe registrar $3.99, nunca $4.00.
+        var session = OpenSession(Guid.NewGuid());
+        var cashRepo = new Mock<ICashSessionRepository>();
+        cashRepo
+            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var handler = BuildHandler(cashRepo);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(),
+            "001-001-000000003",
+            4.00m,
+            UserId,
+            session.Id,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            3.48m,
+            0.52m,
+            0m,
+            0m,
+            0m,
+            cashApplied: 3.99m
+        );
+
+        await handler.Handle(evt, CancellationToken.None);
+
+        session.Movements.Should().ContainSingle(m => m.Amount == 3.99m);
+    }
+
+    [Fact]
+    public async Task Venta_parcial_registra_solo_el_abono_real_cashApplied()
+    {
+        // $10.00 total, abono real $4.00 — caja registra $4.00, no el total ni el saldo pendiente.
+        var session = OpenSession(Guid.NewGuid());
+        var cashRepo = new Mock<ICashSessionRepository>();
+        cashRepo
+            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var handler = BuildHandler(cashRepo);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(),
+            "001-001-000000004",
+            10.00m,
+            UserId,
+            session.Id,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            8.70m,
+            1.30m,
+            0m,
+            0m,
+            0m,
+            cashApplied: 4.00m
+        );
+
+        await handler.Handle(evt, CancellationToken.None);
+
+        session.Movements.Should().ContainSingle(m => m.Amount == 4.00m);
+    }
+
+    [Fact]
+    public async Task Credito_puro_con_cashApplied_cero_no_crea_movimiento_de_caja()
+    {
+        // Venta 100% a crédito (CashApplied == 0) — ningún movimiento debe crearse, ni siquiera $0.
+        var session = OpenSession(Guid.NewGuid());
+        var cashRepo = new Mock<ICashSessionRepository>();
+        cashRepo
+            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var handler = BuildHandler(cashRepo);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(),
+            "001-001-000000005",
+            10.00m,
+            UserId,
+            session.Id,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            8.70m,
+            1.30m,
+            0m,
+            0m,
+            0m,
+            cashApplied: 0m
+        );
+
+        await handler.Handle(evt, CancellationToken.None);
+
+        session.Movements.Should()
+            .NotContain(m => m.ReferenceNumber == "001-001-000000005");
+    }
+
+    [Fact]
+    public async Task Contado_completo_pagado_exacto_registra_el_mismo_monto()
+    {
+        // $4.00 pagado $4.00 — caso base, sigue funcionando igual que antes del fix.
+        var session = OpenSession(Guid.NewGuid());
+        var cashRepo = new Mock<ICashSessionRepository>();
+        cashRepo
+            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var handler = BuildHandler(cashRepo);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(),
+            "001-001-000000006",
+            4.00m,
+            UserId,
+            session.Id,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            3.48m,
+            0.52m,
+            0m,
+            0m,
+            0m,
+            cashApplied: 4.00m
+        );
+
+        await handler.Handle(evt, CancellationToken.None);
+
+        session.Movements.Should().ContainSingle(m => m.Amount == 4.00m);
+    }
 }

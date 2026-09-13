@@ -30,6 +30,16 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
     /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — ya resuelto por el dominio de <c>SalesInvoice</c> (<c>SalesInvoice.TotalIrbpnr</c>), Accounting lo consume tal cual, nunca lo recalcula (mismo criterio que <see cref="TotalVat"/>/<see cref="TotalIce"/>).</summary>
     public decimal TotalIrbpnr { get; }
 
+    /// <summary>
+    /// SALES-CASH-REAL-MONEY-01 — dinero real recibido en esta venta, excluyendo cualquier porción
+    /// cubierta con un método de pago marcado <c>IsCreditAllowed</c> (p. ej. "Crédito" como
+    /// marcador de saldo pendiente). Mismo monto que <c>SalesSettlementPolicy.Calculate</c> usa
+    /// para decidir la CxC generada (ver <c>AuthorizeSalesInvoiceHandler</c>, commit
+    /// SALES-SETTLEMENT-CREDIT-01) — Caja debe consumir este valor tal cual, nunca
+    /// <see cref="GrandTotal"/> (que incluye la porción a crédito, si la hubiera).
+    /// </summary>
+    public decimal CashApplied { get; }
+
     public SalesInvoiceAuthorizedEvent(
         Guid invoiceId,
         string invoiceNumber,
@@ -43,7 +53,8 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         decimal totalVat,
         decimal totalIce,
         decimal totalDiscount,
-        decimal totalIrbpnr = 0m
+        decimal totalIrbpnr = 0m,
+        decimal? cashApplied = null
     )
     {
         InvoiceId = invoiceId;
@@ -59,5 +70,9 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         TotalIce = totalIce;
         TotalDiscount = totalDiscount;
         TotalIrbpnr = totalIrbpnr;
+        // Default a GrandTotal solo para no romper callers/tests preexistentes que no pasan este
+        // parámetro nuevo (ninguno de dominio hoy) — el único caller real de producción
+        // (SalesInvoice.Authorize) siempre lo pasa explícitamente con el cashApplied real.
+        CashApplied = cashApplied ?? grandTotal;
     }
 }

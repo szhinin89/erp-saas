@@ -88,7 +88,11 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public bool IsPaymentScheduleManual { get; private set; }
 
     // ── Calculated (NOT persisted) ──────────────────────────────────
-    public decimal Subtotal => AuthorizedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
+    // SALES-INVOICE-ROUNDING-SUBTOTAL-GRANDTOTAL-01 (Fase 6A) — LineSubtotalRounded (no
+    // LineSubtotal crudo) para que Subtotal (Draft, en vivo) use el mismo criterio de redondeo
+    // por línea que GrandTotal/TaxInclusiveTotal — ver comentario de
+    // SalesInvoiceDetail.LineSubtotalRounded para la justificación completa.
+    public decimal Subtotal => AuthorizedSubtotal ?? _lines.Sum(l => l.LineSubtotalRounded);
     public decimal TotalDiscount => AuthorizedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
     public decimal TotalIce => _lines.Sum(l => l.IceAmount);
     public decimal TotalVat => _lines.Sum(l => l.VatAmount);
@@ -392,7 +396,15 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     }
 
     // ── Authorize (final — immutable after this) ────────────────────
-    public void Authorize(Guid updatedBy)
+    /// <summary>
+    /// SALES-CASH-REAL-MONEY-01 — <paramref name="cashApplied"/> es el dinero real cobrado (suma de
+    /// pagos con método NO marcado <c>IsCreditAllowed</c>), ya calculado por
+    /// <c>AuthorizeSalesInvoiceHandler</c> (mismo monto que alimenta <c>SalesSettlementPolicy</c>
+    /// para la CxC) — se propaga tal cual al evento de dominio para que Caja registre el movimiento
+    /// real, nunca <see cref="AuthorizedGrandTotal"/>. Null solo por compatibilidad de tests/otros
+    /// callers que no lo necesiten; el handler de producción siempre lo pasa.
+    /// </summary>
+    public void Authorize(Guid updatedBy, decimal? cashApplied = null)
     {
         EnsureDraft();
         if (_lines.Count == 0)
@@ -419,7 +431,14 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         foreach (var line in _lines)
             line.Freeze();
 
-        AuthorizedSubtotal = _lines.Sum(l => l.LineSubtotal);
+        // SALES-INVOICE-ROUNDING-SUBTOTAL-GRANDTOTAL-01 (Fase 6A) — causa raíz corregida: antes
+        // sumaba LineSubtotal crudo (Quantity*UnitPrice, sin redondear); ahora suma
+        // LineSubtotalRounded (TaxableBase ya redondeada a 2 decimales por línea + DiscountAmount),
+        // garantizando AuthorizedSubtotal - AuthorizedTotalDiscount == Σ TaxableBase exactamente
+        // (mismo bloque que alimenta AuthorizedGrandTotal vía TaxInclusiveTotal). Ver
+        // SalesInvoiceDetail.LineSubtotalRounded para la justificación completa de por qué se
+        // preserva la semántica bruta (antes de descuento) en vez de redefinir Subtotal como neto.
+        AuthorizedSubtotal = _lines.Sum(l => l.LineSubtotalRounded);
         AuthorizedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
         AuthorizedTotalTax = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
         AuthorizedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal);
@@ -453,7 +472,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 TotalVat,
                 TotalIce,
                 TotalDiscount,
-                TotalIrbpnr
+                TotalIrbpnr,
+                cashApplied
             )
         );
     }
@@ -493,6 +513,22 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         CancelledAt = DateTime.UtcNow;
         CancelledBy = cancelledBy;
         SetUpdated(cancelledBy);
+
+        // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — antes, Cancel()
+        // no levantaba ningún domain event: la anulación de una venta nunca reversaba los asientos
+        // contables ya generados (Sales/InvoiceIssued/Sales/CostOfGoodsSold). Mismo criterio que
+        // PurchaseInvoiceCancelledEvent (Compras).
+        RaiseDomainEvent(
+            new SalesInvoiceCancelledEvent(
+                TenantId,
+                Id,
+                CustomerId,
+                InvoiceNumber,
+                GrandTotal,
+                CancelReason,
+                CompanyId
+            )
+        );
     }
 
     // ── Guards ──────────────────────────────────────────────────────

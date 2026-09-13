@@ -141,6 +141,26 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// consumidor todavía (ver remarks de la clase) — con <see cref="Lines"/> vacío (flujo actual
     /// del Posting Engine, que no llama a <see cref="AddLine"/>) se cumple trivialmente (0 == 0).
     /// </summary>
+    /// <summary>
+    /// SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 introdujo aquí una tolerancia temporal de
+    /// hasta 1 centavo para destrabar asientos de Ventas mientras se investigaba la causa raíz —
+    /// ver historial de git blame de este método para el comentario original. Esa causa raíz
+    /// (<c>SalesInvoiceDetail.LineSubtotal</c> sin redondear alimentando
+    /// <c>SalesInvoice.Subtotal</c>/<c>AuthorizedSubtotal</c>, mientras <c>TaxInclusiveTotal</c>
+    /// sí redondeaba por línea) fue corregida de raíz en
+    /// SALES-INVOICE-ROUNDING-SUBTOTAL-GRANDTOTAL-01 (Fase 6A): <c>SalesInvoiceDetail
+    /// .LineSubtotalRounded</c> ahora deriva Subtotal de <c>TaxableBase</c> (ya redondeada a 2
+    /// decimales por línea, mismo criterio que <c>TaxInclusiveTotal</c>) — con eso,
+    /// <c>AuthorizedSubtotal - AuthorizedTotalDiscount + AuthorizedTotalTax</c> es exactamente
+    /// igual a <c>AuthorizedGrandTotal</c> (sin IRBPNR — gap distinto, ya documentado, fuera de
+    /// alcance). No se encontró ningún otro escenario legítimo de residuo de sub-centavo en el
+    /// sistema (cuotas de PaymentSchedule: la última cuota absorbe el remanente exacto, no toca
+    /// JournalEntry; el resto de los traductores de Posting usan montos ya resueltos en
+    /// numeric(18,2) por su módulo de origen) — por lo tanto esta tolerancia se revierte a
+    /// igualdad EXACTA. Cualquier diferencia real (cuenta equivocada, monto mal mapeado, un futuro
+    /// caso de prorrateo con residuo legítimo) debe seguir bloqueando la publicación del asiento,
+    /// nunca aceptarse en silencio.
+    /// </summary>
     public void EnsureBalanced()
     {
         var totalDebit = _lines.Sum(l => l.Debit);

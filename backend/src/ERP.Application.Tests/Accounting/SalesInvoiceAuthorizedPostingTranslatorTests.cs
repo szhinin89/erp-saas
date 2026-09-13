@@ -1,9 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
+using ERP.Application.Modules.Sales.Exceptions;
 using ERP.Domain.Modules.Sales.Events;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace ERP.Application.Tests.Accounting;
@@ -39,23 +39,9 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
-        public Mock<ILogger<SalesInvoiceAuthorizedPostingTranslator>> Logger { get; } = new();
 
         public SalesInvoiceAuthorizedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, Logger.Object);
-
-        public void VerifyWarningLogged(Times times) =>
-            Logger.Verify(
-                l =>
-                    l.Log(
-                        LogLevel.Warning,
-                        It.IsAny<EventId>(),
-                        It.IsAny<It.IsAnyType>(),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                    ),
-                times
-            );
+            new(PostingEngine.Object);
     }
 
     [Fact]
@@ -118,7 +104,7 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
     }
 
     [Fact]
-    public async Task Posting_exitoso_no_genera_warning()
+    public async Task Posting_exitoso_no_lanza_excepcion()
     {
         var m = new Mocks();
         m.PostingEngine.Setup(e =>
@@ -134,11 +120,17 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
         var act = async () => await translator.Handle(Event(), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        m.VerifyWarningLogged(Times.Never());
     }
 
+    // SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 — un fallo de IPostingEngine.PostAsync ya NO
+    // se traga en un LogWarning: el asiento Sales/InvoiceIssued es obligatorio, así que el
+    // Translator lanza SalesInvoicePostingFailedException para que ErpDbContext.SaveChangesAsync
+    // revierta la transacción completa de autorización (ver remarks de la clase y de
+    // AuthorizeSalesInvoiceHandler). Antes de este lote, este mismo escenario esperaba
+    // NotThrowAsync + warning — comportamiento que produjo el hallazgo real (facturas autorizadas
+    // en BD dev sin ningún JournalEntry InvoiceIssued).
     [Fact]
-    public async Task Posting_failure_genera_warning_y_no_lanza_excepcion()
+    public async Task Posting_failure_lanza_SalesInvoicePostingFailedException()
     {
         var m = new Mocks();
         m.PostingEngine.Setup(e =>
@@ -154,8 +146,9 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
         var translator = m.BuildTranslator();
         var act = async () => await translator.Handle(Event(), CancellationToken.None);
 
-        await act.Should().NotThrowAsync();
-        m.VerifyWarningLogged(Times.Once());
+        var thrown = await act.Should().ThrowAsync<SalesInvoicePostingFailedException>();
+        thrown.Which.Code.Should().Be("RULE_NOT_FOUND");
+        thrown.Which.Message.Should().Be("No existe una regla de contabilización activa.");
     }
 
     [Fact]
@@ -194,8 +187,7 @@ public sealed class SalesInvoiceAuthorizedPostingTranslatorTests
         var translator = m.BuildTranslator();
         var act = async () => await translator.Handle(evt, CancellationToken.None);
 
-        await act.Should().NotThrowAsync();
+        await act.Should().ThrowAsync<SalesInvoicePostingFailedException>();
         captured!.CompanyId.Should().Be(Guid.Empty);
-        m.VerifyWarningLogged(Times.Once());
     }
 }

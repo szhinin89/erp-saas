@@ -187,6 +187,27 @@ public sealed class SalesInvoiceDetailMultiTaxTests
     }
 
     [Fact]
+    public void ApplyTaxes_llamado_multiples_veces_sobre_la_misma_linea_nunca_duplica_IVA_ni_ICE()
+    {
+        // SALES-TAX-DUPLICATE-FIX-01 — ApplyTaxes debe ser idempotente en memoria: N invocaciones
+        // (p. ej. Draft + Authorize "recalculando nombres") dejan exactamente 1 fila por TaxCode.
+        // La causa raíz real del bug de duplicados en BD no estaba aquí (UpsertTaxRow ya hacía
+        // RemoveAll+Add correctamente) sino en SalesInvoiceRepository.GetByIdAsync, que no incluía
+        // Lines.Taxes — ver SalesInvoiceDetailTaxDuplicationIntegrationTests (Infrastructure.Tests)
+        // para la regresión a nivel de persistencia. Este test fija el contrato del dominio.
+        var line = CreateLine(1, 100m, "4");
+
+        line.ApplyTaxes("4", 15m, "IVA 15%", "3041", 10m, "Bebidas gaseosas con azúcar añadida");
+        line.ApplyTaxes("4", 15m, "IVA 15% (recalculado)", "3041", 10m, "Bebidas gaseosas con azúcar añadida");
+        line.ApplyTaxes("4", 15m, "IVA 15% (recalculado otra vez)", "3041", 10m, "Bebidas gaseosas con azúcar añadida");
+
+        line.Taxes.Should().HaveCount(2, "1 fila IVA + 1 fila ICE, nunca duplicadas");
+        line.Taxes.Where(t => t.TaxCode == "2").Should().ContainSingle();
+        line.Taxes.Where(t => t.TaxCode == "3").Should().ContainSingle();
+        line.VatAmount.Should().Be(16.50m); // (100+10) * 15/100
+    }
+
+    [Fact]
     public void ReplaceTaxes_falla_si_la_linea_ya_esta_autorizada()
     {
         var line = CreateLine(1, 100m, "4");
