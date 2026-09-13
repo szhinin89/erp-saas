@@ -14,6 +14,11 @@ public interface IPaymentTermRepository
         Guid id,
         CancellationToken cancellationToken = default
     );
+    Task<PaymentTerm?> GetByCodeAsync(
+        Guid tenantId,
+        string code,
+        CancellationToken cancellationToken = default
+    );
     Task<bool> ExistsByCodeAsync(
         Guid tenantId,
         string code,

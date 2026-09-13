@@ -203,16 +203,28 @@ public sealed class AuthorizeSalesInvoiceHandler
         // CxC) no cambia con este fix.
         var isCredit = inv.CreditTermDays > 0 || inv.PaymentTerm.Installments > 1;
 
+        // SALES-SETTLEMENT-CREDIT-01: además de la señal booleana "hay algún pago con método
+        // Crédito" (isCreditByPaymentMethod, ya existente), se necesita el MONTO real cubierto en
+        // efectivo — Authorize() exige que la suma de pagos calce exactamente con el total
+        // (invariante FROZEN sin tocar), así que "lo que no es efectivo" es, por construcción,
+        // exactamente el monto que quedó pendiente de cobrar (p. ej. abono parcial en efectivo +
+        // el resto registrado con método Crédito como marcador de saldo pendiente). La CxC se
+        // genera por ese saldo, nunca por el total del documento.
         var isCreditByPaymentMethod = false;
+        var cashApplied = 0m;
         foreach (var payment in inv.Payments)
         {
             var method = await _paymentMethodRepo.GetByIdAsync(tid, payment.PaymentMethodId, ct);
             if (method?.IsCreditAllowed == true)
-            {
                 isCreditByPaymentMethod = true;
-                break;
-            }
+            else
+                cashApplied += payment.Amount;
         }
+
+        var settlement = ERP.Domain.Modules.Sales.Policies.SalesSettlementPolicy.Calculate(
+            inv.GrandTotal,
+            cashApplied
+        );
 
         var paymentModality = new SalesPaymentModality(isCredit, isCreditByPaymentMethod);
 
@@ -385,21 +397,23 @@ public sealed class AuthorizeSalesInvoiceHandler
             );
         }
 
-        // ── Generar cuenta por cobrar (solo crédito — contado no genera CxC) ─
-        // isCredit ya calculado arriba (validación de política fiscal de Consumidor Final).
-        // ADR-033, Fase 4: nace del cronograma ya congelado del documento (inv.PaymentSchedules)
-        // — nunca recalculado desde PaymentTerm/CreditTermDays en este momento. GenerateInstallments
-        // queda solo como fallback defensivo para documentos legacy sin cronograma persistido
-        // (no debería ocurrir en la práctica: el cronograma se genera desde la creación del
-        // borrador, Fase 4).
-        if (isCredit && inv.GrandTotal > 0)
+        // ── Generar cuenta por cobrar (solo saldo pendiente — contado/pago completo no genera
+        // CxC) ────────────────────────────────────────────────────────────────
+        // SALES-SETTLEMENT-CREDIT-01: la CxC nace del saldo pendiente (settlement.PendingBalance),
+        // NUNCA del total del documento — un abono parcial genera CxC solo por lo que falta cobrar.
+        // ADR-033, Fase 4: las cuotas nacen del cronograma ya congelado del documento
+        // (inv.PaymentSchedules), dimensionado por saldo pendiente desde la creación/edición del
+        // borrador (CreateSalesDraftHandler/UpdateSalesDraftHandler) — nunca recalculado desde
+        // PaymentTerm/CreditTermDays en este momento. GenerateInstallments queda solo como
+        // fallback defensivo para documentos legacy sin cronograma persistido.
+        if (isCredit && settlement.PendingBalance > 0)
         {
             var receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(
                 tid,
                 cid,
                 inv.Id,
                 inv.CustomerId,
-                inv.GrandTotal,
+                settlement.PendingBalance,
                 uid
             );
             if (inv.PaymentSchedules.Count > 0)

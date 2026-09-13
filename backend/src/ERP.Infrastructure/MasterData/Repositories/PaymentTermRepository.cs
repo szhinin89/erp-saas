@@ -40,6 +40,19 @@ public sealed class PaymentTermRepository : IPaymentTermRepository
             cancellationToken
         );
 
+    public Task<PaymentTerm?> GetByCodeAsync(
+        Guid tenantId,
+        string code,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var upper = code.Trim().ToUpperInvariant();
+        return _db.PaymentTerms.FirstOrDefaultAsync(
+            x => x.TenantId == tenantId && x.Code == upper,
+            cancellationToken
+        );
+    }
+
     public async Task<bool> ExistsByCodeAsync(
         Guid tenantId,
         string code,

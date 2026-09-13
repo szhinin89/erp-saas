@@ -174,7 +174,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         SalesFiscalPolicyResult? fiscalPolicy = null,
         bool paymentMethodIsCreditAllowed = false,
         bool allowSellWithoutStock = false,
-        Guid? activeBranchId = null
+        Guid? activeBranchId = null,
+        Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null
     ) =>
         BuildHandler(
             inv,
@@ -184,7 +185,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             fiscalPolicy,
             paymentMethodIsCreditAllowed,
             allowSellWithoutStock,
-            activeBranchId
+            activeBranchId,
+            paymentMethodRepoOverride
         );
 
     private static (
@@ -199,7 +201,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         SalesFiscalPolicyResult? fiscalPolicy = null,
         bool paymentMethodIsCreditAllowed = false,
         bool allowSellWithoutStock = false,
-        Guid? activeBranchId = null
+        Guid? activeBranchId = null,
+        Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -271,10 +274,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             sortOrder: 1,
             createdBy: UserId
         );
-        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
-        paymentMethodRepo
-            .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(paymentMethod);
+        var paymentMethodRepo = paymentMethodRepoOverride ?? new Mock<IPaymentMethodRepository>();
+        if (paymentMethodRepoOverride is null)
+            paymentMethodRepo
+                .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(paymentMethod);
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
 
@@ -1572,5 +1576,83 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()),
             Times.Once
         );
+    }
+
+    // ── SALES-SETTLEMENT-CREDIT-01 — CxC por saldo pendiente, no por el total ──
+
+    [Fact]
+    public async Task Pago_parcial_efectivo_mas_credito_genera_CxC_solo_por_el_saldo_pendiente()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        // installments=1, daysBetween=30 → PaymentTerm de crédito (isCreditByTerm = true).
+        var inv = CreateDraftInvoice(
+            issueDate: today,
+            unitPrice: 100m,
+            installments: 1,
+            daysBetween: 30
+        );
+        // GrandTotal real: las líneas aún no tienen ApplyTaxes() aplicado en este punto
+        // (CreateDraftInvoice no lo llama) — el Handler recalcula impuestos al inicio de Handle(),
+        // así que el total contra el que debe cuadrar la suma de pagos es el que incluye IVA.
+        var total = ExpectedGrandTotal(100m);
+        var cashAmount = Math.Round(total * 0.6m, 2, MidpointRounding.AwayFromZero);
+        var creditAmount = total - cashAmount;
+
+        var cashMethodId = Guid.NewGuid();
+        var creditMethodId = Guid.NewGuid();
+        var cashPayment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            cashMethodId,
+            "01",
+            "Efectivo",
+            cashAmount
+        );
+        var creditPayment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            creditMethodId,
+            "20",
+            "Crédito",
+            creditAmount
+        );
+        // Pagos = total exacto (invariante de Authorize() sin tocar) — parte efectivo real, parte
+        // método Crédito como marcador del saldo que queda pendiente de cobro.
+        inv.ReplacePayments(new[] { cashPayment, creditPayment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId)
+            );
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, creditMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 2, UserId)
+            );
+
+        var (handler, _, receivableRepo) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        SalesReceivable? captured = null;
+        receivableRepo
+            .Setup(r => r.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesReceivable, CancellationToken>((r, _) => captured = r)
+            .Returns(Task.CompletedTask);
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured.Should().NotBeNull();
+        captured!.OriginalAmount.Should().Be(creditAmount, "la CxC debe ser por el saldo pendiente, nunca por el total del documento cuando hubo abono parcial en efectivo");
+        captured.OriginalAmount.Should().NotBe(total);
     }
 }

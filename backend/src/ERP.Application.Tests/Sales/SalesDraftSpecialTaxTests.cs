@@ -54,9 +54,28 @@ public sealed class SalesDraftSpecialTaxTests
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<ICurrentCashSession> CashSession { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
+        public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
 
         public Fixture()
         {
+            CreditPolicy
+                .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId))
+                );
+            CreditPolicy
+                .Setup(p =>
+                    p.ResolveCompanyOrManualAsync(
+                        It.IsAny<DateOnly?>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    Result<PaymentTerm?>.ValidationFailure(
+                        "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
+                    )
+                );
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
             Branch.Setup(b => b.BranchId).Returns(BranchId);
@@ -149,7 +168,8 @@ public sealed class SalesDraftSpecialTaxTests
                 Branch.Object,
                 User.Object,
                 CashSession.Object,
-                Preferences.Object
+                Preferences.Object,
+                CreditPolicy.Object
             );
     }
 

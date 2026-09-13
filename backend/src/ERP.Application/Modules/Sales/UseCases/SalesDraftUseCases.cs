@@ -216,6 +216,7 @@ public sealed class CreateSalesDraftHandler
     private readonly ICurrentUser _u;
     private readonly ICurrentCashSession _cashSession;
     private readonly IOperationalPreferencesResolver _preferences;
+    private readonly ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy _creditPolicy;
 
     public CreateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -233,7 +234,8 @@ public sealed class CreateSalesDraftHandler
         ICurrentBranch b,
         ICurrentUser u,
         ICurrentCashSession cashSession,
-        IOperationalPreferencesResolver preferences
+        IOperationalPreferencesResolver preferences,
+        ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy
     )
     {
         _repo = repo;
@@ -252,6 +254,7 @@ public sealed class CreateSalesDraftHandler
         _u = u;
         _cashSession = cashSession;
         _preferences = preferences;
+        _creditPolicy = creditPolicy;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -280,12 +283,136 @@ public sealed class CreateSalesDraftHandler
                 "El socio de negocio no tiene rol de Cliente."
             );
 
-        var ptResult = await _ptResolver.ResolveForSaleAsync(cmd.CustomerId, cmd.PaymentTermId, ct);
-        if (!ptResult.IsSuccess)
-            return Result<SalesInvoiceDto>.ValidationFailure(ptResult.Error!);
-        var pt = ptResult.Value!;
-
         var tid = _t.TenantId;
+
+        // ── PaymentTermId explícito (SALES-SETTLEMENT-CREDIT-01) ─────────
+        // Validado SIEMPRE que venga informado, sin importar si queda saldo pendiente — una
+        // condición de pago explícita inválida/inactiva nunca se acepta silenciosamente.
+        Domain.MasterData.Entities.PaymentTerm? explicitPt = null;
+        if (cmd.PaymentTermId.HasValue)
+        {
+            var explicitResult = await _ptResolver.ResolveForSaleAsync(
+                cmd.CustomerId,
+                cmd.PaymentTermId,
+                ct
+            );
+            if (!explicitResult.IsSuccess)
+                return Result<SalesInvoiceDto>.ValidationFailure(explicitResult.Error!);
+            explicitPt = explicitResult.Value;
+        }
+
+        // Id pre-generado: SalesLineBuilder/SalesPaymentHelper necesitan el InvoiceId como FK
+        // antes de que exista el agregado — el saldo pendiente (que decide el PaymentTermSnapshot
+        // definitivo) solo se conoce después de resolver líneas y pagos.
+        var invoiceId = Guid.NewGuid();
+
+        // POS-DISCOUNT-RULES-01: preferencia resuelta UNA vez por request, no por línea.
+        var preferences = await _preferences.ResolveAsync(ct);
+
+        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1) — resuelta UNA vez por request (misma
+        // empresa para todas las líneas), nunca por línea.
+        var companyResponsibleCodes = await _companyTaxRepo.GetResponsibleSriTaxCategoryCodesAsync(
+            _c.CompanyId,
+            tid,
+            ct
+        );
+
+        var linesResult = await SalesLineBuilder.BuildAsync(
+            cmd.Lines,
+            invoiceId,
+            tid,
+            _itemRepo,
+            _tax,
+            _pricing,
+            preferences.SalesPos,
+            companyResponsibleCodes,
+            ct
+        );
+        if (linesResult.Error is not null)
+            return linesResult.Error;
+
+        var provisionalGrandTotal = linesResult.Lines.Sum(l => l.TaxInclusiveTotal);
+
+        List<SalesInvoicePayment> paymentItems = new();
+        var cashApplied = 0m;
+        if (cmd.Payments is { Count: > 0 })
+        {
+            var paymentsResult = await SalesPaymentHelper.BuildPaymentsAsync(
+                cmd.Payments,
+                invoiceId,
+                tid,
+                _pmRepo,
+                ct
+            );
+            if (paymentsResult.Error is not null)
+                return paymentsResult.Error;
+            paymentItems = paymentsResult.Items!;
+            cashApplied = paymentsResult.CashApplied;
+        }
+
+        // SALES-SETTLEMENT-CREDIT-01 — saldo pendiente = total − pagos aplicados (excluye
+        // método Crédito, que nunca cuenta como dinero recibido).
+        var settlement = Domain.Modules.Sales.Policies.SalesSettlementPolicy.Calculate(
+            provisionalGrandTotal,
+            cashApplied
+        );
+
+        Domain.MasterData.Entities.PaymentTerm pt;
+        if (explicitPt is not null)
+        {
+            pt = explicitPt;
+        }
+        else
+        {
+            // d) Default del cliente (CompanyBpSalesSettings) — mismo resolver que el explícito,
+            // con explicitPaymentTermId=null.
+            var customerDefaultResult = await _ptResolver.ResolveForSaleAsync(
+                cmd.CustomerId,
+                null,
+                ct
+            );
+            if (customerDefaultResult.IsSuccess)
+            {
+                pt = customerDefaultResult.Value!;
+            }
+            else if (settlement.IsFullyCovered)
+            {
+                // Saldo cubierto: no se exige condición de pago — cae al Contado sembrado por el
+                // sistema (nunca "primer PaymentTerm activo del catálogo").
+                var cashFallback = await _creditPolicy.GetCashFallbackAsync(ct);
+                if (!cashFallback.IsSuccess)
+                    return Result<SalesInvoiceDto>.ValidationFailure(cashFallback.Error!);
+                pt = cashFallback.Value!;
+            }
+            else
+            {
+                // Queda saldo pendiente sin PaymentTermId explícito ni default de cliente: b)
+                // dueDate manual, c) schedule manual, o e) default de empresa — si ninguno aplica,
+                // 422 con el mensaje de negocio aprobado.
+                var creditResult = await _creditPolicy.ResolveCompanyOrManualAsync(
+                    cmd.DueDate,
+                    cmd.Schedule is { Count: > 0 },
+                    ct
+                );
+                if (!creditResult.IsSuccess)
+                    return Result<SalesInvoiceDto>.ValidationFailure(creditResult.Error!);
+
+                if (creditResult.Value is not null)
+                {
+                    pt = creditResult.Value;
+                }
+                else
+                {
+                    // Satisfecho por dueDate/schedule manual — el snapshot es descriptivo, no
+                    // gobierna la generación del cronograma en este caso (eso lo decide dueDate/
+                    // schedule más abajo). Cae al mismo Contado sembrado por el sistema.
+                    var cashFallback = await _creditPolicy.GetCashFallbackAsync(ct);
+                    if (!cashFallback.IsSuccess)
+                        return Result<SalesInvoiceDto>.ValidationFailure(cashFallback.Error!);
+                    pt = cashFallback.Value!;
+                }
+            }
+        }
 
         var customerSnapshot = CustomerSnapshot.Create(
             bp.Name.LegalName,
@@ -331,67 +458,44 @@ public sealed class CreateSalesDraftHandler
             emissionType: emissionType,
             dueDate: cmd.DueDate,
             notes: cmd.Notes,
-            sriPaymentMethodCode: cmd.SriPaymentMethodCode
+            sriPaymentMethodCode: cmd.SriPaymentMethodCode,
+            id: invoiceId
         );
-
-        // POS-DISCOUNT-RULES-01: preferencia resuelta UNA vez por request, no por línea.
-        var preferences = await _preferences.ResolveAsync(ct);
-
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4/§5.1) — resuelta UNA vez por request (misma
-        // empresa para todas las líneas), nunca por línea.
-        var companyResponsibleCodes = await _companyTaxRepo.GetResponsibleSriTaxCategoryCodesAsync(
-            _c.CompanyId,
-            tid,
-            ct
-        );
-
-        var linesResult = await SalesLineBuilder.BuildAsync(
-            cmd.Lines,
-            inv.Id,
-            tid,
-            _itemRepo,
-            _tax,
-            _pricing,
-            preferences.SalesPos,
-            companyResponsibleCodes,
-            ct
-        );
-        if (linesResult.Error is not null)
-            return linesResult.Error;
 
         inv.ReplaceLines(linesResult.Lines, _u.UserId);
 
-        // ADR-033, Fase 4: cronograma inicial — automático desde el PaymentTerm resuelto, o
-        // manual si el comando trae un Schedule explícito (usuario ya lo personalizó).
+        // SALES-SETTLEMENT-CREDIT-01 — cronograma/CxC solo por el saldo pendiente, nunca por el
+        // total, y solo cuando efectivamente queda algo por cobrar.
         try
         {
-            if (cmd.Schedule is { Count: > 0 })
-                inv.ReplacePaymentSchedule(
-                    cmd.Schedule
-                        .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
-                        .ToList()
-                );
-            else
-                inv.GeneratePaymentSchedule();
+            if (!settlement.IsFullyCovered)
+            {
+                if (cmd.Schedule is { Count: > 0 })
+                    inv.ReplacePaymentSchedule(
+                        cmd.Schedule
+                            .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
+                            .ToList(),
+                        settlement.PendingBalance
+                    );
+                else if (cmd.DueDate.HasValue)
+                    inv.ReplacePaymentSchedule(
+                        new List<(int, DateOnly, decimal, string?)>
+                        {
+                            (1, cmd.DueDate.Value, settlement.PendingBalance, null),
+                        },
+                        settlement.PendingBalance
+                    );
+                else
+                    inv.GeneratePaymentSchedule(settlement.PendingBalance);
+            }
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
         }
 
-        if (cmd.Payments is { Count: > 0 })
-        {
-            var paymentsResult = await SalesPaymentHelper.BuildPaymentsAsync(
-                cmd.Payments,
-                inv.Id,
-                tid,
-                _pmRepo,
-                ct
-            );
-            if (paymentsResult.Error is not null)
-                return paymentsResult.Error;
-            inv.ReplacePayments(paymentsResult.Items!, _u.UserId);
-        }
+        if (paymentItems.Count > 0)
+            inv.ReplacePayments(paymentItems, _u.UserId);
 
         await _repo.AddAsync(inv, ct);
         await _repo.SaveChangesAsync(ct);
@@ -416,6 +520,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
+    private readonly ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy _creditPolicy;
 
     public UpdateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -431,7 +536,8 @@ public sealed class UpdateSalesDraftHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        IOperationalPreferencesResolver preferences
+        IOperationalPreferencesResolver preferences,
+        ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy
     )
     {
         _repo = repo;
@@ -448,6 +554,7 @@ public sealed class UpdateSalesDraftHandler
         _b = b;
         _u = u;
         _preferences = preferences;
+        _creditPolicy = creditPolicy;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -556,44 +663,12 @@ public sealed class UpdateSalesDraftHandler
             await _repo.RemoveLinesByInvoiceAsync(inv.Id, linesResult.Lines, ct);
             inv.ReplaceLines(linesResult.Lines, _u.UserId);
 
-            // ADR-033, Fase 4 — reglas de regeneración/bloqueo del cronograma.
-            if (paymentTermChanged)
-            {
-                // Cambio de condición de pago o de cliente con default válido: siempre regenera
-                // automático, descarta cualquier personalización previa.
-                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
-                inv.GeneratePaymentSchedule();
-            }
-            else if (cmd.Schedule is { Count: > 0 })
-            {
-                // El usuario envía un cronograma explícito en este Update — se acepta si es
-                // válido (ReplacePaymentSchedule exige que la suma calce con el GrandTotal
-                // actual, ya recalculado tras ReplaceLines).
-                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
-                inv.ReplacePaymentSchedule(
-                    cmd.Schedule
-                        .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
-                        .ToList()
-                );
-            }
-            else
-            {
-                var currentScheduleSum = inv.PaymentSchedules.Sum(s => s.Amount);
-                if (currentScheduleSum != inv.GrandTotal)
-                {
-                    if (inv.IsPaymentScheduleManual)
-                        return Result<SalesInvoiceDto>.ValidationFailure(
-                            $"El cronograma fue personalizado y el total del documento cambió "
-                                + $"(nuevo total: {inv.GrandTotal:F2}, cronograma actual: {currentScheduleSum:F2}). "
-                                + "Debe revisar y ajustar el cronograma antes de continuar."
-                        );
-
-                    // Cronograma automático: se regenera silenciosamente con el nuevo total.
-                    await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
-                    inv.GeneratePaymentSchedule();
-                }
-            }
-
+            // SALES-SETTLEMENT-CREDIT-01 — los pagos se resuelven ANTES que el cronograma: el
+            // saldo pendiente (que decide si hace falta cronograma/CxC y de qué tamaño) depende de
+            // ellos. Si el comando no trae un nuevo arreglo de Payments, los pagos existentes no
+            // cambian, pero igual se recalcula cuánto de ellos es efectivo real (excluye Crédito).
+            List<SalesInvoicePayment>? newPaymentItems = null;
+            decimal cashApplied;
             if (cmd.Payments is { Count: > 0 })
             {
                 var paymentsResult = await SalesPaymentHelper.BuildPaymentsAsync(
@@ -605,8 +680,128 @@ public sealed class UpdateSalesDraftHandler
                 );
                 if (paymentsResult.Error is not null)
                     return paymentsResult.Error;
+                newPaymentItems = paymentsResult.Items!;
+                cashApplied = paymentsResult.CashApplied;
+            }
+            else
+            {
+                cashApplied = await SalesPaymentHelper.CalculateCashAppliedAsync(
+                    inv.Payments,
+                    _t.TenantId,
+                    _pmRepo,
+                    ct
+                );
+            }
+
+            var settlement = Domain.Modules.Sales.Policies.SalesSettlementPolicy.Calculate(
+                inv.GrandTotal,
+                cashApplied
+            );
+
+            // ADR-033 / SALES-SETTLEMENT-CREDIT-01 — reglas de regeneración/bloqueo del
+            // cronograma, ahora dimensionado por el saldo pendiente, no por el total.
+            //
+            // SALES-SETTLEMENT-FLOW-ROBUST-01: paridad con CreateSalesDraftHandler — un cronograma
+            // (c) o dueDate (b) manual enviado explícitamente en ESTE Update siempre prevalece
+            // sobre la regeneración automática por cambio de PaymentTerm/cliente. Antes, la rama
+            // `paymentTermChanged` se evaluaba primero y descartaba en silencio el cronograma/
+            // dueDate manual que el propio comando traía — divergencia real frente a Create, donde
+            // la resolución del PaymentTerm (metadata descriptiva) y la generación del cronograma
+            // (cmd.Schedule > cmd.DueDate > auto) son independientes.
+            if (settlement.IsFullyCovered)
+            {
+                // La venta quedó saldada por completo tras esta edición — no debe quedar un
+                // cronograma/CxC huérfano por saldo que ya no existe.
+                if (inv.PaymentSchedules.Count > 0)
+                {
+                    await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                    inv.ClearPaymentSchedule();
+                }
+            }
+            else if (cmd.Schedule is { Count: > 0 })
+            {
+                // El usuario envía un cronograma explícito en este Update — se acepta si es
+                // válido (ReplacePaymentSchedule exige que la suma calce con el saldo pendiente
+                // vigente, ya recalculado tras ReplaceLines/pagos). Prevalece incluso si además
+                // cambió el PaymentTerm/cliente en el mismo comando.
+                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                inv.ReplacePaymentSchedule(
+                    cmd.Schedule
+                        .Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
+                        .ToList(),
+                    settlement.PendingBalance
+                );
+            }
+            else if (cmd.DueDate.HasValue)
+            {
+                // Fecha de vencimiento manual — cuota única por el saldo pendiente (mismo criterio
+                // que CreateSalesDraftHandler). Prevalece incluso si además cambió el PaymentTerm/
+                // cliente en el mismo comando, igual que el cronograma explícito arriba.
+                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                inv.ReplacePaymentSchedule(
+                    new List<(int, DateOnly, decimal, string?)>
+                    {
+                        (1, cmd.DueDate.Value, settlement.PendingBalance, null),
+                    },
+                    settlement.PendingBalance
+                );
+            }
+            else if (paymentTermChanged)
+            {
+                // Cambio de condición de pago o de cliente con default válido, sin cronograma/
+                // dueDate manual en este comando: regenera automático, descarta cualquier
+                // personalización previa.
+                await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                inv.GeneratePaymentSchedule(settlement.PendingBalance);
+            }
+            else
+            {
+                var currentScheduleSum = inv.PaymentSchedules.Sum(s => s.Amount);
+                if (currentScheduleSum != settlement.PendingBalance)
+                {
+                    if (inv.IsPaymentScheduleManual)
+                        return Result<SalesInvoiceDto>.ValidationFailure(
+                            $"El cronograma fue personalizado y el saldo pendiente del documento cambió "
+                                + $"(nuevo saldo: {settlement.PendingBalance:F2}, cronograma actual: {currentScheduleSum:F2}). "
+                                + "Debe revisar y ajustar el cronograma antes de continuar."
+                        );
+
+                    if (inv.PaymentSchedules.Count == 0)
+                    {
+                        // No había cronograma (venta antes saldada, ahora queda saldo pendiente):
+                        // exige una regla de crédito válida — mismo orden que CreateSalesDraftHandler
+                        // (aquí ya se descartaron dueDate/schedule manual arriba; solo queda el
+                        // default de empresa, o el PaymentTerm ya vigente en el borrador si es
+                        // utilizable).
+                        var creditResult = await _creditPolicy.ResolveCompanyOrManualAsync(
+                            null,
+                            false,
+                            ct
+                        );
+                        if (!creditResult.IsSuccess)
+                            return Result<SalesInvoiceDto>.ValidationFailure(creditResult.Error!);
+
+                        if (creditResult.Value is not null)
+                            inv.UpdatePaymentTerm(
+                                PaymentTermSnapshot.Create(
+                                    creditResult.Value.Id,
+                                    creditResult.Value.Name,
+                                    creditResult.Value.Installments,
+                                    creditResult.Value.DaysBetweenInstallments
+                                )
+                            );
+                    }
+
+                    // Cronograma automático: se regenera silenciosamente con el nuevo saldo.
+                    await _repo.RemovePaymentSchedulesByInvoiceAsync(inv.Id, ct);
+                    inv.GeneratePaymentSchedule(settlement.PendingBalance);
+                }
+            }
+
+            if (newPaymentItems is not null)
+            {
                 await _repo.RemovePaymentsByInvoiceAsync(inv.Id, ct);
-                inv.ReplacePayments(paymentsResult.Items!, _u.UserId);
+                inv.ReplacePayments(newPaymentItems, _u.UserId);
             }
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
@@ -1038,21 +1233,58 @@ file static class SalesPaymentHelper
         if (paymentSum < 0)
             return PaymentsBuildResult.Fail("La suma de cobros no puede ser negativa.");
 
-        return PaymentsBuildResult.Ok(items);
+        // SALES-SETTLEMENT-CREDIT-01: el método de pago "Crédito" (IsCreditAllowed) nunca cuenta
+        // como dinero recibido — cache[] ya tiene el PaymentMethod resuelto de cada item.
+        var cashApplied = items
+            .Where(p => !cache[p.PaymentMethodId].IsCreditAllowed)
+            .Sum(p => p.Amount);
+
+        return PaymentsBuildResult.Ok(items, cashApplied);
     }
 
     private static DateOnly? ParseDate(string? iso) =>
         iso is not null && DateOnly.TryParse(iso, out var d) ? d : null;
 
+    /// <summary>
+    /// SALES-SETTLEMENT-CREDIT-01 — recalcula el efectivo aplicado (excluye método Crédito) a
+    /// partir de pagos YA persistidos en el agregado (UpdateSalesDraftHandler cuando el comando no
+    /// trae un nuevo arreglo de Payments, es decir, los pagos existentes no cambian pero igual se
+    /// necesita el saldo pendiente vigente).
+    /// </summary>
+    public static async Task<decimal> CalculateCashAppliedAsync(
+        IEnumerable<SalesInvoicePayment> payments,
+        Guid tenantId,
+        IPaymentMethodRepository pmRepo,
+        CancellationToken ct
+    )
+    {
+        var cache = new Dictionary<Guid, bool>();
+        decimal cashApplied = 0m;
+        foreach (var p in payments)
+        {
+            if (!cache.TryGetValue(p.PaymentMethodId, out var isCreditAllowed))
+            {
+                var pm = await pmRepo.GetByIdAsync(tenantId, p.PaymentMethodId, ct);
+                isCreditAllowed = pm?.IsCreditAllowed == true;
+                cache[p.PaymentMethodId] = isCreditAllowed;
+            }
+            if (!isCreditAllowed)
+                cashApplied += p.Amount;
+        }
+        return cashApplied;
+    }
+
     public sealed record PaymentsBuildResult(
         List<SalesInvoicePayment>? Items,
+        decimal CashApplied,
         Result<SalesInvoiceDto>? Error
     )
     {
-        public static PaymentsBuildResult Ok(List<SalesInvoicePayment> items) => new(items, null);
+        public static PaymentsBuildResult Ok(List<SalesInvoicePayment> items, decimal cashApplied) =>
+            new(items, cashApplied, null);
 
         public static PaymentsBuildResult Fail(string msg) =>
-            new(null, Result<SalesInvoiceDto>.ValidationFailure(msg));
+            new(null, 0m, Result<SalesInvoiceDto>.ValidationFailure(msg));
     }
 }
 

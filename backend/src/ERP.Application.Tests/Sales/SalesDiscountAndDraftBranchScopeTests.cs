@@ -167,7 +167,8 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == activeBranchId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            preferences.Object
+            preferences.Object,
+            Mock.Of<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy>()
         );
 
         return (handler, inv);

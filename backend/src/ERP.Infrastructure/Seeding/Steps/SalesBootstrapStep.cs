@@ -23,7 +23,10 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
 
     private const string DefaultPriceListCode = "GENERAL";
     private const string DefaultPriceListName = "Lista General";
-    private const string DefaultPaymentTermCode = "CONTADO";
+
+    // SALES-SETTLEMENT-CREDIT-01: código compartido con el fallback de venta contado sin fricción
+    // (SalesCreditRequirementPolicy.GetCashFallbackAsync) — SSOT único, ver PaymentTermCodes.
+    private const string DefaultPaymentTermCode = ERP.Domain.MasterData.Constants.PaymentTermCodes.Cash;
     private const string DefaultPaymentTermName = "Contado";
     private const string ConsumidorFinalName = "Consumidor Final";
 

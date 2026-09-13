@@ -125,7 +125,12 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         string? notes = null,
         string currencyCode = "USD",
         decimal exchangeRate = 1m,
-        string? sriPaymentMethodCode = null
+        string? sriPaymentMethodCode = null,
+        // SALES-SETTLEMENT-CREDIT-01: permite a Application pre-generar el Id ANTES de construir
+        // el agregado — necesario para resolver líneas/pagos (que requieren el InvoiceId como FK)
+        // antes de conocer el saldo pendiente y, por lo tanto, el PaymentTermSnapshot definitivo.
+        // Nulo (default) preserva el comportamiento previo: Id autogenerado internamente.
+        Guid? id = null
     )
     {
         if (branchId == Guid.Empty)
@@ -152,7 +157,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
         var inv = new SalesInvoice
         {
-            Id = Guid.NewGuid(),
+            Id = id ?? Guid.NewGuid(),
             TenantId = tenantId,
             CompanyId = companyId,
             BranchId = branchId,
@@ -258,11 +263,20 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     /// sido personalizado por el usuario (ver reglas en Application). Reemplaza cualquier
     /// cronograma previo y marca IsPaymentScheduleManual = false.
     /// </summary>
-    public void GeneratePaymentSchedule()
+    /// <summary>
+    /// <paramref name="amountOverride"/> (SALES-SETTLEMENT-CREDIT-01): monto a prorratear en
+    /// cuotas — por defecto <see cref="GrandTotal"/> (comportamiento previo), pero Application
+    /// pasa el saldo pendiente (GrandTotal menos pagos aplicados que no son método Crédito) cuando
+    /// la venta tuvo un abono parcial: la CxC/cronograma se genera solo por lo que falta cobrar,
+    /// nunca por el total del documento.
+    /// </summary>
+    public void GeneratePaymentSchedule(decimal? amountOverride = null)
     {
         EnsureDraft();
 
-        if (GrandTotal <= 0)
+        var total = amountOverride ?? GrandTotal;
+
+        if (total <= 0)
             throw new InvalidOperationException(
                 "No se puede generar cronograma para una venta con total cero o negativo."
             );
@@ -271,7 +285,6 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 "La condición de pago debe tener al menos 1 cuota."
             );
 
-        var total = GrandTotal;
         var installmentAmount = Math.Round(
             total / PaymentTerm.Installments,
             2,
@@ -294,14 +307,34 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     }
 
     /// <summary>
+    /// SALES-SETTLEMENT-CREDIT-01 — vacía el cronograma (sin generar ninguno nuevo) cuando la
+    /// venta queda saldada por completo (saldo pendiente ≤ tolerancia) tras una edición del
+    /// borrador que antes tenía cuotas pendientes — no hay nada que cobrar después, así que no
+    /// debe quedar un cronograma/CxC huérfano. Idempotente si ya estaba vacío.
+    /// </summary>
+    public void ClearPaymentSchedule()
+    {
+        EnsureDraft();
+        _paymentSchedules.Clear();
+        IsPaymentScheduleManual = false;
+    }
+
+    /// <summary>
     /// Reemplaza el cronograma con cuotas explícitas provistas por el usuario. Valida suma exacta
     /// contra GrandTotal, fechas >= IssueDate, números >= 1 y sin duplicados — mismas invariantes
     /// que PurchaseInvoice.ReplacePaymentSchedule. A diferencia de esa, ESTA SÍ llama EnsureDraft()
     /// (no se copia el hueco de Compras: Ventas nunca permite tocar el cronograma fuera de Draft).
     /// Marca IsPaymentScheduleManual = true.
     /// </summary>
+    /// <summary>
+    /// <paramref name="amountOverride"/> (SALES-SETTLEMENT-CREDIT-01): monto contra el que se
+    /// valida la suma de cuotas — por defecto <see cref="GrandTotal"/> (comportamiento previo),
+    /// pero Application pasa el saldo pendiente cuando el cronograma manual cubre solo el abono
+    /// pendiente de una venta con pago parcial.
+    /// </summary>
     public void ReplacePaymentSchedule(
-        IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments
+        IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments,
+        decimal? amountOverride = null
     )
     {
         EnsureDraft();
@@ -309,7 +342,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         if (installments.Count == 0)
             throw new ArgumentException("Debe incluir al menos una cuota.", nameof(installments));
 
-        var total = GrandTotal;
+        var total = amountOverride ?? GrandTotal;
         if (total <= 0)
             throw new InvalidOperationException(
                 "No se puede generar cronograma para una venta con total cero o negativo."

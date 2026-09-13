@@ -50,9 +50,35 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<ICurrentCashSession> CashSession { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
+        public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
 
         public Fixture()
         {
+            CreditPolicy
+                .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    Result<PaymentTerm>.Success(PaymentTerm.Create(TenantId, "CONTADO", "Contado", 1, 0, UserId))
+                );
+            // Réplica mínima del comportamiento real (b: dueDate manual, c: schedule manual, e:
+            // sin default de empresa configurado por defecto) — suficiente para que los tests que
+            // no mockean explícitamente esta política ejerzan la misma rama que produciría la
+            // implementación real de SalesCreditRequirementPolicy.
+            CreditPolicy
+                .Setup(p =>
+                    p.ResolveCompanyOrManualAsync(
+                        It.IsAny<DateOnly?>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (DateOnly? dueDate, bool hasManualSchedule, CancellationToken _) =>
+                        dueDate.HasValue || hasManualSchedule
+                            ? Result<PaymentTerm?>.Success(null)
+                            : Result<PaymentTerm?>.ValidationFailure(
+                                "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
+                            )
+                );
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Preferences
                 .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
@@ -137,7 +163,8 @@ public sealed class CreateSalesDraftHandlerTests
                 Branch.Object,
                 User.Object,
                 CashSession.Object,
-                Preferences.Object
+                Preferences.Object,
+                CreditPolicy.Object
             );
 
         public static CreateSalesDraftCommand ValidCommand() =>
@@ -259,15 +286,16 @@ public sealed class CreateSalesDraftHandlerTests
     }
 
     [Fact]
-    public async Task ADR033_sin_default_valido_del_cliente_exige_seleccion_explicita()
+    public async Task SALES_SETTLEMENT_CREDIT_01_sin_default_ni_dueDate_ni_schedule_con_saldo_pendiente_exige_regla_de_credito()
     {
         var f = new Fixture();
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
         f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
         f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
 
-        // Sin PaymentTermId explícito y sin CompanyBpSalesSettings válido para el cliente —
-        // nunca cae al catálogo ("primer registro") ni a un default genérico de empresa.
+        // Sin PaymentTermId explícito, sin CompanyBpSalesSettings válido para el cliente, sin
+        // pagos (saldo pendiente = total), sin dueDate/schedule manual y sin default de empresa —
+        // nunca cae al catálogo ("primer registro") ni a un fallback silencioso.
         f.PtResolver
             .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<PaymentTerm>.ValidationFailure(
@@ -278,7 +306,9 @@ public sealed class CreateSalesDraftHandlerTests
         var result = await handler.Handle(Fixture.ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Debe seleccionar");
+        result.Error.Should().Be(
+            "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
+        );
         f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -546,6 +576,230 @@ public sealed class CreateSalesDraftHandlerTests
         line.UomCode.Should().Be("UNIT");
         line.ConversionFactor.Should().Be(1m);
         line.QuantityInBaseUom.Should().Be(5m);
+    }
+
+    // ── SALES-SETTLEMENT-CREDIT-01 ──────────────────────────────────────
+
+    private PaymentMethod CashMethod(Guid id) =>
+        PaymentMethod.Create(TenantId, "EFECTIVO", "Efectivo", false, false, 1, UserId);
+
+    private PaymentMethod CreditMethod(Guid id) =>
+        PaymentMethod.Create(TenantId, "CREDITO", "Crédito", false, true, 2, UserId);
+
+    [Fact]
+    public async Task A_Contado_completo_en_efectivo_no_exige_condicion_de_pago_ni_genera_cronograma()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        // Sin default de cliente ni de empresa — un pago que cubre el total no debe necesitarlos.
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("no configurada"));
+
+        var cashMethodId = Guid.NewGuid();
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CashMethod(cashMethodId));
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") },
+            Payments: new List<SalesPaymentInput> { new(cashMethodId, 115m) }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentSchedules.Should().BeEmpty();
+        captured.Payments.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task F_Pago_parcial_con_dueDate_manual_genera_cronograma_por_el_saldo_pendiente()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("no configurada"));
+
+        var cashMethodId = Guid.NewGuid();
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CashMethod(cashMethodId));
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var issueDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            issueDate,
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }, // total 115
+            DueDate: issueDate.AddDays(30),
+            Payments: new List<SalesPaymentInput> { new(cashMethodId, 60m) }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentSchedules.Should().ContainSingle();
+        captured.PaymentSchedules[0].Amount.Should().Be(55m); // 115 - 60
+        captured.PaymentSchedules[0].DueDate.Should().Be(issueDate.AddDays(30));
+    }
+
+    [Fact]
+    public async Task G_Pago_parcial_con_schedule_manual_usa_el_saldo_pendiente_no_el_total()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("no configurada"));
+
+        var cashMethodId = Guid.NewGuid();
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CashMethod(cashMethodId));
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var issueDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            issueDate,
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }, // total 115
+            Payments: new List<SalesPaymentInput> { new(cashMethodId, 60m) },
+            Schedule: new List<SalesScheduleInput>
+            {
+                new(1, issueDate.AddDays(15), 30m),
+                new(2, issueDate.AddDays(30), 25m),
+            }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentSchedules.Should().HaveCount(2);
+        captured.PaymentSchedules.Sum(s => s.Amount).Should().Be(55m); // saldo pendiente, no el total (115)
+        captured.IsPaymentScheduleManual.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task H_Credito_puro_con_dueDate_genera_cronograma_por_el_total()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("no configurada"));
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var issueDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            issueDate,
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }, // total 115
+            DueDate: issueDate.AddDays(45)
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentSchedules.Should().ContainSingle();
+        captured.PaymentSchedules[0].Amount.Should().Be(captured.GrandTotal);
+        captured.Payments.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task L_Default_de_empresa_cubre_saldo_pendiente_cuando_el_cliente_no_tiene_default()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("no configurada"));
+
+        var companyPt = PaymentTerm.Create(TenantId, "30D", "Crédito 30 días", 1, 30, UserId);
+        f.CreditPolicy
+            .Setup(p =>
+                p.ResolveCompanyOrManualAsync(null, false, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Result<PaymentTerm?>.Success(companyPt));
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(Fixture.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.PaymentTerm.Id.Should().Be(companyPt.Id);
+        captured.PaymentSchedules.Should().ContainSingle();
+        captured.PaymentSchedules[0].Amount.Should().Be(captured.GrandTotal);
+    }
+
+    [Fact]
+    public async Task N_Metodo_credito_no_cuenta_como_pago_aplicado_deja_saldo_pendiente()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        // Sin default de cliente/empresa ni dueDate/schedule — si "Crédito" contara como pago
+        // real, el saldo quedaría en 0 y esto pasaría sin exigir nada. Debe rechazar.
+        f.PtResolver
+            .Setup(r => r.ResolveForSaleAsync(CustomerId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentTerm>.ValidationFailure("no configurada"));
+
+        var creditMethodId = Guid.NewGuid();
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, creditMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreditMethod(creditMethodId));
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }, // total 115
+            Payments: new List<SalesPaymentInput> { new(creditMethodId, 115m) }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be(
+            "Debe definir una fecha de vencimiento, cuotas o una condición de pago para el saldo pendiente."
+        );
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

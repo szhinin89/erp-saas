@@ -185,6 +185,10 @@ public static class DependencyInjection
             ERP.Application.MasterData.Services.IPaymentTermDefaultResolver,
             ERP.Application.MasterData.Services.PaymentTermDefaultResolver
         >();
+        services.AddScoped<
+            ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy,
+            ERP.Application.Modules.Sales.Services.SalesCreditRequirementPolicy
+        >();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp =>
