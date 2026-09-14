@@ -17,6 +17,7 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { PAYMENT_DETAIL_TOLERANCE } from "../constants/tolerances";
+import { deriveDetailReference } from "../utils/paymentDetailReference";
 
 type DetailRow = {
   _k: number;
@@ -30,6 +31,10 @@ interface Props {
   open: boolean;
   methodName: string;
   detailType: PaymentMethodDetailType;
+  /** SALES-TRANSFER-PAYMENT-REFERENCE-PAYLOAD-01: viene de PaymentMethodDto.requiresReference —
+   * cuando es true, bloquea "Confirmar" hasta que cada fila con monto tenga comprobante/
+   * autorización/número de cheque capturado (el backend rechaza la emisión sin esto). */
+  requiresReference: boolean;
   initialRows: DetailRow[];
   initialKey: number;
   available: number;
@@ -41,6 +46,7 @@ export function PaymentDetailModal({
   open,
   methodName,
   detailType,
+  requiresReference,
   initialRows,
   initialKey,
   available,
@@ -57,6 +63,12 @@ export function PaymentDetailModal({
 
   const totalDetail = rows.reduce((s, r) => s + (r.amount || 0), 0);
   const exceeds = totalDetail > available + PAYMENT_DETAIL_TOLERANCE;
+  // SALES-TRANSFER-PAYMENT-REFERENCE-PAYLOAD-01: bloquea antes de emitir — nunca deja que una fila
+  // con monto capturado llegue a onConfirm sin la referencia que el backend exige para este
+  // método, en vez de dejar que el rechazo ocurra recién al intentar emitir la factura.
+  const missingReference =
+    requiresReference &&
+    rows.some((r) => r.amount > 0 && !deriveDetailReference(detailType, r));
 
   const addRow = () => {
     const newRow: DetailRow = {
@@ -99,7 +111,10 @@ export function PaymentDetailModal({
             variant="primary"
             size="md"
             disabled={
-              rows.length === 0 || rows.some((r) => r.amount <= 0) || exceeds
+              rows.length === 0 ||
+              rows.some((r) => r.amount <= 0) ||
+              exceeds ||
+              missingReference
             }
             onClick={() => onConfirm(rows.filter((r) => r.amount > 0))}
           >
@@ -112,6 +127,15 @@ export function PaymentDetailModal({
         <ZHPageNotice
           variant="error"
           message={`Excede el saldo disponible ($${formatMoney(available, totalAmountDecimals)}) por $${formatMoney(totalDetail - available, totalAmountDecimals)}`}
+        />
+      )}
+
+      {missingReference && (
+        <ZHPageNotice
+          variant="error"
+          message={`El método "${methodName}" requiere un comprobante/referencia. Complete ${
+            isTransfer ? "el Comprobante" : isCheque ? "el Nro. Cheque" : "la Autoriz."
+          } en cada fila antes de confirmar.`}
         />
       )}
 

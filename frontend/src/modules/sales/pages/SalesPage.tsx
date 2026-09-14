@@ -27,6 +27,7 @@ import { SalesEmissionConfigSection } from "../components/SalesEmissionConfigSec
 import { EmitButton } from "../components/EmitButton";
 import { PaymentMethodsSection } from "../components/PaymentMethodsSection";
 import { remainingToCollect } from "../components/paymentRemaining";
+import { deriveDetailReference } from "../utils/paymentDetailReference";
 import { useSalesPage } from "../hooks/useSalesPage";
 import type { SalesListItemDto } from "../api/salesService";
 import { useRideActions } from "../hooks/useRideActions";
@@ -575,6 +576,10 @@ export function SalesPage() {
         open={ctx.modalDetail}
         methodName={ctx.detailMethodName}
         detailType={ctx.detailMethodType}
+        requiresReference={
+          ctx.paymentMethods.find((pm) => pm.id === ctx.detailMethodId)
+            ?.requiresReference ?? false
+        }
         initialRows={ctx.detailRows}
         initialKey={ctx.detailKey}
         available={remainingToCollect(ctx, ctx.detailMethodId)}
@@ -587,7 +592,12 @@ export function SalesPage() {
               _key: ctx.payKey + r._k,
               paymentMethodId: ctx.detailMethodId,
               amount: r.amount,
-              reference: null,
+              // SALES-TRANSFER-PAYMENT-REFERENCE-PAYLOAD-01: antes se enviaba siempre null — el
+              // comprobante/autorización/nro. de cheque capturado en el modal nunca llegaba a
+              // payments[].reference, así que el backend rechazaba la emisión para métodos con
+              // RequiresReference=true (ej. Transferencia Bancaria) aunque el usuario ya lo
+              // hubiera ingresado.
+              reference: deriveDetailReference(ctx.detailMethodType, r),
               cardDetail: r.card ?? null,
               transferDetail: r.transfer ?? null,
               chequeDetail: r.cheque ?? null,

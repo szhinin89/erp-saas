@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { PaymentDetailModal } from "./PaymentDetailModal";
@@ -7,7 +8,9 @@ afterEach(() => {
   cleanup();
 });
 
-function renderModal() {
+function renderModal(
+  overrides: Partial<ComponentProps<typeof PaymentDetailModal>> = {},
+) {
   const onConfirm = vi.fn();
   const onCancel = vi.fn();
   const utils = render(
@@ -15,14 +18,24 @@ function renderModal() {
       open
       methodName="Transferencia"
       detailType="Transfer"
+      requiresReference
       initialRows={[
-        { _k: 1, amount: 10, transfer: { bankName: "Pichincha" } },
-        { _k: 2, amount: 20, transfer: { bankName: "Guayaquil" } },
+        {
+          _k: 1,
+          amount: 10,
+          transfer: { bankName: "Pichincha", receiptNumber: "134010011" },
+        },
+        {
+          _k: 2,
+          amount: 20,
+          transfer: { bankName: "Guayaquil", receiptNumber: "998877" },
+        },
       ]}
       initialKey={3}
       available={100}
       onConfirm={onConfirm}
       onCancel={onCancel}
+      {...overrides}
     />,
   );
   return { ...utils, onConfirm, onCancel };
@@ -103,5 +116,38 @@ describe("PaymentDetailModal — total del footer migrado a ZHMoneyValue (SALES-
     moneyValue?.querySelectorAll("*").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
+  });
+});
+
+describe("PaymentDetailModal — referencia obligatoria (SALES-TRANSFER-PAYMENT-REFERENCE-PAYLOAD-01)", () => {
+  it("confirma normalmente cuando cada fila con monto ya tiene comprobante", () => {
+    const { onConfirm } = renderModal();
+    fireEvent.click(screen.getByText(/^Confirmar/));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('bloquea "Confirmar" y muestra un mensaje claro si falta el comprobante', () => {
+    const { onConfirm } = renderModal({
+      initialRows: [{ _k: 1, amount: 10, transfer: { bankName: "Pichincha" } }],
+    });
+
+    expect(
+      screen.getByText(/requiere un comprobante\/referencia/i),
+    ).toBeTruthy();
+    const confirmBtn = screen.getByText(/^Confirmar/).closest("button")!;
+    expect(confirmBtn.disabled).toBe(true);
+    fireEvent.click(confirmBtn);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("no exige comprobante cuando el método no lo requiere (requiresReference=false)", () => {
+    const { onConfirm } = renderModal({
+      requiresReference: false,
+      initialRows: [{ _k: 1, amount: 10, transfer: { bankName: "Pichincha" } }],
+    });
+
+    expect(screen.queryByText(/requiere un comprobante\/referencia/i)).toBeNull();
+    fireEvent.click(screen.getByText(/^Confirmar/));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 });
