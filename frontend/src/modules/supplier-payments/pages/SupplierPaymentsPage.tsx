@@ -6,7 +6,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
@@ -23,7 +23,7 @@ export function SupplierPaymentsPage() {
   const canView = has(PERMISSIONS.view);
   const canCreate = has(PERMISSIONS.create);
   const navigate = useNavigate();
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [rows, setRows] = useState<SupplierPaymentListItemDto[]>([]);
   const [total, setTotal] = useState(0);

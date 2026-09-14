@@ -7,7 +7,7 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
@@ -52,7 +52,7 @@ export function SupplierPaymentDetailPage() {
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
   const canReverse = has(PERMISSIONS.reverse);
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [payment, setPayment] = useState<SupplierPaymentDto | null>(null);
   const [supplierName, setSupplierName] = useState("");

@@ -7,6 +7,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { PendingInstallmentOption } from "../api/pendingPayablesFacade";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
@@ -40,6 +41,7 @@ export function SupplierPayablesPortfolio({ installments, loading, disabled }: P
     formState: { errors },
   } = useFormContext<RegisterSupplierPaymentFormValues>();
   const { replace } = useFieldArray({ control, name: "applicationLines" });
+  const decimals = getPrecisionPolicy().moneyDecimals;
   const applicationLines = watch("applicationLines") ?? [];
   const applicationLinesError =
     typeof errors.applicationLines?.message === "string" ? errors.applicationLines.message : null;
@@ -181,7 +183,7 @@ export function SupplierPayablesPortfolio({ installments, loading, disabled }: P
           <div className="sp-portfolio-apply">
             <ZhDecimalInput
               aria-label={`Monto a aplicar: ${r.documentType} ${r.documentNumber} — Cuota #${r.installmentNumber}`}
-              decimals={2}
+              decimals={decimals}
               positiveOnly
               density="compact"
               disabled={disabled}

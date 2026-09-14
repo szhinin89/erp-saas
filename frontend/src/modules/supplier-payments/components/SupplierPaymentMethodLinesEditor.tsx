@@ -1,6 +1,7 @@
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZhDateInput, ZhDecimalInput, ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import type { CompanyFinancialDestinationDto } from "../../finance/api/financialDestinationService";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
@@ -24,6 +25,7 @@ export function SupplierPaymentMethodLinesEditor({ methods, destinations, disabl
     formState: { errors },
   } = useFormContext<RegisterSupplierPaymentFormValues>();
   const { fields, append, remove } = useFieldArray({ control, name: "methodLines" });
+  const decimals = getPrecisionPolicy().moneyDecimals;
   const methodsById = new Map(methods.map((m) => [m.id, m]));
   const watchedLines = watch("methodLines");
 
@@ -73,7 +75,7 @@ export function SupplierPaymentMethodLinesEditor({ methods, destinations, disabl
 
             <ZHField label="Monto" required error={lineErrors?.amount?.message}>
               <ZhDecimalInput
-                decimals={2}
+                decimals={decimals}
                 positiveOnly
                 disabled={disabled}
                 {...register(`methodLines.${index}.amount` as const, {

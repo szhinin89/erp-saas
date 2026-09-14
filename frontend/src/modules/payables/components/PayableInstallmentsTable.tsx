@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { PayableInstallmentDto } from "../api/payablesService";
 import { PayableStatusBadge } from "./PayableStatusBadge";
 
@@ -12,7 +12,7 @@ export function PayableInstallmentsTable({
 }: {
   installments: PayableInstallmentDto[];
 }) {
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const columns = useMemo<ZHDataTableColumn<PayableInstallmentDto>[]>(
     () => [

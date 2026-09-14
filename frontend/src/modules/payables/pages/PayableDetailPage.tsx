@@ -6,7 +6,7 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
   payablesService,
@@ -41,7 +41,7 @@ export function PayableDetailPage() {
   const navigate = useNavigate();
   const { has } = usePermissionsUi();
   const canView = has(PERMISSIONS.view);
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
 
   const [payable, setPayable] = useState<PayableDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
