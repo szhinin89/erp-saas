@@ -1,5 +1,5 @@
 import { companyManagementService } from "../company-management/api/companyManagementService";
-import { loadDecimalConfig } from "../../lib/config/decimal.config";
+import { loadPrecisionPolicy } from "../../lib/config/precisionPolicy.config";
 import { bumpCompanyOperationalSession } from "../../lib/session/companySession";
 import { logDevSessionContext } from "../../lib/session/devSessionLog";
 import { useAuthStore } from "../../store/authStore";
@@ -17,7 +17,7 @@ export async function syncCompanySelection(auth: AuthResponse): Promise<void> {
   await Promise.allSettled([
     companyManagementService.getCurrent(),
     useSessionStore.getState().refresh(),
-    loadDecimalConfig(),
+    loadPrecisionPolicy(),
     useElectronicInvoicingStatusStore.getState().refresh(),
   ]);
 }

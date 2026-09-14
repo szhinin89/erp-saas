@@ -2,7 +2,6 @@ import React from "react";
 import { allowsDecimalKey } from "../../../lib/validators/numericValidators";
 import { sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import "./ZhInputs.css";
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
@@ -14,14 +13,18 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
  * Input de moneda con símbolo de divisa y limitación de decimales.
  * Compatible con RHF register() via forwardRef.
  *
+ * Fallback fijo de 2 decimales (COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07):
+ * los callers que necesiten la precisión de la empresa deben pasar `decimals` explícito
+ * desde precisionPolicy.config.ts — este componente compartido no lee config por su cuenta.
+ *
  * @example
- * <ZhCurrencyInput {...register('price')} decimals={decimalConfig.sales} />
- * <ZhCurrencyInput {...register('cost')} decimals={decimalConfig.purchases} currency="USD" />
+ * <ZhCurrencyInput {...register('price')} decimals={precisionPolicy.salesUnitPriceDecimals} />
+ * <ZhCurrencyInput {...register('cost')} decimals={precisionPolicy.purchaseUnitPriceDecimals} currency="USD" />
  */
 export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props>(
   (
     {
-      decimals = getDecimalConfig().salesUnitPrice,
+      decimals = 2,
       currency = "USD",
       onKeyDown,
       onPaste,

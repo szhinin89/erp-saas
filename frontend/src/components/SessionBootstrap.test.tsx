@@ -8,7 +8,7 @@ import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingS
 import { setAccessToken, clearAccessToken } from "../lib/session/authTokenMemory";
 import { sessionService } from "../modules/session/api/sessionService";
 import { electronicInvoicingService } from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
-import { loadDecimalConfig } from "../lib/config/decimal.config";
+import { loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
 
 // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: el bootstrap global de sesión no debe
 // disparar el ping externo al SRI (el que produce el ruido SocketException 10054 en logs al
@@ -26,8 +26,8 @@ vi.mock(
   }),
 );
 
-vi.mock("../lib/config/decimal.config", () => ({
-  loadDecimalConfig: vi.fn().mockResolvedValue({}),
+vi.mock("../lib/config/precisionPolicy.config", () => ({
+  loadPrecisionPolicy: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("../lib/session/authRefreshManager", () => ({
@@ -89,7 +89,7 @@ describe("SessionBootstrap — estado de facturación electrónica", () => {
     expect(electronicInvoicingService.getStatus).not.toHaveBeenCalledWith(
       expect.objectContaining({ checkConnectivity: true }),
     );
-    expect(loadDecimalConfig).toHaveBeenCalled();
+    expect(loadPrecisionPolicy).toHaveBeenCalled();
   });
 
   it("sin autenticación, no llama getStatus y limpia el store", async () => {

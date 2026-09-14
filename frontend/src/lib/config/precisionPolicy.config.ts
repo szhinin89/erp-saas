@@ -1,8 +1,9 @@
 import { apiGet, apiPut } from "../../modules/lib/apiEnvelope";
 
 /**
- * COMPANY-PRECISION-POLICY-SSOT-01. Reemplaza `decimal.config.ts` (LEGACY, ver comentario en ese
- * archivo) como fuente de cálculo de precisión operativa de la empresa. `moneyDecimals` /
+ * COMPANY-PRECISION-POLICY-SSOT-01. Única fuente frontend de precisión operativa de la empresa
+ * (reemplazó por completo a `decimal.config.ts`, eliminado en
+ * COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07). `moneyDecimals` /
  * `taxDecimals` / `accountingDecimals` son FIJOS del sistema (FiscalPrecision backend) — nunca
  * editables desde esta pantalla, incluidos solo para que el frontend tenga un único objeto.
  */

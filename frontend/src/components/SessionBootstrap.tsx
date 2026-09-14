@@ -6,7 +6,6 @@ import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingS
 import { restoreSessionFromCookie } from "../lib/session/restoreSessionFromCookie";
 import { getAccessToken } from "../lib/session/authTokenMemory";
 import { initializeAuthBroadcastListener } from "../lib/session/authRefreshManager";
-import { loadDecimalConfig } from "../lib/config/decimal.config";
 import { loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
 
 type Props = { children: ReactNode };
@@ -58,17 +57,14 @@ export function SessionBootstrap({ children }: Props) {
 
     if (isAuthenticated) {
       void useSessionStore.getState().refresh();
-      // Config de decimales por empresa — debe estar disponible antes de que
-      // cualquier módulo (Ventas, Compras, Items) formatee o valide montos.
-      // LEGACY (COMPANY-PRECISION-POLICY-SSOT-01): decimal.config.ts sigue siendo la fuente
-      // consumida por auth/syncCompanySelection, la pantalla legacy DecimalSettingsSection,
-      // el default de ZhCurrencyInput e ItemEditorForm — ninguno migrado todavía.
-      // Ventas (lote 1, 2026-09-13), Compras (lote 2, 2026-09-13), Items/Pricing (lote 3,
-      // 2026-09-13), Inventory (lote 4, 2026-09-13), Expenses (lote 5, 2026-09-13) y
-      // Payables/Supplier Payments (lote 6, 2026-09-13) ya migraron por completo a
-      // precisionPolicy.config.ts — se mantiene esta carga en paralelo solo por los módulos
-      // pendientes.
-      void loadDecimalConfig();
+      // Config de precisión operativa por empresa — debe estar disponible antes de que
+      // cualquier módulo (Ventas, Compras, Items, Inventory, Expenses, Payables) formatee
+      // o valide montos. company_precision_policy / precisionPolicy.config.ts es la única
+      // SSOT frontend desde COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07
+      // (2026-09-13): decimal.config.ts (legacy) fue eliminado del frontend tras confirmar
+      // cero consumidores productivos (ZhCurrencyInput pasó a fallback fijo de 2 decimales;
+      // la pantalla legacy DecimalSettingsSection.tsx fue eliminada por estar huérfana, ya
+      // reemplazada por PrecisionPolicySettingsSection).
       void loadPrecisionPolicy();
       // Estado LOCAL de facturación electrónica (certificado/ambiente/URL) — alimenta
       // ZHElectronicEnvironmentBanner en cualquier pantalla emisora sin que cada una dispare su

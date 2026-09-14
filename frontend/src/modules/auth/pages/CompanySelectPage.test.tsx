@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
-import { loadDecimalConfig } from "../../../lib/config/decimal.config";
+import { loadPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { companyManagementService } from "../../company-management/api/companyManagementService";
 import { useAuthStore } from "../../../store/authStore";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
@@ -33,8 +33,8 @@ vi.mock("../../company-management/api/companyManagementService", () => ({
   },
 }));
 
-vi.mock("../../../lib/config/decimal.config", () => ({
-  loadDecimalConfig: vi.fn(),
+vi.mock("../../../lib/config/precisionPolicy.config", () => ({
+  loadPrecisionPolicy: vi.fn(),
 }));
 
 vi.mock("../../../lib/session/devSessionLog", () => ({
@@ -137,12 +137,22 @@ describe("CompanySelectPage", () => {
     vi.mocked(authService.listMyCompanies).mockResolvedValue([baseCompany()]);
     vi.mocked(authService.switchCompany).mockResolvedValue(authResponse);
     vi.mocked(companyManagementService.getCurrent).mockResolvedValue(null);
-    vi.mocked(loadDecimalConfig).mockResolvedValue({
-      salesUnitPrice: 2,
-      purchaseUnitPrice: 4,
-      quantity: 4,
-      percentage: 2,
-      totalAmount: 2,
+    vi.mocked(loadPrecisionPolicy).mockResolvedValue({
+      profileType: "StandardCommercial",
+      salesUnitPriceDecimals: 2,
+      purchaseUnitPriceDecimals: 4,
+      quantityDecimals: 4,
+      percentageDecimals: 2,
+      unitCostDecimals: 6,
+      averageCostDecimals: 6,
+      conversionFactorDecimals: 6,
+      settlementToleranceAmount: 0.01,
+      isLocked: false,
+      lockedAt: null,
+      lockedReason: null,
+      moneyDecimals: 2,
+      taxDecimals: 2,
+      accountingDecimals: 2,
     });
   });
 
@@ -179,7 +189,7 @@ describe("CompanySelectPage", () => {
     });
     expect(useAuthStore.getState().login).toHaveBeenCalledWith(authResponse);
     expect(useSessionStore.getState().refresh).toHaveBeenCalledTimes(1);
-    expect(loadDecimalConfig).toHaveBeenCalledTimes(1);
+    expect(loadPrecisionPolicy).toHaveBeenCalledTimes(1);
     expect(
       useElectronicInvoicingStatusStore.getState().refresh,
     ).toHaveBeenCalledTimes(1);

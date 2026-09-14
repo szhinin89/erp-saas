@@ -6,7 +6,7 @@ import { useSessionStore } from "../../store/sessionStore";
 import { useElectronicInvoicingStatusStore } from "../../store/electronicInvoicingStatusStore";
 import type { AuthResponse } from "../../types/auth";
 import { companyManagementService } from "../company-management/api/companyManagementService";
-import { loadDecimalConfig } from "../../lib/config/decimal.config";
+import { loadPrecisionPolicy } from "../../lib/config/precisionPolicy.config";
 import { clearOperationalContext } from "./clearOperationalContext";
 import { syncCompanySelection } from "./syncCompanySelection";
 
@@ -14,8 +14,8 @@ vi.mock("../company-management/api/companyManagementService", () => ({
   companyManagementService: { getCurrent: vi.fn() },
 }));
 
-vi.mock("../../lib/config/decimal.config", () => ({
-  loadDecimalConfig: vi.fn(),
+vi.mock("../../lib/config/precisionPolicy.config", () => ({
+  loadPrecisionPolicy: vi.fn(),
 }));
 
 vi.mock("../../lib/session/devSessionLog", () => ({
@@ -93,14 +93,24 @@ describe("syncCompanySelection", () => {
       order.push("companyManagementService.getCurrent");
       return null;
     });
-    vi.mocked(loadDecimalConfig).mockImplementation(async () => {
-      order.push("loadDecimalConfig");
+    vi.mocked(loadPrecisionPolicy).mockImplementation(async () => {
+      order.push("loadPrecisionPolicy");
       return {
-        salesUnitPrice: 2,
-        purchaseUnitPrice: 4,
-        quantity: 4,
-        percentage: 2,
-        totalAmount: 2,
+        profileType: "StandardCommercial",
+        salesUnitPriceDecimals: 2,
+        purchaseUnitPriceDecimals: 4,
+        quantityDecimals: 4,
+        percentageDecimals: 2,
+        unitCostDecimals: 6,
+        averageCostDecimals: 6,
+        conversionFactorDecimals: 6,
+        settlementToleranceAmount: 0.01,
+        isLocked: false,
+        lockedAt: null,
+        lockedReason: null,
+        moneyDecimals: 2,
+        taxDecimals: 2,
+        accountingDecimals: 2,
       };
     });
   });
@@ -130,7 +140,7 @@ describe("syncCompanySelection", () => {
       [
         "companyManagementService.getCurrent",
         "electronicInvoicingStatusStore.refresh",
-        "loadDecimalConfig",
+        "loadPrecisionPolicy",
         "sessionStore.refresh",
       ].sort(),
     );
@@ -140,8 +150,8 @@ describe("syncCompanySelection", () => {
   });
 
   it("no deja pendiente la limpieza del contexto si un refresh secundario falla", async () => {
-    vi.mocked(loadDecimalConfig).mockImplementation(async () => {
-      order.push("loadDecimalConfig");
+    vi.mocked(loadPrecisionPolicy).mockImplementation(async () => {
+      order.push("loadPrecisionPolicy");
       throw new Error("network error");
     });
 
@@ -149,7 +159,7 @@ describe("syncCompanySelection", () => {
 
     expect(order).toContain("clearOperationalContext");
     expect(order.indexOf("clearOperationalContext")).toBeLessThan(
-      order.indexOf("loadDecimalConfig"),
+      order.indexOf("loadPrecisionPolicy"),
     );
   });
 });

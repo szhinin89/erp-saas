@@ -20,7 +20,7 @@ import {
   sriLookupService,
   type SriVatRateLookup,
 } from "../../../modules/items/catalog/api/catalogService";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginAmount, calcMarginPercent } from "../../../lib/margin";
 import type { ItemEditorFormValues } from "./itemEditorSchema";
@@ -507,7 +507,7 @@ function PurchaseInfoReadOnly({
 }: {
   purchaseContext: NonNullable<CreateItemInitialData["purchaseContext"]>;
 }) {
-  const dc = getDecimalConfig();
+  const pp = getPrecisionPolicy();
   const { unitCost, quantity, discountPct } = purchaseContext;
   const hasDiscount = discountPct != null;
   const costFinal = unitCost * (1 - (discountPct ?? 0) / 100);
@@ -520,18 +520,18 @@ function PurchaseInfoReadOnly({
       <ZHGrid cols={2}>
         <ZHField label="Costo unitario" readOnly density="compact">
           <input
-            value={formatMoneyWithSymbol(unitCost, dc.purchaseUnitPrice)}
+            value={formatMoneyWithSymbol(unitCost, pp.purchaseUnitPriceDecimals)}
             disabled
           />
         </ZHField>
         <ZHField label="Cantidad" readOnly density="compact">
-          <input value={formatMoney(quantity, dc.quantity)} disabled />
+          <input value={formatMoney(quantity, pp.quantityDecimals)} disabled />
         </ZHField>
         <ZHField label="Descuento aplicado" readOnly density="compact">
           <input
             value={
               hasDiscount
-                ? `${formatMoney(discountPct ?? 0, dc.percentage)}%`
+                ? `${formatMoney(discountPct ?? 0, pp.percentageDecimals)}%`
                 : "—"
             }
             disabled
@@ -543,7 +543,7 @@ function PurchaseInfoReadOnly({
           density="compact"
         >
           <input
-            value={formatMoneyWithSymbol(costFinal, dc.purchaseUnitPrice)}
+            value={formatMoneyWithSymbol(costFinal, pp.purchaseUnitPriceDecimals)}
             disabled
           />
         </ZHField>
@@ -587,7 +587,7 @@ function PriceAndProfitability({
   purchaseVatCodeFieldError?: string;
   isUpdate: boolean;
 }) {
-  const dc = getDecimalConfig();
+  const pp = getPrecisionPolicy();
   const costFinal = purchaseContext
     ? purchaseContext.unitCost * (1 - (purchaseContext.discountPct ?? 0) / 100)
     : null;
@@ -619,7 +619,7 @@ function PriceAndProfitability({
           <input
             value={
               xmlVatPercent != null
-                ? `${formatMoney(xmlVatPercent, dc.percentage)}%`
+                ? `${formatMoney(xmlVatPercent, pp.percentageDecimals)}%`
                 : "—"
             }
             disabled
@@ -634,7 +634,7 @@ function PriceAndProfitability({
             <option value="">Sin IVA configurado</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
-                {v.name} ({formatMoney(v.percentage, dc.percentage)}%)
+                {v.name} ({formatMoney(v.percentage, pp.percentageDecimals)}%)
               </option>
             ))}
           </select>
@@ -660,7 +660,7 @@ function PriceAndProfitability({
             <option value="">Sin IVA configurado</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
-                {v.name} ({formatMoney(v.percentage, dc.percentage)}%)
+                {v.name} ({formatMoney(v.percentage, pp.percentageDecimals)}%)
               </option>
             ))}
           </select>
@@ -674,7 +674,7 @@ function PriceAndProfitability({
           fieldError={salePriceFieldError}
         >
           <ZhDecimalInput
-            decimals={dc.salesUnitPrice}
+            decimals={pp.salesUnitPriceDecimals}
             positiveOnly
             placeholder="0.00"
             {...register("salePrice", {
@@ -699,7 +699,7 @@ function PriceAndProfitability({
             <span className="citm-margin-sim__label">Costo</span>
             <span className="citm-margin-sim__value">
               {hasCost
-                ? formatMoneyWithSymbol(costFinal, dc.purchaseUnitPrice)
+                ? formatMoneyWithSymbol(costFinal, pp.purchaseUnitPriceDecimals)
                 : "—"}
             </span>
           </div>
@@ -707,7 +707,7 @@ function PriceAndProfitability({
             <span className="citm-margin-sim__label">Precio</span>
             <span className="citm-margin-sim__value">
               {hasPrice
-                ? formatMoneyWithSymbol(salePriceValue, dc.salesUnitPrice)
+                ? formatMoneyWithSymbol(salePriceValue, pp.salesUnitPriceDecimals)
                 : "—"}
             </span>
           </div>
@@ -715,7 +715,7 @@ function PriceAndProfitability({
             <span className="citm-margin-sim__label">IVA</span>
             <span className="citm-margin-sim__value">
               {hasItemVat
-                ? `${formatMoney(itemVatPercent, dc.percentage)}%`
+                ? `${formatMoney(itemVatPercent, pp.percentageDecimals)}%`
                 : "—"}
             </span>
           </div>
@@ -723,7 +723,7 @@ function PriceAndProfitability({
             <span className="citm-margin-sim__label">Precio final</span>
             <span className="citm-margin-sim__value">
               {priceFinal != null
-                ? formatMoneyWithSymbol(priceFinal, dc.salesUnitPrice)
+                ? formatMoneyWithSymbol(priceFinal, pp.salesUnitPriceDecimals)
                 : "—"}
             </span>
           </div>
@@ -733,7 +733,7 @@ function PriceAndProfitability({
               className={`citm-margin-sim__value ${hasCost && hasPrice && marginAmount < 0 ? "citm-margin-sim__value--neg" : ""}`}
             >
               {hasCost && hasPrice
-                ? formatMoneyWithSymbol(marginAmount, dc.salesUnitPrice)
+                ? formatMoneyWithSymbol(marginAmount, pp.salesUnitPriceDecimals)
                 : "—"}
             </span>
           </div>
@@ -743,7 +743,7 @@ function PriceAndProfitability({
               className={`citm-margin-sim__value citm-margin-sim__value--pct ${hasCost && hasPrice && marginPct < 0 ? "citm-margin-sim__value--neg" : ""}`}
             >
               {hasCost && hasPrice
-                ? `${formatMoney(marginPct, dc.percentage)}%`
+                ? `${formatMoney(marginPct, pp.percentageDecimals)}%`
                 : "—"}
             </span>
           </div>
