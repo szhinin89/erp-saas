@@ -1,5 +1,5 @@
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 
 export interface ExpenseDocumentTotalsValue {
   subtotal: number;
@@ -13,7 +13,7 @@ export function ExpenseDocumentTotals({
 }: {
   totals: ExpenseDocumentTotalsValue;
 }) {
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
 
   return (
     <section className="exp-doc-totals" aria-label="Totales del gasto">

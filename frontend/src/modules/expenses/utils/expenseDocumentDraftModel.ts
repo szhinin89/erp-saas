@@ -1,4 +1,4 @@
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import type { AccountDto } from "../../accounting/api/accountingApi";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
@@ -39,7 +39,7 @@ export function parseExpenseNumber(value: string): number {
 }
 
 function roundMoney(value: number): number {
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
 }
@@ -136,8 +136,8 @@ export function documentToLines(
         expenseSubcategoryId: line.expenseSubcategoryId,
         description: line.description,
         quantity: String(line.quantity),
-        unitPrice: line.unitAmount.toFixed(getDecimalConfig().purchaseUnitPrice),
-        discountValue: line.discountAmount.toFixed(getDecimalConfig().totalAmount),
+        unitPrice: line.unitAmount.toFixed(getPrecisionPolicy().purchaseUnitPriceDecimals),
+        discountValue: line.discountAmount.toFixed(getPrecisionPolicy().moneyDecimals),
         vatCode: line.vatCode,
         notes: line.notes ?? "",
       }))

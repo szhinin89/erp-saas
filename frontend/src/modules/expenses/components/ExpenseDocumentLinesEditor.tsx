@@ -5,7 +5,7 @@ import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { AccountDto } from "../../accounting/api/accountingApi";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
@@ -53,7 +53,7 @@ export function ExpenseDocumentLinesEditor({
   errors,
   onChange,
 }: Props) {
-  const decimals = getDecimalConfig();
+  const decimals = getPrecisionPolicy();
 
   const updateLine = (
     key: string,
@@ -146,7 +146,7 @@ export function ExpenseDocumentLinesEditor({
                   <ZhDecimalInput
                     density="compact"
                     positiveOnly
-                    decimals={decimals.quantity}
+                    decimals={decimals.quantityDecimals}
                     value={line.quantity}
                     disabled={disabled}
                     className="exp-doc-number-input"
@@ -165,7 +165,7 @@ export function ExpenseDocumentLinesEditor({
                   <ZhDecimalInput
                     density="compact"
                     positiveOnly
-                    decimals={decimals.purchaseUnitPrice}
+                    decimals={decimals.purchaseUnitPriceDecimals}
                     value={line.unitPrice}
                     disabled={disabled}
                     className="exp-doc-number-input"
@@ -183,7 +183,7 @@ export function ExpenseDocumentLinesEditor({
                   <ZhDecimalInput
                     density="compact"
                     positiveOnly
-                    decimals={decimals.totalAmount}
+                    decimals={decimals.moneyDecimals}
                     value={line.discountValue}
                     disabled={disabled}
                     className="exp-doc-number-input"
@@ -239,7 +239,7 @@ export function ExpenseDocumentLinesEditor({
                   Base{" "}
                   <ZHMoneyValue
                     value={lineTotals.taxableBase}
-                    decimals={decimals.totalAmount}
+                    decimals={decimals.moneyDecimals}
                     currencySymbol=""
                   />
                 </span>
@@ -247,7 +247,7 @@ export function ExpenseDocumentLinesEditor({
                   IVA{" "}
                   <ZHMoneyValue
                     value={lineTotals.vat}
-                    decimals={decimals.totalAmount}
+                    decimals={decimals.moneyDecimals}
                     currencySymbol=""
                   />
                 </span>
@@ -255,7 +255,7 @@ export function ExpenseDocumentLinesEditor({
                   Total{" "}
                   <ZHMoneyValue
                     value={lineTotals.total}
-                    decimals={decimals.totalAmount}
+                    decimals={decimals.moneyDecimals}
                     currencySymbol=""
                     emphasis="strong"
                   />
