@@ -1,5 +1,5 @@
 import type { SalesLineInput } from "../api/salesService";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 
 export function lineGross(l: SalesLineInput): number {
@@ -283,7 +283,10 @@ export function calcSummary(
     byRate.set(vatRate, entry);
   }
 
-  const totalAmountDecimals = getDecimalConfig().totalAmount;
+  // COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-01: total/impuestos son montos
+  // fiscales fijos (FiscalPrecision backend) — usan moneyDecimals de la policy nueva, nunca un
+  // campo configurable como salesUnitPriceDecimals.
+  const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
   const roundTotal = (v: number) => {
     const factor = 10 ** totalAmountDecimals;
     return Math.round(v * factor) / factor;

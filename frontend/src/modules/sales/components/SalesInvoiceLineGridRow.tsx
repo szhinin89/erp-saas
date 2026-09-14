@@ -13,7 +13,7 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import {
   lineNet,
   calcLineTax,
@@ -81,7 +81,7 @@ export function SalesInvoiceLineGridRow({
   onRemove,
   index,
 }: SalesInvoiceLineGridRowProps) {
-  const dc = getDecimalConfig();
+  const dc = getPrecisionPolicy();
   const previewNet = lineNet(line);
   const previewTax = calcLineTax(line, vatRates);
   const total =
@@ -260,7 +260,7 @@ export function SalesInvoiceLineGridRow({
             <div className="sf-product__discount-readonly">
               {hasManualDiscount && (
                 <span className="sf-product__discount-manual">
-                  Manual {manualDiscountPct.toFixed(dc.percentage)}%
+                  Manual {manualDiscountPct.toFixed(dc.percentageDecimals)}%
                 </span>
               )}
               {hasRuleDiscount && (
@@ -293,7 +293,7 @@ export function SalesInvoiceLineGridRow({
                 key={line.discountPct ?? 0}
                 className="sf-product__disc-input"
                 density="compact"
-                decimals={dc.percentage}
+                decimals={dc.percentageDecimals}
                 positiveOnly
                 defaultValue={line.discountPct ?? 0}
                 onBlur={(e) =>
@@ -324,7 +324,7 @@ export function SalesInvoiceLineGridRow({
               key={line.unitPrice}
               className="sf-product__price-input"
               density="compact"
-              decimals={dc.salesUnitPrice}
+              decimals={dc.salesUnitPriceDecimals}
               positiveOnly
               defaultValue={line.unitPrice}
               onBlur={(e) =>
@@ -508,7 +508,7 @@ export function SalesInvoiceLineGridRow({
             // lee line.quantity en vivo) queda desincronizado de la cantidad visible.
             key={line.quantity}
             className="sf-product__qty-input"
-            decimals={dc.quantity}
+            decimals={dc.quantityDecimals}
             positiveOnly
             defaultValue={line.quantity}
             onBlur={(e) =>

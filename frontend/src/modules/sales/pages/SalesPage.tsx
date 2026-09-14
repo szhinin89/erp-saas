@@ -13,7 +13,7 @@ import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectron
 import { ZHSectionHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { formatMoney } from "../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { CustomerPicker } from "../components/CustomerPicker";
 import { SalesInvoiceDetailsSection } from "../components/SalesInvoiceDetailsSection";
 import { PaymentDetailModal } from "../components/PaymentDetailModal";
@@ -100,7 +100,7 @@ export function SalesPage() {
       header: "Total",
       align: "right",
       cellClassName: "zh-table-cell--num",
-      render: (inv) => <ZHMoneyValue value={inv.grandTotal} decimals={getDecimalConfig().totalAmount} />,
+      render: (inv) => <ZHMoneyValue value={inv.grandTotal} decimals={getPrecisionPolicy().moneyDecimals} />,
     },
     { key: "lines", header: "Líneas", align: "center", render: (inv) => inv.lineCount },
     {
@@ -322,7 +322,7 @@ export function SalesPage() {
                     variables={{
                       maxConsumerFinalAmount: formatMoney(
                         ctx.consumerFinalPolicy.consumerFinalMaxAmount,
-                        getDecimalConfig().totalAmount,
+                        getPrecisionPolicy().moneyDecimals,
                       ),
                     }}
                   />
@@ -347,13 +347,13 @@ export function SalesPage() {
                         <td>
                           <ZHMoneyValue
                             value={e.base}
-                            decimals={getDecimalConfig().totalAmount}
+                            decimals={getPrecisionPolicy().moneyDecimals}
                           />
                         </td>
                         <td>
                           <ZHMoneyValue
                             value={e.tax}
-                            decimals={getDecimalConfig().totalAmount}
+                            decimals={getPrecisionPolicy().moneyDecimals}
                           />
                         </td>
                       </tr>
@@ -367,7 +367,7 @@ export function SalesPage() {
                       -
                       <ZHMoneyValue
                         value={ctx.totalDiscount}
-                        decimals={getDecimalConfig().totalAmount}
+                        decimals={getPrecisionPolicy().moneyDecimals}
                       />
                     </span>
                   </div>
@@ -380,7 +380,7 @@ export function SalesPage() {
                 <div className="sf-total-box__amount">
                   <ZHMoneyValue
                     value={ctx.grandTotal}
-                    decimals={getDecimalConfig().totalAmount}
+                    decimals={getPrecisionPolicy().moneyDecimals}
                     emphasis="total"
                   />
                 </div>

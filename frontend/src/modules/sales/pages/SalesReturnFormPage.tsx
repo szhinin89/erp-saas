@@ -7,7 +7,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { SalesReturnInvoicePicker } from "../components/SalesReturnInvoicePicker";
 import { ReturnableLinesEditor } from "../components/ReturnableLinesEditor";
 import { AuthorizeSalesReturnModal } from "../components/AuthorizeSalesReturnModal";
@@ -221,7 +221,7 @@ export function SalesReturnFormPage() {
     );
   }
 
-  const decimals = getDecimalConfig().totalAmount;
+  const decimals = getPrecisionPolicy().moneyDecimals;
 
   return (
     <PageShell

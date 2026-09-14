@@ -6,7 +6,7 @@ import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { remainingToCollect } from "./paymentRemaining";
@@ -61,7 +61,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 <span className="sales-payment-chip__amount">
                   <ZHMoneyValue
                     value={p.amount}
-                    decimals={getDecimalConfig().totalAmount}
+                    decimals={getPrecisionPolicy().moneyDecimals}
                   />
                 </span>
               </div>
@@ -74,7 +74,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
             // diferencia en vez de dejarla como un descuadre visual sin contexto. Si la diferencia
             // excede la tolerancia, no se muestra nota — sigue viéndose como pendiente/no saldada
             // según la lógica ya existente (no se toca esa lógica).
-            const decimals = getDecimalConfig().totalAmount;
+            const decimals = getPrecisionPolicy().moneyDecimals;
             const factor = 10 ** decimals;
             const total = ctx.grandTotal;
             const paid = (ctx.editing?.payments ?? []).reduce(
@@ -198,11 +198,11 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     <div className="sales-payment-amount-row">
                       <span className="sales-payment-dollar">$</span>
                       <ZhDecimalInput
-                        decimals={getDecimalConfig().totalAmount}
+                        decimals={getPrecisionPolicy().moneyDecimals}
                         positiveOnly
                         defaultValue={formatMoney(
                           entry!.amount,
-                          getDecimalConfig().totalAmount,
+                          getPrecisionPolicy().moneyDecimals,
                         )}
                         disabled={ctx.fieldDisabled}
                         onBlur={(e) => {
@@ -239,7 +239,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     <span className="sales-payment-ref-amount">
                       <ZHMoneyValue
                         value={totalForMethod}
-                        decimals={getDecimalConfig().totalAmount}
+                        decimals={getPrecisionPolicy().moneyDecimals}
                       />{" "}
                       <span className="sales-payment-ref-count">
                         ({entries.length})
@@ -259,7 +259,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     >
                       <ZHMoneyValue
                         value={entry!.amount}
-                        decimals={getDecimalConfig().totalAmount}
+                        decimals={getPrecisionPolicy().moneyDecimals}
                       />
                     </span>
                   )}
@@ -303,13 +303,13 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                 <div className="sales-cash-box__input-wrap">
                   <span className="sales-cash-box__currency">$</span>
                   <ZhDecimalInput
-                    decimals={getDecimalConfig().totalAmount}
+                    decimals={getPrecisionPolicy().moneyDecimals}
                     positiveOnly
                     defaultValue={
                       ctx.cashReceived > 0
                         ? formatMoney(
                             ctx.cashReceived,
-                            getDecimalConfig().totalAmount,
+                            getPrecisionPolicy().moneyDecimals,
                           )
                         : ""
                     }
@@ -337,7 +337,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                         ? ctx.cashDue - ctx.cashReceived
                         : ctx.cashChange
                     }
-                    decimals={getDecimalConfig().totalAmount}
+                    decimals={getPrecisionPolicy().moneyDecimals}
                   />
                 </span>
               </div>
@@ -346,7 +346,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
           {(() => {
             const paid = ctx.paidTotal;
             const total = ctx.summary.total;
-            const factor = 10 ** getDecimalConfig().totalAmount;
+            const factor = 10 ** getPrecisionPolicy().moneyDecimals;
             const diff = Math.round((total - paid) * factor) / factor;
             const exceeds = diff < 0;
             return (
@@ -363,7 +363,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                   <span className="sales-summary-row__amount">
                     <ZHMoneyValue
                       value={paid}
-                      decimals={getDecimalConfig().totalAmount}
+                      decimals={getPrecisionPolicy().moneyDecimals}
                     />
                   </span>
                 </div>
@@ -381,7 +381,7 @@ export function PaymentMethodsSection({ ctx }: PaymentMethodsSectionProps) {
                     <span className="sales-summary-total-row__amount">
                       <ZHMoneyValue
                         value={Math.abs(diff)}
-                        decimals={getDecimalConfig().totalAmount}
+                        decimals={getPrecisionPolicy().moneyDecimals}
                       />
                     </span>
                   )}

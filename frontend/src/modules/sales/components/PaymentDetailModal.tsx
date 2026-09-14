@@ -15,7 +15,7 @@ import { ZHFieldLabel } from "../../../components/zh/ZHFieldLabel";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { PAYMENT_DETAIL_TOLERANCE } from "../constants/tolerances";
 
 type DetailRow = {
@@ -49,7 +49,7 @@ export function PaymentDetailModal({
 }: Props) {
   const [rows, setRows] = useState<DetailRow[]>(initialRows);
   const [nextKey, setNextKey] = useState(initialKey);
-  const totalAmountDecimals = getDecimalConfig().totalAmount;
+  const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
 
   const isCard = detailType === "Card";
   const isTransfer = detailType === "Transfer";

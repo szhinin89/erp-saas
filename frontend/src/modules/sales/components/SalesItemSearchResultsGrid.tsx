@@ -5,7 +5,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { stockBadgeInfo, discountBadgeText } from "../utils/salesCalc";
 
 // SALES-ITEM-SEARCH-RESULTS-GRID-COMPONENT-01: extraído de SalesInvoiceDetailsSection —
@@ -61,7 +61,7 @@ export function SalesItemSearchResultsGrid({
   onHoverIndex,
   registerResultRef,
 }: SalesItemSearchResultsGridProps) {
-  const dc = getDecimalConfig();
+  const dc = getPrecisionPolicy();
 
   return (
     <>
@@ -127,7 +127,7 @@ export function SalesItemSearchResultsGrid({
                 item.availableStock != null ? (
                   <>
                     <span className="sf-result__stock-qty">
-                      {item.availableStock.toFixed(dc.quantity)}{" "}
+                      {item.availableStock.toFixed(dc.quantityDecimals)}{" "}
                       {item.uomAbbrev}
                     </span>
                     <Badge label={badge.label} variant={badge.variant} upper size="md" />
@@ -159,7 +159,7 @@ export function SalesItemSearchResultsGrid({
                 <span className="sf-result__col sf-result__col-price-normal">
                   <ZHMoneyValue
                     value={item.salePriceWithoutTax!}
-                    decimals={dc.salesUnitPrice}
+                    decimals={dc.salesUnitPriceDecimals}
                     className={
                       hasDiscount
                         ? "sf-result__price-normal"
@@ -189,7 +189,7 @@ export function SalesItemSearchResultsGrid({
                   {effectiveFinal != null && (
                     <ZHMoneyValue
                       value={effectiveFinal}
-                      decimals={dc.salesUnitPrice}
+                      decimals={dc.salesUnitPriceDecimals}
                       className="sf-result__price-final"
                     />
                   )}

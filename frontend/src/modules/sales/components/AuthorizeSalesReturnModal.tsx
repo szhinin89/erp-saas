@@ -11,7 +11,7 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import {
   buildAuthorizeSalesReturnSchema,
   type AuthorizeSalesReturnFormValues,
@@ -51,7 +51,7 @@ export function AuthorizeSalesReturnModal({
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const submittingRef = useRef(false);
-  const dc = getDecimalConfig();
+  const dc = getPrecisionPolicy();
 
   const grandTotal = salesReturn?.grandTotal ?? 0;
   const {
@@ -188,7 +188,7 @@ export function AuthorizeSalesReturnModal({
         <div className="sr-refund-summary">
           <span>
             Asignado:{" "}
-            <ZHMoneyValue value={sum} decimals={dc.totalAmount} currencySymbol="" />
+            <ZHMoneyValue value={sum} decimals={dc.moneyDecimals} currencySymbol="" />
           </span>
           <span className={remaining !== 0 ? "sr-refund-summary--pending" : ""}>
             {remaining === 0 ? (
@@ -198,7 +198,7 @@ export function AuthorizeSalesReturnModal({
                 Diferencia:{" "}
                 <ZHMoneyValue
                   value={remaining}
-                  decimals={dc.totalAmount}
+                  decimals={dc.moneyDecimals}
                   currencySymbol=""
                 />
               </>

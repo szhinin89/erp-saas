@@ -4,7 +4,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { salesService, type SalesInvoiceDto } from "../api/salesService";
 import {
@@ -230,7 +230,7 @@ export function SalesIssueModal({
   }, [phase, result, printingPrefs.mode, receiptPrintState]);
 
   if (phase === "idle") return null;
-  const dc = getDecimalConfig().totalAmount;
+  const dc = getPrecisionPolicy().moneyDecimals;
 
   const title =
     phase === "processing"

@@ -40,9 +40,9 @@ import { salesRuntimeContextService } from "../api/salesRuntimeContextService";
 import type { SalesRuntimeContextDto } from "../api/salesRuntimeContextService";
 import { salesItemPricingService } from "../api/salesItemPricingService";
 import {
-  loadDecimalConfig,
-  getDecimalConfig,
-} from "../../../lib/config/decimal.config";
+  loadPrecisionPolicy,
+  getPrecisionPolicy,
+} from "../../../lib/config/precisionPolicy.config";
 import {
   todayIso,
   toLocalIsoDate,
@@ -442,7 +442,7 @@ export function useSalesPage() {
     isCashPaymentMethod(paymentMethods.find((pm) => pm.id === p.paymentMethodId)),
   );
   const cashDue = cashPaymentEntry?.amount || 0;
-  const cashChangeFactor = 10 ** getDecimalConfig().totalAmount;
+  const cashChangeFactor = 10 ** getPrecisionPolicy().moneyDecimals;
   const cashChange =
     cashDue > 0
       ? Math.max(0, Math.round((cashReceived - cashDue) * cashChangeFactor) / cashChangeFactor)
@@ -578,7 +578,7 @@ export function useSalesPage() {
           .listPaymentMethods(true)
           .then(setPaymentMethods)
           .catch(() => {}),
-        loadDecimalConfig(),
+        loadPrecisionPolicy(),
         sriLookupFacade
           .paymentMethods()
           .then((pms) =>
@@ -1578,7 +1578,7 @@ export function useSalesPage() {
       }
       const count = selectedPt.installments;
       const interval = selectedPt.daysBetweenInstallments;
-      const factor = 10 ** getDecimalConfig().totalAmount;
+      const factor = 10 ** getPrecisionPolicy().moneyDecimals;
       const base = Math.round((amount / count) * factor) / factor;
       const rows: CreditRow[] = [];
       let accumulated = 0;

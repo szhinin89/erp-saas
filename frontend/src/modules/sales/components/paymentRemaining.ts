@@ -1,4 +1,4 @@
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 
 /** Saldo pendiente de cobro excluyendo los pagos ya asignados a una forma de pago específica —
@@ -10,7 +10,7 @@ export function remainingToCollect(
   ctx: SalesPageContext,
   excludePaymentMethodId: string,
 ): number {
-  const factor = 10 ** getDecimalConfig().totalAmount;
+  const factor = 10 ** getPrecisionPolicy().moneyDecimals;
   const othersTotal = ctx.payments
     .filter((p) => p.paymentMethodId !== excludePaymentMethodId)
     .reduce((s, p) => s + (p.amount || 0), 0);

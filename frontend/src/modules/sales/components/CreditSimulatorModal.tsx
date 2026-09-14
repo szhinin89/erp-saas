@@ -6,7 +6,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { INSTALLMENT_ROUNDING_TOLERANCE } from "../constants/tolerances";
 
 interface Props {
@@ -41,7 +41,7 @@ export function CreditSimulatorModal({
   onConfirm,
   onCancel,
 }: Props) {
-  const totalAmountDecimals = getDecimalConfig().totalAmount;
+  const totalAmountDecimals = getPrecisionPolicy().moneyDecimals;
   const factor = 10 ** totalAmountDecimals;
   const totalCuotas = rows.reduce((s, r) => s + r.amount, 0);
   const diff = Math.round((amount - totalCuotas) * factor) / factor;
