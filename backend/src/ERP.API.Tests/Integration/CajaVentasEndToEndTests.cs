@@ -1,6 +1,8 @@
 using ERP.API.Tests.Support;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.MasterData.Constants;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.Caja.Entities;
@@ -11,9 +13,11 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Seeding.Steps;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -224,9 +228,13 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         CashRegisterA2Id = registerA2.Id;
         CashRegisterA3Id = registerA3.Id;
 
+        // Código "CONTADO" (PaymentTermCodes.Cash) — es el código canónico que
+        // SalesCreditRequirementPolicy.GetCashFallbackAsync busca vía GetByCodeAsync para el
+        // fallback de ventas de contado (SALES-SETTLEMENT-CREDIT-01); un código distinto (p.ej.
+        // "CONT") no es encontrado y la venta falla con VALIDATION_ERROR.
         var paymentTerm = PaymentTerm.Create(
             TenantId,
-            "CONT",
+            PaymentTermCodes.Cash,
             "Contado",
             installments: 1,
             daysBetweenInstallments: 0,
@@ -279,6 +287,24 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         );
 
         await db.SaveChangesAsync();
+
+        // API-TESTS-CAJA-VENTAS-PAYMENT-TERM-SEED-01: este fixture crea Tenant/Company "a mano"
+        // (arriba) en vez de pasar por CompanyProvisioningService, así que nunca corría el
+        // bootstrap contable oficial (AccountingBootstrapStep: Plan de Cuentas + PostingRule
+        // mínimas — MinimalPostingRules). AuthorizeSalesInvoiceHandler es fail-closed (nunca
+        // autoriza sin asiento contabilizado — ver AuthorizeSalesUseCases.cs): sin la PostingRule
+        // ("Sales","InvoiceIssued") sembrada, autorizar cualquier factura fallaba con
+        // RULE_NOT_FOUND. Mismo patrón ya aplicado en SalesReturnFlowFixture
+        // (API-TESTS-POSTING-RULE-NOT-FOUND-01) — se invoca aquí el mismo seeding oficial que
+        // CompanyProvisioningService dispara en producción, nunca una PostingRule suelta
+        // hardcodeada en el fixture.
+        var accountingBootstrap = new AccountingBootstrapStep(
+            db,
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
+        await accountingBootstrap.ExecuteAsync(
+            new CompanyBootstrapContext(TenantId, CompanyId, _adminId)
+        );
     }
 
     /// <summary>
