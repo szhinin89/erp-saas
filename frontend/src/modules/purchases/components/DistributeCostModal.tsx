@@ -5,7 +5,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseCostDistributionType } from "../api/purchaseService";
 import {
@@ -43,7 +43,13 @@ export function DistributeCostModal({
   onApply,
 }: Props) {
   const { t } = useI18n();
-  const totalAmountDecimals = getDecimalConfig().totalAmount;
+  const policy = getPrecisionPolicy();
+  // Totales/valores agregados de la simulación (freight, valor a distribuir, totales de
+  // factura) usan moneyDecimals (fijo, FiscalPrecision). Los costos por unidad (costo unitario
+  // actual/nuevo, asignado por unidad) usan unitCostDecimals — misma semántica que
+  // purchaseLinePresentation.ts (costo unitario != monto total de línea/factura).
+  const totalAmountDecimals = policy.moneyDecimals;
+  const unitCostDecimals = policy.unitCostDecimals;
 
   const [costType, setCostType] =
     useState<PurchaseCostDistributionType>("Freight");
@@ -250,7 +256,7 @@ export function DistributeCostModal({
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={p.currentUnitCost}
-                  decimals={totalAmountDecimals}
+                  decimals={unitCostDecimals}
                   currencySymbol=""
                 />
               </td>
@@ -274,14 +280,14 @@ export function DistributeCostModal({
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={hasCalculated ? p.allocatedPerUnit : null}
-                  decimals={totalAmountDecimals}
+                  decimals={unitCostDecimals}
                   currencySymbol=""
                 />
               </td>
               <td className="zh-table-cell--num">
                 <ZHMoneyValue
                   value={hasCalculated ? p.newUnitCost : null}
-                  decimals={totalAmountDecimals}
+                  decimals={unitCostDecimals}
                   currencySymbol=""
                 />
               </td>

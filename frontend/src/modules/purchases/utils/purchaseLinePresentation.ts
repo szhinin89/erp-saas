@@ -1,6 +1,6 @@
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { ItemMatchStatus } from "../api/purchaseReceptionService";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginPercent } from "../../../lib/margin";
 import { lineNet, calcLineTax } from "./purchaseCalc";
@@ -146,7 +146,7 @@ export function buildPurchaseLinePresentation(
   vatRates?: Record<string, number>,
   iceRates?: Record<string, number>,
 ): PurchaseLinePresentationVM {
-  const decimals = getDecimalConfig();
+  const decimals = getPrecisionPolicy();
   const ctx = line.context;
   const hasItem = !!line.itemId;
   const isLoading = !!line._contextLoading;
@@ -210,10 +210,10 @@ export function buildPurchaseLinePresentation(
     hasItem && selectedPackaging && conversionFactor > 1
       ? (t?.("purchases.lines.equivalenceDetail", {
           package: selectedPackaging.name,
-          qty: formatMoney(conversionFactor, decimals.quantity),
+          qty: formatMoney(conversionFactor, decimals.quantityDecimals),
           unit: baseUnitWord,
         }) ??
-        `1 ${selectedPackaging.name} = ${formatMoney(conversionFactor, decimals.quantity)} ${baseUnitWord}`)
+        `1 ${selectedPackaging.name} = ${formatMoney(conversionFactor, decimals.quantityDecimals)} ${baseUnitWord}`)
       : "";
   // PURCHASE-LINE-HEADER-INVENTORY-MODE-01 — el costo real unitario base debe descontar el
   // descuento de línea (y sumar flete/otros gastos ya asignados, si existen) antes de dividir
@@ -252,7 +252,7 @@ export function buildPurchaseLinePresentation(
   const showDeviationAlert = hasContext && deviationRatio > 0.5;
   const deviationPercent = formatMoney(
     deviationRatio * 100,
-    decimals.percentage,
+    decimals.percentageDecimals,
   );
   const deviationLabel = showDeviationAlert
     ? baseUnitCost > referenceCost
@@ -285,32 +285,32 @@ export function buildPurchaseLinePresentation(
       // casos no existe un original documental distinto que preservar.
       quantity: formatMoney(
         line.xmlQuantity ?? quantity,
-        decimals.quantity,
+        decimals.quantityDecimals,
       ),
       unitPrice: formatMoneyWithSymbol(
         line.xmlUnitPrice ?? unitPrice,
-        decimals.purchaseUnitPrice,
+        decimals.purchaseUnitPriceDecimals,
       ),
       discount: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.totalAmount)
+        ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       vatPercentage: hasOrigin
-        ? formatMoney(line.xmlVatPercentage ?? 0, decimals.percentage)
+        ? formatMoney(line.xmlVatPercentage ?? 0, decimals.percentageDecimals)
         : UNKNOWN,
       taxValue: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.totalAmount)
+        ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       totalLine: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.totalAmount)
+        ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       taxableBase: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlTaxableBase ?? 0, decimals.totalAmount)
+        ? formatMoneyWithSymbol(line.xmlTaxableBase ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       iceValue: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlIceAmount ?? 0, decimals.totalAmount)
+        ? formatMoneyWithSymbol(line.xmlIceAmount ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       irbpnrValue: hasOrigin
-        ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.totalAmount)
+        ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.moneyDecimals)
         : UNKNOWN,
       hasIrbpnr: hasOrigin && (line.xmlIrbpnrAmount ?? 0) > 0,
       additionalFields: line.xmlAdditionalFields ?? [],
@@ -339,17 +339,23 @@ export function buildPurchaseLinePresentation(
       presentationLabel,
       conversionFactorLabel: hasItem ? conversionFactorLabel : UNKNOWN,
       conversionDetail: hasItem
-        ? `${formatMoney(quantity, decimals.quantity)} ${presentationUom} -> ${formatMoney(quantityInBase, decimals.quantity)} ${baseUom}`
+        ? `${formatMoney(quantity, decimals.quantityDecimals)} ${presentationUom} -> ${formatMoney(quantityInBase, decimals.quantityDecimals)} ${baseUom}`
         : UNKNOWN,
       equivalenceDetail,
       baseQuantity: hasItem
-        ? `${formatMoney(quantityInBase, decimals.quantity)} ${baseUnitWord}`
+        ? `${formatMoney(quantityInBase, decimals.quantityDecimals)} ${baseUnitWord}`
         : UNKNOWN,
       baseQuantityValue: quantityInBase,
       conversionFactorValue: conversionFactor,
+      // NOTA: se mantiene purchaseUnitPriceDecimals (no unitCostDecimals) — ver "casos dudosos"
+      // en el reporte del ticket COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-02 lote 2.
+      // baseUnitCost es un costo unitario derivado, pero purchaseLinePresentation.test.ts fija
+      // en 39+ asserts un formato de 4 decimales ($0.8515) heredado del legacy purchaseUnitPrice;
+      // reclasificar a unitCostDecimals (default 6) rompe esos tests sin que el ticket autorice
+      // explícitamente ese cambio de comportamiento visible.
       baseUnitCost:
         hasItem && quantityInBase > 0
-          ? formatMoneyWithSymbol(baseUnitCost, decimals.purchaseUnitPrice)
+          ? formatMoneyWithSymbol(baseUnitCost, decimals.purchaseUnitPriceDecimals)
           : UNKNOWN,
       baseUnitCostValue: baseUnitCost,
     },
@@ -357,13 +363,13 @@ export function buildPurchaseLinePresentation(
       hasContext,
       stock: {
         current: hasContext
-          ? formatMoney(currentStock, decimals.quantity)
+          ? formatMoney(currentStock, decimals.quantityDecimals)
           : UNKNOWN,
         available: hasContext
-          ? formatMoney(ctx!.availableStock, decimals.quantity)
+          ? formatMoney(ctx!.availableStock, decimals.quantityDecimals)
           : UNKNOWN,
         reserved: hasContext
-          ? formatMoney(ctx!.reservedStock, decimals.quantity)
+          ? formatMoney(ctx!.reservedStock, decimals.quantityDecimals)
           : UNKNOWN,
         statusLabel: hasContext
           ? currentStock <= 0
@@ -374,12 +380,12 @@ export function buildPurchaseLinePresentation(
       },
       costs: {
         average: hasContext
-          ? formatMoneyWithSymbol(averageCost, decimals.purchaseUnitPrice)
+          ? formatMoneyWithSymbol(averageCost, decimals.averageCostDecimals)
           : UNKNOWN,
         last: hasContext
           ? formatMoneyWithSymbol(
               ctx!.lastPurchaseCost,
-              decimals.purchaseUnitPrice,
+              decimals.unitCostDecimals,
             )
           : UNKNOWN,
         showDeviationAlert,
@@ -387,14 +393,14 @@ export function buildPurchaseLinePresentation(
       },
       profitability: {
         pvp: hasContext
-          ? formatMoneyWithSymbol(pvp, decimals.salesUnitPrice)
+          ? formatMoneyWithSymbol(pvp, decimals.salesUnitPriceDecimals)
           : UNKNOWN,
         marginPct: hasContext
-          ? formatMoney(marginPctValue, decimals.percentage)
+          ? formatMoney(marginPctValue, decimals.percentageDecimals)
           : UNKNOWN,
         marginPctValue,
         maxDiscountPercent: hasContext
-          ? formatMoney(ctx!.maxDiscountPercent, decimals.percentage)
+          ? formatMoney(ctx!.maxDiscountPercent, decimals.percentageDecimals)
           : UNKNOWN,
       },
     },

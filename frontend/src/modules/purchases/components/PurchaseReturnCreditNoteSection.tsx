@@ -8,6 +8,7 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -41,6 +42,9 @@ type Props = {
  */
 export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Props) {
   const navigate = useNavigate();
+  // Subtotal/IVA/Total de la NC del proveedor (registro manual) — montos: moneyDecimals
+  // (fijo, FiscalPrecision).
+  const moneyDecimals = getPrecisionPolicy().moneyDecimals;
   const {
     register,
     handleSubmit,
@@ -189,13 +193,13 @@ export function PurchaseReturnCreditNoteSection({ purchaseReturn, onLinked }: Pr
             <ZhTextInput className="zh-input" {...register("currencyCode")} />
           </ZHField>
           <ZHField label="Subtotal" required fieldError={errors.subtotal?.message}>
-            <ZhDecimalInput decimals={2} {...register("subtotal")} />
+            <ZhDecimalInput decimals={moneyDecimals} {...register("subtotal")} />
           </ZHField>
           <ZHField label="IVA" required fieldError={errors.vatAmount?.message}>
-            <ZhDecimalInput decimals={2} {...register("vatAmount")} />
+            <ZhDecimalInput decimals={moneyDecimals} {...register("vatAmount")} />
           </ZHField>
           <ZHField label="Total" required fieldError={errors.totalAmount?.message}>
-            <ZhDecimalInput decimals={2} positiveOnly {...register("totalAmount")} />
+            <ZhDecimalInput decimals={moneyDecimals} positiveOnly {...register("totalAmount")} />
           </ZHField>
         </div>
         <ZHFormActions

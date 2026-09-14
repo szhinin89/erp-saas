@@ -3,6 +3,7 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import type { PurchaseLineDto } from "../api/purchaseService";
 import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type {
   PurchaseReturnLineFormValues,
 } from "../schemas/purchaseReturnSchema";
@@ -41,6 +42,9 @@ export function PurchaseReturnableLinesEditor({
     return <p className="sr-lines-empty">Esta factura no tiene líneas devolvibles.</p>;
   }
 
+  // Cantidad a devolver — cantidad, no precio/monto: quantityDecimals.
+  const quantityDecimals = getPrecisionPolicy().quantityDecimals;
+
   const indexOf = (invoiceDetailId: string) =>
     selected.findIndex((l) => l.originalInvoiceDetailId === invoiceDetailId);
 
@@ -71,7 +75,7 @@ export function PurchaseReturnableLinesEditor({
       const exceeds = qty > line.remainingQuantity;
       return <>
         <ZhDecimalInput aria-label={`Cantidad a devolver: ${line.description}`} aria-invalid={exceeds}
-          decimals={4} positiveOnly disabled={disabled || line.remainingQuantity <= 0}
+          decimals={quantityDecimals} positiveOnly disabled={disabled || line.remainingQuantity <= 0}
           value={qty ? String(qty) : ""} onChange={(e) => handleQuantityChange(line, e.target.value)} />
         {exceeds && <div role="alert" className="sr-lines-table__error">Excede lo disponible ({line.remainingQuantity}).</div>}
       </>;

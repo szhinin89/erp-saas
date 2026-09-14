@@ -3,7 +3,7 @@ import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { ItemDto } from "../../../types/items";
 import { useI18n } from "../../../i18n/i18n";
 import {
@@ -166,7 +166,7 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
                       <span className="zh-picker__result-extra-value">
                         <ZHMoneyValue
                           value={cached.currentPvp}
-                          decimals={getDecimalConfig().salesUnitPrice}
+                          decimals={getPrecisionPolicy().salesUnitPriceDecimals}
                         />
                       </span>
                       <span className="zh-picker__result-extra-label">

@@ -4,7 +4,7 @@ import type {
   PurchaseLineDto,
 } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { toLocalIsoDate } from "../../../lib/formatters/dateFormatters";
 
 type LineWithContext = PurchaseLineInput & { context?: PurchaseItemContextDto };
@@ -113,7 +113,7 @@ type ScheduleRow = {
 };
 
 export function roundToTotalAmount(value: number): number {
-  const factor = 10 ** getDecimalConfig().totalAmount;
+  const factor = 10 ** getPrecisionPolicy().moneyDecimals;
   return Math.round(value * factor) / factor;
 }
 
@@ -282,7 +282,7 @@ export function generateScheduleRows(
   date: string,
 ): ScheduleRow[] {
   if (count < 1 || !date) return [];
-  const factor = 10 ** getDecimalConfig().totalAmount;
+  const factor = 10 ** getPrecisionPolicy().moneyDecimals;
   const amt = total > 0 ? Math.round((total * factor) / count) / factor : 0;
   let accumulated = 0;
   const rows: ScheduleRow[] = [];

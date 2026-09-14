@@ -3,6 +3,7 @@ import type { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove } from 
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatMoney } from "../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { useI18n } from "../../../i18n/i18n";
 import type {
   PurchaseCreditNoteDraftFormValues,
@@ -45,6 +46,8 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
   disabled,
 }: Readonly<Props>) {
   const { t } = useI18n();
+  // Base imponible a acreditar — monto, no cantidad ni precio: moneyDecimals (fijo, FiscalPrecision).
+  const moneyDecimals = getPrecisionPolicy().moneyDecimals;
 
   // PURCHASE-CREDIT-NOTE-DISCOUNT-DECIMAL-INPUT-01 — el input estaba 100% controlado por
   // `String(selected[idx].taxableBase)` (un número ya redondeado por `Number(raw)` en cada
@@ -151,7 +154,7 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
                   <ZhDecimalInput
                     aria-label={`${t("purchases.creditNote.taxSummaryLines.discountBase", "Base descuento a aplicar")}: ${summary.vatName ?? summary.vatCode}`}
                     aria-invalid={exceeds}
-                    decimals={2}
+                    decimals={moneyDecimals}
                     positiveOnly
                     disabled={disabled || summary.availableTaxableBase <= 0}
                     value={baseInput}

@@ -6,7 +6,7 @@ import {
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { useI18n } from "../../../i18n/i18n";
 import type {
   PurchaseReceptionXmlView,
@@ -43,10 +43,10 @@ export function PurchaseReceptionXmlViewModal({
   onClose,
 }: Props) {
   const { t } = useI18n();
-  const qty = getDecimalConfig().quantity;
-  const cost = getDecimalConfig().purchaseUnitPrice;
-  const total = getDecimalConfig().totalAmount;
-  const pct = getDecimalConfig().percentage;
+  const qty = getPrecisionPolicy().quantityDecimals;
+  const cost = getPrecisionPolicy().purchaseUnitPriceDecimals;
+  const total = getPrecisionPolicy().moneyDecimals;
+  const pct = getPrecisionPolicy().percentageDecimals;
 
   const totalRows: TotalRow[] = data
     ? [
