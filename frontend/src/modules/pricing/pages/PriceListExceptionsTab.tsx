@@ -8,6 +8,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import {  ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import {  ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
 import {  formatMoney, parseDecimal } from "../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
 import {  formatApiError } from "../../lib/formatApiError";
 import {  message } from "../../../lib/messages";
@@ -220,6 +221,7 @@ function ExceptionDrawer({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const pp = getPrecisionPolicy();
   const [selected, setSelected] = useState<DrawerProduct | null>(product);
   const [ruleType, setRuleType] = useState("");
   const [ruleValue, setRuleValue] = useState("");
@@ -408,7 +410,7 @@ function ExceptionDrawer({
             <ZhDecimalInput
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
-              decimals={2}
+              decimals={pp.percentageDecimals}
               positiveOnly
               placeholder="15"
             />
@@ -424,7 +426,7 @@ function ExceptionDrawer({
             <ZhDecimalInput
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
-              decimals={2}
+              decimals={pp.percentageDecimals}
               positiveOnly
               placeholder="8"
             />
@@ -441,7 +443,7 @@ function ExceptionDrawer({
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
               currency={priceList.currencyCode}
-              decimals={2}
+              decimals={pp.salesUnitPriceDecimals}
               placeholder="25"
             />
           </div>
@@ -457,7 +459,7 @@ function ExceptionDrawer({
             <ZhDecimalInput
               value={ruleValue}
               onChange={(e) => setRuleValue(e.target.value)}
-              decimals={2}
+              decimals={pp.salesUnitPriceDecimals}
               placeholder="3"
             />
           </div>

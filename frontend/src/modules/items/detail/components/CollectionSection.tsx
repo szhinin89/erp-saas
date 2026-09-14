@@ -5,6 +5,7 @@ import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import type {
   ItemImageDto,
   ItemUnitConversionDto,
@@ -278,6 +279,7 @@ export function PackagingLevelsSection({
   onSave: (levels: PackagingLevelInput[]) => Promise<void>;
 }) {
   const active = levels.filter((l) => l.isActive);
+  const conversionFactorDecimals = getPrecisionPolicy().conversionFactorDecimals;
   const [adding, setAdding] = useState(false);
   const [addDraft, setAddDraft] = useState<PackagingLevelDraft>(
     emptyPackagingDraft,
@@ -607,7 +609,7 @@ export function PackagingLevelsSection({
                     <td>
                       <ZhDecimalInput
                         density="compact"
-                        decimals={4}
+                        decimals={conversionFactorDecimals}
                         positiveOnly
                         value={editDraft.baseQuantity}
                         onChange={(e) =>
@@ -830,7 +832,7 @@ export function PackagingLevelsSection({
                   <td>
                     <ZhDecimalInput
                       density="compact"
-                      decimals={4}
+                      decimals={conversionFactorDecimals}
                       positiveOnly
                       value={addDraft.baseQuantity}
                       onChange={(e) =>

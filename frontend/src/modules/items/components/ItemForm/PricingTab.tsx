@@ -7,7 +7,7 @@ import {
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
 import { ZhDecimalInput, ZhSelect } from "../../../../components/zh/inputs";
-import { getDecimalConfig } from "../../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { formatMoney } from "../../../../lib/sanitizers";
 import { useAsync } from "../../../../hooks/useAsync";
 import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
@@ -114,7 +114,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
     formState: { errors },
   } = useFormContext<CreateItemFormValues>();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
-  const dc = getDecimalConfig();
+  const pp = getPrecisionPolicy();
   const [inputPriceMode, setInputPriceMode] =
     useState<PriceInputMode>("net");
   const [inputPriceValue, setInputPriceValue] = useState("");
@@ -203,7 +203,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
 
   const valueFromBasePrice = (persistedBasePrice: number | null) => {
     if (persistedBasePrice == null) return "";
-    return formatInputValue(persistedBasePrice, dc.salesUnitPrice);
+    return formatInputValue(persistedBasePrice, pp.salesUnitPriceDecimals);
   };
 
   useEffect(() => {
@@ -215,7 +215,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
   }, [basePrice]);
 
   const persistNetPrice = (netPrice: number | null) => {
-    const next = netPrice == null ? null : roundTo(netPrice, dc.salesUnitPrice);
+    const next = netPrice == null ? null : roundTo(netPrice, pp.salesUnitPriceDecimals);
     syncedBasePrice.current = next;
     setValue("baseSalePrice", next, {
       shouldDirty: true,
@@ -258,7 +258,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           <div className="items-currency-input">
             <span className="items-currency-input__prefix">{currencyCode}</span>
             <ZhDecimalInput
-              decimals={dc.salesUnitPrice}
+              decimals={pp.salesUnitPriceDecimals}
               positiveOnly
               placeholder={t("items.pricing.pvpPlaceholder", "0.00")}
               value={inputPriceValue}
@@ -325,14 +325,14 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
       <div className="items-metric-grid">
         <Metric
           label={t("items.pricing.saleVatRate", "Tarifa IVA venta")}
-          value={formatVatRate(selectedVatRate, dc.percentage)}
+          value={formatVatRate(selectedVatRate, pp.percentageDecimals)}
         />
         <Metric
           label={t("items.pricing.netToSave", "Precio sin IVA que se guardará")}
           value={formatOptionalMoney(
             computedNetPrice,
             currencyCode,
-            dc.salesUnitPrice,
+            pp.salesUnitPriceDecimals,
           )}
         />
         <Metric
@@ -340,7 +340,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             computedTaxAmount,
             currencyCode,
-            dc.salesUnitPrice,
+            pp.salesUnitPriceDecimals,
           )}
         />
         <Metric
@@ -348,7 +348,7 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             computedGrossPrice,
             currencyCode,
-            dc.salesUnitPrice,
+            pp.salesUnitPriceDecimals,
           )}
         />
         <Metric
@@ -356,7 +356,12 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             hasCost ? averageCost : null,
             currencyCode,
-            dc.purchaseUnitPrice,
+            // PRICING-LAB-COST-DECIMAL-SEMANTICS-01: mantiene la fuente legacy
+            // (purchaseUnitPriceDecimals) a propósito para no cambiar los
+            // decimales visibles sin tests que cubran el nuevo formato.
+            // Semánticamente debería ser unitCostDecimals — pendiente de
+            // decisión de negocio en un ticket aparte.
+            pp.purchaseUnitPriceDecimals,
           )}
         />
         <Metric
@@ -364,7 +369,8 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             lastCost,
             currencyCode,
-            dc.purchaseUnitPrice,
+            // PRICING-LAB-COST-DECIMAL-SEMANTICS-01: ver nota arriba.
+            pp.purchaseUnitPriceDecimals,
           )}
         />
         <Metric
@@ -372,7 +378,10 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
           value={formatOptionalMoney(
             hasCost ? averageCost : null,
             currencyCode,
-            dc.purchaseUnitPrice,
+            // PRICING-LAB-COST-DECIMAL-SEMANTICS-01: mantiene la fuente legacy
+            // (purchaseUnitPriceDecimals) a propósito; el mapeo correcto sería
+            // averageCostDecimals — pendiente de decisión de negocio y tests.
+            pp.purchaseUnitPriceDecimals,
           )}
         />
         <Metric
@@ -380,17 +389,17 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
             "items.pricing.estimatedProfit",
             "Utilidad estimada por unidad",
           )}
-          value={formatOptionalMoney(utilidad, currencyCode, dc.salesUnitPrice)}
+          value={formatOptionalMoney(utilidad, currencyCode, pp.salesUnitPriceDecimals)}
           tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
         />
         <Metric
           label={t("items.pricing.salesMargin", "Margen sobre venta")}
-          value={formatOptionalPercent(margen, dc.percentage)}
+          value={formatOptionalPercent(margen, pp.percentageDecimals)}
           tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
         />
         <Metric
           label={t("items.pricing.costMarkup", "Markup sobre costo")}
-          value={formatOptionalPercent(markup, dc.percentage)}
+          value={formatOptionalPercent(markup, pp.percentageDecimals)}
           tone={isLoss ? "error" : lowMargin ? "warning" : "neutral"}
         />
         <Metric

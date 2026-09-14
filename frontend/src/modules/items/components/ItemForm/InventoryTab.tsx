@@ -8,7 +8,7 @@ import {
   ZHToggle,
 } from "../../../../components/zh/ZHForm";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
-import { getDecimalConfig } from "../../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { UnitConversionsSection } from "../../detail/components/CollectionSection";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 import type { ItemUnitConversionDto } from "../../../../types/items";
@@ -35,7 +35,7 @@ export function InventoryTab({
   } = useFormContext<CreateItemFormValues>();
   const navigate = useNavigate();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
-  const quantityDecimals = getDecimalConfig().quantity;
+  const quantityDecimals = getPrecisionPolicy().quantityDecimals;
 
   return (
     <>

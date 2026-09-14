@@ -6,7 +6,7 @@ import {
   ZHToggle,
 } from "../../../../components/zh/ZHForm";
 import { ZhDecimalInput } from "../../../../components/zh/inputs";
-import { getDecimalConfig } from "../../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
 type Props = {
@@ -21,7 +21,7 @@ export function SettingsTab({ t, disabled }: Props) {
     formState: { errors },
   } = useFormContext<CreateItemFormValues>();
   const fe = (msg?: string) => (msg ? t(msg, msg) : null);
-  const dc = getDecimalConfig();
+  const pp = getPrecisionPolicy();
 
   return (
     <>
@@ -126,7 +126,7 @@ export function SettingsTab({ t, disabled }: Props) {
             fieldError={fe(errors.saleConfig?.maxDiscountPercent?.message)}
           >
             <ZhDecimalInput
-              decimals={dc.percentage}
+              decimals={pp.percentageDecimals}
               positiveOnly
               placeholder={t("items.pricing.maxDiscountPlaceholder", "0")}
               {...register("saleConfig.maxDiscountPercent", {

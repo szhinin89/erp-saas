@@ -14,6 +14,7 @@ import {
   ZhDateInput,
 } from "../../../components/zh/inputs";
 import { parseDecimal } from "../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type {
   PriceListDto,
   CreatePriceListPayload,
@@ -33,6 +34,7 @@ import "../../../styles/shared/items-catalog.css";
 type Tab = "resumen" | "listado" | "nuevo" | "excepciones";
 
 export function PriceListsPage() {
+  const pp = getPrecisionPolicy();
   const [tab, setTab] = useState<Tab>("listado");
   const [items, setItems] = useState<PriceListDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -424,7 +426,7 @@ export function PriceListsPage() {
                   <ZhDecimalInput
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
-                    decimals={2}
+                    decimals={pp.percentageDecimals}
                     positiveOnly
                     placeholder="15"
                   />
@@ -440,7 +442,7 @@ export function PriceListsPage() {
                   <ZhDecimalInput
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
-                    decimals={2}
+                    decimals={pp.percentageDecimals}
                     positiveOnly
                     placeholder="8"
                   />
@@ -457,7 +459,7 @@ export function PriceListsPage() {
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
                     currency={fCurrency}
-                    decimals={2}
+                    decimals={pp.salesUnitPriceDecimals}
                     placeholder="25"
                   />
                 </div>
@@ -473,7 +475,7 @@ export function PriceListsPage() {
                   <ZhDecimalInput
                     value={fRuleValue}
                     onChange={(e) => setFRuleValue(e.target.value)}
-                    decimals={2}
+                    decimals={pp.salesUnitPriceDecimals}
                     placeholder="3"
                   />
                 </div>
