@@ -1,6 +1,25 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-12** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-14** · Kernel refactor: **2026-06-05**.
+
+## COMPANY-PRECISION-POLICY — Precisión decimal operativa por empresa (2026-09-14)
+
+**Estado: COMPLETADO.** `company_precision_policy` queda como única SSOT de precisión decimal operativa configurable por empresa (precio unitario venta/compra, cantidad, porcentaje, costo unitario/promedio, factor de conversión, tolerancia de cuadre). `FiscalPrecision` sigue fijo para impuestos/totales/caja/CxC/CxP/contabilidad — sin cambios.
+
+- **Backend**: entidad + provider fail-closed por tenant/company, perfiles Estándar comercial/Alta precisión/Personalizado, bloqueo operativo automático (409) al detectar la primera operación real (venta autorizada, compra confirmada, movimiento de inventario, pago, asiento posted) — sin endpoint de desbloqueo.
+- **Frontend**: migrado módulo por módulo (Sales → Purchases → Items/Pricing → Inventory → Expenses → Payables/Supplier Payments → consumidores compartidos) a `precisionPolicy.config.ts`. `decimal.config.ts` y la pantalla legacy de decimales fueron eliminados del frontend.
+- **Legacy backend**: endpoint `GET/PUT /api/v1/config/decimals` (`DecimalConfigController`) eliminado — cero consumidores confirmados por auditoría. `org_settings/Presentation` se conserva solo como respaldo de filas históricas y fixture de tests, sin vía de escritura activa.
+
+**Commits**: `b907502a` (base backend) · `ffbfa763` (Sales) · `5269406f` (Purchases) · `845fc701` (Items/Pricing) · `d988fc71` (Inventory) · `8ff8ae6c` (Expenses) · `c82dba96` (Payables/Supplier Payments) · `97ce8e36` (retiro legacy frontend) · `71f29b9d` (retiro legacy backend).
+
+### Pendientes no bloqueantes
+
+- `PRICING-LAB-COST-DECIMAL-SEMANTICS-01`: 3 métricas de costo en `PricingTab.tsx` (Items) mantienen la escala legacy (`purchaseUnitPriceDecimals`) en vez de `unitCostDecimals`/`averageCostDecimals` por falta de tests de formato — decisión de negocio pendiente.
+- `INVENTORY-DECIMAL-SEMANTICS-01`: mismo criterio aplicado a 3 métricas de costo en Kardex (`KardexPage.tsx`/`KardexMovementDetailModal.tsx`).
+- `purchaseLinePresentation.ts` — `inventory.baseUnitCost` sigue en `purchaseUnitPriceDecimals` en vez de `unitCostDecimals`; mismo criterio, pendiente de decisión de negocio + tests dedicados.
+- `ERP.API.Tests`: 25 fallas `RULE_NOT_FOUND` preexistentes (Sales Return/Caja Ventas E2E + 1 test de unicidad PostgreSQL) — confirmadas no atribuibles a esta iniciativa (reproducidas idénticas contra el baseline previo a estos cambios).
+
+---
 
 ## CLOSE-PURCHASES-EXPENSES-PAYABLES-READY-01 — Cierre funcional (2026-09-12)
 
