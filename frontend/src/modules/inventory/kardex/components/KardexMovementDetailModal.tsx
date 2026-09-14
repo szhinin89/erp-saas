@@ -7,7 +7,7 @@ import {
   formatDateTimeSeconds,
 } from "../../../../lib/formatters/dateFormatters";
 import { formatMoney, formatMoneyWithSymbol } from "../../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import type { KardexMovementDetailDto } from "../../stock/api/kardexService";
 
 type Props = {
@@ -43,9 +43,17 @@ export function KardexMovementDetailModal({
   movementTypeLabels,
 }: Props) {
   const navigate = useNavigate();
-  const qty = getDecimalConfig().quantity;
-  const cost = getDecimalConfig().purchaseUnitPrice;
-  const total = getDecimalConfig().totalAmount;
+  const policy = getPrecisionPolicy();
+  const qty = policy.quantityDecimals;
+  // INVENTORY-DECIMAL-SEMANTICS-01: "Costo Unitario" y "Costo Promedio Corrido" son
+  // semánticamente costo (unitCostDecimals/averageCostDecimals), pero mantienen
+  // purchaseUnitPriceDecimals (mismo valor visible que antes con decimal.config.ts) porque
+  // ninguna de las dos métricas tiene cobertura de test sobre su formato de decimales — mismo
+  // criterio aplicado a PricingTab (commit 845fc701) e inventory.baseUnitCost de Compras
+  // (commit 5269406f). Reclasificación pendiente como decisión de negocio, no efecto de esta
+  // migración.
+  const cost = policy.purchaseUnitPriceDecimals;
+  const total = policy.moneyDecimals;
 
   const m = detail?.movement;
   const typeLabel = m
@@ -166,13 +174,13 @@ export function KardexMovementDetailModal({
                   {detail.sourceDocument.discountPct != null && (
                     <Field
                       label="Descuento"
-                      value={`${formatMoney(detail.sourceDocument.discountPct, getDecimalConfig().percentage)}%`}
+                      value={`${formatMoney(detail.sourceDocument.discountPct, policy.percentageDecimals)}%`}
                     />
                   )}
                   {detail.sourceDocument.vatRate != null && (
                     <Field
                       label="IVA"
-                      value={`${formatMoney(detail.sourceDocument.vatRate, getDecimalConfig().percentage)}%`}
+                      value={`${formatMoney(detail.sourceDocument.vatRate, policy.percentageDecimals)}%`}
                     />
                   )}
                   {detail.sourceDocument.reason && (

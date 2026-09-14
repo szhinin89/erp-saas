@@ -61,11 +61,13 @@ export function SessionBootstrap({ children }: Props) {
       // Config de decimales por empresa — debe estar disponible antes de que
       // cualquier módulo (Ventas, Compras, Items) formatee o valide montos.
       // LEGACY (COMPANY-PRECISION-POLICY-SSOT-01): decimal.config.ts sigue siendo la fuente
-      // consumida por Inventory y Expenses (no migrados todavía, ver
-      // COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-04+). Ventas (lote 1,
-      // 2026-09-13), Compras (lote 2, 2026-09-13) e Items/Pricing (lote 3, 2026-09-13) ya
-      // migraron por completo a precisionPolicy.config.ts — se mantiene esta carga en paralelo
-      // solo por los módulos pendientes.
+      // consumida por Expenses, Payables, Supplier Payments, auth/syncCompanySelection,
+      // la pantalla legacy DecimalSettingsSection y el default de ZhCurrencyInput — ninguno
+      // migrado todavía (ver COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-05+).
+      // Ventas (lote 1, 2026-09-13), Compras (lote 2, 2026-09-13), Items/Pricing (lote 3,
+      // 2026-09-13) e Inventory (lote 4, 2026-09-13) ya migraron por completo a
+      // precisionPolicy.config.ts — se mantiene esta carga en paralelo solo por los módulos
+      // pendientes.
       void loadDecimalConfig();
       void loadPrecisionPolicy();
       // Estado LOCAL de facturación electrónica (certificado/ambiente/URL) — alimenta

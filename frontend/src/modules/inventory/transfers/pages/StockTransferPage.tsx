@@ -13,6 +13,7 @@ import { ZhWarehouseSelector } from "../../../../components/zh/inputs/ZhWarehous
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
 import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { Badge, EmptyState } from "../../../../components/PageShell";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { TransferProductPicker } from "../components/TransferProductPicker";
 import { useStockTransferPage } from "../hooks/useStockTransferPage";
 import "./StockTransferPage.css";
@@ -52,6 +53,11 @@ function availabilityBadge(
 export function StockTransferPage() {
   const { t } = useI18n();
   const ctx = useStockTransferPage();
+  // Cantidad transferida no estaba conectada a decimal.config.ts (decimals={2} fijo) — se
+  // conecta directo a quantityDecimals de la política de precisión, igual que el resto de
+  // "Cantidad" del módulo (mismo criterio que los 8 campos sin fuente previa migrados en
+  // Items/Pricing, commit 845fc701).
+  const quantityDecimals = getPrecisionPolicy().quantityDecimals;
 
   const badge = ctx.transfer ? statusBadge(ctx.transfer.status, t) : null;
 
@@ -190,7 +196,7 @@ export function StockTransferPage() {
                         {t("inventory.transfers.fields.quantity", "Cantidad")}
                       </ZHFieldLabel>
                       <ZhDecimalInput
-                        decimals={2}
+                        decimals={quantityDecimals}
                         positiveOnly
                         density="compact"
                         defaultValue={line.quantity}

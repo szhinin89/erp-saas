@@ -15,6 +15,7 @@ import {
   NoAccessPage,
 } from "../../../../components/PageShell";
 import { formatMoney } from "../../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { useStockAdjustmentFormPage } from "../hooks/useStockAdjustmentFormPage";
 import { AdjustmentProductPicker } from "../components/AdjustmentProductPicker";
 import { AdjustmentLineCard } from "../components/AdjustmentLineCard";
@@ -32,6 +33,10 @@ import "./StockAdjustmentFormPage.css";
 export function StockAdjustmentFormPage() {
   const { t } = useI18n();
   const ctx = useStockAdjustmentFormPage();
+  // Costo total (ejecutado/estimado) del documento — agregado, no costo unitario:
+  // moneyDecimals; no estaba conectado a decimal.config.ts (decimals fijo 2), mismo criterio de
+  // "traer al SSOT" que Items/Pricing (commit 845fc701).
+  const totalCostDecimals = getPrecisionPolicy().moneyDecimals;
 
   if (!ctx.canView) {
     return (
@@ -285,9 +290,9 @@ export function StockAdjustmentFormPage() {
                 value={
                   <ZHDataValue variant="numeric">
                     {isExecuted
-                      ? formatMoney(ctx.executedTotalCost, 2)
+                      ? formatMoney(ctx.executedTotalCost, totalCostDecimals)
                       : ctx.movementType === "Ingreso"
-                        ? formatMoney(ctx.estimatedTotalCost, 2)
+                        ? formatMoney(ctx.estimatedTotalCost, totalCostDecimals)
                         : t(
                             "inventory.adjustments.summary.costResolvedOnExecute",
                             "Se calcula al ejecutar",

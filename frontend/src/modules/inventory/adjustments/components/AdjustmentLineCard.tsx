@@ -8,6 +8,7 @@ import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../../components/zh/inputs/ZhTextarea";
 import { Badge } from "../../../../components/PageShell";
 import { formatMoney } from "../../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import type { AdjustmentMovementType } from "../types";
 import type { useStockAdjustmentFormPage } from "../hooks/useStockAdjustmentFormPage";
 
@@ -47,6 +48,15 @@ export function AdjustmentLineCard({
   const { t } = useI18n();
   const { line } = view;
   const baseUnitWord = t("inventory.adjustments.lines.baseUnit", "unidades base");
+  // Estos campos no estaban conectados a decimal.config.ts (decimals={2}/{4} fijos) — se
+  // conectan directo a la política de precisión: cantidad/equivalencia/stock usan
+  // quantityDecimals, factor de conversión (baseQuantity de presentación) usa
+  // conversionFactorDecimals, costo unitario base usa unitCostDecimals. Mismo criterio que los
+  // 8 campos sin fuente previa migrados en Items/Pricing (commit 845fc701).
+  const policy = getPrecisionPolicy();
+  const quantityDecimals = policy.quantityDecimals;
+  const conversionFactorDecimals = policy.conversionFactorDecimals;
+  const unitCostDecimals = policy.unitCostDecimals;
 
   return (
     <ZHLineCard
@@ -98,7 +108,7 @@ export function AdjustmentLineCard({
               </option>
               {line.packagingLevels.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} (x{formatMoney(p.baseQuantity, 2)})
+                  {p.name} (x{formatMoney(p.baseQuantity, conversionFactorDecimals)})
                 </option>
               ))}
             </ZhSelect>
@@ -111,7 +121,7 @@ export function AdjustmentLineCard({
             {view.uomCode})
           </ZHFieldLabel>
           <ZhDecimalInput
-            decimals={2}
+            decimals={quantityDecimals}
             positiveOnly
             density="compact"
             key={`qty-${line._key}-${line.packagingLevelId ?? "base"}`}
@@ -129,6 +139,12 @@ export function AdjustmentLineCard({
             {t("inventory.adjustments.lines.equivalence", "Equivalencia")}
           </ZHFieldLabel>
           <ZHDataValue variant="numeric">
+            {/* INVENTORY-DECIMAL-SEMANTICS-01: se mantiene el 2 fijo (no quantityDecimals,
+                default 4) porque StockAdjustmentFormPage.test.tsx cubre exactamente este
+                formato ("Equivale a 1.00 unidades base" / "Equivale a 12.00 unidades base") —
+                cambiarlo rompe esa cobertura sin red de regresión para el nuevo valor visible.
+                Reclasificación pendiente como decisión de negocio, no efecto de esta
+                migración. */}
             {t("inventory.adjustments.lines.equivalentTo", "Equivale a")}{" "}
             {formatMoney(view.quantityInBaseUom, 2)} {baseUnitWord}
           </ZHDataValue>
@@ -141,7 +157,7 @@ export function AdjustmentLineCard({
           <ZHDataValue variant="numeric">
             {line.currentStock === null
               ? "—"
-              : `${formatMoney(line.currentStock, 2)} ${line.baseUomCode}`}
+              : `${formatMoney(line.currentStock, quantityDecimals)} ${line.baseUomCode}`}
           </ZHDataValue>
         </div>
 
@@ -151,7 +167,7 @@ export function AdjustmentLineCard({
           </ZHFieldLabel>
           {movementType === "Ingreso" && !formLocked ? (
             <ZhDecimalInput
-              decimals={4}
+              decimals={unitCostDecimals}
               positiveOnly
               density="compact"
               key={`cost-${line._key}`}
@@ -171,7 +187,7 @@ export function AdjustmentLineCard({
                     "inventory.adjustments.lines.costFromAverage",
                     "Lo calcula el sistema",
                   )
-                : formatMoney(line.unitCostBase, 4)}
+                : formatMoney(line.unitCostBase, unitCostDecimals)}
             </ZHDataValue>
           )}
         </div>

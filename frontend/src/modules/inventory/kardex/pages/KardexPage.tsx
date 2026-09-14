@@ -14,7 +14,7 @@ import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol, formatMoney } from "../../../../lib/sanitizers";
-import { getDecimalConfig } from "../../../../lib/config/decimal.config";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { useInventoryInvestigationPage } from "../hooks/useInventoryInvestigationPage";
 import type { InitialDocument } from "../hooks/useInventoryInvestigationPage";
 import type { StockMovementDto } from "../../stock/api/stockService";
@@ -124,9 +124,16 @@ export function KardexPage() {
       />
     );
 
-  const qty = getDecimalConfig().quantity;
-  const cost = getDecimalConfig().purchaseUnitPrice;
-  const total = getDecimalConfig().totalAmount;
+  const policy = getPrecisionPolicy();
+  const qty = policy.quantityDecimals;
+  // INVENTORY-DECIMAL-SEMANTICS-01: "Costo Unit." y "Costo Promedio" son semánticamente costo
+  // (unitCostDecimals/averageCostDecimals), pero mantienen purchaseUnitPriceDecimals (mismo
+  // valor visible que antes con decimal.config.ts) porque ninguna de las dos columnas tiene
+  // cobertura de test sobre su formato de decimales — mismo criterio aplicado a PricingTab
+  // (commit 845fc701) e inventory.baseUnitCost de Compras (commit 5269406f). Reclasificación
+  // pendiente como decisión de negocio, no efecto de esta migración.
+  const cost = policy.purchaseUnitPriceDecimals;
+  const total = policy.moneyDecimals;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Seq." (sequenceNumber) sigue
   // siendo la secuencia funcional del movimiento; "N°" es solo el índice visual de fila

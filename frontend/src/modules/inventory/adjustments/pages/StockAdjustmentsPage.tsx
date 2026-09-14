@@ -15,6 +15,7 @@ import {
 } from "../../../../components/PageShell";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../../lib/sanitizers";
+import { getPrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
 import { useStockAdjustmentsPage, PAGE_SIZE } from "../hooks/useStockAdjustmentsPage";
 import { AdjustmentLifecycleModals } from "../components/AdjustmentLifecycleModals";
 import {
@@ -51,6 +52,10 @@ export function StockAdjustmentsPage() {
 
   const totalCost = (row: StockAdjustmentDto) =>
     row.lines.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
+  // Costo total del documento (agregado de líneas), no costo unitario — moneyDecimals; no
+  // estaba conectado a decimal.config.ts (decimals fijo 2), mismo criterio de "traer al SSOT"
+  // que Items/Pricing (commit 845fc701).
+  const totalCostDecimals = getPrecisionPolicy().moneyDecimals;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "N.º" (adjustmentNumber) sigue
   // siendo el identificador funcional del documento; "N°" es solo el índice visual de fila,
@@ -90,7 +95,7 @@ export function StockAdjustmentsPage() {
       header: t("inventory.adjustments.table.totalCost", "Costo total"),
       render: (row) => (
         <span className="mono">
-          {row.status === "Executed" ? formatMoney(totalCost(row), 2) : "—"}
+          {row.status === "Executed" ? formatMoney(totalCost(row), totalCostDecimals) : "—"}
         </span>
       ),
     },
