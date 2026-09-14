@@ -9,6 +9,8 @@ import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
+import { useI18n } from "../../../../i18n/i18n";
+import { sourceModuleLabel, factTypeLabel, friendlyDescription } from "../../labels/accountingLabels";
 import { accountingApi, type GeneralJournalLineDto } from "../../api/accountingApi";
 
 const PAGE_SIZE = 50;
@@ -41,6 +43,7 @@ function today(): string {
  * `zh-form-actions-row`/`zh-actions`, ambas reales en `zh-ui.css`.
  */
 export function GeneralJournalReportTab() {
+  const { t } = useI18n();
   const [fromDate, setFromDate] = useState(firstDayOfMonth());
   const [toDate, setToDate] = useState(today());
   const [sourceModule, setSourceModule] = useState("");
@@ -92,11 +95,19 @@ export function GeneralJournalReportTab() {
         </>
       ),
     },
-    { key: "description", header: "Descripción", render: (r) => r.description },
+    {
+      key: "description",
+      header: "Descripción",
+      render: (r) => friendlyDescription(t, r.description),
+    },
     {
       key: "source",
       header: "Documento origen",
-      render: (r) => r.sourceDocumentNumber ?? `${r.sourceModule} / ${r.sourceEventType}`,
+      // ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: fallback cuando no hay número de documento
+      // resuelto — traduce el hecho contable técnico, nunca lo oculta.
+      render: (r) =>
+        r.sourceDocumentNumber ??
+        `${sourceModuleLabel(t, r.sourceModule)} / ${factTypeLabel(t, r.sourceEventType)}`,
     },
     {
       key: "debit",

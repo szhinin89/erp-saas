@@ -9,6 +9,8 @@ import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
+import { useI18n } from "../../../i18n/i18n";
+import { sourceModuleLabel, factTypeLabel, friendlyDescription } from "../labels/accountingLabels";
 import { accountingApi, type JournalEntryListItemDto } from "../api/accountingApi";
 // ACCOUNTING-DS-FULL-AUDIT-10F: sin este import, `.prd-sku` (usado abajo para el código de
 // documento origen truncado) no tiene estilo — mismo root cause ya corregido en
@@ -46,6 +48,7 @@ function statusBadge(status: string): { label: string; variant: "gray" | "green"
  */
 export function JournalEntriesPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [items, setItems] = useState<JournalEntryListItemDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -89,12 +92,15 @@ export function JournalEntriesPage() {
     {
       key: "sourceModule",
       header: "Origen",
-      render: (row) => row.sourceModule,
+      render: (row) => sourceModuleLabel(t, row.sourceModule),
     },
     {
       key: "sourceDocumentType",
       header: "Tipo documento",
-      render: (row) => row.sourceDocumentType ?? row.sourceEventType,
+      // ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: sourceDocumentType (cuando existe) ya es un texto
+      // legible resuelto por el backend; el fallback a sourceEventType (crudo, ej. "InvoiceIssued")
+      // es el que se traduce aquí — nunca oculta el hecho contable, solo lo hace entendible.
+      render: (row) => row.sourceDocumentType ?? factTypeLabel(t, row.sourceEventType),
     },
     {
       key: "sourceDocumentNumber",
@@ -119,7 +125,10 @@ export function JournalEntriesPage() {
     {
       key: "description",
       header: "Descripción",
-      render: (row) => row.description,
+      // ACCOUNTING-JOURNAL-LABELS-UX-01: el backend compone esta descripción siempre igual
+      // ("Sales — InvoiceIssued — {id}") — se traduce a un texto de negocio; cualquier
+      // descripción real distinta a ese formato se muestra intacta.
+      render: (row) => friendlyDescription(t, row.description),
     },
     {
       key: "totalDebit",

@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { I18nProvider } from "../../../i18n/i18n";
 import { JournalEntryDetailPage } from "./JournalEntryDetailPage";
 import type { JournalEntryDetailDto } from "../api/accountingApi";
 
@@ -75,11 +76,13 @@ const BASE_ENTRY: JournalEntryDetailDto = {
 
 function show() {
   return render(
-    <MemoryRouter initialEntries={["/accounting/journal-entries/entry-1"]}>
-      <Routes>
-        <Route path="/accounting/journal-entries/:id" element={<JournalEntryDetailPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <I18nProvider>
+      <MemoryRouter initialEntries={["/accounting/journal-entries/entry-1"]}>
+        <Routes>
+          <Route path="/accounting/journal-entries/:id" element={<JournalEntryDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </I18nProvider>,
   );
 }
 
@@ -99,7 +102,11 @@ it("shows displayDescription for the automatic line and falls back to descriptio
   expect(within(rows[1]!).queryByText("Expenses — DocumentConfirmed — expense-1")).toBeNull();
 });
 
-it("falls back to the raw technical description when displayDescription cannot be resolved", async () => {
+it("falls back to a friendly (translated) description when displayDescription cannot be resolved", async () => {
+  // ACCOUNTING-JOURNAL-LABELS-UX-01: cuando no hay displayDescription, ya no se muestra el texto
+  // técnico crudo ("Expenses — DocumentConfirmed — expense-1") — se traduce a negocio ("Gastos —
+  // Confirmación de gasto") vía friendlyDescription, que reconoce el formato compuesto por
+  // JournalFactory.cs y lo traduce sin tocar backend.
   mocks.getJournalEntryById.mockResolvedValue({
     ...BASE_ENTRY,
     lines: BASE_ENTRY.lines.map((l) => ({ ...l, displayDescription: null })),
@@ -108,5 +115,6 @@ it("falls back to the raw technical description when displayDescription cannot b
 
   const table = await screen.findByRole("table");
   const rows = within(table).getAllByRole("row");
-  expect(within(rows[1]!).getByText("Expenses — DocumentConfirmed — expense-1")).toBeTruthy();
+  expect(within(rows[1]!).getByText("Gastos — Confirmación de gasto")).toBeTruthy();
+  expect(within(rows[1]!).queryByText("Expenses — DocumentConfirmed — expense-1")).toBeNull();
 });

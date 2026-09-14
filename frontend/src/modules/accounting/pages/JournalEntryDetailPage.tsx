@@ -11,6 +11,13 @@ import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
+import { useI18n } from "../../../i18n/i18n";
+import {
+  sourceModuleLabel,
+  factTypeLabel,
+  factTypeDescription,
+  friendlyDescription,
+} from "../labels/accountingLabels";
 import { accountingApi, type JournalEntryDetailDto } from "../api/accountingApi";
 // ACCOUNTING-DS-FULL-AUDIT-10F: sin este import, `.prd-sku`/`.prd-empty-row` no tienen estilo —
 // mismo root cause ya corregido en AccountingReportsPage.tsx/JournalEntriesPage.tsx.
@@ -48,6 +55,7 @@ function InfoLabel({ children }: { children: ReactNode }) {
 export function JournalEntryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const [entry, setEntry] = useState<JournalEntryDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +105,12 @@ export function JournalEntryDetailPage() {
     <PageShell
       kicker="Contabilidad"
       title={`Asiento ${entry.entryNumber ?? "(sin numerar)"}`}
-      subtitle={`${entry.sourceModule} — ${entry.sourceEventType}`}
+      // ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: subtítulo visible siempre — traduce el hecho
+      // contable técnico (ej. "Sales — InvoiceIssued") a un nombre entendible ("Ventas — Asiento
+      // de venta") para que no se confunda con el asiento hermano de costo de venta. El bloque
+      // "Documento origen — técnico" más abajo (cuando no hay documento resuelto) sigue mostrando
+      // el valor crudo a propósito — nunca se oculta el dato técnico, solo se traduce aquí.
+      subtitle={`${sourceModuleLabel(t, entry.sourceModule)} — ${factTypeLabel(t, entry.sourceEventType)}`}
       action={
         <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/journal-entries")}>
           Volver al listado
@@ -105,9 +118,29 @@ export function JournalEntryDetailPage() {
       }
     >
       <ZHCard title="Datos generales" actions={<Badge label={badge.label} variant={badge.variant} />}>
+        {/* ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: nombre entendible del hecho contable + su
+            descripción corta opcional (solo para InvoiceIssued/CostOfGoodsSold por ahora) — evita
+            que el usuario confunda el asiento de venta con el de costo de venta en una misma
+            transacción. Nunca reemplaza "Descripción" (texto libre del asiento, fila siguiente). */}
+        <ZHInfoRow
+          label={<InfoLabel>Tipo de asiento</InfoLabel>}
+          value={
+            <ZHDataValue>
+              {factTypeLabel(t, entry.sourceEventType)}
+              {factTypeDescription(t, entry.sourceEventType) && (
+                <span className="text-muted"> — {factTypeDescription(t, entry.sourceEventType)}</span>
+              )}
+            </ZHDataValue>
+          }
+          wide
+        />
         <ZHInfoRow label={<InfoLabel>Fecha</InfoLabel>} value={<ZHDataValue>{formatDate(entry.entryDate)}</ZHDataValue>} />
         <ZHInfoRow label={<InfoLabel>Ejercicio fiscal</InfoLabel>} value={<ZHDataValue variant="numeric">{entry.fiscalYear}</ZHDataValue>} />
-        <ZHInfoRow label={<InfoLabel>Descripción</InfoLabel>} value={<ZHDataValue>{entry.description}</ZHDataValue>} wide />
+        <ZHInfoRow
+          label={<InfoLabel>Descripción</InfoLabel>}
+          value={<ZHDataValue>{friendlyDescription(t, entry.description)}</ZHDataValue>}
+          wide
+        />
         <ZHInfoRow
           label={<InfoLabel>Publicado</InfoLabel>}
           value={<ZHDataValue>{entry.postedAtUtc ? formatDateTime(entry.postedAtUtc) : "—"}</ZHDataValue>}
@@ -237,7 +270,7 @@ export function JournalEntryDetailPage() {
                   <td>
                     <strong>{l.accountCode}</strong> — {l.accountName}
                   </td>
-                  <td>{l.displayDescription ?? l.description ?? "—"}</td>
+                  <td>{l.displayDescription ?? friendlyDescription(t, l.description)}</td>
                   <td className="zh-table-cell--num">
                     <ZHMoneyValue value={l.debit > 0 ? l.debit : null} />
                   </td>

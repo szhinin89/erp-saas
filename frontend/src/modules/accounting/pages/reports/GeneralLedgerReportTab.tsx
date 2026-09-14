@@ -16,6 +16,8 @@ import {
   type GeneralLedgerAccountDto,
   type GeneralLedgerMovementDto,
 } from "../../api/accountingApi";
+import { useI18n } from "../../../../i18n/i18n";
+import { sourceModuleLabel, friendlyDescription } from "../../labels/accountingLabels";
 
 function firstDayOfMonth(): string {
   const d = new Date();
@@ -34,6 +36,7 @@ function today(): string {
  * `zh-mb-16` real para separación entre cuentas (antes `pg-pad-8`, sin efecto).
  */
 export function GeneralLedgerReportTab() {
+  const { t } = useI18n();
   const [fromDate, setFromDate] = useState(firstDayOfMonth());
   const [toDate, setToDate] = useState(today());
   const [accountId, setAccountId] = useState("");
@@ -73,11 +76,18 @@ export function GeneralLedgerReportTab() {
   const movementColumns: ZHDataTableColumn<GeneralLedgerMovementDto>[] = [
     { key: "entryDate", header: "Fecha", render: (r) => formatDate(r.entryDate) },
     { key: "entryNumber", header: "Asiento", render: (r) => r.entryNumber ?? "—" },
-    { key: "description", header: "Descripción", render: (r) => r.description },
+    {
+      key: "description",
+      header: "Descripción",
+      // ACCOUNTING-JOURNAL-LABELS-UX-01: GeneralLedgerMovementDto no expone SourceEventType/
+      // SourceEventId por separado (a diferencia del Libro Diario), pero friendlyDescription
+      // extrae Módulo/FactType del propio texto compuesto — funciona igual sin ese campo extra.
+      render: (r) => friendlyDescription(t, r.description),
+    },
     {
       key: "source",
       header: "Origen",
-      render: (r) => r.sourceDocumentNumber ?? r.sourceModule,
+      render: (r) => r.sourceDocumentNumber ?? sourceModuleLabel(t, r.sourceModule),
     },
     {
       key: "debit",
