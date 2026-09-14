@@ -1,4 +1,5 @@
 using ERP.API.Tests.Support;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -17,9 +18,11 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Seeding.Steps;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -332,6 +335,23 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
             unitCost: 1m
         );
         await stockRepo.SaveChangesWithSequenceRetryAsync();
+
+        // API-TESTS-POSTING-RULE-NOT-FOUND-01: este fixture crea Tenant/Company "a mano" (arriba)
+        // en vez de pasar por CompanyProvisioningService, así que nunca corría el bootstrap
+        // contable oficial (AccountingBootstrapStep: Plan de Cuentas + PostingRule mínimas —
+        // MinimalPostingRules). AuthorizeSalesInvoiceHandler es fail-closed desde
+        // SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 ("no autorizar sin asiento" —
+        // AuthorizeSalesUseCases.cs): sin la PostingRule ("Sales","InvoiceIssued") sembrada, la
+        // autorización de CUALQUIER factura de venta usada como precondición de un escenario de
+        // devolución fallaba "RULE_NOT_FOUND" (ver PostingRuleResolver) — no un problema del
+        // propio módulo SalesReturn. Se invoca aquí el mismo seeding oficial que
+        // CompanyProvisioningService dispara en producción (mismo patrón que los tests verdes de
+        // ERP.Infrastructure.Tests, p. ej. AccountingBootstrapStepTests), nunca una PostingRule
+        // suelta hardcodeada en el fixture.
+        var accountingBootstrap = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        await accountingBootstrap.ExecuteAsync(
+            new CompanyBootstrapContext(TenantId, CompanyId, _adminId)
+        );
     }
 
     /// <summary>
@@ -1245,11 +1265,19 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
     [Fact]
     public async Task Escenario17_Autorizar_sin_PostingRule_configurada_no_genera_JournalEntry_ni_falla()
     {
-        // No se siembra ningún PostingRule para (SourceModule="Sales", FactType="SalesReturn") en
-        // este fixture — comportamiento tolerante documentado (mismo criterio que
-        // SalesInvoiceAuthorizedPostingTranslator / confirmado por
+        // API-TESTS-POSTING-RULE-NOT-FOUND-01: el fixture ahora corre el bootstrap contable
+        // oficial (AccountingBootstrapStep, ver SalesReturnFlowFixture.SeedAsync) para que
+        // CreateAndAuthorizeInvoiceAsync pueda autorizar la factura precondición — eso siembra
+        // MinimalPostingRules completo, incluyendo ("Sales","CostOfGoodsSoldReversed") (usada por
+        // SalesReturnCogsReversalPostingTranslator, un hecho contable DISTINTO e independiente de
+        // la propia devolución). Pero deliberadamente NUNCA siembra
+        // (SourceModule="Sales", FactType="SalesReturn") — comportamiento tolerante documentado
+        // (mismo criterio que SalesInvoiceAuthorizedPostingTranslator / confirmado por
         // SalesReturnAuthorizedPostingTranslatorTests.Posting_failure_genera_warning_y_no_lanza_excepcion):
-        // el translator solo loguea warning, la autorización de la devolución NO se revierte.
+        // el translator solo loguea warning, la autorización de la devolución NO se revierte. Por
+        // eso la aserción de abajo filtra por SourceEventType (=FactType) "SalesReturn"
+        // específicamente, no por el conteo total de JournalEntry del draft — el reverso de COGS
+        // sí debe generar su propio asiento, eso es correcto y esperado.
         var userId = await _f.CreateUserWithBranchAccessAsync();
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
@@ -1285,12 +1313,14 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
 
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var journalCount = await db.JournalEntries.CountAsync(j => j.SourceEventId == draft.Id);
-        journalCount
+        var salesReturnJournalCount = await db.JournalEntries.CountAsync(j =>
+            j.SourceEventId == draft.Id && j.SourceEventType == "SalesReturn"
+        );
+        salesReturnJournalCount
             .Should()
             .Be(
                 0,
-                "sin PostingRule seedeada, el posting engine responde RULE_NOT_FOUND y el translator solo loguea warning"
+                "sin PostingRule seedeada para (Sales, SalesReturn), el posting engine responde RULE_NOT_FOUND y el translator solo loguea warning"
             );
     }
 
