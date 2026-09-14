@@ -2,6 +2,15 @@
 
 **Single source of truth** for delivery state. Updated: **2026-09-14** · Kernel refactor: **2026-06-05**.
 
+## API TEST SUITE CLEANUP — `ERP.API.Tests` 483/483 (2026-09-14)
+
+**Estado: COMPLETADO.** Las 25 fallas preexistentes de `ERP.API.Tests` (detectadas durante COMPANY-PRECISION-POLICY, confirmadas no atribuibles a esa iniciativa) quedaron resueltas. `ERP.API.Tests` pasó de 458/483 a **483/483** — sin fallas pendientes.
+
+- **Causa raíz agrupada**: fixtures de `ERP.API.Tests` incompletos — creaban Company "a mano" sin correr el bootstrap contable oficial (`PostingRule` faltante → `RULE_NOT_FOUND`); `PaymentTerm` de contado sembrado con código no canónico ("CONT" en vez de "CONTADO"); índice único de `BusinessPartner` (`uq_mbp_identification`) perdido al recomprimir el historial de migraciones dos veces.
+- **Commits**: `257ff134` (SalesReturn fixture: bootstrap contable oficial) · `e91e9bc9` (CajaVentas fixture: PaymentTerm canónico + bootstrap contable) · `1b94cb54` (migración: restaura índice único de BusinessPartner).
+
+---
+
 ## COMPANY-PRECISION-POLICY — Precisión decimal operativa por empresa (2026-09-14)
 
 **Estado: COMPLETADO.** `company_precision_policy` queda como única SSOT de precisión decimal operativa configurable por empresa (precio unitario venta/compra, cantidad, porcentaje, costo unitario/promedio, factor de conversión, tolerancia de cuadre). `FiscalPrecision` sigue fijo para impuestos/totales/caja/CxC/CxP/contabilidad — sin cambios.
