@@ -900,10 +900,6 @@ public static class DependencyInjection
         >();
 
         // ── Company Config ───────────────────────────────────────────────────
-        services.AddScoped<
-            ERP.Application.Modules.Companies.UseCases.DecimalConfig.IDecimalConfigRepository,
-            ERP.Infrastructure.Persistence.Repositories.CompanyConfig.DecimalConfigRepository
-        >();
         // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4)
         services.AddScoped<
             ICompanySpecialTaxResponsibilityRepository,

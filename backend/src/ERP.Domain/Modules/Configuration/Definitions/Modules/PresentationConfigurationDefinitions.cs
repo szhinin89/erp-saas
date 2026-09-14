@@ -4,8 +4,14 @@ using ERP.Domain.Configuration.Enums;
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
 // LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar para
-// cálculo nuevo. Sigue vigente solo como respaldo del endpoint legacy /api/v1/config/decimals
-// (DecimalConfigController) mientras se termina de migrar el frontend (ver reporte del ticket).
+// cálculo nuevo. El endpoint legacy /api/v1/config/decimals (DecimalConfigController) y su
+// repositorio (DecimalConfigRepository) fueron eliminados en
+// COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08. Esta definition se conserva
+// registrada en ConfigurationDefinitionCatalog únicamente porque: (1) preserva la validación de
+// filas existentes de org_settings con namespace Presentation (datos históricos, no se borran) y
+// (2) sirve de fixture a los guardrail tests de ConfigurationDefinitionCatalog/OrgSettingsRepository
+// (ver ConfigurationDefinitionCatalogTests, OrgSettingsRepositoryConfigurationGuardrailTests). No
+// existe ningún camino de código vivo que escriba estas keys — no es una vía activa de configuración.
 /// <summary>
 /// Definitions para OrgSettingKeys.Presentation — decimales de PRESENTACIÓN (CONFIG-FOUNDATION-P1-01).
 /// Nunca fiscales: FiscalPrecision es constante System, sin relación con este módulo.

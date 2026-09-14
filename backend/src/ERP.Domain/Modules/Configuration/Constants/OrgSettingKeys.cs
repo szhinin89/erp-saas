@@ -84,6 +84,11 @@ public static class OrgSettingKeys
     ///
     /// LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar
     /// para cálculo nuevo. Ver <see cref="ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy"/>.
+    /// El endpoint que exponía estas keys (DecimalConfigController, GET/PUT
+    /// /api/v1/config/decimals) fue eliminado en
+    /// COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08 — no queda ninguna vía
+    /// activa de escritura. Namespace conservado solo por filas históricas existentes en
+    /// org_settings y como fixture de los guardrail tests de configuración.
     /// </summary>
     public static class Presentation
     {
