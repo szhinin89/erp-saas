@@ -262,27 +262,6 @@ export function calcSummary(
   vatRates?: Record<string, number>,
   iceRates?: Record<string, number>,
 ) {
-  const subtotal = lines.reduce((s, l) => s + lineGross(l), 0);
-  const discount = lines.reduce((s, l) => s + lineDiscountAmt(l), 0);
-  const netSubtotal = subtotal - discount;
-
-  const byRate = new Map<number, { base: number; tax: number }>();
-  let totalIce = 0;
-
-  for (const l of lines) {
-    const net = lineNet(l);
-    const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
-    const ice = iceRate > 0 ? (net * iceRate) / 100 : 0;
-    totalIce += ice;
-    const taxableBase = net + ice;
-    const vatRate = vatRates?.[l.vatCode] ?? 0;
-    const tax = (taxableBase * vatRate) / 100;
-    const entry = byRate.get(vatRate) ?? { base: 0, tax: 0 };
-    entry.base += taxableBase;
-    entry.tax += tax;
-    byRate.set(vatRate, entry);
-  }
-
   // COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-01: total/impuestos son montos
   // fiscales fijos (FiscalPrecision backend) — usan moneyDecimals de la policy nueva, nunca un
   // campo configurable como salesUnitPriceDecimals.
@@ -291,6 +270,46 @@ export function calcSummary(
     const factor = 10 ** totalAmountDecimals;
     return Math.round(v * factor) / factor;
   };
+
+  const subtotal = lines.reduce((s, l) => s + lineGross(l), 0);
+  const discount = lines.reduce((s, l) => s + lineDiscountAmt(l), 0);
+
+  // SALES-FRONTEND-LINE-ROUNDING-MATCH-BACKEND-01: el backend (SalesInvoiceDetail.ApplyTaxes)
+  // redondea taxableBase/vatAmount a moneyDecimals POR LÍNEA y luego suma esos valores ya
+  // redondeados — nunca suma los valores crudos de todas las líneas y redondea recién al final.
+  // Con más de una línea, "redondear la suma" y "sumar lo redondeado" pueden diferir en un
+  // centavo (caso real: MANJAR DE LECHE 80G + 1 LITRO FRUTILLA, backend $2.64 vs frontend $2.65
+  // con el cálculo anterior) — este bloque replica exactamente el orden de operaciones del
+  // backend para que el total mostrado, el monto cobrado y el payload de pagos coincidan siempre
+  // con el grandTotal real que se autoriza.
+  const byRate = new Map<number, { base: number; tax: number }>();
+  let netSubtotal = 0;
+  let totalVat = 0;
+  let totalIce = 0;
+  let total = 0;
+
+  for (const l of lines) {
+    const net = lineNet(l);
+    const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
+    const iceRaw = iceRate > 0 ? (net * iceRate) / 100 : 0;
+    const ice = roundTotal(iceRaw);
+    // La base imponible del IVA incluye el ICE (normativa SRI Ecuador) — redondeada a
+    // moneyDecimals antes de calcular el IVA sobre ella, igual que backend.
+    const taxableBase = roundTotal(net + iceRaw);
+    const vatRate = vatRates?.[l.vatCode] ?? 0;
+    const vatAmount = roundTotal((taxableBase * vatRate) / 100);
+    const lineTotal = roundTotal(taxableBase + vatAmount);
+
+    netSubtotal += taxableBase;
+    totalIce += ice;
+    totalVat += vatAmount;
+    total += lineTotal;
+
+    const entry = byRate.get(vatRate) ?? { base: 0, tax: 0 };
+    entry.base += taxableBase;
+    entry.tax += vatAmount;
+    byRate.set(vatRate, entry);
+  }
 
   const taxBreakdown: TaxBreakdownEntry[] = Array.from(byRate.entries())
     .sort((a, b) => a[0] - b[0])
@@ -301,17 +320,13 @@ export function calcSummary(
       tax: roundTotal(v.tax),
     }));
 
-  const vat = taxBreakdown.reduce((s, e) => s + e.tax, 0);
-  const ice = roundTotal(totalIce);
-  const total = roundTotal(netSubtotal + vat + ice);
-
   return {
     subtotal: roundTotal(subtotal),
     discount: roundTotal(discount),
     netSubtotal: roundTotal(netSubtotal),
-    vat,
-    ice,
-    total,
+    vat: roundTotal(totalVat),
+    ice: roundTotal(totalIce),
+    total: roundTotal(total),
     taxBreakdown,
   };
 }

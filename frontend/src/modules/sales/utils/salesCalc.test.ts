@@ -309,6 +309,29 @@ describe("salesCalc — UI preview layer", () => {
       // IVA sobre net (sin ice) = 18 × 15% = 2.7
       expect(s.vat).toBeCloseTo(2.7, 2);
     });
+
+    it("SALES-FRONTEND-LINE-ROUNDING-MATCH-BACKEND-01: caso real MANJAR DE LECHE 80G + 1 LITRO FRUTILLA — total $2.64, nunca $2.65", () => {
+      // Reproduce exactamente el caso reportado: dos líneas cuyo redondeo por línea (backend)
+      // difiere de redondear la suma cruda al final (bug anterior del frontend).
+      const manjar: SalesLineInput = {
+        description: "MANJAR DE LECHE 80G",
+        quantity: 1,
+        unitPrice: 0.5225,
+        vatCode: "10", // 15%
+        discountPct: 0,
+      };
+      const frutilla: SalesLineInput = {
+        description: "1 LITRO FRUTILLA",
+        quantity: 1,
+        unitPrice: 2.0425,
+        vatCode: "0", // 0%
+        discountPct: 0,
+      };
+      const s = calcSummary([manjar, frutilla], TEST_VAT_RATES);
+      expect(s.netSubtotal).toBe(2.56);
+      expect(s.vat).toBe(0.08);
+      expect(s.total).toBe(2.64);
+    });
   });
 
   describe("mock backend data — structural integrity", () => {
