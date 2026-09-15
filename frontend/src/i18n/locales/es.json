@@ -101,6 +101,7 @@
   "app.nav.item.accounting.journalGroup": "Asientos",
   "app.nav.item.accounting.chartGroup": "Plan contable",
   "app.nav.item.accounting.reportsGroup": "Reportes",
+  "app.nav.item.accounting.configurationGroup": "Configuración",
   "app.nav.item.settings.enterpriseGroup": "Empresa",
   "app.nav.item.settings.electronicInvoicingGroup": "Facturación electrónica",
   "app.nav.item.settings.communicationsGroup": "Comunicaciones",

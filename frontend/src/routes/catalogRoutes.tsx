@@ -289,10 +289,13 @@ export const catalogRoutes = [
 
   // -- Sales ---------------------------------------------------------------
   <Route key="sales" path="/sales" element={<SalesPage />} />,
+  // DESTINOS-CONTABLES-COBROS-VENTAS-01: ruta canónica movida a
+  // /accounting/configuration/sales-collection-destinations (ver bloque Accounting más abajo) —
+  // se conserva este redirect por enlaces/tests legacy, sin duplicar la pantalla.
   <Route
     key="sales-payment-methods"
     path="/sales/payment-methods"
-    element={<PaymentMethodsPage />}
+    element={<Navigate to="/accounting/configuration/sales-collection-destinations" replace />}
   />,
   <Route
     key="sales-returns"
@@ -338,6 +341,14 @@ export const catalogRoutes = [
     key="accounting-journal-entry-detail"
     path="/accounting/journal-entries/:id"
     element={<JournalEntryDetailPage />}
+  />,
+  // DESTINOS-CONTABLES-COBROS-VENTAS-01: cuenta contable por forma de cobro (PaymentMethodAccount)
+  // — misma pantalla/endpoints que antes (PaymentMethodsPage.tsx, /api/v1/payment-methods*), solo
+  // se reubica bajo Contabilidad > Configuración > Destinos contables > Cobros de ventas.
+  <Route
+    key="accounting-sales-collection-destinations"
+    path="/accounting/configuration/sales-collection-destinations"
+    element={<PaymentMethodsPage />}
   />,
   <Route
     key="accounting-chart-of-accounts"

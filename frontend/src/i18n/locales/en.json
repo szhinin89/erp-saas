@@ -101,6 +101,7 @@
   "app.nav.item.accounting.journalGroup": "Journal Entries",
   "app.nav.item.accounting.chartGroup": "Chart of Accounts",
   "app.nav.item.accounting.reportsGroup": "Reports",
+  "app.nav.item.accounting.configurationGroup": "Configuration",
   "app.nav.item.settings.enterpriseGroup": "Company",
   "app.nav.item.settings.electronicInvoicingGroup": "Electronic Invoicing",
   "app.nav.item.settings.communicationsGroup": "Communications",
