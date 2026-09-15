@@ -14,14 +14,16 @@ type LauncherCategoryGroupProps = {
   toggleFavorite: (item: NavItem) => void;
   t: TranslateFn;
   moduleId: string;
-  expandedGroupId: string | null;
+  expandedGroupIds: ReadonlySet<string>;
   onToggleGroup: (groupId: string) => void;
 };
 
 /**
- * Nivel 3 — Categoría funcional: encabezado en mayúsculas/color secundario, separador
+ * Nivel 3+ — Categoría funcional: encabezado en mayúsculas/color secundario, separador
  * superior, colapsable y persistido. Sus hijos son Formularios (Nivel 4) o, si tienen
- * a su vez sub-categorías, otra Categoría anidada (profundidad creciente).
+ * a su vez sub-categorías, otra Categoría anidada (profundidad creciente, sin límite —
+ * cada categoría abre/cierra de forma independiente de sus hermanas y ancestros vía
+ * `expandedGroupIds`, ver ZH-MENU-N-LEVEL-EXPAND-FIX-01).
  */
 export function LauncherCategoryGroup({
   item,
@@ -32,11 +34,11 @@ export function LauncherCategoryGroup({
   toggleFavorite,
   t,
   moduleId,
-  expandedGroupId,
+  expandedGroupIds,
   onToggleGroup,
 }: LauncherCategoryGroupProps) {
   const groupKey = `${moduleId}:${item.id}`;
-  const open = expandedGroupId === groupKey;
+  const open = expandedGroupIds.has(groupKey);
   const contentId = `zh-launcher-category-${groupKey}`;
 
   return (
@@ -67,7 +69,7 @@ export function LauncherCategoryGroup({
                 toggleFavorite={toggleFavorite}
                 t={t}
                 moduleId={moduleId}
-                expandedGroupId={expandedGroupId}
+                expandedGroupIds={expandedGroupIds}
                 onToggleGroup={onToggleGroup}
               />
             ) : (

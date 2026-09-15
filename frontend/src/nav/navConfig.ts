@@ -28,6 +28,32 @@ export function navSubtreeMatchesPath(it: NavItem, pathname: string): boolean {
   return it.children?.some((c) => navSubtreeMatchesPath(c, pathname)) ?? false;
 }
 
+/**
+ * Ids de grupo (`${moduleId}:${item.id}`, mismo formato que `LauncherCategoryGroup`) de toda
+ * categoría en el camino hacia la pantalla activa, sin importar la profundidad — usado para
+ * auto-expandir el "active trail" completo del launcher (p. ej. Contabilidad > Configuración >
+ * Destinos contables > Cobros de ventas: 2 categorías anidadas, ambas deben quedar abiertas a la
+ * vez). Recorre recursivamente sin límite de niveles: cualquier ítem con hijos cuyo subárbol
+ * contenga la ruta activa se agrega y se sigue bajando por sus hijos.
+ */
+export function collectActiveTrailGroupKeys(
+  items: NavItem[],
+  moduleId: string,
+  pathname: string,
+): string[] {
+  const keys: string[] = [];
+  const visit = (list: NavItem[]) => {
+    for (const it of list) {
+      if (it.children?.length && navSubtreeMatchesPath(it, pathname)) {
+        keys.push(`${moduleId}:${it.id}`);
+        visit(it.children);
+      }
+    }
+  };
+  visit(items);
+  return keys;
+}
+
 /** Clave estable para persistir estado de UI (expand/collapse) de un NavItem. */
 export function navItemStorageKey(it: NavItem): string {
   return it.id;

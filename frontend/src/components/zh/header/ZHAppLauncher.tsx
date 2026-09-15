@@ -5,7 +5,11 @@ import { LauncherFavoritesSection } from "./launcher/LauncherFavoritesSection";
 import { LauncherModuleGroup } from "./launcher/LauncherModuleGroup";
 import { LauncherIcon } from "./launcher/LauncherIcon";
 import type { MainMenuGroup } from "../../useAppLayoutNavigation";
-import type { NavItem, TranslateFn } from "../../../nav/navConfig";
+import {
+  collectActiveTrailGroupKeys,
+  type NavItem,
+  type TranslateFn,
+} from "../../../nav/navConfig";
 import "./launcher/launcher.css";
 
 type ZHAppLauncherProps = {
@@ -47,7 +51,16 @@ export function ZHAppLauncher({
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(
     null,
   );
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  // ZH-MENU-N-LEVEL-EXPAND-FIX-01: antes era un único `string | null` compartido por TODAS las
+  // categorías del árbol (cualquier profundidad) — abrir una categoría hija forzaba a cerrar a su
+  // padre (mismo estado, solo un id a la vez), así que un camino de 2+ categorías anidadas
+  // (Configuración > Destinos contables) nunca podía quedar abierto completo: el cuerpo del padre
+  // deja de renderizarse al cerrarse, así que el hijo tampoco se veía. Un Set permite que
+  // cualquier cantidad de categorías, a cualquier profundidad, estén abiertas simultáneamente,
+  // cada una independiente de sus hermanas/ancestros.
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -92,11 +105,25 @@ export function ZHAppLauncher({
     setOpen(false);
   }, [location.pathname]);
 
-  // Conserva la expansión automática del módulo de la ruta actual, pero con un
-  // único id compartido para que el accordion de módulos sea exclusivo.
+  // Conserva la expansión automática del módulo de la ruta actual (accordion exclusivo entre
+  // módulos) y además auto-expande el "active trail" completo de categorías anidadas dentro de
+  // ese módulo (cualquier profundidad, ver collectActiveTrailGroupKeys) — así, al navegar
+  // directo a /accounting/configuration/sales-collection-destinations, Configuración y Destinos
+  // contables quedan ambas abiertas sin que el usuario tenga que expandirlas a mano.
   useEffect(() => {
     const activeModule = mainMenuGroups.find((group) => group.isActive);
-    if (activeModule) setExpandedModuleId(activeModule.id);
+    if (activeModule) {
+      setExpandedModuleId(activeModule.id);
+      setExpandedGroupIds(
+        new Set(
+          collectActiveTrailGroupKeys(
+            activeModule.items,
+            activeModule.id,
+            location.pathname,
+          ),
+        ),
+      );
+    }
   }, [location.pathname, mainMenuGroups]);
 
   const closePanel = () => {
@@ -107,13 +134,20 @@ export function ZHAppLauncher({
   const toggleModule = (moduleId: string) => {
     setExpandedModuleId((current) => {
       const next = current === moduleId ? null : moduleId;
-      setExpandedGroupId(null);
+      setExpandedGroupIds(new Set());
       return next;
     });
   };
 
+  // Cada categoría se abre/cierra de forma independiente de sus hermanas y ancestros — no es un
+  // accordion exclusivo, así que cualquier combinación de niveles puede quedar abierta a la vez.
   const toggleGroup = (groupId: string) => {
-    setExpandedGroupId((current) => (current === groupId ? null : groupId));
+    setExpandedGroupIds((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
   };
 
   const modulesContent = mainMenuGroups;
@@ -184,7 +218,7 @@ export function ZHAppLauncher({
                         t={t}
                         expandedModuleId={expandedModuleId}
                         onToggleModule={toggleModule}
-                        expandedGroupId={expandedGroupId}
+                        expandedGroupIds={expandedGroupIds}
                         onToggleGroup={toggleGroup}
                       />
                     ))

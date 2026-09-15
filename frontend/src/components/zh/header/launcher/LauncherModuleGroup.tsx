@@ -13,7 +13,7 @@ type LauncherModuleGroupProps = {
   t: TranslateFn;
   expandedModuleId: string | null;
   onToggleModule: (moduleId: string) => void;
-  expandedGroupId: string | null;
+  expandedGroupIds: ReadonlySet<string>;
   onToggleGroup: (groupId: string) => void;
 };
 
@@ -31,7 +31,7 @@ export function LauncherModuleGroup({
   t,
   expandedModuleId,
   onToggleModule,
-  expandedGroupId,
+  expandedGroupIds,
   onToggleGroup,
 }: LauncherModuleGroupProps) {
   const isSingleLink =
@@ -91,7 +91,7 @@ export function LauncherModuleGroup({
                 toggleFavorite={toggleFavorite}
                 t={t}
                 moduleId={group.id}
-                expandedGroupId={expandedGroupId}
+                expandedGroupIds={expandedGroupIds}
                 onToggleGroup={onToggleGroup}
               />
             ) : (

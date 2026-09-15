@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { NavItem } from "../../../../nav/navConfig";
+import {
+  collectActiveTrailGroupKeys,
+  type NavItem,
+} from "../../../../nav/navConfig";
 import type { MainMenuGroup } from "../../../useAppLayoutNavigation";
 import { LauncherModuleGroup } from "./LauncherModuleGroup";
 import { LauncherFavoritesSection } from "./LauncherFavoritesSection";
@@ -97,7 +100,7 @@ function renderModule(
       t={t}
       expandedModuleId="suppliers"
       onToggleModule={vi.fn()}
-      expandedGroupId="suppliers:category-purchases"
+      expandedGroupIds={new Set(["suppliers:category-purchases"])}
       onToggleGroup={vi.fn()}
       {...overrides}
     />,
@@ -107,12 +110,12 @@ function renderModule(
 function renderModules({
   currentPath = "/inventory/kardex",
   expandedModuleId = "inventory",
-  expandedGroupId = "inventory:category-inventory-operation",
+  expandedGroupIds = new Set(["inventory:category-inventory-operation"]),
   groups = [suppliersModuleGroup, inventoryModuleGroup],
 }: {
   currentPath?: string;
   expandedModuleId?: string | null;
-  expandedGroupId?: string | null;
+  expandedGroupIds?: ReadonlySet<string>;
   groups?: MainMenuGroup[];
 } = {}) {
   return render(
@@ -128,7 +131,7 @@ function renderModules({
           t={t}
           expandedModuleId={expandedModuleId}
           onToggleModule={vi.fn()}
-          expandedGroupId={expandedGroupId}
+          expandedGroupIds={expandedGroupIds}
           onToggleGroup={vi.fn()}
         />
       ))}
@@ -298,7 +301,7 @@ describe("App Launcher — estados current/open/hover (ZH-MENU-ACTIVE-STATE-FIX-
         { ...inventoryModuleGroup, isActive: false },
       ],
       expandedModuleId: "inventory",
-      expandedGroupId: "inventory:category-inventory-operation",
+      expandedGroupIds: new Set(["inventory:category-inventory-operation"]),
     });
 
     const suppliersModule = screen
@@ -318,6 +321,131 @@ describe("App Launcher — estados current/open/hover (ZH-MENU-ACTIVE-STATE-FIX-
     expect(
       document.querySelectorAll(".zh-launcher__module.is-current"),
     ).toHaveLength(1);
+  });
+});
+
+const salesCollectionItem: NavItem = {
+  id: "item-sales-collection-destinations",
+  to: "/accounting/configuration/sales-collection-destinations",
+  label: "Cobros de ventas",
+};
+const destinationsCategory: NavItem = {
+  id: "category-accounting-destinations",
+  to: "/accounting/destinations/group",
+  label: "Destinos contables",
+  children: [salesCollectionItem],
+};
+const configurationCategory: NavItem = {
+  id: "category-accounting-configuration",
+  to: "/accounting/configuration/group",
+  label: "Configuración",
+  children: [destinationsCategory],
+};
+const accountingModuleGroup: MainMenuGroup = {
+  id: "accounting",
+  label: "Contabilidad",
+  icon: "accounting",
+  isActive: true,
+  items: [configurationCategory],
+};
+const CONFIG_GROUP_KEY = "accounting:category-accounting-configuration";
+const DESTINATIONS_GROUP_KEY = "accounting:category-accounting-destinations";
+
+describe("App Launcher — N niveles sin límite (ZH-MENU-N-LEVEL-EXPAND-FIX-01)", () => {
+  /**
+   * Antes, `expandedGroupId` era un único string compartido por TODO el árbol: solo una
+   * categoría (a cualquier profundidad) podía estar "abierta" a la vez. Abrir "Destinos
+   * contables" (hija) forzaba a cerrar "Configuración" (padre) porque ambas competían por el
+   * mismo valor — y al cerrarse el padre, su cuerpo deja de renderizarse, así que el hijo
+   * (y "Cobros de ventas" dentro de él) desaparecía. Con el fix, `expandedGroupIds` es un Set:
+   * cualquier cantidad de categorías, en cualquier profundidad, pueden estar abiertas juntas.
+   */
+  it("renderiza 4 niveles (Módulo > Configuración > Destinos contables > Cobros de ventas) con ambas categorías anidadas abiertas a la vez", () => {
+    render(
+      <LauncherModuleGroup
+        group={accountingModuleGroup}
+        currentPath="/accounting/configuration/sales-collection-destinations"
+        onNavigate={vi.fn()}
+        isFavorite={() => false}
+        toggleFavorite={vi.fn()}
+        t={t}
+        expandedModuleId="accounting"
+        onToggleModule={vi.fn()}
+        expandedGroupIds={new Set([CONFIG_GROUP_KEY, DESTINATIONS_GROUP_KEY])}
+        onToggleGroup={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Contabilidad")).toBeTruthy();
+    expect(screen.getByText("Configuración")).toBeTruthy();
+    expect(screen.getByText("Destinos contables")).toBeTruthy();
+    expect(screen.getByText("Cobros de ventas")).toBeTruthy();
+
+    const link = screen.getByText("Cobros de ventas").closest("a");
+    expect(link?.getAttribute("href")).toBe(
+      "/accounting/configuration/sales-collection-destinations",
+    );
+    expect(link?.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("el click en la pantalla hoja (nivel 4) dispara onNavigate con /accounting/configuration/sales-collection-destinations", () => {
+    const onNavigate = vi.fn();
+    render(
+      <LauncherModuleGroup
+        group={accountingModuleGroup}
+        currentPath="/accounting/configuration/sales-collection-destinations"
+        onNavigate={onNavigate}
+        isFavorite={() => false}
+        toggleFavorite={vi.fn()}
+        t={t}
+        expandedModuleId="accounting"
+        onToggleModule={vi.fn()}
+        expandedGroupIds={new Set([CONFIG_GROUP_KEY, DESTINATIONS_GROUP_KEY])}
+        onToggleGroup={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText("Cobros de ventas"));
+    expect(onNavigate).toHaveBeenCalledWith(
+      "/accounting/configuration/sales-collection-destinations",
+    );
+  });
+
+  it("si solo la categoría padre está en expandedGroupIds, la hija se ve pero no su contenido (cada nivel abre de forma independiente)", () => {
+    render(
+      <LauncherModuleGroup
+        group={accountingModuleGroup}
+        currentPath="/accounting/configuration/sales-collection-destinations"
+        onNavigate={vi.fn()}
+        isFavorite={() => false}
+        toggleFavorite={vi.fn()}
+        t={t}
+        expandedModuleId="accounting"
+        onToggleModule={vi.fn()}
+        expandedGroupIds={new Set([CONFIG_GROUP_KEY])}
+        onToggleGroup={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Destinos contables")).toBeTruthy();
+    expect(screen.queryByText("Cobros de ventas")).toBeNull();
+  });
+
+  it("collectActiveTrailGroupKeys devuelve las 2 categorías del camino activo, sin límite de profundidad", () => {
+    const keys = collectActiveTrailGroupKeys(
+      accountingModuleGroup.items,
+      "accounting",
+      "/accounting/configuration/sales-collection-destinations",
+    );
+    expect(keys).toEqual([CONFIG_GROUP_KEY, DESTINATIONS_GROUP_KEY]);
+  });
+
+  it("collectActiveTrailGroupKeys no incluye categorías fuera del camino activo", () => {
+    const keys = collectActiveTrailGroupKeys(
+      accountingModuleGroup.items,
+      "accounting",
+      "/accounting/journal-entries",
+    );
+    expect(keys).toEqual([]);
   });
 });
 
