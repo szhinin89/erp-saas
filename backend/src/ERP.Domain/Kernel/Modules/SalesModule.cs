@@ -105,10 +105,11 @@ public static class SalesModule
     )]
     public const string ConfigurationGroup = "/sales/configuration-group";
 
-    // PAYMENT-METHOD-ACCOUNT-UI-NAV-01: "Métodos de Pago" se retiró de aquí — quedaba como una
-    // segunda entrada al mismo destino que confundía más de lo que ayudaba (ver decisión del
-    // usuario). Única entrada de menú ahora: SettingsModule.PaymentMethods, bajo Configuración >
-    // Condiciones comerciales > "Formas de cobro" (mismo Id d1000000-0000-4000-9000-000000000002
+    // PAYMENT-METHOD-ACCOUNT-UI-NAV-01 / DESTINOS-CONTABLES-COBROS-VENTAS-01: "Métodos de Pago"
+    // se retiró de aquí — quedaba como una segunda entrada al mismo destino que confundía más de
+    // lo que ayudaba (ver decisión del usuario). Única entrada de menú ahora:
+    // AccountingModule.SalesCollectionDestinations, bajo Contabilidad > Configuración >
+    // Destinos contables > "Cobros de ventas" (mismo Id d1000000-0000-4000-9000-000000000002
     // reutilizado allí, sin generar un ui_nav_items huérfano).
 
     // Enlace contextual al tab "salesPos" de la pantalla única de Preferencias Operativas

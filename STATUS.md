@@ -1,6 +1,16 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-09-14** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-09-15** · Kernel refactor: **2026-06-05**.
+
+## DESTINOS-CONTABLES-COBROS-VENTAS-01 — Cuenta contable por forma de pago (2026-09-15)
+
+**Estado: COMPLETADO (Fase 1).** `PaymentMethod → AccountingAccount` por `TenantId + CompanyId` (entidad `PaymentMethodAccount`), consumido por la contabilización de Ventas: una venta con pago no-crédito (ej. Transferencia) resuelve su cuenta contable configurada en vez de caer siempre en "Caja general"; si la Company tiene al menos una cuenta configurada, cualquier forma de pago no-crédito sin cuenta asignada bloquea la autorización (fail-closed) con mensaje explícito. Compañías sin ninguna fila configurada mantienen el comportamiento histórico (retrocompatible).
+
+- **Backend** (construido en `47cff20a`, `SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01`): entidad `PaymentMethodAccount` (`ERP.Domain/Modules/Sales/Entities`), endpoint `PUT /api/v1/payment-methods/{id}/account` (`SetPaymentMethodAccountCommand`, valida cuenta activa/imputable y de la Company activa), gate de bloqueo en `AuthorizeSalesUseCases`, ruteo de allocations en `SalesInvoiceAuthorizedPostingTranslator`.
+- **Frontend**: `PaymentMethodsPage.tsx` — tabla Forma de cobro/Código/Código SRI/Requiere referencia/Cuenta contable/Estado, selector de cuenta imputable activa, guardado independiente del CRUD del catálogo de formas de pago.
+- **Navegación** (este ticket): único punto de acceso reubicado a **Contabilidad → Configuración → Destinos contables → Cobros de ventas** (antes en Configuración → Condiciones comerciales, `8ab5c121`) — mismo `NavItem` Id reutilizado, sin duplicar entrada de menú (criterio ya establecido: dos accesos al mismo destino confunde). Cambio de navegación puro, sin tocar backend/lógica de posting.
+
+---
 
 ## API TEST SUITE CLEANUP — `ERP.API.Tests` 483/483 (2026-09-14)
 

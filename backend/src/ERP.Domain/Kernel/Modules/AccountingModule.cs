@@ -124,4 +124,34 @@ public static class AccountingModule
         ParentId = "5f363c9d-e97e-4a39-8bf7-1599915e26a1"
     )]
     public const string Reports = "/accounting/reports";
+
+    // DESTINOS-CONTABLES-COBROS-VENTAS-01: movido desde SettingsModule.PaymentMethods
+    // (Configuración > Condiciones comerciales, ver PAYMENT-METHOD-ACCOUNT-UI-NAV-01) hacia
+    // Contabilidad > Configuración > Destinos contables > Cobros de ventas — la asignación de
+    // cuenta contable por forma de pago (PaymentMethodAccount) es una configuración contable,
+    // no comercial, y este ticket pidió explícitamente esa ubicación. Una sola entrada de menú,
+    // no dos (mismo criterio ya decidido en PAYMENT-METHOD-ACCOUNT-UI-NAV-01: dos accesos al
+    // mismo destino confunde más de lo que ayuda) — se retira el NavItem de SettingsModule.
+    // Mismo Id, misma ruta/página/permisos que tenía antes (PaymentMethodsPage.tsx,
+    // /sales/payment-methods, SalesPermissions.View/Update) — solo cambia su ubicación en el
+    // menú, no su implementación.
+    [NavItem(
+        "Destinos contables",
+        LabelKey = "app.nav.item.accounting.destinationsGroup",
+        SortOrder = 35,
+        Id = "ac000000-0000-4000-9000-000000000005",
+        PermissionsAnyCsv = SalesPermissions.View
+    )]
+    public const string DestinationsGroup = "/accounting/destinations/group";
+
+    [NavItem(
+        "Cobros de ventas",
+        Permission = SalesPermissions.View,
+        LabelKey = "app.nav.item.accounting.salesCollectionDestinations",
+        SortOrder = 35,
+        Id = "d1000000-0000-4000-9000-000000000002",
+        ParentId = "ac000000-0000-4000-9000-000000000005",
+        RelatedActionPermissionsCsv = SalesPermissions.Update
+    )]
+    public const string SalesCollectionDestinations = "/sales/payment-methods";
 }
