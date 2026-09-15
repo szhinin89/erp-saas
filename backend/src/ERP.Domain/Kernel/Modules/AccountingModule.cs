@@ -125,6 +125,25 @@ public static class AccountingModule
     )]
     public const string Reports = "/accounting/reports";
 
+    // DESTINOS-CONTABLES-COBROS-VENTAS-01 (jerarquía visual): "Destinos contables" es una
+    // categoría real de Configuración contable, no un grupo de tope al mismo nivel que
+    // Asientos/Plan contable/Reportes — se agrega el contenedor "Configuración" (nivel 2, mismo
+    // patrón que SettingsModule/SuppliersModule: un grupo puede anidar sub-categorías,
+    // LauncherCategoryGroup ya soporta profundidad creciente de forma recursiva, sin cambios en
+    // frontend) y "Destinos contables" pasa a ser su hijo en vez de hijo directo del módulo.
+    // PermissionsAnyCsv usa el permiso contable dedicado (no SalesPermissions.View): NavigationBuilder
+    // .BuildItemTree corta la recursión en el primer ítem no visible — si este contenedor no
+    // resuelve con el mismo permiso que su único hijo real, un usuario con permiso contable pero
+    // sin sales.view nunca vería "Cobros de ventas" aunque tenga acceso explícito a esa pantalla.
+    [NavItem(
+        "Configuración",
+        LabelKey = "app.nav.item.accounting.configurationGroup",
+        SortOrder = 35,
+        Id = "ac000000-0000-4000-9000-000000000006",
+        PermissionsAnyCsv = AccountingPermissions.DestinationsSalesCollectionsView
+    )]
+    public const string ConfigurationGroup = "/accounting/configuration/group";
+
     // DESTINOS-CONTABLES-COBROS-VENTAS-01: movido desde SettingsModule.PaymentMethods
     // (Configuración > Condiciones comerciales, ver PAYMENT-METHOD-ACCOUNT-UI-NAV-01) hacia
     // Contabilidad > Configuración > Destinos contables > Cobros de ventas — la asignación de
@@ -132,26 +151,40 @@ public static class AccountingModule
     // no comercial, y este ticket pidió explícitamente esa ubicación. Una sola entrada de menú,
     // no dos (mismo criterio ya decidido en PAYMENT-METHOD-ACCOUNT-UI-NAV-01: dos accesos al
     // mismo destino confunde más de lo que ayuda) — se retira el NavItem de SettingsModule.
-    // Mismo Id, misma ruta/página/permisos que tenía antes (PaymentMethodsPage.tsx,
-    // /sales/payment-methods, SalesPermissions.View/Update) — solo cambia su ubicación en el
-    // menú, no su implementación.
+    // Mismo Id, misma página que tenía antes (PaymentMethodsPage.tsx) — permiso corregido a
+    // AccountingPermissions.DestinationsSalesCollectionsView (ver comentario de ConfigurationGroup).
     [NavItem(
         "Destinos contables",
         LabelKey = "app.nav.item.accounting.destinationsGroup",
-        SortOrder = 35,
+        SortOrder = 10,
         Id = "ac000000-0000-4000-9000-000000000005",
-        PermissionsAnyCsv = SalesPermissions.View
+        ParentId = "ac000000-0000-4000-9000-000000000006",
+        PermissionsAnyCsv = AccountingPermissions.DestinationsSalesCollectionsView
     )]
     public const string DestinationsGroup = "/accounting/destinations/group";
 
+    // Ruta visible corregida a /accounting/configuration/sales-collection-destinations (antes
+    // /sales/payment-methods, que quedaba fuera del árbol de Contabilidad pese a que el menú ya
+    // apuntaba aquí) — mismo Id, misma pantalla y endpoints; /sales/payment-methods sigue existiendo
+    // solo como redirect en el frontend (catalogRoutes.tsx) para enlaces/tests legacy, no como
+    // segunda ruta funcional.
+    // Permisos corregidos de SalesPermissions.View/Update a AccountingPermissions
+    // .DestinationsSalesCollectionsView/Update: esta pantalla configura una cuenta CONTABLE por
+    // forma de pago (PaymentMethodAccount) — usar el permiso de Ventas para ella confundía el
+    // SSOT de navegación/permisos (un usuario con acceso a Ventas, sin ningún permiso contable,
+    // podía ver/editar destinos contables; un usuario con permisos contables pero sin acceso a
+    // Ventas no podía). PaymentMethodsController (GET list/{id}) sigue siendo consumido también
+    // por el selector de forma de pago en Ventas/POS — ese endpoint compartido bajó a [Authorize]
+    // simple (mismo patrón que los lookups SRI de CatalogController) en vez de exigir un permiso
+    // específico de ningún dominio, así ninguno de los dos consumidores se rompe.
     [NavItem(
         "Cobros de ventas",
-        Permission = SalesPermissions.View,
+        Permission = AccountingPermissions.DestinationsSalesCollectionsView,
         LabelKey = "app.nav.item.accounting.salesCollectionDestinations",
         SortOrder = 35,
         Id = "d1000000-0000-4000-9000-000000000002",
         ParentId = "ac000000-0000-4000-9000-000000000005",
-        RelatedActionPermissionsCsv = SalesPermissions.Update
+        RelatedActionPermissionsCsv = AccountingPermissions.DestinationsSalesCollectionsUpdate
     )]
-    public const string SalesCollectionDestinations = "/sales/payment-methods";
+    public const string SalesCollectionDestinations = "/accounting/configuration/sales-collection-destinations";
 }
