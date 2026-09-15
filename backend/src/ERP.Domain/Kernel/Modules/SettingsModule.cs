@@ -245,6 +245,29 @@ public static class SettingsModule
     )]
     public const string CreditTerms = "/finance/credit-terms";
 
+    /// <summary>
+    /// PAYMENT-METHOD-ACCOUNT-UI-NAV-01: movido desde <c>SalesModule.PaymentMethods</c> (Ventas &gt;
+    /// Configuración) hacia Configuración &gt; Condiciones comerciales, junto a Condiciones de
+    /// Pago/Crédito — es un catálogo transversal, no exclusivo de Ventas: aquí se configura la
+    /// cuenta contable por método de pago y empresa (PaymentMethodAccount,
+    /// SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01), y ningún usuario que revisa Configuración lo
+    /// iba a encontrar buscando dentro de Ventas. Una sola entrada de menú, no dos — se descartó
+    /// el enfoque inicial de mantener también el NavItem bajo Ventas (decisión explícita del
+    /// usuario: dos accesos al mismo destino confundía más de lo que ayudaba). Mismo Id que tenía
+    /// en SalesModule (mismo criterio que MENU-MODULE-REORG-01: reutilizar el Id al mover un item
+    /// entre módulos, para no generar una fila huérfana en <c>ui_nav_items</c>).
+    /// </summary>
+    [NavItem(
+        "Formas de cobro",
+        Permission = SalesPermissions.View,
+        LabelKey = "app.nav.item.settings.paymentMethods",
+        SortOrder = 96,
+        Id = "d1000000-0000-4000-9000-000000000002",
+        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
+        RelatedActionPermissionsCsv = SalesPermissions.Update
+    )]
+    public const string PaymentMethods = "/sales/payment-methods";
+
     // INITIAL-LOAD-ARCH-01: registro de navegación separado del [AppFeature] del controller —
     // el AppFeatureDiscoveryService sincroniza app_features (catálogo de permisos), pero la
     // barra lateral (GET /api/v1/me/menu) se arma desde este KernelRegistry ([Module]/[NavItem]),

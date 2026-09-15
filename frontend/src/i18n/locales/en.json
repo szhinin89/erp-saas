@@ -463,6 +463,7 @@
   "app.nav.item.reportes.stock": "Inventory Report",
   "app.nav.item.reportes.compras": "Purchases Report",
   "app.nav.item.finance.creditTerms": "Credit Terms",
+  "app.nav.item.settings.paymentMethods": "Payment Methods",
   "app.nav.item.finance.receivables": "Accounts Receivable",
   "app.nav.item.finance.supplierCredits": "Supplier Credits",
   "app.nav.group.inventory": "Inventory",

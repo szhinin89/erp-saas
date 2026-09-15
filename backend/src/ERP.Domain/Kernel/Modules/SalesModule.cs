@@ -105,15 +105,11 @@ public static class SalesModule
     )]
     public const string ConfigurationGroup = "/sales/configuration-group";
 
-    [NavItem(
-        "Métodos de Pago",
-        Permission = SalesPermissions.View,
-        LabelKey = "app.nav.item.sales.paymentMethods",
-        SortOrder = 10,
-        Id = "d1000000-0000-4000-9000-000000000002",
-        ParentId = "e4000000-0000-4000-9000-000000000020"
-    )]
-    public const string PaymentMethods = "/sales/payment-methods";
+    // PAYMENT-METHOD-ACCOUNT-UI-NAV-01: "Métodos de Pago" se retiró de aquí — quedaba como una
+    // segunda entrada al mismo destino que confundía más de lo que ayudaba (ver decisión del
+    // usuario). Única entrada de menú ahora: SettingsModule.PaymentMethods, bajo Configuración >
+    // Condiciones comerciales > "Formas de cobro" (mismo Id d1000000-0000-4000-9000-000000000002
+    // reutilizado allí, sin generar un ui_nav_items huérfano).
 
     // Enlace contextual al tab "salesPos" de la pantalla única de Preferencias Operativas
     // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.

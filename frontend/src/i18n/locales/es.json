@@ -113,6 +113,7 @@
   "app.nav.group.pricing": "Precios",
   "app.nav.item.pricing.priceLists": "Listas de Precios",
   "app.nav.item.finance.creditTerms": "Condiciones de Crédito",
+  "app.nav.item.settings.paymentMethods": "Formas de cobro",
   "app.nav.item.finance.receivables": "Cuentas por Cobrar",
   "app.nav.item.finance.supplierCredits": "Créditos de Proveedor",
   "app.nav.item.caja.registers": "Cajas registradoras",
