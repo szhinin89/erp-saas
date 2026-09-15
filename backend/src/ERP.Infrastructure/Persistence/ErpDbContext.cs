@@ -387,6 +387,9 @@ public class ErpDbContext : DbContext
     public DbSet<ERP.Domain.Modules.Sales.Entities.SalesPaymentSchedule> SalesPaymentSchedules =>
         Set<ERP.Domain.Modules.Sales.Entities.SalesPaymentSchedule>();
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+    // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01
+    public DbSet<ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount> PaymentMethodAccounts =>
+        Set<ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>();
     public DbSet<SalesReceivable> SalesReceivables => Set<SalesReceivable>();
     public DbSet<SalesReceivableInstallment> SalesReceivableInstallments =>
         Set<SalesReceivableInstallment>();

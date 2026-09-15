@@ -116,6 +116,7 @@ function buildPaymentMethod(
     sortOrder: 1,
     detailType: "None",
     sriPaymentMethodCode: null,
+    accountingAccountId: null,
     ...overrides,
   };
 }

@@ -872,6 +872,11 @@ public static class DependencyInjection
             ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodRepository,
             ERP.Infrastructure.Persistence.Repositories.Sales.PaymentMethodRepository
         >();
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01
+        services.AddScoped<
+            ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository,
+            ERP.Infrastructure.Persistence.Repositories.Sales.PaymentMethodAccountRepository
+        >();
         services.AddScoped<
             ERP.Domain.Modules.Sales.Interfaces.ISalesReceivableRepository,
             ERP.Infrastructure.Persistence.Repositories.Sales.SalesReceivableRepository
@@ -942,6 +947,8 @@ public static class DependencyInjection
         services.AddScoped<MasterDataClassificationBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, SalesBootstrapStep>();
         services.AddScoped<PaymentMethodSriMappingBackfillService>();
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01
+        services.AddScoped<PaymentMethodAccountBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, CajaBootstrapStep>();
         services.AddScoped<AccountingBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep>(sp =>

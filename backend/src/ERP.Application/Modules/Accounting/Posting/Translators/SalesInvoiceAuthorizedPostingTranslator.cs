@@ -1,4 +1,5 @@
 using ERP.Application.Modules.Sales.Exceptions;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Sales.Events;
 using MediatR;
 
@@ -47,6 +48,33 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
         if (pendingBalance < 0)
             pendingBalance = 0;
 
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01: si Application (AuthorizeSalesInvoiceHandler)
+        // resolvio el desglose de e.CashApplied por cuenta contable real (CashByAccount, una por
+        // cada PaymentMethodAccount configurado y usado en la venta), esas cuentas se contabilizan
+        // via PostingFact.Allocations (EXPENSES-POSTING-ALLOCATIONS-06, mismo mecanismo ya usado
+        // por Gastos para N cuentas dinamicas), nunca via la cuenta fija de PostingRuleLine.
+        // e.CashByAccount NO tiene por que sumar e.CashApplied: Application deliberadamente deja
+        // afuera el monto de EFECTIVO sin PaymentMethodAccount configurado (compatibilidad con
+        // companies/entornos que no han migrado — ver comentario en AuthorizeSalesInvoiceHandler).
+        // factCashApplied transporta exactamente ese remanente no cubierto por allocations, para
+        // que la linea fija historica de la PostingRule ("Caja general") lo contabilice como
+        // siempre — nunca se pierde ni se duplica un centavo del Debe total. Sin desglose
+        // (CashByAccount vacio: callers/tests que no lo proveen), comportamiento IDENTICO al
+        // anterior: factCashApplied = e.CashApplied completo, sin allocations, cuenta fija de la
+        // PostingRule (compatibilidad total con Lote 1/2/3 ya cerrados).
+        IReadOnlyCollection<PostingAllocation>? cashAllocations = null;
+        var factCashApplied = e.CashApplied;
+        if (e.CashByAccount.Count > 0)
+        {
+            cashAllocations = e
+                .CashByAccount.Where(kv => kv.Value > 0m)
+                .Select(kv => new PostingAllocation(kv.Key, kv.Value, AccountNature.Debit))
+                .ToList();
+            factCashApplied = e.CashApplied - e.CashByAccount.Values.Sum();
+            if (factCashApplied < 0m)
+                factCashApplied = 0m;
+        }
+
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
@@ -60,8 +88,9 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
             e.TotalDiscount,
             e.GrandTotal,
             TotalIrbpnr: e.TotalIrbpnr,
-            CashApplied: e.CashApplied,
-            PendingBalance: pendingBalance
+            CashApplied: factCashApplied,
+            PendingBalance: pendingBalance,
+            Allocations: cashAllocations
         );
 
         var result = await _postingEngine.PostAsync(fact, ct);

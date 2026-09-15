@@ -430,7 +430,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public void Authorize(
         Guid updatedBy,
         decimal? cashApplied = null,
-        decimal? settlementTolerance = null
+        decimal? settlementTolerance = null,
+        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null
     )
     {
         EnsureDraft();
@@ -508,7 +509,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 TotalIce,
                 TotalDiscount,
                 TotalIrbpnr,
-                cashApplied
+                cashApplied,
+                cashByAccount
             )
         );
     }

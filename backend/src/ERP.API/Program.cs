@@ -452,6 +452,29 @@ if (args.Contains("backfill-payment-method-sri-mapping"))
     return;
 }
 
+// Comando de una sola vez (SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01): backfill idempotente de
+// PaymentMethodAccount (EFECTIVO -> Caja general) para companies creadas antes de este ticket —
+// sin esto, toda venta al contado de una company existente empezaría a fallar fail-closed (sin
+// cuenta configurada) en vez de seguir contabilizando contra Caja general como siempre. Nunca
+// siembra cuenta para Transferencia/Tarjeta/Cheque (requiere configuración explícita del
+// administrador). No es un endpoint HTTP ni un IGlobalBootstrapStep — operación de despliegue
+// explícita: `dotnet run -- backfill-payment-method-account`. Sale sin iniciar el host web.
+if (args.Contains("backfill-payment-method-account"))
+{
+    using var paymentMethodAccountBackfillScope = app.Services.CreateScope();
+    var paymentMethodAccountBackfillService =
+        paymentMethodAccountBackfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.PaymentMethodAccountBackfillService>();
+    var paymentMethodAccountResult = await paymentMethodAccountBackfillService.RunAsync();
+    Console.WriteLine(
+        $"[backfill-payment-method-account] Companies procesadas: {paymentMethodAccountResult.CompaniesProcessed}. "
+            + $"Filas creadas: {paymentMethodAccountResult.RowsCreated}. "
+            + $"Sin método EFECTIVO: {paymentMethodAccountResult.SkippedNoEfectivoMethod}. "
+            + $"Sin cuenta Caja general activa/postable: {paymentMethodAccountResult.SkippedNoCajaGeneralAccount}. "
+            + $"Ya configuradas: {paymentMethodAccountResult.SkippedAlreadyConfigured}."
+    );
+    return;
+}
+
 // Comando de una sola vez (ACCOUNTING-CHART-CANONICAL-HIERARCHY-01): corrige ParentAccountId de
 // cuentas existentes para que coincida con el padre canónico implicado por su código, en TODAS
 // las companies activas — incluida Production. Deliberadamente NO gateado por IsProduction() ni

@@ -176,7 +176,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         bool paymentMethodIsCreditAllowed = false,
         bool allowSellWithoutStock = false,
         Guid? activeBranchId = null,
-        Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null
+        Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null,
+        Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null
     ) =>
         BuildHandler(
             inv,
@@ -187,7 +188,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodIsCreditAllowed,
             allowSellWithoutStock,
             activeBranchId,
-            paymentMethodRepoOverride
+            paymentMethodRepoOverride,
+            paymentMethodAccountRepoOverride
         );
 
     private static (
@@ -203,7 +205,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         bool paymentMethodIsCreditAllowed = false,
         bool allowSellWithoutStock = false,
         Guid? activeBranchId = null,
-        Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null
+        Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null,
+        Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -281,6 +284,28 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                 .Setup(r => r.GetByIdAsync(TenantId, PaymentMethodId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(paymentMethod);
 
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — default: la Company activa NO tiene ningún
+        // PaymentMethodAccount configurado (mapa vacío) — mismo "gate de activación" que
+        // AuthorizeSalesInvoiceHandler usa para companies que no han migrado: con el mapa vacío, el
+        // guard fail-closed nunca se activa y el comportamiento es IDÉNTICO al previo a este
+        // ticket, sin importar qué Guid de método de pago use cada test (varios usan Guids
+        // distintos de la constante PaymentMethodId vía paymentMethodRepoOverride). El guard
+        // fail-closed en sí se cubre en sus propios tests dedicados, con
+        // paymentMethodAccountRepoOverride explícito.
+        var paymentMethodAccountRepo =
+            paymentMethodAccountRepoOverride ?? new Mock<IPaymentMethodAccountRepository>();
+        if (paymentMethodAccountRepoOverride is null)
+            paymentMethodAccountRepo
+                .Setup(r =>
+                    r.GetMapAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(
+                    new Dictionary<
+                        Guid,
+                        ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount
+                    >()
+                );
+
         var receivableRepo = new Mock<ISalesReceivableRepository>();
 
         postingEngine = new Mock<IPostingEngine>();
@@ -312,6 +337,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
+            paymentMethodAccountRepo.Object,
             postingEngine.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -407,6 +433,18 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                 )
             );
 
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — mapa vacío por default (Company sin migrar,
+        // ver comentario equivalente en BuildHandler): comportamiento idéntico al previo a este
+        // ticket, el guard fail-closed no se activa.
+        var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
+        paymentMethodAccountRepo
+            .Setup(r =>
+                r.GetMapAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>()
+            );
+
         var preferences = new Mock<IOperationalPreferencesResolver>();
         preferences
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
@@ -427,6 +465,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
+            paymentMethodAccountRepo.Object,
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -628,6 +667,18 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                 )
             );
 
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — mapa vacío por default (Company sin migrar,
+        // ver comentario equivalente en BuildHandler): comportamiento idéntico al previo a este
+        // ticket, el guard fail-closed no se activa.
+        var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
+        paymentMethodAccountRepo
+            .Setup(r =>
+                r.GetMapAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>()
+            );
+
         var preferences = new Mock<IOperationalPreferencesResolver>();
         preferences
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
@@ -648,6 +699,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
+            paymentMethodAccountRepo.Object,
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -703,6 +755,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<IBusinessPartnerRepository>(),
             Mock.Of<ISalesFiscalPolicyResolver>(),
             Mock.Of<IPaymentMethodRepository>(),
+            Mock.Of<IPaymentMethodAccountRepository>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -1983,5 +2036,164 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.SriPaymentMethodCode.Should().Be("01", "sin mapping SRI configurado para el único método usado, la cabecera conserva su fallback previo en vez de sincronizar un valor incorrecto o vaciarlo.");
+    }
+
+    // ── SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 ──────────────────────────────────────────
+
+    [Fact]
+    public async Task Transferencia_sin_cuenta_configurada_bloquea_la_autorizacion_con_mensaje_claro()
+    {
+        // Reproduce el bug reportado: "Transferencia Bancaria" sin PaymentMethodAccount configurado
+        // para la Company activa. La autorización debe rechazarse ANTES de capturar secuencial/
+        // tocar inventario — nunca contabilizar silenciosamente contra Caja general.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var transferMethodId = Guid.NewGuid();
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            transferMethodId,
+            "16",
+            "Transferencia Bancaria",
+            total
+        );
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(
+                    TenantId,
+                    "TRANSFERENCIA",
+                    "Transferencia Bancaria",
+                    true,
+                    false,
+                    2,
+                    UserId,
+                    sriPaymentMethodCode: "16"
+                )
+            );
+
+        // Mapa NO vacío (contiene una entrada de OTRO método) — activa el gate estricto de la
+        // Company (ya "migró": al menos un PaymentMethodAccount configurado) sin incluir
+        // Transferencia — reproduce exactamente el caso reportado: cualquier otro método sin
+        // cuenta configurada bloquea, nunca cae en Caja general en silencio.
+        var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
+        paymentMethodAccountRepo
+            .Setup(r =>
+                r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>
+                {
+                    [Guid.NewGuid()] = ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount.Create(
+                        TenantId,
+                        CompanyId,
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        UserId
+                    ),
+                }
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            paymentMethodAccountRepoOverride: paymentMethodAccountRepo
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Transferencia Bancaria");
+        result.Error.Should().Contain("cuenta contable");
+        inv.Status.Should()
+            .Be(
+                Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft,
+                "no debe autorizarse ni consumir secuencial sin cuenta contable configurada para el método de pago"
+            );
+    }
+
+    [Fact]
+    public async Task Efectivo_sin_PaymentMethodAccount_configurado_sigue_autorizando_por_compatibilidad()
+    {
+        // Compatibilidad con companies/entornos que no han corrido el backfill de
+        // PaymentMethodAccountBackfillService: EFECTIVO sin fila configurada NO debe bloquear la
+        // autorización (a diferencia de cualquier otro método) — el traductor de posting enruta
+        // ese monto a la línea fija histórica de la PostingRule.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m);
+
+        // Mapa vacío deliberado: ningún método tiene cuenta configurada — Company "sin migrar",
+        // el gate fail-closed permanece apagado.
+        var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
+        paymentMethodAccountRepo
+            .Setup(r => r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>()
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            paymentMethodAccountRepoOverride: paymentMethodAccountRepo
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+    }
+
+    [Fact]
+    public async Task Efectivo_con_cuenta_configurada_sigue_autorizando_igual_que_antes()
+    {
+        // Regresión: Efectivo con PaymentMethodAccount configurado (Caja general) debe seguir
+        // autorizando exactamente igual que antes de este ticket.
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m);
+        var cajaGeneralAccountId = Guid.NewGuid();
+
+        var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
+        paymentMethodAccountRepo
+            .Setup(r => r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>
+                {
+                    [PaymentMethodId] =
+                        ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount.Create(
+                            TenantId,
+                            CompanyId,
+                            PaymentMethodId,
+                            cajaGeneralAccountId,
+                            UserId
+                        ),
+                }
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            paymentMethodAccountRepoOverride: paymentMethodAccountRepo
+        );
+
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
     }
 }

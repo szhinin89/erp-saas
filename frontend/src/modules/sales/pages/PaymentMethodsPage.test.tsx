@@ -21,6 +21,12 @@ function renderPage() {
  * mensaje real y ya no queda silencioso.
  */
 
+vi.mock("../../accounting/api/accountingApi", () => ({
+  accountingApi: {
+    listAccounts: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 vi.mock("../api/paymentMethodService", () => ({
   paymentMethodService: {
     list: vi.fn(),
@@ -28,6 +34,7 @@ vi.mock("../api/paymentMethodService", () => ({
     create: vi.fn(),
     update: vi.fn(),
     toggle: vi.fn(),
+    setAccount: vi.fn(),
   },
 }));
 
@@ -59,6 +66,7 @@ const ACTIVE_PM: PaymentMethodDto = {
   sortOrder: 1,
   detailType: "None",
   sriPaymentMethodCode: "01",
+  accountingAccountId: null,
 };
 
 afterEach(() => cleanup());

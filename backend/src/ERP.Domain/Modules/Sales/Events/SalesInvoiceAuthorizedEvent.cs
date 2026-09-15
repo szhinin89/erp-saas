@@ -40,6 +40,22 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
     /// </summary>
     public decimal CashApplied { get; }
 
+    /// <summary>
+    /// SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — desglose de <see cref="CashApplied"/> por cuenta
+    /// contable real (Caja general / Bancos / etc.), agrupado por la cuenta configurada
+    /// (<c>PaymentMethodAccount</c>) del método de pago usado en cada línea de
+    /// <c>SalesInvoicePayment</c> no marcada <c>IsCreditAllowed</c>. Resuelto y validado por
+    /// Application (<c>AuthorizeSalesInvoiceHandler</c>) ANTES de llamar a <c>Authorize()</c> — el
+    /// dominio no conoce <c>PaymentMethodAccount</c> ni accede a repositorios, solo transporta el
+    /// resultado ya calculado (mismo criterio que <see cref="CashApplied"/>/<see cref="Subtotal"/>).
+    /// Suma de los valores == <see cref="CashApplied"/> siempre que se provea (garantizado por el
+    /// handler, que construye ambos del mismo recorrido de <c>Payments</c>). Vacío/null solo por
+    /// compatibilidad con callers/tests que no lo necesiten — <see cref="SalesInvoiceAuthorizedPostingTranslator"/>
+    /// (Accounting) lo usa para enrutar el Debe de "Sales/InvoiceIssued" a la cuenta real por método
+    /// de pago, en vez de la cuenta fija histórica ("Caja general" para cualquier método).
+    /// </summary>
+    public IReadOnlyDictionary<Guid, decimal> CashByAccount { get; }
+
     public SalesInvoiceAuthorizedEvent(
         Guid invoiceId,
         string invoiceNumber,
@@ -54,7 +70,8 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         decimal totalIce,
         decimal totalDiscount,
         decimal totalIrbpnr = 0m,
-        decimal? cashApplied = null
+        decimal? cashApplied = null,
+        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null
     )
     {
         InvoiceId = invoiceId;
@@ -74,5 +91,6 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         // parámetro nuevo (ninguno de dominio hoy) — el único caller real de producción
         // (SalesInvoice.Authorize) siempre lo pasa explícitamente con el cashApplied real.
         CashApplied = cashApplied ?? grandTotal;
+        CashByAccount = cashByAccount ?? new Dictionary<Guid, decimal>();
     }
 }

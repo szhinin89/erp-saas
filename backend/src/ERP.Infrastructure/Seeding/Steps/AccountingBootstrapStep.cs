@@ -718,6 +718,44 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             LogAccountsSkipped(companyId);
         }
 
+        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — vincula EFECTIVO (sembrado por
+        // SalesBootstrapStep, Order 40, ANTES de que exista el Plan de Cuentas) a "1.1.01.001 Caja
+        // general" (recién sembrada arriba) — mismo criterio de idempotencia que el resto de este
+        // step: solo crea el vínculo si no existe. Nunca siembra cuenta para Transferencia/
+        // Tarjeta/Cheque — ver PaymentMethodAccountBackfillService (mismo criterio, para companies
+        // ya existentes) para la justificación completa de por qué esos métodos quedan sin cuenta.
+        if (accountIdByCode.TryGetValue("1.1.01.001", out var cajaGeneralAccountId))
+        {
+            var efectivo = await _db
+                .PaymentMethods.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(pm => pm.TenantId == tenantId && pm.Code == "EFECTIVO", cancellationToken);
+            if (efectivo is not null)
+            {
+                var hasLink = await _db
+                    .PaymentMethodAccounts.IgnoreQueryFilters()
+                    .AnyAsync(
+                        x =>
+                            x.TenantId == tenantId
+                            && x.CompanyId == companyId
+                            && x.PaymentMethodId == efectivo.Id,
+                        cancellationToken
+                    );
+                if (!hasLink)
+                {
+                    _db.PaymentMethodAccounts.Add(
+                        ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount.Create(
+                            tenantId,
+                            companyId,
+                            efectivo.Id,
+                            cajaGeneralAccountId,
+                            actorId
+                        )
+                    );
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+            }
+        }
+
         var currentYear = DateTime.UtcNow.Year;
         var hasPeriodForYear = await _db
             .AccountingPeriods.IgnoreQueryFilters()

@@ -66,4 +66,26 @@ public sealed class PaymentMethodsController : ControllerBase
     [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
     public async Task<IActionResult> Toggle(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new TogglePaymentMethodCommand(id), ct));
+
+    /// <summary>
+    /// SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — configura, para la Company activa, la cuenta
+    /// contable (Caja/Bancos) que debe recibir el débito de "dinero real cobrado" cuando este
+    /// método de pago se usa en una venta. Sin esta configuración, toda venta con este método
+    /// (salvo Efectivo, ya vinculado por defecto a Caja general) es rechazada al autorizar.
+    /// </summary>
+    [HttpPut("{id:guid}/account")]
+    [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
+    public async Task<IActionResult> SetAccount(
+        Guid id,
+        [FromBody] SetPaymentMethodAccountRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new SetPaymentMethodAccountCommand(id, body.AccountingAccountId),
+                ct
+            )
+        );
 }
+
+public sealed record SetPaymentMethodAccountRequest(Guid AccountingAccountId);

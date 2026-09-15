@@ -49,6 +49,7 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISalesFiscalPolicyResolver _fiscalPolicyResolver;
     private readonly IPaymentMethodRepository _paymentMethodRepo;
+    private readonly IPaymentMethodAccountRepository _paymentMethodAccountRepo;
     private readonly IPostingEngine _postingEngine;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
@@ -73,6 +74,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         IBusinessPartnerRepository bpRepo,
         ISalesFiscalPolicyResolver fiscalPolicyResolver,
         IPaymentMethodRepository paymentMethodRepo,
+        IPaymentMethodAccountRepository paymentMethodAccountRepo,
         IPostingEngine postingEngine,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
@@ -97,6 +99,7 @@ public sealed class AuthorizeSalesInvoiceHandler
         _bpRepo = bpRepo;
         _fiscalPolicyResolver = fiscalPolicyResolver;
         _paymentMethodRepo = paymentMethodRepo;
+        _paymentMethodAccountRepo = paymentMethodAccountRepo;
         _postingEngine = postingEngine;
         _logger = logger;
         _t = t;
@@ -230,6 +233,59 @@ public sealed class AuthorizeSalesInvoiceHandler
                 isCreditByPaymentMethod = true;
             else
                 cashApplied += payment.Amount;
+        }
+
+        // ── SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 ───────────────────────
+        // Resuelve, para cada método de pago NO-Crédito realmente usado en esta venta, la cuenta
+        // contable de la Company activa (PaymentMethodAccount) que debe recibir el débito de
+        // "dinero real cobrado" en el asiento Sales/InvoiceIssued — nunca la cuenta fija histórica
+        // ("Caja general" para cualquier método).
+        //
+        // Gate de activación por Company (nunca por Code/Name hardcodeado — evita acoplar esta
+        // regla a un valor mágico como "EFECTIVO", que ni siquiera es estable entre entornos: los
+        // fixtures de integración crean PaymentMethod con Code="01"/Name="Efectivo"): si la Company
+        // activa TODAVÍA no tiene NINGÚN PaymentMethodAccount configurado (no ha migrado — nunca
+        // corrió el backfill ni configuró nada manualmente), esta venta se contabiliza EXACTAMENTE
+        // como antes de este ticket (cashByAccount vacío -> SalesInvoiceAuthorizedPostingTranslator
+        // usa la línea fija histórica para el 100% del monto, sin bloquear nada) — así ninguna
+        // company/entorno existente se rompe el día que este código se despliega. En cuanto la
+        // Company tiene AL MENOS UN PaymentMethodAccount configurado (el backfill de Efectivo → Caja
+        // general corre automáticamente en el bootstrap/backfill de Accounting, así que en la
+        // práctica esto se activa solo), la regla pasa a ser estricta: CUALQUIER método no-Crédito
+        // usado sin cuenta configurada bloquea la autorización — fail-closed, nunca un fallback
+        // oculto a Caja general (el bug reportado por este ticket).
+        var companyAccountMap = await _paymentMethodAccountRepo.GetMapAsync(tid, cid, ct);
+        var cashByAccount = new Dictionary<Guid, decimal>();
+        var missingAccountMethodNames = new List<string>();
+        if (companyAccountMap.Count > 0)
+        {
+            foreach (var payment in inv.Payments)
+            {
+                if (
+                    !resolvedPaymentMethods.TryGetValue(payment.PaymentMethodId, out var method)
+                    || method.IsCreditAllowed
+                )
+                    continue;
+
+                if (!companyAccountMap.TryGetValue(payment.PaymentMethodId, out var link))
+                {
+                    if (!missingAccountMethodNames.Contains(method.Name))
+                        missingAccountMethodNames.Add(method.Name);
+                    continue;
+                }
+
+                cashByAccount.TryGetValue(link.AccountingAccountId, out var existing);
+                cashByAccount[link.AccountingAccountId] = existing + payment.Amount;
+            }
+        }
+
+        if (missingAccountMethodNames.Count > 0)
+        {
+            var methodsList = string.Join(", ", missingAccountMethodNames);
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                $"El método de pago '{methodsList}' no tiene una cuenta contable configurada para esta empresa. "
+                    + "Configúrela en Ventas > Métodos de pago antes de emitir esta factura."
+            );
         }
 
         var settlement = ERP.Domain.Modules.Sales.Policies.SalesSettlementPolicy.Calculate(
@@ -413,7 +469,7 @@ public sealed class AuthorizeSalesInvoiceHandler
             // SalesSettlementPolicy.Tolerance como fuente de cálculo — la constante sigue viviendo
             // en Domain solo como fallback si la policy no pudiera resolverse).
             var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
-            inv.Authorize(uid, cashApplied, precision.SettlementToleranceAmount);
+            inv.Authorize(uid, cashApplied, precision.SettlementToleranceAmount, cashByAccount);
         }
         catch (InvalidOperationException ex)
         {

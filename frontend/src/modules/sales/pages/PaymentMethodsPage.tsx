@@ -18,6 +18,7 @@ import type {
 } from "../api/paymentMethodService";
 import { paymentMethodService } from "../api/paymentMethodService";
 import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
+import { accountingApi } from "../../accounting/api/accountingApi";
 import { useAsync } from "../../../hooks/useAsync";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
@@ -51,12 +52,23 @@ export function PaymentMethodsPage() {
   const [fDetailType, setFDetailType] =
     useState<PaymentMethodDetailType>("None");
   const [fSriPaymentMethodCode, setFSriPaymentMethodCode] = useState("");
+  // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01
+  const [fAccountingAccountId, setFAccountingAccountId] = useState("");
+  const [savingAccount, setSavingAccount] = useState(false);
 
   // SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: catálogo real sri_payment_method — nunca códigos
   // hardcodeados en el frontend. Sin mapeo (valor "") la emisión usa el default de empresa
   // (Configuración de Empresa → Ventas).
   const sriPaymentMethodsState = useAsync(() => sriLookupFacade.paymentMethods());
   const sriPaymentMethods = sriPaymentMethodsState.data ?? [];
+
+  // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — reutiliza accountingApi.listAccounts() (ya usado
+  // por ChartOfAccountsPage) en vez de crear un fetch nuevo. Solo cuentas postables/activas son
+  // seleccionables — mismo criterio que PostingAccountGuard en backend.
+  const accountsState = useAsync(() => accountingApi.listAccounts());
+  const postableAccounts = (accountsState.data ?? []).filter(
+    (a) => a.isActive && a.allowsPosting,
+  );
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -90,6 +102,7 @@ export function PaymentMethodsPage() {
     setFSortOrder(0);
     setFDetailType("None");
     setFSriPaymentMethodCode("");
+    setFAccountingAccountId("");
     setEditing(null);
     setError("");
   };
@@ -102,7 +115,28 @@ export function PaymentMethodsPage() {
     setFSortOrder(pm.sortOrder);
     setFDetailType(pm.detailType);
     setFSriPaymentMethodCode(pm.sriPaymentMethodCode ?? "");
+    setFAccountingAccountId(pm.accountingAccountId ?? "");
     setTab("nuevo");
+  };
+
+  // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — comando independiente de create/update (la cuenta
+  // es Company-scoped, distinto ciclo de vida que el catálogo de métodos, que es tenant-wide).
+  const handleSaveAccount = async () => {
+    if (!editing || !fAccountingAccountId) return;
+    setSavingAccount(true);
+    try {
+      await paymentMethodService.setAccount(editing.id, fAccountingAccountId);
+      await fetchItems();
+      message.success("Cuenta contable configurada correctamente.");
+    } catch (err: unknown) {
+      message.error(
+        formatApiRequestError(err, {
+          generic: "No se pudo configurar la cuenta contable.",
+        }),
+      );
+    } finally {
+      setSavingAccount(false);
+    }
   };
 
   const handleSave = async () => {
@@ -224,6 +258,25 @@ export function PaymentMethodsPage() {
           (s) => s.code === pm.sriPaymentMethodCode,
         );
         return `${pm.sriPaymentMethodCode} — ${sri?.name ?? "?"}`;
+      },
+    },
+    {
+      key: "accountingAccountId",
+      header: "Cuenta Contable",
+      render: (pm) => {
+        if (pm.isCreditAllowed)
+          return <span className="zh-text-muted zh-text-xs">N/A (Crédito)</span>;
+        if (!pm.accountingAccountId)
+          return (
+            <Badge
+              variant="error"
+              label="Sin configurar"
+            />
+          );
+        const acc = (accountsState.data ?? []).find(
+          (a) => a.id === pm.accountingAccountId,
+        );
+        return acc ? `${acc.code} — ${acc.name}` : pm.accountingAccountId;
       },
     },
     { key: "sortOrder", header: "Orden", render: (pm) => pm.sortOrder },
@@ -385,6 +438,52 @@ export function PaymentMethodsPage() {
               </div>
             </div>
           </div>
+
+          {editing && !fIsCredit && (
+            <div className="prd-section zh-mt-16">
+              <h4 className="prd-crud-title">Cuenta Contable</h4>
+              <p className="zh-text-muted zh-text-xs">
+                Cuenta de Caja/Bancos que recibe el débito de "dinero real
+                cobrado" cuando se usa este método en una venta
+                (SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01). Sin esta
+                configuración, ninguna venta con este método podrá emitirse.
+              </p>
+              <div className="prd-crud-form-grid">
+                <div className="zh-field">
+                  <label className="zh-field-label">Cuenta</label>
+                  <div className="zh-field-control">
+                    <ZhSelect
+                      value={fAccountingAccountId}
+                      onChange={(e) => setFAccountingAccountId(e.target.value)}
+                      disabled={accountsState.loading}
+                    >
+                      <option value="">— Sin configurar —</option>
+                      {postableAccounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.code} — {acc.name}
+                        </option>
+                      ))}
+                    </ZhSelect>
+                  </div>
+                </div>
+              </div>
+              <div className="prd-crud-actions">
+                <ZHBtn
+                  onClick={handleSaveAccount}
+                  disabled={
+                    savingAccount ||
+                    !fAccountingAccountId ||
+                    fAccountingAccountId === editing.accountingAccountId
+                  }
+                >
+                  <span className="material-symbols-outlined zh-icon-lg">
+                    save
+                  </span>
+                  {savingAccount ? "Guardando..." : "Guardar Cuenta"}
+                </ZHBtn>
+              </div>
+            </div>
+          )}
 
           <div className="pf-collapsible zh-mt-16 pm-flags-panel">
             <label className="zh-checkbox-label pm-checkbox-option">
