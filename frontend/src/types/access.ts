@@ -70,5 +70,6 @@ export interface NavMenuGroupDto {
   code: string;
   icon: string;
   labelKey: string;
+  sortOrder: number;
   items: NavMenuItemDto[];
 }

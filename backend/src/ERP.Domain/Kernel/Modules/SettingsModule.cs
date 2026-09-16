@@ -3,7 +3,13 @@ using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.Domain.Kernel.Modules;
 
-[Module("settings", Icon = "⚙", SortOrder = 50, GroupId = "f2d0ca10-0000-4000-8000-000000000008")]
+// MAPA-MENU-ERP-SSOT-01: Facturación electrónica se movió a SriModule (tile "SRI/Documentos
+// electrónicos"), Condiciones comerciales se movió a SuppliersModule (tile "Proveedores") y
+// Destinos financieros se movió a TreasuryModule (tile "Tesorería") — el árbol objetivo agrupa
+// esas tres áreas fuera de Configuración general. Queda: Empresa, Documentos y flujos,
+// Comunicaciones, Sistema — igual al árbol objetivo. SortOrder actualizado para su posición en el
+// árbol de 12 módulos de nivel superior.
+[Module("settings", Icon = "⚙", SortOrder = 110, GroupId = "f2d0ca10-0000-4000-8000-000000000008")]
 public static class SettingsModule
 {
     /// <summary>
@@ -13,8 +19,9 @@ public static class SettingsModule
     /// Id/ruta/permiso que tenía en AdminModule — sin cambios de API ni de lógica de negocio.
     /// </summary>
     // NAV-HIERARCHY-UNIFY-01: contenedor "Empresa" — agrupa todos los catálogos de identidad/
-    // ubicación de empresa (Mis empresas, datos de empresa, Sucursales, Establecimientos, Puntos de emisión, Destinos
-    // financieros, Geografía) para que ninguno quede suelto bajo el módulo Configuración.
+    // ubicación de empresa (Mis empresas, datos de empresa, Sucursales, Establecimientos, Puntos
+    // de emisión, Geografía) para que ninguno quede suelto bajo el módulo Configuración.
+    // (MAPA-MENU-ERP-SSOT-01: Destinos financieros se movió a Tesorería, ver más abajo.)
     // MENU-COMPANY-HIERARCHY-FLAT-01: "Mis empresas" (multiempresa, CompaniesView) y
     // "Datos de la empresa" (empresa activa, CompanyView) son pantallas reales distintas con
     // permisos distintos; se dejan como hermanos directos bajo "Empresa" para evitar el nivel
@@ -26,8 +33,7 @@ public static class SettingsModule
         Id = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         PermissionsAnyCsv = SettingsPermissions.CompaniesView + "," + SettingsPermissions.CompanyView
             + "," + SettingsPermissions.BranchesView + "," + SettingsPermissions.EstablishmentsView
-            + "," + SettingsPermissions.EmissionPointsView + ","
-            + SettingsPermissions.FinancialDestinationsView + "," + SettingsPermissions.GeographyView
+            + "," + SettingsPermissions.EmissionPointsView + "," + SettingsPermissions.GeographyView
     )]
     public const string EnterpriseGroup = "/settings/enterprise-group";
 
@@ -90,16 +96,10 @@ public static class SettingsModule
     )]
     public const string EmissionPoints = "/settings/emission-points";
 
-    [NavItem(
-        "Destinos financieros",
-        Permission = SettingsPermissions.FinancialDestinationsView,
-        LabelKey = "app.nav.item.settings.financialDestinations",
-        SortOrder = 50,
-        Id = "a1000000-0000-4000-9000-000000000011",
-        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        RelatedActionPermissionsCsv = SettingsPermissions.FinancialDestinationsManage
-    )]
-    public const string FinancialDestinations = "/settings/financial-destinations";
+    // MAPA-MENU-ERP-SSOT-01: "Destinos financieros" se movió a TreasuryModule.FinancialDestinations
+    // (Tesorería > Bancos) — mismo Id (a1000000-0000-4000-9000-000000000011), nueva ruta
+    // /treasury/banks/financial-destinations (antes /settings/financial-destinations, que queda
+    // como redirect en el frontend).
 
     // NAV-HIERARCHY-UNIFY-01: contenedor "Documentos y flujos" — categoría propia, ninguna
     // pantalla real puede quedar suelta directamente bajo el módulo settings.
@@ -127,30 +127,11 @@ public static class SettingsModule
     )]
     public const string DocumentFlows = "/settings/document-flows";
 
-    // NAV-HIERARCHY-UNIFY-01: contenedor "Facturación electrónica" — categoría propia.
-    [NavItem(
-        "Facturación electrónica",
-        LabelKey = "app.nav.item.settings.electronicInvoicingGroup",
-        SortOrder = 60,
-        Id = "60530be0-ce1c-4a1c-b1e8-fa5b4256bde7",
-        PermissionsAnyCsv = ElectronicInvoicingPermissions.View
-    )]
-    public const string ElectronicInvoicingGroup = "/settings/electronic-invoicing/group";
-
-    // MENU-MODULE-REORG-01: movido desde SalesModule — es configuración transversal (aplica al
-    // documento electrónico en general), no exclusiva de Ventas. Mismo permiso; antes derivaba
-    // su Id automáticamente (module.Code="sales" + ruta), ahora fijo explícito para que el
-    // cambio de módulo no genere un Id nuevo huérfano en ui_nav_items.
-    [NavItem(
-        "Electronic Invoicing",
-        Permission = ElectronicInvoicingPermissions.View,
-        LabelKey = "app.nav.item.settings.electronicInvoicing",
-        SortOrder = 60,
-        Id = "a1000000-0000-4000-9000-000000000014",
-        ParentId = "60530be0-ce1c-4a1c-b1e8-fa5b4256bde7",
-        RelatedActionPermissionsCsv = ElectronicInvoicingPermissions.Configure
-    )]
-    public const string ElectronicInvoicing = "/settings/electronic-invoicing";
+    // MAPA-MENU-ERP-SSOT-01: "Facturación electrónica" (grupo + pantalla) se movió a
+    // SriModule (tile "SRI/Documentos electrónicos" > Configuración) — mismos Ids
+    // (60530be0-ce1c-4a1c-b1e8-fa5b4256bde7 / a1000000-0000-4000-9000-000000000014), nueva ruta
+    // /sri/configuration/electronic-invoicing (antes /settings/electronic-invoicing, que queda
+    // como redirect en el frontend).
 
     // NAV-HIERARCHY-UNIFY-01: contenedor "Comunicaciones" — categoría propia.
     [NavItem(
@@ -206,44 +187,11 @@ public static class SettingsModule
     )]
     public const string Geography = "/settings/geography";
 
-    // NAV-HIERARCHY-UNIFY-01: contenedor "Condiciones comerciales" — Condiciones de Pago +
-    // Condiciones de Crédito, catálogos transversales (no exclusivos de Clientes ni de
-    // Proveedores) que antes quedaban sueltos bajo el módulo Configuración.
-    [NavItem(
-        "Condiciones comerciales",
-        LabelKey = "app.nav.item.settings.commercialTermsGroup",
-        SortOrder = 92,
-        Id = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
-        PermissionsAnyCsv = MasterDataPermissions.PaymentTermsView + "," + FinancePermissions.View
-    )]
-    public const string CommercialTermsGroup = "/master/commercial-terms-group";
-
-    // NAVIGATION-OPERATING-CYCLES-03: movidos desde MasterDataModule — son catálogos/parámetros
-    // transversales (no exclusivos de Clientes ni de Proveedores). Mismos Ids/rutas/permisos.
-    [NavItem(
-        "Condiciones de Pago",
-        Permission = MasterDataPermissions.PaymentTermsView,
-        LabelKey = "app.nav.item.masterdata.paymentTerms",
-        SortOrder = 92,
-        Id = "a1000000-0000-4000-9000-000000000103",
-        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
-        RelatedActionPermissionsCsv = MasterDataPermissions.PaymentTermsManage
-    )]
-    public const string PaymentTermsCustomer = "/master/payment-terms";
-
-    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update (CreditTermsPage.tsx →
-    // creditTermService.create/update/enable/disable, CreditTermsController) son acciones reales
-    // de esta pantalla y no estaban en el catálogo asignable.
-    [NavItem(
-        "Condiciones de Crédito",
-        Permission = FinancePermissions.View,
-        LabelKey = "app.nav.item.finance.creditTerms",
-        SortOrder = 94,
-        Id = "b2000000-0000-4000-9000-000000000001",
-        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
-        RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.Update
-    )]
-    public const string CreditTerms = "/finance/credit-terms";
+    // MAPA-MENU-ERP-SSOT-01: "Condiciones comerciales" (grupo + Condiciones de Pago + Condiciones
+    // de Crédito) se movió a SuppliersModule (tile "Proveedores") — el árbol objetivo pide
+    // "Condiciones pago/crédito" bajo Proveedores. Mismos Ids
+    // (3ac9c729-c29b-4e88-a1eb-b0d8073828c2 / a1000000-0000-4000-9000-000000000103 /
+    // b2000000-0000-4000-9000-000000000001), mismas rutas/permisos.
 
     // DESTINOS-CONTABLES-COBROS-VENTAS-01: NavItem "Formas de cobro" (antes aquí, movido desde
     // SalesModule por PAYMENT-METHOD-ACCOUNT-UI-NAV-01) reubicado a

@@ -4,14 +4,20 @@ using ERP.Domain.Kernel.Permissions;
 namespace ERP.Domain.Kernel.Modules;
 
 // MENU-MODULE-REORG-01: reorganizado en Operación/Configuración/Reportes. Reporte de Ventas
-// (antes ReportsModule) se movió aquí — mismos Ids/rutas/permisos. Facturación Electrónica
-// (config) se movió a Configuración general (SettingsModule) por ser transversal; el Monitor de
-// Documentos Electrónicos se mantiene aquí como operación de Ventas (revisión diaria de
-// comprobantes emitidos).
+// (antes ReportsModule) se movió aquí — mismos Ids/rutas/permisos.
 // NAVIGATION-OPERATING-CYCLES-03: Cuentas por cobrar se movió a CustomersModule (ciclo cliente,
-// no ciclo venta). Caja se fusionó aquí desde CajaModule (antes grupo propio) — Ventas/POS y
-// Caja son la misma operación de piso de venta; mismos Ids/rutas/permisos que tenía CajaModule.
-[Module("sales", Icon = "💰", SortOrder = 40)]
+// no ciclo venta). Caja se fusionó aquí desde CajaModule.
+//
+// MAPA-MENU-ERP-SSOT-01: Caja se separa de vuelta a su propio módulo de nivel superior
+// (TreasuryModule.cs, junto con Destinos financieros — el árbol objetivo agrupa todo lo
+// financiero/de tesorería en un solo tile, no dentro de Ventas). El Monitor de Documentos
+// Electrónicos se mueve a SriModule.cs (el árbol objetivo lo agrupa con Facturación electrónica
+// bajo un tile "SRI/Documentos electrónicos" propio, ya que ambos son sobre el ciclo de vida del
+// comprobante electrónico ante el SRI, no una operación de venta en sí). Ventas queda con:
+// Facturas de venta/POS, Devoluciones, Preferencias de Ventas/POS, Reporte de Ventas — igual al
+// árbol objetivo. Mismos Ids/rutas/permisos en los módulos nuevos, solo cambia a qué [Module]
+// pertenecen.
+[Module("sales", Icon = "💰", SortOrder = 70)]
 public static class SalesModule
 {
     // ── Ventas (MENU-FINAL-STRUCTURE-01: subgrupo renombrado de "Operación" al mismo
@@ -21,7 +27,7 @@ public static class SalesModule
         LabelKey = "app.nav.item.sales.operation",
         SortOrder = 10,
         Id = "e4000000-0000-4000-9000-000000000010",
-        PermissionsAnyCsv = SalesPermissions.View + "," + ElectronicDocumentsPermissions.View
+        PermissionsAnyCsv = SalesPermissions.View
     )]
     public const string OperationGroup = "/sales/operation-group";
 
@@ -54,45 +60,11 @@ public static class SalesModule
     )]
     public const string Returns = "/sales/returns";
 
-    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Detail/Retry (ver detalle/reintentar un documento
-    // varado — useElectronicDocumentsMonitor.ts) son acciones reales de esta pantalla, no
-    // estaban en el catálogo asignable.
-    [NavItem(
-        "Electronic Documents Monitor",
-        Permission = ElectronicDocumentsPermissions.View,
-        LabelKey = "app.nav.item.electronicDocuments.monitor",
-        SortOrder = 40,
-        ParentId = "e4000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = ElectronicDocumentsPermissions.Detail + ","
-            + ElectronicDocumentsPermissions.Retry
-    )]
-    public const string ElectronicDocumentsMonitor = "/electronic-documents/monitor";
-
-    // ── Caja (fusionado desde CajaModule, sin Reportes: no existe pantalla de "Reporte de
-    // Caja" en el sistema — regla explícita: no crear entradas falsas) ────────────────
-    [NavItem(
-        "Caja",
-        LabelKey = "app.nav.item.caja.operation",
-        SortOrder = 15,
-        Id = "f5000000-0000-4000-9000-000000000010",
-        PermissionsAnyCsv = CajaPermissions.View
-    )]
-    public const string CajaGroup = "/cash/operation-group";
-
-    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Open/Close/Record (abrir/cerrar turno, registrar
-    // movimiento — CajaPage.tsx/useCajaPage.ts → CashSessionController) son acciones reales
-    // distintas de View y no estaban en el catálogo asignable.
-    [NavItem(
-        "Turno de Caja",
-        Permission = CajaPermissions.View,
-        LabelKey = "app.nav.item.caja.sessions",
-        SortOrder = 10,
-        Id = "f5000000-0000-4000-9000-000000000001",
-        ParentId = "f5000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = CajaPermissions.Open + "," + CajaPermissions.Close + ","
-            + CajaPermissions.Record
-    )]
-    public const string CajaSessions = "/cash";
+    // MAPA-MENU-ERP-SSOT-01: "Electronic Documents Monitor" se movió a
+    // SriModule.ElectronicDocumentsMonitor (mismo Id explícito nuevo, ver comentario allí — antes
+    // derivaba su Id automáticamente de module.Code="sales", así que no había un Id previo que
+    // preservar). Nueva ruta /sri/electronic-documents/monitor (antes
+    // /electronic-documents/monitor, que queda como redirect en el frontend).
 
     // ── Configuración ────────────────────────────────────────────────
     [NavItem(
@@ -100,8 +72,7 @@ public static class SalesModule
         LabelKey = "app.nav.item.sales.configuration",
         SortOrder = 20,
         Id = "e4000000-0000-4000-9000-000000000020",
-        PermissionsAnyCsv = SalesPermissions.View + "," + OperationalPreferencesPermissions.View
-            + "," + CajaPermissions.View
+        PermissionsAnyCsv = OperationalPreferencesPermissions.View
     )]
     public const string ConfigurationGroup = "/sales/configuration-group";
 
@@ -124,34 +95,8 @@ public static class SalesModule
     )]
     public const string PosPreferences = "/settings/operations?tab=salesPos";
 
-    // Cajas registradoras (fusionado desde CajaModule.ConfigurationGroup) — permission alineado
-    // con el GET/listado real de CashRegisterController (perm:caja.view): create/update/enable/
-    // disable siguen protegidos por CajaPermissions.Manage a nivel de API.
-    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Manage (create/update/enable/disable —
-    // useCashRegistersPage.ts canManage) es real y no estaba en el catálogo asignable pese a que
-    // el comentario anterior ya documentaba su existencia a nivel de API.
-    [NavItem(
-        "Cajas registradoras",
-        Permission = CajaPermissions.View,
-        LabelKey = "app.nav.item.caja.registers",
-        SortOrder = 30,
-        Id = "f5000000-0000-4000-9000-000000000002",
-        ParentId = "e4000000-0000-4000-9000-000000000020",
-        RelatedActionPermissionsCsv = CajaPermissions.Manage
-    )]
-    public const string CajaRegisters = "/cash/registers";
-
-    // Enlace contextual al tab "cash" de la pantalla única de Preferencias Operativas
-    // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.
-    [NavItem(
-        "Preferencias de Caja",
-        Permission = OperationalPreferencesPermissions.View,
-        LabelKey = "app.nav.item.caja.preferences",
-        SortOrder = 40,
-        Id = "f5000000-0000-4000-9000-000000000021",
-        ParentId = "e4000000-0000-4000-9000-000000000020"
-    )]
-    public const string CajaPreferences = "/settings/operations?tab=cash";
+    // MAPA-MENU-ERP-SSOT-01: "Cajas registradoras" y "Preferencias de Caja" se movieron a
+    // TreasuryModule (Tesorería > Caja > Configuración) — mismos Ids, ver comentario allí.
 
     // ── Reportes ─────────────────────────────────────────────────────
     [NavItem(

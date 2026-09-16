@@ -1,0 +1,101 @@
+using ERP.Domain.Kernel.Attributes;
+using ERP.Domain.Kernel.Permissions;
+
+namespace ERP.Domain.Kernel.Modules;
+
+// MAPA-MENU-ERP-SSOT-01: nuevo módulo de nivel superior "Tesorería" — concentra Caja (movida
+// desde SalesModule, donde vivía fusionada desde CajaModule por NAVIGATION-OPERATING-CYCLES-03) y
+// Destinos financieros/Bancos (movido desde SettingsModule > Empresa). El árbol objetivo agrupa
+// todo lo financiero/de tesorería bajo un tile propio, separado de Ventas y de Configuración.
+// Mismos Ids que ya tenían en sus módulos de origen — solo cambia a qué [Module] pertenecen.
+//
+// Rutas nuevas por política de URL del ticket (coherentes con el módulo, antes vivían bajo
+// /cash y /settings/*): /treasury/cash (antes /cash), /treasury/cash/registers (antes
+// /cash/registers), /treasury/banks/financial-destinations (antes
+// /settings/financial-destinations). Las rutas antiguas quedan como redirect en el frontend
+// (catalogRoutes.tsx) — no se duplica ninguna pantalla ni endpoint.
+[Module("treasury", Icon = "🏦", SortOrder = 80)]
+public static class TreasuryModule
+{
+    [NavItem(
+        "Caja",
+        LabelKey = "app.nav.item.caja.operation",
+        SortOrder = 10,
+        Id = "f5000000-0000-4000-9000-000000000010",
+        PermissionsAnyCsv = CajaPermissions.View
+    )]
+    public const string CajaGroup = "/treasury/cash/group";
+
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Open/Close/Record (abrir/cerrar turno, registrar
+    // movimiento — CajaPage.tsx/useCajaPage.ts → CashSessionController) son acciones reales
+    // distintas de View y no estaban en el catálogo asignable.
+    [NavItem(
+        "Turno de Caja",
+        Permission = CajaPermissions.View,
+        LabelKey = "app.nav.item.caja.sessions",
+        SortOrder = 10,
+        Id = "f5000000-0000-4000-9000-000000000001",
+        ParentId = "f5000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = CajaPermissions.Open + "," + CajaPermissions.Close + ","
+            + CajaPermissions.Record
+    )]
+    public const string CajaSessions = "/treasury/cash";
+
+    [NavItem(
+        "Configuración",
+        LabelKey = "app.nav.item.caja.configuration",
+        SortOrder = 20,
+        Id = "f5000000-0000-4000-9000-000000000030",
+        ParentId = "f5000000-0000-4000-9000-000000000010",
+        PermissionsAnyCsv = CajaPermissions.View + "," + OperationalPreferencesPermissions.View
+    )]
+    public const string CashConfigurationGroup = "/treasury/cash/configuration-group";
+
+    // Cajas registradoras (fusionado desde CajaModule.ConfigurationGroup originalmente) —
+    // permission alineado con el GET/listado real de CashRegisterController (perm:caja.view):
+    // create/update/enable/disable siguen protegidos por CajaPermissions.Manage a nivel de API.
+    [NavItem(
+        "Cajas registradoras",
+        Permission = CajaPermissions.View,
+        LabelKey = "app.nav.item.caja.registers",
+        SortOrder = 10,
+        Id = "f5000000-0000-4000-9000-000000000002",
+        ParentId = "f5000000-0000-4000-9000-000000000030",
+        RelatedActionPermissionsCsv = CajaPermissions.Manage
+    )]
+    public const string CajaRegisters = "/treasury/cash/registers";
+
+    // Enlace contextual al tab "cash" de la pantalla única de Preferencias Operativas
+    // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.
+    [NavItem(
+        "Preferencias de Caja",
+        Permission = OperationalPreferencesPermissions.View,
+        LabelKey = "app.nav.item.caja.preferences",
+        SortOrder = 20,
+        Id = "f5000000-0000-4000-9000-000000000021",
+        ParentId = "f5000000-0000-4000-9000-000000000030"
+    )]
+    public const string CajaPreferences = "/settings/operations?tab=cash";
+
+    [NavItem(
+        "Bancos",
+        LabelKey = "app.nav.item.treasury.banksGroup",
+        SortOrder = 30,
+        Id = "f5000000-0000-4000-9000-000000000040",
+        PermissionsAnyCsv = SettingsPermissions.FinancialDestinationsView
+    )]
+    public const string BanksGroup = "/treasury/banks/group";
+
+    // Movido desde SettingsModule (Configuración > Empresa) — mismo Id/permiso, nueva ruta
+    // coherente con Tesorería (antes /settings/financial-destinations).
+    [NavItem(
+        "Destinos financieros",
+        Permission = SettingsPermissions.FinancialDestinationsView,
+        LabelKey = "app.nav.item.settings.financialDestinations",
+        SortOrder = 10,
+        Id = "a1000000-0000-4000-9000-000000000011",
+        ParentId = "f5000000-0000-4000-9000-000000000040",
+        RelatedActionPermissionsCsv = SettingsPermissions.FinancialDestinationsManage
+    )]
+    public const string FinancialDestinations = "/treasury/banks/financial-destinations";
+}

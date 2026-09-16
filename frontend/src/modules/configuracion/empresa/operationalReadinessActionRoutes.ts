@@ -16,9 +16,9 @@ const ACTION_TARGET_ROUTES: Record<ReadinessActionTarget, string> = {
   Establishments: "/settings/establishments",
   EmissionPoints: "/settings/emission-points",
   Warehouses: "/inventory/warehouses",
-  CashRegisters: "/cash/registers",
+  CashRegisters: "/treasury/cash/registers",
   PriceLists: "/pricing",
-  ElectronicInvoicingSettings: "/settings/electronic-invoicing",
+  ElectronicInvoicingSettings: "/sri/configuration/electronic-invoicing",
   Items: "/inventory/items",
 };
 

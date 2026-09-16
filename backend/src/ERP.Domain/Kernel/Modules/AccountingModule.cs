@@ -44,7 +44,11 @@ namespace ERP.Domain.Kernel.Modules;
 // exclusión de 11D para este caso puntual; se agrega como 4to NavItem plano, mismo criterio que
 // los 3 anteriores (AccountingPermissions.View, sin permiso granular nuevo). Accounting
 // Periods/Configuración contable siguen sin UI real, así que siguen fuera del menú.
-[Module("accounting", Icon = "📒", SortOrder = 46)]
+// MAPA-MENU-ERP-SSOT-01: SortOrder actualizado para su posición en el árbol de 12 módulos de
+// nivel superior; "Reglas contables" se reubica de "Plan contable" a "Configuración" (junto a
+// "Destinos contables") con nueva ruta /accounting/configuration/posting-rules — el árbol
+// objetivo la pide como Configuración/Reglas contables, no como parte del plan de cuentas.
+[Module("accounting", Icon = "📒", SortOrder = 90)]
 public static class AccountingModule
 {
     // NAV-HIERARCHY-UNIFY-01: contenedores de categoría — ningún ítem plano bajo el módulo.
@@ -94,16 +98,6 @@ public static class AccountingModule
     public const string ChartOfAccounts = "/accounting/chart-of-accounts";
 
     [NavItem(
-        "Reglas contables",
-        Permission = AccountingPermissions.View,
-        LabelKey = "app.nav.item.accounting.postingRules",
-        SortOrder = 25,
-        Id = "ac000000-0000-4000-9000-000000000004",
-        ParentId = "72e69e8c-e34d-4ee4-b3ff-3568acc7d899"
-    )]
-    public const string PostingRules = "/accounting/posting-rules";
-
-    [NavItem(
         "Reportes",
         LabelKey = "app.nav.item.accounting.reportsGroup",
         SortOrder = 30,
@@ -140,9 +134,22 @@ public static class AccountingModule
         LabelKey = "app.nav.item.accounting.configurationGroup",
         SortOrder = 35,
         Id = "ac000000-0000-4000-9000-000000000006",
-        PermissionsAnyCsv = AccountingPermissions.DestinationsSalesCollectionsView
+        PermissionsAnyCsv = AccountingPermissions.DestinationsSalesCollectionsView + ","
+            + AccountingPermissions.View
     )]
     public const string ConfigurationGroup = "/accounting/configuration/group";
+
+    // MAPA-MENU-ERP-SSOT-01: reubicado desde "Plan contable" — mismo Id/permiso, nueva ruta
+    // (antes /accounting/posting-rules, que queda como redirect en el frontend).
+    [NavItem(
+        "Reglas contables",
+        Permission = AccountingPermissions.View,
+        LabelKey = "app.nav.item.accounting.postingRules",
+        SortOrder = 5,
+        Id = "ac000000-0000-4000-9000-000000000004",
+        ParentId = "ac000000-0000-4000-9000-000000000006"
+    )]
+    public const string PostingRules = "/accounting/configuration/posting-rules";
 
     // DESTINOS-CONTABLES-COBROS-VENTAS-01: movido desde SettingsModule.PaymentMethods
     // (Configuración > Condiciones comerciales, ver PAYMENT-METHOD-ACCOUNT-UI-NAV-01) hacia

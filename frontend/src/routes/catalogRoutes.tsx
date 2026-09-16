@@ -313,12 +313,25 @@ export const catalogRoutes = [
     element={<SalesReturnFormPage />}
   />,
 
-  // -- Caja (Cash Management) ---------------------------------------------
-  <Route key="cash" path="/cash" element={<CajaPage />} />,
+  // -- Treasury (Caja / Bancos) ---------------------------------------------
+  // MAPA-MENU-ERP-SSOT-01: Caja se reubicó bajo Tesorería (antes vivía bajo Ventas) — mismas
+  // pantallas/endpoints, solo cambia la URL visible; /cash y /cash/registers quedan como redirect
+  // para enlaces/tests legacy, no como segunda ruta funcional.
+  <Route key="treasury-cash" path="/treasury/cash" element={<CajaPage />} />,
   <Route
-    key="cash-registers"
-    path="/cash/registers"
+    key="treasury-cash-registers"
+    path="/treasury/cash/registers"
     element={<CashRegistersPage />}
+  />,
+  <Route
+    key="cash-legacy"
+    path="/cash"
+    element={<Navigate to="/treasury/cash" replace />}
+  />,
+  <Route
+    key="cash-registers-legacy"
+    path="/cash/registers"
+    element={<Navigate to="/treasury/cash/registers" replace />}
   />,
 
   // -- Accounting -----------------------------------------------------------
@@ -355,10 +368,17 @@ export const catalogRoutes = [
     path="/accounting/chart-of-accounts"
     element={<ChartOfAccountsPage />}
   />,
+  // MAPA-MENU-ERP-SSOT-01: reubicado bajo Contabilidad > Configuración (antes bajo Plan de
+  // cuentas) — misma pantalla/endpoints; /accounting/posting-rules queda como redirect legacy.
   <Route
     key="accounting-posting-rules"
-    path="/accounting/posting-rules"
+    path="/accounting/configuration/posting-rules"
     element={<PostingRulesPage />}
+  />,
+  <Route
+    key="accounting-posting-rules-legacy"
+    path="/accounting/posting-rules"
+    element={<Navigate to="/accounting/configuration/posting-rules" replace />}
   />,
   <Route
     key="accounting-reports"
@@ -387,10 +407,17 @@ export const catalogRoutes = [
     path="/finance/supplier-credits/:id"
     element={<SupplierCreditDetailPage />}
   />,
+  // MAPA-MENU-ERP-SSOT-01: reubicado bajo Tesorería > Bancos (antes bajo Configuración > Empresa)
+  // — misma pantalla/endpoints; /settings/financial-destinations queda como redirect legacy.
   <Route
-    key="settings-financial-destinations"
-    path="/settings/financial-destinations"
+    key="treasury-financial-destinations"
+    path="/treasury/banks/financial-destinations"
     element={<FinancialDestinationsPage />}
+  />,
+  <Route
+    key="settings-financial-destinations-legacy"
+    path="/settings/financial-destinations"
+    element={<Navigate to="/treasury/banks/financial-destinations" replace />}
   />,
 
   // -- Payables (generico: Compras + Gastos) -------------------------------

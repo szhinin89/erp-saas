@@ -3,7 +3,14 @@ using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.Domain.Kernel.Modules;
 
-[Module("admin", Icon = "🛡️", SortOrder = 60)]
+// MAPA-MENU-ERP-SSOT-01: labels ajustados a Usuarios/Perfiles/Permisos/Seguridad/Sesiones/
+// Actividad ("Roles"→"Perfiles" ya coincidía con el nombre real de la pantalla, ProfilesPage;
+// "Asignación de permisos"→"Permisos"; "Sesiones de usuario"→"Sesiones"; "Activity"→"Actividad",
+// corrige un label en inglés suelto). "Seguridad administrativa" se deja sin cambio: renombrarla a
+// "Seguridad" duplicaría el label de su grupo contenedor (mismo problema ya señalado para
+// "Cuentas por cobrar"/"Cuentas por pagar" en otros módulos) — el bullet "Seguridad" del árbol
+// objetivo ya se satisface con el grupo contenedor. Mismos Ids/rutas/permisos en todos los casos.
+[Module("admin", Icon = "🛡️", SortOrder = 120)]
 public static class AdminModule
 {
     // NAV-HIERARCHY-UNIFY-01: contenedor "Usuarios y roles" — Usuarios + Roles + Asignación de
@@ -35,7 +42,7 @@ public static class AdminModule
     public const string Users = "/access/users";
 
     [NavItem(
-        "Roles",
+        "Perfiles",
         Permission = AccessPermissions.ProfilesView,
         LabelKey = "app.nav.item.admin.roles",
         SortOrder = 20,
@@ -49,7 +56,7 @@ public static class AdminModule
     // Reutiliza el permiso ya existente (mismo que ya exige GET/PUT .../profiles/{id}/permissions)
     // y los endpoints ya existentes de AccessProfilesController — sin cambios de backend/API.
     [NavItem(
-        "Asignación de permisos",
+        "Permisos",
         Permission = AccessPermissions.ProfilesView,
         LabelKey = "app.nav.item.admin.permissionsAssignment",
         SortOrder = 30,
@@ -96,7 +103,7 @@ public static class AdminModule
     // AdminUserSessionsPage.tsx "Cerrar sesión"/canClose) es la única acción de escritura real de
     // esta pantalla y no estaba en el catálogo asignable.
     [NavItem(
-        "Sesiones de usuario",
+        "Sesiones",
         Permission = AccessPermissions.SessionsView,
         LabelKey = "app.nav.item.admin.accessSessions",
         SortOrder = 50,
@@ -107,7 +114,7 @@ public static class AdminModule
     public const string AccessSessions = "/admin/access/sessions";
 
     [NavItem(
-        "Activity",
+        "Actividad",
         Permission = AdminPermissions.ActivityView,
         LabelKey = "app.nav.item.admin.activity",
         SortOrder = 60,

@@ -216,6 +216,7 @@ export function mapSessionMenuToNavGroups(
     id: g.code,
     label: t(g.labelKey),
     icon: g.icon,
+    sortOrder: g.sortOrder,
     items: g.items.map((it) => mapSessionMenuItem(it, t)),
   }));
   return sortNavGroupsForMainBar(mapped);

@@ -5,7 +5,10 @@ namespace ERP.Domain.Kernel.Modules;
 
 // MENU-MODULE-REORG-01: reorganizado en Operación/Configuración/Reportes — el catálogo de
 // productos se movió a ProductsModule (módulo propio "Productos y servicios").
-[Module("inventory", Icon = "🏭", SortOrder = 20)]
+// MAPA-MENU-ERP-SSOT-01: orden de items ajustado a Bodegas/Kardex/Ajustes/Transferencias (antes
+// Transferencias iba antes que Ajustes) para coincidir con el árbol objetivo; SortOrder del
+// módulo actualizado para su posición en el árbol de 12 módulos de nivel superior.
+[Module("inventory", Icon = "🏭", SortOrder = 60)]
 public static class InventoryModule
 {
     // ── Inventario (MENU-FINAL-STRUCTURE-01: subgrupo renombrado de "Operación" al mismo
@@ -49,28 +52,28 @@ public static class InventoryModule
     )]
     public const string Kardex = "/inventory/kardex";
 
-    [NavItem(
-        "Transferencias entre bodegas",
-        Permission = InventoryPermissions.StockManage,
-        LabelKey = "app.nav.item.inventory.transfers",
-        SortOrder = 30,
-        ParentId = "e2000000-0000-4000-9000-000000000010"
-    )]
-    public const string Transfers = "/inventory/transfers";
-
     // INVENTORY-ADJUSTMENTS-02: ajustes de inventario (Ingreso/Egreso) con líneas por ítem y
     // motivo administrable — mismo grupo "Inventario" que Bodegas/Historial/Transferencias.
     [NavItem(
         "Ajustes de inventario",
         Permission = InventoryPermissions.AdjustmentsView,
         LabelKey = "app.nav.item.inventory.adjustments",
-        SortOrder = 40,
+        SortOrder = 30,
         ParentId = "e2000000-0000-4000-9000-000000000010",
         RelatedActionPermissionsCsv = InventoryPermissions.AdjustmentsCreate + ","
             + InventoryPermissions.AdjustmentsUpdate + "," + InventoryPermissions.AdjustmentsConfirm
             + "," + InventoryPermissions.AdjustmentsCancel
     )]
     public const string Adjustments = "/inventory/adjustments";
+
+    [NavItem(
+        "Transferencias entre bodegas",
+        Permission = InventoryPermissions.StockManage,
+        LabelKey = "app.nav.item.inventory.transfers",
+        SortOrder = 40,
+        ParentId = "e2000000-0000-4000-9000-000000000010"
+    )]
+    public const string Transfers = "/inventory/transfers";
 
     // ── Configuración ────────────────────────────────────────────────
     [NavItem(

@@ -1,4 +1,4 @@
-import { Route } from "react-router-dom";
+import { Route, Navigate } from "react-router-dom";
 import { lazyNamedPage } from "./lazyPage";
 
 const DashboardPage = lazyNamedPage(
@@ -189,10 +189,18 @@ export const mainRoutes = [
     path="/settings/company"
     element={<CompanySettingsHubPage />}
   />,
+  // MAPA-MENU-ERP-SSOT-01: reubicado bajo SRI > Configuración (antes bajo Configuración >
+  // Facturación electrónica) — misma pantalla/endpoints; /settings/electronic-invoicing queda
+  // como redirect legacy.
   <Route
-    key="settings-electronic-invoicing"
-    path="/settings/electronic-invoicing"
+    key="sri-electronic-invoicing"
+    path="/sri/configuration/electronic-invoicing"
     element={<ElectronicInvoicingPage />}
+  />,
+  <Route
+    key="settings-electronic-invoicing-legacy"
+    path="/settings/electronic-invoicing"
+    element={<Navigate to="/sri/configuration/electronic-invoicing" replace />}
   />,
   <Route
     key="settings-communications-email"
@@ -232,10 +240,17 @@ export const mainRoutes = [
     path="/initial-load/initial-stock"
     element={<InitialLoadInitialStockPage />}
   />,
+  // MAPA-MENU-ERP-SSOT-01: reubicado bajo SRI > Documentos electrónicos (antes bajo Ventas) —
+  // misma pantalla/endpoints; /electronic-documents/monitor queda como redirect legacy.
   <Route
-    key="electronic-documents-monitor"
-    path="/electronic-documents/monitor"
+    key="sri-electronic-documents-monitor"
+    path="/sri/electronic-documents/monitor"
     element={<ElectronicDocumentsMonitorPage />}
+  />,
+  <Route
+    key="electronic-documents-monitor-legacy"
+    path="/electronic-documents/monitor"
+    element={<Navigate to="/sri/electronic-documents/monitor" replace />}
   />,
   <Route
     key="settings-branches"

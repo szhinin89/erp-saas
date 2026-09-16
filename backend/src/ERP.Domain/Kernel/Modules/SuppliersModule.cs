@@ -3,20 +3,23 @@ using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.Domain.Kernel.Modules;
 
-// NAVIGATION-OPERATING-CYCLES-03: nuevo módulo — concentra el ciclo proveedor, fusionando
-// MasterDataModule.Suppliers + PurchasesModule + ExpensesModule + PayablesModule (antes 4 grupos
-// separados: "Clientes y proveedores"(parcial), Compras, Gastos, Cuentas por Pagar). Mismos
-// Ids/rutas/permisos que tenían en sus módulos de origen, salvo Cuentas por pagar / Pagos a
-// proveedores: antes derivaban su Id automáticamente de module.Code="payables"; al cambiar de
-// módulo se les fija un Id explícito nuevo para no dejar huérfana la fila vieja en ui_nav_items
-// (mismo criterio que "Electronic Invoicing" en SettingsModule).
-[Module("suppliers", Icon = "🛒", SortOrder = 12)]
+// NAVIGATION-OPERATING-CYCLES-03: módulo original — concentraba el ciclo proveedor completo,
+// fusionando MasterDataModule.Suppliers + PurchasesModule + ExpensesModule + PayablesModule.
+//
+// MAPA-MENU-ERP-SSOT-01: Compras y Gastos se separan de vuelta a sus propios módulos de nivel
+// superior (PurchasesModule.cs / ExpensesModule.cs) — el árbol objetivo de este ticket los lista
+// como tiles independientes del launcher, no como categorías anidadas dentro de "Proveedores".
+// Mismos Ids/rutas/permisos en los archivos nuevos, solo cambia a qué [Module] pertenecen. Este
+// módulo queda con: catálogo de Proveedores, Cuentas por pagar (+ Pagos a proveedores + Créditos
+// de proveedor, reagrupados aquí — antes Créditos de proveedor vivía dentro de "Compras") y
+// Condiciones comerciales (movida desde SettingsModule — Pago/Crédito son catálogos usados en el
+// ciclo de compra, y el árbol objetivo las pide explícitamente bajo Proveedores).
+[Module("suppliers", Icon = "🏢", SortOrder = 20)]
 public static class SuppliersModule
 {
     // NAV-HIERARCHY-UNIFY-01: contenedor "Gestión de proveedores" — antes Proveedores quedaba
     // suelto directamente bajo el módulo (Nivel 1). Todo ítem de primer nivel del módulo debe
-    // ser una categoría (Nivel 2); Proveedores pasa a ser su único hijo. Mismo patrón ya usado
-    // por "Compras"/"Configuración"/"Reportes" en este mismo archivo.
+    // ser una categoría (Nivel 2); Proveedores pasa a ser su único hijo.
     [NavItem(
         "Gestión de proveedores",
         LabelKey = "app.nav.item.suppliers.managementGroup",
@@ -45,123 +48,18 @@ public static class SuppliersModule
     )]
     public const string Suppliers = "/masterdata/suppliers";
 
-    // ── Compras (movido desde PurchasesModule, sin cambios internos) ──────────────────
-    [NavItem(
-        "Compras",
-        LabelKey = "app.nav.item.purchases.operation",
-        SortOrder = 10,
-        Id = "e3000000-0000-4000-9000-000000000010",
-        PermissionsAnyCsv = PurchasePermissions.View + "," + FinancePermissions.View
-    )]
-    public const string PurchasesGroup = "/purchases/operation-group";
-
-    // ZH-MENU-TAXONOMY-STANDARD-01: renombrado de "Compras" a "Facturas de compra" — evita
-    // repetir el nombre del grupo contenedor ("Compras") en su pantalla principal, ambigüedad
-    // señalada explícitamente por el ticket (mismo Id/ruta/permiso, solo cambia el label i18n).
-    [NavItem(
-        "Facturas de compra",
-        Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.purchases.invoices",
-        SortOrder = 10,
-        Id = "c1000000-0000-4000-9000-000000000001",
-        ParentId = "e3000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = PurchasePermissions.Create + "," + PurchasePermissions.Update
-    )]
-    public const string Invoices = "/purchases";
-
-    [NavItem(
-        "Recepción electrónica (TXT)",
-        Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.purchases.reception",
-        SortOrder = 20,
-        Id = "c1000000-0000-4000-9000-000000000002",
-        ParentId = "e3000000-0000-4000-9000-000000000010"
-    )]
-    public const string Reception = "/purchases/reception";
-
-    // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — la devolución de mercadería es un flujo dentro
-    // de "Notas de crédito de compra" (tipo Return), no un módulo principal para el usuario; ya no
-    // es un ítem de menú (se quita el atributo [NavItem], nunca la ruta/lógica de PurchaseReturn:
-    // /purchases/returns y /purchases/returns/{id} siguen existiendo y funcionando como rutas
-    // técnicas/secundarias, ej. el botón "Ver devolución vinculada" desde el detalle de NC).
-    public const string Returns = "/purchases/returns";
-
-    // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — antes solo se llegaba a
-    // PurchaseCreditNoteFormPage desde Recepción XML/SRI o desde una factura/devolución puntual,
-    // sin punto de entrada propio en el menú. Mismo patrón que "Devoluciones de compra": el menú
-    // apunta al LISTADO (PurchaseCreditNoteListPage), nunca directo a /new — "Nueva" es un botón
-    // dentro de esa pantalla que abre el mismo formulario en modo manual.
-    [NavItem(
-        "Notas de crédito de compra",
-        Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.purchases.creditNotes",
-        SortOrder = 35,
-        Id = "c1000000-0000-4000-9000-000000000004",
-        ParentId = "e3000000-0000-4000-9000-000000000010"
-    )]
-    public const string CreditNotes = "/purchases/credit-notes";
-
-    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Update (aplicar/reembolsar crédito —
-    // ApplySupplierCreditModal.tsx/RegisterSupplierCreditRefundModal.tsx, SupplierCreditController)
-    // es la única acción de escritura real de esta pantalla y no estaba en el catálogo asignable.
-    [NavItem(
-        "Créditos de proveedor",
-        Permission = FinancePermissions.View,
-        LabelKey = "app.nav.item.finance.supplierCredits",
-        SortOrder = 50,
-        Id = "f6000000-0000-4000-9000-000000000003",
-        ParentId = "e3000000-0000-4000-9000-000000000010",
-        RelatedActionPermissionsCsv = FinancePermissions.Update
-    )]
-    public const string SupplierCredits = "/finance/supplier-credits";
-
-    // ── Gastos (movido desde ExpensesModule, ítems planos sin cambios) ─────────────────
-    // NAV-HIERARCHY-UNIFY-01: Gastos NO pertenece a Compras — categoría propia, hermana de
-    // "Compras", no anidada dentro de ella.
-    [NavItem(
-        "Gastos",
-        LabelKey = "app.nav.item.suppliers.expensesGroup",
-        SortOrder = 20,
-        Id = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
-        PermissionsAnyCsv = ExpensePermissions.DocumentsView + "," + ExpensePermissions.CatalogView
-    )]
-    public const string ExpensesGroup = "/expenses/group";
-
-    [NavItem(
-        "Documentos de Gastos",
-        Permission = ExpensePermissions.DocumentsView,
-        LabelKey = "app.nav.item.expenses.documents",
-        SortOrder = 20,
-        Id = "e5000000-0000-4000-9000-000000000002",
-        ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
-        RelatedActionPermissionsCsv = ExpensePermissions.DocumentsCreate + ","
-            + ExpensePermissions.DocumentsUpdate + "," + ExpensePermissions.DocumentsConfirm
-            + "," + ExpensePermissions.DocumentsCancel
-    )]
-    public const string ExpenseDocuments = "/expenses/documents";
-
-    [NavItem(
-        "Catalogo de Gastos",
-        Permission = ExpensePermissions.CatalogView,
-        LabelKey = "app.nav.item.expenses.catalog",
-        SortOrder = 21,
-        Id = "e5000000-0000-4000-9000-000000000001",
-        ParentId = "ca6fa276-a8bc-4dc7-b207-7c37d57341ad",
-        RelatedActionPermissionsCsv = ExpensePermissions.CatalogCreate + ","
-            + ExpensePermissions.CatalogUpdate + "," + ExpensePermissions.CatalogActivate + ","
-            + ExpensePermissions.CatalogDeactivate
-    )]
-    public const string ExpenseCatalog = "/expenses/categories";
-
     // ── Cuentas por pagar (movido desde PayablesModule) ────────────────────────────────
     // NAV-HIERARCHY-UNIFY-01: Cuentas por pagar NO pertenece a Compras ni a Gastos — categoría
-    // propia, hermana de ambas.
+    // propia. Créditos de proveedor se reagrupa aquí (MAPA-MENU-ERP-SSOT-01): antes vivía dentro
+    // de "Compras", pero es una relación financiera con el proveedor (igual que Cuentas por pagar/
+    // Pagos), no un documento de compra.
     [NavItem(
         "Cuentas por pagar",
         LabelKey = "app.nav.item.suppliers.payablesGroup",
-        SortOrder = 30,
+        SortOrder = 10,
         Id = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
-        PermissionsAnyCsv = PayablesPermissions.View + "," + SupplierPaymentsPermissions.View
+        PermissionsAnyCsv = PayablesPermissions.View + "," + SupplierPaymentsPermissions.View + ","
+            + FinancePermissions.View
     )]
     public const string PayablesGroup = "/payables/group";
 
@@ -169,7 +67,7 @@ public static class SuppliersModule
         "Cuentas por pagar",
         Permission = PayablesPermissions.View,
         LabelKey = "app.nav.item.payables.list",
-        SortOrder = 30,
+        SortOrder = 10,
         Id = "c9000000-0000-4000-9000-000000000001",
         ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262"
     )]
@@ -181,7 +79,7 @@ public static class SuppliersModule
         "Pagos a proveedores",
         Permission = SupplierPaymentsPermissions.View,
         LabelKey = "app.nav.item.payables.supplierPayments",
-        SortOrder = 40,
+        SortOrder = 20,
         Id = "c9000000-0000-4000-9000-000000000002",
         ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
         RelatedActionPermissionsCsv = SupplierPaymentsPermissions.Create + ","
@@ -189,43 +87,64 @@ public static class SuppliersModule
     )]
     public const string SupplierPayments = "/supplier-payments";
 
-    // ── Configuración (movido desde PurchasesModule) ───────────────────────────────────
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Update (aplicar/reembolsar crédito —
+    // ApplySupplierCreditModal.tsx/RegisterSupplierCreditRefundModal.tsx, SupplierCreditController)
+    // es la única acción de escritura real de esta pantalla y no estaba en el catálogo asignable.
     [NavItem(
-        "Configuración",
-        LabelKey = "app.nav.item.purchases.configuration",
-        SortOrder = 50,
-        Id = "e3000000-0000-4000-9000-000000000020",
-        PermissionsAnyCsv = OperationalPreferencesPermissions.View
+        "Créditos de proveedor",
+        Permission = FinancePermissions.View,
+        LabelKey = "app.nav.item.finance.supplierCredits",
+        SortOrder = 30,
+        Id = "f6000000-0000-4000-9000-000000000003",
+        ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
+        RelatedActionPermissionsCsv = FinancePermissions.Update
     )]
-    public const string ConfigurationGroup = "/purchases/configuration-group";
+    public const string SupplierCredits = "/finance/supplier-credits";
+
+    // MAPA-MENU-ERP-SSOT-01: movido desde SettingsModule ("Configuración > Condiciones
+    // comerciales") — el árbol objetivo pide "Condiciones pago/crédito" bajo Proveedores. Mismos
+    // Ids/rutas/permisos, solo cambia su ubicación en el menú.
+    [NavItem(
+        "Condiciones comerciales",
+        LabelKey = "app.nav.item.settings.commercialTermsGroup",
+        SortOrder = 40,
+        Id = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
+        PermissionsAnyCsv = MasterDataPermissions.PaymentTermsView + "," + FinancePermissions.View
+    )]
+    public const string CommercialTermsGroup = "/master/commercial-terms-group";
 
     [NavItem(
-        "Preferencias de Compras",
-        Permission = OperationalPreferencesPermissions.View,
-        LabelKey = "app.nav.item.purchases.preferences",
+        "Condiciones de Pago",
+        Permission = MasterDataPermissions.PaymentTermsView,
+        LabelKey = "app.nav.item.masterdata.paymentTerms",
         SortOrder = 10,
-        Id = "e3000000-0000-4000-9000-000000000021",
-        ParentId = "e3000000-0000-4000-9000-000000000020"
+        Id = "a1000000-0000-4000-9000-000000000103",
+        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
+        RelatedActionPermissionsCsv = MasterDataPermissions.PaymentTermsManage
     )]
-    public const string Preferences = "/settings/operations?tab=purchases";
+    public const string PaymentTermsCustomer = "/master/payment-terms";
 
-    // ── Reportes (movido desde PurchasesModule) ────────────────────────────────────────
+    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update (CreditTermsPage.tsx →
+    // creditTermService.create/update/enable/disable, CreditTermsController) son acciones reales
+    // de esta pantalla y no estaban en el catálogo asignable.
     [NavItem(
-        "Reportes",
-        LabelKey = "app.nav.item.purchases.reports",
-        SortOrder = 60,
-        Id = "e3000000-0000-4000-9000-000000000030",
-        PermissionsAnyCsv = PurchasePermissions.View
+        "Condiciones de Crédito",
+        Permission = FinancePermissions.View,
+        LabelKey = "app.nav.item.finance.creditTerms",
+        SortOrder = 20,
+        Id = "b2000000-0000-4000-9000-000000000001",
+        ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
+        RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.Update
     )]
-    public const string ReportsGroup = "/purchases/reports-group";
+    public const string CreditTerms = "/finance/credit-terms";
 
-    [NavItem(
-        "Reporte de Compras",
-        Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.reportes.compras",
-        SortOrder = 10,
-        Id = "f7000000-0000-4000-9000-000000000003",
-        ParentId = "e3000000-0000-4000-9000-000000000030"
-    )]
-    public const string PurchasesReport = "/reportes/compras";
+    // DESTINOS-CONTABLES-COBROS-VENTAS-01: NavItem "Formas de cobro" (antes aquí, movido desde
+    // SalesModule por PAYMENT-METHOD-ACCOUNT-UI-NAV-01) reubicado a
+    // AccountingModule.SalesCollectionDestinations (Contabilidad > Configuración > Destinos
+    // contables > Cobros de ventas) — mismo Id (d1000000-0000-4000-9000-000000000002), misma
+    // ruta/página/permisos, solo cambia su ubicación en el menú. Una sola entrada de menú, no dos.
+
+    // NOTA (MAPA-MENU-ERP-SSOT-01): no se agrega grupo "Reportes" a Proveedores — no existe una
+    // pantalla de reporte específica de proveedores (solo /reportes/compras, que ahora vive en
+    // PurchasesModule). Regla del ticket: no crear pantallas nuevas.
 }

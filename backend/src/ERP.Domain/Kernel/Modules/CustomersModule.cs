@@ -66,4 +66,7 @@ public static class CustomersModule
         RelatedActionPermissionsCsv = FinancePermissions.Create
     )]
     public const string Receivables = "/finance/receivables";
+
+    // NOTA (MAPA-MENU-ERP-SSOT-01): no se agrega grupo "Reportes" — no existe una pantalla de
+    // reporte de clientes todavía. Regla del ticket: no crear pantallas nuevas.
 }

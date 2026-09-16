@@ -7,7 +7,11 @@ namespace ERP.Domain.Kernel.Modules;
 // contenedor dentro de Inventario) — el catálogo de productos/atributos es un dominio de
 // negocio distinto de la operación de bodegas/kardex/transferencias. Mismos Ids/rutas/
 // permisos que tenían en InventoryModule — sin cambios de API ni de lógica de negocio.
-[Module("products", Icon = "📦", SortOrder = 15)]
+// MAPA-MENU-ERP-SSOT-01: ya coincide con el árbol objetivo (Productos, Tipos, Categorías,
+// Marcas, Atributos, Precios) — solo se ajusta SortOrder para su posición en el árbol de 12
+// módulos de nivel superior. No se agrega "Reportes": no existe pantalla de reporte de
+// productos/servicios todavía (no crear pantallas nuevas).
+[Module("products", Icon = "📦", SortOrder = 50)]
 public static class ProductsModule
 {
     // NAV-HIERARCHY-UNIFY-01: contenedor "Gestión de ítems" — ningún ítem plano bajo el módulo.
