@@ -290,9 +290,8 @@ export function PaymentMethodsPage() {
 
           <div className="prd-section zh-mt-16">
             <p className="zh-text-muted zh-text-xs">
-              Cuenta de Caja/Bancos que recibirá el débito de "dinero real
-              cobrado" cuando se use esta forma de cobro en una venta
-              (SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01). Sin esta
+              Cuenta contable que recibirá el débito del dinero cobrado
+              cuando se use esta forma de cobro en una venta. Sin esta
               configuración, ninguna venta con esta forma de cobro podrá
               emitirse.
             </p>
