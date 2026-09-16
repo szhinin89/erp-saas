@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { NavLink } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useActiveBranchStore } from "../../store/activeBranchStore";
 import { useSessionStore } from "../../store/sessionStore";
@@ -52,6 +53,29 @@ export function ZHAppTenantHeader(props: {
                 toggleFavorite={navigation.toggleFavorite}
                 t={t}
               />
+              <NavLink
+                to="/dashboard"
+                end
+                className={({ isActive }) =>
+                  `zh-app-header__launcherTrigger zh-app-header__home${isActive ? " is-active" : ""}`
+                }
+                title={t("app.nav.group.home")}
+                aria-label={t("app.nav.group.home")}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
+                </svg>
+              </NavLink>
             </div>
           ) : null}
 
