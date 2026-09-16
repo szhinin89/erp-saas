@@ -40,12 +40,22 @@ function flattenFavorites(
  * Jerarquía: Favoritos (Nivel 0) → Módulos → Categorías → Formularios.
  */
 export function ZHAppLauncher({
-  mainMenuGroups,
+  mainMenuGroups: navigationGroups,
   loading,
   isFavorite,
   toggleFavorite,
   t,
 }: ZHAppLauncherProps) {
+  // Home vive en la cabecera; conservar el árbol interno que valida /dashboard.
+  const mainMenuGroups = useMemo(
+    () => navigationGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.id !== "synthetic-home-erp-dashboard"),
+      }))
+      .filter((group) => group.items.length > 0),
+    [navigationGroups],
+  );
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(
