@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-13T23:36:49.654Z",
+  "generatedAt": "2026-09-16T12:54:50.773Z",
   "summary": {
-    "total": 131,
-    "allowed": 131,
+    "total": 130,
+    "allowed": 130,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -469,14 +469,6 @@
       "endpoint": "/api/v1/companies/profile/operation",
       "files": [
         "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/config/decimals",
-      "files": [
-        "frontend/src/lib/config/decimal.config.ts"
       ],
       "legacy": false,
       "allowed": true

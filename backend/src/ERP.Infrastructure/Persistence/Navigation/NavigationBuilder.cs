@@ -141,7 +141,7 @@ public sealed class NavigationBuilder : INavigationBuilder
             if (itemDtos.Count == 0)
                 continue;
 
-            result.Add(new NavMenuGroupDto(g.Id, g.Code, g.Icon, g.LabelKey, itemDtos));
+            result.Add(new NavMenuGroupDto(g.Id, g.Code, g.Icon, g.LabelKey, g.SortOrder, itemDtos));
         }
 
         return result;

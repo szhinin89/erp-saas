@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Caja", $"perm:{CajaPermissions.View}", "💵", "/cash", null, 70)]
+[AppFeature("Caja", $"perm:{CajaPermissions.View}", "💵", "/treasury/cash", null, 70)]
 [ApiController]
 [Route("api/v1/cash-sessions")]
 [Authorize]

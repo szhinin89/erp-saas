@@ -20,7 +20,7 @@ namespace ERP.API.Controllers;
     "Facturación electrónica",
     $"perm:{ElectronicInvoicingPermissions.View}",
     "🧾",
-    "/settings/electronic-invoicing",
+    "/sri/configuration/electronic-invoicing",
     "perm:settings.group",
     25
 )]

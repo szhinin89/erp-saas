@@ -19,7 +19,7 @@ namespace ERP.API.Controllers;
     "Destinos Financieros",
     $"perm:{SettingsPermissions.FinancialDestinationsView}",
     "🏦",
-    "/settings/financial-destinations",
+    "/treasury/banks/financial-destinations",
     null,
     45,
     IsVisibleInMenu = false

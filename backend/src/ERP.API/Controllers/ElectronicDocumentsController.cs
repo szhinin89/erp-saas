@@ -28,7 +28,7 @@ namespace ERP.API.Controllers;
     "Monitor de Documentos Electrónicos",
     $"perm:{ElectronicDocumentsPermissions.View}",
     "📡",
-    "/electronic-documents/monitor",
+    "/sri/electronic-documents/monitor",
     "perm:settings.group",
     26
 )]
