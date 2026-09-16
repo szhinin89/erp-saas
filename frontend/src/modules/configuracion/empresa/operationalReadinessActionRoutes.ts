@@ -17,9 +17,9 @@ const ACTION_TARGET_ROUTES: Record<ReadinessActionTarget, string> = {
   EmissionPoints: "/settings/emission-points",
   Warehouses: "/inventory/warehouses",
   CashRegisters: "/treasury/cash/registers",
-  PriceLists: "/pricing",
+  PriceLists: "/products/pricing",
   ElectronicInvoicingSettings: "/sri/configuration/electronic-invoicing",
-  Items: "/inventory/items",
+  Items: "/products/items",
 };
 
 export function getOperationalReadinessActionRoute(

@@ -14,6 +14,11 @@ namespace ERP.Domain.Kernel.Modules;
 // de proveedor, reagrupados aquí — antes Créditos de proveedor vivía dentro de "Compras") y
 // Condiciones comerciales (movida desde SettingsModule — Pago/Crédito son catálogos usados en el
 // ciclo de compra, y el árbol objetivo las pide explícitamente bajo Proveedores).
+//
+// URLS-MENU-ALIGNMENT-01: Proveedores/Créditos/Condiciones realineados al prefijo /suppliers/*
+// (antes heredaban /masterdata/*, /finance/* y /master/* de sus módulos de origen) — mismos
+// Ids/páginas/permisos, solo cambia la URL visible. Cuentas por pagar/Pagos a proveedores no
+// cambian — fuera del alcance explícito de este ticket (ya no llevaban prefijo incoherente).
 [Module("suppliers", Icon = "🏢", SortOrder = 20)]
 public static class SuppliersModule
 {
@@ -27,7 +32,7 @@ public static class SuppliersModule
         Id = "6093d90b-221b-41e0-8d6d-25391ec5d4e6",
         PermissionsAnyCsv = MasterDataPermissions.BusinessPartnersView
     )]
-    public const string ManagementGroup = "/masterdata/suppliers/management-group";
+    public const string ManagementGroup = "/suppliers/management-group";
 
     // Movido desde MasterDataModule — mismo Id/ruta/permiso.
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update/Disable/ConfigureCompany
@@ -46,7 +51,7 @@ public static class SuppliersModule
             + MasterDataPermissions.BusinessPartnersDisable + ","
             + MasterDataPermissions.BusinessPartnersConfigureCompany
     )]
-    public const string Suppliers = "/masterdata/suppliers";
+    public const string Suppliers = "/suppliers";
 
     // ── Cuentas por pagar (movido desde PayablesModule) ────────────────────────────────
     // NAV-HIERARCHY-UNIFY-01: Cuentas por pagar NO pertenece a Compras ni a Gastos — categoría
@@ -99,7 +104,7 @@ public static class SuppliersModule
         ParentId = "40aa3390-e353-4cd4-92fb-3b4f01bee262",
         RelatedActionPermissionsCsv = FinancePermissions.Update
     )]
-    public const string SupplierCredits = "/finance/supplier-credits";
+    public const string SupplierCredits = "/suppliers/credits";
 
     // MAPA-MENU-ERP-SSOT-01: movido desde SettingsModule ("Configuración > Condiciones
     // comerciales") — el árbol objetivo pide "Condiciones pago/crédito" bajo Proveedores. Mismos
@@ -111,7 +116,7 @@ public static class SuppliersModule
         Id = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
         PermissionsAnyCsv = MasterDataPermissions.PaymentTermsView + "," + FinancePermissions.View
     )]
-    public const string CommercialTermsGroup = "/master/commercial-terms-group";
+    public const string CommercialTermsGroup = "/suppliers/commercial-terms-group";
 
     [NavItem(
         "Condiciones de Pago",
@@ -122,7 +127,7 @@ public static class SuppliersModule
         ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
         RelatedActionPermissionsCsv = MasterDataPermissions.PaymentTermsManage
     )]
-    public const string PaymentTermsCustomer = "/master/payment-terms";
+    public const string PaymentTermsCustomer = "/suppliers/payment-terms";
 
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update (CreditTermsPage.tsx →
     // creditTermService.create/update/enable/disable, CreditTermsController) son acciones reales
@@ -136,7 +141,7 @@ public static class SuppliersModule
         ParentId = "3ac9c729-c29b-4e88-a1eb-b0d8073828c2",
         RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.Update
     )]
-    public const string CreditTerms = "/finance/credit-terms";
+    public const string CreditTerms = "/suppliers/credit-terms";
 
     // DESTINOS-CONTABLES-COBROS-VENTAS-01: NavItem "Formas de cobro" (antes aquí, movido desde
     // SalesModule por PAYMENT-METHOD-ACCOUNT-UI-NAV-01) reubicado a

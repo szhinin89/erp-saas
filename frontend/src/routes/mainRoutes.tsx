@@ -127,16 +127,29 @@ const InitialLoadInitialStockPage = lazyNamedPage(
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
 
-  // -- Inventory / Items -----------------------------------------------------
+  // -- Products / Items -----------------------------------------------------
+  // URLS-MENU-ALIGNMENT-01: reubicado bajo /products (antes /inventory/*, heredado de cuando
+  // este catálogo vivía dentro de Inventario) — misma pantalla/endpoints; ruta anterior queda
+  // como redirect legacy más abajo.
   <Route
-    key="inventory-Items"
-    path="/inventory/items"
+    key="products-items"
+    path="/products/items"
     element={<ItemsPage />}
   />,
   <Route
-    key="inventory-item-types"
-    path="/inventory/item-types"
+    key="products-item-types"
+    path="/products/item-types"
     element={<ItemTypesPage />}
+  />,
+  <Route
+    key="inventory-items-legacy"
+    path="/inventory/items"
+    element={<Navigate to="/products/items" replace />}
+  />,
+  <Route
+    key="inventory-item-types-legacy"
+    path="/inventory/item-types"
+    element={<Navigate to="/products/item-types" replace />}
   />,
   <Route
     key="inventory-kardex"
@@ -166,10 +179,13 @@ export const mainRoutes = [
     element={<StockAdjustmentFormPage />}
   />,
 
-  // -- Master data --------------------------------------------------------
+  // -- Customers / Suppliers -----------------------------------------------
+  // URLS-MENU-ALIGNMENT-01: reubicados a /customers y /suppliers (antes /masterdata/*, heredado
+  // del módulo "masterdata" ya disuelto) — mismas pantallas/endpoints; rutas anteriores quedan
+  // como redirect legacy más abajo.
   <Route
-    key="masterdata-customers"
-    path="/masterdata/customers"
+    key="customers"
+    path="/customers"
     element={<MasterDataCustomersPage />}
   />,
   <Route
@@ -178,9 +194,19 @@ export const mainRoutes = [
     element={<MasterDataBusinessPartnerDetailPage />}
   />,
   <Route
-    key="masterdata-suppliers"
-    path="/masterdata/suppliers"
+    key="suppliers"
+    path="/suppliers"
     element={<MasterDataSuppliersPage />}
+  />,
+  <Route
+    key="masterdata-customers-legacy"
+    path="/masterdata/customers"
+    element={<Navigate to="/customers" replace />}
+  />,
+  <Route
+    key="masterdata-suppliers-legacy"
+    path="/masterdata/suppliers"
+    element={<Navigate to="/suppliers" replace />}
   />,
 
   // -- Settings / Configuración -----------------------------------------------

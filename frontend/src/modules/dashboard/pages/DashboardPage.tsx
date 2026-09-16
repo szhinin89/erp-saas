@@ -195,7 +195,7 @@ export function DashboardPage() {
                 type="button"
                 variant="secondary"
                 className="dsh-quick-btn"
-                onClick={() => navigate("/inventory/items")}
+                onClick={() => navigate("/products/items")}
               >
                 <span className="material-symbols-outlined dsh-quick-icon">
                   inventory
@@ -214,7 +214,7 @@ export function DashboardPage() {
                 type="button"
                 variant="secondary"
                 className="dsh-quick-btn"
-                onClick={() => navigate("/masterdata/customers")}
+                onClick={() => navigate("/customers")}
               >
                 <span className="material-symbols-outlined dsh-quick-icon">
                   person_add

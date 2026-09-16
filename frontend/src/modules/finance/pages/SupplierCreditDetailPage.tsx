@@ -53,7 +53,7 @@ export function SupplierCreditDetailPage() {
         message.error(
           formatApiRequestError(err, { generic: "No se pudo cargar el crédito de proveedor." }),
         );
-        navigate("/finance/supplier-credits");
+        navigate("/suppliers/credits");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -199,7 +199,7 @@ export function SupplierCreditDetailPage() {
       title={`Crédito de proveedor — ${credit.supplierId}`}
       subtitle={`Moneda: ${credit.currencyCode}`}
       action={
-        <ZHBtn type="button" variant="ghost" onClick={() => navigate("/finance/supplier-credits")}>
+        <ZHBtn type="button" variant="ghost" onClick={() => navigate("/suppliers/credits")}>
           Volver al listado
         </ZHBtn>
       }

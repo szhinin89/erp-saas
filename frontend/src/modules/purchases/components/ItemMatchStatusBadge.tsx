@@ -32,6 +32,6 @@ export function useViewMatchedItem(onBeforeNavigate?: () => void) {
   return (itemId: string) => {
     startViewItem(itemId);
     onBeforeNavigate?.();
-    navigate("/inventory/items");
+    navigate("/products/items");
   };
 }

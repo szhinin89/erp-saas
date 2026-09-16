@@ -1,5 +1,6 @@
 import { Route, Navigate } from "react-router-dom";
 import { lazyNamedPage } from "./lazyPage";
+import { SupplierCreditDetailLegacyRedirect } from "./legacyRedirects";
 
 const GeographyPage = lazyNamedPage(
   () => import("../modules/settings/geography/pages/GeographyPage"),
@@ -247,7 +248,14 @@ export const catalogRoutes = [
   />,
 
   // -- Pricing ------------------------------------------------------------
-  <Route key="pricing" path="/pricing" element={<PriceListsPage />} />,
+  // URLS-MENU-ALIGNMENT-01: reubicado bajo /products/pricing (antes /pricing, un módulo "pricing"
+  // que ya no existe como tal) — misma pantalla/endpoints; ruta anterior queda como redirect.
+  <Route key="products-pricing" path="/products/pricing" element={<PriceListsPage />} />,
+  <Route
+    key="pricing-legacy"
+    path="/pricing"
+    element={<Navigate to="/products/pricing" replace />}
+  />,
 
   // -- Purchases -----------------------------------------------------------
   <Route key="purchases" path="/purchases" element={<PurchasesPage />} />,
@@ -387,10 +395,18 @@ export const catalogRoutes = [
   />,
 
   // -- Finance ------------------------------------------------------------
+  // URLS-MENU-ALIGNMENT-01: Condiciones de Crédito y Créditos de proveedor reubicados bajo
+  // /suppliers/* (antes /finance/*, heredado del módulo "finance" ya disuelto) — mismas
+  // pantallas/endpoints; rutas anteriores quedan como redirect legacy.
   <Route
-    key="finance-credit-terms"
-    path="/finance/credit-terms"
+    key="suppliers-credit-terms"
+    path="/suppliers/credit-terms"
     element={<CreditTermsPage />}
+  />,
+  <Route
+    key="finance-credit-terms-legacy"
+    path="/finance/credit-terms"
+    element={<Navigate to="/suppliers/credit-terms" replace />}
   />,
   <Route
     key="finance-receivables"
@@ -398,14 +414,24 @@ export const catalogRoutes = [
     element={<AccountsReceivablePage />}
   />,
   <Route
-    key="finance-supplier-credits"
-    path="/finance/supplier-credits"
+    key="suppliers-credits"
+    path="/suppliers/credits"
     element={<SupplierCreditListPage />}
   />,
   <Route
-    key="finance-supplier-credits-detail"
-    path="/finance/supplier-credits/:id"
+    key="suppliers-credits-detail"
+    path="/suppliers/credits/:id"
     element={<SupplierCreditDetailPage />}
+  />,
+  <Route
+    key="finance-supplier-credits-legacy"
+    path="/finance/supplier-credits"
+    element={<Navigate to="/suppliers/credits" replace />}
+  />,
+  <Route
+    key="finance-supplier-credits-detail-legacy"
+    path="/finance/supplier-credits/:id"
+    element={<SupplierCreditDetailLegacyRedirect />}
   />,
   // MAPA-MENU-ERP-SSOT-01: reubicado bajo Tesorería > Bancos (antes bajo Configuración > Empresa)
   // — misma pantalla/endpoints; /settings/financial-destinations queda como redirect legacy.
@@ -464,32 +490,61 @@ export const catalogRoutes = [
     element={<ExpenseCategoriesPage />}
   />,
 
-  // -- MasterData / Payment Terms -----------------------------------------
+  // -- Suppliers / Payment Terms -------------------------------------------
+  // URLS-MENU-ALIGNMENT-01: reubicado bajo /suppliers/payment-terms (antes /master/payment-terms,
+  // heredado del módulo "masterdata" ya disuelto) — misma pantalla/endpoints.
   <Route
-    key="master-payment-terms"
-    path="/master/payment-terms"
+    key="suppliers-payment-terms"
+    path="/suppliers/payment-terms"
     element={<PaymentTermsPage />}
   />,
-
-  // -- Catalog ------------------------------------------------------------
   <Route
-    key="catalog-brands"
-    path="/catalog/brands"
+    key="master-payment-terms-legacy"
+    path="/master/payment-terms"
+    element={<Navigate to="/suppliers/payment-terms" replace />}
+  />,
+
+  // -- Products / Catalog ---------------------------------------------------
+  // URLS-MENU-ALIGNMENT-01: reubicados bajo /products/* (antes /catalog/*, heredado de cuando
+  // este catálogo era un módulo "catalog" separado) — mismas pantallas/endpoints.
+  <Route
+    key="products-brands"
+    path="/products/brands"
     element={<BrandsPage />}
   />,
   <Route
-    key="catalog-attribute-groups"
-    path="/catalog/attribute-groups"
+    key="products-attribute-groups"
+    path="/products/attribute-groups"
     element={<AttributeGroupsPage />}
   />,
   <Route
-    key="catalog-attribute-definitions"
-    path="/catalog/attribute-definitions"
+    key="products-attribute-definitions"
+    path="/products/attribute-definitions"
     element={<AttributeDefinitionsPage />}
   />,
   <Route
-    key="catalog-tree"
-    path="/catalog/tree"
+    key="products-categories"
+    path="/products/categories"
     element={<TreeEditorPage />}
+  />,
+  <Route
+    key="catalog-brands-legacy"
+    path="/catalog/brands"
+    element={<Navigate to="/products/brands" replace />}
+  />,
+  <Route
+    key="catalog-attribute-groups-legacy"
+    path="/catalog/attribute-groups"
+    element={<Navigate to="/products/attribute-groups" replace />}
+  />,
+  <Route
+    key="catalog-attribute-definitions-legacy"
+    path="/catalog/attribute-definitions"
+    element={<Navigate to="/products/attribute-definitions" replace />}
+  />,
+  <Route
+    key="catalog-tree-legacy"
+    path="/catalog/tree"
+    element={<Navigate to="/products/categories" replace />}
   />,
 ];

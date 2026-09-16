@@ -76,10 +76,13 @@ export type TranslateFn = (key: string) => string;
  */
 const MENU_DESCRIPTION_BY_ROUTE_PREFIX: ReadonlyArray<readonly [string, string]> = [
   ["/dashboard", "Indicadores y actividad reciente"],
-  ["/masterdata/customers", "Gestión de clientes y saldos"],
-  ["/masterdata/suppliers", "Gestión de proveedores y compras"],
+  // URLS-MENU-ALIGNMENT-01: /masterdata/customers, /masterdata/suppliers e /inventory/items
+  // quedaron como redirects legacy — las entradas activas ahora son /customers, /suppliers y
+  // /products/items.
+  ["/customers", "Gestión de clientes y saldos"],
+  ["/suppliers", "Gestión de proveedores y compras"],
   ["/masterdata", "Catálogos base del sistema"],
-  ["/inventory/items", "Catálogo, precios e impuestos"],
+  ["/products/items", "Catálogo, precios e impuestos"],
   ["/inventory/adjustments", "Ingresos y egresos manuales de stock"],
   ["/inventory/adjustment-reasons", "Motivos configurables para ajustes de inventario"],
   ["/inventory", "Stock, kardex y movimientos"],

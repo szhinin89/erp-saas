@@ -8,7 +8,7 @@ export function InitialLoadSuppliersPage() {
       title="Carga Inicial — Proveedores"
       helpText="Descarga la plantilla, complétala con tus proveedores y súbela aquí."
       requiredFieldsHint="Los campos obligatorios son Tipo/Número de Identificación, Razón Social y Condición de Pago."
-      resultRoute="/masterdata/suppliers"
+      resultRoute="/suppliers"
       resultRouteLabel="Ver proveedores"
       resultEntityLabelPlural="proveedores"
     />

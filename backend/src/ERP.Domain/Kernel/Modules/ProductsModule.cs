@@ -11,6 +11,10 @@ namespace ERP.Domain.Kernel.Modules;
 // Marcas, Atributos, Precios) — solo se ajusta SortOrder para su posición en el árbol de 12
 // módulos de nivel superior. No se agrega "Reportes": no existe pantalla de reporte de
 // productos/servicios todavía (no crear pantallas nuevas).
+// URLS-MENU-ALIGNMENT-01: URLs realineadas al prefijo del módulo (antes heredaban /inventory/*
+// y /catalog/* de cuando este catálogo vivía dentro de Inventario/era un módulo "catalog"
+// separado) — mismos Ids/páginas/permisos, solo cambia la URL visible; cada ruta anterior queda
+// como redirect legacy en el frontend (catalogRoutes.tsx/mainRoutes.tsx).
 [Module("products", Icon = "📦", SortOrder = 50)]
 public static class ProductsModule
 {
@@ -22,7 +26,7 @@ public static class ProductsModule
         Id = "911bc892-ff7a-43d0-b0ff-ff75a747adbe",
         PermissionsAnyCsv = InventoryPermissions.ItemsView + "," + CatalogPermissions.Manage
     )]
-    public const string ManagementGroup = "/inventory/items/management-group";
+    public const string ManagementGroup = "/products/items/management-group";
 
     [NavItem(
         "Productos",
@@ -34,7 +38,7 @@ public static class ProductsModule
         RelatedActionPermissionsCsv = InventoryPermissions.ItemsCreate + ","
             + InventoryPermissions.ItemsEdit
     )]
-    public const string Items = "/inventory/items";
+    public const string Items = "/products/items";
 
     [NavItem(
         "Tipos de Producto",
@@ -44,7 +48,7 @@ public static class ProductsModule
         Id = "a1000000-0000-4000-9000-000000000039",
         ParentId = "911bc892-ff7a-43d0-b0ff-ff75a747adbe"
     )]
-    public const string ItemTypes = "/inventory/item-types";
+    public const string ItemTypes = "/products/item-types";
 
     [NavItem(
         "Categorías de Productos",
@@ -54,7 +58,7 @@ public static class ProductsModule
         Id = "a1000000-0000-4000-9000-000000000038",
         ParentId = "911bc892-ff7a-43d0-b0ff-ff75a747adbe"
     )]
-    public const string CatalogTree = "/catalog/tree";
+    public const string CatalogTree = "/products/categories";
 
     [NavItem(
         "Marcas",
@@ -64,7 +68,7 @@ public static class ProductsModule
         Id = "a1000000-0000-4000-9000-000000000031",
         ParentId = "911bc892-ff7a-43d0-b0ff-ff75a747adbe"
     )]
-    public const string Brands = "/catalog/brands";
+    public const string Brands = "/products/brands";
 
     [NavItem(
         "Atributos de Productos",
@@ -74,7 +78,7 @@ public static class ProductsModule
         Id = "a1000000-0000-4000-9000-000000000035",
         ParentId = "911bc892-ff7a-43d0-b0ff-ff75a747adbe"
     )]
-    public const string AttributeGroups = "/catalog/attribute-groups";
+    public const string AttributeGroups = "/products/attribute-groups";
 
     // No listado explícitamente en el modelo de negocio de MENU-MODULE-REORG-01 ("Atributos
     // de productos" agrupa conceptualmente ambas pantallas) — se mantiene visible para no
@@ -87,7 +91,7 @@ public static class ProductsModule
         Id = "a1000000-0000-4000-9000-000000000036",
         ParentId = "911bc892-ff7a-43d0-b0ff-ff75a747adbe"
     )]
-    public const string AttributeDefinitions = "/catalog/attribute-definitions";
+    public const string AttributeDefinitions = "/products/attribute-definitions";
 
     // NAV-HIERARCHY-UNIFY-01: contenedor "Precios" — categoría propia, hermana de Gestión de
     // ítems.
@@ -98,7 +102,7 @@ public static class ProductsModule
         Id = "c79860c8-af6b-4c93-9411-12721734bfad",
         PermissionsAnyCsv = PricingPermissions.View
     )]
-    public const string PricingGroup = "/pricing/group";
+    public const string PricingGroup = "/products/pricing/group";
 
     // NAVIGATION-OPERATING-CYCLES-03: movido desde MasterDataModule — aplica por igual a precios
     // de venta a clientes y costos de proveedor, pero el catálogo de precios en sí es un dato de
@@ -111,5 +115,5 @@ public static class ProductsModule
         Id = "b1000000-0000-4000-9000-000000000001",
         ParentId = "c79860c8-af6b-4c93-9411-12721734bfad"
     )]
-    public const string PriceLists = "/pricing";
+    public const string PriceLists = "/products/pricing";
 }

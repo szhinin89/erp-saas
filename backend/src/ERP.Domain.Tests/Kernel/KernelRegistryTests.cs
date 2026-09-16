@@ -183,32 +183,39 @@ public sealed class KernelRegistryTests
         // MAPA-MENU-ERP-SSOT-01: Créditos de proveedor se reagrupó bajo "Cuentas por pagar"
         // (relación financiera con el proveedor, junto a Cuentas por pagar/Pagos a proveedores) —
         // antes vivía dentro de "Compras", que ahora es su propio módulo separado.
+        // URLS-MENU-ALIGNMENT-01: /finance/supplier-credits -> /suppliers/credits (misma
+        // pantalla/Id, URL coherente con el módulo Proveedores).
         var supplierCredits = navigation.SingleOrDefault(n =>
-            n.RoutePath == "/finance/supplier-credits"
+            n.RoutePath == "/suppliers/credits"
         );
         supplierCredits.Should().NotBeNull("créditos de proveedor debe estar en el menú");
         supplierCredits!.PermissionKey.Should().Be(financePermission);
         supplierCredits.GroupCode.Should().Be("suppliers");
         supplierCredits.ParentItemId.Should().Be(Guid.Parse("40aa3390-e353-4cd4-92fb-3b4f01bee262"));
 
-        navigation.Should().NotContain(n => n.RoutePath == "/finance/supplier-credits/:id");
+        navigation.Should().NotContain(n => n.RoutePath == "/finance/supplier-credits");
+        navigation.Should().NotContain(n => n.RoutePath == "/suppliers/credits/:id");
         navigation
             .Should()
-            .NotContain(n => n.RoutePath.StartsWith("/finance/supplier-credits/", StringComparison.Ordinal));
+            .NotContain(n => n.RoutePath.StartsWith("/suppliers/credits/", StringComparison.Ordinal));
 
         // MAPA-MENU-ERP-SSOT-01: condiciones de pago/crédito se movieron de Configuración
         // (catálogo transversal) a Proveedores — el árbol objetivo las pide explícitamente bajo
         // "Proveedores > Condiciones pago/crédito". Mismo contenedor "Condiciones comerciales"
         // (Id sin cambios), ahora dentro de "suppliers".
+        // URLS-MENU-ALIGNMENT-01: /finance/credit-terms -> /suppliers/credit-terms,
+        // /master/payment-terms -> /suppliers/payment-terms.
         var commercialTermsGroupId = Guid.Parse("3ac9c729-c29b-4e88-a1eb-b0d8073828c2");
 
-        var creditTerms = navigation.Single(n => n.RoutePath == "/finance/credit-terms");
+        var creditTerms = navigation.Single(n => n.RoutePath == "/suppliers/credit-terms");
         creditTerms.GroupCode.Should().Be("suppliers", "condiciones de crédito viven en Proveedores");
         creditTerms.ParentItemId.Should().Be(commercialTermsGroupId);
+        navigation.Should().NotContain(n => n.RoutePath == "/finance/credit-terms");
 
-        var paymentTerms = navigation.Single(n => n.RoutePath == "/master/payment-terms");
+        var paymentTerms = navigation.Single(n => n.RoutePath == "/suppliers/payment-terms");
         paymentTerms.GroupCode.Should().Be("suppliers", "condiciones de pago viven en Proveedores");
         paymentTerms.ParentItemId.Should().Be(commercialTermsGroupId);
+        navigation.Should().NotContain(n => n.RoutePath == "/master/payment-terms");
     }
 
     [Fact]
@@ -272,17 +279,19 @@ public sealed class KernelRegistryTests
             .Select(n => n.RoutePath)
             .ToList();
 
+        // URLS-MENU-ALIGNMENT-01: realineadas bajo /suppliers/* (Payables/SupplierPayments no
+        // cambian, fuera del alcance explícito de ese ticket).
         suppliersRoutes.Should().BeEquivalentTo(new[]
         {
-            "/masterdata/suppliers/management-group",
-            "/masterdata/suppliers",
+            "/suppliers/management-group",
+            "/suppliers",
             "/payables/group",
             "/payables",
             "/supplier-payments",
-            "/finance/supplier-credits",
-            "/master/commercial-terms-group",
-            "/master/payment-terms",
-            "/finance/credit-terms",
+            "/suppliers/credits",
+            "/suppliers/commercial-terms-group",
+            "/suppliers/payment-terms",
+            "/suppliers/credit-terms",
         });
     }
 
@@ -390,10 +399,12 @@ public sealed class KernelRegistryTests
 
         // NAV-HIERARCHY-UNIFY-01: 2 categorías nuevas — Gestión de clientes/Cuentas por cobrar —
         // para que ambas pantallas dejen de quedar sueltas bajo el módulo.
+        // URLS-MENU-ALIGNMENT-01: /masterdata/customers -> /customers (Cuentas por cobrar no
+        // cambia, fuera del alcance de ese ticket).
         customersRoutes.Should().BeEquivalentTo(new[]
         {
-            "/masterdata/customers/management-group",
-            "/masterdata/customers",
+            "/customers/management-group",
+            "/customers",
             "/finance/receivables/group",
             "/finance/receivables",
         });
@@ -441,14 +452,15 @@ public sealed class KernelRegistryTests
         // contenedor dentro de "inventory") — mismos Ids/rutas/permisos, sin contenedor padre.
         var navigation = KernelRegistry.Navigation;
 
+        // URLS-MENU-ALIGNMENT-01: realineadas bajo /products/* (antes /inventory/* y /catalog/*).
         var productsRoutes = new[]
         {
-            "/inventory/items",
-            "/inventory/item-types",
-            "/catalog/tree",
-            "/catalog/brands",
-            "/catalog/attribute-groups",
-            "/catalog/attribute-definitions",
+            "/products/items",
+            "/products/item-types",
+            "/products/categories",
+            "/products/brands",
+            "/products/attribute-groups",
+            "/products/attribute-definitions",
         };
 
         // NAV-HIERARCHY-UNIFY-01: ahora se anidan bajo la categoría "Gestión de ítems" — ya no

@@ -84,7 +84,7 @@ export function SupplierCreditListPage() {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => navigate(`/finance/supplier-credits/${row.id}`)}
+          onClick={() => navigate(`/suppliers/credits/${row.id}`)}
         >
           Ver
         </ZHBtn>

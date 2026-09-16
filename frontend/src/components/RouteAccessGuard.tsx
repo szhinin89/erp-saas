@@ -17,6 +17,13 @@ const LEGACY_REDIRECT_PREFIXES = new Set([
   "/configuracion",
   "/actividad",
   "/security",
+  // URLS-MENU-ALIGNMENT-01: ningún NavItem activo usa ya estos prefijos (todos sus ítems se
+  // reubicaron bajo /products, /customers, /suppliers) — sin esto, isRouteAllowed bloquearía
+  // el <Navigate> legacy antes de que llegue a montar y redirigir.
+  "/masterdata",
+  "/catalog",
+  "/master",
+  "/pricing",
 ]);
 
 function firstSegment(path: string): string {

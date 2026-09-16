@@ -8,7 +8,7 @@ export function InitialLoadProductCatalogPage() {
       title="Carga Inicial — Catálogo de Productos"
       helpText="Descarga la plantilla, complétala con tus productos (una fila = un producto) y súbela aquí."
       requiredFieldsHint="Los campos obligatorios son SKU, Nombre, Tipo de Ítem, Unidad Base, Categoría, Marca y al menos un Código de Barra."
-      resultRoute="/inventory/items"
+      resultRoute="/products/items"
       resultRouteLabel="Ver ítems"
       resultEntityLabelPlural="productos"
       primaryColumnKey="SKU"

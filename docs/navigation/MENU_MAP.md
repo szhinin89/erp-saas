@@ -1,6 +1,6 @@
 # Mapa de menú ERP — SSOT de navegación
 
-**Ticket:** MAPA-MENU-ERP-SSOT-01 · **Actualizado:** 2026-09-16
+**Tickets:** MAPA-MENU-ERP-SSOT-01, URLS-MENU-ALIGNMENT-01 · **Actualizado:** 2026-09-16
 
 Fuente de verdad **ejecutable** del menú: `backend/src/ERP.Domain/Kernel/Modules/*.cs`
 (atributos `[Module]`/`[NavItem]`, leídos por reflexión en `KernelRegistry`). Este documento es
@@ -22,31 +22,31 @@ home/access/security/saas/plan-custom, sintéticos) y el glifo de ícono por có
 ```
 Clientes                                    [Module("customers")]
 ├─ Gestión de clientes
-│  └─ Clientes                              /masterdata/customers
+│  └─ Clientes                              /customers
 └─ Cuentas por cobrar
    └─ Cuentas por cobrar                    /finance/receivables
 
 Proveedores                                 [Module("suppliers")]
 ├─ Gestión de proveedores
-│  └─ Proveedores                           /masterdata/suppliers
+│  └─ Proveedores                           /suppliers
 ├─ Cuentas por pagar
 │  ├─ Cuentas por pagar                     /payables
 │  ├─ Pagos a proveedores                   /supplier-payments
-│  └─ Créditos de proveedor                 /finance/supplier-credits
+│  └─ Créditos de proveedor                 /suppliers/credits
 └─ Condiciones comerciales
-   ├─ Condiciones de Pago                   /master/payment-terms
-   └─ Condiciones de Crédito                /finance/credit-terms
+   ├─ Condiciones de Pago                   /suppliers/payment-terms
+   └─ Condiciones de Crédito                /suppliers/credit-terms
 
 Productos y servicios                       [Module("products")]
 ├─ Gestión de ítems
-│  ├─ Productos                             /inventory/items
-│  ├─ Tipos de Producto                     /inventory/item-types
-│  ├─ Categorías de Productos                /catalog/tree
-│  ├─ Marcas                                /catalog/brands
-│  ├─ Atributos de Productos                /catalog/attribute-groups
-│  └─ Definiciones de Atributos             /catalog/attribute-definitions
+│  ├─ Productos                             /products/items
+│  ├─ Tipos de Producto                     /products/item-types
+│  ├─ Categorías de Productos                /products/categories
+│  ├─ Marcas                                /products/brands
+│  ├─ Atributos de Productos                /products/attribute-groups
+│  └─ Definiciones de Atributos             /products/attribute-definitions
 └─ Precios
-   └─ Listas de Precios                     /pricing
+   └─ Listas de Precios                     /products/pricing
 
 Inventario                                  [Module("inventory")]
 ├─ Inventario
@@ -190,7 +190,7 @@ Compras/Inventario/Contabilidad.
   Preferencias Operativas (`/settings/operations?tab=X`) no se mueven — no son una pantalla
   propia, son un ancla a una pestaña dentro de `OperationalPreferencesPage`, y moverlas
   fragmentaría esa pantalla en URLs que no existen.
-- Rutas de esta ronda (MAPA-MENU-ERP-SSOT-01):
+- Rutas movidas en MAPA-MENU-ERP-SSOT-01:
 
   | Antes | Ahora |
   |---|---|
@@ -201,11 +201,36 @@ Compras/Inventario/Contabilidad.
   | `/settings/electronic-invoicing` | `/sri/configuration/electronic-invoicing` |
   | `/accounting/posting-rules` | `/accounting/configuration/posting-rules` |
 
-- `/purchases/*`, `/expenses/*`, `/masterdata/suppliers`, `/payables`, `/supplier-payments`,
-  `/finance/*`, `/sales/*`, `/inventory/*`, `/catalog/*`, `/pricing`, `/accounting/journal-entries`,
-  `/accounting/chart-of-accounts`, `/accounting/reports`,
-  `/accounting/configuration/sales-collection-destinations`, `/settings/*` (resto), `/admin/*`,
-  `/access/*` no cambiaron — ya eran coherentes con su módulo antes de este ticket.
+- Rutas movidas en URLS-MENU-ALIGNMENT-01:
+
+  | Antes | Ahora |
+  |---|---|
+  | `/inventory/items` | `/products/items` |
+  | `/inventory/item-types` | `/products/item-types` |
+  | `/catalog/tree` | `/products/categories` |
+  | `/catalog/brands` | `/products/brands` |
+  | `/catalog/attribute-groups` | `/products/attribute-groups` |
+  | `/catalog/attribute-definitions` | `/products/attribute-definitions` |
+  | `/pricing` | `/products/pricing` |
+  | `/masterdata/customers` | `/customers` |
+  | `/masterdata/suppliers` | `/suppliers` |
+  | `/finance/supplier-credits` (+ `/:id`) | `/suppliers/credits` (+ `/:id`) |
+  | `/master/payment-terms` | `/suppliers/payment-terms` |
+  | `/finance/credit-terms` | `/suppliers/credit-terms` |
+
+- Sin cambios (ya coherentes con su módulo, confirmados en URLS-MENU-ALIGNMENT-01): `/inventory/warehouses`,
+  `/inventory/kardex`, `/inventory/transfers`, `/inventory/adjustments`,
+  `/inventory/adjustment-reasons`, `/purchases/*`, `/expenses/*`, `/payables`,
+  `/supplier-payments`, `/finance/receivables`, `/sales/*`, `/treasury/cash`,
+  `/treasury/cash/registers`, `/treasury/banks/financial-destinations`,
+  `/accounting/journal-entries`, `/accounting/chart-of-accounts`, `/accounting/reports`,
+  `/accounting/configuration/posting-rules`,
+  `/accounting/configuration/sales-collection-destinations`,
+  `/sri/electronic-documents/monitor`, `/sri/configuration/electronic-invoicing`,
+  `/settings/company`, `/settings/branches`, `/settings/establishments`,
+  `/settings/emission-points`, `/settings/geography`, `/settings/document-flows`,
+  `/settings/communications/email`, `/settings/operations`, `/initial-load`, `/admin/*`,
+  `/access/*`.
 
 ## Política de redirects legacy
 
@@ -239,3 +264,14 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
   reubicó Reglas contables bajo Contabilidad → Configuración; aplicó la política de URLs anterior
   con redirects legacy; agregó `NavMenuGroupDto.SortOrder` para que el orden de los tiles del
   launcher deje de depender de una lista hardcodeada en frontend.
+- **2026-09-16 — URLS-MENU-ALIGNMENT-01**: terminó de alinear las URLs visibles de Productos y
+  servicios (`/inventory/*`, `/catalog/*`, `/pricing` → `/products/*`), Clientes
+  (`/masterdata/customers` → `/customers`) y Proveedores (`/masterdata/suppliers` → `/suppliers`,
+  `/finance/supplier-credits` → `/suppliers/credits`, `/master/payment-terms` →
+  `/suppliers/payment-terms`, `/finance/credit-terms` → `/suppliers/credit-terms`) con el árbol de
+  MAPA-MENU-ERP-SSOT-01 — esos módulos habían quedado con URLs heredadas de sus módulos de origen
+  (`masterdata`/`catalog`/`master`/`finance`/`pricing`, ya disueltos). Confirmó sin cambios
+  Inventario/Tesorería/Contabilidad/SRI/Configuración (ya coherentes). Se agregó
+  `RouteAccessGuard.LEGACY_REDIRECT_PREFIXES` para `/masterdata`, `/catalog`, `/master` y
+  `/pricing` — sin ningún NavItem activo produciendo ya esos prefijos, el guard de acceso los
+  habría bloqueado antes de que el `<Navigate>` legacy llegara a montar.

@@ -5,6 +5,10 @@ namespace ERP.Domain.Kernel.Modules;
 
 // NAVIGATION-OPERATING-CYCLES-03: nuevo módulo — concentra el ciclo cliente (antes disperso
 // entre "masterdata" y "sales"). Mismos Ids/rutas/permisos que tenían en sus módulos de origen.
+// URLS-MENU-ALIGNMENT-01: "Clientes" realineado de /masterdata/customers a /customers (mismo
+// Id/página/permiso) — la URL visible debe coincidir con el módulo, no con el catálogo interno
+// (BusinessPartner) que la respalda. Redirect legacy en catalogRoutes.tsx. Cuentas por cobrar no
+// cambia — fuera del alcance explícito de este ticket.
 [Module("customers", Icon = "👥", SortOrder = 10)]
 public static class CustomersModule
 {
@@ -17,7 +21,7 @@ public static class CustomersModule
         Id = "8f31a57d-ed70-4e09-8031-393375bf40a5",
         PermissionsAnyCsv = MasterDataPermissions.BusinessPartnersView
     )]
-    public const string ManagementGroup = "/masterdata/customers/management-group";
+    public const string ManagementGroup = "/customers/management-group";
 
     // Movido desde MasterDataModule — mismo Id/ruta/permiso.
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: Create/Update/Disable/ConfigureCompany
@@ -36,7 +40,7 @@ public static class CustomersModule
             + MasterDataPermissions.BusinessPartnersDisable + ","
             + MasterDataPermissions.BusinessPartnersConfigureCompany
     )]
-    public const string Customers = "/masterdata/customers";
+    public const string Customers = "/customers";
 
     // Movido desde SalesModule (antes hijo del contenedor "Ventas → Operación") — mismo Id/ruta/
     // permiso; ahora ítem plano de Clientes, no contenedor.

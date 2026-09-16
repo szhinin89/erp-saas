@@ -177,7 +177,7 @@ export function SupplierPicker({ value, onChange, disabled }: Props) {
                   "¿Aún no tiene proveedores registrados?",
                 )}{" "}
                 <a
-                  href="/masterdata/suppliers"
+                  href="/suppliers"
                   className="zh-picker__link"
                 >
                   {t("purchases.supplierPicker.register", "Registre un proveedor")}

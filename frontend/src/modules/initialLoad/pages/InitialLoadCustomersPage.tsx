@@ -8,7 +8,7 @@ export function InitialLoadCustomersPage() {
       title="Carga Inicial — Clientes"
       helpText="Descarga la plantilla, complétala con tus clientes y súbela aquí."
       requiredFieldsHint="Los campos obligatorios son Tipo/Número de Identificación y Razón Social."
-      resultRoute="/masterdata/customers"
+      resultRoute="/customers"
       resultRouteLabel="Ver clientes"
       resultEntityLabelPlural="clientes"
     />
