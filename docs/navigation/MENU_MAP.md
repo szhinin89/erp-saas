@@ -91,7 +91,8 @@ Tesorería                                   [Module("treasury")]
 │     ├─ Cajas registradoras                /treasury/cash/registers
 │     └─ Preferencias de Caja               /settings/operations?tab=cash
 └─ Bancos
-   └─ Destinos financieros                  /treasury/banks/financial-destinations
+   ├─ Destinos financieros                  /treasury/banks/financial-destinations
+   └─ Cuentas bancarias                     /treasury/banks/accounts
 
 Contabilidad                                [Module("accounting")]
 ├─ Asientos
@@ -223,6 +224,9 @@ Compras/Inventario/Contabilidad.
 - Ruta nueva en BANK-CATALOG-01 (pantalla nueva, sin URL anterior — no aplica redirect legacy):
   `/settings/catalogs/banks`.
 
+- Ruta nueva en TREASURY-BANK-ACCOUNTS-01 (pantalla nueva, sin URL anterior — no aplica redirect
+  legacy): `/treasury/banks/accounts`.
+
 - Sin cambios (ya coherentes con su módulo, confirmados en URLS-MENU-ALIGNMENT-01): `/inventory/warehouses`,
   `/inventory/kardex`, `/inventory/transfers`, `/inventory/adjustments`,
   `/inventory/adjustment-reasons`, `/purchases/*`, `/expenses/*`, `/payables`,
@@ -286,3 +290,11 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
   CompanyId, seed mínimo Ecuador (9 bancos). Primera categoría "Catálogos" bajo Configuración;
   preparada para futuros catálogos maestros sin necesitar un módulo Tesorería/Bancos propio
   todavía.
+- **2026-09-16 — TREASURY-BANK-ACCOUNTS-01**: agregó Tesorería → Bancos → Cuentas bancarias
+  (`/treasury/banks/accounts`) — `CompanyBankAccount` (CRUD básico + activar/desactivar),
+  company-scoped, banco seleccionado siempre desde el catálogo maestro `Bank` (BANK-CATALOG-01,
+  nunca texto libre), cuenta contable validada activa/postable/misma empresa (mismo criterio que
+  `CompanyFinancialDestination`). Único por CompanyId+BankId+AccountType+AccountNumber. Alcance
+  estricto: sin posting, sin caja, sin conciliación, sin movimientos bancarios — eso pertenece a un
+  módulo bancario completo futuro. El grupo "Bancos" ahora agrupa dos pantallas (Destinos
+  financieros + Cuentas bancarias).

@@ -342,6 +342,9 @@ public class ErpDbContext : DbContext
     public DbSet<SupplierCreditRefundTransaction> SupplierCreditRefundTransactions =>
         Set<SupplierCreditRefundTransaction>();
 
+    // TREASURY-BANK-ACCOUNTS-01
+    public DbSet<CompanyBankAccount> CompanyBankAccounts => Set<CompanyBankAccount>();
+
     // ── FLOW-READY-02C: PurchaseCreditNote (descuento/promoción) ────────────
     public DbSet<PurchaseCreditNote> PurchaseCreditNotes => Set<PurchaseCreditNote>();
     public DbSet<PurchaseCreditNoteDetail> PurchaseCreditNoteDetails =>

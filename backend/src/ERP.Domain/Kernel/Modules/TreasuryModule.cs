@@ -77,12 +77,17 @@ public static class TreasuryModule
     )]
     public const string CajaPreferences = "/settings/operations?tab=cash";
 
+    // TREASURY-BANK-ACCOUNTS-01: el grupo "Bancos" ahora agrupa dos pantallas
+    // (Destinos financieros + Cuentas bancarias) — PermissionsAnyCsv debe incluir el permiso de
+    // vista de ambas, o un usuario con solo uno de los dos nunca vería el grupo padre
+    // (NavigationBuilder.BuildItemTree corta la recursión en el primer ancestro invisible).
     [NavItem(
         "Bancos",
         LabelKey = "app.nav.item.treasury.banksGroup",
         SortOrder = 30,
         Id = "f5000000-0000-4000-9000-000000000040",
-        PermissionsAnyCsv = SettingsPermissions.FinancialDestinationsView
+        PermissionsAnyCsv = SettingsPermissions.FinancialDestinationsView + ","
+            + TreasuryPermissions.BankAccountsView
     )]
     public const string BanksGroup = "/treasury/banks/group";
 
@@ -98,4 +103,20 @@ public static class TreasuryModule
         RelatedActionPermissionsCsv = SettingsPermissions.FinancialDestinationsManage
     )]
     public const string FinancialDestinations = "/treasury/banks/financial-destinations";
+
+    // TREASURY-BANK-ACCOUNTS-01: cuentas bancarias de empresa (CompanyBankAccount), catálogo
+    // maestro Bank existente (BANK-CATALOG-01) — CRUD básico + activar/desactivar, sin tocar
+    // PaymentMethodAccount ni CompanyFinancialDestination.
+    [NavItem(
+        "Cuentas bancarias",
+        Permission = TreasuryPermissions.BankAccountsView,
+        LabelKey = "app.nav.item.treasury.bankAccounts",
+        SortOrder = 20,
+        Id = "f5000000-0000-4000-9000-000000000042",
+        ParentId = "f5000000-0000-4000-9000-000000000040",
+        RelatedActionPermissionsCsv = TreasuryPermissions.BankAccountsCreate + ","
+            + TreasuryPermissions.BankAccountsUpdate + ","
+            + TreasuryPermissions.BankAccountsManage
+    )]
+    public const string BankAccounts = "/treasury/banks/accounts";
 }

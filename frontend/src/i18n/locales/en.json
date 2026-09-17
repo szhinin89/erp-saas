@@ -124,6 +124,7 @@
   "app.nav.item.caja.configuration": "Settings",
   "app.nav.item.caja.preferences": "Cash Preferences",
   "app.nav.item.treasury.banksGroup": "Banks",
+  "app.nav.item.treasury.bankAccounts": "Bank Accounts",
   "app.nav.item.sri.electronicDocumentsGroup": "Electronic Documents",
   "app.nav.item.sri.configurationGroup": "Configuration",
   "app.nav.group.accounting": "Accounting",

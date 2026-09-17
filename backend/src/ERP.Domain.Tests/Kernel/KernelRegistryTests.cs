@@ -362,6 +362,8 @@ public sealed class KernelRegistryTests
             "/settings/operations?tab=cash",
             "/treasury/banks/group",
             "/treasury/banks/financial-destinations",
+            // TREASURY-BANK-ACCOUNTS-01
+            "/treasury/banks/accounts",
         });
     }
 

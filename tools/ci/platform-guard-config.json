@@ -69,6 +69,7 @@
     "/api/settings",
     "/api/supplier-payments",
     "/api/taxrates",
+    "/api/treasury",
     "/api/public",
     "/api/catalog",
     "/api/catalogs",

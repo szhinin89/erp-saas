@@ -70,6 +70,10 @@ const FinancialDestinationsPage = lazyNamedPage(
   () => import("../modules/finance/pages/FinancialDestinationsPage"),
   "FinancialDestinationsPage",
 );
+const BankAccountsPage = lazyNamedPage(
+  () => import("../modules/finance/pages/BankAccountsPage"),
+  "BankAccountsPage",
+);
 const ExpenseCategoriesPage = lazyNamedPage(
   () => import("../modules/expenses/pages/ExpenseCategoriesPage"),
   "ExpenseCategoriesPage",
@@ -455,6 +459,12 @@ export const catalogRoutes = [
     key="settings-financial-destinations-legacy"
     path="/settings/financial-destinations"
     element={<Navigate to="/treasury/banks/financial-destinations" replace />}
+  />,
+  // TREASURY-BANK-ACCOUNTS-01
+  <Route
+    key="treasury-bank-accounts"
+    path="/treasury/banks/accounts"
+    element={<BankAccountsPage />}
   />,
 
   // -- Payables (generico: Compras + Gastos) -------------------------------

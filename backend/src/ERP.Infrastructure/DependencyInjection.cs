@@ -837,6 +837,11 @@ public static class DependencyInjection
             ERP.Domain.Modules.Finance.Interfaces.ISupplierCreditRefundTransactionRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.SupplierCreditRefundTransactionRepository
         >();
+        // TREASURY-BANK-ACCOUNTS-01
+        services.AddScoped<
+            ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository,
+            ERP.Infrastructure.Persistence.Repositories.Finance.CompanyBankAccountRepository
+        >();
         // Fase 3: reutiliza ISriAuthorizationClient (ya registrado para ElectronicDocuments) — nunca un segundo cliente SOAP.
         services.AddScoped<
             ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.ISriReceptionXmlProvider,
