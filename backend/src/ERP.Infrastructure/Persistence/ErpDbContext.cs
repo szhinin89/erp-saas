@@ -196,6 +196,7 @@ public class ErpDbContext : DbContext
         Set<BusinessPartnerLocation>();
     public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
+    public DbSet<Bank> Banks => Set<Bank>();
     public DbSet<LegalEntityTypeCatalog> LegalEntityTypeCatalog => Set<LegalEntityTypeCatalog>();
 
     // ── MasterData BC — catálogos de clasificación BusinessPartner (CLASS-BP-CATALOGS-01) ──

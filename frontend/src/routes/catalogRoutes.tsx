@@ -6,6 +6,10 @@ const GeographyPage = lazyNamedPage(
   () => import("../modules/settings/geography/pages/GeographyPage"),
   "GeographyPage",
 );
+const BanksPage = lazyNamedPage(
+  () => import("../modules/settings/banks/pages/BanksPage"),
+  "BanksPage",
+);
 const ActivityPage = lazyNamedPage(
   () => import("../modules/admin/activity/pages/ActivityPage"),
   "ActivityPage",
@@ -228,6 +232,13 @@ export const catalogRoutes = [
     key="geo-legacy"
     path="/configuracion/geografia"
     element={<Navigate to="/settings/geography" replace />}
+  />,
+  // BANK-CATALOG-01: catálogo maestro de Bancos — Configuración > Catálogos > Bancos. No existe
+  // ruta antigua para este catálogo (pantalla nueva) — sin redirect legacy, per alcance del ticket.
+  <Route
+    key="settings-catalogs-banks"
+    path="/settings/catalogs/banks"
+    element={<BanksPage />}
   />,
 
   // -- Admin / Activity ---------------------------------------------------

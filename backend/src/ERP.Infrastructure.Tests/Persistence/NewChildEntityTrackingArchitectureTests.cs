@@ -34,6 +34,9 @@ public sealed class NewChildEntityTrackingArchitectureTests
         "src/ERP.Infrastructure/Persistence/Repositories/Sales/PaymentMethodRepository.cs",
         "src/ERP.Infrastructure/Persistence/Repositories/SriSettingsRepository.cs",
         "src/ERP.Infrastructure/Persistence/Repositories/Items/ItemTypeRepository.cs",
+        // BANK-CATALOG-01: Bank es un catálogo simple sin colecciones de navegación hijas (mismo
+        // perfil que PaymentTermRepository) — sin fixup de grafo posible.
+        "src/ERP.Infrastructure/MasterData/Repositories/BankRepository.cs",
     };
 
     /// <summary>

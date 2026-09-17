@@ -652,6 +652,35 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_settings_catalogs_banks_with_dedicated_permissions()
+    {
+        // BANK-CATALOG-01: Configuración > Catálogos > Bancos — permisos dedicados
+        // (settings.catalogs.banks.*), no reusa AccountingPermissions/SettingsPermissions
+        // genéricos de ningún otro catálogo.
+        var navigation = KernelRegistry.Navigation;
+
+        var catalogsGroup = navigation.SingleOrDefault(n => n.RoutePath == "/settings/catalogs/group");
+        catalogsGroup.Should().NotBeNull("el contenedor Catálogos debe estar en el menú de Configuración");
+        catalogsGroup!.GroupCode.Should().Be("settings");
+        catalogsGroup.ParentItemId.Should().BeNull();
+
+        var banks = navigation.SingleOrDefault(n => n.RoutePath == "/settings/catalogs/banks");
+        banks.Should().NotBeNull("Bancos debe estar en el menú de Configuración > Catálogos");
+        banks!.GroupCode.Should().Be("settings");
+        banks.ParentItemId.Should().Be(catalogsGroup.Id);
+        banks.PermissionKey.Should().Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.BanksView);
+        banks.RelatedActionPermissionKeys.Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    ERP.Domain.Kernel.Permissions.SettingsPermissions.BanksCreate,
+                    ERP.Domain.Kernel.Permissions.SettingsPermissions.BanksUpdate,
+                    ERP.Domain.Kernel.Permissions.SettingsPermissions.BanksManage,
+                }
+            );
+    }
+
+    [Fact]
     public void Navigation_contains_settings_operational_preferences_with_settings_operations_view_permission()
     {
         var navigation = KernelRegistry.Navigation;

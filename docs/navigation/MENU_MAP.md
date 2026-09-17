@@ -121,6 +121,8 @@ Configuración                               [Module("settings")]
 │  └─ Geography (Geografía)                 /settings/geography
 ├─ Documentos y flujos
 │  └─ Documentos y flujos                   /settings/document-flows
+├─ Catálogos
+│  └─ Bancos                                /settings/catalogs/banks
 ├─ Comunicaciones
 │  └─ Correo SMTP                           /settings/communications/email
 └─ Sistema
@@ -218,6 +220,9 @@ Compras/Inventario/Contabilidad.
   | `/master/payment-terms` | `/suppliers/payment-terms` |
   | `/finance/credit-terms` | `/suppliers/credit-terms` |
 
+- Ruta nueva en BANK-CATALOG-01 (pantalla nueva, sin URL anterior — no aplica redirect legacy):
+  `/settings/catalogs/banks`.
+
 - Sin cambios (ya coherentes con su módulo, confirmados en URLS-MENU-ALIGNMENT-01): `/inventory/warehouses`,
   `/inventory/kardex`, `/inventory/transfers`, `/inventory/adjustments`,
   `/inventory/adjustment-reasons`, `/purchases/*`, `/expenses/*`, `/payables`,
@@ -275,3 +280,9 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
   `RouteAccessGuard.LEGACY_REDIRECT_PREFIXES` para `/masterdata`, `/catalog`, `/master` y
   `/pricing` — sin ningún NavItem activo produciendo ya esos prefijos, el guard de acceso los
   habría bloqueado antes de que el `<Navigate>` legacy llegara a montar.
+- **2026-09-16 — BANK-CATALOG-01**: agregó Configuración → Catálogos → Bancos
+  (`/settings/catalogs/banks`) — catálogo maestro de bancos (CRUD + activar/desactivar, sin
+  cuenta contable ni relación con `PaymentMethodAccount`/Destinos financieros), tenant-wide sin
+  CompanyId, seed mínimo Ecuador (9 bancos). Primera categoría "Catálogos" bajo Configuración;
+  preparada para futuros catálogos maestros sin necesitar un módulo Tesorería/Bancos propio
+  todavía.

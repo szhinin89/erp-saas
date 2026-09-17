@@ -12,6 +12,9 @@ public static class CompanyBootstrapStepOrder
     /// <summary>Sucursal Principal, Bodega Principal, Establecimiento, Punto de Emisión.</summary>
     public const int Organization = 10;
 
+    /// <summary>BANK-CATALOG-01 — catálogo maestro de Bancos (seed mínimo Ecuador). No depende de ningún otro step.</summary>
+    public const int BankCatalog = 15;
+
     /// <summary>Numeraciones (DocumentSequence). Depende de Organization (punto de emisión).</summary>
     public const int ElectronicDocuments = 20;
 

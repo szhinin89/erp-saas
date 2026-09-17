@@ -133,6 +133,30 @@ public static class SettingsModule
     // /sri/configuration/electronic-invoicing (antes /settings/electronic-invoicing, que queda
     // como redirect en el frontend).
 
+    // BANK-CATALOG-01: contenedor "Catálogos" — categoría propia para catálogos maestros
+    // transversales de Configuración (hoy solo Bancos; preparado para futuros catálogos sin
+    // crear un módulo Tesorería/Bancos todavía, fuera del alcance de este ticket).
+    [NavItem(
+        "Catálogos",
+        LabelKey = "app.nav.item.settings.catalogsGroup",
+        SortOrder = 65,
+        Id = "9c7a1e20-0000-4000-8000-000000000001",
+        PermissionsAnyCsv = SettingsPermissions.BanksView
+    )]
+    public const string CatalogsGroup = "/settings/catalogs/group";
+
+    [NavItem(
+        "Bancos",
+        Permission = SettingsPermissions.BanksView,
+        LabelKey = "app.nav.item.settings.banks",
+        SortOrder = 10,
+        Id = "9c7a1e20-0000-4000-8000-000000000002",
+        ParentId = "9c7a1e20-0000-4000-8000-000000000001",
+        RelatedActionPermissionsCsv = SettingsPermissions.BanksCreate + ","
+            + SettingsPermissions.BanksUpdate + "," + SettingsPermissions.BanksManage
+    )]
+    public const string Banks = "/settings/catalogs/banks";
+
     // NAV-HIERARCHY-UNIFY-01: contenedor "Comunicaciones" — categoría propia.
     [NavItem(
         "Comunicaciones",

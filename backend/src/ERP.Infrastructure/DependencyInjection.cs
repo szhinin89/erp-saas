@@ -158,6 +158,7 @@ public static class DependencyInjection
         services.AddScoped<IBusinessPartnerLocationRepository, BusinessPartnerLocationRepository>();
         services.AddScoped<IBusinessPartnerContactRepository, BusinessPartnerContactRepository>();
         services.AddScoped<IPaymentTermRepository, PaymentTermRepository>();
+        services.AddScoped<IBankRepository, BankRepository>();
 
         // ── MasterData BC — catálogos de clasificación BusinessPartner (CLASS-BP-CATALOGS-01) ──
         services.AddScoped<ICustomerCategoryRepository, CustomerCategoryRepository>();
@@ -940,6 +941,9 @@ public static class DependencyInjection
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
         services.AddScoped<ICompanyBootstrapService, CompanyBootstrapOrchestrator>();
         services.AddScoped<ICompanyBootstrapStep, OrganizationBootstrapStep>();
+        services.AddScoped<BankCatalogSeeder>();
+        services.AddScoped<ICompanyBootstrapStep, BankCatalogBootstrapStep>();
+        services.AddScoped<BankCatalogBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, ElectronicDocumentsBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, InventoryBootstrapStep>();
         services.AddScoped<MasterDataClassificationSeeder>();

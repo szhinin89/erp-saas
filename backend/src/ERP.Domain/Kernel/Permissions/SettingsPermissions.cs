@@ -46,4 +46,10 @@ public static class SettingsPermissions
     /// </summary>
     public const string DocumentFlowsView = "settings.documentFlows.view";
     public const string DocumentFlowsUpdate = "settings.documentFlows.update";
+
+    /// <summary>BANK-CATALOG-01 — catálogo maestro de Bancos (Configuración → Catálogos → Bancos). Manage cubre activar/desactivar (nunca borrado físico).</summary>
+    public const string BanksView = "settings.catalogs.banks.view";
+    public const string BanksCreate = "settings.catalogs.banks.create";
+    public const string BanksUpdate = "settings.catalogs.banks.update";
+    public const string BanksManage = "settings.catalogs.banks.manage";
 }

@@ -414,6 +414,22 @@ using (var migrationScope = app.Services.CreateScope())
         await db.Database.MigrateAsync();
 }
 
+// Comando de una sola vez (BANK-CATALOG-01): backfill idempotente del catálogo mínimo de Bancos
+// para tenants creados antes de este ticket — BankCatalogBootstrapStep solo siembra empresas
+// NUEVAS. No es un endpoint HTTP ni un IGlobalBootstrapStep — operación de despliegue explícita:
+// `dotnet run -- backfill-bank-catalog`. Sale sin iniciar el host web.
+if (args.Contains("backfill-bank-catalog"))
+{
+    using var bankCatalogBackfillScope = app.Services.CreateScope();
+    var bankCatalogBackfillService =
+        bankCatalogBackfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.BankCatalogBackfillService>();
+    var bankCatalogResult = await bankCatalogBackfillService.RunAsync();
+    Console.WriteLine(
+        $"[backfill-bank-catalog] Tenants procesados: {bankCatalogResult.TenantsProcessed}. Bancos insertados: {bankCatalogResult.RowsInserted}."
+    );
+    return;
+}
+
 // Comando de una sola vez (CLASS-BP-CATALOGS-01): backfill idempotente de los 12 catálogos de
 // clasificación de BusinessPartner para empresas creadas antes de este bloque (p. ej. Sumak).
 // No es un endpoint HTTP ni un IGlobalBootstrapStep — es una operación de despliegue explícita:
