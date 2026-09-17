@@ -100,9 +100,9 @@ export function SupplierCreditListPage() {
         <ZHBtn
           type="button"
           variant="ghost"
-          onClick={() => navigate("/treasury/banks/financial-destinations")}
+          onClick={() => navigate("/treasury/banks/accounts")}
         >
-          Destinos financieros
+          Cuentas bancarias
         </ZHBtn>
       }
     >

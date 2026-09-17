@@ -8,7 +8,7 @@ namespace ERP.Domain.Modules.Payables.Entities;
 /// SUPPLIER-PAYMENTS-FOUNDATION-15B — agregado raíz independiente para el registro de pagos a
 /// proveedores, aprobado por SUPPLIER-PAYMENTS-AUDIT-15A. Deliberadamente NO reutiliza
 /// <c>Payment</c>/<c>PaymentApplicationLine</c> (Finance): esos sostienen Collections/CxC en vivo y
-/// su forma es plana (un único <c>PaymentMethodId</c>/<c>FinancialDestinationId</c> de cabecera, una
+/// su forma es plana (un único <c>PaymentMethodId</c>/<c>CompanyBankAccountId</c> de cabecera, una
 /// línea de aplicación = un documento) — no admite varios medios por pago, una cuota pagada con
 /// varios medios, ni un medio repartido entre varias cuotas sin reestructurar esos campos de
 /// cabecera y arriesgar el flujo de Collections ya probado.
@@ -131,7 +131,8 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                     payment.Id,
                     tenantId,
                     input.PaymentMethodId,
-                    input.FinancialDestinationId,
+                    input.CompanyBankAccountId,
+                    input.CashRegisterId,
                     input.Amount,
                     input.ReferenceNumber,
                     input.CheckNumber,
@@ -186,7 +187,11 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 totalAmount,
                 paymentDate,
                 payment._methodLines
-                    .Select(l => new SupplierPaymentConfirmedMethodLine(l.FinancialDestinationId, l.Amount))
+                    .Select(l => new SupplierPaymentConfirmedMethodLine(
+                        l.CompanyBankAccountId,
+                        l.CashRegisterId,
+                        l.Amount
+                    ))
                     .ToList()
             )
         );
@@ -230,7 +235,11 @@ public sealed class SupplierPayment : AuditableEntity, ITenantScopedEntity, ICom
                 PaymentDate,
                 trimmedReason,
                 _methodLines
-                    .Select(l => new SupplierPaymentConfirmedMethodLine(l.FinancialDestinationId, l.Amount))
+                    .Select(l => new SupplierPaymentConfirmedMethodLine(
+                        l.CompanyBankAccountId,
+                        l.CashRegisterId,
+                        l.Amount
+                    ))
                     .ToList(),
                 _applicationLines
                     .Select(l => new SupplierPaymentReversedApplicationLine(

@@ -115,7 +115,7 @@ function AccountTreeNameCell({ code, name, allowsPosting }: AccountTreeNameCellP
 /**
  * Plan de Cuentas (ACCOUNTING-CHART-OF-ACCOUNTS-02). Auditoría de reutilización: revisadas
  * `JournalEntriesPage.tsx`/`JournalEntryDetailPage.tsx` (mismo módulo, mismo patrón
- * PageShell+ZHCard+ZHDataTable ya establecido para Contabilidad) y `FinancialDestinationsPage.tsx`
+ * PageShell+ZHCard+ZHDataTable ya establecido para Contabilidad) y `BankAccountsPage.tsx`
  * (formulario RHF+Zod+ZHField/ZHGrid+applyServerErrors sobre una cuenta contable, catálogo
  * comparable). Reutiliza PageShell/ZHCard/ZHBtn/ZHIconButton/ZHDataTable/Badge/ZHPageNotice/
  * ZHField/ZHGrid/ZhTextInput/ZhSelect — sin componentes nuevos. Solo Create/Update/Enable/Disable:

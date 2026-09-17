@@ -9,6 +9,7 @@ using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
@@ -19,6 +20,7 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Repositories.Caja;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
@@ -62,8 +64,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
     private Guid _cashMethodId;
     private Guid _transferMethodId;
-    private Guid _cashDestinationId;
-    private Guid _bankDestinationId;
+    private Guid _cashRegisterId;
+    private Guid _companyBankAccountId;
     private Guid _cashAccountId;
     private Guid _bankAccountId;
     private Guid _payablesAccountId;
@@ -228,39 +230,31 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             "Caja Principal",
             _createdBy
         );
+        cashRegisterEntity.SetAccountingAccount(cashAccount.Id, _createdBy);
         db.CashRegisters.Add(cashRegisterEntity);
         await db.SaveChangesAsync();
 
-        var cashDestination = CompanyFinancialDestination.Create(
+        var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _createdBy);
+        db.Banks.Add(bank);
+        await db.SaveChangesAsync();
+
+        var companyBankAccount = CompanyBankAccount.Create(
             _tenantId,
             _companyId,
-            "CAJA-01",
-            "Caja Principal",
-            FinancialDestinationTypeCode.CashRegister,
-            cashAccount.Id,
-            "USD",
-            _createdBy,
-            cashRegisterId: cashRegisterEntity.Id
-        );
-        var bankDestination = CompanyFinancialDestination.Create(
-            _tenantId,
-            _companyId,
-            "BANCO-01",
+            bank.Id,
+            BankAccountType.Checking,
+            "2200123456",
             "Banco Pichincha",
-            FinancialDestinationTypeCode.BankAccount,
             bankAccount.Id,
-            "USD",
-            _createdBy,
-            bankInstitutionCode: "PICHINCHA",
-            bankAccountIdentifierNormalized: "2200123456"
+            _createdBy
         );
-        db.CompanyFinancialDestinations.AddRange(cashDestination, bankDestination);
+        db.CompanyBankAccounts.Add(companyBankAccount);
         await db.SaveChangesAsync();
 
         _cashMethodId = cashMethod.Id;
         _transferMethodId = transferMethod.Id;
-        _cashDestinationId = cashDestination.Id;
-        _bankDestinationId = bankDestination.Id;
+        _cashRegisterId = cashRegisterEntity.Id;
+        _companyBankAccountId = companyBankAccount.Id;
         _cashAccountId = cashAccount.Id;
         _bankAccountId = bankAccount.Id;
         _payablesAccountId = payablesAccount.Id;
@@ -309,10 +303,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<
-            ICompanyFinancialDestinationRepository,
-            CompanyFinancialDestinationRepository
-        >();
+        services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
+        services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(SupplierPaymentConfirmedPostingTranslator).Assembly)
@@ -363,7 +355,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             new SupplierPaymentSequenceRepository(db),
             new AccountsPayableRepository(db),
             new PaymentMethodRepository(db),
-            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(_companyId)),
+            new CompanyBankAccountRepository(db, new FixedCurrentCompany(_companyId)),
+            new CashRegisterRepository(db, new FixedCurrentCompany(_companyId)),
             new UnitOfWork(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -445,7 +438,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             paymentDate,
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+            new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
         );
@@ -513,8 +506,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             "CHK-0001",
             new[]
             {
-                new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m),
-                new SupplierPaymentMethodLineRequest(_transferMethodId, _bankDestinationId, 200m),
+                new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m),
+                new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m),
             },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
             new[]
@@ -562,7 +555,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             paymentDate,
             500m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _bankDestinationId, 500m) },
+            new[] { new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 500m) },
             new[]
             {
                 new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m),
@@ -617,8 +610,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             null,
             new[]
             {
-                new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 150m),
-                new SupplierPaymentMethodLineRequest(_transferMethodId, _bankDestinationId, 150m),
+                new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 150m),
+                new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 150m),
             },
             new[]
             {
@@ -678,7 +671,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             paymentDate,
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+            new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
         );
@@ -722,7 +715,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     300m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
                 ),
@@ -791,7 +784,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     100m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
                 ),
@@ -834,8 +827,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     null,
                     new[]
                     {
-                        new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m),
-                        new SupplierPaymentMethodLineRequest(_transferMethodId, _bankDestinationId, 200m),
+                        new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m),
+                        new SupplierPaymentMethodLineRequest(_transferMethodId, _companyBankAccountId, null, 200m),
                     },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[]
@@ -885,7 +878,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     300m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
                 ),
@@ -927,7 +920,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     300m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
                 ),
@@ -989,7 +982,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     300m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
                 ),
@@ -1036,7 +1029,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     100m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 100m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 100m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 100m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
                 ),
@@ -1078,7 +1071,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     300m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
                 ),
@@ -1117,7 +1110,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     paymentDate,
                     300m,
                     null,
-                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, _cashDestinationId, 300m) },
+                    new[] { new SupplierPaymentMethodLineRequest(_cashMethodId, null, _cashRegisterId, 300m) },
                     new[] { new SupplierPaymentApplicationLineRequest(_purchaseInstallmentId, 300m) },
                     new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
                 ),

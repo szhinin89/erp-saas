@@ -15,7 +15,7 @@ public sealed class SupplierCreditAuditTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid TargetPurchasePayableId = Guid.NewGuid();
     private static readonly Guid SourcePurchaseReturnId = Guid.NewGuid();
-    private static readonly Guid FinancialDestinationId = Guid.NewGuid();
+    private static readonly Guid CompanyBankAccountId = Guid.NewGuid();
     private static readonly Guid AccountingAccountId = Guid.NewGuid();
     private static readonly Guid CashRegisterId = Guid.NewGuid();
     private static readonly Guid CashSessionId = Guid.NewGuid();
@@ -153,7 +153,7 @@ public sealed class SupplierCreditAuditTests
         );
 
         audit.MovementType.Should().Be(SupplierCreditMovementType.ReversalOfApplication);
-        audit.FinancialDestinationId.Should().BeNull();
+        audit.CompanyBankAccountId.Should().BeNull();
         audit.PaymentMethodCode.Should().BeNull();
         audit.EffectiveDate.Should().BeNull();
     }
@@ -176,9 +176,9 @@ public sealed class SupplierCreditAuditTests
             balanceAfter: 0m,
             statusBefore: "Open",
             statusAfter: "Closed",
-            financialDestinationId: FinancialDestinationId,
-            financialDestinationCodeSnapshot: "BANCO-001",
-            destinationTypeCodeSnapshot: "BANK_ACCOUNT",
+            companyBankAccountId: CompanyBankAccountId,
+            destinationCodeSnapshot: "BANCO-001",
+            destinationTypeSnapshot: "BankAccount",
             accountingAccountId: AccountingAccountId,
             cashRegisterId: null,
             cashSessionId: null,
@@ -189,9 +189,9 @@ public sealed class SupplierCreditAuditTests
         );
 
         audit.MovementType.Should().Be(SupplierCreditMovementType.Refund);
-        audit.FinancialDestinationId.Should().Be(FinancialDestinationId);
-        audit.FinancialDestinationCodeSnapshot.Should().Be("BANCO-001");
-        audit.DestinationTypeCodeSnapshot.Should().Be("BANK_ACCOUNT");
+        audit.CompanyBankAccountId.Should().Be(CompanyBankAccountId);
+        audit.DestinationCodeSnapshot.Should().Be("BANCO-001");
+        audit.DestinationTypeSnapshot.Should().Be("BankAccount");
         audit.AccountingAccountId.Should().Be(AccountingAccountId);
         audit.PaymentMethodCode.Should().Be("TRANSFER");
         audit.ExternalReference.Should().Be("REF-0001");
@@ -213,7 +213,7 @@ public sealed class SupplierCreditAuditTests
             "Refunded",
             movementType: SupplierCreditMovementType.Refund,
             amount: 100m,
-            financialDestinationId: FinancialDestinationId,
+            companyBankAccountId: CompanyBankAccountId,
             cashRegisterId: CashRegisterId,
             cashSessionId: CashSessionId,
             cashMovementId: CashMovementId,
@@ -258,9 +258,9 @@ public sealed class SupplierCreditAuditTests
         // Ambos grupos de campos (destino de aplicación y destino financiero de reembolso)
         // quedan null en SourceReturnCancelled (§20.1bis).
         audit.TargetPurchasePayableId.Should().BeNull();
-        audit.FinancialDestinationId.Should().BeNull();
-        audit.FinancialDestinationCodeSnapshot.Should().BeNull();
-        audit.DestinationTypeCodeSnapshot.Should().BeNull();
+        audit.CompanyBankAccountId.Should().BeNull();
+        audit.DestinationCodeSnapshot.Should().BeNull();
+        audit.DestinationTypeSnapshot.Should().BeNull();
         audit.AccountingAccountId.Should().BeNull();
         audit.CashRegisterId.Should().BeNull();
         audit.CashSessionId.Should().BeNull();

@@ -15,10 +15,8 @@ import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
 } from "../../sales/facades/paymentMethodLookupFacade";
-import {
-  financialDestinationService,
-  type CompanyFinancialDestinationDto,
-} from "../../finance/api/financialDestinationService";
+import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
+import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
 import { supplierPaymentService, type SupplierPaymentDto } from "../api/supplierPaymentService";
 import { SupplierPaymentStatusBadge } from "../components/SupplierPaymentStatusBadge";
 import { SupplierPaymentReverseModal } from "../components/SupplierPaymentReverseModal";
@@ -57,7 +55,8 @@ export function SupplierPaymentDetailPage() {
   const [payment, setPayment] = useState<SupplierPaymentDto | null>(null);
   const [supplierName, setSupplierName] = useState("");
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
-  const [destinations, setDestinations] = useState<CompanyFinancialDestinationDto[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
+  const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,14 +69,16 @@ export function SupplierPaymentDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [detail, methodsList, destinationsList] = await Promise.all([
+      const [detail, methodsList, bankAccountsList, cashRegistersList] = await Promise.all([
         supplierPaymentService.getById(id),
         paymentMethodLookupFacade.list(false),
-        financialDestinationService.list(),
+        bankAccountService.list(),
+        cajaService.getCashRegisters(),
       ]);
       setPayment(detail);
       setMethods(methodsList);
-      setDestinations(destinationsList);
+      setBankAccounts(bankAccountsList);
+      setCashRegisters(cashRegistersList);
       try {
         const supplier = await businessPartnerFacade.getBusinessPartner(detail.supplierId);
         setSupplierName(supplier.tradeName?.trim() || supplier.legalName);
@@ -119,7 +120,8 @@ export function SupplierPaymentDetailPage() {
   if (!canView) return <NoAccessPage title="Pago a proveedor" />;
 
   const methodsById = new Map(methods.map((m) => [m.id, m]));
-  const destinationsById = new Map(destinations.map((d) => [d.id, d]));
+  const bankAccountsById = new Map(bankAccounts.map((b) => [b.id, b]));
+  const cashRegistersById = new Map(cashRegisters.map((c) => [c.id, c]));
   const canShowReverseButton = payment?.status === "Confirmed" && canReverse;
 
   // ZH-LISTING-DETAIL-TABLES-AUDIT-04: líneas de un documento confirmado, sin acciones ni
@@ -129,7 +131,7 @@ export function SupplierPaymentDetailPage() {
     {
       key: "destination",
       header: "Caja / cuenta bancaria",
-      render: (line) => destinationsById.get(line.financialDestinationId)?.name ?? "—",
+      render: (line) => (line.companyBankAccountId ? bankAccountsById.get(line.companyBankAccountId)?.displayName : cashRegistersById.get(line.cashRegisterId ?? "")?.name) ?? "—",
     },
     {
       key: "reference",

@@ -11,7 +11,7 @@ public sealed class SupplierCreditRefundTransactionTests
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid SupplierCreditId = Guid.NewGuid();
     private static readonly Guid SupplierCreditMovementId = Guid.NewGuid();
-    private static readonly Guid FinancialDestinationId = Guid.NewGuid();
+    private static readonly Guid CompanyBankAccountId = Guid.NewGuid();
     private static readonly Guid AccountingAccountId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
@@ -26,12 +26,13 @@ public sealed class SupplierCreditRefundTransactionTests
             SupplierId,
             SupplierCreditId,
             SupplierCreditMovementId,
-            FinancialDestinationId,
+            CompanyBankAccountId,
+            null,
             AccountingAccountId,
             accountingAccountCodeSnapshot: "1.1.03.01",
-            financialDestinationCodeSnapshot: "BANCO-001",
-            financialDestinationNameSnapshot: "Cuenta corriente Pichincha",
-            destinationTypeCodeSnapshot: "BANK_ACCOUNT",
+            destinationCodeSnapshot: "BANCO-001",
+            destinationNameSnapshot: "Cuenta corriente Pichincha",
+            destinationTypeSnapshot: "BankAccount",
             paymentMethodCode: "TRANSFER",
             amount: amount,
             currencyCode: "USD",
@@ -80,12 +81,13 @@ public sealed class SupplierCreditRefundTransactionTests
                 SupplierId,
                 SupplierCreditId,
                 SupplierCreditMovementId,
-                Guid.Empty,
+                null,
+                null,
                 AccountingAccountId,
                 "1.1.03.01",
                 "BANCO-001",
                 "Cuenta corriente Pichincha",
-                "BANK_ACCOUNT",
+                "BankAccount",
                 "TRANSFER",
                 150m,
                 "USD",
@@ -138,7 +140,7 @@ public sealed class SupplierCreditRefundTransactionTests
 
         reversal.TransactionTypeCode.Should().Be(RefundTransactionTypeCode.RefundReversed);
         reversal.OriginalTransactionId.Should().Be(original.Id);
-        reversal.FinancialDestinationId.Should().Be(original.FinancialDestinationId);
+        reversal.CompanyBankAccountId.Should().Be(original.CompanyBankAccountId);
         reversal.AccountingAccountId.Should().Be(original.AccountingAccountId);
         reversal.PaymentMethodCode.Should().Be(original.PaymentMethodCode);
         reversal.Amount.Should().Be(original.Amount);

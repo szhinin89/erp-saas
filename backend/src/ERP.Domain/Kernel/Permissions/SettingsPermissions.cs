@@ -31,13 +31,9 @@ public static class SettingsPermissions
     /// DOCUMENT-SEQUENCES-CONFIG-03 — configurar el número inicial de una secuencia documental
     /// SRI (<c>DocumentSequence</c>) antes de su primer uso real. No es un permiso de emisión de
     /// documentos (Facturas/Retenciones ya tienen los suyos) — es administración de numeración,
-    /// mismo perfil de riesgo que <see cref="FinancialDestinationsManage"/>.
+    /// mismo perfil de riesgo que administrar cuentas contables/métodos de pago.
     /// </summary>
     public const string DocumentSequencesManage = "settings.document-sequences.manage";
-
-    /// <summary>P0-02 §20.2 — administración del catálogo <c>CompanyFinancialDestination</c> (mismo perfil de riesgo que administrar cuentas contables/métodos de pago).</summary>
-    public const string FinancialDestinationsView = "settings.financial-destinations.view";
-    public const string FinancialDestinationsManage = "settings.financial-destinations.manage";
 
     /// <summary>
     /// DOCUMENT-FLOW-POLICY-01 — administración de <c>DocumentFlowPolicy</c> (Configuración →

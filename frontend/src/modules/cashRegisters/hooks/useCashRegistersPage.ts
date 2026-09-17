@@ -1,3 +1,4 @@
+import { apiGet } from "../../lib/apiEnvelope";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +32,12 @@ export function useCashRegistersPage() {
   const canManage = canShow("caja.manage");
 
   // ── Datos del listado ────────────────────────────────────────────────────
+  const [accounts, setAccounts] = useState<{id: string; code: string; name: string; isActive: boolean; allowsPosting: boolean}[]>([]);
+  useEffect(() => {
+    apiGet<typeof accounts>("/api/v1/accounting/accounts")
+      .then((rows) => setAccounts(rows.filter((a) => a.isActive && a.allowsPosting)))
+      .catch(() => setAccounts([]));
+  }, []);
   const [items, setItems] = useState<CashRegisterDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -205,6 +212,7 @@ export function useCashRegistersPage() {
       name: item.name,
       emissionPointId: item.emissionPointId ?? "",
       notes: item.notes ?? "",
+      accountingAccountId: item.accountingAccountId ?? "",
       defaultWarehouseId: item.defaultWarehouseId ?? "",
       defaultCustomerId: item.defaultCustomerId ?? "",
     });
@@ -235,6 +243,7 @@ export function useCashRegistersPage() {
           name: form.name.trim(),
           emissionPointId: form.emissionPointId || null,
           notes: form.notes || null,
+          accountingAccountId: form.accountingAccountId || null,
           defaultWarehouseId: form.defaultWarehouseId || null,
           defaultCustomerId: form.defaultCustomerId || null,
         });
@@ -247,6 +256,7 @@ export function useCashRegistersPage() {
           name: form.name.trim(),
           emissionPointId: form.emissionPointId || null,
           notes: form.notes || null,
+          accountingAccountId: form.accountingAccountId || null,
           defaultWarehouseId: form.defaultWarehouseId || null,
           defaultCustomerId: form.defaultCustomerId || null,
         });
@@ -261,6 +271,7 @@ export function useCashRegistersPage() {
           name: created.name,
           emissionPointId: created.emissionPointId ?? "",
           notes: created.notes ?? "",
+          accountingAccountId: created.accountingAccountId ?? "",
           defaultWarehouseId: created.defaultWarehouseId ?? "",
           defaultCustomerId: created.defaultCustomerId ?? "",
         });
@@ -299,6 +310,7 @@ export function useCashRegistersPage() {
   };
 
   return {
+    accounts,
     // Permisos
     canView,
     canManage,

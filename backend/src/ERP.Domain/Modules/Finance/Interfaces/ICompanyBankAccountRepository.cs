@@ -7,6 +7,17 @@ public interface ICompanyBankAccountRepository
 {
     Task<CompanyBankAccount?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
+    /// <summary>
+    /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — bloqueo <c>SELECT ... FOR SHARE</c>
+    /// real sobre la fila, para leer <see cref="CompanyBankAccount.AccountingAccountId"/> con la
+    /// misma garantía de concurrencia que antes daba <c>legacy treasury destination</c> FOR SHARE.
+    /// </summary>
+    Task<CompanyBankAccount?> GetByIdForShareAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    );
+
     Task<IReadOnlyList<CompanyBankAccount>> GetListAsync(
         Guid tenantId,
         bool? isActive,

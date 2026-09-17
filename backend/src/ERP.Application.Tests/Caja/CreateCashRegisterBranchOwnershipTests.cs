@@ -3,6 +3,7 @@ using ERP.Application.Modules.Caja.UseCases;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -61,6 +62,7 @@ public sealed class CreateCashRegisterBranchOwnershipTests
         public Mock<IBranchRepository> BranchRepo { get; } = new();
         public Mock<IWarehouseRepository> WarehouseRepo { get; } = new();
         public Mock<IBusinessPartnerRepository> CustomerRepo { get; } = new();
+        public Mock<IAccountRepository> AccountRepo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
@@ -89,6 +91,7 @@ public sealed class CreateCashRegisterBranchOwnershipTests
                 BranchRepo.Object,
                 WarehouseRepo.Object,
                 CustomerRepo.Object,
+                AccountRepo.Object,
                 Tenant.Object,
                 Company.Object,
                 User.Object

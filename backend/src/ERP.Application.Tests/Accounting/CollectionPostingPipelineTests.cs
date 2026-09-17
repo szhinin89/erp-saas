@@ -4,6 +4,7 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
@@ -35,7 +36,7 @@ public sealed class CollectionPostingPipelineTests
     private static CollectionAppliedEvent CollectionEvent(
         Guid paymentId,
         decimal amount = 300m,
-        Guid? financialDestinationId = null
+        Guid? companyBankAccountId = null
     ) =>
         new(
             TenantId,
@@ -44,21 +45,19 @@ public sealed class CollectionPostingPipelineTests
             PartnerId,
             amount,
             new DateOnly(2026, 8, 10),
-            financialDestinationId
+            companyBankAccountId
         );
 
-    private static CompanyFinancialDestination BankDestination(Guid accountingAccountId) =>
-        CompanyFinancialDestination.Create(
+    private static CompanyBankAccount BankAccount(Guid accountingAccountId) =>
+        CompanyBankAccount.Create(
             TenantId,
             CompanyId,
-            "BANCO-01",
+            Guid.NewGuid(),
+            BankAccountType.Checking,
+            "1234567890",
             "Banco Pichincha",
-            FinancialDestinationTypeCode.BankAccount,
             accountingAccountId,
-            "USD",
-            CreatedBy,
-            bankInstitutionCode: "PICHINCHA",
-            bankAccountIdentifierNormalized: "1234567890"
+            CreatedBy
         );
 
     private static Account PostableAccount(string code, string name) =>
@@ -100,7 +99,8 @@ public sealed class CollectionPostingPipelineTests
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
         public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
         public Mock<IAccountRepository> Accounts { get; } = new();
-        public Mock<ICompanyFinancialDestinationRepository> FinancialDestinations { get; } = new();
+        public Mock<ICompanyBankAccountRepository> BankAccounts { get; } = new();
+        public Mock<ICashRegisterRepository> CashRegisters { get; } = new();
         public JournalEntry? Captured { get; private set; }
 
         public Mocks()
@@ -142,12 +142,12 @@ public sealed class CollectionPostingPipelineTests
                 .ReturnsAsync(1);
         }
 
-        public void RegisterFinancialDestination(CompanyFinancialDestination destination) =>
-            FinancialDestinations
+        public void RegisterBankAccount(CompanyBankAccount bankAccount) =>
+            BankAccounts
                 .Setup(r =>
-                    r.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>())
+                    r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>())
                 )
-                .ReturnsAsync(destination);
+                .ReturnsAsync(bankAccount);
 
         public void RegisterAccount(Account account) =>
             Accounts
@@ -184,7 +184,7 @@ public sealed class CollectionPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         var paymentId = Guid.NewGuid();
         await translator.Handle(CollectionEvent(paymentId, 300m), CancellationToken.None);
@@ -237,7 +237,7 @@ public sealed class CollectionPostingPipelineTests
             .ReturnsAsync(existing);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         await translator.Handle(CollectionEvent(paymentId, 300m), CancellationToken.None);
 
@@ -266,7 +266,7 @@ public sealed class CollectionPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         await translator.Handle(CollectionEvent(Guid.NewGuid(), 300m), CancellationToken.None);
 
@@ -289,8 +289,8 @@ public sealed class CollectionPostingPipelineTests
         m.RegisterAccount(cashDefault);
         m.RegisterAccount(bank);
         m.RegisterAccount(receivable);
-        var destination = BankDestination(bank.Id);
-        m.RegisterFinancialDestination(destination);
+        var destination = BankAccount(bank.Id);
+        m.RegisterBankAccount(destination);
         // La PostingRule sigue apuntando a Caja por defecto — el override debe ganar.
         var rule = Rule("Finance", "CollectionApplied", cashDefault.Id, receivable.Id);
         m.PostingRules
@@ -301,7 +301,7 @@ public sealed class CollectionPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         var paymentId = Guid.NewGuid();
         await translator.Handle(
@@ -318,7 +318,7 @@ public sealed class CollectionPostingPipelineTests
     }
 
     [Fact]
-    public async Task Cobro_con_destino_financiero_cuya_cuenta_ya_no_es_postable_bloquea_solo_el_posting()
+    public async Task Cobro_con_cuenta_no_postable_bloquea_la_operacion()
     {
         var m = new Mocks();
         var cashDefault = PostableAccount("1.1.01", "Caja");
@@ -328,8 +328,8 @@ public sealed class CollectionPostingPipelineTests
         m.RegisterAccount(cashDefault);
         m.RegisterAccount(bank);
         m.RegisterAccount(receivable);
-        var destination = BankDestination(bank.Id);
-        m.RegisterFinancialDestination(destination);
+        var destination = BankAccount(bank.Id);
+        m.RegisterBankAccount(destination);
         var rule = Rule("Finance", "CollectionApplied", cashDefault.Id, receivable.Id);
         m.PostingRules
             .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Finance", "CollectionApplied", It.IsAny<CancellationToken>()))
@@ -339,7 +339,7 @@ public sealed class CollectionPostingPipelineTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new CollectionAppliedPostingTranslator(engine, m.FinancialDestinations.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
+        var translator = new CollectionAppliedPostingTranslator(engine, m.BankAccounts.Object, m.CashRegisters.Object, NullLogger<CollectionAppliedPostingTranslator>.Instance);
 
         var act = async () =>
             await translator.Handle(
@@ -347,7 +347,7 @@ public sealed class CollectionPostingPipelineTests
                 CancellationToken.None
             );
 
-        await act.Should().NotThrowAsync("el cobro ya aplicado nunca debe verse afectado por un fallo de posting");
+        await act.Should().ThrowAsync<InvalidOperationException>();
         m.Captured.Should().BeNull("la cuenta efectiva (override) es inválida — ningún asiento parcial");
         m.JournalEntries.Verify(
             r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),

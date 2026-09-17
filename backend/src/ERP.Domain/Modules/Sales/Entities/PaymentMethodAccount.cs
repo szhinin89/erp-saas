@@ -16,7 +16,7 @@ namespace ERP.Domain.Modules.Sales.Entities;
 /// campo escalar en <c>PaymentMethod</c> sería incorrecto para cualquier tenant con más de una
 /// Company: la misma fila necesitaría apuntar a la cuenta "Bancos" de la Company A y, simultáneamente,
 /// a la cuenta "Bancos" de la Company B. Esta entidad resuelve eso con una fila por
-/// (TenantId, CompanyId, PaymentMethodId) — mismo criterio de <see cref="Finance.Entities.CompanyFinancialDestination"/>
+/// (TenantId, CompanyId, PaymentMethodId) — mismo criterio de <see cref="Finance.Entities.CompanyBankAccount"/>
 /// (también Company-scoped) para el problema análogo de Finance/Payment.
 ///
 /// Sin fila para un (Company, PaymentMethod) dado → ese método no tiene cuenta configurada en esa

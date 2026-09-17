@@ -44,8 +44,10 @@ public sealed record PaymentDto(
     IReadOnlyList<PaymentApplicationLineDto> Lines,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
-    /// <summary>ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) del cobro/pago, si se especificó.</summary>
-    Guid? FinancialDestinationId = null
+    /// <summary>Cuenta bancaria del cobro/pago, si se especificó — mutuamente excluyente con <see cref="CashRegisterId"/>.</summary>
+    Guid? CompanyBankAccountId = null,
+    /// <summary>Caja del cobro/pago, si se especificó — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
+    Guid? CashRegisterId = null
 );
 
 /// <summary>Entrada de una línea de aplicación al registrar un cobro/pago — DocumentId es SalesReceivable.Id o PurchasePayable.Id según el comando.</summary>

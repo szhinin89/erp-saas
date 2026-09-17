@@ -54,7 +54,7 @@ public sealed class SupplierCreditRefundReversedPostingTranslator
             e.TenantId!.Value,
             e.CompanyId,
             SourceModuleName,
-            $"SupplierCreditRefundReversed:{transaction.FinancialDestinationCodeSnapshot}",
+            $"SupplierCreditRefundReversed:{transaction.DestinationCodeSnapshot}",
             e.SupplierCreditMovementId,
             transaction.EffectiveDate,
             Subtotal: 0m,

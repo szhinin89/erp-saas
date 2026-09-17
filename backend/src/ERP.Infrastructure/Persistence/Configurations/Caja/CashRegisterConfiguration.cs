@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,8 @@ public sealed class CashRegisterConfiguration : IEntityTypeConfiguration<CashReg
         builder.Property(x => x.EmissionPointId).HasColumnName("emission_point_id");
         builder.Property(x => x.DefaultWarehouseId).HasColumnName("default_warehouse_id");
         builder.Property(x => x.DefaultCustomerId).HasColumnName("default_customer_id");
+        // FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01
+        builder.Property(x => x.AccountingAccountId).HasColumnName("accounting_account_id");
 
         builder
             .Property(x => x.Code)
@@ -83,6 +86,12 @@ public sealed class CashRegisterConfiguration : IEntityTypeConfiguration<CashReg
             .HasOne(x => x.DefaultCustomer)
             .WithMany()
             .HasForeignKey(x => x.DefaultCustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(x => x.AccountingAccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ── Indexes ─────────────────────────────────────────────────

@@ -62,6 +62,7 @@ export function CashRegistersManagementSection() {
       editorContent={
         ctx.panelOpen ? (
           <CashRegistersFormPanel
+            accounts={ctx.accounts}
             editingId={ctx.editingId}
             editingCode={ctx.editingCode}
             editingName={ctx.editingName}

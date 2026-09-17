@@ -48,6 +48,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         var registerHash = RegisterSupplierCreditRefundHandler.ComputeRegisterPayloadHash(
             credit.Id,
             DestinationId,
+            null,
             "TRANSFER",
             refundAmount,
             "USD",
@@ -62,6 +63,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             credit.Id,
             movement.Id,
             DestinationId,
+            null,
             AccountId,
             "1.1.01",
             "BANK-01",
@@ -96,6 +98,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         );
         var registerHash = RegisterSupplierCreditRefundHandler.ComputeRegisterPayloadHash(
             credit.Id,
+            null,
             DestinationId,
             "CASH",
             refundAmount,
@@ -110,6 +113,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
             SupplierId,
             credit.Id,
             movement.Id,
+            null,
             DestinationId,
             AccountId,
             "1.1.01",
@@ -220,7 +224,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         result.IsSuccess.Should().BeTrue(result.Error);
         var dto = result.Value!;
         dto.OriginalTransactionId.Should().Be(f.OriginalTx.Id);
-        dto.FinancialDestinationId.Should().Be(f.OriginalTx.FinancialDestinationId);
+        dto.CompanyBankAccountId.Should().Be(f.OriginalTx.CompanyBankAccountId);
         dto.AccountingAccountId.Should().Be(f.OriginalTx.AccountingAccountId);
         dto.PaymentMethodCode.Should().Be(f.OriginalTx.PaymentMethodCode);
         dto.Amount.Should().Be(f.OriginalTx.Amount);

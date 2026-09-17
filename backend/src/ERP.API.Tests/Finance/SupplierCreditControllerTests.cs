@@ -67,6 +67,7 @@ public sealed class SupplierCreditControllerTests
             "Received",
             null,
             Guid.NewGuid(),
+            null,
             Guid.NewGuid(),
             "TRANSFER",
             50m,
@@ -266,6 +267,7 @@ public sealed class SupplierCreditControllerTests
             id,
             new RegisterSupplierCreditRefundRequest(
                 Guid.NewGuid(),
+                null,
                 "TRANSFER",
                 50m,
                 new DateOnly(2026, 7, 1),
@@ -293,6 +295,7 @@ public sealed class SupplierCreditControllerTests
             Guid.NewGuid(),
             new RegisterSupplierCreditRefundRequest(
                 Guid.NewGuid(),
+                null,
                 "TRANSFER",
                 50m,
                 new DateOnly(2026, 7, 1),

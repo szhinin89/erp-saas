@@ -20,8 +20,10 @@ using Moq;
 namespace ERP.Application.Tests.Finance;
 
 /// <summary>
-/// P0-02 Fase 8 — RegisterSupplierCreditRefundHandler: reembolso feliz banco/caja, SC-001, SC-020,
-/// SC-021, SC-024, SC-025, SC-015, SC-027, SC-003, idempotencia (SC-006).
+/// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — RegisterSupplierCreditRefundHandler:
+/// reembolso feliz banco/caja, SC-001, SC-020, SC-021, SC-024, SC-015, SC-027, SC-003,
+/// idempotencia (SC-006). CompanyBankAccount/CashRegister reemplazan a legacy treasury destination
+/// — no hay validación de moneda (ninguno de los dos modelos tiene CurrencyCode propio).
 /// </summary>
 public sealed class RegisterSupplierCreditRefundUseCasesTests
 {
@@ -30,9 +32,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
-    private static readonly Guid DestinationId = Guid.NewGuid();
+    private static readonly Guid BankAccountId = Guid.NewGuid();
     private static readonly Guid AccountId = Guid.NewGuid();
     private static readonly Guid CashRegisterId = Guid.NewGuid();
+    private static readonly Guid BankId = Guid.NewGuid();
 
     private static SupplierCredit BuildCredit(decimal amount = 100m, string currency = "USD") =>
         SupplierCredit.CreateFromReturn(
@@ -64,41 +67,30 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         return acc;
     }
 
-    private static CompanyFinancialDestination BuildBankDestination(
-        bool active = true,
-        string currency = "USD"
-    ) =>
-        CompanyFinancialDestination
+    private static CompanyBankAccount BuildBankAccount(bool active = true) =>
+        CompanyBankAccount
             .Create(
                 TenantId,
                 CompanyId,
-                "BANK-01",
+                BankId,
+                BankAccountType.Checking,
+                "1234567890",
                 "Banco Pichincha CTE",
-                FinancialDestinationTypeCode.BankAccount,
                 AccountId,
-                currency,
-                UserId,
-                bankInstitutionCode: "PICHINCHA",
-                bankAccountIdentifierNormalized: "1234567890"
+                UserId
             )
             .Also(d =>
             {
                 if (!active)
-                    d.SetActive(false, UserId);
+                    d.Disable(UserId);
             });
 
-    private static CompanyFinancialDestination BuildCashDestination(string currency = "USD") =>
-        CompanyFinancialDestination.Create(
-            TenantId,
-            CompanyId,
-            "CASH-01",
-            "Caja Matriz",
-            FinancialDestinationTypeCode.CashRegister,
-            AccountId,
-            currency,
-            UserId,
-            cashRegisterId: CashRegisterId
-        );
+    private static CashRegister BuildCashRegister()
+    {
+        var register = CashRegister.Create(TenantId, CompanyId, BranchId, "CASH-01", "Caja Matriz", UserId);
+        register.SetAccountingAccount(AccountId, UserId);
+        return register;
+    }
 
     private static PaymentMethod BuildPaymentMethod(
         bool active = true,
@@ -138,7 +130,8 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
         public Mock<ISupplierCreditRefundTransactionRepository> TxRepo { get; } = new();
-        public Mock<ICompanyFinancialDestinationRepository> DestinationRepo { get; } = new();
+        public Mock<ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
+        public Mock<ICashRegisterRepository> CashRegisterRepo { get; } = new();
         public Mock<IAccountRepository> AccountRepo { get; } = new();
         public Mock<IPaymentMethodRepository> PaymentMethodRepo { get; } = new();
         public Mock<ICashSessionRepository> CashSessionRepo { get; } = new();
@@ -157,7 +150,8 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             new(
                 CreditRepo.Object,
                 TxRepo.Object,
-                DestinationRepo.Object,
+                BankAccountRepo.Object,
+                CashRegisterRepo.Object,
                 AccountRepo.Object,
                 PaymentMethodRepo.Object,
                 CashSessionRepo.Object,
@@ -168,18 +162,53 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             );
     }
 
+    private static RegisterSupplierCreditRefundCommand BankCommand(
+        Guid supplierCreditId,
+        decimal amount,
+        DateOnly? effectiveDate = null,
+        string? externalReference = null,
+        Guid? clientRequestId = null
+    ) =>
+        new(
+            supplierCreditId,
+            BankAccountId,
+            null,
+            "TRANSFER",
+            amount,
+            effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            externalReference,
+            clientRequestId ?? Guid.NewGuid()
+        );
+
+    private static RegisterSupplierCreditRefundCommand CashCommand(
+        Guid supplierCreditId,
+        decimal amount,
+        DateOnly? effectiveDate = null,
+        Guid? clientRequestId = null
+    ) =>
+        new(
+            supplierCreditId,
+            null,
+            CashRegisterId,
+            "TRANSFER",
+            amount,
+            effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            null,
+            clientRequestId ?? Guid.NewGuid()
+        );
+
     [Fact]
     public async Task Reembolso_feliz_banco_reduce_AvailableAmount_y_crea_transaccion()
     {
         var credit = BuildCredit(100m);
         var m = new Mocks(credit);
-        var destination = BuildBankDestination();
+        var bankAccount = BuildBankAccount();
         var account = BuildAccount();
         var pm = BuildPaymentMethod();
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(destination);
+            .ReturnsAsync(bankAccount);
         m.AccountRepo.Setup(r =>
                 r.GetByIdForShareAsync(
                     TenantId,
@@ -195,18 +224,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(pm);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                40m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(credit.Id, 40m), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         credit.AvailableAmount.Should().Be(60m);
@@ -220,12 +238,12 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit(100m);
         var m = new Mocks(credit);
-        var destination = BuildCashDestination();
+        var destination = BuildCashRegister();
         var account = BuildAccount();
         var pm = BuildPaymentMethod();
         var session = BuildOpenCashSession();
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.CashRegisterRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(destination);
         m.AccountRepo.Setup(r =>
@@ -251,18 +269,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(session);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                40m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(CashCommand(credit.Id, 40m), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.CashSessionId.Should().Be(session.Id);
@@ -280,18 +287,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync((SupplierCredit?)null);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                missingId,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(missingId, 10m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -302,24 +298,13 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit();
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync((CompanyFinancialDestination?)null);
+            .ReturnsAsync((CompanyBankAccount?)null);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(credit.Id, 10m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -331,55 +316,16 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit();
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(BuildBankDestination(active: false));
+            .ReturnsAsync(BuildBankAccount(active: false));
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(credit.Id, 10m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("activo");
-    }
-
-    [Fact]
-    public async Task Moneda_distinta_rechaza_SC_025()
-    {
-        var credit = BuildCredit(currency: "USD");
-        var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync(BuildBankDestination(currency: "EUR"));
-        var handler = m.BuildHandler();
-
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("moneda");
+        result.Error.Should().Contain("activa");
     }
 
     [Fact]
@@ -387,10 +333,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit();
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(BuildBankDestination());
+            .ReturnsAsync(BuildBankAccount());
         m.AccountRepo.Setup(r =>
                 r.GetByIdForShareAsync(
                     TenantId,
@@ -402,18 +348,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(BuildAccount(allowsPosting: false));
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(credit.Id, 10m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("contabilización");
@@ -424,10 +359,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit();
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(BuildBankDestination());
+            .ReturnsAsync(BuildBankAccount());
         m.AccountRepo.Setup(r =>
                 r.GetByIdForShareAsync(
                     TenantId,
@@ -443,18 +378,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(BuildPaymentMethod(active: false));
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(credit.Id, 10m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("método de pago");
@@ -465,10 +389,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit();
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.CashRegisterRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(BuildCashDestination());
+            .ReturnsAsync(BuildCashRegister());
         m.AccountRepo.Setup(r =>
                 r.GetByIdForShareAsync(
                     TenantId,
@@ -492,18 +416,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync((CashSession?)null);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                10m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(CashCommand(credit.Id, 10m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sesión de caja");
@@ -517,10 +430,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit(30m);
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(BuildBankDestination());
+            .ReturnsAsync(BuildBankAccount());
         m.AccountRepo.Setup(r =>
                 r.GetByIdForShareAsync(
                     TenantId,
@@ -536,18 +449,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             .ReturnsAsync(BuildPaymentMethod());
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                50m,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                null,
-                Guid.NewGuid()
-            ),
-            CancellationToken.None
-        );
+        var result = await handler.Handle(BankCommand(credit.Id, 50m), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         credit.AvailableAmount.Should().Be(30m);
@@ -558,10 +460,10 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     {
         var credit = BuildCredit(100m);
         var m = new Mocks(credit);
-        m.DestinationRepo.Setup(r =>
-                r.GetByIdForShareAsync(TenantId, DestinationId, It.IsAny<CancellationToken>())
+        m.BankAccountRepo.Setup(r =>
+                r.GetByIdForShareAsync(TenantId, BankAccountId, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(BuildBankDestination());
+            .ReturnsAsync(BuildBankAccount());
         m.AccountRepo.Setup(r =>
                 r.GetByIdForShareAsync(
                     TenantId,
@@ -580,15 +482,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         var date = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var first = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                40m,
-                date,
-                null,
-                cri
-            ),
+            BankCommand(credit.Id, 40m, date, clientRequestId: cri),
             CancellationToken.None
         );
         first.IsSuccess.Should().BeTrue(first.Error);
@@ -608,10 +502,11 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
                     SupplierId,
                     credit.Id,
                     firstMovement.Id,
-                    DestinationId,
+                    BankAccountId,
+                    null,
                     AccountId,
                     "1.1.01",
-                    "BANK-01",
+                    "1234567890",
                     "Banco Pichincha CTE",
                     "BankAccount",
                     "TRANSFER",
@@ -625,15 +520,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
             );
 
         var retry = await handler.Handle(
-            new RegisterSupplierCreditRefundCommand(
-                credit.Id,
-                DestinationId,
-                "TRANSFER",
-                40m,
-                date,
-                null,
-                cri
-            ),
+            BankCommand(credit.Id, 40m, date, clientRequestId: cri),
             CancellationToken.None
         );
 

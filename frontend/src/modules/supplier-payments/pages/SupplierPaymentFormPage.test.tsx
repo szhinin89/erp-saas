@@ -1,3 +1,4 @@
+import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -8,9 +9,9 @@ import { pendingPayablesFacade, type PendingInstallmentOption } from "../api/pen
 import { supplierPaymentService } from "../api/supplierPaymentService";
 import { paymentMethodLookupFacade, type PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import {
-  financialDestinationService,
-  type CompanyFinancialDestinationDto,
-} from "../../finance/api/financialDestinationService";
+  bankAccountService,
+  type CompanyBankAccountDto,
+} from "../../finance/api/bankAccountService";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
@@ -31,9 +32,11 @@ vi.mock("../../sales/facades/paymentMethodLookupFacade", () => ({
   paymentMethodLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../finance/api/financialDestinationService", () => ({
-  financialDestinationService: { list: vi.fn() },
+vi.mock("../../finance/api/bankAccountService", () => ({
+  bankAccountService: { list: vi.fn() },
 }));
+
+vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: vi.fn() } }));
 
 vi.mock("../../masterData/api/businessPartnerFacade", () => ({
   businessPartnerFacade: { getBusinessPartner: vi.fn() },
@@ -96,19 +99,16 @@ const methods: PaymentMethodDto[] = [
   } as PaymentMethodDto,
 ];
 
-const destinations: CompanyFinancialDestinationDto[] = [
+const destinations: CompanyBankAccountDto[] = [
   {
     id: "fd-1",
-    code: "CAJA1",
-    name: "Banco Principal",
-    destinationTypeCode: "BankAccount",
+    bankId: "bank-1",
+    accountType: "Checking",
+    accountNumber: "123",
+    displayName: "Banco Principal",
     accountingAccountId: "acc-1",
-    currencyCode: "USD",
-    cashRegisterId: null,
-    bankInstitutionCode: null,
-    bankAccountIdentifierNormalized: null,
     isActive: true,
-  } as CompanyFinancialDestinationDto,
+  } as CompanyBankAccountDto,
 ];
 
 function renderPage() {
@@ -131,7 +131,7 @@ async function fillMethodLine(paymentMethodId: string, amount: string) {
     target: { value: paymentMethodId },
   });
   fireEvent.change(screen.getByLabelText(/^Caja \/ cuenta bancaria\*$/), {
-    target: { value: "fd-1" },
+    target: { value: "bank:fd-1" },
   });
   fireEvent.change(screen.getByLabelText(/^Monto\*$/), { target: { value: amount } });
 }
@@ -141,13 +141,14 @@ function registerPayload() {
 }
 
 beforeEach(() => {
+  vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Caja Principal", isActive: true, accountingAccountId: "acc-2" } as CashRegisterDto]);
   vi.mocked(usePermissionsUi).mockReturnValue({
     canShow: () => true,
     has: () => true,
     isAdminRole: false,
   } as unknown as ReturnType<typeof usePermissionsUi>);
   vi.mocked(paymentMethodLookupFacade.list).mockResolvedValue(methods);
-  vi.mocked(financialDestinationService.list).mockResolvedValue(destinations);
+  vi.mocked(bankAccountService.list).mockResolvedValue(destinations);
   vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue({
     legalName: "Proveedor Test",
     tradeName: null,
@@ -279,7 +280,7 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     const methodSelects = screen.getAllByLabelText(/^Medio de pago\*$/);
     const amountInputs = screen.getAllByLabelText(/^Monto\*$/);
     fireEvent.change(methodSelects[1], { target: { value: "pm-2" } });
-    fireEvent.change(financialSelects[1], { target: { value: "fd-1" } });
+    fireEvent.change(financialSelects[1], { target: { value: "cash:cash-1" } });
     fireEvent.change(amountInputs[1], { target: { value: "30" } });
 
     fireEvent.click(screen.getByText("Registrar pago"));
@@ -295,6 +296,10 @@ describe("SupplierPaymentFormPage — cartera como única fuente de applicationL
     );
     expect(payload?.applicationLines).toHaveLength(2);
     expect(payload?.totalAmount).toBe(100);
+    expect(payload?.methodLines).toEqual([
+      expect.objectContaining({ companyBankAccountId: "fd-1", cashRegisterId: null, amount: 70 }),
+      expect.objectContaining({ companyBankAccountId: null, cashRegisterId: "cash-1", amount: 30 }),
+    ]);
   });
 
   it("no permite registrar si la suma de medios de pago no cuadra con el total aplicado", async () => {

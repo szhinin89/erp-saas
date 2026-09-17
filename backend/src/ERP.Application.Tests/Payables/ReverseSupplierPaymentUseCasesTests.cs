@@ -85,7 +85,7 @@ public sealed class ReverseSupplierPaymentUseCasesTests
         decimal amount
     )
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), amount) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, amount) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(installmentId, amount) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, amount) };
         var payment = SupplierPayment.Create(

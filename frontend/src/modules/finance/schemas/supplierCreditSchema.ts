@@ -34,7 +34,8 @@ export function buildRegisterSupplierCreditRefundSchema(
 ) {
   return z
     .object({
-      financialDestinationId: z.string().min(1, "Seleccione el destino financiero."),
+      /** Codifica el destino elegido como "bank:<id>" o "cash:<id>". */
+      destination: z.string().min(1, "Seleccione la cuenta bancaria o caja."),
       paymentMethodCode: z.string().min(1, "Seleccione la forma de pago."),
       amount: z.coerce
         .number()

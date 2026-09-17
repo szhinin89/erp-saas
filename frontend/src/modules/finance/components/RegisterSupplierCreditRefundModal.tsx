@@ -12,10 +12,8 @@ import { formatMoney } from "../../../lib/sanitizers";
 import { todayIso } from "../../../lib/formatters/dateFormatters";
 import type { SupplierCreditDto } from "../api/supplierCreditService";
 import { supplierCreditService } from "../api/supplierCreditService";
-import {
-  financialDestinationService,
-  type CompanyFinancialDestinationDto,
-} from "../api/financialDestinationService";
+import { bankAccountService, type CompanyBankAccountDto } from "../api/bankAccountService";
+import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
 import { paymentMethodLookupFacade, type PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
 import {
   buildRegisterSupplierCreditRefundSchema,
@@ -30,9 +28,9 @@ interface Props {
 }
 
 /**
- * Registra un reembolso del crédito de proveedor contra un destino financiero activo. El destino
- * se resuelve vía `GET /finance/financial-destinations?isActive=true` (Remediación 01, Fase 13);
- * `AccountingAccountId` nunca se envía — se deriva server-side (diseño Fase 13 cambio exacto #3).
+ * Registra un reembolso del crédito de proveedor contra una cuenta bancaria o caja activa
+ * (FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01). `AccountingAccountId` nunca se envía — se
+ * deriva server-side desde la cuenta bancaria/caja elegida.
  * `externalReference` es condicionalmente obligatorio según `PaymentMethod.RequiresReference`
  * (catálogo real, `paymentMethodLookupFacade.list(true)`) — validado manualmente en el submit porque
  * el resolver de Zod se fija al montar el formulario y no puede reaccionar a la selección del
@@ -46,7 +44,8 @@ export function RegisterSupplierCreditRefundModal({
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [destinations, setDestinations] = useState<CompanyFinancialDestinationDto[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
+  const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
   const submittingRef = useRef(false);
 
@@ -61,7 +60,7 @@ export function RegisterSupplierCreditRefundModal({
   } = useForm<RegisterSupplierCreditRefundFormValues>({
     resolver: zodResolver(buildRegisterSupplierCreditRefundSchema(availableAmount, false)),
     defaultValues: {
-      financialDestinationId: "",
+      destination: "",
       paymentMethodCode: "",
       amount: availableAmount,
       effectiveDate: todayIso(),
@@ -74,17 +73,21 @@ export function RegisterSupplierCreditRefundModal({
   useEffect(() => {
     if (!open || !credit) return;
     reset({
-      financialDestinationId: "",
+      destination: "",
       paymentMethodCode: "",
       amount: credit.availableAmount,
       effectiveDate: todayIso(),
       externalReference: "",
     });
     setSubmitError("");
-    financialDestinationService
+    bankAccountService
       .list(true)
-      .then((list) => setDestinations(list.filter((d) => d.currencyCode === credit.currencyCode)))
-      .catch(() => setDestinations([]));
+      .then(setBankAccounts)
+      .catch(() => setBankAccounts([]));
+    cajaService
+      .getCashRegisters(true)
+      .then(setCashRegisters)
+      .catch(() => setCashRegisters([]));
     paymentMethodLookupFacade
       .list(true)
       .then(setMethods)
@@ -109,9 +112,16 @@ export function RegisterSupplierCreditRefundModal({
     submittingRef.current = true;
     setSubmitError("");
     setSaving(true);
+    const companyBankAccountId = values.destination.startsWith("bank:")
+      ? values.destination.slice(5)
+      : null;
+    const cashRegisterId = values.destination.startsWith("cash:")
+      ? values.destination.slice(5)
+      : null;
     try {
       await supplierCreditService.registerRefund(credit.id, {
-        financialDestinationId: values.financialDestinationId,
+        companyBankAccountId,
+        cashRegisterId,
         paymentMethodCode: values.paymentMethodCode,
         amount: values.amount,
         effectiveDate: values.effectiveDate,
@@ -147,15 +157,20 @@ export function RegisterSupplierCreditRefundModal({
     >
       <div>
         <ZHField
-          label="Destino financiero"
+          label="Cuenta bancaria o caja"
           required
-          fieldError={errors.financialDestinationId?.message}
+          fieldError={errors.destination?.message}
         >
-          <ZhSelect className="zh-input" disabled={saving} {...register("financialDestinationId")}>
-            <option value="">Seleccione un destino</option>
-            {destinations.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.code} — {d.name}
+          <ZhSelect className="zh-input" disabled={saving} {...register("destination")}>
+            <option value="">Seleccione una cuenta bancaria o caja</option>
+            {bankAccounts.map((b) => (
+              <option key={b.id} value={`bank:${b.id}`}>
+                Banco: {b.displayName}
+              </option>
+            ))}
+            {cashRegisters.map((c) => (
+              <option key={c.id} value={`cash:${c.id}`}>
+                Caja: {c.name}
               </option>
             ))}
           </ZhSelect>

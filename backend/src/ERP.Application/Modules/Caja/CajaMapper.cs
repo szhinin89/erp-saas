@@ -115,6 +115,7 @@ internal static class CajaMapper
             r.DefaultWarehouse?.Name,
             r.DefaultCustomerId,
             r.DefaultCustomer?.Name.LegalName,
+            r.AccountingAccountId,
             r.CreatedAt,
             r.UpdatedAt
         );

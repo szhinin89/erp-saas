@@ -16,6 +16,7 @@ export const cashRegistersPageSchema = z.object({
     .max(500, "Máximo 500 caracteres.")
     .optional()
     .or(z.literal("")),
+  accountingAccountId: z.string().optional(),
   defaultWarehouseId: z.string().optional().or(z.literal("")),
   defaultCustomerId: z.string().optional().or(z.literal("")),
 });
@@ -31,6 +32,7 @@ export function emptyCashRegistersPageForm(): CashRegistersPageFormValues {
     name: "",
     emissionPointId: "",
     notes: "",
+    accountingAccountId: "",
     defaultWarehouseId: "",
     defaultCustomerId: "",
   };

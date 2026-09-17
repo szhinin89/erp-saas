@@ -47,7 +47,7 @@ public sealed class SupplierPaymentsControllerTests
             new DateOnly(2026, 8, 28),
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(Guid.NewGuid(), Guid.NewGuid(), 300m) },
+            new[] { new SupplierPaymentMethodLineRequest(Guid.NewGuid(), Guid.NewGuid(), null, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(installmentId, 300m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
         );

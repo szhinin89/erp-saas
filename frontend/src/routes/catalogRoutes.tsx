@@ -66,10 +66,6 @@ const SupplierCreditDetailPage = lazyNamedPage(
   () => import("../modules/finance/pages/SupplierCreditDetailPage"),
   "SupplierCreditDetailPage",
 );
-const FinancialDestinationsPage = lazyNamedPage(
-  () => import("../modules/finance/pages/FinancialDestinationsPage"),
-  "FinancialDestinationsPage",
-);
 const BankAccountsPage = lazyNamedPage(
   () => import("../modules/finance/pages/BankAccountsPage"),
   "BankAccountsPage",
@@ -447,18 +443,6 @@ export const catalogRoutes = [
     key="finance-supplier-credits-detail-legacy"
     path="/finance/supplier-credits/:id"
     element={<SupplierCreditDetailLegacyRedirect />}
-  />,
-  // MAPA-MENU-ERP-SSOT-01: reubicado bajo Tesorería > Bancos (antes bajo Configuración > Empresa)
-  // — misma pantalla/endpoints; /settings/financial-destinations queda como redirect legacy.
-  <Route
-    key="treasury-financial-destinations"
-    path="/treasury/banks/financial-destinations"
-    element={<FinancialDestinationsPage />}
-  />,
-  <Route
-    key="settings-financial-destinations-legacy"
-    path="/settings/financial-destinations"
-    element={<Navigate to="/treasury/banks/financial-destinations" replace />}
   />,
   // TREASURY-BANK-ACCOUNTS-01
   <Route

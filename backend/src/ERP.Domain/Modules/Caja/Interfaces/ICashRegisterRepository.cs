@@ -5,6 +5,13 @@ namespace ERP.Domain.Modules.Caja.Interfaces;
 public interface ICashRegisterRepository
 {
     Task<CashRegister?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — bloqueo <c>SELECT ... FOR SHARE</c>
+    /// real sobre la fila, para leer <see cref="CashRegister.AccountingAccountId"/> con la misma
+    /// garantía de concurrencia que antes daba <c>legacy treasury destination</c> FOR SHARE.
+    /// </summary>
+    Task<CashRegister?> GetByIdForShareAsync(Guid tenantId, Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<CashRegister>> GetByBranchAsync(
         Guid tenantId,
         Guid branchId,

@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Finance.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -20,6 +22,7 @@ using ERP.Domain.Modules.Sales.ValueObjects;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Repositories.Caja;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
 using ERP.Infrastructure.Persistence.Repositories.Sales;
 using FluentAssertions;
@@ -263,11 +266,9 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<
-            ICompanyFinancialDestinationRepository,
-            CompanyFinancialDestinationRepository
-        >();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
+        services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
         );
@@ -345,7 +346,8 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         new(
             new PaymentRepository(db),
             new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
-            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(companyId)),
+            new CompanyBankAccountRepository(db, new FixedCurrentCompany(companyId)),
+            new CashRegisterRepository(db, new FixedCurrentCompany(companyId)),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)
@@ -463,6 +465,63 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         db.PostingRules.AddRange(appliedRule, reversedRule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public async Task Explicit_bank_or_cash_posts_selected_account_or_rolls_back(bool cash, bool postable)
+    {
+        var date = new DateOnly(2026, 7, 15);
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await using var context = db;
+        await SeedRuleAndPeriodAsync(db, date);
+        var account = Account.Create(_tenantId, _companyId, AccountCode.Create("1.9.99"),
+            "Selected treasury account", null, AccountType.Asset, AccountNature.Debit,
+            allowsPosting: postable, createdBy: _createdBy);
+        db.Accounts.Add(account);
+        Guid? bankId = null;
+        Guid? cashId = null;
+        if (cash)
+        {
+            var register = await db.CashRegisters.SingleAsync();
+            register.SetAccountingAccount(account.Id, _createdBy);
+            cashId = register.Id;
+        }
+        else
+        {
+            var bank = Bank.Create(_tenantId, "BANK", "Test bank", null, _createdBy);
+            db.Banks.Add(bank);
+            var bankAccount = CompanyBankAccount.Create(_tenantId, _companyId, bank.Id,
+                BankAccountType.Checking, "123456", "Selected bank", account.Id, _createdBy);
+            db.CompanyBankAccounts.Add(bankAccount);
+            bankId = bankAccount.Id;
+        }
+        await db.SaveChangesAsync();
+        var command = SingleLineCommand(_receivableId, 300m, date, _customerId) with
+        {
+            CompanyBankAccountId = bankId,
+            CashRegisterId = cashId,
+        };
+        var act = () => BuildHandler(db, _tenantId, _companyId, _createdBy).Handle(command, CancellationToken.None);
+        if (!postable)
+        {
+            await act.Should().ThrowAsync<InvalidOperationException>();
+            await using var verify = CreateContext();
+            (await verify.Payments.CountAsync()).Should().Be(0);
+            (await verify.SalesReceivables.SingleAsync()).PaidAmount.Should().Be(0m);
+            return;
+        }
+        var result = await act();
+        result.IsSuccess.Should().BeTrue();
+        await using var check = CreateContext();
+        var entry = await check.JournalEntries.Include(e => e.Lines).SingleAsync();
+        entry.Lines.Should().Contain(l => l.AccountId == account.Id && l.Debit == 300m);
+        var payment = await check.Payments.SingleAsync();
+        payment.CompanyBankAccountId.Should().Be(bankId);
+        payment.CashRegisterId.Should().Be(cashId);
     }
 
     [Fact]

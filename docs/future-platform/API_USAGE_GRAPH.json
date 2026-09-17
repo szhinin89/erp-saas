@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-17T04:32:57.932Z",
+  "generatedAt": "2026-09-17T22:46:53.793Z",
   "summary": {
-    "total": 132,
-    "allowed": 132,
+    "total": 130,
+    "allowed": 130,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -72,8 +72,8 @@
     {
       "endpoint": "/api/v1/accounting/accounts",
       "files": [
-        "frontend/src/modules/finance/pages/BankAccountsPage.tsx",
-        "frontend/src/modules/finance/pages/FinancialDestinationsPage.tsx"
+        "frontend/src/modules/cashRegisters/hooks/useCashRegistersPage.ts",
+        "frontend/src/modules/finance/pages/BankAccountsPage.tsx"
       ],
       "legacy": false,
       "allowed": true
@@ -240,14 +240,6 @@
       "endpoint": "/api/v1/cash-registers",
       "files": [
         "frontend/src/modules/caja/api/cajaService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/cash-registers/all?activeOnly=true",
-      "files": [
-        "frontend/src/modules/finance/pages/FinancialDestinationsPage.tsx"
       ],
       "legacy": false,
       "allowed": true
@@ -633,14 +625,6 @@
       "endpoint": "/api/v1/finance/credit-terms",
       "files": [
         "frontend/src/modules/finance/api/creditTermService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/finance/financial-destinations",
-      "files": [
-        "frontend/src/modules/finance/api/financialDestinationService.ts"
       ],
       "legacy": false,
       "allowed": true

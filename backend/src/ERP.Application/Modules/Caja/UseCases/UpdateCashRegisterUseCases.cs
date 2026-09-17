@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -24,7 +25,8 @@ public sealed record UpdateCashRegisterCommand(
     string? Notes,
     Guid? EmissionPointId,
     Guid? DefaultWarehouseId = null,
-    Guid? DefaultCustomerId = null
+    Guid? DefaultCustomerId = null,
+    Guid? AccountingAccountId = null
 ) : IRequest<Result<CashRegisterDto>>, ICompanyScopedRequest;
 
 // ── Validator ──────────────────────────────────────────────────────────
@@ -55,6 +57,7 @@ public sealed class UpdateCashRegisterHandler
     private readonly IEmissionPointRepository _emissionPointRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IBusinessPartnerRepository _customerRepo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICashRegisterUsageGuard _usageGuard;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -65,6 +68,7 @@ public sealed class UpdateCashRegisterHandler
         IEmissionPointRepository emissionPointRepo,
         IWarehouseRepository warehouseRepo,
         IBusinessPartnerRepository customerRepo,
+        IAccountRepository accountRepo,
         ICashRegisterUsageGuard usageGuard,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -75,6 +79,7 @@ public sealed class UpdateCashRegisterHandler
         _emissionPointRepo = emissionPointRepo;
         _warehouseRepo = warehouseRepo;
         _customerRepo = customerRepo;
+        _accountRepo = accountRepo;
         _usageGuard = usageGuard;
         _t = t;
         _c = c;
@@ -147,6 +152,22 @@ public sealed class UpdateCashRegisterHandler
                 );
         }
 
+        if (cmd.AccountingAccountId != entity.AccountingAccountId && cmd.AccountingAccountId.HasValue)
+        {
+            var account = await _accountRepo.GetByIdAsync(
+                tid,
+                _c.CompanyId,
+                cmd.AccountingAccountId.Value,
+                ct
+            );
+            if (account is null)
+                return Result<CashRegisterDto>.ValidationFailure("La cuenta contable no existe.");
+            if (!account.IsActive || !account.AllowsPosting)
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "La cuenta contable debe estar activa y ser imputable."
+                );
+        }
+
         entity.Update(cmd.Name.Trim(), cmd.Notes, _u.UserId);
         if (changesEmissionPoint)
             entity.ChangeEmissionPoint(cmd.EmissionPointId, _u.UserId);
@@ -154,6 +175,8 @@ public sealed class UpdateCashRegisterHandler
             entity.SetDefaultWarehouse(cmd.DefaultWarehouseId, _u.UserId);
         if (cmd.DefaultCustomerId != entity.DefaultCustomerId)
             entity.SetDefaultCustomer(cmd.DefaultCustomerId, _u.UserId);
+        if (cmd.AccountingAccountId != entity.AccountingAccountId)
+            entity.SetAccountingAccount(cmd.AccountingAccountId, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
 

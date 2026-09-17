@@ -361,7 +361,6 @@ public sealed class KernelRegistryTests
             "/treasury/cash/registers",
             "/settings/operations?tab=cash",
             "/treasury/banks/group",
-            "/treasury/banks/financial-destinations",
             // TREASURY-BANK-ACCOUNTS-01
             "/treasury/banks/accounts",
         });
@@ -564,11 +563,11 @@ public sealed class KernelRegistryTests
         cajaPreferences.GroupCode.Should().Be("treasury");
         cajaPreferences.ParentItemId.Should().Be(cajaConfigGroupId);
 
-        var financialDestinations = KernelRegistry.Navigation.Single(n =>
-            n.RoutePath == "/treasury/banks/financial-destinations"
+        var bankAccounts = KernelRegistry.Navigation.Single(n =>
+            n.RoutePath == "/treasury/banks/accounts"
         );
-        financialDestinations.GroupCode.Should().Be("treasury");
-        financialDestinations.ParentItemId.Should().Be(Guid.Parse("f5000000-0000-4000-9000-000000000040"));
+        bankAccounts.GroupCode.Should().Be("treasury");
+        bankAccounts.ParentItemId.Should().Be(Guid.Parse("f5000000-0000-4000-9000-000000000040"));
     }
 
     [Fact]
@@ -597,23 +596,14 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_contains_treasury_financial_destinations()
+    public void Navigation_does_not_contain_retired_financial_destinations_screen()
     {
-        // MAPA-MENU-ERP-SSOT-01: reubicado de Configuración > Empresa a Tesorería > Bancos —
-        // mismo Id/permiso, nueva ruta (antes /settings/financial-destinations).
+        // FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01: legacy treasury destination y su
+        // pantalla fueron retirados — CompanyBankAccount es ahora el único SSOT.
         var navigation = KernelRegistry.Navigation;
 
         navigation.Should().NotContain(n => n.RoutePath == "/settings/financial-destinations");
-
-        var financialDestinations = navigation.SingleOrDefault(n =>
-            n.RoutePath == "/treasury/banks/financial-destinations"
-        );
-        financialDestinations.Should().NotBeNull("destinos financieros debe estar en el menú");
-        financialDestinations!.GroupCode.Should().Be("treasury");
-        financialDestinations
-            .PermissionKey.Should()
-            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.FinancialDestinationsView);
-        financialDestinations.Id.Should().Be(Guid.Parse("a1000000-0000-4000-9000-000000000011"));
+        navigation.Should().NotContain(n => n.RoutePath == "/treasury/banks/financial-destinations");
     }
 
     [Fact]

@@ -830,10 +830,6 @@ public static class DependencyInjection
         >();
 
         services.AddScoped<
-            ERP.Domain.Modules.Finance.Interfaces.ICompanyFinancialDestinationRepository,
-            ERP.Infrastructure.Persistence.Repositories.Finance.CompanyFinancialDestinationRepository
-        >();
-        services.AddScoped<
             ERP.Domain.Modules.Finance.Interfaces.ISupplierCreditRefundTransactionRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.SupplierCreditRefundTransactionRepository
         >();

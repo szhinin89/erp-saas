@@ -36,7 +36,8 @@ export interface SupplierCreditRefundTransactionDto {
   id: string;
   transactionTypeCode: string;
   originalTransactionId: string | null;
-  financialDestinationId: string;
+  companyBankAccountId: string | null;
+  cashRegisterId: string | null;
   accountingAccountId: string;
   paymentMethodCode: string;
   amount: number;
@@ -62,7 +63,8 @@ export interface ReverseSupplierCreditApplicationPayload {
 }
 
 export interface RegisterSupplierCreditRefundPayload {
-  financialDestinationId: string;
+  companyBankAccountId: string | null;
+  cashRegisterId: string | null;
   paymentMethodCode: string;
   amount: number;
   effectiveDate: string;

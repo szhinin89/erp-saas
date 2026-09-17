@@ -3,12 +3,14 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZhDateInput, ZhDecimalInput, ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
-import type { CompanyFinancialDestinationDto } from "../../finance/api/financialDestinationService";
+import type { CompanyBankAccountDto } from "../../finance/api/bankAccountService";
+import type { CashRegisterDto } from "../../caja/api/cajaService";
 import type { RegisterSupplierPaymentFormValues } from "../../../schemas/supplier-payments/registerSupplierPaymentSchema";
 
 interface Props {
   methods: PaymentMethodDto[];
-  destinations: CompanyFinancialDestinationDto[];
+  bankAccounts: CompanyBankAccountDto[];
+  cashRegisters: CashRegisterDto[];
   disabled?: boolean;
 }
 
@@ -17,7 +19,12 @@ interface Props {
  * efectivo, cualquier otro PaymentMethod activo del catálogo). Cheque exige número y fecha
  * (PaymentMethod.DetailType === "Check", catálogo — no una lista hardcodeada de códigos).
  */
-export function SupplierPaymentMethodLinesEditor({ methods, destinations, disabled }: Props) {
+export function SupplierPaymentMethodLinesEditor({
+  methods,
+  bankAccounts,
+  cashRegisters,
+  disabled,
+}: Props) {
   const {
     control,
     register,
@@ -57,17 +64,22 @@ export function SupplierPaymentMethodLinesEditor({ methods, destinations, disabl
             <ZHField
               label="Caja / cuenta bancaria"
               required
-              error={lineErrors?.financialDestinationId?.message}
+              error={lineErrors?.destination?.message}
             >
               <ZhSelect
                 className="zh-input"
                 disabled={disabled}
-                {...register(`methodLines.${index}.financialDestinationId` as const)}
+                {...register(`methodLines.${index}.destination` as const)}
               >
                 <option value="">Seleccione...</option>
-                {destinations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
+                {bankAccounts.map((b) => (
+                  <option key={b.id} value={`bank:${b.id}`}>
+                    Banco: {b.displayName}
+                  </option>
+                ))}
+                {cashRegisters.map((c) => (
+                  <option key={c.id} value={`cash:${c.id}`}>
+                    Caja: {c.name}
                   </option>
                 ))}
               </ZhSelect>
@@ -143,7 +155,7 @@ export function SupplierPaymentMethodLinesEditor({ methods, destinations, disabl
         onClick={() =>
           append({
             paymentMethodId: "",
-            financialDestinationId: "",
+            destination: "",
             amount: 0,
             referenceNumber: "",
             checkNumber: "",

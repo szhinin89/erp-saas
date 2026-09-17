@@ -17,11 +17,14 @@ public sealed class CollectionAppliedEvent : BaseDomainEvent, IAuditEvent
     public DateOnly PaymentDate { get; }
 
     /// <summary>
-    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero elegido para este cobro
-    /// (<c>CompanyFinancialDestination</c>), si el usuario especificó uno; <c>null</c> preserva el
-    /// comportamiento previo (cuenta fija de la <c>PostingRule</c>).
+    /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — cuenta bancaria elegida para este
+    /// cobro, si el usuario especificó una; <c>null</c> preserva el comportamiento previo (cuenta
+    /// fija de la <c>PostingRule</c>). Mutuamente excluyente con <see cref="CashRegisterId"/>.
     /// </summary>
-    public Guid? FinancialDestinationId { get; }
+    public Guid? CompanyBankAccountId { get; }
+
+    /// <summary>Caja elegida para este cobro — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
+    public Guid? CashRegisterId { get; }
 
     public CollectionAppliedEvent(
         Guid tenantId,
@@ -30,7 +33,8 @@ public sealed class CollectionAppliedEvent : BaseDomainEvent, IAuditEvent
         Guid customerId,
         decimal amount,
         DateOnly paymentDate,
-        Guid? financialDestinationId = null
+        Guid? companyBankAccountId = null,
+        Guid? cashRegisterId = null
     )
     {
         TenantId = tenantId;
@@ -39,7 +43,8 @@ public sealed class CollectionAppliedEvent : BaseDomainEvent, IAuditEvent
         CustomerId = customerId;
         Amount = amount;
         PaymentDate = paymentDate;
-        FinancialDestinationId = financialDestinationId;
+        CompanyBankAccountId = companyBankAccountId;
+        CashRegisterId = cashRegisterId;
     }
 
     Guid IAuditEvent.EntityId => PaymentId;
@@ -61,11 +66,14 @@ public sealed class SupplierPaymentAppliedEvent : BaseDomainEvent, IAuditEvent
     public DateOnly PaymentDate { get; }
 
     /// <summary>
-    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero elegido para este pago
-    /// (<c>CompanyFinancialDestination</c>), si el usuario especificó uno; <c>null</c> preserva el
-    /// comportamiento previo (cuenta fija de la <c>PostingRule</c>).
+    /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — cuenta bancaria elegida para este
+    /// pago, si el usuario especificó una; <c>null</c> preserva el comportamiento previo (cuenta
+    /// fija de la <c>PostingRule</c>). Mutuamente excluyente con <see cref="CashRegisterId"/>.
     /// </summary>
-    public Guid? FinancialDestinationId { get; }
+    public Guid? CompanyBankAccountId { get; }
+
+    /// <summary>Caja elegida para este pago — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
+    public Guid? CashRegisterId { get; }
 
     public SupplierPaymentAppliedEvent(
         Guid tenantId,
@@ -74,7 +82,8 @@ public sealed class SupplierPaymentAppliedEvent : BaseDomainEvent, IAuditEvent
         Guid supplierId,
         decimal amount,
         DateOnly paymentDate,
-        Guid? financialDestinationId = null
+        Guid? companyBankAccountId = null,
+        Guid? cashRegisterId = null
     )
     {
         TenantId = tenantId;
@@ -83,7 +92,8 @@ public sealed class SupplierPaymentAppliedEvent : BaseDomainEvent, IAuditEvent
         SupplierId = supplierId;
         Amount = amount;
         PaymentDate = paymentDate;
-        FinancialDestinationId = financialDestinationId;
+        CompanyBankAccountId = companyBankAccountId;
+        CashRegisterId = cashRegisterId;
     }
 
     Guid IAuditEvent.EntityId => PaymentId;

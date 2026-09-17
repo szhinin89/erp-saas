@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
@@ -13,8 +14,9 @@ using Moq;
 namespace ERP.Application.Tests.Accounting;
 
 /// <summary>
-/// Fase 5.6.3 — CollectionAppliedPostingTranslator (Fase 5.6.1). ACCOUNTING-PAYMENT-METHOD-
-/// ACCOUNT-MAPPING-14 agrega la resolución de override de cuenta vía destino financiero.
+/// Fase 5.6.3 — CollectionAppliedPostingTranslator (Fase 5.6.1).
+/// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 agrega la resolución de override de cuenta
+/// vía cuenta bancaria/caja directa (reemplaza legacy treasury destination).
 /// </summary>
 public sealed class CollectionAppliedPostingTranslatorTests
 {
@@ -25,7 +27,7 @@ public sealed class CollectionAppliedPostingTranslatorTests
     private static CollectionAppliedEvent Event(
         DateOnly? paymentDate = null,
         Guid? paymentId = null,
-        Guid? financialDestinationId = null
+        Guid? companyBankAccountId = null
     ) =>
         new(
             TenantId,
@@ -34,31 +36,30 @@ public sealed class CollectionAppliedPostingTranslatorTests
             CustomerId,
             150m,
             paymentDate ?? new DateOnly(2026, 7, 25),
-            financialDestinationId
+            companyBankAccountId
         );
 
-    private static CompanyFinancialDestination BankDestination(Guid accountingAccountId) =>
-        CompanyFinancialDestination.Create(
+    private static CompanyBankAccount BankAccount(Guid accountingAccountId) =>
+        CompanyBankAccount.Create(
             TenantId,
             CompanyId,
-            "BANCO-01",
-            "Banco Pichincha",
-            FinancialDestinationTypeCode.BankAccount,
-            accountingAccountId,
-            "USD",
             Guid.NewGuid(),
-            bankInstitutionCode: "PICHINCHA",
-            bankAccountIdentifierNormalized: "1234567890"
+            BankAccountType.Checking,
+            "1234567890",
+            "Banco Pichincha",
+            accountingAccountId,
+            Guid.NewGuid()
         );
 
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
-        public Mock<ICompanyFinancialDestinationRepository> FinancialDestinations { get; } = new();
+        public Mock<ICompanyBankAccountRepository> BankAccounts { get; } = new();
+        public Mock<ICashRegisterRepository> CashRegisters { get; } = new();
         public Mock<ILogger<CollectionAppliedPostingTranslator>> Logger { get; } = new();
 
         public CollectionAppliedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, FinancialDestinations.Object, Logger.Object);
+            new(PostingEngine.Object, BankAccounts.Object, CashRegisters.Object, Logger.Object);
 
         public void VerifyWarningLogged(Times times) =>
             Logger.Verify(
@@ -113,14 +114,14 @@ public sealed class CollectionAppliedPostingTranslatorTests
     }
 
     [Fact]
-    public async Task Cobro_con_destino_financiero_valido_override_cuenta_debe()
+    public async Task Cobro_con_cuenta_bancaria_valida_override_cuenta_debe()
     {
         var m = new Mocks();
         var accountId = Guid.NewGuid();
-        var destination = BankDestination(accountId);
-        m.FinancialDestinations
-            .Setup(r => r.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        var bankAccount = BankAccount(accountId);
+        m.BankAccounts
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
         PostingFact? captured = null;
         m.PostingEngine.Setup(e =>
                 e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
@@ -133,7 +134,7 @@ public sealed class CollectionAppliedPostingTranslatorTests
             );
 
         var translator = m.BuildTranslator();
-        await translator.Handle(Event(financialDestinationId: destination.Id), CancellationToken.None);
+        await translator.Handle(Event(companyBankAccountId: bankAccount.Id), CancellationToken.None);
 
         captured.Should().NotBeNull();
         captured!.OverrideAccountId.Should().Be(accountId);
@@ -142,15 +143,15 @@ public sealed class CollectionAppliedPostingTranslatorTests
     }
 
     [Fact]
-    public async Task Cobro_con_destino_financiero_inactivo_no_bloquea_y_usa_fallback()
+    public async Task Cobro_con_cuenta_bancaria_inactiva_bloquea_sin_fallback()
     {
         var m = new Mocks();
         var accountId = Guid.NewGuid();
-        var destination = BankDestination(accountId);
-        destination.SetActive(false, Guid.NewGuid());
-        m.FinancialDestinations
-            .Setup(r => r.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        var bankAccount = BankAccount(accountId);
+        bankAccount.Disable(Guid.NewGuid());
+        m.BankAccounts
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
         PostingFact? captured = null;
         m.PostingEngine.Setup(e =>
                 e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
@@ -165,14 +166,12 @@ public sealed class CollectionAppliedPostingTranslatorTests
         var translator = m.BuildTranslator();
         var act = async () =>
             await translator.Handle(
-                Event(financialDestinationId: destination.Id),
+                Event(companyBankAccountId: bankAccount.Id),
                 CancellationToken.None
             );
 
-        await act.Should().NotThrowAsync();
-        captured.Should().NotBeNull();
-        captured!.OverrideAccountId.Should().BeNull();
-        m.VerifyWarningLogged(Times.Once());
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        captured.Should().BeNull();
     }
 
     [Fact]

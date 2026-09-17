@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -26,7 +27,8 @@ public sealed record CreateCashRegisterCommand(
     Guid? EmissionPointId = null,
     string? Notes = null,
     Guid? DefaultWarehouseId = null,
-    Guid? DefaultCustomerId = null
+    Guid? DefaultCustomerId = null,
+    Guid? AccountingAccountId = null
 ) : IRequest<Result<CashRegisterDto>>, ICompanyScopedRequest;
 
 // ── Validator ──────────────────────────────────────────────────────────
@@ -67,6 +69,7 @@ public sealed class CreateCashRegisterHandler
     private readonly IBranchRepository _branchRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IBusinessPartnerRepository _customerRepo;
+    private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -77,6 +80,7 @@ public sealed class CreateCashRegisterHandler
         IBranchRepository branchRepo,
         IWarehouseRepository warehouseRepo,
         IBusinessPartnerRepository customerRepo,
+        IAccountRepository accountRepo,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -87,6 +91,7 @@ public sealed class CreateCashRegisterHandler
         _branchRepo = branchRepo;
         _warehouseRepo = warehouseRepo;
         _customerRepo = customerRepo;
+        _accountRepo = accountRepo;
         _t = t;
         _c = c;
         _u = u;
@@ -154,6 +159,22 @@ public sealed class CreateCashRegisterHandler
                 $"Ya existe una caja con código '{code}' en esta sucursal."
             );
 
+        if (cmd.AccountingAccountId.HasValue)
+        {
+            var account = await _accountRepo.GetByIdAsync(
+                tid,
+                _c.CompanyId,
+                cmd.AccountingAccountId.Value,
+                ct
+            );
+            if (account is null)
+                return Result<CashRegisterDto>.ValidationFailure("La cuenta contable no existe.");
+            if (!account.IsActive || !account.AllowsPosting)
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "La cuenta contable debe estar activa y ser imputable."
+                );
+        }
+
         var register = CashRegister.Create(
             tid,
             _c.CompanyId,
@@ -166,6 +187,8 @@ public sealed class CreateCashRegisterHandler
             cmd.DefaultWarehouseId,
             cmd.DefaultCustomerId
         );
+        if (cmd.AccountingAccountId.HasValue)
+            register.SetAccountingAccount(cmd.AccountingAccountId.Value, _u.UserId);
 
         await _repo.AddAsync(register, ct);
         await _repo.SaveChangesAsync(ct);

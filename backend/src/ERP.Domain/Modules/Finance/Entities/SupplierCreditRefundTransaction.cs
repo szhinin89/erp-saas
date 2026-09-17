@@ -35,13 +35,17 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
     /// <summary>Solo tiene valor cuando <see cref="TransactionTypeCode"/> == <see cref="RefundTransactionTypeCode.RefundReversed"/>.</summary>
     public Guid? OriginalTransactionId { get; private set; }
 
-    public Guid FinancialDestinationId { get; private set; }
+    /// <summary>Cuenta bancaria destino — exactamente uno de este campo o <see cref="CashRegisterId"/> (FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01).</summary>
+    public Guid? CompanyBankAccountId { get; private set; }
+
+    /// <summary>Caja destino — exactamente uno de este campo o <see cref="CompanyBankAccountId"/>.</summary>
+    public Guid? CashRegisterId { get; private set; }
 
     /// <summary>
     /// Cuenta contable realmente usada por esta transacción concreta — congelada al confirmar,
     /// nunca resuelta de nuevo contra el destino (§6.4bis). Fuente autoritativa del asiento y de
     /// todo reporte histórico, nunca <see cref="AccountingAccountCodeSnapshot"/> ni el
-    /// <c>AccountingAccountId</c> mutable actual de <see cref="CompanyFinancialDestination"/>.
+    /// <c>AccountingAccountId</c> mutable actual de <c>CompanyBankAccount</c>/<c>CashRegister</c>.
     /// </summary>
     public Guid AccountingAccountId { get; private set; }
 
@@ -59,9 +63,11 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
     public Guid? CashSessionId { get; private set; }
     public Guid? CashMovementId { get; private set; }
 
-    public string FinancialDestinationCodeSnapshot { get; private set; } = null!;
-    public string FinancialDestinationNameSnapshot { get; private set; } = null!;
-    public string DestinationTypeCodeSnapshot { get; private set; } = null!;
+    public string DestinationCodeSnapshot { get; private set; } = null!;
+    public string DestinationNameSnapshot { get; private set; } = null!;
+
+    /// <summary>"BankAccount" o "CashRegister" — congelado al confirmar (mismos valores que antes usaba <c>legacy destination enum</c>).</summary>
+    public string DestinationTypeSnapshot { get; private set; } = null!;
     public string AccountingAccountCodeSnapshot { get; private set; } = null!;
 
     public Guid CreatedByUserId { get; private set; }
@@ -82,12 +88,13 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
         Guid supplierId,
         Guid supplierCreditId,
         Guid supplierCreditMovementId,
-        Guid financialDestinationId,
+        Guid? companyBankAccountId,
+        Guid? cashRegisterId,
         Guid accountingAccountId,
         string accountingAccountCodeSnapshot,
-        string financialDestinationCodeSnapshot,
-        string financialDestinationNameSnapshot,
-        string destinationTypeCodeSnapshot,
+        string destinationCodeSnapshot,
+        string destinationNameSnapshot,
+        string destinationTypeSnapshot,
         string paymentMethodCode,
         decimal amount,
         string currencyCode,
@@ -105,10 +112,15 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
                 "El movimiento de crédito que origina la transacción es obligatorio.",
                 nameof(supplierCreditMovementId)
             );
-        if (financialDestinationId == Guid.Empty)
+        if (companyBankAccountId is null && cashRegisterId is null)
             throw new ArgumentException(
-                "El destino financiero es obligatorio.",
-                nameof(financialDestinationId)
+                "El destino financiero (cuenta bancaria o caja) es obligatorio.",
+                nameof(companyBankAccountId)
+            );
+        if (companyBankAccountId is not null && cashRegisterId is not null)
+            throw new ArgumentException(
+                "La transacción no puede tener cuenta bancaria y caja destino a la vez.",
+                nameof(cashRegisterId)
             );
         if (accountingAccountId == Guid.Empty)
             throw new ArgumentException(
@@ -145,12 +157,13 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
             SupplierCreditMovementId = supplierCreditMovementId,
             TransactionTypeCode = RefundTransactionTypeCode.RefundReceived,
             OriginalTransactionId = null,
-            FinancialDestinationId = financialDestinationId,
+            CompanyBankAccountId = companyBankAccountId,
+            CashRegisterId = cashRegisterId,
             AccountingAccountId = accountingAccountId,
             AccountingAccountCodeSnapshot = accountingAccountCodeSnapshot.Trim(),
-            FinancialDestinationCodeSnapshot = financialDestinationCodeSnapshot.Trim(),
-            FinancialDestinationNameSnapshot = financialDestinationNameSnapshot.Trim(),
-            DestinationTypeCodeSnapshot = destinationTypeCodeSnapshot.Trim(),
+            DestinationCodeSnapshot = destinationCodeSnapshot.Trim(),
+            DestinationNameSnapshot = destinationNameSnapshot.Trim(),
+            DestinationTypeSnapshot = destinationTypeSnapshot.Trim(),
             PaymentMethodCode = paymentMethodCode.Trim(),
             Amount = amount,
             CurrencyCode = currencyCode.Trim().ToUpperInvariant(),
@@ -216,12 +229,13 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
             SupplierCreditMovementId = supplierCreditMovementId,
             TransactionTypeCode = RefundTransactionTypeCode.RefundReversed,
             OriginalTransactionId = original.Id,
-            FinancialDestinationId = original.FinancialDestinationId,
+            CompanyBankAccountId = original.CompanyBankAccountId,
+            CashRegisterId = original.CashRegisterId,
             AccountingAccountId = original.AccountingAccountId,
             AccountingAccountCodeSnapshot = original.AccountingAccountCodeSnapshot,
-            FinancialDestinationCodeSnapshot = original.FinancialDestinationCodeSnapshot,
-            FinancialDestinationNameSnapshot = original.FinancialDestinationNameSnapshot,
-            DestinationTypeCodeSnapshot = original.DestinationTypeCodeSnapshot,
+            DestinationCodeSnapshot = original.DestinationCodeSnapshot,
+            DestinationNameSnapshot = original.DestinationNameSnapshot,
+            DestinationTypeSnapshot = original.DestinationTypeSnapshot,
             PaymentMethodCode = original.PaymentMethodCode,
             Amount = original.Amount,
             CurrencyCode = original.CurrencyCode,

@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Sales.Entities;
@@ -10,17 +11,23 @@ public sealed class SupplierPaymentMethodLineConfiguration : IEntityTypeConfigur
 {
     public void Configure(EntityTypeBuilder<SupplierPaymentMethodLine> builder)
     {
-        builder.ToTable("supplier_payment_methods");
+        builder.ToTable(
+            "supplier_payment_methods",
+            t =>
+                t.HasCheckConstraint(
+                    "chk_supplier_payment_methods_destination_xor",
+                    "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) "
+                        + "OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)"
+                )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.SupplierPaymentId).HasColumnName("supplier_payment_id").IsRequired();
         builder.Property(x => x.PaymentMethodId).HasColumnName("payment_method_id").IsRequired();
-        builder
-            .Property(x => x.FinancialDestinationId)
-            .HasColumnName("financial_destination_id")
-            .IsRequired();
+        builder.Property(x => x.CompanyBankAccountId).HasColumnName("company_bank_account_id");
+        builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id");
         builder
             .Property(x => x.Amount)
             .HasColumnName("amount")
@@ -40,9 +47,14 @@ public sealed class SupplierPaymentMethodLineConfiguration : IEntityTypeConfigur
             .HasForeignKey(x => x.PaymentMethodId)
             .OnDelete(DeleteBehavior.Restrict);
         builder
-            .HasOne<CompanyFinancialDestination>()
+            .HasOne<CompanyBankAccount>()
             .WithMany()
-            .HasForeignKey(x => x.FinancialDestinationId)
+            .HasForeignKey(x => x.CompanyBankAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<CashRegister>()
+            .WithMany()
+            .HasForeignKey(x => x.CashRegisterId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
@@ -52,7 +64,10 @@ public sealed class SupplierPaymentMethodLineConfiguration : IEntityTypeConfigur
             .HasIndex(x => x.PaymentMethodId)
             .HasDatabaseName("ix_supplier_payment_methods_payment_method");
         builder
-            .HasIndex(x => x.FinancialDestinationId)
-            .HasDatabaseName("ix_supplier_payment_methods_financial_destination");
+            .HasIndex(x => x.CompanyBankAccountId)
+            .HasDatabaseName("ix_supplier_payment_methods_bank_account");
+        builder
+            .HasIndex(x => x.CashRegisterId)
+            .HasDatabaseName("ix_supplier_payment_methods_cash_register");
     }
 }

@@ -25,8 +25,10 @@ export interface PaymentDto {
   lines: PaymentApplicationLineDto[];
   createdAt: string;
   updatedAt: string | null;
-  /** ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) usado, si se especificó. */
-  financialDestinationId: string | null;
+  /** FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — cuenta bancaria usada, si se especificó. */
+  companyBankAccountId: string | null;
+  /** FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — caja usada, si se especificó. */
+  cashRegisterId: string | null;
 }
 
 export interface PaymentApplicationLineInput {
@@ -42,8 +44,10 @@ export interface RegisterCollectionPayload {
   paymentMethodId?: string | null;
   reference?: string | null;
   lines: PaymentApplicationLineInput[];
-  /** ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) opcional. */
-  financialDestinationId?: string | null;
+  /** FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — cuenta bancaria opcional, excluyente con cashRegisterId. */
+  companyBankAccountId?: string | null;
+  /** FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — caja opcional, excluyente con companyBankAccountId. */
+  cashRegisterId?: string | null;
 }
 
 const BASE = "/api/v1/finance";

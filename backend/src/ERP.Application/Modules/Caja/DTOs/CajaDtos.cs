@@ -159,6 +159,7 @@ public sealed record CashRegisterDto(
     string? DefaultWarehouseName,
     Guid? DefaultCustomerId,
     string? DefaultCustomerName,
+    Guid? AccountingAccountId,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );

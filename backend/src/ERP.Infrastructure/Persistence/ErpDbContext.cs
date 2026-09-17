@@ -335,10 +335,6 @@ public class ErpDbContext : DbContext
     public DbSet<SupplierCredit> SupplierCredits => Set<SupplierCredit>();
     public DbSet<SupplierCreditMovement> SupplierCreditMovements => Set<SupplierCreditMovement>();
     public DbSet<SupplierCreditAudit> SupplierCreditAudits => Set<SupplierCreditAudit>();
-    public DbSet<CompanyFinancialDestination> CompanyFinancialDestinations =>
-        Set<CompanyFinancialDestination>();
-    public DbSet<CompanyFinancialDestinationAudit> CompanyFinancialDestinationAudits =>
-        Set<CompanyFinancialDestinationAudit>();
     public DbSet<SupplierCreditRefundTransaction> SupplierCreditRefundTransactions =>
         Set<SupplierCreditRefundTransaction>();
 

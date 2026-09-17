@@ -87,6 +87,7 @@ export interface CashSessionListResponse {
 }
 
 export interface CashRegisterDto {
+  accountingAccountId: string | null;
   id: string;
   branchId: string;
   branchName: string;
@@ -124,6 +125,7 @@ export interface EmissionPointLookupForBranchDto {
 export type CashRegisterActiveStatus = "all" | "active" | "inactive";
 
 export interface CreateCashRegisterPayload {
+  accountingAccountId?: string | null;
   branchId: string;
   code: string;
   name: string;
@@ -134,6 +136,7 @@ export interface CreateCashRegisterPayload {
 }
 
 export interface UpdateCashRegisterPayload {
+  accountingAccountId?: string | null;
   id: string;
   name: string;
   emissionPointId?: string | null;

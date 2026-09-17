@@ -11,8 +11,8 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 ///
 /// Campos poblados según la etapa/acción (§20.1, párrafo bajo la tabla y columna "Campos nullable
 /// según etapa"): <see cref="TargetPurchasePayableId"/> solo en <c>Applied</c>/
-/// <c>ApplicationReversed</c>; el grupo de campos del destino financiero (<see cref="FinancialDestinationId"/>,
-/// <see cref="FinancialDestinationCodeSnapshot"/>, <see cref="DestinationTypeCodeSnapshot"/>,
+/// <c>ApplicationReversed</c>; el grupo de campos del destino financiero (<see cref="CompanyBankAccountId"/>,
+/// <see cref="DestinationCodeSnapshot"/>, <see cref="DestinationTypeSnapshot"/>,
 /// <see cref="AccountingAccountId"/>, <see cref="CashRegisterId"/>, <see cref="CashSessionId"/>,
 /// <see cref="CashMovementId"/>, <see cref="PaymentMethodCode"/>, <see cref="ExternalReference"/>,
 /// <see cref="EffectiveDate"/>) solo en <c>Refunded</c>/<c>RefundReversed</c>; en
@@ -73,9 +73,9 @@ public sealed class SupplierCreditAudit : AuditRecordBase, ICompanyOperationalEn
     public Guid? SourcePurchaseReturnId { get; private set; }
 
     // ── Grupo "destino financiero del reembolso" (§6.4, §20.1) — solo Refunded/RefundReversed ──
-    public Guid? FinancialDestinationId { get; private set; }
-    public string? FinancialDestinationCodeSnapshot { get; private set; }
-    public string? DestinationTypeCodeSnapshot { get; private set; }
+    public Guid? CompanyBankAccountId { get; private set; }
+    public string? DestinationCodeSnapshot { get; private set; }
+    public string? DestinationTypeSnapshot { get; private set; }
     public Guid? AccountingAccountId { get; private set; }
     public Guid? CashRegisterId { get; private set; }
     public Guid? CashSessionId { get; private set; }
@@ -101,9 +101,9 @@ public sealed class SupplierCreditAudit : AuditRecordBase, ICompanyOperationalEn
         string? statusAfter = null,
         Guid? targetPurchasePayableId = null,
         Guid? sourcePurchaseReturnId = null,
-        Guid? financialDestinationId = null,
-        string? financialDestinationCodeSnapshot = null,
-        string? destinationTypeCodeSnapshot = null,
+        Guid? companyBankAccountId = null,
+        string? destinationCodeSnapshot = null,
+        string? destinationTypeSnapshot = null,
         Guid? accountingAccountId = null,
         Guid? cashRegisterId = null,
         Guid? cashSessionId = null,
@@ -132,9 +132,9 @@ public sealed class SupplierCreditAudit : AuditRecordBase, ICompanyOperationalEn
             StatusAfter = statusAfter,
             TargetPurchasePayableId = targetPurchasePayableId,
             SourcePurchaseReturnId = sourcePurchaseReturnId,
-            FinancialDestinationId = financialDestinationId,
-            FinancialDestinationCodeSnapshot = financialDestinationCodeSnapshot,
-            DestinationTypeCodeSnapshot = destinationTypeCodeSnapshot,
+            CompanyBankAccountId = companyBankAccountId,
+            DestinationCodeSnapshot = destinationCodeSnapshot,
+            DestinationTypeSnapshot = destinationTypeSnapshot,
             AccountingAccountId = accountingAccountId,
             CashRegisterId = cashRegisterId,
             CashSessionId = cashSessionId,

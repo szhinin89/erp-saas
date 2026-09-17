@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.Exceptions;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
@@ -15,7 +16,8 @@ namespace ERP.Application.Modules.Payables.UseCases;
 /// <summary>SUPPLIER-PAYMENTS-REGISTER-15C — un medio de pago usado en el registro.</summary>
 public sealed record SupplierPaymentMethodLineRequest(
     Guid PaymentMethodId,
-    Guid FinancialDestinationId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
     decimal Amount,
     string? ReferenceNumber = null,
     string? CheckNumber = null,
@@ -60,7 +62,8 @@ public sealed record RegisterSupplierPaymentRequest(
 public sealed record SupplierPaymentMethodLineDto(
     Guid Id,
     Guid PaymentMethodId,
-    Guid FinancialDestinationId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
     decimal Amount,
     string? ReferenceNumber,
     string? CheckNumber,
@@ -150,8 +153,10 @@ public sealed class SupplierPaymentMethodLineRequestValidator
     public SupplierPaymentMethodLineRequestValidator()
     {
         RuleFor(x => x.PaymentMethodId).NotEmpty();
-        RuleFor(x => x.FinancialDestinationId).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
+        RuleFor(x => x)
+            .Must(x => x.CompanyBankAccountId is not null ^ x.CashRegisterId is not null)
+            .WithMessage("Debe especificar exactamente una cuenta bancaria o una caja destino.");
     }
 }
 
@@ -209,7 +214,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
     private readonly ISupplierPaymentSequenceRepository _sequences;
     private readonly IAccountsPayableRepository _accountsPayables;
     private readonly IPaymentMethodRepository _paymentMethods;
-    private readonly ICompanyFinancialDestinationRepository _financialDestinations;
+    private readonly ICompanyBankAccountRepository _bankAccounts;
+    private readonly ICashRegisterRepository _cashRegisters;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -221,7 +227,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
         ISupplierPaymentSequenceRepository sequences,
         IAccountsPayableRepository accountsPayables,
         IPaymentMethodRepository paymentMethods,
-        ICompanyFinancialDestinationRepository financialDestinations,
+        ICompanyBankAccountRepository bankAccounts,
+        ICashRegisterRepository cashRegisters,
         IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -233,7 +240,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
         _sequences = sequences;
         _accountsPayables = accountsPayables;
         _paymentMethods = paymentMethods;
-        _financialDestinations = financialDestinations;
+        _bankAccounts = bankAccounts;
+        _cashRegisters = cashRegisters;
         _uow = uow;
         _t = t;
         _c = c;
@@ -288,29 +296,53 @@ public sealed class RegisterSupplierPaymentCommandHandler
                 }
             }
 
-            // ── FinancialDestinationId debe existir, pertenecer a la empresa, estar activo y tener cuenta contable ──
-            foreach (var destinationId in cmd.MethodLines.Select(l => l.FinancialDestinationId).Distinct())
+            // ── Cuenta bancaria/caja debe existir, pertenecer a la empresa, estar activa y tener cuenta contable ──
+            foreach (var bankAccountId in cmd.MethodLines
+                .Where(l => l.CompanyBankAccountId is not null)
+                .Select(l => l.CompanyBankAccountId!.Value)
+                .Distinct())
             {
-                var destination = await _financialDestinations.GetByIdAsync(tenantId, destinationId, ct);
-                if (destination is null || destination.CompanyId != companyId)
+                var bankAccount = await _bankAccounts.GetByIdAsync(tenantId, bankAccountId, ct);
+                if (bankAccount is null || bankAccount.CompanyId != companyId)
                 {
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierPaymentDto>.NotFound(
-                        $"El destino financiero {destinationId} no existe o no pertenece a esta empresa."
+                        $"La cuenta bancaria {bankAccountId} no existe o no pertenece a esta empresa."
                     );
                 }
-                if (!destination.IsActive)
+                if (!bankAccount.IsActive)
                 {
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"El destino financiero {destinationId} no está activo."
+                        $"La cuenta bancaria {bankAccountId} no está activa."
                     );
                 }
-                if (destination.AccountingAccountId == Guid.Empty)
+            }
+            foreach (var cashRegisterId in cmd.MethodLines
+                .Where(l => l.CashRegisterId is not null)
+                .Select(l => l.CashRegisterId!.Value)
+                .Distinct())
+            {
+                var cashRegister = await _cashRegisters.GetByIdAsync(tenantId, cashRegisterId, ct);
+                if (cashRegister is null || cashRegister.CompanyId != companyId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.NotFound(
+                        $"La caja {cashRegisterId} no existe o no pertenece a esta empresa."
+                    );
+                }
+                if (!cashRegister.IsActive)
                 {
                     await _uow.RollbackAsync(ct);
                     return Result<SupplierPaymentDto>.ValidationFailure(
-                        $"El destino financiero {destinationId} no tiene una cuenta contable configurada."
+                        $"La caja {cashRegisterId} no está activa."
+                    );
+                }
+                if (cashRegister.AccountingAccountId is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierPaymentDto>.ValidationFailure(
+                        $"La caja {cashRegisterId} no tiene una cuenta contable configurada."
                     );
                 }
             }
@@ -404,7 +436,8 @@ public sealed class RegisterSupplierPaymentCommandHandler
                     cmd.MethodLines
                         .Select(l => new SupplierPaymentMethodLineInput(
                             l.PaymentMethodId,
-                            l.FinancialDestinationId,
+                            l.CompanyBankAccountId,
+                            l.CashRegisterId,
                             l.Amount,
                             l.ReferenceNumber,
                             l.CheckNumber,
@@ -541,7 +574,8 @@ internal static class SupplierPaymentDtoMapper
                 .Select(l => new SupplierPaymentMethodLineDto(
                     l.Id,
                     l.PaymentMethodId,
-                    l.FinancialDestinationId,
+                    l.CompanyBankAccountId,
+                    l.CashRegisterId,
                     l.Amount,
                     l.ReferenceNumber,
                     l.CheckNumber,

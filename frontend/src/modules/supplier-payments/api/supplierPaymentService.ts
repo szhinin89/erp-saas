@@ -10,7 +10,8 @@ export type SupplierPaymentStatus = "Confirmed" | "Reversed";
 /** Espejo exacto de SupplierPaymentMethodLineRequest — backend. */
 export interface SupplierPaymentMethodLineRequest {
   paymentMethodId: string;
-  financialDestinationId: string;
+  companyBankAccountId: string | null;
+  cashRegisterId: string | null;
   amount: number;
   referenceNumber?: string | null;
   checkNumber?: string | null;
@@ -48,7 +49,8 @@ export interface RegisterSupplierPaymentRequest {
 export interface SupplierPaymentMethodLineDto {
   id: string;
   paymentMethodId: string;
-  financialDestinationId: string;
+  companyBankAccountId: string | null;
+  cashRegisterId: string | null;
   amount: number;
   referenceNumber: string | null;
   checkNumber: string | null;

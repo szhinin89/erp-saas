@@ -18,7 +18,15 @@ public sealed class SupplierCreditRefundTransactionConfiguration
 {
     public void Configure(EntityTypeBuilder<SupplierCreditRefundTransaction> builder)
     {
-        builder.ToTable("supplier_credit_refund_transactions");
+        builder.ToTable(
+            "supplier_credit_refund_transactions",
+            t =>
+                t.HasCheckConstraint(
+                    "chk_supplier_credit_refund_transactions_destination_xor",
+                    "(\"company_bank_account_id\" IS NOT NULL AND \"cash_register_id\" IS NULL) "
+                        + "OR (\"company_bank_account_id\" IS NULL AND \"cash_register_id\" IS NOT NULL)"
+                )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -36,10 +44,8 @@ public sealed class SupplierCreditRefundTransactionConfiguration
             .HasConversion<int>()
             .IsRequired();
         builder.Property(x => x.OriginalTransactionId).HasColumnName("original_transaction_id");
-        builder
-            .Property(x => x.FinancialDestinationId)
-            .HasColumnName("financial_destination_id")
-            .IsRequired();
+        builder.Property(x => x.CompanyBankAccountId).HasColumnName("company_bank_account_id");
+        builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id");
         builder
             .Property(x => x.AccountingAccountId)
             .HasColumnName("accounting_account_id")
@@ -76,18 +82,18 @@ public sealed class SupplierCreditRefundTransactionConfiguration
         builder.Property(x => x.CashMovementId).HasColumnName("cash_movement_id");
 
         builder
-            .Property(x => x.FinancialDestinationCodeSnapshot)
-            .HasColumnName("financial_destination_code_snapshot")
+            .Property(x => x.DestinationCodeSnapshot)
+            .HasColumnName("destination_code_snapshot")
             .HasMaxLength(SupplierCreditRefundTransaction.SnapshotMaxLen)
             .IsRequired();
         builder
-            .Property(x => x.FinancialDestinationNameSnapshot)
-            .HasColumnName("financial_destination_name_snapshot")
+            .Property(x => x.DestinationNameSnapshot)
+            .HasColumnName("destination_name_snapshot")
             .HasMaxLength(SupplierCreditRefundTransaction.SnapshotMaxLen)
             .IsRequired();
         builder
-            .Property(x => x.DestinationTypeCodeSnapshot)
-            .HasColumnName("destination_type_code_snapshot")
+            .Property(x => x.DestinationTypeSnapshot)
+            .HasColumnName("destination_type_snapshot")
             .HasMaxLength(SupplierCreditRefundTransaction.SnapshotMaxLen)
             .IsRequired();
         builder
@@ -142,9 +148,17 @@ public sealed class SupplierCreditRefundTransactionConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne<CompanyFinancialDestination>()
+            .HasOne<CompanyBankAccount>()
             .WithMany()
-            .HasForeignKey(x => x.FinancialDestinationId)
+            .HasForeignKey(x => x.CompanyBankAccountId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<CashRegister>()
+            .WithMany()
+            .HasForeignKey(x => x.CashRegisterId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder

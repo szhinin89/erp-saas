@@ -1,8 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
-using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
@@ -36,7 +36,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         Mock<ISupplierPaymentSequenceRepository> Sequences,
         Mock<IAccountsPayableRepository> AccountsPayables,
         Mock<IPaymentMethodRepository> PaymentMethods,
-        Mock<ICompanyFinancialDestinationRepository> FinancialDestinations,
+        Mock<ICompanyBankAccountRepository> BankAccounts,
+        Mock<ICashRegisterRepository> CashRegisters,
         Mock<IUnitOfWork> Uow,
         Mock<ICurrentTenant> Tenant,
         Mock<ICurrentCompany> Company,
@@ -50,7 +51,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var sequences = new Mock<ISupplierPaymentSequenceRepository>();
         var accountsPayables = new Mock<IAccountsPayableRepository>();
         var paymentMethods = new Mock<IPaymentMethodRepository>();
-        var financialDestinations = new Mock<ICompanyFinancialDestinationRepository>();
+        var bankAccounts = new Mock<ICompanyBankAccountRepository>();
+        var cashRegisters = new Mock<ICashRegisterRepository>();
         var uow = new Mock<IUnitOfWork>();
         var tenant = new Mock<ICurrentTenant>();
         var company = new Mock<ICurrentCompany>();
@@ -81,7 +83,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             sequences,
             accountsPayables,
             paymentMethods,
-            financialDestinations,
+            bankAccounts,
+            cashRegisters,
             uow,
             tenant,
             company,
@@ -96,7 +99,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             m.Sequences.Object,
             m.AccountsPayables.Object,
             m.PaymentMethods.Object,
-            m.FinancialDestinations.Object,
+            m.BankAccounts.Object,
+            m.CashRegisters.Object,
             m.Uow.Object,
             m.Tenant.Object,
             m.Company.Object,
@@ -107,18 +111,12 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     private static PaymentMethod ActivePaymentMethod() =>
         PaymentMethod.Create(TenantId, "EFEC", "Efectivo", false, false, 1, UserId);
 
-    private static CompanyFinancialDestination ActiveDestination(Guid companyId) =>
-        CompanyFinancialDestination.Create(
-            TenantId,
-            companyId,
-            "CAJA-01",
-            "Caja Principal",
-            FinancialDestinationTypeCode.CashRegister,
-            Guid.NewGuid(),
-            "USD",
-            UserId,
-            cashRegisterId: Guid.NewGuid()
-        );
+    private static CashRegister ActiveDestination(Guid companyId)
+    {
+        var register = CashRegister.Create(TenantId, companyId, BranchId, "CAJA-01", "Caja Principal", UserId);
+        register.SetAccountingAccount(Guid.NewGuid(), UserId);
+        return register;
+    }
 
     private static AccountsPayable CreatePayableWithInstallment(
         decimal amount,
@@ -146,13 +144,13 @@ public sealed class RegisterSupplierPaymentUseCasesTests
     private void SetupMethodAndDestination(
         Mocks m,
         PaymentMethod method,
-        CompanyFinancialDestination destination
+        CashRegister destination
     )
     {
         m.PaymentMethods
             .Setup(p => p.GetByIdAsync(TenantId, method.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(method);
-        m.FinancialDestinations
+        m.CashRegisters
             .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(destination);
     }
@@ -181,7 +179,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 300m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 300m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 300m) }
         );
@@ -223,8 +221,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             null,
             new[]
             {
-                new SupplierPaymentMethodLineRequest(methodA.Id, destination.Id, 100m),
-                new SupplierPaymentMethodLineRequest(methodB.Id, destination.Id, 200m),
+                new SupplierPaymentMethodLineRequest(methodA.Id, null, destination.Id, 100m),
+                new SupplierPaymentMethodLineRequest(methodB.Id, null, destination.Id, 200m),
             },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 300m) },
             new[]
@@ -259,7 +257,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 300m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 300m) },
             new[]
             {
                 new SupplierPaymentApplicationLineRequest(payableA.Installments[0].Id, 100m),
@@ -305,8 +303,8 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             "CHK-001",
             new[]
             {
-                new SupplierPaymentMethodLineRequest(methodA.Id, destination.Id, 150m),
-                new SupplierPaymentMethodLineRequest(methodB.Id, destination.Id, 150m),
+                new SupplierPaymentMethodLineRequest(methodA.Id, null, destination.Id, 150m),
+                new SupplierPaymentMethodLineRequest(methodB.Id, null, destination.Id, 150m),
             },
             new[]
             {
@@ -347,7 +345,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             "   ",
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -375,7 +373,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -403,7 +401,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             150m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 150m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 150m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 150m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 150m) }
         );
@@ -433,7 +431,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -460,7 +458,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -488,7 +486,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             50m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 50m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 50m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 50m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 50m) }
         );
@@ -516,7 +514,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             50m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 50m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 50m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 50m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 50m) }
         );
@@ -543,7 +541,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -560,7 +558,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var m = BuildMocks();
         var method = ActivePaymentMethod();
         var destination = ActiveDestination(CompanyId);
-        destination.SetActive(false, UserId);
+        destination.Disable(UserId);
         var payable = CreatePayableWithInstallment(100m);
         SetupMethodAndDestination(m, method, destination);
         SetupPayable(m, payable);
@@ -571,7 +569,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -589,7 +587,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
         var destination = ActiveDestination(CompanyId);
         var payable = CreatePayableWithInstallment(100m);
         var missingMethodId = Guid.NewGuid();
-        m.FinancialDestinations
+        m.CashRegisters
             .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(destination);
         SetupPayable(m, payable);
@@ -600,7 +598,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(missingMethodId, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(missingMethodId, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -628,7 +626,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -656,7 +654,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             300m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 300m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 300m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 250m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 250m) }
         );
@@ -701,7 +699,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             "CHK-001",
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );
@@ -744,7 +742,7 @@ public sealed class RegisterSupplierPaymentUseCasesTests
             new DateOnly(2026, 8, 28),
             100m,
             null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, destination.Id, 100m) },
+            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
             new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
             new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) }
         );

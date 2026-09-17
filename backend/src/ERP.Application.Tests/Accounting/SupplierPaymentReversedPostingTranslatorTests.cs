@@ -3,8 +3,8 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Events;
 using FluentAssertions;
@@ -22,35 +22,43 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
-        public Mock<ICompanyFinancialDestinationRepository> FinancialDestinations { get; } = new();
+        public Mock<ICompanyBankAccountRepository> BankAccounts { get; } = new();
+        public Mock<ICashRegisterRepository> CashRegisters { get; } = new();
 
         public SupplierPaymentReversedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, FinancialDestinations.Object);
+            new(PostingEngine.Object, BankAccounts.Object, CashRegisters.Object);
+
+        public void RegisterCashRegister(CashRegister cashRegister) =>
+            CashRegisters
+                .Setup(r => r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(cashRegister);
     }
 
-    private static CompanyFinancialDestination Destination(Guid? companyId = null, bool isActive = true)
+    private static CashRegister Destination(Guid? companyId = null, bool isActive = true)
     {
-        var destination = CompanyFinancialDestination.Create(
+        var destination = CashRegister.Create(
             TenantId,
             companyId ?? CompanyId,
+            BranchId,
             $"CAJA-{Guid.NewGuid():N}"[..10],
             "Caja Principal",
-            FinancialDestinationTypeCode.CashRegister,
-            Guid.NewGuid(),
-            "USD",
-            UserId,
-            cashRegisterId: Guid.NewGuid()
+            UserId
         );
+        destination.SetAccountingAccount(Guid.NewGuid(), UserId);
         if (!isActive)
-            destination.SetActive(false, UserId);
+            destination.Disable(UserId);
         return destination;
     }
+
+    private static SupplierPaymentConfirmedMethodLine CashLine(CashRegister destination, decimal amount) =>
+        new(null, destination.Id, amount);
 
     private static SupplierPaymentReversedEvent Event(
         IReadOnlyList<SupplierPaymentConfirmedMethodLine> methodLines,
@@ -74,9 +82,7 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
 
         PostingFact? captured = null;
         m.PostingEngine
@@ -87,11 +93,7 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
             );
 
         var supplierPaymentId = Guid.NewGuid();
-        var evt = Event(
-            new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 300m) },
-            300m,
-            supplierPaymentId
-        );
+        var evt = Event(new[] { CashLine(destination, 300m) }, 300m, supplierPaymentId);
 
         await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -102,7 +104,7 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         captured.GrandTotal.Should().Be(300m, "el Haber de CxP se resuelve vía PostingRule con GrandTotal");
         captured.Allocations.Should().ContainSingle();
         var allocation = captured.Allocations!.Single();
-        allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId);
+        allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId!.Value);
         allocation.Amount.Should().Be(300m);
         allocation.Nature.Should().Be(AccountNature.Debit, "el reverso invierte: Debe caja/banco, Haber CxP");
     }
@@ -113,12 +115,8 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
         var m = new Mocks();
         var destinationA = Destination();
         var destinationB = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destinationA.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destinationA);
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destinationB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destinationB);
+        m.RegisterCashRegister(destinationA);
+        m.RegisterCashRegister(destinationB);
 
         PostingFact? captured = null;
         m.PostingEngine
@@ -129,11 +127,7 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
             );
 
         var evt = Event(
-            new[]
-            {
-                new SupplierPaymentConfirmedMethodLine(destinationA.Id, 100m),
-                new SupplierPaymentConfirmedMethodLine(destinationB.Id, 200m),
-            },
+            new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) },
             300m
         );
 
@@ -149,16 +143,14 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
         m.PostingEngine
             .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created))
             );
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -170,16 +162,14 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
         m.PostingEngine
             .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.ValidationFailure("No existe regla de contabilización.", "RULE_NOT_FOUND")
             );
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -192,11 +182,9 @@ public sealed class SupplierPaymentReversedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination(isActive: false);
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 

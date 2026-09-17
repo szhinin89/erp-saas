@@ -32,6 +32,19 @@ public sealed class CashRegisterRepository : ICashRegisterRepository
         CancellationToken ct = default
     ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<CashRegister?> GetByIdForShareAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM cash_registers WHERE id = {id} AND tenant_id = {tenantId} FOR SHARE",
+            ct
+        );
+        return await GetByIdAsync(tenantId, id, ct);
+    }
+
     public async Task<IReadOnlyList<CashRegister>> GetByBranchAsync(
         Guid tenantId,
         Guid branchId,

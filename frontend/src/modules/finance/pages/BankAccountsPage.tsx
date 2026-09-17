@@ -43,7 +43,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
  * TREASURY-BANK-ACCOUNTS-01: CRUD básico + activar/desactivar de cuentas bancarias de empresa
  * (Tesorería → Bancos → Cuentas bancarias). Banco siempre seleccionado desde el catálogo maestro
  * `Bank` (BANK-CATALOG-01) — nunca texto libre. Sigue el patrón `ConfigTabsLayout` obligatorio
- * (Master Configuration UI CLOSED), mismo criterio que `FinancialDestinationsPage.tsx`.
+ * (Master Configuration UI CLOSED), mismo criterio que `CashRegistersPage.tsx`.
  */
 export function BankAccountsPage() {
   const [activeTab, setActiveTab] = useState<"list" | "editor">("list");

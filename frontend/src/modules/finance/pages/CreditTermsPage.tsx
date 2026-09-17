@@ -193,7 +193,7 @@ export function CreditTermsPage() {
     { key: "installments", header: "Cuotas", render: (ct) => ct.installments.length },
     {
       // ZH-LISTING-GLOBAL-STANDARD-06: antes mostraba el texto literal "Estado" en vez del
-      // estado real (mismo bug corregido en FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
+      // estado real (mismo bug corregido en BankAccountsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
       key: "status",
       header: "Estado",
       render: (ct) => <Badge label={ct.isActive ? "Activo" : "Inactivo"} variant={ct.isActive ? "success" : "neutral"} />,

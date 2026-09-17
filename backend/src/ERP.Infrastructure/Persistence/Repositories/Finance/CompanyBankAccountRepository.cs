@@ -25,6 +25,19 @@ public sealed class CompanyBankAccountRepository : ICompanyBankAccountRepository
         _db.CompanyBankAccounts.ForOperationalScope(tenantId, _company)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<CompanyBankAccount?> GetByIdForShareAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM company_bank_accounts WHERE id = {id} AND tenant_id = {tenantId} FOR SHARE",
+            ct
+        );
+        return await GetByIdAsync(tenantId, id, ct);
+    }
+
     public async Task<IReadOnlyList<CompanyBankAccount>> GetListAsync(
         Guid tenantId,
         bool? isActive,

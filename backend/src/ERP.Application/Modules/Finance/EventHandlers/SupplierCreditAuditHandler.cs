@@ -17,7 +17,7 @@ namespace ERP.Application.Modules.Finance.EventHandlers;
 /// <c>RefundReversed</c> — <c>SourceReturnCancelled</c> queda para Fase 10 (Open/Closed, mismo
 /// criterio que <c>PurchaseReturnAuditHandler</c>).
 ///
-/// Ninguno de los 4 eventos transporta el grupo "destino financiero" (§20.1: <c>FinancialDestinationId</c>,
+/// Ninguno de los 4 eventos transporta el grupo "destino financiero" (§20.1: <c>CompanyBankAccountId</c>,
 /// codes, <c>AccountingAccountId</c>, caja, método, referencia, fecha efectiva) ni
 /// <c>BranchId</c>/<c>SupplierId</c> (inmutables del agregado) — este handler los resuelve
 /// mediante lecturas de solo lectura de <see cref="ISupplierCreditRepository"/>/
@@ -136,10 +136,11 @@ public sealed class SupplierCreditAuditHandler
                 balanceAfter: e.AvailableAmountAfter,
                 statusBefore: balanceBefore > 0 ? "Open" : "Closed",
                 statusAfter: e.AvailableAmountAfter > 0 ? "Open" : "Closed",
-                financialDestinationId: transaction?.FinancialDestinationId,
-                financialDestinationCodeSnapshot: transaction?.FinancialDestinationCodeSnapshot,
-                destinationTypeCodeSnapshot: transaction?.DestinationTypeCodeSnapshot,
+                companyBankAccountId: transaction?.CompanyBankAccountId,
+                destinationCodeSnapshot: transaction?.DestinationCodeSnapshot,
+                destinationTypeSnapshot: transaction?.DestinationTypeSnapshot,
                 accountingAccountId: transaction?.AccountingAccountId,
+                cashRegisterId: transaction?.CashRegisterId,
                 cashSessionId: transaction?.CashSessionId,
                 cashMovementId: transaction?.CashMovementId,
                 paymentMethodCode: transaction?.PaymentMethodCode,
@@ -177,10 +178,11 @@ public sealed class SupplierCreditAuditHandler
                 balanceAfter: e.AvailableAmountAfter,
                 statusBefore: balanceBefore > 0 ? "Open" : "Closed",
                 statusAfter: e.AvailableAmountAfter > 0 ? "Open" : "Closed",
-                financialDestinationId: transaction?.FinancialDestinationId,
-                financialDestinationCodeSnapshot: transaction?.FinancialDestinationCodeSnapshot,
-                destinationTypeCodeSnapshot: transaction?.DestinationTypeCodeSnapshot,
+                companyBankAccountId: transaction?.CompanyBankAccountId,
+                destinationCodeSnapshot: transaction?.DestinationCodeSnapshot,
+                destinationTypeSnapshot: transaction?.DestinationTypeSnapshot,
                 accountingAccountId: transaction?.AccountingAccountId,
+                cashRegisterId: transaction?.CashRegisterId,
                 cashSessionId: transaction?.CashSessionId,
                 cashMovementId: transaction?.CashMovementId,
                 paymentMethodCode: transaction?.PaymentMethodCode,

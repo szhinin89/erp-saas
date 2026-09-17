@@ -1,5 +1,6 @@
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Events;
 using MediatR;
@@ -32,15 +33,18 @@ public sealed class SupplierPaymentReversedPostingTranslator
     private const string FactTypeName = "SupplierPaymentReversed";
 
     private readonly IPostingEngine _postingEngine;
-    private readonly ICompanyFinancialDestinationRepository _financialDestinations;
+    private readonly ICompanyBankAccountRepository _bankAccounts;
+    private readonly ICashRegisterRepository _cashRegisters;
 
     public SupplierPaymentReversedPostingTranslator(
         IPostingEngine postingEngine,
-        ICompanyFinancialDestinationRepository financialDestinations
+        ICompanyBankAccountRepository bankAccounts,
+        ICashRegisterRepository cashRegisters
     )
     {
         _postingEngine = postingEngine;
-        _financialDestinations = financialDestinations;
+        _bankAccounts = bankAccounts;
+        _cashRegisters = cashRegisters;
     }
 
     public async Task Handle(SupplierPaymentReversedEvent e, CancellationToken ct)
@@ -50,33 +54,15 @@ public sealed class SupplierPaymentReversedPostingTranslator
 
         foreach (var methodLine in e.MethodLines)
         {
-            var destination = await _financialDestinations.GetByIdAsync(
+            var accountId = await _bankAccounts.ResolveAccountingAccountIdAsync(
+                _cashRegisters,
                 tenantId,
-                methodLine.FinancialDestinationId,
+                e.CompanyId,
+                methodLine,
                 ct
             );
-            if (destination is null || destination.CompanyId != e.CompanyId)
-                throw new SupplierPaymentPostingFailedException(
-                    $"El destino financiero {methodLine.FinancialDestinationId} no existe o no "
-                        + "pertenece a esta empresa."
-                );
-            if (!destination.IsActive)
-                throw new SupplierPaymentPostingFailedException(
-                    $"El destino financiero {methodLine.FinancialDestinationId} no está activo."
-                );
-            if (destination.AccountingAccountId == Guid.Empty)
-                throw new SupplierPaymentPostingFailedException(
-                    $"El destino financiero {methodLine.FinancialDestinationId} no tiene una "
-                        + "cuenta contable configurada."
-                );
 
-            allocations.Add(
-                new PostingAllocation(
-                    destination.AccountingAccountId,
-                    methodLine.Amount,
-                    AccountNature.Debit
-                )
-            );
+            allocations.Add(new PostingAllocation(accountId, methodLine.Amount, AccountNature.Debit));
         }
 
         var fact = new PostingFact(

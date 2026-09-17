@@ -3,7 +3,7 @@ import { z } from "zod";
 // ── Crear cuenta ────────────────────────────────────────────────────────
 // Espejo de CreateAccountCommandValidator (ERP.Application). Code/AccountType/Nature son
 // inmutables tras crear (ver UpdateAccountCommand — no los acepta), mismo criterio ya usado en
-// CompanyFinancialDestination §6.4ter para campos estructurales.
+// legacy treasury destination §6.4ter para campos estructurales.
 
 export const ACCOUNT_TYPE_OPTIONS = [
   { value: "Asset", label: "Activo" },

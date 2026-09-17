@@ -1,3 +1,4 @@
+import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -6,7 +7,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { SupplierPaymentDetailPage } from "./SupplierPaymentDetailPage";
 import { supplierPaymentService, type SupplierPaymentDto } from "../api/supplierPaymentService";
 import { paymentMethodLookupFacade } from "../../sales/facades/paymentMethodLookupFacade";
-import { financialDestinationService } from "../../finance/api/financialDestinationService";
+import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
@@ -25,9 +26,11 @@ vi.mock("../../sales/facades/paymentMethodLookupFacade", () => ({
   paymentMethodLookupFacade: { list: vi.fn() },
 }));
 
-vi.mock("../../finance/api/financialDestinationService", () => ({
-  financialDestinationService: { list: vi.fn() },
+vi.mock("../../finance/api/bankAccountService", () => ({
+  bankAccountService: { list: vi.fn() },
 }));
+
+vi.mock("../../caja/api/cajaService", () => ({ cajaService: { getCashRegisters: vi.fn() } }));
 
 vi.mock("../../masterData/api/businessPartnerFacade", () => ({
   businessPartnerFacade: { getBusinessPartner: vi.fn() },
@@ -64,7 +67,8 @@ function payment(over: Partial<SupplierPaymentDto> = {}): SupplierPaymentDto {
       {
         id: "ml-1",
         paymentMethodId: "pm-1",
-        financialDestinationId: "fd-1",
+        companyBankAccountId: "fd-1",
+        cashRegisterId: null,
         amount: 300,
         referenceNumber: null,
         checkNumber: null,
@@ -101,10 +105,11 @@ function renderPage() {
 }
 
 beforeEach(() => {
+  vi.mocked(cajaService.getCashRegisters).mockResolvedValue([]);
   routeParams.id = "sp-1";
   grant(["supplier-payments.view", "supplier-payments.reverse"]);
   vi.mocked(paymentMethodLookupFacade.list).mockResolvedValue([]);
-  vi.mocked(financialDestinationService.list).mockResolvedValue([]);
+  vi.mocked(bankAccountService.list).mockResolvedValue([]);
   vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue({
     legalName: "Proveedor Test",
     tradeName: null,
@@ -264,5 +269,19 @@ describe("SupplierPaymentDetailPage — nombres legibles en Cuotas aplicadas (SU
     expect(
       await screen.findByText("001-001-000031760 — Cuota #1 — Vence 03/09/2026"),
     ).toBeTruthy();
+  });
+});
+
+
+describe("Direct bank/cash identity display", () => {
+  it.each([false, true])("resolves the direct ID (cash=%s)", async (cash) => {
+    const detail = payment();
+    detail.methodLines[0].companyBankAccountId = cash ? null : "bank-1";
+    detail.methodLines[0].cashRegisterId = cash ? "cash-1" : null;
+    vi.mocked(supplierPaymentService.getById).mockResolvedValue(detail);
+    vi.mocked(bankAccountService.list).mockResolvedValue([{ id: "bank-1", displayName: "Bank 12345" } as CompanyBankAccountDto]);
+    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ id: "cash-1", name: "Main cash" } as CashRegisterDto]);
+    renderPage();
+    expect(await screen.findByText(cash ? "Main cash" : "Bank 12345")).toBeTruthy();
   });
 });

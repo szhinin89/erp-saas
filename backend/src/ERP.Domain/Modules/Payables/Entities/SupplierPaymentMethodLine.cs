@@ -15,7 +15,13 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
     public Guid TenantId { get; private set; }
     public Guid SupplierPaymentId { get; private set; }
     public Guid PaymentMethodId { get; private set; }
-    public Guid FinancialDestinationId { get; private set; }
+
+    /// <summary>Cuenta bancaria destino — exactamente uno de este campo o <see cref="CashRegisterId"/> es obligatorio (FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01).</summary>
+    public Guid? CompanyBankAccountId { get; private set; }
+
+    /// <summary>Caja destino — exactamente uno de este campo o <see cref="CompanyBankAccountId"/> es obligatorio.</summary>
+    public Guid? CashRegisterId { get; private set; }
+
     public decimal Amount { get; private set; }
     public string? ReferenceNumber { get; private set; }
     public string? CheckNumber { get; private set; }
@@ -29,7 +35,8 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
         Guid supplierPaymentId,
         Guid tenantId,
         Guid paymentMethodId,
-        Guid financialDestinationId,
+        Guid? companyBankAccountId,
+        Guid? cashRegisterId,
         decimal amount,
         string? referenceNumber,
         string? checkNumber,
@@ -39,10 +46,15 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
     {
         if (paymentMethodId == Guid.Empty)
             throw new ArgumentException("El medio de pago es obligatorio.", nameof(paymentMethodId));
-        if (financialDestinationId == Guid.Empty)
+        if (companyBankAccountId is null && cashRegisterId is null)
             throw new ArgumentException(
                 "La caja o cuenta bancaria destino es obligatoria.",
-                nameof(financialDestinationId)
+                nameof(companyBankAccountId)
+            );
+        if (companyBankAccountId is not null && cashRegisterId is not null)
+            throw new ArgumentException(
+                "El medio de pago no puede tener cuenta bancaria y caja destino a la vez.",
+                nameof(cashRegisterId)
             );
         if (amount <= 0)
             throw new ArgumentException("El monto del medio de pago debe ser mayor a cero.", nameof(amount));
@@ -53,7 +65,8 @@ public sealed class SupplierPaymentMethodLine : IMustHaveTenant
             TenantId = tenantId,
             SupplierPaymentId = supplierPaymentId,
             PaymentMethodId = paymentMethodId,
-            FinancialDestinationId = financialDestinationId,
+            CompanyBankAccountId = companyBankAccountId,
+            CashRegisterId = cashRegisterId,
             Amount = amount,
             ReferenceNumber = string.IsNullOrWhiteSpace(referenceNumber) ? null : referenceNumber.Trim(),
             CheckNumber = string.IsNullOrWhiteSpace(checkNumber) ? null : checkNumber.Trim(),

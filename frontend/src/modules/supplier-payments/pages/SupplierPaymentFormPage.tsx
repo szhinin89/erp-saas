@@ -14,10 +14,8 @@ import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
 } from "../../sales/facades/paymentMethodLookupFacade";
-import {
-  financialDestinationService,
-  type CompanyFinancialDestinationDto,
-} from "../../finance/api/financialDestinationService";
+import { bankAccountService, type CompanyBankAccountDto } from "../../finance/api/bankAccountService";
+import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
 import {
   pendingPayablesFacade,
   type PendingInstallmentOption,
@@ -39,7 +37,7 @@ const PERMISSIONS = { create: "supplier-payments.create" } as const;
 
 const EMPTY_METHOD_LINE = {
   paymentMethodId: "",
-  financialDestinationId: "",
+  destination: "",
   amount: 0,
   referenceNumber: "",
   checkNumber: "",
@@ -62,7 +60,8 @@ export function SupplierPaymentFormPage() {
   const navigate = useNavigate();
 
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
-  const [destinations, setDestinations] = useState<CompanyFinancialDestinationDto[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
+  const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const [installments, setInstallments] = useState<PendingInstallmentOption[]>([]);
   const [installmentsLoading, setInstallmentsLoading] = useState(false);
   const [supplierName, setSupplierName] = useState("");
@@ -89,7 +88,8 @@ export function SupplierPaymentFormPage() {
 
   useEffect(() => {
     paymentMethodLookupFacade.list(true).then(setMethods).catch(() => setMethods([]));
-    financialDestinationService.list(true).then(setDestinations).catch(() => setDestinations([]));
+    bankAccountService.list(true).then(setBankAccounts).catch(() => setBankAccounts([]));
+    cajaService.getCashRegisters(true).then(setCashRegisters).catch(() => setCashRegisters([]));
   }, []);
 
   useEffect(() => {
@@ -194,7 +194,8 @@ export function SupplierPaymentFormPage() {
         receiptNumber: pendingValues.receiptNumber?.trim() || null,
         methodLines: pendingValues.methodLines.map((l) => ({
           paymentMethodId: l.paymentMethodId,
-          financialDestinationId: l.financialDestinationId,
+          companyBankAccountId: l.destination.startsWith("bank:") ? l.destination.slice(5) : null,
+          cashRegisterId: l.destination.startsWith("cash:") ? l.destination.slice(5) : null,
           amount: l.amount,
           referenceNumber: l.referenceNumber?.trim() || null,
           checkNumber: l.checkNumber?.trim() || null,
@@ -255,7 +256,8 @@ export function SupplierPaymentFormPage() {
         <ZHCard title="Medios de pago">
           <SupplierPaymentMethodLinesEditor
             methods={methods}
-            destinations={destinations}
+            bankAccounts={bankAccounts}
+            cashRegisters={cashRegisters}
             disabled={saving}
           />
         </ZHCard>

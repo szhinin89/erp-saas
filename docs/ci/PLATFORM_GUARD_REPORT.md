@@ -1,6 +1,6 @@
 # Platform Control Plane — CI Guard Report
 
-**Generated:** 2026-09-17T04:32:58.109Z
+**Generated:** 2026-09-17T22:46:53.965Z
 **Status:** PASS
 **Violations:** 0
 
@@ -21,8 +21,8 @@ _No violations detected._
 
 ```json
 {
-  "total": 132,
-  "allowed": 132,
+  "total": 130,
+  "allowed": 130,
   "legacyViolations": 0,
   "allowlistViolations": 0
 }

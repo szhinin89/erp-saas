@@ -158,7 +158,8 @@ public sealed class SupplierCreditController : ControllerBase
             await _mediator.Send(
                 new RegisterSupplierCreditRefundCommand(
                     id,
-                    request.FinancialDestinationId,
+                    request.CompanyBankAccountId,
+                    request.CashRegisterId,
                     request.PaymentMethodCode,
                     request.Amount,
                     request.EffectiveDate,
@@ -218,7 +219,8 @@ public sealed record ReverseSupplierCreditApplicationRequest(
 
 /// <summary>Cuerpo de <see cref="SupplierCreditController.Refund"/>.</summary>
 public sealed record RegisterSupplierCreditRefundRequest(
-    Guid FinancialDestinationId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
     string PaymentMethodCode,
     decimal Amount,
     DateOnly EffectiveDate,

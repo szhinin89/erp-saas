@@ -359,7 +359,6 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<ICompanyFinancialDestinationRepository, CompanyFinancialDestinationRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly));
 

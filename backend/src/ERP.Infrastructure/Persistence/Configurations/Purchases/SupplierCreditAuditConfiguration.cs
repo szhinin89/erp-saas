@@ -32,14 +32,14 @@ public sealed class SupplierCreditAuditConfiguration : IEntityTypeConfiguration<
             .HasColumnName("target_purchase_payable_id");
         builder.Property(x => x.SourcePurchaseReturnId).HasColumnName("source_purchase_return_id");
 
-        builder.Property(x => x.FinancialDestinationId).HasColumnName("financial_destination_id");
+        builder.Property(x => x.CompanyBankAccountId).HasColumnName("company_bank_account_id");
         builder
-            .Property(x => x.FinancialDestinationCodeSnapshot)
-            .HasColumnName("financial_destination_code_snapshot")
+            .Property(x => x.DestinationCodeSnapshot)
+            .HasColumnName("destination_code_snapshot")
             .HasMaxLength(30);
         builder
-            .Property(x => x.DestinationTypeCodeSnapshot)
-            .HasColumnName("destination_type_code_snapshot")
+            .Property(x => x.DestinationTypeSnapshot)
+            .HasColumnName("destination_type_snapshot")
             .HasMaxLength(20);
         builder.Property(x => x.AccountingAccountId).HasColumnName("accounting_account_id");
         builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id");

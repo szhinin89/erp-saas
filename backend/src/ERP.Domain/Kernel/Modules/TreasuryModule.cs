@@ -5,15 +5,14 @@ namespace ERP.Domain.Kernel.Modules;
 
 // MAPA-MENU-ERP-SSOT-01: nuevo módulo de nivel superior "Tesorería" — concentra Caja (movida
 // desde SalesModule, donde vivía fusionada desde CajaModule por NAVIGATION-OPERATING-CYCLES-03) y
-// Destinos financieros/Bancos (movido desde SettingsModule > Empresa). El árbol objetivo agrupa
-// todo lo financiero/de tesorería bajo un tile propio, separado de Ventas y de Configuración.
-// Mismos Ids que ya tenían en sus módulos de origen — solo cambia a qué [Module] pertenecen.
+// Bancos. El árbol objetivo agrupa todo lo financiero/de tesorería bajo un tile propio, separado
+// de Ventas y de Configuración. Mismos Ids que ya tenían en sus módulos de origen — solo cambia a
+// qué [Module] pertenecen.
 //
 // Rutas nuevas por política de URL del ticket (coherentes con el módulo, antes vivían bajo
-// /cash y /settings/*): /treasury/cash (antes /cash), /treasury/cash/registers (antes
-// /cash/registers), /treasury/banks/financial-destinations (antes
-// /settings/financial-destinations). Las rutas antiguas quedan como redirect en el frontend
-// (catalogRoutes.tsx) — no se duplica ninguna pantalla ni endpoint.
+// /cash): /treasury/cash (antes /cash), /treasury/cash/registers (antes /cash/registers). Las
+// rutas antiguas quedan como redirect en el frontend (catalogRoutes.tsx) — no se duplica ninguna
+// pantalla ni endpoint.
 [Module("treasury", Icon = "🏦", SortOrder = 80)]
 public static class TreasuryModule
 {
@@ -77,36 +76,20 @@ public static class TreasuryModule
     )]
     public const string CajaPreferences = "/settings/operations?tab=cash";
 
-    // TREASURY-BANK-ACCOUNTS-01: el grupo "Bancos" ahora agrupa dos pantallas
-    // (Destinos financieros + Cuentas bancarias) — PermissionsAnyCsv debe incluir el permiso de
-    // vista de ambas, o un usuario con solo uno de los dos nunca vería el grupo padre
-    // (NavigationBuilder.BuildItemTree corta la recursión en el primer ancestro invisible).
+    // FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01: "Destinos financieros" retirado —
+    // legacy treasury destination fue eliminado como intermediario; CompanyBankAccount es ahora el
+    // único SSOT de cuentas bancarias. El grupo "Bancos" queda con un solo hijo.
     [NavItem(
         "Bancos",
         LabelKey = "app.nav.item.treasury.banksGroup",
         SortOrder = 30,
         Id = "f5000000-0000-4000-9000-000000000040",
-        PermissionsAnyCsv = SettingsPermissions.FinancialDestinationsView + ","
-            + TreasuryPermissions.BankAccountsView
+        PermissionsAnyCsv = TreasuryPermissions.BankAccountsView
     )]
     public const string BanksGroup = "/treasury/banks/group";
 
-    // Movido desde SettingsModule (Configuración > Empresa) — mismo Id/permiso, nueva ruta
-    // coherente con Tesorería (antes /settings/financial-destinations).
-    [NavItem(
-        "Destinos financieros",
-        Permission = SettingsPermissions.FinancialDestinationsView,
-        LabelKey = "app.nav.item.settings.financialDestinations",
-        SortOrder = 10,
-        Id = "a1000000-0000-4000-9000-000000000011",
-        ParentId = "f5000000-0000-4000-9000-000000000040",
-        RelatedActionPermissionsCsv = SettingsPermissions.FinancialDestinationsManage
-    )]
-    public const string FinancialDestinations = "/treasury/banks/financial-destinations";
-
     // TREASURY-BANK-ACCOUNTS-01: cuentas bancarias de empresa (CompanyBankAccount), catálogo
-    // maestro Bank existente (BANK-CATALOG-01) — CRUD básico + activar/desactivar, sin tocar
-    // PaymentMethodAccount ni CompanyFinancialDestination.
+    // maestro Bank existente (BANK-CATALOG-01) — CRUD básico + activar/desactivar.
     [NavItem(
         "Cuentas bancarias",
         Permission = TreasuryPermissions.BankAccountsView,

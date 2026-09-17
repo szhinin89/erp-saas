@@ -12,7 +12,8 @@ import { z } from "zod";
 
 export const supplierPaymentMethodLineSchema = z.object({
   paymentMethodId: z.string().min(1, "El medio de pago es obligatorio."),
-  financialDestinationId: z.string().min(1, "La caja o cuenta bancaria es obligatoria."),
+  /** Codifica el destino elegido como "bank:<id>" o "cash:<id>". */
+  destination: z.string().min(1, "La caja o cuenta bancaria es obligatoria."),
   amount: z
     .number({ invalid_type_error: "El monto es obligatorio." })
     .positive("El monto debe ser mayor a cero."),

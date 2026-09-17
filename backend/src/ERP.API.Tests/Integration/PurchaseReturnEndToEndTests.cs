@@ -84,8 +84,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     private Guid _warehouseId;
     private Guid _itemId;
     private Guid _accountId;
-    private Guid _bankDestinationId;
-    private Guid _cashDestinationId;
+    private Guid _companyBankAccountId;
     private Guid _cashRegisterId;
     private Guid _emissionPointId;
     private readonly Guid _userId = Guid.NewGuid();
@@ -231,21 +230,23 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _accountId = account.Id;
 
-        var bankDestination = CompanyFinancialDestination.Create(
+        var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _userId);
+        db.Set<Bank>().Add(bank);
+        await db.SaveChangesAsync();
+
+        var companyBankAccount = CompanyBankAccount.Create(
             _tenantId,
             _companyId,
-            "BANK-01",
+            bank.Id,
+            BankAccountType.Checking,
+            "1234567890",
             "Banco Pichincha CTE",
-            FinancialDestinationTypeCode.BankAccount,
             _accountId,
-            "USD",
-            _userId,
-            bankInstitutionCode: "PICHINCHA",
-            bankAccountIdentifierNormalized: "1234567890"
+            _userId
         );
-        db.Set<CompanyFinancialDestination>().Add(bankDestination);
+        db.Set<CompanyBankAccount>().Add(companyBankAccount);
         await db.SaveChangesAsync();
-        _bankDestinationId = bankDestination.Id;
+        _companyBankAccountId = companyBankAccount.Id;
 
         var establishment = ERP.Domain.Modules.Company.Entities.Establishment.Create(
             _tenantId,
@@ -283,24 +284,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             "Caja Matriz",
             _userId
         );
+        cashRegister.SetAccountingAccount(_accountId, _userId);
         db.Set<CashRegister>().Add(cashRegister);
         await db.SaveChangesAsync();
         _cashRegisterId = cashRegister.Id;
-
-        var cashDestination = CompanyFinancialDestination.Create(
-            _tenantId,
-            _companyId,
-            "CASH-01",
-            "Caja Matriz",
-            FinancialDestinationTypeCode.CashRegister,
-            _accountId,
-            "USD",
-            _userId,
-            cashRegisterId: _cashRegisterId
-        );
-        db.Set<CompanyFinancialDestination>().Add(cashDestination);
-        await db.SaveChangesAsync();
-        _cashDestinationId = cashDestination.Id;
 
         var paymentMethod = PaymentMethod.Create(
             _tenantId,
@@ -502,10 +489,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
                 db,
                 new FixedCurrentCompany(() => _companyId)
             ),
-            new CompanyFinancialDestinationRepository(
-                db,
-                new FixedCurrentCompany(() => _companyId)
-            ),
+            new CompanyBankAccountRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new CashRegisterRepository(db, new FixedCurrentCompany(() => _companyId)),
             new AccountRepository(db),
             new PaymentMethodRepository(db),
             new CashSessionRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -772,7 +757,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var refunded = await refundHandler.Handle(
             new RegisterSupplierCreditRefundCommand(
                 credit.Id,
-                _bankDestinationId,
+                _companyBankAccountId,
+                null,
                 "TRANSFER",
                 credit.AvailableAmount,
                 DateOnly.FromDateTime(DateTime.UtcNow),
@@ -783,7 +769,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         );
 
         refunded.IsSuccess.Should().BeTrue(refunded.Error);
-        refunded.Value!.FinancialDestinationId.Should().Be(_bankDestinationId);
+        refunded.Value!.CompanyBankAccountId.Should().Be(_companyBankAccountId);
         refunded.Value.AccountingAccountId.Should().Be(_accountId);
         refunded.Value.CashSessionId.Should().BeNull();
 
@@ -833,7 +819,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             var refunded = await refundHandler.Handle(
                 new RegisterSupplierCreditRefundCommand(
                     credit.Id,
-                    _cashDestinationId,
+                    null,
+                    _cashRegisterId,
                     "TRANSFER",
                     credit.AvailableAmount,
                     DateOnly.FromDateTime(DateTime.UtcNow),

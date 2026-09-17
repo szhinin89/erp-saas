@@ -8,7 +8,8 @@ namespace ERP.Domain.Modules.Payables.Entities;
 /// </summary>
 public sealed record SupplierPaymentMethodLineInput(
     Guid PaymentMethodId,
-    Guid FinancialDestinationId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
     decimal Amount,
     string? ReferenceNumber = null,
     string? CheckNumber = null,

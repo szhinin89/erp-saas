@@ -33,7 +33,8 @@ function samplePayment(): SupplierPaymentDto {
       {
         id: "ml-1",
         paymentMethodId: "pm-1",
-        financialDestinationId: "fd-1",
+        companyBankAccountId: "fd-1",
+        cashRegisterId: null,
         amount: 300,
         referenceNumber: null,
         checkNumber: null,

@@ -4,7 +4,6 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -22,7 +21,8 @@ public sealed record SupplierCreditRefundTransactionDto(
     Guid Id,
     string TransactionTypeCode,
     Guid? OriginalTransactionId,
-    Guid FinancialDestinationId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
     Guid AccountingAccountId,
     string PaymentMethodCode,
     decimal Amount,
@@ -37,13 +37,15 @@ public sealed record SupplierCreditRefundTransactionDto(
 // ── Command ─────────────────────────────────────────────────────────────
 
 /// <summary>
-/// P0-02 Fase 8 — registra un reembolso de <c>SupplierCredit</c> hacia un destino financiero real
-/// (banco o caja): Lock B + <c>FOR SHARE</c> de <c>CompanyFinancialDestination</c>+<c>Account</c>+
-/// <c>CashSession</c> condicional (§6.4quater), idempotente (§16.2, fila <c>RegisterRefund</c>).
+/// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — registra un reembolso de
+/// <c>SupplierCredit</c> hacia una cuenta bancaria o caja real: Lock B + <c>FOR SHARE</c> de
+/// <c>CompanyBankAccount</c>/<c>CashRegister</c>+<c>Account</c>+<c>CashSession</c> condicional
+/// (§6.4quater), idempotente (§16.2, fila <c>RegisterRefund</c>).
 /// </summary>
 public sealed record RegisterSupplierCreditRefundCommand(
     Guid SupplierCreditId,
-    Guid FinancialDestinationId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
     string PaymentMethodCode,
     decimal Amount,
     DateOnly EffectiveDate,
@@ -57,13 +59,15 @@ public sealed class RegisterSupplierCreditRefundValidator
     public RegisterSupplierCreditRefundValidator()
     {
         RuleFor(x => x.SupplierCreditId).NotEmpty();
-        RuleFor(x => x.FinancialDestinationId).NotEmpty();
         RuleFor(x => x.PaymentMethodCode).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
         RuleFor(x => x.EffectiveDate).NotEmpty();
         RuleFor(x => x.ClientRequestId)
             .NotEmpty()
             .WithMessage("El identificador de idempotencia es obligatorio.");
+        RuleFor(x => x)
+            .Must(x => x.CompanyBankAccountId is not null ^ x.CashRegisterId is not null)
+            .WithMessage("Debe especificar exactamente una cuenta bancaria o una caja destino.");
     }
 }
 
@@ -77,7 +81,8 @@ public sealed class RegisterSupplierCreditRefundHandler
 {
     private readonly ISupplierCreditRepository _creditRepo;
     private readonly ISupplierCreditRefundTransactionRepository _txRepo;
-    private readonly ICompanyFinancialDestinationRepository _destinationRepo;
+    private readonly ICompanyBankAccountRepository _bankAccountRepo;
+    private readonly ICashRegisterRepository _cashRegisterRepo;
     private readonly IAccountRepository _accountRepo;
     private readonly IPaymentMethodRepository _paymentMethodRepo;
     private readonly ICashSessionRepository _cashSessionRepo;
@@ -89,7 +94,8 @@ public sealed class RegisterSupplierCreditRefundHandler
     public RegisterSupplierCreditRefundHandler(
         ISupplierCreditRepository creditRepo,
         ISupplierCreditRefundTransactionRepository txRepo,
-        ICompanyFinancialDestinationRepository destinationRepo,
+        ICompanyBankAccountRepository bankAccountRepo,
+        ICashRegisterRepository cashRegisterRepo,
         IAccountRepository accountRepo,
         IPaymentMethodRepository paymentMethodRepo,
         ICashSessionRepository cashSessionRepo,
@@ -101,7 +107,8 @@ public sealed class RegisterSupplierCreditRefundHandler
     {
         _creditRepo = creditRepo;
         _txRepo = txRepo;
-        _destinationRepo = destinationRepo;
+        _bankAccountRepo = bankAccountRepo;
+        _cashRegisterRepo = cashRegisterRepo;
         _accountRepo = accountRepo;
         _paymentMethodRepo = paymentMethodRepo;
         _cashSessionRepo = cashSessionRepo;
@@ -146,7 +153,8 @@ public sealed class RegisterSupplierCreditRefundHandler
                 await _uow.RollbackAsync(ct);
                 var expectedHash = ComputeRegisterPayloadHash(
                     cmd.SupplierCreditId,
-                    cmd.FinancialDestinationId,
+                    cmd.CompanyBankAccountId,
+                    cmd.CashRegisterId,
                     cmd.PaymentMethodCode,
                     cmd.Amount,
                     credit.CurrencyCode,
@@ -169,48 +177,82 @@ public sealed class RegisterSupplierCreditRefundHandler
                 );
             }
 
-            // 3-4. Cargar y bloquear (FOR SHARE) CompanyFinancialDestination + validar.
-            var destination = await _destinationRepo.GetByIdForShareAsync(
-                tid,
-                cmd.FinancialDestinationId,
-                ct
-            );
-            if (destination is null || destination.CompanyId != credit.CompanyId)
+            // 3-4. Cargar y bloquear (FOR SHARE) CompanyBankAccount/CashRegister + validar.
+            Guid destinationAccountingAccountId;
+            string destinationCodeSnapshot;
+            string destinationNameSnapshot;
+            string destinationTypeSnapshot;
+            if (cmd.CompanyBankAccountId is { } companyBankAccountId)
             {
-                await _uow.RollbackAsync(ct);
-                // SC-020
-                return Result<SupplierCreditRefundTransactionDto>.NotFound(
-                    "El destino financiero indicado no existe."
+                var bankAccount = await _bankAccountRepo.GetByIdForShareAsync(
+                    tid,
+                    companyBankAccountId,
+                    ct
                 );
+                if (bankAccount is null || bankAccount.CompanyId != credit.CompanyId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    // SC-020
+                    return Result<SupplierCreditRefundTransactionDto>.NotFound(
+                        "La cuenta bancaria indicada no existe."
+                    );
+                }
+                if (!bankAccount.IsActive)
+                {
+                    await _uow.RollbackAsync(ct);
+                    // SC-021
+                    return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                        "La cuenta bancaria indicada no está activa."
+                    );
+                }
+
+                destinationAccountingAccountId = bankAccount.AccountingAccountId;
+                destinationCodeSnapshot = bankAccount.AccountNumber;
+                destinationNameSnapshot = bankAccount.DisplayName;
+                destinationTypeSnapshot = "BankAccount";
             }
-            if (!destination.IsActive)
+            else
             {
-                await _uow.RollbackAsync(ct);
-                // SC-021
-                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                    "El destino financiero indicado no está activo."
+                var cashRegisterForDestination = await _cashRegisterRepo.GetByIdForShareAsync(
+                    tid,
+                    cmd.CashRegisterId!.Value,
+                    ct
                 );
-            }
-            if (
-                !string.Equals(
-                    destination.CurrencyCode,
-                    credit.CurrencyCode,
-                    StringComparison.OrdinalIgnoreCase
-                )
-            )
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-025
-                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                    "La moneda del destino financiero no coincide con la del crédito de proveedor."
-                );
+                if (cashRegisterForDestination is null || cashRegisterForDestination.CompanyId != credit.CompanyId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    // SC-020
+                    return Result<SupplierCreditRefundTransactionDto>.NotFound(
+                        "La caja indicada no existe."
+                    );
+                }
+                if (!cashRegisterForDestination.IsActive)
+                {
+                    await _uow.RollbackAsync(ct);
+                    // SC-021
+                    return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                        "La caja indicada no está activa."
+                    );
+                }
+                if (cashRegisterForDestination.AccountingAccountId is not { } cashAccountingAccountId)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                        "La caja indicada no tiene una cuenta contable configurada."
+                    );
+                }
+
+                destinationAccountingAccountId = cashAccountingAccountId;
+                destinationCodeSnapshot = cashRegisterForDestination.Code;
+                destinationNameSnapshot = cashRegisterForDestination.Name;
+                destinationTypeSnapshot = "CashRegister";
             }
 
             // 5-6. Cargar y bloquear (FOR SHARE) Account + validar.
             var account = await _accountRepo.GetByIdForShareAsync(
                 tid,
-                destination.CompanyId,
-                destination.AccountingAccountId,
+                credit.CompanyId,
+                destinationAccountingAccountId,
                 ct
             );
             if (account is null || !account.IsActive || !account.AllowsPosting)
@@ -218,7 +260,7 @@ public sealed class RegisterSupplierCreditRefundHandler
                 await _uow.RollbackAsync(ct);
                 // SC-024
                 return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                    "La cuenta contable del destino financiero no admite contabilización."
+                    "La cuenta contable del destino indicado no admite contabilización."
                 );
             }
 
@@ -246,11 +288,11 @@ public sealed class RegisterSupplierCreditRefundHandler
 
             // 8. Si CASH_REGISTER: resolver y bloquear (FOR SHARE) CashSession activa.
             Domain.Modules.Caja.Entities.CashSession? cashSession = null;
-            if (destination.DestinationTypeCode == FinancialDestinationTypeCode.CashRegister)
+            if (cmd.CashRegisterId is { } cashRegisterId)
             {
                 cashSession = await _cashSessionRepo.GetOpenByCashRegisterForShareAsync(
                     tid,
-                    destination.CashRegisterId!.Value,
+                    cashRegisterId,
                     ct
                 );
                 if (cashSession is null)
@@ -258,14 +300,15 @@ public sealed class RegisterSupplierCreditRefundHandler
                     await _uow.RollbackAsync(ct);
                     // SC-027
                     return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                        "No existe una sesión de caja activa para el destino financiero indicado."
+                        "No existe una sesión de caja activa para la caja indicada."
                     );
                 }
             }
 
             var hash = ComputeRegisterPayloadHash(
                 cmd.SupplierCreditId,
-                cmd.FinancialDestinationId,
+                cmd.CompanyBankAccountId,
+                cmd.CashRegisterId,
                 cmd.PaymentMethodCode,
                 cmd.Amount,
                 credit.CurrencyCode,
@@ -307,12 +350,13 @@ public sealed class RegisterSupplierCreditRefundHandler
                 credit.SupplierId,
                 credit.Id,
                 movement.Id,
-                destination.Id,
+                cmd.CompanyBankAccountId,
+                cmd.CashRegisterId,
                 account.Id,
                 account.Code.ToString(),
-                destination.Code,
-                destination.Name,
-                destination.DestinationTypeCode.ToString(),
+                destinationCodeSnapshot,
+                destinationNameSnapshot,
+                destinationTypeSnapshot,
                 cmd.PaymentMethodCode,
                 cmd.Amount,
                 credit.CurrencyCode,
@@ -364,10 +408,11 @@ public sealed class RegisterSupplierCreditRefundHandler
         }
     }
 
-    /// <summary>Huella determinista (§16.2, diseño línea 785): SupplierCreditId+FinancialDestinationId+PaymentMethodCode+Amount+CurrencyCode+EffectiveDate+ExternalReference normalizada.</summary>
+    /// <summary>Huella determinista (§16.2, diseño línea 785): SupplierCreditId+CompanyBankAccountId+CashRegisterId+PaymentMethodCode+Amount+CurrencyCode+EffectiveDate+ExternalReference normalizada.</summary>
     public static string ComputeRegisterPayloadHash(
         Guid supplierCreditId,
-        Guid financialDestinationId,
+        Guid? companyBankAccountId,
+        Guid? cashRegisterId,
         string paymentMethodCode,
         decimal amount,
         string currencyCode,
@@ -379,7 +424,10 @@ public sealed class RegisterSupplierCreditRefundHandler
             "",
             "RegisterSupplierCreditRefund",
             supplierCreditId.ToString("D"),
-            financialDestinationId.ToString("D"),
+            "bank:",
+            companyBankAccountId?.ToString("D") ?? "",
+            "|cash:",
+            cashRegisterId?.ToString("D") ?? "",
             paymentMethodCode.Trim().ToUpperInvariant(),
             amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
             currencyCode.Trim().ToUpperInvariant(),
@@ -400,7 +448,8 @@ internal static class RefundMap
             t.Id,
             t.TransactionTypeCode.ToString(),
             t.OriginalTransactionId,
-            t.FinancialDestinationId,
+            t.CompanyBankAccountId,
+            t.CashRegisterId,
             t.AccountingAccountId,
             t.PaymentMethodCode,
             t.Amount,

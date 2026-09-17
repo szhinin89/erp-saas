@@ -11,6 +11,7 @@ import type { CashRegistersPageContext } from "../hooks/useCashRegistersPage";
 
 type Props = Pick<
   CashRegistersPageContext,
+  | "accounts"
   | "editingId"
   | "editingCode"
   | "editingName"
@@ -34,6 +35,7 @@ type Props = Pick<
 >;
 
 export function CashRegistersFormPanel({
+  accounts,
   editingId,
   editingCode,
   editingName,
@@ -150,6 +152,12 @@ export function CashRegistersFormPanel({
                 </ZHField>
               </ZHGrid>
 
+              <ZHField label="Cuenta contable" error={errors.accountingAccountId?.message}>
+                <ZhSelect className="zh-input" disabled={saving} {...register("accountingAccountId")}>
+                  <option value="">Sin configurar</option>
+                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} - {a.name}</option>)}
+                </ZhSelect>
+              </ZHField>
               <ZHField label="Nombre" required error={errors.name?.message}>
                 <ZhTextInput
                   className="zh-input"

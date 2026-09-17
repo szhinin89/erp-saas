@@ -3,8 +3,8 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Events;
 using FluentAssertions;
@@ -18,40 +18,47 @@ namespace ERP.Application.Tests.Accounting;
 /// (nunca solo loguear un warning), para que <c>ErpDbContext.SaveChangesAsync</c> revierta todo el
 /// registro del pago (ver <see cref="SupplierPaymentPostingFailedException"/>). A diferencia de
 /// Gastos, aquí las cuentas de crédito no vienen ya resueltas en el evento — se resuelven leyendo
-/// <c>CompanyFinancialDestination.AccountingAccountId</c> por cada medio de pago, mismo patrón que
-/// <c>CollectionAppliedPostingTranslator</c> pero generalizado a N destinos.
+/// <c>CashRegister.AccountingAccountId</c> por cada medio de pago (FINANCIAL-DESTINATION-TO-BANK-
+/// ACCOUNT-MIGRATION-01), mismo patrón que <c>CollectionAppliedPostingTranslator</c> pero
+/// generalizado a N destinos.
 /// </summary>
 public sealed class SupplierPaymentConfirmedPostingTranslatorTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
-        public Mock<ICompanyFinancialDestinationRepository> FinancialDestinations { get; } = new();
+        public Mock<ICompanyBankAccountRepository> BankAccounts { get; } = new();
+        public Mock<ICashRegisterRepository> CashRegisters { get; } = new();
 
         public SupplierPaymentConfirmedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, FinancialDestinations.Object);
+            new(PostingEngine.Object, BankAccounts.Object, CashRegisters.Object);
+
+        public void RegisterCashRegister(CashRegister cashRegister) =>
+            CashRegisters
+                .Setup(r => r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(cashRegister);
     }
 
-    private static CompanyFinancialDestination Destination(Guid? companyId = null, bool isActive = true)
+    private static CashRegister Destination(Guid? companyId = null, bool isActive = true, bool withAccount = true)
     {
-        var destination = CompanyFinancialDestination.Create(
+        var destination = CashRegister.Create(
             TenantId,
             companyId ?? CompanyId,
+            BranchId,
             $"CAJA-{Guid.NewGuid():N}"[..10],
             "Caja Principal",
-            FinancialDestinationTypeCode.CashRegister,
-            Guid.NewGuid(),
-            "USD",
-            UserId,
-            cashRegisterId: Guid.NewGuid()
+            UserId
         );
+        if (withAccount)
+            destination.SetAccountingAccount(Guid.NewGuid(), UserId);
         if (!isActive)
-            destination.SetActive(false, UserId);
+            destination.Disable(UserId);
         return destination;
     }
 
@@ -70,6 +77,9 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
             methodLines
         );
 
+    private static SupplierPaymentConfirmedMethodLine CashLine(CashRegister destination, decimal amount) =>
+        new(null, destination.Id, amount);
+
     private void SetupSuccess(Mocks m) =>
         m.PostingEngine
             .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
@@ -85,9 +95,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         var m = new Mocks();
         SetupSuccess(m);
         var destination = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
 
         PostingFact? captured = null;
         m.PostingEngine
@@ -98,11 +106,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
             );
 
         var supplierPaymentId = Guid.NewGuid();
-        var evt = Event(
-            new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 300m) },
-            300m,
-            supplierPaymentId
-        );
+        var evt = Event(new[] { CashLine(destination, 300m) }, 300m, supplierPaymentId);
 
         await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -115,7 +119,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         captured.GrandTotal.Should().Be(300m, "el Debe de CxP se resuelve vía PostingRule con GrandTotal");
         captured.Allocations.Should().ContainSingle();
         var allocation = captured.Allocations!.Single();
-        allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId);
+        allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId!.Value);
         allocation.Amount.Should().Be(300m);
         allocation.Nature.Should().Be(AccountNature.Credit);
     }
@@ -126,12 +130,8 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         var m = new Mocks();
         var destinationA = Destination();
         var destinationB = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destinationA.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destinationA);
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destinationB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destinationB);
+        m.RegisterCashRegister(destinationA);
+        m.RegisterCashRegister(destinationB);
 
         PostingFact? captured = null;
         m.PostingEngine
@@ -142,11 +142,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
             );
 
         var evt = Event(
-            new[]
-            {
-                new SupplierPaymentConfirmedMethodLine(destinationA.Id, 100m),
-                new SupplierPaymentConfirmedMethodLine(destinationB.Id, 200m),
-            },
+            new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) },
             300m
         );
 
@@ -163,9 +159,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         var m = new Mocks();
         var destinations = new[] { Destination(), Destination(), Destination() };
         foreach (var d in destinations)
-            m.FinancialDestinations
-                .Setup(f => f.GetByIdAsync(TenantId, d.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(d);
+            m.RegisterCashRegister(d);
 
         PostingFact? captured = null;
         m.PostingEngine
@@ -176,9 +170,7 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
             );
 
         var evt = Event(
-            destinations
-                .Select((d, i) => new SupplierPaymentConfirmedMethodLine(d.Id, 100m * (i + 1)))
-                .ToList(),
+            destinations.Select((d, i) => CashLine(d, 100m * (i + 1))).ToList(),
             600m
         );
 
@@ -196,22 +188,14 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
         var m = new Mocks();
         var destinationA = Destination();
         var destinationB = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destinationA.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destinationA);
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destinationB.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destinationB);
+        m.RegisterCashRegister(destinationA);
+        m.RegisterCashRegister(destinationB);
         SetupSuccess(m);
 
         // El mismo pago total (300) pudo haberse aplicado a 1 o a 2 cuotas — el evento no lo dice,
         // y el posting resultante (2 créditos, uno por medio) es idéntico en ambos casos.
         var evt = Event(
-            new[]
-            {
-                new SupplierPaymentConfirmedMethodLine(destinationA.Id, 150m),
-                new SupplierPaymentConfirmedMethodLine(destinationB.Id, 150m),
-            },
+            new[] { CashLine(destinationA, 150m), CashLine(destinationB, 150m) },
             300m
         );
 
@@ -233,12 +217,10 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
         SetupSuccess(m);
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -250,16 +232,14 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination();
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
         m.PostingEngine
             .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.ValidationFailure("No existe regla de contabilización.", "RULE_NOT_FOUND")
             );
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -272,11 +252,11 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         var missingId = Guid.NewGuid();
-        m.FinancialDestinations
+        m.CashRegisters
             .Setup(f => f.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CompanyFinancialDestination?)null);
+            .ReturnsAsync((CashRegister?)null);
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(missingId, 100m) }, 100m);
+        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(null, missingId, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -292,11 +272,9 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination(companyId: Guid.NewGuid());
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 
@@ -308,11 +286,27 @@ public sealed class SupplierPaymentConfirmedPostingTranslatorTests
     {
         var m = new Mocks();
         var destination = Destination(isActive: false);
-        m.FinancialDestinations
-            .Setup(f => f.GetByIdAsync(TenantId, destination.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(destination);
+        m.RegisterCashRegister(destination);
 
-        var evt = Event(new[] { new SupplierPaymentConfirmedMethodLine(destination.Id, 100m) }, 100m);
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
+
+        var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
+
+        await act.Should().ThrowAsync<SupplierPaymentPostingFailedException>();
+        m.PostingEngine.Verify(
+            e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Caja_sin_cuenta_contable_configurada_bloquea_lanzando()
+    {
+        var m = new Mocks();
+        var destination = Destination(withAccount: false);
+        m.RegisterCashRegister(destination);
+
+        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
 
         var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
 

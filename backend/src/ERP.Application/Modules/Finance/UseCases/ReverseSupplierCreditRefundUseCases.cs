@@ -156,11 +156,7 @@ public sealed class ReverseSupplierCreditRefundHandler
             // inmutable del destino, §6.4ter) y bloquear (FOR SHARE) su CashSession activa —
             // nunca revalida el destino/cuenta vigentes (§6.4quinquies paso 5).
             Domain.Modules.Caja.Entities.CashSession? cashSession = null;
-            if (
-                original.DestinationTypeCodeSnapshot
-                    == FinancialDestinationTypeCode.CashRegister.ToString()
-                && original.CashSessionId.HasValue
-            )
+            if (original.CashRegisterId.HasValue && original.CashSessionId.HasValue)
             {
                 var originalSession = await _cashSessionRepo.GetByIdAsync(
                     tid,

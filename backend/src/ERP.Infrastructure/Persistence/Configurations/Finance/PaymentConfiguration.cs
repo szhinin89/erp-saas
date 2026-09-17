@@ -1,4 +1,5 @@
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -40,9 +41,8 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasColumnType("date")
             .IsRequired();
         builder.Property(x => x.PaymentMethodId).HasColumnName("payment_method_id");
-        builder
-            .Property(x => x.FinancialDestinationId)
-            .HasColumnName("financial_destination_id");
+        builder.Property(x => x.CompanyBankAccountId).HasColumnName("company_bank_account_id");
+        builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id");
         builder.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(100);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.AppliedAtUtc).HasColumnName("applied_at_utc");
@@ -68,12 +68,18 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasForeignKey(x => x.PaymentMethodId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — mismo criterio: FK sin navegación de
-        // dominio, Restrict (un destino financiero en uso por pagos históricos no puede borrarse).
+        // FK sin navegación de dominio, Restrict (una cuenta bancaria/caja en uso por pagos
+        // históricos no puede borrarse).
         builder
-            .HasOne<CompanyFinancialDestination>()
+            .HasOne<CompanyBankAccount>()
             .WithMany()
-            .HasForeignKey(x => x.FinancialDestinationId)
+            .HasForeignKey(x => x.CompanyBankAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<CashRegister>()
+            .WithMany()
+            .HasForeignKey(x => x.CashRegisterId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Líneas de aplicación — Cascade porque una línea no tiene sentido de existir sin su pago

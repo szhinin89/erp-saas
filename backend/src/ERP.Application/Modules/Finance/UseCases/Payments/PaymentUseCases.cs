@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Finance.DTOs;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
@@ -24,11 +25,13 @@ public sealed record RegisterCollectionCommand(
     string? Reference,
     IReadOnlyList<PaymentApplicationLineInput> Lines,
     /// <summary>
-    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero (caja/banco) que
-    /// recibió el cobro. Opcional: sin especificar, la contabilización sigue usando la cuenta
-    /// fija de la PostingRule (comportamiento previo, sin cambios).
+    /// Cuenta bancaria que recibió el cobro. Opcional: sin especificar, la contabilización sigue
+    /// usando la cuenta fija de la PostingRule (comportamiento previo, sin cambios). Mutuamente
+    /// excluyente con <see cref="CashRegisterId"/>.
     /// </summary>
-    Guid? FinancialDestinationId = null
+    Guid? CompanyBankAccountId = null,
+    /// <summary>Caja que recibió el cobro — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
+    Guid? CashRegisterId = null
 ) : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
 
 /// <summary>Fase 5.5.5.3 — reversa un cobro ya aplicado y decrementa el saldo de cada CxC afectada.</summary>
@@ -59,6 +62,9 @@ public sealed class RegisterCollectionCommandValidator
             .NotEmpty()
             .WithMessage("El cobro debe tener al menos una línea de aplicación.");
         RuleForEach(x => x.Lines).SetValidator(new PaymentApplicationLineInputValidator());
+        RuleFor(x => x)
+            .Must(x => x.CompanyBankAccountId is null || x.CashRegisterId is null)
+            .WithMessage("Un cobro no puede tener cuenta bancaria y caja destino a la vez.");
     }
 }
 
@@ -78,7 +84,8 @@ public sealed class RegisterCollectionCommandHandler
 {
     private readonly IPaymentRepository _payments;
     private readonly ISalesReceivableRepository _receivables;
-    private readonly ICompanyFinancialDestinationRepository _financialDestinations;
+    private readonly ICompanyBankAccountRepository _bankAccounts;
+    private readonly ICashRegisterRepository _cashRegisters;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -86,7 +93,8 @@ public sealed class RegisterCollectionCommandHandler
     public RegisterCollectionCommandHandler(
         IPaymentRepository payments,
         ISalesReceivableRepository receivables,
-        ICompanyFinancialDestinationRepository financialDestinations,
+        ICompanyBankAccountRepository bankAccounts,
+        ICashRegisterRepository cashRegisters,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -94,7 +102,8 @@ public sealed class RegisterCollectionCommandHandler
     {
         _payments = payments;
         _receivables = receivables;
-        _financialDestinations = financialDestinations;
+        _bankAccounts = bankAccounts;
+        _cashRegisters = cashRegisters;
         _t = t;
         _c = c;
         _u = u;
@@ -108,20 +117,27 @@ public sealed class RegisterCollectionCommandHandler
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
-        // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — un destino financiero explícitamente
-        // elegido debe existir, pertenecer a esta empresa y estar activo (a diferencia del caso
-        // "sin especificar", que nunca bloquea el cobro — ver PostingRule fallback en el
-        // traductor). El repositorio ya filtra por empresa activa (ForOperationalScope).
-        if (cmd.FinancialDestinationId is { } financialDestinationId)
+        // Una cuenta bancaria o caja explícitamente elegida debe existir, pertenecer a esta
+        // empresa, estar activa y tener cuenta contable configurada (a diferencia del caso "sin
+        // especificar", que nunca bloquea el cobro — ver PostingRule fallback en el traductor).
+        if (cmd.CompanyBankAccountId is { } bankAccountId)
         {
-            var destination = await _financialDestinations.GetByIdAsync(
-                tenantId,
-                financialDestinationId,
-                ct
-            );
-            if (destination is null || !destination.IsActive)
+            var bankAccount = await _bankAccounts.GetByIdAsync(tenantId, bankAccountId, ct);
+            if (bankAccount is null || bankAccount.CompanyId != companyId || !bankAccount.IsActive)
                 return Result<PaymentDto>.ValidationFailure(
-                    "El destino financiero indicado no existe, no pertenece a esta empresa o está inactivo."
+                    "La cuenta bancaria indicada no existe, no pertenece a esta empresa o está inactiva."
+                );
+        }
+        if (cmd.CashRegisterId is { } cashRegisterId)
+        {
+            var cashRegister = await _cashRegisters.GetByIdAsync(tenantId, cashRegisterId, ct);
+            if (cashRegister is null || cashRegister.CompanyId != companyId || !cashRegister.IsActive)
+                return Result<PaymentDto>.ValidationFailure(
+                    "La caja indicada no existe, no pertenece a esta empresa o está inactiva."
+                );
+            if (cashRegister.AccountingAccountId is null)
+                return Result<PaymentDto>.ValidationFailure(
+                    "La caja indicada no tiene una cuenta contable configurada. Configúrela en Cajas registradoras antes de registrar el cobro."
                 );
         }
 
@@ -138,7 +154,8 @@ public sealed class RegisterCollectionCommandHandler
                 cmd.PaymentMethodId,
                 cmd.Reference,
                 _u.UserId,
-                cmd.FinancialDestinationId
+                cmd.CompanyBankAccountId,
+                cmd.CashRegisterId
             );
         }
         catch (ArgumentException ex)
@@ -303,6 +320,7 @@ file static class Map
                 .ToList(),
             p.CreatedAt,
             p.UpdatedAt,
-            p.FinancialDestinationId
+            p.CompanyBankAccountId,
+            p.CashRegisterId
         );
 }

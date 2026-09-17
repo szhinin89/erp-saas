@@ -30,7 +30,7 @@ describe("buildApplySupplierCreditSchema", () => {
 
 describe("buildRegisterSupplierCreditRefundSchema", () => {
   const base = {
-    financialDestinationId: "fd-1",
+    destination: "bank:fd-1",
     paymentMethodCode: "TRANSFER",
     amount: 50,
     effectiveDate: "2026-07-01",

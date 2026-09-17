@@ -232,7 +232,7 @@ export function PriceListsPage() {
     },
     {
       // ZH-LISTING-GLOBAL-STANDARD-06: antes mostraba el texto literal "Estado" en vez del
-      // estado real (mismo bug corregido en FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
+      // estado real (mismo bug corregido en BankAccountsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
       key: "status",
       header: "Estado",
       render: (pl) => <Badge label={pl.isActive ? "Activo" : "Inactivo"} variant={pl.isActive ? "success" : "neutral"} />,

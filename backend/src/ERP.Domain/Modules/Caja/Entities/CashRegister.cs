@@ -52,6 +52,16 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
     /// </summary>
     public Guid? DefaultCustomerId { get; private set; }
 
+    /// <summary>
+    /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — cuenta contable real de esta caja
+    /// (reemplaza el intermediario <c>legacy treasury destination</c> para el lado "caja" de
+    /// cobros/pagos/reembolsos). Nullable: una caja recién creada no tiene cuenta configurada
+    /// todavía — cualquier operación que necesite contabilizar contra esta caja debe fallar-cerrado
+    /// (mensaje claro) mientras este campo sea null, nunca asumir una cuenta fija oculta. Solo se
+    /// muta mediante <see cref="SetAccountingAccount"/>.
+    /// </summary>
+    public Guid? AccountingAccountId { get; private set; }
+
     // EF navigation — solo lectura, proyección de nombres para DTOs (nunca mutadas fuera de aquí).
     public Branch Branch { get; private set; } = null!;
     public EmissionPoint? EmissionPoint { get; private set; }
@@ -207,6 +217,23 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
             );
 
         DefaultCustomerId = customerId;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Único método autorizado para asignar o quitar la cuenta contable de esta caja. Acepta
+    /// <c>null</c> para dejarla sin configurar (bloquea fail-closed cualquier cobro/pago/reembolso
+    /// que intente contabilizar contra esta caja hasta que se configure).
+    /// </summary>
+    public void SetAccountingAccount(Guid? accountingAccountId, Guid updatedBy)
+    {
+        if (accountingAccountId == Guid.Empty)
+            throw new ArgumentException(
+                "La cuenta contable no puede ser un Guid vacío.",
+                nameof(accountingAccountId)
+            );
+
+        AccountingAccountId = accountingAccountId;
         SetUpdated(updatedBy);
     }
 

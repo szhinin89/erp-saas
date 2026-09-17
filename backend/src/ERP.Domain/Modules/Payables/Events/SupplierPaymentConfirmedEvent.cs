@@ -4,13 +4,18 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Modules.Payables.Events;
 
 /// <summary>
-/// SUPPLIER-PAYMENTS-POSTING-15D — snapshot de un <c>SupplierPaymentMethodLine</c> tal como lo
-/// necesita el posting contable: cuenta destino (vía <c>FinancialDestinationId</c>) y monto. No
-/// transporta <c>PaymentMethodId</c>/referencia/cheque — el asiento contable no distingue el medio,
-/// solo la cuenta de caja/banco que recibió/entregó el efectivo (mismo criterio que
-/// <c>CollectionAppliedEvent.FinancialDestinationId</c>, aquí generalizado a N líneas).
+/// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — snapshot de un
+/// <c>SupplierPaymentMethodLine</c> tal como lo necesita el posting contable: cuenta destino
+/// (<c>CompanyBankAccountId</c> XOR <c>CashRegisterId</c>) y monto. No transporta
+/// <c>PaymentMethodId</c>/referencia/cheque — el asiento contable no distingue el medio, solo la
+/// cuenta de caja/banco que recibió/entregó el efectivo (mismo criterio que
+/// <c>CollectionAppliedEvent</c>, aquí generalizado a N líneas).
 /// </summary>
-public sealed record SupplierPaymentConfirmedMethodLine(Guid FinancialDestinationId, decimal Amount);
+public sealed record SupplierPaymentConfirmedMethodLine(
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
+    decimal Amount
+);
 
 /// <summary>
 /// SUPPLIER-PAYMENTS-FOUNDATION-15B — se levanta cuando <c>SupplierPayment.Create</c> confirma un

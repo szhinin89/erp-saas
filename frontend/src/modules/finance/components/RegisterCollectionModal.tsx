@@ -19,10 +19,8 @@ import {
   paymentMethodLookupFacade,
   type PaymentMethodDto,
 } from "../../sales/facades/paymentMethodLookupFacade";
-import {
-  financialDestinationService,
-  type CompanyFinancialDestinationDto,
-} from "../api/financialDestinationService";
+import { bankAccountService, type CompanyBankAccountDto } from "../api/bankAccountService";
+import { cajaService, type CashRegisterDto } from "../../caja/api/cajaService";
 import {
   buildRegisterCollectionSchema,
   type RegisterCollectionFormValues,
@@ -49,9 +47,8 @@ export function RegisterCollectionModal({
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [methods, setMethods] = useState<PaymentMethodDto[]>([]);
-  const [financialDestinations, setFinancialDestinations] = useState<
-    CompanyFinancialDestinationDto[]
-  >([]);
+  const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
+  const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const submittingRef = useRef(false);
 
   const maxAmount = receivable?.balanceDue ?? 0;
@@ -67,7 +64,7 @@ export function RegisterCollectionModal({
       amount: maxAmount,
       installmentId: "",
       paymentMethodId: "",
-      financialDestinationId: "",
+      destination: "",
       reference: "",
     },
   });
@@ -78,7 +75,7 @@ export function RegisterCollectionModal({
       amount: receivable.balanceDue,
       installmentId: "",
       paymentMethodId: "",
-      financialDestinationId: "",
+      destination: "",
       reference: "",
     });
     setSubmitError("");
@@ -86,10 +83,14 @@ export function RegisterCollectionModal({
       .list(true)
       .then(setMethods)
       .catch(() => setMethods([]));
-    financialDestinationService
+    bankAccountService
       .list(true)
-      .then(setFinancialDestinations)
-      .catch(() => setFinancialDestinations([]));
+      .then(setBankAccounts)
+      .catch(() => setBankAccounts([]));
+    cajaService
+      .getCashRegisters(true)
+      .then(setCashRegisters)
+      .catch(() => setCashRegisters([]));
   }, [open, receivable, reset]);
 
   const handleClose = () => {
@@ -103,13 +104,19 @@ export function RegisterCollectionModal({
     submittingRef.current = true;
     setSubmitError("");
     setSaving(true);
+    const destination = values.destination || "";
+    const companyBankAccountId = destination.startsWith("bank:")
+      ? destination.slice(5)
+      : null;
+    const cashRegisterId = destination.startsWith("cash:") ? destination.slice(5) : null;
     try {
       await paymentService.registerCollection({
         customerId: receivable.customerId,
         amount: values.amount,
         paymentDate: new Date().toISOString().slice(0, 10),
         paymentMethodId: values.paymentMethodId || null,
-        financialDestinationId: values.financialDestinationId || null,
+        companyBankAccountId,
+        cashRegisterId,
         reference: values.reference || null,
         lines: [
           {
@@ -191,19 +198,20 @@ export function RegisterCollectionModal({
         </ZHField>
 
         <ZHField
-          label="Destino financiero (opcional)"
-          error={errors.financialDestinationId?.message}
-          hint="Cuenta contable usada para generar asientos automáticos cuando esta forma de pago/destino financiero se use en cobros o pagos."
+          label="Cuenta bancaria o caja (opcional)"
+          error={errors.destination?.message}
+          hint="Cuenta contable usada para generar asientos automáticos cuando esta cuenta bancaria/caja se use en cobros."
         >
-          <ZhSelect
-            className="zh-input"
-            disabled={saving}
-            {...register("financialDestinationId")}
-          >
+          <ZhSelect className="zh-input" disabled={saving} {...register("destination")}>
             <option value="">Sin especificar</option>
-            {financialDestinations.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
+            {bankAccounts.map((b) => (
+              <option key={b.id} value={`bank:${b.id}`}>
+                Banco: {b.displayName}
+              </option>
+            ))}
+            {cashRegisters.map((c) => (
+              <option key={c.id} value={`cash:${c.id}`}>
+                Caja: {c.name}
               </option>
             ))}
           </ZhSelect>

@@ -163,7 +163,7 @@ export function PaymentTermsPage() {
     { key: "summary", header: "Resumen", render: (pt) => <Badge variant="info" label={pt.summary} /> },
     {
       // ZH-LISTING-GLOBAL-STANDARD-06: antes mostraba el texto literal "Estado" en vez del
-      // estado real (mismo bug corregido en FinancialDestinationsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
+      // estado real (mismo bug corregido en BankAccountsPage — FINANCIAL-DESTINATIONS-STATUS-FIX-01).
       key: "status",
       header: "Estado",
       render: (pt) => <Badge label={pt.isActive ? "Activo" : "Inactivo"} variant={pt.isActive ? "success" : "neutral"} />,

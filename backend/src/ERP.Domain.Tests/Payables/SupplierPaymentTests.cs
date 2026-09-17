@@ -46,7 +46,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Create_valido_1_medio_1_aplicacion_1_allocation()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -61,7 +61,7 @@ public sealed class SupplierPaymentTests
 
     /// <summary>
     /// SUPPLIER-PAYMENTS-POSTING-15D — el evento debe transportar un snapshot
-    /// (FinancialDestinationId, Amount) por cada medio de pago, para que
+    /// (CompanyBankAccountId, Amount) por cada medio de pago, para que
     /// <c>SupplierPaymentConfirmedPostingTranslator</c> pueda generar un crédito por medio sin
     /// recargar el agregado completo.
     /// </summary>
@@ -72,8 +72,8 @@ public sealed class SupplierPaymentTests
         var destinationB = Guid.NewGuid();
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationA, 100m),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationB, 200m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationA, null, 100m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationB, null, 200m),
         };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[]
@@ -90,8 +90,8 @@ public sealed class SupplierPaymentTests
             .BeEquivalentTo(
                 new[]
                 {
-                    new SupplierPaymentConfirmedMethodLine(destinationA, 100m),
-                    new SupplierPaymentConfirmedMethodLine(destinationB, 200m),
+                    new SupplierPaymentConfirmedMethodLine(destinationA, null, 100m),
+                    new SupplierPaymentConfirmedMethodLine(destinationB, null, 200m),
                 }
             );
     }
@@ -101,8 +101,8 @@ public sealed class SupplierPaymentTests
     {
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 100m),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 200m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 200m),
         };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[]
@@ -122,7 +122,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Create_valido_1_medio_2_cuotas()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[]
         {
             new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 100m),
@@ -147,8 +147,8 @@ public sealed class SupplierPaymentTests
     {
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 150m),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 150m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 150m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 150m),
         };
         var applications = new[]
         {
@@ -172,7 +172,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Bloquea_si_suma_medios_no_coincide_con_suma_aplicaciones()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 250m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 250m) };
 
@@ -184,7 +184,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Bloquea_si_suma_allocations_no_coincide_con_total()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 250m) };
 
@@ -198,8 +198,8 @@ public sealed class SupplierPaymentTests
     {
         var methods = new[]
         {
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 100m),
-            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 200m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 100m),
+            new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 200m),
         };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         // El medio 1 (200) solo se distribuye 150 — el otro medio compensa el total pero deja
@@ -218,7 +218,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void Bloquea_si_una_aplicacion_no_esta_cubierta_al_100_por_ciento()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[]
         {
             new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 100m),
@@ -242,7 +242,7 @@ public sealed class SupplierPaymentTests
     [InlineData(-10)]
     public void Bloquea_monto_de_medio_menor_o_igual_a_cero(decimal amount)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), amount) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, amount) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -256,7 +256,7 @@ public sealed class SupplierPaymentTests
     [InlineData(-10)]
     public void Bloquea_monto_de_aplicacion_menor_o_igual_a_cero(decimal amount)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -270,7 +270,7 @@ public sealed class SupplierPaymentTests
     [InlineData(-10)]
     public void Bloquea_monto_total_menor_o_igual_a_cero(decimal amount)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -282,7 +282,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void DisplayNumber_usa_receipt_number_cuando_existe()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -301,7 +301,7 @@ public sealed class SupplierPaymentTests
     [Fact]
     public void DisplayNumber_usa_system_number_cuando_no_hay_receipt_number()
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
 
@@ -355,7 +355,7 @@ public sealed class SupplierPaymentTests
 
     private static SupplierPayment CreateSimplePayment(decimal amount = 300m)
     {
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), amount) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), Guid.NewGuid(), null, amount) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(Guid.NewGuid(), amount) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, amount) };
         return CreatePayment(amount, methods, applications, allocations);
@@ -381,7 +381,7 @@ public sealed class SupplierPaymentTests
     {
         var destinationId = Guid.NewGuid();
         var installmentId = Guid.NewGuid();
-        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationId, 300m) };
+        var methods = new[] { new SupplierPaymentMethodLineInput(Guid.NewGuid(), destinationId, null, 300m) };
         var applications = new[] { new SupplierPaymentApplicationLineInput(installmentId, 300m) };
         var allocations = new[] { new SupplierPaymentAllocationInput(0, 0, 300m) };
         var payment = CreatePayment(300m, methods, applications, allocations);
@@ -393,7 +393,7 @@ public sealed class SupplierPaymentTests
         evt.TotalAmount.Should().Be(300m);
         evt.ReverseReason.Should().Be("Duplicado");
         evt.MethodLines.Should()
-            .BeEquivalentTo(new[] { new SupplierPaymentConfirmedMethodLine(destinationId, 300m) });
+            .BeEquivalentTo(new[] { new SupplierPaymentConfirmedMethodLine(destinationId, null, 300m) });
         evt.ApplicationLines.Should()
             .BeEquivalentTo(new[] { new SupplierPaymentReversedApplicationLine(installmentId, 300m) });
     }

@@ -13,19 +13,18 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// (misma técnica de lectura vía repositorio ya usada en <c>SupplierCreditAuditHandler</c>, Fase 7).
 ///
 /// Desviación documentada respecto al mecanismo genérico de <c>PostingRule</c> (una cuenta fija
-/// por <c>FactType</c>): dado que <see cref="Domain.Modules.Finance.Entities.CompanyFinancialDestination"/>
-/// puede tener una cuenta contable distinta por cada destino (banco/caja) y el Posting Engine
-/// actual (<c>PostingRuleLine.AccountId</c>) no admite una cuenta dinámica por transacción sin
-/// modificar infraestructura FROZEN (<c>PostingEngine.cs</c>/<c>PostingRule.cs</c>/<c>JournalFactory.cs</c>,
-/// fuera del alcance autorizado de esta fase), el <c>FactType</c> incorpora el código del destino
-/// financiero (<c>"SupplierCreditRefunded:{FinancialDestinationCodeSnapshot}"</c>) — permite a cada
-/// tenant configurar una <c>PostingRule</c> por destino con su propia cuenta de débito, sin tocar
-/// ningún archivo de la infraestructura de Posting. Limitación conocida: si la cuenta contable del
-/// destino cambia (<c>ChangeAccountingAccount</c>) DESPUÉS de que existan reembolsos ya
-/// contabilizados con la <c>PostingRule</c> anterior, el administrador debe actualizar esa
-/// <c>PostingRule</c> para que los reembolsos NUEVOS usen la cuenta correcta — los asientos ya
-/// posteados no se ven afectados (inmutables), consistente con el congelamiento histórico exigido
-/// por §6.4bis a nivel de <see cref="Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction"/>.
+/// por <c>FactType</c>): dado que la cuenta bancaria/caja destino puede tener una cuenta contable
+/// distinta cada una y el Posting Engine actual (<c>PostingRuleLine.AccountId</c>) no admite una
+/// cuenta dinámica por transacción sin modificar infraestructura FROZEN (<c>PostingEngine.cs</c>/
+/// <c>PostingRule.cs</c>/<c>JournalFactory.cs</c>, fuera del alcance autorizado de esta fase), el
+/// <c>FactType</c> incorpora el código del destino (<c>"SupplierCreditRefunded:{DestinationCodeSnapshot}"</c>)
+/// — permite a cada tenant configurar una <c>PostingRule</c> por destino con su propia cuenta de
+/// débito, sin tocar ningún archivo de la infraestructura de Posting. Limitación conocida: si la
+/// cuenta contable del destino cambia DESPUÉS de que existan reembolsos ya contabilizados con la
+/// <c>PostingRule</c> anterior, el administrador debe actualizar esa <c>PostingRule</c> para que
+/// los reembolsos NUEVOS usen la cuenta correcta — los asientos ya posteados no se ven afectados
+/// (inmutables), consistente con el congelamiento histórico exigido por §6.4bis a nivel de
+/// <see cref="Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction"/>.
 /// </summary>
 public sealed class SupplierCreditRefundedPostingTranslator
     : INotificationHandler<SupplierCreditRefundedEvent>
@@ -67,7 +66,7 @@ public sealed class SupplierCreditRefundedPostingTranslator
             e.TenantId!.Value,
             e.CompanyId,
             SourceModuleName,
-            $"SupplierCreditRefunded:{transaction.FinancialDestinationCodeSnapshot}",
+            $"SupplierCreditRefunded:{transaction.DestinationCodeSnapshot}",
             e.SupplierCreditMovementId,
             transaction.EffectiveDate,
             Subtotal: 0m,

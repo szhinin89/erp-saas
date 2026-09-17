@@ -37,14 +37,18 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     public Guid? PaymentMethodId { get; private set; }
 
     /// <summary>
-    /// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — destino financiero real (caja/banco,
-    /// <c>CompanyFinancialDestination</c>) que recibió/originó el efectivo de este cobro/pago,
-    /// referencia por Id sin navegación de dominio (mismo criterio que <see cref="PaymentMethodId"/>).
-    /// Opcional: un pago sin destino específico sigue contabilizando con la cuenta fija de la
-    /// <c>PostingRule</c> (comportamiento previo, sin cambios) — ver <see cref="Events.CollectionAppliedEvent"/>/
+    /// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — cuenta bancaria real que recibió/
+    /// originó el efectivo de este cobro/pago, referencia por Id sin navegación de dominio (mismo
+    /// criterio que <see cref="PaymentMethodId"/>). Mutuamente excluyente con
+    /// <see cref="CashRegisterId"/> — nunca ambos a la vez. Opcional: un pago sin destino
+    /// específico sigue contabilizando con la cuenta fija de la <c>PostingRule</c> (comportamiento
+    /// previo, sin cambios) — ver <see cref="Events.CollectionAppliedEvent"/>/
     /// <see cref="Events.SupplierPaymentAppliedEvent"/> para cómo Accounting lo consume.
     /// </summary>
-    public Guid? FinancialDestinationId { get; private set; }
+    public Guid? CompanyBankAccountId { get; private set; }
+
+    /// <summary>Caja real que recibió/originó el efectivo — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
+    public Guid? CashRegisterId { get; private set; }
 
     public string? Reference { get; private set; }
     public PaymentStatus Status { get; private set; }
@@ -67,7 +71,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
         Guid? paymentMethodId,
         string? reference,
         Guid createdBy,
-        Guid? financialDestinationId = null
+        Guid? companyBankAccountId = null,
+        Guid? cashRegisterId = null
     )
     {
         if (partnerId == Guid.Empty)
@@ -77,6 +82,11 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
             );
         if (amount <= 0)
             throw new ArgumentException("El monto del pago debe ser mayor a cero.", nameof(amount));
+        if (companyBankAccountId is not null && cashRegisterId is not null)
+            throw new ArgumentException(
+                "Un pago no puede tener cuenta bancaria y caja destino a la vez.",
+                nameof(cashRegisterId)
+            );
 
         var payment = new Payment
         {
@@ -88,7 +98,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
             Amount = amount,
             PaymentDate = paymentDate,
             PaymentMethodId = paymentMethodId,
-            FinancialDestinationId = financialDestinationId,
+            CompanyBankAccountId = companyBankAccountId,
+            CashRegisterId = cashRegisterId,
             Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
             Status = PaymentStatus.Draft,
         };
@@ -181,7 +192,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
                     PartnerId,
                     Amount,
                     PaymentDate,
-                    FinancialDestinationId
+                    CompanyBankAccountId,
+                    CashRegisterId
                 )
                 : new SupplierPaymentAppliedEvent(
                     TenantId,
@@ -190,7 +202,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
                     PartnerId,
                     Amount,
                     PaymentDate,
-                    FinancialDestinationId
+                    CompanyBankAccountId,
+                    CashRegisterId
                 )
         );
     }

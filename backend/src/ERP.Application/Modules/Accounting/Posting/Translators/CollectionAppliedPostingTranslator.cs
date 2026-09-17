@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Finance.Events;
 using ERP.Domain.Modules.Finance.Interfaces;
 using MediatR;
@@ -13,15 +14,13 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// son "montos inventados" — un cobro real no tiene esos componentes) y GrandTotal transporta el
 /// monto cobrado, mismo campo genérico que ya usan los traductores de Ventas/Compras.
 ///
-/// ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 — si el cobro especificó un destino financiero
-/// (<see cref="CollectionAppliedEvent.FinancialDestinationId"/>), lee su
-/// <c>AccountingAccountId</c> ya validado/postable (<c>CompanyFinancialDestination</c> exige cuenta
-/// activa y postable desde su propia creación, ver <c>CreateCompanyFinancialDestinationHandler</c>)
-/// y lo pasa como override de la línea Debe de la PostingRule (el lado "caja/banco" de un cobro,
-/// nunca el lado CxC) — no es "resolver una regla contable" (eso sigue siendo exclusivo del
-/// Posting Engine), es leer tal cual un dato ya elegido por el usuario en Finance, mismo principio
-/// que Subtotal/TotalVat arriba. Destino ausente, no encontrado o inactivo → sin override,
-/// comportamiento previo intacto (log-and-continue, nunca bloquea el cobro ya aplicado).
+/// FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01 — si el cobro especificó una cuenta
+/// bancaria (<see cref="CollectionAppliedEvent.CompanyBankAccountId"/>) o una caja
+/// (<see cref="CollectionAppliedEvent.CashRegisterId"/>), lee su <c>AccountingAccountId</c> y lo
+/// pasa como override de la línea Debe de la PostingRule (el lado "caja/banco" de un cobro, nunca
+/// el lado CxC) — no es "resolver una regla contable" (eso sigue siendo exclusivo del Posting
+/// Engine), es leer tal cual un dato ya elegido por el usuario en Finance, mismo principio que
+/// Subtotal/TotalVat arriba. An explicit bank/cash selection fails closed.
 /// </summary>
 public sealed class CollectionAppliedPostingTranslator
     : INotificationHandler<CollectionAppliedEvent>
@@ -30,43 +29,41 @@ public sealed class CollectionAppliedPostingTranslator
     private const string FactTypeName = "CollectionApplied";
 
     private readonly IPostingEngine _postingEngine;
-    private readonly ICompanyFinancialDestinationRepository _financialDestinations;
+    private readonly ICompanyBankAccountRepository _bankAccounts;
+    private readonly ICashRegisterRepository _cashRegisters;
     private readonly ILogger<CollectionAppliedPostingTranslator> _logger;
 
     public CollectionAppliedPostingTranslator(
         IPostingEngine postingEngine,
-        ICompanyFinancialDestinationRepository financialDestinations,
+        ICompanyBankAccountRepository bankAccounts,
+        ICashRegisterRepository cashRegisters,
         ILogger<CollectionAppliedPostingTranslator> logger
     )
     {
         _postingEngine = postingEngine;
-        _financialDestinations = financialDestinations;
+        _bankAccounts = bankAccounts;
+        _cashRegisters = cashRegisters;
         _logger = logger;
     }
 
     public async Task Handle(CollectionAppliedEvent e, CancellationToken ct)
     {
+        if (e.CompanyBankAccountId is not null && e.CashRegisterId is not null)
+            throw new InvalidOperationException("A collection cannot target both bank and cash.");
         Guid? overrideAccountId = null;
-        if (e.FinancialDestinationId is { } destinationId)
+        if (e.CompanyBankAccountId is { } bankAccountId)
         {
-            var destination = await _financialDestinations.GetByIdAsync(
-                e.TenantId!.Value,
-                destinationId,
-                ct
-            );
-            if (destination is { IsActive: true })
-            {
-                overrideAccountId = destination.AccountingAccountId;
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "Financial destination {FinancialDestinationId} not found or inactive for "
-                        + "Collection {PaymentId} — falling back to the PostingRule default account.",
-                    destinationId,
-                    e.PaymentId
-                );
-            }
+            var bank = await _bankAccounts.GetByIdAsync(e.TenantId!.Value, bankAccountId, ct);
+            if (bank is null || bank.TenantId != e.TenantId || bank.CompanyId != e.CompanyId || !bank.IsActive)
+                throw new InvalidOperationException("The selected bank account is unavailable for this company.");
+            overrideAccountId = bank.AccountingAccountId;
+        }
+        else if (e.CashRegisterId is { } cashRegisterId)
+        {
+            var cash = await _cashRegisters.GetByIdAsync(e.TenantId!.Value, cashRegisterId, ct);
+            if (cash is null || cash.TenantId != e.TenantId || cash.CompanyId != e.CompanyId || !cash.IsActive || cash.AccountingAccountId is null)
+                throw new InvalidOperationException("The selected cash register is unavailable or has no accounting account.");
+            overrideAccountId = cash.AccountingAccountId;
         }
 
         var fact = new PostingFact(
@@ -90,6 +87,8 @@ public sealed class CollectionAppliedPostingTranslator
 
         if (!result.IsSuccess)
         {
+            if (overrideAccountId is not null)
+                throw new InvalidOperationException($"Collection posting failed: {result.Code} - {result.Error}");
             _logger.LogWarning(
                 "Posting failed for Collection {PaymentId}: {Code} — {Error}",
                 e.PaymentId,

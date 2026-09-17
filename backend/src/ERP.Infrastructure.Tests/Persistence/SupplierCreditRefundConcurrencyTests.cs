@@ -51,8 +51,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
     private Guid _branchId;
     private Guid _supplierId;
     private Guid _accountId;
-    private Guid _bankDestinationId;
-    private Guid _cashDestinationId;
+    private Guid _companyBankAccountId;
     private Guid _cashRegisterId;
     private Guid _paymentMethodId;
     private Guid _paymentTermId;
@@ -205,21 +204,23 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _accountId = account.Id;
 
-        var bankDestination = CompanyFinancialDestination.Create(
+        var bank = Bank.Create(_tenantId, "PICHINCHA", "Banco Pichincha", "Pichincha", _userId);
+        db.Set<Bank>().Add(bank);
+        await db.SaveChangesAsync();
+
+        var companyBankAccount = CompanyBankAccount.Create(
             _tenantId,
             _companyId,
-            "BANK-01",
+            bank.Id,
+            BankAccountType.Checking,
+            "1234567890",
             "Banco Pichincha CTE",
-            FinancialDestinationTypeCode.BankAccount,
             _accountId,
-            "USD",
-            _userId,
-            bankInstitutionCode: "PICHINCHA",
-            bankAccountIdentifierNormalized: "1234567890"
+            _userId
         );
-        db.Set<CompanyFinancialDestination>().Add(bankDestination);
+        db.Set<CompanyBankAccount>().Add(companyBankAccount);
         await db.SaveChangesAsync();
-        _bankDestinationId = bankDestination.Id;
+        _companyBankAccountId = companyBankAccount.Id;
 
         var establishment = ERP.Domain.Modules.Company.Entities.Establishment.Create(
             _tenantId,
@@ -257,24 +258,10 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             "Caja Matriz",
             _userId
         );
+        cashRegister.SetAccountingAccount(_accountId, _userId);
         db.Set<CashRegister>().Add(cashRegister);
         await db.SaveChangesAsync();
         _cashRegisterId = cashRegister.Id;
-
-        var cashDestination = CompanyFinancialDestination.Create(
-            _tenantId,
-            _companyId,
-            "CASH-01",
-            "Caja Matriz",
-            FinancialDestinationTypeCode.CashRegister,
-            _accountId,
-            "USD",
-            _userId,
-            cashRegisterId: _cashRegisterId
-        );
-        db.Set<CompanyFinancialDestination>().Add(cashDestination);
-        await db.SaveChangesAsync();
-        _cashDestinationId = cashDestination.Id;
 
         var paymentMethod = PaymentMethod.Create(
             _tenantId,
@@ -412,7 +399,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         ERP.Application.Modules.Finance.UseCases.SupplierCreditRefundTransactionDto? Value
     )> ExecuteRegisterAsync(
         Guid creditId,
-        Guid destinationId,
+        Guid? companyBankAccountId,
+        Guid? cashRegisterId,
         string paymentMethodCode,
         decimal amount,
         Guid cri,
@@ -426,10 +414,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
                 db,
                 new FixedCurrentCompany(() => _companyId)
             ),
-            new CompanyFinancialDestinationRepository(
-                db,
-                new FixedCurrentCompany(() => _companyId)
-            ),
+            new CompanyBankAccountRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new CashRegisterRepository(db, new FixedCurrentCompany(() => _companyId)),
             new AccountRepository(db),
             new PaymentMethodRepository(db),
             new CashSessionRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -441,7 +427,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var result = await handler.Handle(
             new RegisterSupplierCreditRefundCommand(
                 creditId,
-                destinationId,
+                companyBankAccountId,
+                cashRegisterId,
                 paymentMethodCode,
                 amount,
                 DateOnly.FromDateTime(DateTime.UtcNow),
@@ -501,7 +488,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var result = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -527,6 +515,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var result = await ExecuteRegisterAsync(
             creditId,
             Guid.NewGuid(),
+            null,
             "TRANSFER",
             10m,
             Guid.NewGuid()
@@ -550,15 +539,16 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         await using (var db = CreateContext())
         {
-            var destination = await db.Set<CompanyFinancialDestination>()
-                .FirstAsync(d => d.Id == _bankDestinationId);
-            destination.SetActive(false, _userId);
+            var companyBankAccount = await db.Set<CompanyBankAccount>()
+                .FirstAsync(d => d.Id == _companyBankAccountId);
+            companyBankAccount.Disable(_userId);
             await db.SaveChangesAsync();
         }
 
         var result = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             10m,
             Guid.NewGuid()
@@ -588,39 +578,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
 
         var result = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
-            "TRANSFER",
-            10m,
-            Guid.NewGuid()
-        );
-        result.Success.Should().BeFalse();
-    }
-
-    // ── 7. Moneda distinta ────────────────────────────────────────────────
-
-    [Fact]
-    public async Task Punto7_Moneda_distinta_rechaza_SC_025()
-    {
-        await using var seedDb = CreateContext();
-        var eurDestination = CompanyFinancialDestination.Create(
-            _tenantId,
-            _companyId,
-            "BANK-EUR",
-            "Banco EUR",
-            FinancialDestinationTypeCode.BankAccount,
-            _accountId,
-            "EUR",
-            _userId,
-            bankInstitutionCode: "EURBANK",
-            bankAccountIdentifierNormalized: "EUR0001"
-        );
-        seedDb.Set<CompanyFinancialDestination>().Add(eurDestination);
-        await seedDb.SaveChangesAsync();
-
-        var creditId = await SeedCreditAsync(100m);
-        var result = await ExecuteRegisterAsync(
-            creditId,
-            eurDestination.Id,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             10m,
             Guid.NewGuid()
@@ -657,7 +616,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
 
         var result = await ExecuteRegisterAsync(
             creditId,
-            _cashDestinationId,
+            null,
+            _cashRegisterId,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -681,7 +641,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var result = await ExecuteRegisterAsync(
             creditId,
-            _cashDestinationId,
+            null,
+            _cashRegisterId,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -709,9 +670,9 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var first = await ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
+        var first = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
         first.Success.Should().BeTrue(first.Error);
-        var retry = await ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
+        var retry = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
         retry.Success.Should().BeTrue(retry.Error);
 
         await using var verify = CreateContext();
@@ -727,9 +688,9 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var first = await ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
+        var first = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
         first.Success.Should().BeTrue(first.Error);
-        var second = await ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 25m, cri);
+        var second = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 25m, cri);
         second.Success.Should().BeFalse();
 
         await using var verify = CreateContext();
@@ -745,8 +706,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var t1 = ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
-        var t2 = ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
+        var t1 = ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
+        var t2 = ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
         var results = await Task.WhenAll(t1, t2);
 
         results.Should().OnlyContain(r => r.Success);
@@ -764,9 +725,9 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var cri = Guid.NewGuid();
 
-        var first = await ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
+        var first = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
         first.Success.Should().BeTrue(first.Error);
-        var retry = await ExecuteRegisterAsync(creditId, _bankDestinationId, "TRANSFER", 40m, cri);
+        var retry = await ExecuteRegisterAsync(creditId, _companyBankAccountId, null, "TRANSFER", 40m, cri);
 
         retry.Success.Should().BeTrue(retry.Error);
         retry.Value!.Amount.Should().Be(first.Value!.Amount);
@@ -787,7 +748,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var apply = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -820,7 +782,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var apply = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -842,9 +805,9 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
                 createdBy: _userId
             );
             db.Accounts.Add(newAccount);
-            var destination = await db.Set<CompanyFinancialDestination>()
-                .FirstAsync(d => d.Id == _bankDestinationId);
-            destination.ChangeAccountingAccount(newAccount.Id, _userId);
+            var companyBankAccount = await db.Set<CompanyBankAccount>()
+                .FirstAsync(d => d.Id == _companyBankAccountId);
+            companyBankAccount.Update(companyBankAccount.DisplayName, newAccount.Id, _userId);
             await db.SaveChangesAsync();
         }
 
@@ -866,7 +829,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var apply = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -901,7 +865,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
         var creditId = await SeedCreditAsync(100m);
         var apply = await ExecuteRegisterAsync(
             creditId,
-            _bankDestinationId,
+            _companyBankAccountId,
+            null,
             "TRANSFER",
             40m,
             Guid.NewGuid()
@@ -957,7 +922,8 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
 
         var apply = await ExecuteRegisterAsync(
             creditId,
-            _cashDestinationId,
+            null,
+            _cashRegisterId,
             "TRANSFER",
             40m,
             Guid.NewGuid()
