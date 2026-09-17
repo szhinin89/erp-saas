@@ -1,31 +1,37 @@
 {
   "generated": "2026-07-25",
   "source": "Derivado de docs/ROADMAP.md / docs/ProgressDashboard/data/roadmap.json (campo 'bloqueadores' de cada etapa) -- ningun bloqueador fue inventado, son los mismos pendientes ya documentados, reestructurados como registros individuales con severidad/estado/accion propios.",
-  "method": "Revision manual, no analizador automatizado. Actualizar 'estado' (Abierto/En progreso/Resuelto) cuando el pendiente correspondiente en docs/ROADMAP.md cambie -- editar siempre primero docs/ROADMAP.md, luego reflejar aqui.",
+  "method": "Revisión manual contra STATUS.md vigente y código. Conservar IDs históricos; un hallazgo implementado se marca Resuelto, sin reutilizar su ID para otro pendiente.",
   "blockers": [
     {
       "id": "BLK-001",
-      "titulo": "Modulo de Cobros pendiente",
-      "descripcion": "SalesReceivable (FROZEN) solo registra deuda, nunca cobra -- decision de diseno explicita, no un olvido, pero deja el ciclo de venta a credito incompleto.",
+      "titulo": "Cobros contra CxC implementados",
+      "descripcion": "Cobros contra CxC implementados",
       "severidad": "Alta",
       "etapa": "etapa-1",
-      "modulosAfectados": ["Sales"],
+      "modulosAfectados": [
+        "Sales"
+      ],
       "dependencias": "Ninguna",
-      "accionRequerida": "Implementar aplicacion de pago contra SalesReceivableInstallment",
-      "estado": "Abierto",
-      "observaciones": "docs/ROADMAP.md lo describe como 'el hueco funcional mas visible del MVP comercial actual'."
+      "accionRequerida": "Sin acción pendiente para este hallazgo; no implica cierre contable global.",
+      "estado": "Resuelto",
+      "observaciones": "CollectionAppliedPostingTranslator.cs y frontend/src/modules/finance/pages/AccountsReceivablePage.tsx; STATUS.md.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "BLK-002",
       "titulo": "Liquidacion de compra (SRI 03) y recepcion fisica sin factura pendientes",
-      "descripcion": "Sin liquidacion de compra tipo SRI 03 ni recepcion fisica sin factura -- bloquean el flujo de Retenciones (obligacion fiscal Ecuador).",
+      "descripcion": "Ampliaciones fuera del cierre aprobado de Compras/Gastos/CxP. Las retenciones de gastos ya tienen implementación independiente.",
       "severidad": "Alta",
       "etapa": "etapa-1",
-      "modulosAfectados": ["Purchases"],
+      "modulosAfectados": [
+        "Purchases"
+      ],
       "dependencias": "Ninguna",
       "accionRequerida": "Implementar PurchaseSettlement (tipo SRI 03) y recepcion fisica sin factura",
       "estado": "Abierto",
-      "observaciones": "Bloquea a su vez el modulo de Retenciones dentro de Etapa 1 (extension de ElectronicDocuments)."
+      "observaciones": "STATUS.md, cierre funcional 2026-09-12.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "BLK-003",
@@ -33,7 +39,9 @@
       "descripcion": "Caja es funcional pero no tiene el mismo nivel de gobernanza arquitectonica que el resto de la Etapa 1 -- sin ADR ni freeze propio.",
       "severidad": "Media",
       "etapa": "etapa-1",
-      "modulosAfectados": ["Caja"],
+      "modulosAfectados": [
+        "Caja"
+      ],
       "dependencias": "Ninguna",
       "accionRequerida": "Redactar ADR de cierre de Caja",
       "estado": "Abierto",
@@ -45,7 +53,9 @@
       "descripcion": "Ya validado en ambiente de Pruebas SRI (celcer.sri.gob.ec) con certificado real (ADR-023); falta el ambiente productivo.",
       "severidad": "Media",
       "etapa": "etapa-1",
-      "modulosAfectados": ["ElectronicDocuments"],
+      "modulosAfectados": [
+        "ElectronicDocuments"
+      ],
       "dependencias": "Ninguna",
       "accionRequerida": "Certificacion y validacion en ambiente de produccion SRI",
       "estado": "Abierto",
@@ -57,7 +67,10 @@
       "descripcion": "Aislamiento multi-tenant hoy 100% a nivel de aplicacion (CompanyScopeBehavior + EF query filters, FROZEN); RLS a nivel de base de datos sigue pendiente.",
       "severidad": "Media",
       "etapa": "etapa-2",
-      "modulosAfectados": ["Security", "Access"],
+      "modulosAfectados": [
+        "Security",
+        "Access"
+      ],
       "dependencias": "Ninguna",
       "accionRequerida": "Extender politicas RLS a tablas de sales/purchasing/accounting",
       "estado": "Abierto",
@@ -65,39 +78,52 @@
     },
     {
       "id": "BLK-006",
-      "titulo": "Permissions cache con wiring parcial",
-      "descripcion": "El servicio IPermissionsCacheService existe pero su wiring en el hot path de autorizacion (RuntimePermissionAuthorizer) es parcial.",
+      "titulo": "Caché de permisos integrada",
+      "descripcion": "Caché de permisos integrada",
       "severidad": "Baja",
       "etapa": "etapa-2",
-      "modulosAfectados": ["Access"],
+      "modulosAfectados": [
+        "Access"
+      ],
       "dependencias": "Ninguna",
-      "accionRequerida": "Completar wiring de IPermissionsCacheService en RuntimePermissionAuthorizer",
-      "estado": "Abierto",
-      "observaciones": "Deuda tecnica no bloqueante, ya documentada en docs/ROADMAP.md."
+      "accionRequerida": "Sin acción pendiente para este hallazgo; no implica cierre contable global.",
+      "estado": "Resuelto",
+      "observaciones": "RuntimePermissionAuthorizer.cs usa EffectivePermissionKeysProvider.cs; el provider invoca _cache.ReadAsync y _cache.WriteAsync.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "BLK-007",
-      "titulo": "Posting Engine / Asientos contables sin iniciar",
-      "descripcion": "Motor de generacion automatica de asientos desde eventos de dominio -- maximo acoplamiento transversal del ERP (todo documento transaccional eventualmente debe generar un asiento).",
+      "titulo": "Posting Engine y asientos implementados",
+      "descripcion": "Posting Engine y asientos implementados",
       "severidad": "Alta",
       "etapa": "etapa-4",
-      "modulosAfectados": ["Accounting", "Sales", "Purchases", "Caja", "Inventory"],
+      "modulosAfectados": [
+        "Accounting",
+        "Sales",
+        "Purchases",
+        "Caja",
+        "Inventory"
+      ],
       "dependencias": "Precondicion recomendada: cerrar BLK-001 (Cobros) y BLK-002 (Liquidacion de compra) antes de completar esta etapa, para no generar el motor de asientos contra un dominio transaccional todavia incompleto",
-      "accionRequerida": "Disenar el Posting Engine antes de codificar (unico punto de consumo de eventos de dominio, apoyado en Domain Events + Outbox ya FROZEN ADR-007/008 -- nunca disparadores ad-hoc por modulo)",
-      "estado": "Abierto",
-      "observaciones": "docs/ROADMAP.md lo describe como 'Riesgo estructural'. 'Accounting' referenciado aqui es un modulo real (ADR-026 ACCEPTED) todavia no trackeado por explorer-index.json -- ver advertencia de validacion del generador."
+      "accionRequerida": "Sin acción pendiente para este hallazgo; no implica cierre contable global.",
+      "estado": "Resuelto",
+      "observaciones": "backend/src/ERP.Application/Modules/Accounting/Posting y cierre funcional en STATUS.md (2026-09-12).",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "BLK-008",
-      "titulo": "Reglas de contabilizacion sin consumidor real",
-      "descripcion": "PostingRule existe como configuracion de mapeo pura pero no tiene ningun consumidor todavia (el Posting Engine no existe) -- hoy no produce ningun efecto contable real.",
+      "titulo": "Reglas contables con consumidores reales",
+      "descripcion": "Reglas contables con consumidores reales",
       "severidad": "Baja",
       "etapa": "etapa-3",
-      "modulosAfectados": ["Accounting"],
+      "modulosAfectados": [
+        "Accounting"
+      ],
       "dependencias": "Depende de BLK-007 (Posting Engine) para tener efecto real",
-      "accionRequerida": "Ninguna accion inmediata -- queda a la espera del Posting Engine (Etapa 4)",
-      "estado": "Abierto",
-      "observaciones": "No es un bloqueador urgente por si mismo, es una consecuencia de la secuencia de etapas (Etapa 3 antes que Etapa 4)."
+      "accionRequerida": "Sin acción pendiente para este hallazgo; no implica cierre contable global.",
+      "estado": "Resuelto",
+      "observaciones": "SalesInvoiceAuthorizedPostingTranslator.cs y CollectionAppliedPostingTranslator.cs; STATUS.md (2026-09-15).",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "BLK-009",
@@ -105,7 +131,9 @@
       "descripcion": "El Plan de cuentas (Account) tiene CRUD completo pero sigue sin definirse si el contenido inicial es un catalogo tenant-editable (patron ItemTypeDefinition) o una plantilla estandar NIIF PYMES Ecuador.",
       "severidad": "Baja",
       "etapa": "etapa-3",
-      "modulosAfectados": ["Accounting"],
+      "modulosAfectados": [
+        "Accounting"
+      ],
       "dependencias": "Ninguna",
       "accionRequerida": "Decision de producto pendiente del cliente/negocio, no de arquitectura",
       "estado": "Abierto",
@@ -117,11 +145,63 @@
       "descripcion": "Items tiene una regla congelada de 'clasificacion pura sin comportamiento' (CLAUDE.md, Infraestructura CLOSED Tipos de Item) -- extenderlo para soportar BOM/recetas de Produccion/Manufactura exige una ADR nueva, no una extension menor.",
       "severidad": "Baja",
       "etapa": "etapa-6",
-      "modulosAfectados": ["Items", "Inventory"],
+      "modulosAfectados": [
+        "Items",
+        "Inventory"
+      ],
       "dependencias": "Ninguna",
       "accionRequerida": "Redactar ADR de extension de Items antes de iniciar Produccion/Manufactura; prioridad de negocio del cliente sin decidir todavia",
       "estado": "Abierto",
       "observaciones": "docs/ROADMAP.md marca Etapa 6 como 'Baja (decision de negocio del cliente)' -- no urgente hoy."
+    },
+    {
+      "id": "BLK-011",
+      "titulo": "Retenciones: validar emisión productiva",
+      "descripcion": "Wiring XML integrado en 5d1c801e; verificar emisión con el ambiente real.",
+      "severidad": "Media",
+      "etapa": "evolucion",
+      "modulosAfectados": [
+        "Retentions",
+        "ElectronicDocuments"
+      ],
+      "dependencias": "Ver evidencia",
+      "accionRequerida": "Wiring XML integrado en 5d1c801e; verificar emisión con el ambiente real.",
+      "estado": "Implementado; cierre por verificar",
+      "observaciones": "STATUS.md y código local, revisión 2026-09-16.",
+      "reviewedAt": "2026-09-16"
+    },
+    {
+      "id": "BLK-012",
+      "titulo": "Guía de remisión y nota de débito",
+      "descripcion": "Ampliaciones fiscales pendientes, según alcance de negocio.",
+      "severidad": "Media",
+      "etapa": "evolucion",
+      "modulosAfectados": [
+        "ElectronicDocuments"
+      ],
+      "dependencias": "Ver evidencia",
+      "accionRequerida": "Ampliaciones fiscales pendientes, según alcance de negocio.",
+      "estado": "Futuro",
+      "observaciones": "STATUS.md y código local, revisión 2026-09-16.",
+      "reviewedAt": "2026-09-16"
+    },
+    {
+      "id": "BLK-013",
+      "titulo": "Cierre contable y operaciones bancarias avanzadas",
+      "descripcion": "Catálogo Bank implementado (8121a0d3); CompanyBankAccount en desarrollo local. Cierre contable, conciliación y flujo de efectivo pendientes según STATUS.md.",
+      "severidad": "Media",
+      "etapa": "evolucion",
+      "modulosAfectados": [
+        "Accounting",
+        "Finance",
+        "Caja"
+      ],
+      "dependencias": "Ver evidencia",
+      "accionRequerida": "Catálogo Bank implementado (8121a0d3); CompanyBankAccount en desarrollo local. Cierre contable, conciliación y flujo de efectivo pendientes según STATUS.md.",
+      "estado": "Abierto",
+      "observaciones": "STATUS.md y código local, revisión 2026-09-16.",
+      "reviewedAt": "2026-09-16"
     }
-  ]
+  ],
+  "reviewedAt": "2026-09-16"
 }

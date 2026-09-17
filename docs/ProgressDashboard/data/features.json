@@ -193,10 +193,10 @@
                                           ]
                          },
                          {
-                             "name":  "Decimal Config",
+                             "name":  "Company Precision Policy",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Companies/UseCases/DecimalConfig"
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/PrecisionPolicy"
                                           ]
                          },
                          {

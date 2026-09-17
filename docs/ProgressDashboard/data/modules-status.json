@@ -1,6 +1,6 @@
 {
   "generated": "2026-07-25",
-  "source": "Fuente FUNCIONAL oficial, mantenida por Arquitectura. Complementa a explorer-index.json (fuente TECNICA, generada por analisis estatico) -- no la reemplaza. Compilada por revision cruzada de CLAUDE.md, docs/STATUS.md, docs/ROADMAP.md, FEATURES.md y docs/adr/*.md contra los 29 modulos ya trackeados por el pipeline (explorer-index.json.modules[].id). Ningun campo se infiere desde heuristicas de score: donde no hay evidencia documental directa y verificable, el campo dice 'Pendiente de evaluacion' en vez de adivinar.",
+  "source": "Estado funcional revisado contra STATUS.md (raíz, 2026-09-15), docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md, docs/navigation/MENU_MAP.md y código local. Filas con reviewedAt revisadas en esa fecha; las demás conservan su revisión histórica. No representa ejecución de pruebas ni certificación productiva.",
   "method": "Revision manual, no analizador automatizado. Actualizar esta fila por modulo cuando exista una nueva auditoria/ADR/cierre documentado -- nunca completar un campo por similitud de nombre o intuicion.",
   "modules": [
     {
@@ -37,7 +37,8 @@
       "priority": "Pendiente de evaluacion",
       "blockers": "Pendiente de evaluacion",
       "adr": "Pendiente de evaluacion",
-      "observations": "ADR-014 (rotacion de refresh tokens) esta Accepted pero no cita explicitamente al modulo Auth como FROZEN/CLOSED en CLAUDE.md/docs/STATUS.md. Sin evidencia de freeze module-especifico encontrada."
+      "observations": "ADR-014 (rotacion de refresh tokens) esta Accepted pero no cita explicitamente al modulo Auth como FROZEN/CLOSED en CLAUDE.md/docs/STATUS.md. Sin evidencia de freeze module-especifico encontrada.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Auxiliary",
@@ -89,15 +90,16 @@
     },
     {
       "id": "Companies",
-      "functionalStatus": "Pendiente de evaluacion",
-      "maturityLevel": "Pendiente de evaluacion",
-      "freezeStatus": "Pendiente de evaluacion",
-      "roadmapStage": "Pendiente de evaluacion",
-      "nextStage": "Pendiente de evaluacion",
-      "priority": "Pendiente de evaluacion",
-      "blockers": "Pendiente de evaluacion",
-      "adr": "Pendiente de evaluacion",
-      "observations": "IMPORTANTE -- distincion verificada por codigo: 'Companies' es el perfil/configuracion de la empresa tenant (Create/Update Company, Fiscal, Branding, Decimal Config; backend/src/ERP.Application/Modules/Companies/). NO es BusinessPartner V2 (Clientes/Proveedores, docs/adr/ADR-017), que vive en backend/src/ERP.Application/MasterData/ y no esta mapeado como modulo propio en el pipeline del dashboard (uno de los '7 unmapped' del log de render-dashboard.ps1). Ninguna tabla de freeze en docs/STATUS.md/CLAUDE.md nombra 'Companies' explicitamente -- no atribuir sin cita textual directa."
+      "functionalStatus": "Implementado",
+      "maturityLevel": "Media-Alta",
+      "freezeStatus": "Precisión por empresa: iniciativa cerrada; no implica freeze global",
+      "roadmapStage": "Perfil de empresa y CompanyPrecisionPolicy",
+      "nextStage": "Decisiones de escala de costos documentadas en STATUS.md",
+      "priority": "Alta",
+      "blockers": "Sin bloqueo de la iniciativa; semántica de costos pendiente de decisión",
+      "adr": "Pendiente de ADR especifico",
+      "observations": "STATUS.md: COMPANY-PRECISION-POLICY completado; UseCases/PrecisionPolicy y frontend/src/lib/config/precisionPolicy.config.ts. DecimalConfig legacy retirado.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Company",
@@ -121,7 +123,8 @@
       "priority": "Pendiente de evaluacion",
       "blockers": "Pendiente de evaluacion",
       "adr": "Pendiente de evaluacion",
-      "observations": "0 features en explorer-index.json. FEATURES.md solo menciona 'Configuracion / SRI' como fila generica, sin lenguaje de freeze. Sin evidencia de proposito/alcance especifico del modulo en la documentacion revisada."
+      "observations": "0 features en explorer-index.json. FEATURES.md solo menciona 'Configuracion / SRI' como fila generica, sin lenguaje de freeze. Sin evidencia de proposito/alcance especifico del modulo en la documentacion revisada.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Dashboard",
@@ -157,19 +160,21 @@
       "priority": "Pendiente de evaluacion",
       "blockers": "Pendiente de evaluacion",
       "adr": "Pendiente de evaluacion (citado en CLAUDE.md, sin numero de ADR formal)",
-      "observations": "Distinto de ElectronicDocuments: featureNames (Get/Upsert Sri Configuration, Inspect/Upload Sri Certificate, Electronic Invoicing Status) viven en ERP.Application/Modules/ElectronicInvoicing/. El CLOSED 2026-07-01 cubre unicamente los 5 valores por defecto de factura (hoy en org_settings, expuestos via ElectronicInvoicingController), no la totalidad del modulo."
+      "observations": "Distinto de ElectronicDocuments: featureNames (Get/Upsert Sri Configuration, Inspect/Upload Sri Certificate, Electronic Invoicing Status) viven en ERP.Application/Modules/ElectronicInvoicing/. El CLOSED 2026-07-01 cubre unicamente los 5 valores por defecto de factura (hoy en org_settings, expuestos via ElectronicInvoicingController), no la totalidad del modulo.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Finance",
-      "functionalStatus": "Pendiente de evaluacion",
-      "maturityLevel": "Pendiente de evaluacion",
-      "freezeStatus": "Pendiente de evaluacion",
-      "roadmapStage": "Pendiente de evaluacion",
-      "nextStage": "Pendiente de evaluacion",
-      "priority": "Pendiente de evaluacion",
-      "blockers": "Pendiente de evaluacion",
-      "adr": "Pendiente de evaluacion",
-      "observations": "Contiene unicamente CreditTerm/CreditInstallment (catalogo de condiciones de pago; backend/src/ERP.Domain/Modules/Finance/Entities/). NO es el nuevo modulo Accounting (ADR-026-accounting-core.md, ACCEPTED, en backend/src/ERP.Domain/Modules/Accounting/, todavia no trackeado por el pipeline del dashboard -- ver docs/ROADMAP.md FASE 2). No confundir ambos al alimentar este campo en el futuro."
+      "functionalStatus": "En piloto",
+      "maturityLevel": "Media-Alta",
+      "freezeStatus": "Operativo para CxC/CxP, cobros, pagos y destinos financieros; no es modulo bancario completo",
+      "roadmapStage": "Collections, Supplier Payments, Financial Destinations y source resolver contable",
+      "nextStage": "Conciliacion bancaria, bancos y flujo de efectivo",
+      "priority": "Alta",
+      "blockers": "Sin conciliacion bancaria ni automatización adicional de destinos (mapeo contable por medio de pago ya implementado en Ventas)",
+      "adr": "ADR-026 relacionado por posting",
+      "observations": "STATUS/FEATURES: ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 y Supplier Payments operan con destino financiero y posting.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Integration",
@@ -233,15 +238,16 @@
     },
     {
       "id": "Navigation",
-      "functionalStatus": "Pendiente de evaluacion",
+      "functionalStatus": "Implementado",
       "maturityLevel": "Pendiente de evaluacion",
-      "freezeStatus": "Pendiente de evaluacion",
-      "roadmapStage": "Pendiente de evaluacion",
-      "nextStage": "Pendiente de evaluacion",
+      "freezeStatus": "Menú SSOT en Kernel; sin nuevo freeze declarado",
+      "roadmapStage": "Navegación de 12 módulos y expansión multinivel",
+      "nextStage": "Mantener menú y rutas alineados con pantallas reales",
       "priority": "Pendiente de evaluacion",
-      "blockers": "Pendiente de evaluacion",
+      "blockers": "Sin bloqueo verificado en esta revisión",
       "adr": "Pendiente de evaluacion",
-      "observations": "Solo mencion de refactor historico (NavigationMenuEditorPanel, post-audit wave 3 en docs/STATUS.md) -- no es un freeze de arquitectura."
+      "observations": "docs/navigation/MENU_MAP.md; backend/src/ERP.Domain/Kernel/Modules; commits ac3e753b, 007646f5 y 4ff6726a.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "OrgConfig",
@@ -269,63 +275,68 @@
     },
     {
       "id": "Purchases",
-      "functionalStatus": "Operativo",
+      "functionalStatus": "Listo / cerrado (2026-09-12)",
       "maturityLevel": "Media-Alta",
-      "freezeStatus": "No congelado -- funcional, mejorable (docs/ROADMAP.md)",
-      "roadmapStage": "FASE 1 -- ERP Core (pendiente de mejoras)",
-      "nextStage": "Liquidacion de compra (tipo SRI 03) y recepcion fisica sin factura -- bloquean el flujo de retenciones en compra de FASE 3 (docs/ROADMAP.md)",
+      "freezeStatus": "Cierre funcional aprobado: compras, XML, NC, devoluciones, CxP, pagos e inventario; no implica freeze global",
+      "roadmapStage": "FASE 1 -- ERP Core operativo; mejoras SRI pendientes",
+      "nextStage": "Liquidacion de compra (tipo SRI 03), recepcion fisica sin factura y cierre de retenciones fuera de gastos",
       "priority": "Alta",
-      "blockers": "Sin liquidacion de compra (tipo SRI 03); sin recepcion fisica sin factura; sin validacion de precio OC vs Factura (docs/ROADMAP.md)",
-      "adr": "Pendiente de evaluacion",
-      "observations": "docs/ROADMAP.md, fila 'Compras': Dependencias Items, BP-Supplier. Auditoria UX+SSOT completada 2026-06-24 (docs/STATUS.md) es una auditoria de calidad, no un freeze arquitectonico."
+      "blockers": "Sin liquidacion de compra SRI 03; recepcion fisica sin factura pendiente",
+      "adr": "Pendiente de ADR especifico",
+      "observations": "Compras confirma CxP, inventario y asiento contable; Supplier Payments ya aplica pagos contra CxP. Retenciones de gasto avanzan en modulo Retentions, no se declara retencion completa de compras.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Ride",
-      "functionalStatus": "Skeleton (diseno congelado, implementacion NO iniciada)",
-      "maturityLevel": "Pendiente de evaluacion",
-      "freezeStatus": "Diseno FROZEN -- ADR-025-ride-design-freeze.md (2026-07-12); implementacion no iniciada",
-      "roadmapStage": "Pendiente de evaluacion (no aparece como fila propia en docs/ROADMAP.md)",
-      "nextStage": "Pendiente de evaluacion",
-      "priority": "Pendiente de evaluacion",
-      "blockers": "Pendiente de evaluacion",
+      "functionalStatus": "En piloto parcial",
+      "maturityLevel": "Media-Alta",
+      "freezeStatus": "Diseno FROZEN -- ADR-025; implementacion base y RIDE de retencion con avance real",
+      "roadmapStage": "Get/Generate y Regenerate RIDE base; RIDE PDF de retenciones implementado en commits recientes",
+      "nextStage": "QA visual por cada codDoc adicional y produccion SRI real",
+      "priority": "Media",
+      "blockers": "Depende de que cada tipo documental exponga datos completos y plantillas validadas",
       "adr": "ADR-025-ride-design-freeze.md",
-      "observations": "ADR-025 declara el DISENO congelado (2 contratos: GetOrGenerateRide, RegenerateRide), no una implementacion en produccion -- el ADR indica explicitamente 'Implementacion: NO INICIADA'. No tratar como equivalente a un modulo FROZEN operativo."
+      "observations": "La fila historica decia implementacion no iniciada; ya no aplica para el estado actual. Se conserva como modulo en piloto parcial porque no todos los documentos SRI futuros tienen RIDE cerrado.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Sales",
-      "functionalStatus": "Frozen (deliberadamente parcial: sin cobros)",
+      "functionalStatus": "En piloto",
       "maturityLevel": "Alta",
-      "freezeStatus": "FROZEN -- Sales Invoice + Detail (2026-06-24), Payment Methods + Formas de Cobro (2026-06-24), Sales Receivable / CxC deuda (2026-06-25)",
-      "roadmapStage": "FASE 1 -- ERP Core (cerrado, 'Ventas: Invoice + CxC deuda')",
-      "nextStage": "Modulo de Cobros -- aplicar pago contra SalesReceivableInstallment; hoy SalesReceivable (FROZEN) solo registra deuda, nunca cobra -- decision de diseno explicita (docs/ROADMAP.md)",
+      "freezeStatus": "FROZEN en factura/CxC base; cobros y destino financiero ya implementados posteriormente",
+      "roadmapStage": "Ventas/POS, CxC, cobros, inventario, COGS, pricing y documentos electronicos base",
+      "nextStage": "Produccion SRI real, mejoras de cobros/bancos y cierre contable futuro",
       "priority": "Alta",
-      "blockers": "Cobros es el hueco funcional mas visible del MVP comercial actual (docs/ROADMAP.md)",
-      "adr": "Pendiente de evaluacion (sin ADR especifico citado, solo tabla Modulos FROZEN de docs/STATUS.md)",
-      "observations": "docs/ROADMAP.md, fila 'Ventas (Invoice + CxC deuda)': Dependencias Items, BP-Customer, Pricing. Confirmado tambien en docs/STATUS.md (Sales Invoice + Detail, Payment Methods, Sales Receivable)."
+      "blockers": "No se considera bloqueo MVP el antiguo pendiente de cobros; queda bancos/conciliacion como futuro",
+      "adr": "ADR-026 relacionado por posting",
+      "observations": "STATUS/FEATURES registran CollectionApplied, destino financiero, CxC y posting; la nota antigua de ventas previa a cobros quedo historica.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Security",
-      "functionalStatus": "Pendiente de evaluacion",
-      "maturityLevel": "Pendiente de evaluacion",
-      "freezeStatus": "Pendiente de evaluacion",
-      "roadmapStage": "Pendiente de evaluacion",
-      "nextStage": "Pendiente de evaluacion",
-      "priority": "Pendiente de evaluacion",
-      "blockers": "Pendiente de evaluacion",
-      "adr": "Pendiente de evaluacion",
-      "observations": "featureNames (Get/Upsert Security Admin Matrix/Scopes) sin cita de freeze especifica para este modulo. 'Security Hardening FROZEN 2026-06-05' (docs/STATUS.md) es un item transversal del ERP CORE BASELINE (CompanyScopeBehavior, fail-closed EF filters), no confirmado como equivalente a este modulo puntual -- no atribuir sin verificacion adicional."
+      "functionalStatus": "Completado",
+      "maturityLevel": "Alta",
+      "freezeStatus": "Operativo -- permisos jerarquicos SSOT y anti-escalamiento cerrados",
+      "roadmapStage": "NAV-PERMISSION-HIERARCHY-SSOT-01 + SECURITY-PERMISSION-SCOPE-01 cerrados",
+      "nextStage": "Planes/billing/enforcement real por entitlements queda para plataforma SaaS externa",
+      "priority": "Alta",
+      "blockers": "NoOpExternalEntitlementService es seam futuro, no enforcement comercial activo",
+      "adr": "Arquitectura security.md; ERP_CORE_FREEZE.md",
+      "observations": "Backend es SSOT de menu/permisos; se bloqueo escalamiento por usuarios no Admin y se dejo punto de extension externo sin acoplar SaaS al ERP Core.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "Session",
-      "functionalStatus": "Pendiente de evaluacion",
-      "maturityLevel": "Pendiente de evaluacion",
-      "freezeStatus": "Pendiente de evaluacion",
-      "roadmapStage": "Pendiente de evaluacion",
-      "nextStage": "Pendiente de evaluacion",
-      "priority": "Pendiente de evaluacion",
-      "blockers": "Pendiente de evaluacion",
-      "adr": "Pendiente de evaluacion",
-      "observations": "docs/STATUS.md describe 'Contexto Operativo del Usuario (UserSession): implementado y estabilizado' (2026-07-17) -- lenguaje distinto a FROZEN/CLOSED/CERRADO usado en el resto de la tabla de Modulos FROZEN. Evidencia mas debil; requiere confirmacion manual antes de tratarla como freeze equivalente."
+      "functionalStatus": "Completado",
+      "maturityLevel": "Alta",
+      "freezeStatus": "Operativo -- auth/sesion y contexto empresa/sucursal estabilizados",
+      "roadmapStage": "Logout backend, expiracion absoluta 8h, overlay inactividad 30 min, reauth modal, select-company sincronizado",
+      "nextStage": "Sin fase funcional activa",
+      "priority": "Alta",
+      "blockers": "Ninguno bloqueante reportado para piloto",
+      "adr": "ADR-014 relacionado",
+      "observations": "Contexto operativo limpia empresa/sucursal al cambiar de sesion y el header muestra Empresa/Sucursal.",
+      "reviewedAt": "2026-09-16"
     },
     {
       "id": "SriCatalogs",
@@ -350,6 +361,20 @@
       "blockers": "Pendiente de evaluacion",
       "adr": "Pendiente de evaluacion",
       "observations": "'Multi-Tenant Boundaries FROZEN 2026-06-05' (docs/STATUS.md) es un item transversal de infraestructura (EF query filters, CompanyScopeBehavior), no del codigo propio del modulo Tenants (Tenant.cs/ITenantRepository). 'SaaS Commercial Flow FROZEN 2026-05-28' (Plans/Entitlements/Subscriptions) fue eliminado completamente en la limpieza de FASE 1 Kernel Cleanup (2026-06-05, docs/STATUS.md) -- no debe citarse como evidencia vigente. docs/ROADMAP.md incluye 'Tenant' dentro de la fila 'Organizacion' (FROZEN, Madurez Alta) pero sin desglose especifico por modulo Tenants -- se mantiene Pendiente de evaluacion por prudencia dado el historial de reversion en esta area."
+    },
+    {
+      "id": "Accounting",
+      "functionalStatus": "En piloto",
+      "maturityLevel": "Alta",
+      "freezeStatus": "Operativo avanzado -- ADR-026; no congelado como cierre contable final",
+      "priority": "Alta",
+      "roadmapStage": "Accounting operativo: plan, periodos, reglas, asientos, reversos, reportes y trazabilidad",
+      "nextStage": "Cierre contable, flujo de efectivo y conciliacion bancaria; configuración de cobros de ventas ya implementada",
+      "blockers": "Sin cierre contable formal ni conciliacion bancaria; integración contable de movimientos propios de Caja pendiente de cierre",
+      "adr": "ADR-026-accounting-core.md",
+      "observations": "Evidencia: FEATURES.md y STATUS.md registran reportes, reversos, COGS, cobros/pagos, supplier payments, expenses y retentions posting. Ya no es \"Pendiente de evaluacion\".",
+      "reviewedAt": "2026-09-16"
     }
-  ]
+  ],
+  "reviewedAt": "2026-09-16"
 }
