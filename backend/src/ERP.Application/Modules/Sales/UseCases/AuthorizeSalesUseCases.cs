@@ -7,10 +7,13 @@ using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.Policies;
 using MediatR;
@@ -50,6 +53,8 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ISalesFiscalPolicyResolver _fiscalPolicyResolver;
     private readonly IPaymentMethodRepository _paymentMethodRepo;
     private readonly IPaymentMethodAccountRepository _paymentMethodAccountRepo;
+    private readonly ICompanyBankAccountRepository _bankAccountRepo;
+    private readonly IAccountRepository _accountRepo;
     private readonly IPostingEngine _postingEngine;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
@@ -75,6 +80,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         ISalesFiscalPolicyResolver fiscalPolicyResolver,
         IPaymentMethodRepository paymentMethodRepo,
         IPaymentMethodAccountRepository paymentMethodAccountRepo,
+        ICompanyBankAccountRepository bankAccountRepo,
+        IAccountRepository accountRepo,
         IPostingEngine postingEngine,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
@@ -100,6 +107,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         _fiscalPolicyResolver = fiscalPolicyResolver;
         _paymentMethodRepo = paymentMethodRepo;
         _paymentMethodAccountRepo = paymentMethodAccountRepo;
+        _bankAccountRepo = bankAccountRepo;
+        _accountRepo = accountRepo;
         _postingEngine = postingEngine;
         _logger = logger;
         _t = t;
@@ -257,26 +266,76 @@ public sealed class AuthorizeSalesInvoiceHandler
         var companyAccountMap = await _paymentMethodAccountRepo.GetMapAsync(tid, cid, ct);
         var cashByAccount = new Dictionary<Guid, decimal>();
         var missingAccountMethodNames = new List<string>();
-        if (companyAccountMap.Count > 0)
+        foreach (var payment in inv.Payments)
         {
-            foreach (var payment in inv.Payments)
+            if (
+                !resolvedPaymentMethods.TryGetValue(payment.PaymentMethodId, out var method)
+                || method.IsCreditAllowed
+            )
+                continue;
+
+            // ── SALES-TRANSFER-BANK-ACCOUNT-01 ──────────────────────────────────────
+            // Transferencia SIEMPRE resuelve su cuenta contable desde
+            // CompanyBankAccount.AccountingAccountId — nunca desde PaymentMethodAccount cuando
+            // el método es realmente Transferencia (PaymentMethod.DetailType, no Code/Name). Es
+            // fail-closed incondicional (no depende de si la Company "migró" PaymentMethodAccount):
+            // sin una cuenta bancaria activa y postable, la autorización se bloquea antes de
+            // capturar secuencial/generar el asiento. No confía en el CompanyBankAccountId
+            // persistido en el borrador — lo revalida aquí por si la cuenta fue desactivada
+            // después de crear el borrador (mismo criterio que el re-chequeo de PaymentTerm).
+            if (method.DetailType == PaymentMethodDetailType.Transfer)
             {
+                if (payment.TransferDetail?.CompanyBankAccountId is not { } bankAccountId)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        $"El pago con método '{method.Name}' no tiene una cuenta bancaria de destino seleccionada. "
+                            + "Edite el borrador y seleccione una cuenta bancaria activa."
+                    );
+
+                var bankAccount = await _bankAccountRepo.GetByIdAsync(tid, bankAccountId, ct);
+                if (bankAccount is null || bankAccount.CompanyId != cid)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        $"La cuenta bancaria seleccionada para '{method.Name}' no existe o no pertenece a esta empresa."
+                    );
+                if (!bankAccount.IsActive)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        $"La cuenta bancaria seleccionada para '{method.Name}' está inactiva. "
+                            + "Edite el borrador y seleccione otra cuenta bancaria."
+                    );
+
+                var bankAccountingAccount = await _accountRepo.GetByIdAsync(
+                    tid,
+                    cid,
+                    bankAccount.AccountingAccountId,
+                    ct
+                );
                 if (
-                    !resolvedPaymentMethods.TryGetValue(payment.PaymentMethodId, out var method)
-                    || method.IsCreditAllowed
+                    bankAccountingAccount is null
+                    || !bankAccountingAccount.IsActive
+                    || !bankAccountingAccount.AllowsPosting
                 )
-                    continue;
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        $"La cuenta contable de la cuenta bancaria seleccionada para '{method.Name}' "
+                            + "no es postable o está inactiva. Configúrela en Tesorería > Bancos > "
+                            + "Cuentas bancarias antes de emitir esta factura."
+                    );
 
-                if (!companyAccountMap.TryGetValue(payment.PaymentMethodId, out var link))
-                {
-                    if (!missingAccountMethodNames.Contains(method.Name))
-                        missingAccountMethodNames.Add(method.Name);
-                    continue;
-                }
-
-                cashByAccount.TryGetValue(link.AccountingAccountId, out var existing);
-                cashByAccount[link.AccountingAccountId] = existing + payment.Amount;
+                cashByAccount.TryGetValue(bankAccount.AccountingAccountId, out var existingTransfer);
+                cashByAccount[bankAccount.AccountingAccountId] = existingTransfer + payment.Amount;
+                continue;
             }
+
+            if (companyAccountMap.Count == 0)
+                continue;
+
+            if (!companyAccountMap.TryGetValue(payment.PaymentMethodId, out var link))
+            {
+                if (!missingAccountMethodNames.Contains(method.Name))
+                    missingAccountMethodNames.Add(method.Name);
+                continue;
+            }
+
+            cashByAccount.TryGetValue(link.AccountingAccountId, out var existing);
+            cashByAccount[link.AccountingAccountId] = existing + payment.Amount;
         }
 
         if (missingAccountMethodNames.Count > 0)

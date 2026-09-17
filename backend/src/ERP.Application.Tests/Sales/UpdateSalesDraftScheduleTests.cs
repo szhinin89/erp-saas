@@ -49,6 +49,7 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
         public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
+        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
 
         public PaymentTerm DefaultPt { get; } = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
 
@@ -126,7 +127,8 @@ public sealed class UpdateSalesDraftScheduleTests
                 Branch.Object,
                 User.Object,
                 Preferences.Object,
-                CreditPolicy.Object
+                CreditPolicy.Object,
+                BankAccountRepo.Object
             );
 
         /// <summary>Factura Draft existente con una línea de 100 (VAT 15% => GrandTotal 115).</summary>

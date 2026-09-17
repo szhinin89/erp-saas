@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -73,6 +74,11 @@ public sealed class SalesInvoicePaymentConfiguration : IEntityTypeConfiguration<
                 td.ToTable("payment_transfer_details");
                 td.WithOwner().HasForeignKey("PaymentId");
                 td.Property(t => t.PaymentId).HasColumnName("payment_id").IsRequired();
+                // SALES-TRANSFER-BANK-ACCOUNT-01: nullable a nivel de columna — facturas
+                // autorizadas antes de este ticket no tienen cuenta bancaria seleccionada
+                // (BankName libre en su lugar) y nunca se reescriben. El dominio exige este campo
+                // obligatorio para toda transferencia NUEVA (PaymentTransferDetail.Create).
+                td.Property(t => t.CompanyBankAccountId).HasColumnName("company_bank_account_id");
                 td.Property(t => t.BankName)
                     .HasColumnName("bank_name")
                     .HasMaxLength(PaymentTransferDetail.BankMaxLen);
@@ -80,6 +86,11 @@ public sealed class SalesInvoicePaymentConfiguration : IEntityTypeConfiguration<
                     .HasColumnName("receipt_number")
                     .HasMaxLength(PaymentTransferDetail.ReceiptMaxLen);
                 td.Property(t => t.TransferDate).HasColumnName("transfer_date");
+                td.HasOne<CompanyBankAccount>()
+                    .WithMany()
+                    .HasForeignKey(t => t.CompanyBankAccountId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.Restrict);
             }
         );
 

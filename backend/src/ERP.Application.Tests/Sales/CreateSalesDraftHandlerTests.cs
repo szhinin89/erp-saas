@@ -55,6 +55,7 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<ICurrentCashSession> CashSession { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
         public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
+        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
 
         public Fixture()
         {
@@ -179,7 +180,8 @@ public sealed class CreateSalesDraftHandlerTests
                 User.Object,
                 CashSession.Object,
                 Preferences.Object,
-                CreditPolicy.Object
+                CreditPolicy.Object,
+                BankAccountRepo.Object
             );
 
         public static CreateSalesDraftCommand ValidCommand() =>
@@ -297,6 +299,201 @@ public sealed class CreateSalesDraftHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inactiva");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── SALES-TRANSFER-BANK-ACCOUNT-01 ──────────────────────────────────────────────────────
+
+    private static readonly Guid TransferMethodId = Guid.NewGuid();
+    private static readonly Guid BankId = Guid.NewGuid();
+    private static readonly Guid AccountingAccountId = Guid.NewGuid();
+
+    private static Domain.Modules.Sales.Entities.PaymentMethod TransferPaymentMethod() =>
+        Domain.Modules.Sales.Entities.PaymentMethod.Create(
+            TenantId,
+            "TRANSFERENCIA",
+            "Transferencia Bancaria",
+            requiresReference: true,
+            isCreditAllowed: false,
+            sortOrder: 2,
+            createdBy: UserId,
+            detailType: Domain.Modules.Sales.Enums.PaymentMethodDetailType.Transfer
+        );
+
+    private static ERP.Domain.Modules.Finance.Entities.CompanyBankAccount ActiveBankAccount(
+        bool isActive = true
+    )
+    {
+        var bankAccount = ERP.Domain.Modules.Finance.Entities.CompanyBankAccount.Create(
+            TenantId,
+            CompanyId,
+            BankId,
+            ERP.Domain.Modules.Finance.Enums.BankAccountType.Checking,
+            "2200123456",
+            "Cuenta corriente Pichincha",
+            AccountingAccountId,
+            UserId
+        );
+        if (!isActive)
+            bankAccount.Disable(UserId);
+        return bankAccount;
+    }
+
+    private static CreateSalesDraftCommand CommandWithTransferPayment(Guid? companyBankAccountId) =>
+        new(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") },
+            Payments: new List<SalesPaymentInput>
+            {
+                new(
+                    TransferMethodId,
+                    115m,
+                    Reference: "TRX-001",
+                    TransferDetail: new TransferDetailInput(
+                        companyBankAccountId,
+                        "TRX-001",
+                        DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd")
+                    )
+                ),
+            }
+        );
+
+    [Fact]
+    public async Task Transferencia_sin_CompanyBankAccountId_rechaza_el_borrador()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, TransferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TransferPaymentMethod());
+
+        var result = await f.BuildHandler()
+            .Handle(CommandWithTransferPayment(companyBankAccountId: null), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("cuenta bancaria destino");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Transferencia_con_cuenta_bancaria_de_otra_empresa_rechaza_el_borrador()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, TransferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TransferPaymentMethod());
+        var bankAccountId = Guid.NewGuid();
+        f.BankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.Finance.Entities.CompanyBankAccount?)null);
+
+        var result = await f.BuildHandler()
+            .Handle(CommandWithTransferPayment(bankAccountId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no existe o no pertenece a esta empresa");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Transferencia_con_cuenta_bancaria_inactiva_rechaza_el_borrador()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, TransferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TransferPaymentMethod());
+        var bankAccount = ActiveBankAccount(isActive: false);
+        f.BankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+
+        var result = await f.BuildHandler()
+            .Handle(CommandWithTransferPayment(bankAccount.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("inactiva");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Transferencia_valida_persiste_CompanyBankAccountId_en_el_detalle()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, TransferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TransferPaymentMethod());
+        var bankAccount = ActiveBankAccount();
+        f.BankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler()
+            .Handle(CommandWithTransferPayment(bankAccount.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Payments.Should().ContainSingle();
+        captured.Payments[0].TransferDetail.Should().NotBeNull();
+        captured.Payments[0].TransferDetail!.CompanyBankAccountId.Should().Be(bankAccount.Id);
+        captured.Payments[0].TransferDetail!.ReceiptNumber.Should().Be("TRX-001");
+    }
+
+    [Fact]
+    public async Task TransferDetail_adjunto_a_un_metodo_que_no_es_Transferencia_rechaza_el_borrador()
+    {
+        var f = new Fixture();
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        var cashMethodId = Guid.NewGuid();
+        f.PmRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Domain.Modules.Sales.Entities.PaymentMethod.Create(
+                    TenantId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    requiresReference: false,
+                    isCreditAllowed: false,
+                    sortOrder: 1,
+                    createdBy: UserId
+                )
+            );
+
+        var command = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") },
+            Payments: new List<SalesPaymentInput>
+            {
+                new(
+                    cashMethodId,
+                    115m,
+                    TransferDetail: new TransferDetailInput(Guid.NewGuid(), "TRX-001", "2026-07-13")
+                ),
+            }
+        );
+
+        var result = await f.BuildHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no admite datos de transferencia");
         f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

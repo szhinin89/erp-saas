@@ -8,6 +8,7 @@ import type {
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
@@ -35,6 +36,9 @@ interface Props {
    * cuando es true, bloquea "Confirmar" hasta que cada fila con monto tenga comprobante/
    * autorización/número de cheque capturado (el backend rechaza la emisión sin esto). */
   requiresReference: boolean;
+  /** SALES-TRANSFER-BANK-ACCOUNT-01: cuentas bancarias activas de la empresa (Banco + alias +
+   * tipo/número enmascarado) — solo se usa cuando detailType === "Transfer". */
+  bankAccountOptions: { id: string; label: string }[];
   initialRows: DetailRow[];
   initialKey: number;
   available: number;
@@ -47,6 +51,7 @@ export function PaymentDetailModal({
   methodName,
   detailType,
   requiresReference,
+  bankAccountOptions,
   initialRows,
   initialKey,
   available,
@@ -69,6 +74,12 @@ export function PaymentDetailModal({
   const missingReference =
     requiresReference &&
     rows.some((r) => r.amount > 0 && !deriveDetailReference(detailType, r));
+  // SALES-TRANSFER-BANK-ACCOUNT-01: Transferencia exige seleccionar una cuenta bancaria destino —
+  // ninguna fila con monto puede confirmarse sin ella (Banco texto libre ya no existe).
+  const missingBankAccount =
+    isTransfer && rows.some((r) => r.amount > 0 && !r.transfer?.companyBankAccountId);
+  const missingTransferDate =
+    isTransfer && rows.some((r) => r.amount > 0 && !r.transfer?.transferDate);
 
   const addRow = () => {
     const newRow: DetailRow = {
@@ -114,7 +125,9 @@ export function PaymentDetailModal({
               rows.length === 0 ||
               rows.some((r) => r.amount <= 0) ||
               exceeds ||
-              missingReference
+              missingReference ||
+              missingBankAccount ||
+              missingTransferDate
             }
             onClick={() => onConfirm(rows.filter((r) => r.amount > 0))}
           >
@@ -127,6 +140,20 @@ export function PaymentDetailModal({
         <ZHPageNotice
           variant="error"
           message={`Excede el saldo disponible ($${formatMoney(available, totalAmountDecimals)}) por $${formatMoney(totalDetail - available, totalAmountDecimals)}`}
+        />
+      )}
+
+      {missingBankAccount && (
+        <ZHPageNotice
+          variant="error"
+          message={`El método "${methodName}" requiere seleccionar una cuenta bancaria destino en cada fila antes de confirmar.`}
+        />
+      )}
+
+      {missingTransferDate && (
+        <ZHPageNotice
+          variant="error"
+          message={`El método "${methodName}" requiere la fecha de operación en cada fila antes de confirmar.`}
         />
       )}
 
@@ -164,31 +191,48 @@ export function PaymentDetailModal({
             }
           />
           <div className="pdt-row-fields">
-            <div className="pdt-field pdt-field--grow">
-              <ZHFieldLabel size="sm" className="pdt-label">
-                Banco
-              </ZHFieldLabel>
-              <ZhTextInput
-                placeholder="Banco"
-                value={
-                  (isCard
-                    ? row.card?.bankName
-                    : isTransfer
-                      ? row.transfer?.bankName
-                      : row.cheque?.bankName) ?? ""
-                }
-                onChange={(e) => {
-                  const v = e.target.value;
-                  upd(row._k, (r) =>
-                    isCard
-                      ? { ...r, card: { ...r.card, bankName: v } }
-                      : isTransfer
-                        ? { ...r, transfer: { ...r.transfer, bankName: v } }
+            {isTransfer ? (
+              <div className="pdt-field pdt-field--grow">
+                <ZHFieldLabel size="sm" className="pdt-label">
+                  Cuenta bancaria destino
+                </ZHFieldLabel>
+                <ZhSelect
+                  value={row.transfer?.companyBankAccountId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    upd(row._k, (r) => ({
+                      ...r,
+                      transfer: { ...r.transfer, companyBankAccountId: v || undefined },
+                    }));
+                  }}
+                >
+                  <option value="">Seleccione una cuenta bancaria</option>
+                  {bankAccountOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                </ZhSelect>
+              </div>
+            ) : (
+              <div className="pdt-field pdt-field--grow">
+                <ZHFieldLabel size="sm" className="pdt-label">
+                  Banco
+                </ZHFieldLabel>
+                <ZhTextInput
+                  placeholder="Banco"
+                  value={(isCard ? row.card?.bankName : row.cheque?.bankName) ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    upd(row._k, (r) =>
+                      isCard
+                        ? { ...r, card: { ...r.card, bankName: v } }
                         : { ...r, cheque: { ...r.cheque, bankName: v } },
-                  );
-                }}
-              />
-            </div>
+                    );
+                  }}
+                />
+              </div>
+            )}
             {isCard && (
               <>
                 <div className="pdt-field pdt-field--grow">

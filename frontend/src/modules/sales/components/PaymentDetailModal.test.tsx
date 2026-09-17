@@ -8,6 +8,9 @@ afterEach(() => {
   cleanup();
 });
 
+const BANK_ACCOUNT_PICHINCHA = "bank-account-pichincha";
+const BANK_ACCOUNT_GUAYAQUIL = "bank-account-guayaquil";
+
 function renderModal(
   overrides: Partial<ComponentProps<typeof PaymentDetailModal>> = {},
 ) {
@@ -19,16 +22,28 @@ function renderModal(
       methodName="Transferencia"
       detailType="Transfer"
       requiresReference
+      bankAccountOptions={[
+        { id: BANK_ACCOUNT_PICHINCHA, label: "Pichincha — Cta. Principal — Corriente ****3456" },
+        { id: BANK_ACCOUNT_GUAYAQUIL, label: "Guayaquil — Cta. Secundaria — Ahorros ****7890" },
+      ]}
       initialRows={[
         {
           _k: 1,
           amount: 10,
-          transfer: { bankName: "Pichincha", receiptNumber: "134010011" },
+          transfer: {
+            companyBankAccountId: BANK_ACCOUNT_PICHINCHA,
+            receiptNumber: "134010011",
+            transferDate: "2026-09-17",
+          },
         },
         {
           _k: 2,
           amount: 20,
-          transfer: { bankName: "Guayaquil", receiptNumber: "998877" },
+          transfer: {
+            companyBankAccountId: BANK_ACCOUNT_GUAYAQUIL,
+            receiptNumber: "998877",
+            transferDate: "2026-09-17",
+          },
         },
       ]}
       initialKey={3}
@@ -64,8 +79,8 @@ describe("PaymentDetailModal — botón eliminar fila (SALES-DS-PAYMENT-REMOVE-0
     fireEvent.click(removeButtons[0]);
 
     expect(screen.getAllByTitle("Eliminar")).toHaveLength(1);
-    expect(screen.getByDisplayValue("Guayaquil")).toBeTruthy();
-    expect(screen.queryByDisplayValue("Pichincha")).toBeNull();
+    expect(screen.getByDisplayValue("998877")).toBeTruthy();
+    expect(screen.queryByDisplayValue("134010011")).toBeNull();
   });
 
   it('no muestra texto visible "Eliminar" (icon-only)', () => {
@@ -102,8 +117,8 @@ describe("PaymentDetailModal — total del footer migrado a ZHMoneyValue (SALES-
   it("los montos de las filas siguen siendo inputs editables, no ZHMoneyValue", () => {
     renderModal();
 
-    const bankInput = screen.getByDisplayValue("Pichincha");
-    expect(bankInput.tagName).toBe("INPUT");
+    const receiptInput = screen.getByDisplayValue("134010011");
+    expect(receiptInput.tagName).toBe("INPUT");
   });
 
   it("no hay estilos inline en el total del footer", () => {
@@ -128,7 +143,9 @@ describe("PaymentDetailModal — referencia obligatoria (SALES-TRANSFER-PAYMENT-
 
   it('bloquea "Confirmar" y muestra un mensaje claro si falta el comprobante', () => {
     const { onConfirm } = renderModal({
-      initialRows: [{ _k: 1, amount: 10, transfer: { bankName: "Pichincha" } }],
+      initialRows: [
+        { _k: 1, amount: 10, transfer: { companyBankAccountId: BANK_ACCOUNT_PICHINCHA } },
+      ],
     });
 
     expect(
@@ -143,11 +160,83 @@ describe("PaymentDetailModal — referencia obligatoria (SALES-TRANSFER-PAYMENT-
   it("no exige comprobante cuando el método no lo requiere (requiresReference=false)", () => {
     const { onConfirm } = renderModal({
       requiresReference: false,
-      initialRows: [{ _k: 1, amount: 10, transfer: { bankName: "Pichincha" } }],
+      initialRows: [
+        {
+          _k: 1,
+          amount: 10,
+          transfer: {
+            companyBankAccountId: BANK_ACCOUNT_PICHINCHA,
+            transferDate: "2026-09-17",
+          },
+        },
+      ],
     });
 
     expect(screen.queryByText(/requiere un comprobante\/referencia/i)).toBeNull();
     fireEvent.click(screen.getByText(/^Confirmar/));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("PaymentDetailModal — cuenta bancaria destino obligatoria (SALES-TRANSFER-BANK-ACCOUNT-01)", () => {
+  it("el campo Banco se reemplaza por un select de cuentas bancarias para Transferencia", () => {
+    renderModal();
+
+    expect(screen.queryByPlaceholderText("Banco")).toBeNull();
+    expect(screen.getAllByText("Cuenta bancaria destino")).toHaveLength(2);
+    expect(
+      screen.getAllByText("Pichincha — Cta. Principal — Corriente ****3456"),
+    ).not.toHaveLength(0);
+  });
+
+  it('bloquea "Confirmar" y muestra un mensaje claro si falta la cuenta bancaria', () => {
+    const { onConfirm } = renderModal({
+      initialRows: [
+        {
+          _k: 1,
+          amount: 10,
+          transfer: { receiptNumber: "134010011", transferDate: "2026-09-17" },
+        },
+      ],
+    });
+
+    expect(
+      screen.getByText(/requiere seleccionar una cuenta bancaria destino/i),
+    ).toBeTruthy();
+    const confirmBtn = screen.getByText(/^Confirmar/).closest("button")!;
+    expect(confirmBtn.disabled).toBe(true);
+    fireEvent.click(confirmBtn);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("mantiene el campo Banco como texto libre para Tarjeta/Cheque (fuera de alcance)", () => {
+    renderModal({
+      detailType: "Card",
+      requiresReference: false,
+      initialRows: [{ _k: 1, amount: 10, card: { bankName: "Pichincha" } }],
+    });
+
+    expect(screen.getByPlaceholderText("Banco")).toBeTruthy();
+    expect(screen.queryByText("Cuenta bancaria destino")).toBeNull();
+  });
+
+  it("seleccionar una cuenta bancaria habilita Confirmar y viaja en el payload", () => {
+    const { onConfirm } = renderModal({
+      initialRows: [
+        {
+          _k: 1,
+          amount: 10,
+          transfer: { receiptNumber: "134010011", transferDate: "2026-09-17" },
+        },
+      ],
+    });
+
+    const select = screen.getByDisplayValue("Seleccione una cuenta bancaria");
+    fireEvent.change(select, { target: { value: BANK_ACCOUNT_PICHINCHA } });
+    fireEvent.click(screen.getByText(/^Confirmar/));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    const rows = onConfirm.mock.calls[0][0];
+    expect(rows[0].transfer.companyBankAccountId).toBe(BANK_ACCOUNT_PICHINCHA);
   });
 });

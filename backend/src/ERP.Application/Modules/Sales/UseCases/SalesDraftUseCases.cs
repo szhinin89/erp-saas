@@ -60,8 +60,14 @@ public sealed record CardDetailInput(
     string? LotNumber = null
 );
 
+/// <summary>
+/// SALES-TRANSFER-BANK-ACCOUNT-01: <see cref="CompanyBankAccountId"/> reemplaza el texto libre
+/// <c>BankName</c> como fuente de verdad — obligatorio para todo pago cuyo método sea
+/// Transferencia (validado en <see cref="SalesPaymentHelper.BuildPaymentsAsync"/>, nunca confiado
+/// tal cual del cliente).
+/// </summary>
 public sealed record TransferDetailInput(
-    string? BankName = null,
+    Guid? CompanyBankAccountId = null,
     string? ReceiptNumber = null,
     string? TransferDate = null
 );
@@ -264,6 +270,7 @@ public sealed class CreateSalesDraftHandler
     private readonly ICurrentCashSession _cashSession;
     private readonly IOperationalPreferencesResolver _preferences;
     private readonly ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy _creditPolicy;
+    private readonly ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository _bankAccountRepo;
 
     public CreateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -286,7 +293,8 @@ public sealed class CreateSalesDraftHandler
         ICurrentUser u,
         ICurrentCashSession cashSession,
         IOperationalPreferencesResolver preferences,
-        ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy
+        ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy,
+        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo
     )
     {
         _repo = repo;
@@ -310,6 +318,7 @@ public sealed class CreateSalesDraftHandler
         _cashSession = cashSession;
         _preferences = preferences;
         _creditPolicy = creditPolicy;
+        _bankAccountRepo = bankAccountRepo;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -398,7 +407,9 @@ public sealed class CreateSalesDraftHandler
                 cmd.Payments,
                 invoiceId,
                 tid,
+                _c.CompanyId,
                 _pmRepo,
+                _bankAccountRepo,
                 ct
             );
             if (paymentsResult.Error is not null)
@@ -590,6 +601,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
     private readonly ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy _creditPolicy;
+    private readonly ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository _bankAccountRepo;
 
     public UpdateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -610,7 +622,8 @@ public sealed class UpdateSalesDraftHandler
         ICurrentBranch b,
         ICurrentUser u,
         IOperationalPreferencesResolver preferences,
-        ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy
+        ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy,
+        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo
     )
     {
         _repo = repo;
@@ -632,6 +645,7 @@ public sealed class UpdateSalesDraftHandler
         _u = u;
         _preferences = preferences;
         _creditPolicy = creditPolicy;
+        _bankAccountRepo = bankAccountRepo;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -762,7 +776,9 @@ public sealed class UpdateSalesDraftHandler
                     cmd.Payments,
                     inv.Id,
                     _t.TenantId,
+                    _c.CompanyId,
                     _pmRepo,
+                    _bankAccountRepo,
                     ct
                 );
                 if (paymentsResult.Error is not null)
@@ -1370,7 +1386,9 @@ file static class SalesPaymentHelper
         List<SalesPaymentInput> inputs,
         Guid invoiceId,
         Guid tenantId,
+        Guid companyId,
         IPaymentMethodRepository pmRepo,
+        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo,
         CancellationToken ct
     )
     {
@@ -1395,6 +1413,42 @@ file static class SalesPaymentHelper
                         $"El método '{pm.Name}' requiere una referencia."
                     );
                 cache[pm.Id] = pm;
+            }
+
+            // SALES-TRANSFER-BANK-ACCOUNT-01: solo Transferencia acepta/exige TransferDetail con
+            // CompanyBankAccountId — un TransferDetail adjunto a cualquier otro método (payload
+            // manipulado) se rechaza aquí, nunca se persiste silenciosamente.
+            if (
+                input.TransferDetail is not null
+                && pm.DetailType != PaymentMethodDetailType.Transfer
+            )
+                return PaymentsBuildResult.Fail(
+                    $"El método '{pm.Name}' no admite datos de transferencia bancaria."
+                );
+            if (pm.DetailType == PaymentMethodDetailType.Transfer)
+            {
+                if (input.TransferDetail?.CompanyBankAccountId is not { } bankAccountId)
+                    return PaymentsBuildResult.Fail(
+                        $"El método '{pm.Name}' requiere seleccionar una cuenta bancaria destino."
+                    );
+
+                var bankAccount = await bankAccountRepo.GetByIdAsync(tenantId, bankAccountId, ct);
+                if (bankAccount is null || bankAccount.CompanyId != companyId)
+                    return PaymentsBuildResult.Fail(
+                        "La cuenta bancaria seleccionada no existe o no pertenece a esta empresa."
+                    );
+                if (!bankAccount.IsActive)
+                    return PaymentsBuildResult.Fail(
+                        "La cuenta bancaria seleccionada está inactiva."
+                    );
+                if (string.IsNullOrWhiteSpace(input.TransferDetail!.ReceiptNumber))
+                    return PaymentsBuildResult.Fail(
+                        "El comprobante/referencia de la transferencia es obligatorio."
+                    );
+                if (ParseDate(input.TransferDetail.TransferDate) is null)
+                    return PaymentsBuildResult.Fail(
+                        "La fecha de operación de la transferencia es obligatoria."
+                    );
             }
 
             var payment = SalesInvoicePayment.Create(
@@ -1423,9 +1477,9 @@ file static class SalesPaymentHelper
                 payment.SetTransferDetail(
                     PaymentTransferDetail.Create(
                         payment.Id,
-                        input.TransferDetail.BankName,
-                        input.TransferDetail.ReceiptNumber,
-                        ParseDate(input.TransferDetail.TransferDate)
+                        input.TransferDetail.CompanyBankAccountId!.Value,
+                        input.TransferDetail.ReceiptNumber ?? string.Empty,
+                        ParseDate(input.TransferDetail.TransferDate) ?? default
                     )
                 );
 

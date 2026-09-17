@@ -7,9 +7,11 @@ using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
@@ -177,7 +179,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         bool allowSellWithoutStock = false,
         Guid? activeBranchId = null,
         Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null,
-        Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null
+        Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null,
+        Mock<ICompanyBankAccountRepository>? bankAccountRepoOverride = null,
+        Mock<IAccountRepository>? accountRepoOverride = null
     ) =>
         BuildHandler(
             inv,
@@ -189,7 +193,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             allowSellWithoutStock,
             activeBranchId,
             paymentMethodRepoOverride,
-            paymentMethodAccountRepoOverride
+            paymentMethodAccountRepoOverride,
+            bankAccountRepoOverride,
+            accountRepoOverride
         );
 
     private static (
@@ -206,7 +212,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         bool allowSellWithoutStock = false,
         Guid? activeBranchId = null,
         Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null,
-        Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null
+        Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null,
+        Mock<ICompanyBankAccountRepository>? bankAccountRepoOverride = null,
+        Mock<IAccountRepository>? accountRepoOverride = null
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -308,6 +316,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
 
+        // SALES-TRANSFER-BANK-ACCOUNT-01 — sin overrides, ningún test de este bloque usa
+        // Transferencia (todos usan Efectivo por defecto), así que estos mocks nunca se invocan.
+        var bankAccountRepo = bankAccountRepoOverride ?? new Mock<ICompanyBankAccountRepository>();
+        var accountRepo = accountRepoOverride ?? new Mock<IAccountRepository>();
+
         postingEngine = new Mock<IPostingEngine>();
         postingEngine
             .Setup(p =>
@@ -338,6 +351,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
             paymentMethodAccountRepo.Object,
+            bankAccountRepo.Object,
+            accountRepo.Object,
             postingEngine.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -466,6 +481,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
             paymentMethodAccountRepo.Object,
+            Mock.Of<ICompanyBankAccountRepository>(),
+            Mock.Of<IAccountRepository>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -700,6 +717,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
             paymentMethodAccountRepo.Object,
+            Mock.Of<ICompanyBankAccountRepository>(),
+            Mock.Of<IAccountRepository>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -756,6 +775,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<ISalesFiscalPolicyResolver>(),
             Mock.Of<IPaymentMethodRepository>(),
             Mock.Of<IPaymentMethodAccountRepository>(),
+            Mock.Of<ICompanyBankAccountRepository>(),
+            Mock.Of<IAccountRepository>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -2195,5 +2216,290 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+    }
+
+    // ── SALES-TRANSFER-BANK-ACCOUNT-01 ──────────────────────────────────────────────────────
+
+    private static Domain.Modules.Sales.Entities.PaymentMethod CreateTransferPaymentMethod(
+        Guid id
+    ) =>
+        Domain.Modules.Sales.Entities.PaymentMethod.Create(
+            TenantId,
+            "TRANSFERENCIA",
+            "Transferencia Bancaria",
+            requiresReference: true,
+            isCreditAllowed: false,
+            sortOrder: 2,
+            createdBy: UserId,
+            detailType: Domain.Modules.Sales.Enums.PaymentMethodDetailType.Transfer
+        );
+
+    private static ERP.Domain.MasterData.Entities.Bank ActiveBank() =>
+        ERP.Domain.MasterData.Entities.Bank.Create(TenantId, "PICHINCHA", "Banco Pichincha", null, UserId);
+
+    private static ERP.Domain.Modules.Accounting.Entities.Account ActiveAccount(
+        bool allowsPosting = true,
+        bool isActive = true
+    )
+    {
+        var account = ERP.Domain.Modules.Accounting.Entities.Account.Create(
+            TenantId,
+            CompanyId,
+            ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.02.001"),
+            "Banco Pichincha Cta. Cte.",
+            null,
+            ERP.Domain.Modules.Accounting.Enums.AccountType.Asset,
+            ERP.Domain.Modules.Accounting.Enums.AccountNature.Debit,
+            allowsPosting,
+            UserId
+        );
+        if (!isActive)
+            account.Disable(UserId);
+        return account;
+    }
+
+    private static ERP.Domain.Modules.Finance.Entities.CompanyBankAccount ActiveBankAccount(
+        Guid bankId,
+        Guid accountingAccountId,
+        bool isActive = true
+    )
+    {
+        var bankAccount = ERP.Domain.Modules.Finance.Entities.CompanyBankAccount.Create(
+            TenantId,
+            CompanyId,
+            bankId,
+            ERP.Domain.Modules.Finance.Enums.BankAccountType.Checking,
+            "2200123456",
+            "Cuenta corriente Pichincha",
+            accountingAccountId,
+            UserId
+        );
+        if (!isActive)
+            bankAccount.Disable(UserId);
+        return bankAccount;
+    }
+
+    /// <summary>Factura de contado con un único pago Transferencia — con o sin TransferDetail según el test.</summary>
+    private static (SalesInvoice inv, Guid transferMethodId) CreateDraftInvoiceWithTransferPayment(
+        DateOnly issueDate,
+        Guid? companyBankAccountId,
+        decimal unitPrice = 100m
+    )
+    {
+        var inv = CreateDraftInvoiceWithHeaderSriCode(issueDate, headerSriPaymentMethodCode: "16", unitPrice);
+        var transferMethodId = Guid.NewGuid();
+        var total = ExpectedGrandTotal(unitPrice);
+        var payment = SalesInvoicePayment.Create(
+            inv.Id,
+            TenantId,
+            transferMethodId,
+            "16",
+            "Transferencia Bancaria",
+            total
+        );
+        if (companyBankAccountId.HasValue)
+            payment.SetTransferDetail(
+                PaymentTransferDetail.Create(
+                    payment.Id,
+                    companyBankAccountId.Value,
+                    "TRX-001",
+                    issueDate
+                )
+            );
+        inv.ReplacePayments(new[] { payment }, UserId);
+        return (inv, transferMethodId);
+    }
+
+    [Fact]
+    public async Task Transferencia_sin_cuenta_bancaria_seleccionada_bloquea_la_autorizacion()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, companyBankAccountId: null);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateTransferPaymentMethod(transferMethodId));
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("cuenta bancaria de destino");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+    }
+
+    [Fact]
+    public async Task Transferencia_con_cuenta_bancaria_de_otra_empresa_bloquea_la_autorizacion()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var bank = ActiveBank();
+        var account = ActiveAccount();
+        var bankAccount = ActiveBankAccount(bank.Id, account.Id);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateTransferPaymentMethod(transferMethodId));
+
+        var bankAccountRepo = new Mock<ICompanyBankAccountRepository>();
+        bankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.Finance.Entities.CompanyBankAccount?)null); // no pertenece a esta empresa
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            bankAccountRepoOverride: bankAccountRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no existe o no pertenece a esta empresa");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+    }
+
+    [Fact]
+    public async Task Transferencia_con_cuenta_bancaria_inactiva_bloquea_la_autorizacion()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var bank = ActiveBank();
+        var account = ActiveAccount();
+        var bankAccount = ActiveBankAccount(bank.Id, account.Id, isActive: false);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateTransferPaymentMethod(transferMethodId));
+
+        var bankAccountRepo = new Mock<ICompanyBankAccountRepository>();
+        bankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            bankAccountRepoOverride: bankAccountRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("inactiva");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+    }
+
+    [Fact]
+    public async Task Transferencia_con_cuenta_contable_inactiva_bloquea_la_autorizacion()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var bank = ActiveBank();
+        var account = ActiveAccount(isActive: false);
+        var bankAccount = ActiveBankAccount(bank.Id, account.Id);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateTransferPaymentMethod(transferMethodId));
+
+        var bankAccountRepo = new Mock<ICompanyBankAccountRepository>();
+        bankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(account);
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            bankAccountRepoOverride: bankAccountRepo,
+            accountRepoOverride: accountRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no es postable o está inactiva");
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+    }
+
+    [Fact]
+    public async Task Transferencia_valida_rutea_el_debito_a_la_cuenta_contable_de_la_cuenta_bancaria_seleccionada()
+    {
+        // No debe usar PaymentMethodAccount ni la línea fija de "Caja general" — el 100% del monto
+        // debe quedar asignado a CompanyBankAccount.AccountingAccountId.
+        var today = new DateOnly(2026, 7, 13);
+        var bank = ActiveBank();
+        var account = ActiveAccount();
+        var bankAccount = ActiveBankAccount(bank.Id, account.Id);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id, unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateTransferPaymentMethod(transferMethodId));
+
+        var bankAccountRepo = new Mock<ICompanyBankAccountRepository>();
+        bankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(account);
+
+        // Mapa PaymentMethodAccount vacío a propósito: si el código incorrectamente cayera en esa
+        // ruta para Transferencia, este test lo detectaría (el guard de "sin cuenta configurada"
+        // rechazaría con OTRO mensaje distinto al esperado, o bloquearía cuando no debería).
+        var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
+        paymentMethodAccountRepo
+            .Setup(r => r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new Dictionary<Guid, ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount>()
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            paymentMethodAccountRepoOverride: paymentMethodAccountRepo,
+            bankAccountRepoOverride: bankAccountRepo,
+            accountRepoOverride: accountRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+
+        var authorizedEvent = inv.DomainEvents
+            .OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+            .Single();
+        authorizedEvent.CashByAccount.Should().ContainSingle();
+        authorizedEvent.CashByAccount.Should().ContainKey(account.Id);
+        authorizedEvent.CashByAccount[account.Id].Should().Be(total);
     }
 }

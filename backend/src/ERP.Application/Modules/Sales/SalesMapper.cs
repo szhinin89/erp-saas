@@ -84,6 +84,7 @@ internal static class SalesMapper
                 : null,
             p.TransferDetail is not null
                 ? new PaymentTransferDetailDto(
+                    p.TransferDetail.CompanyBankAccountId,
                     p.TransferDetail.BankName,
                     p.TransferDetail.ReceiptNumber,
                     p.TransferDetail.TransferDate

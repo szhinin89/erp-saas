@@ -59,6 +59,7 @@ public sealed class SalesDraftSpecialTaxTests
         public Mock<ICurrentCashSession> CashSession { get; } = new();
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
         public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
+        public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
 
         public Fixture()
         {
@@ -184,7 +185,8 @@ public sealed class SalesDraftSpecialTaxTests
                 User.Object,
                 CashSession.Object,
                 Preferences.Object,
-                CreditPolicy.Object
+                CreditPolicy.Object,
+                BankAccountRepo.Object
             );
     }
 

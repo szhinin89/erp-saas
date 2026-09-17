@@ -580,6 +580,7 @@ export function SalesPage() {
           ctx.paymentMethods.find((pm) => pm.id === ctx.detailMethodId)
             ?.requiresReference ?? false
         }
+        bankAccountOptions={ctx.bankAccountOptions}
         initialRows={ctx.detailRows}
         initialKey={ctx.detailKey}
         available={remainingToCollect(ctx, ctx.detailMethodId)}

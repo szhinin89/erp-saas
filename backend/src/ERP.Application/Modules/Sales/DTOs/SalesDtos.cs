@@ -109,6 +109,7 @@ public sealed record PaymentCardDetailDto(
 );
 
 public sealed record PaymentTransferDetailDto(
+    Guid? CompanyBankAccountId,
     string? BankName,
     string? ReceiptNumber,
     DateOnly? TransferDate

@@ -93,7 +93,7 @@ const cardDetailSchema = z.object({
 });
 
 const transferDetailSchema = z.object({
-  bankName: z.string().optional(),
+  companyBankAccountId: z.string().optional(),
   receiptNumber: z.string().optional(),
   transferDate: z.string().optional(),
 });

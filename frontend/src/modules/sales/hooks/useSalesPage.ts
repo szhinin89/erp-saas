@@ -39,6 +39,10 @@ import type { SalesInvoiceDefaultsDto } from "../api/salesDefaultsService";
 import { salesRuntimeContextService } from "../api/salesRuntimeContextService";
 import type { SalesRuntimeContextDto } from "../api/salesRuntimeContextService";
 import { salesItemPricingService } from "../api/salesItemPricingService";
+import { bankAccountService } from "../../finance/api/bankAccountService";
+import type { CompanyBankAccountDto } from "../../finance/api/bankAccountService";
+import { bankService } from "../../settings/banks/api/bankService";
+import type { BankDto } from "../../settings/banks/api/bankService";
 import {
   loadPrecisionPolicy,
   getPrecisionPolicy,
@@ -257,6 +261,14 @@ function simulateRemainingSteps(
   return { stop: () => clearInterval(id) };
 }
 
+// SALES-TRANSFER-BANK-ACCOUNT-01: etiquetas legibles de BankAccountType para el selector de
+// cuenta bancaria destino en Transferencia.
+const BANK_ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  Checking: "Corriente",
+  Savings: "Ahorros",
+  Other: "Otro",
+};
+
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function useSalesPage() {
@@ -314,6 +326,26 @@ export function useSalesPage() {
     [],
   );
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDto[]>([]);
+  // SALES-TRANSFER-BANK-ACCOUNT-01: cuentas bancarias activas de la empresa, para el selector de
+  // Transferencia en PaymentDetailModal — reemplaza el texto libre "Banco".
+  const [bankAccounts, setBankAccounts] = useState<CompanyBankAccountDto[]>([]);
+  const [banks, setBanks] = useState<BankDto[]>([]);
+  // SALES-TRANSFER-BANK-ACCOUNT-01: "Banco + alias + tipo/número enmascarado" — el número de
+  // cuenta nunca se muestra completo en el selector de Transferencia (solo los últimos 4 dígitos).
+  const bankAccountOptions = useMemo(
+    () =>
+      bankAccounts.map((a) => {
+        const bankName = banks.find((b) => b.id === a.bankId)?.name ?? a.bankId;
+        const type = BANK_ACCOUNT_TYPE_LABELS[a.accountType] ?? a.accountType;
+        const last4 = a.accountNumber.slice(-4);
+        const masked = a.accountNumber.length > 4 ? `****${last4}` : a.accountNumber;
+        return {
+          id: a.id,
+          label: `${bankName} — ${a.displayName} — ${type} ${masked}`,
+        };
+      }),
+    [bankAccounts, banks],
+  );
   const [warehouses, setWarehouses] = useState<WarehouseDto[]>([]);
   const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
   const [vatRatesMap, setVatRatesMap] = useState<Record<string, number>>({});
@@ -620,6 +652,15 @@ export function useSalesPage() {
         salesRuntimeContextService
           .get()
           .then(setRuntimeContext)
+          .catch(() => {}),
+        // SALES-TRANSFER-BANK-ACCOUNT-01
+        bankAccountService
+          .list(true)
+          .then(setBankAccounts)
+          .catch(() => {}),
+        bankService
+          .list(true)
+          .then(setBanks)
           .catch(() => {}),
       ]);
 
@@ -1790,6 +1831,7 @@ export function useSalesPage() {
     payKey,
     setPayKey,
     paymentMethods,
+    bankAccountOptions,
     // Único cómputo de "total ya cobrado" — evita que el checklist y la grilla de formas de
     // cobro recalculen el mismo reduce() por separado (ver SalesPage.tsx).
     paidTotal,

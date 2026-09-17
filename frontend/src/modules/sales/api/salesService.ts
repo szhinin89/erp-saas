@@ -55,6 +55,8 @@ export interface CardDetailDto {
   lotNumber: string | null;
 }
 export interface TransferDetailDto {
+  companyBankAccountId: string | null;
+  /** Legado — solo facturas autorizadas antes de SALES-TRANSFER-BANK-ACCOUNT-01. */
   bankName: string | null;
   receiptNumber: string | null;
   transferDate: string | null;
@@ -86,7 +88,7 @@ export interface CardDetailInput {
   lotNumber?: string;
 }
 export interface TransferDetailInput {
-  bankName?: string;
+  companyBankAccountId?: string;
   receiptNumber?: string;
   transferDate?: string;
 }
