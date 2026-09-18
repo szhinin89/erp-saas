@@ -46,7 +46,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         bool CreditAllowed,
         int Sort,
         PaymentMethodDetailType DetailType,
-        string? SriPaymentMethodCode
+        string? SriPaymentMethodCode,
+        bool AffectsPhysicalCash
     )[] DefaultPaymentMethods = DefaultPaymentMethodSeedData.Entries;
 
     private readonly ErpDbContext _db;
@@ -100,7 +101,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
                 creditAllowed,
                 sort,
                 detailType,
-                sriPaymentMethodCode
+                sriPaymentMethodCode,
+                affectsPhysicalCash
             ) in DefaultPaymentMethods
         )
         {
@@ -119,7 +121,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
                 sort,
                 actorId,
                 detailType,
-                sriPaymentMethodCode
+                sriPaymentMethodCode,
+                affectsPhysicalCash
             );
             _db.PaymentMethods.Add(pm);
             added++;

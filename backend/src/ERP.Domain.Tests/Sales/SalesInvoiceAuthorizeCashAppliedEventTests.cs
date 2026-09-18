@@ -96,4 +96,29 @@ public sealed class SalesInvoiceAuthorizeCashAppliedEventTests
         evt.CashApplied.Should().Be(0m);
         evt.GrandTotal.Should().Be(100.00m);
     }
+
+    // ── CASH-SESSION-PHYSICAL-CASH-SSOT-01 ──────────────────────────────
+
+    [Fact]
+    public void Authorize_con_physicalCashApplied_explicito_lo_propaga_distinto_de_CashApplied()
+    {
+        // Venta pagada 100% con Transferencia: CashApplied = 100 (dinero real, no crédito) pero
+        // PhysicalCashApplied = 0 (no mueve el cajón físico).
+        var inv = CreateDraftReadyToAuthorize(unitPrice: 100m);
+        inv.Authorize(UserId, cashApplied: 100m, physicalCashApplied: 0m);
+
+        var evt = inv.DomainEvents.OfType<SalesInvoiceAuthorizedEvent>().Single();
+        evt.CashApplied.Should().Be(100m);
+        evt.PhysicalCashApplied.Should().Be(0m);
+    }
+
+    [Fact]
+    public void Authorize_sin_physicalCashApplied_usa_CashApplied_por_compatibilidad()
+    {
+        var inv = CreateDraftReadyToAuthorize(unitPrice: 100m);
+        inv.Authorize(UserId, cashApplied: 100m);
+
+        var evt = inv.DomainEvents.OfType<SalesInvoiceAuthorizedEvent>().Single();
+        evt.PhysicalCashApplied.Should().Be(evt.CashApplied);
+    }
 }

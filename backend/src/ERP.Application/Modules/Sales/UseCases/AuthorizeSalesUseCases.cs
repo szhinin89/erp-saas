@@ -234,6 +234,13 @@ public sealed class AuthorizeSalesInvoiceHandler
         // genera por ese saldo, nunca por el total del documento.
         var isCreditByPaymentMethod = false;
         var cashApplied = 0m;
+        // CASH-SESSION-PHYSICAL-CASH-SSOT-01 — subconjunto de cashApplied que además mueve efectivo
+        // físico de caja (PaymentMethod.AffectsPhysicalCash = true, hoy solo Efectivo). Distinto de
+        // cashApplied: Transferencia/Tarjeta/Cheque son dinero real (suman a cashApplied) pero
+        // nunca entran/salen del cajón físico (no deben sumar aquí). Único punto de este cálculo —
+        // Caja (SalesInvoiceAuthorizedHandler) lo consume tal cual, nunca vuelve a filtrar por
+        // método de pago.
+        var physicalCashApplied = 0m;
         // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6C) — cachea los PaymentMethod ya
         // resueltos en este mismo recorrido (antes solo se usaban para cashApplied/isCredit) para
         // reutilizarlos más abajo al sincronizar SriPaymentMethodCode de cabecera, sin repetir la
@@ -248,6 +255,8 @@ public sealed class AuthorizeSalesInvoiceHandler
                 isCreditByPaymentMethod = true;
             else
                 cashApplied += payment.Amount;
+            if (method?.AffectsPhysicalCash == true)
+                physicalCashApplied += payment.Amount;
         }
 
         // ── SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 ─────────────────────────
@@ -580,7 +589,13 @@ public sealed class AuthorizeSalesInvoiceHandler
             // SalesSettlementPolicy.Tolerance como fuente de cálculo — la constante sigue viviendo
             // en Domain solo como fallback si la policy no pudiera resolverse).
             var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
-            inv.Authorize(uid, cashApplied, precision.SettlementToleranceAmount, cashByAccount);
+            inv.Authorize(
+                uid,
+                cashApplied,
+                precision.SettlementToleranceAmount,
+                cashByAccount,
+                physicalCashApplied
+            );
         }
         catch (InvalidOperationException ex)
         {

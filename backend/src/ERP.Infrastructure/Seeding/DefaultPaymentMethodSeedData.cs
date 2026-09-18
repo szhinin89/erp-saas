@@ -29,11 +29,12 @@ public static class DefaultPaymentMethodSeedData
         bool CreditAllowed,
         int Sort,
         PaymentMethodDetailType DetailType,
-        string? SriPaymentMethodCode
+        string? SriPaymentMethodCode,
+        bool AffectsPhysicalCash
     )[] Entries =
     [
-        ("EFECTIVO", "Efectivo", false, false, 1, PaymentMethodDetailType.None, "01"),
-        ("TARJETA", "Tarjeta de Crédito", true, false, 2, PaymentMethodDetailType.Card, "19"),
+        ("EFECTIVO", "Efectivo", false, false, 1, PaymentMethodDetailType.None, "01", true),
+        ("TARJETA", "Tarjeta de Crédito", true, false, 2, PaymentMethodDetailType.Card, "19", false),
         (
             "TRANSFERENCIA",
             "Transferencia Bancaria",
@@ -41,10 +42,11 @@ public static class DefaultPaymentMethodSeedData
             false,
             3,
             PaymentMethodDetailType.Transfer,
-            "20"
+            "20",
+            false
         ),
-        ("CHEQUE", "Cheque", true, false, 4, PaymentMethodDetailType.Check, "20"),
-        ("CREDITO", "Crédito", false, true, 5, PaymentMethodDetailType.None, null),
+        ("CHEQUE", "Cheque", true, false, 4, PaymentMethodDetailType.Check, "20", false),
+        ("CREDITO", "Crédito", false, true, 5, PaymentMethodDetailType.None, null, false),
     ];
 
     /// <summary>Código SRI inicial sugerido para un Code de PaymentMethod conocido, o null si no hay entrada/mapeo.</summary>

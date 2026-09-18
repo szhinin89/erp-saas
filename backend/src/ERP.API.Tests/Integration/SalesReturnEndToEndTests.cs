@@ -223,7 +223,8 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
             requiresReference: false,
             isCreditAllowed: false,
             sortOrder: 1,
-            createdBy: _adminId
+            createdBy: _adminId,
+            affectsPhysicalCash: true
         );
         var creditPaymentMethod = PaymentMethod.Create(
             TenantId,

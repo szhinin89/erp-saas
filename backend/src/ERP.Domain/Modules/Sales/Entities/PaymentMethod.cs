@@ -14,6 +14,17 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
     public bool IsCreditAllowed { get; private set; }
     public int SortOrder { get; private set; }
 
+    /// <summary>
+    /// CASH-SESSION-PHYSICAL-CASH-SSOT-01 — SSOT de si este método de pago mueve efectivo físico
+    /// de caja (billetes/monedas en el cajón), distinto de <see cref="IsCreditAllowed"/> (que
+    /// distingue "dinero real" vs. "saldo pendiente" para settlement/CxC/contabilidad). Solo
+    /// Efectivo lo tiene en true por defecto: Transferencia/Tarjeta/Cheque/Crédito son dinero real
+    /// recibido (o no) pero nunca entran/salen del cajón físico. Consumido exclusivamente por
+    /// <c>AuthorizeSalesUseCases</c> para calcular <c>PhysicalCashApplied</c> — nunca inferido por
+    /// código/nombre en un handler (evitaría el SSOT).
+    /// </summary>
+    public bool AffectsPhysicalCash { get; private set; }
+
     /// <summary>Esquema de detalle que la UI debe capturar para este método (tarjeta/transferencia/cheque/ninguno).</summary>
     public PaymentMethodDetailType DetailType { get; private set; }
 
@@ -40,7 +51,10 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         int sortOrder,
         Guid createdBy,
         PaymentMethodDetailType detailType = PaymentMethodDetailType.None,
-        string? sriPaymentMethodCode = null
+        string? sriPaymentMethodCode = null,
+        // CASH-SESSION-PHYSICAL-CASH-SSOT-01: default false (fail-closed) — un método de pago
+        // creado sin especificarlo nunca mueve caja física hasta que se marque explícitamente.
+        bool affectsPhysicalCash = false
     )
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -71,6 +85,7 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
             SriPaymentMethodCode = string.IsNullOrWhiteSpace(sriPaymentMethodCode)
                 ? null
                 : sriPaymentMethodCode.Trim(),
+            AffectsPhysicalCash = affectsPhysicalCash,
         };
         pm.SetCreated(createdBy);
         return pm;
@@ -94,7 +109,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         int sortOrder,
         Guid createdBy,
         PaymentMethodDetailType detailType = PaymentMethodDetailType.None,
-        string? sriPaymentMethodCode = null
+        string? sriPaymentMethodCode = null,
+        bool affectsPhysicalCash = false
     )
     {
         var pm = Create(
@@ -106,7 +122,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
             sortOrder,
             createdBy,
             detailType,
-            sriPaymentMethodCode
+            sriPaymentMethodCode,
+            affectsPhysicalCash
         );
         pm.MarkAsSystemSeeded();
         return pm;

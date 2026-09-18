@@ -249,7 +249,8 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
             requiresReference: false,
             isCreditAllowed: false,
             sortOrder: 1,
-            createdBy: _adminId
+            createdBy: _adminId,
+            affectsPhysicalCash: true
         );
         db.PaymentMethods.Add(paymentMethod);
         await db.SaveChangesAsync();

@@ -28,6 +28,11 @@ public sealed class PaymentMethodConfiguration : IEntityTypeConfiguration<Paymen
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.RequiresReference).HasColumnName("requires_reference").IsRequired();
         builder.Property(x => x.IsCreditAllowed).HasColumnName("is_credit_allowed").IsRequired();
+        builder
+            .Property(x => x.AffectsPhysicalCash)
+            .HasColumnName("affects_physical_cash")
+            .IsRequired()
+            .HasDefaultValue(false);
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
         builder
             .Property(x => x.IsSystemSeeded)

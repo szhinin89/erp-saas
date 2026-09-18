@@ -431,7 +431,10 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         Guid updatedBy,
         decimal? cashApplied = null,
         decimal? settlementTolerance = null,
-        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null
+        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null,
+        // CASH-SESSION-PHYSICAL-CASH-SSOT-01: subconjunto de cashApplied cobrado con un método
+        // PaymentMethod.AffectsPhysicalCash = true — ver SalesInvoiceAuthorizedEvent.PhysicalCashApplied.
+        decimal? physicalCashApplied = null
     )
     {
         EnsureDraft();
@@ -510,7 +513,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 TotalDiscount,
                 TotalIrbpnr,
                 cashApplied,
-                cashByAccount
+                cashByAccount,
+                physicalCashApplied
             )
         );
     }

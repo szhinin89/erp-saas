@@ -56,6 +56,18 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
     /// </summary>
     public IReadOnlyDictionary<Guid, decimal> CashByAccount { get; }
 
+    /// <summary>
+    /// CASH-SESSION-PHYSICAL-CASH-SSOT-01 — subconjunto de <see cref="CashApplied"/> cobrado con un
+    /// método de pago marcado <c>PaymentMethod.AffectsPhysicalCash = true</c> (hoy solo Efectivo).
+    /// Distinto de <see cref="CashApplied"/>: ese campo es "dinero real recibido" para
+    /// settlement/CxC/contabilidad (incluye Transferencia/Tarjeta/Cheque); este es "efectivo que
+    /// entra/sale del cajón físico" — el único monto que <c>Caja</c> (<see cref="ERP.Domain.Modules.Caja.Entities.CashSession"/>)
+    /// debe registrar como <c>CashMovementType.SaleIncome</c>. Nunca inferir por Code/nombre en el
+    /// handler: siempre viene de este campo, ya resuelto por Application con el mismo criterio
+    /// SSOT que <see cref="CashApplied"/>.
+    /// </summary>
+    public decimal PhysicalCashApplied { get; }
+
     public SalesInvoiceAuthorizedEvent(
         Guid invoiceId,
         string invoiceNumber,
@@ -71,7 +83,8 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         decimal totalDiscount,
         decimal totalIrbpnr = 0m,
         decimal? cashApplied = null,
-        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null
+        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null,
+        decimal? physicalCashApplied = null
     )
     {
         InvoiceId = invoiceId;
@@ -92,5 +105,10 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         // (SalesInvoice.Authorize) siempre lo pasa explícitamente con el cashApplied real.
         CashApplied = cashApplied ?? grandTotal;
         CashByAccount = cashByAccount ?? new Dictionary<Guid, decimal>();
+        // Default a CashApplied solo para no romper callers/tests preexistentes que no distinguen
+        // forma de pago (mismo criterio que el default de CashApplied arriba) — el único caller
+        // real de producción (AuthorizeSalesUseCases vía SalesInvoice.Authorize) siempre lo pasa
+        // explícitamente, ya filtrado por PaymentMethod.AffectsPhysicalCash.
+        PhysicalCashApplied = physicalCashApplied ?? CashApplied;
     }
 }

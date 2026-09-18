@@ -2617,4 +2617,98 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         authorizedEvent.CashByAccount.Should().ContainKey(account.Id);
         authorizedEvent.CashByAccount[account.Id].Should().Be(total);
     }
+
+    // ── CASH-SESSION-PHYSICAL-CASH-SSOT-01 ──────────────────────────────
+    // AuthorizeSalesUseCases debe calcular PhysicalCashApplied leyendo
+    // PaymentMethod.AffectsPhysicalCash — nunca inferido por Code/DetailType en el handler.
+
+    [Fact]
+    public async Task Transferencia_100_por_ciento_CashApplied_real_pero_PhysicalCashApplied_cero()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var bank = ActiveBank();
+        var account = ActiveAccount();
+        var bankAccount = ActiveBankAccount(bank.Id, account.Id);
+        var (inv, transferMethodId) = CreateDraftInvoiceWithTransferPayment(today, bankAccount.Id, unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateTransferPaymentMethod(transferMethodId));
+
+        var bankAccountRepo = new Mock<ICompanyBankAccountRepository>();
+        bankAccountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, bankAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(bankAccount);
+
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, account.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(account);
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo,
+            bankAccountRepoOverride: bankAccountRepo,
+            accountRepoOverride: accountRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+
+        var authorizedEvent = inv.DomainEvents
+            .OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+            .Single();
+        authorizedEvent.CashApplied.Should().Be(total, "Transferencia es dinero real recibido para settlement/CxC/contabilidad.");
+        authorizedEvent.PhysicalCashApplied.Should().Be(0m, "Transferencia nunca mueve el cajón físico de la caja.");
+    }
+
+    [Fact]
+    public async Task Efectivo_100_por_ciento_CashApplied_y_PhysicalCashApplied_iguales_al_total()
+    {
+        var today = new DateOnly(2026, 7, 13);
+        var inv = CreateDraftInvoice(issueDate: today, unitPrice: 100m);
+        var total = ExpectedGrandTotal(100m);
+
+        var cashMethodId = Guid.NewGuid();
+        var payment = SalesInvoicePayment.Create(inv.Id, TenantId, cashMethodId, "01", "Efectivo", total);
+        inv.ReplacePayments(new[] { payment }, UserId);
+
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.GetByIdAsync(TenantId, cashMethodId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                PaymentMethod.Create(
+                    TenantId,
+                    "EFECTIVO",
+                    "Efectivo",
+                    false,
+                    false,
+                    1,
+                    UserId,
+                    affectsPhysicalCash: true
+                )
+            );
+
+        var (handler, _, _) = BuildHandler(
+            inv,
+            today,
+            CreateIdentifiedCustomerBp(),
+            paymentMethodRepoOverride: paymentMethodRepo
+        );
+
+        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+
+        var authorizedEvent = inv.DomainEvents
+            .OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
+            .Single();
+        authorizedEvent.CashApplied.Should().Be(total);
+        authorizedEvent.PhysicalCashApplied.Should().Be(total);
+    }
 }
