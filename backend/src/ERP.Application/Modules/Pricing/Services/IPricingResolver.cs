@@ -12,6 +12,10 @@ namespace ERP.Application.Modules.Pricing.Services;
 /// Resolver regla (PricingRule del ítem > regla general de la lista > sin ajuste) →
 /// Aplicar estrategia de ajuste → PricingResult.
 ///
+/// PRICE-LIST-EXPIRED-FALLBACK-PVP-01: una PriceList inexistente/deshabilitada/vencida/aún no
+/// vigente NUNCA bloquea la venta — se ignora y el precio cae al PVP/BaseSalePrice del ítem tal
+/// cual. El único bloqueo real es la ausencia de <c>Item.BaseSalePrice</c>.
+///
 /// NO calcula impuestos — frontera respetada con la infraestructura tributaria congelada
 /// (ISriTaxResolver). El PricingResult es un precio neto.
 /// </summary>

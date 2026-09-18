@@ -122,8 +122,10 @@ public sealed class PricingResolverCompanyClockTests
     }
 
     [Fact]
-    public async Task Dia_local_siguiente_al_ValidUntil_la_lista_ya_no_esta_vigente()
+    public async Task Dia_local_siguiente_al_ValidUntil_la_lista_se_ignora_y_usa_PVP_base_sin_error()
     {
+        // PRICE-LIST-EXPIRED-FALLBACK-PVP-01: una lista vencida ya NUNCA bloquea la venta — se
+        // ignora y el precio cae al PVP/BaseSalePrice del ítem tal cual.
         var companyToday = new DateOnly(2026, 9, 18);
         var f = new Fixture();
         f.CompanyClock
@@ -142,8 +144,11 @@ public sealed class PricingResolverCompanyClockTests
 
         var result = await f.Build().ResolveAsync(item.Id, priceList.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("no está vigente");
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.PriceListId.Should().BeNull();
+        result.Value!.RuleApplied.Should().BeNull();
+        result.Value!.UnitPrice.Should().Be(item.BaseSalePrice!.Value);
+        result.Value!.BasePrice.Should().Be(item.BaseSalePrice!.Value);
     }
 
     [Fact]

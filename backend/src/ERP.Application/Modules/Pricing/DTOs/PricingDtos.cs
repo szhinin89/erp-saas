@@ -92,10 +92,15 @@ public sealed record PricingRuleSetResultDto(
 /// <c>RuleDescription</c> es el mismo texto humano que <see cref="PricingRuleSummaryDto.Description"/>
 /// (vía <see cref="Services.PricingCalculation.Summarize"/>) — null cuando <c>RuleApplied</c> también
 /// lo es (precio base sin ajuste), para que un consumidor de UI (p. ej. Ventas) pueda explicar de
-/// dónde salió el precio sin reimplementar el formato de <c>RuleApplied</c>.</summary>
+/// dónde salió el precio sin reimplementar el formato de <c>RuleApplied</c>.
+/// PRICE-LIST-EXPIRED-FALLBACK-PVP-01: <c>PriceListId</c> es null cuando no hubo ninguna lista
+/// aplicable (inexistente/deshabilitada/vencida/aún no vigente) — el precio siempre se resuelve
+/// (PVP/base), nunca se bloquea por el estado de la lista; en ese caso <c>PriceListCode</c>/
+/// <c>PriceListName</c> quedan en el sentinel "Precio base" y <c>RuleApplied</c>/<c>RuleDescription</c>
+/// en null, exactamente igual que cuando SÍ hay lista pero no aplica ninguna regla.</summary>
 public sealed record PricingResult(
     Guid ItemId,
-    Guid PriceListId,
+    Guid? PriceListId,
     string PriceListCode,
     string PriceListName,
     string CurrencyCode,
