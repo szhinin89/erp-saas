@@ -54,7 +54,8 @@ public sealed class StockAdjustment
         Guid reasonId,
         string? notes,
         Guid createdBy,
-        Guid companyId
+        Guid companyId,
+        DateOnly adjustmentDate
     )
     {
         if (string.IsNullOrWhiteSpace(warehouseName))
@@ -75,7 +76,10 @@ public sealed class StockAdjustment
             ReasonId = reasonId,
             MovementType = movementType,
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
-            AdjustmentDate = DateTime.UtcNow,
+            // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: día operativo de la empresa (ICompanyClock,
+            // resuelto en Application), nunca DateTime.UtcNow crudo — Domain no accede al reloj,
+            // solo recibe el DateOnly ya resuelto.
+            AdjustmentDate = adjustmentDate.ToDateTime(TimeOnly.MinValue),
             Status = "Draft",
         };
         a.SetCreated(createdBy);

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
@@ -10,14 +11,20 @@ public sealed class GetPurchasesBySupplierReportQueryHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
+    private readonly ICompanyClock _companyClock;
 
     public GetPurchasesBySupplierReportQueryHandler(
         IPurchaseInvoiceRepository repo,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
         _t = t;
+        _c = c;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<PurchasesBySupplierReportResponse>> Handle(
@@ -25,7 +32,7 @@ public sealed class GetPurchasesBySupplierReportQueryHandler
         CancellationToken ct
     )
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _companyClock.TodayAsync(_c.CompanyId, _t.TenantId, ct);
         var dateFrom = q.DateFrom ?? today;
         var dateTo = q.DateTo ?? today;
 

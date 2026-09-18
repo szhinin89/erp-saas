@@ -337,7 +337,8 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
             Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock()
         );
 
         var result = await handler.Handle(

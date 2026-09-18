@@ -53,7 +53,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         new(
             db,
             new FakeHostEnvironment(isProduction: false),
-            new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance),
+            new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance),
             NullLogger<AccountingChartBackfillService>.Instance
         );
 
@@ -86,7 +86,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         {
             await SeedActiveCompanyAsync(db);
             // Bootstrap completo primero (deja la forma vigente de 3 líneas)...
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -162,7 +162,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -274,7 +274,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -328,7 +328,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -382,7 +382,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -436,7 +436,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 
@@ -490,7 +490,7 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
         await using (var db = NewDbContext(dbName))
         {
             await SeedActiveCompanyAsync(db);
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.Mapping;
@@ -31,6 +32,7 @@ public sealed class CreateStockAdjustmentCommandHandler
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
+    private readonly ICompanyClock _companyClock;
     private readonly StockAdjustmentLineResolver _lineResolver;
 
     public CreateStockAdjustmentCommandHandler(
@@ -41,7 +43,8 @@ public sealed class CreateStockAdjustmentCommandHandler
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyClock companyClock
     )
     {
         _adjRepo = adjRepo;
@@ -52,6 +55,7 @@ public sealed class CreateStockAdjustmentCommandHandler
         _company = company;
         _branch = branch;
         _user = user;
+        _companyClock = companyClock;
         _lineResolver = new StockAdjustmentLineResolver(itemRepo);
     }
 
@@ -84,6 +88,7 @@ public sealed class CreateStockAdjustmentCommandHandler
             return Result<StockAdjustmentDto>.ValidationFailure(lineResult.Error!);
 
         var seq = await _adjRepo.GetNextSequentialAsync(tid, ct);
+        var adjustmentDate = await _companyClock.TodayAsync(_company.CompanyId, tid, ct);
 
         var adj = StockAdjustment.Create(
             tid,
@@ -94,7 +99,8 @@ public sealed class CreateStockAdjustmentCommandHandler
             request.ReasonId,
             request.Notes,
             _user.UserId,
-            _company.CompanyId
+            _company.CompanyId,
+            adjustmentDate
         );
         adj.ReplaceLines(lineResult.Value!);
 

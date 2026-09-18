@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -399,7 +400,16 @@ public sealed class SalesInvoiceCogsPostingPipelineTests
             .ReturnsAsync(new List<StockMovement> { SaleReturnMovement(returnId, 90m) });
 
         var engine = m.BuildEngine();
-        var translator = new SalesReturnCogsReversalPostingTranslator(m.Stock.Object, engine, NullLogger<SalesReturnCogsReversalPostingTranslator>.Instance);
+        var companyClock = new Mock<ICompanyClock>();
+        companyClock
+            .Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DateOnly(2026, 9, 17));
+        var translator = new SalesReturnCogsReversalPostingTranslator(
+            m.Stock.Object,
+            engine,
+            companyClock.Object,
+            NullLogger<SalesReturnCogsReversalPostingTranslator>.Instance
+        );
 
         await translator.Handle(ReturnEvent(returnId), CancellationToken.None);
 

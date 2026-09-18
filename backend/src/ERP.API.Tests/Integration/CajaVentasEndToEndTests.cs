@@ -300,6 +300,7 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         // hardcodeada en el fixture.
         var accountingBootstrap = new AccountingBootstrapStep(
             db,
+            new AlwaysTodayCompanyClock(),
             NullLogger<AccountingBootstrapStep>.Instance
         );
         await accountingBootstrap.ExecuteAsync(

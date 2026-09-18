@@ -348,7 +348,11 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
         // CompanyProvisioningService dispara en producción (mismo patrón que los tests verdes de
         // ERP.Infrastructure.Tests, p. ej. AccountingBootstrapStepTests), nunca una PostingRule
         // suelta hardcodeada en el fixture.
-        var accountingBootstrap = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        var accountingBootstrap = new AccountingBootstrapStep(
+            db,
+            new AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
         await accountingBootstrap.ExecuteAsync(
             new CompanyBootstrapContext(TenantId, CompanyId, _adminId)
         );

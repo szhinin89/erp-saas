@@ -413,7 +413,8 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             Mock.Of<IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new FixedCompanyClock()
         );
 
         var result = await handler.Handle(
@@ -666,6 +667,13 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             Guid tenantId,
             CancellationToken ct = default
         ) => Task.FromResult((DateTime.UtcNow.Date, DateTime.UtcNow.Date.AddDays(1).AddTicks(-1)));
+
+        public Task<DateOnly> LocalDateAsync(
+            Guid companyId,
+            Guid tenantId,
+            DateTime utcInstant,
+            CancellationToken ct = default
+        ) => Task.FromResult(DateOnly.FromDateTime(utcInstant));
     }
 
     private sealed class NoOpPublisher : MediatR.IPublisher

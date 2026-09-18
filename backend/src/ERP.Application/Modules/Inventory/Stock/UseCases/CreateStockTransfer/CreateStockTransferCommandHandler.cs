@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -14,18 +15,21 @@ public sealed class CreateStockTransferCommandHandler
     private readonly IInterBranchAccessGuard _interBranchGuard;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
+    private readonly ICompanyClock _companyClock;
 
     public CreateStockTransferCommandHandler(
         IStockTransferRepository repo,
         IInterBranchAccessGuard interBranchGuard,
         ICurrentTenant tenant,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
         _interBranchGuard = interBranchGuard;
         _tenant = tenant;
         _user = user;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<StockTransferDto>> Handle(
@@ -52,6 +56,7 @@ public sealed class CreateStockTransferCommandHandler
         var ctx = access.Value!;
         var seq = await _repo.GetNextSequentialAsync(ctx.TenantId, ctx.CompanyId, ct);
         var uid = _user.UserId;
+        var transferDate = await _companyClock.TodayAsync(ctx.CompanyId, ctx.TenantId, ct);
 
         var transfer = StockTransfer.Create(
             _tenant.TenantId,
@@ -62,6 +67,7 @@ public sealed class CreateStockTransferCommandHandler
             request.Reason,
             request.Notes,
             uid,
+            transferDate,
             ctx.CompanyId
         );
 

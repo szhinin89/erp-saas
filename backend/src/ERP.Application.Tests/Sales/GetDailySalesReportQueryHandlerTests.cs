@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.UseCases.GetDailySalesReport;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Sales.Entities;
@@ -30,10 +31,20 @@ public sealed class GetDailySalesReportQueryHandlerTests
     {
         public Mock<ISalesInvoiceRepository> Repo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
+        public Mock<ICurrentCompany> Company { get; } = new();
+        public Mock<ICompanyClock> CompanyClock { get; } = new();
 
-        public Fixture() => Tenant.Setup(t => t.TenantId).Returns(TenantId);
+        public Fixture()
+        {
+            Tenant.Setup(t => t.TenantId).Returns(TenantId);
+            Company.Setup(c => c.CompanyId).Returns(CompanyId);
+            CompanyClock
+                .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DateOnly(2026, 9, 17));
+        }
 
-        public GetDailySalesReportQueryHandler BuildHandler() => new(Repo.Object, Tenant.Object);
+        public GetDailySalesReportQueryHandler BuildHandler() =>
+            new(Repo.Object, Tenant.Object, Company.Object, CompanyClock.Object);
     }
 
     private static SalesInvoice CreateInvoice(decimal grandTotalSeed, bool authorize, bool cancel = false)

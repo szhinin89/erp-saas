@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -53,6 +54,7 @@ public sealed class CancelPurchaseHandler
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyClock _companyClock;
     private readonly IPurchaseReceptionDocumentRepository? _receptionRepo;
 
     public CancelPurchaseHandler(
@@ -68,6 +70,7 @@ public sealed class CancelPurchaseHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
+        ICompanyClock companyClock,
         IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
     {
@@ -83,6 +86,7 @@ public sealed class CancelPurchaseHandler
         _c = c;
         _b = b;
         _u = u;
+        _companyClock = companyClock;
         _receptionRepo = receptionRepo;
     }
 
@@ -224,6 +228,7 @@ public sealed class CancelPurchaseHandler
             // (nunca PurchaseReturn: esto no es una devolución real a proveedor, es la reversa de
             // stock de una factura anulada). SourceDocType sigue siendo "PurchaseInvoice" — sigue
             // siendo únicamente el documento origen (FACCOM), no el motivo del movimiento.
+            var effectiveDate = await _companyClock.TodayAsync(cid, tid, ct);
             foreach (var line in inv.Lines)
             {
                 if (line.ItemId is null)
@@ -240,7 +245,7 @@ public sealed class CancelPurchaseHandler
                     StockMovementType.PurchaseCancelled,
                     -line.QuantityInBaseUom,
                     line.BaseUomCode,
-                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    effectiveDate,
                     $"ANULACIÓN: {inv.InvoiceNumber}",
                     inv.Id,
                     "PurchaseInvoice",

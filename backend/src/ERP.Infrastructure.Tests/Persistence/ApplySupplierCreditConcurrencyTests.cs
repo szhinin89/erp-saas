@@ -791,6 +791,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
 
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(() => _tenantId));

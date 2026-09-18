@@ -40,6 +40,7 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
         string? reason,
         string? notes,
         Guid createdBy,
+        DateOnly transferDate,
         Guid companyId = default
     )
     {
@@ -53,7 +54,10 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
             OperationBranchId = operationBranchId,
             SourceWarehouseId = sourceWarehouseId,
             TargetWarehouseId = targetWarehouseId,
-            TransferDate = DateTime.UtcNow,
+            // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: día operativo de la empresa (ICompanyClock,
+            // resuelto en Application), nunca DateTime.UtcNow crudo — Domain no accede al reloj,
+            // solo recibe el DateOnly ya resuelto.
+            TransferDate = transferDate.ToDateTime(TimeOnly.MinValue),
             Status = "Draft",
             Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),

@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Finance.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -12,8 +13,9 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// PostingRule que lo mapea (fuera de alcance de esta fase) decide el efecto contable. Mismo
 /// criterio que CollectionAppliedPostingTranslator: sin desglose de impuestos
 /// (Subtotal/TotalVat/TotalIce/TotalDiscount en cero, no inventados), GrandTotal transporta el
-/// monto reversado. Sin PaymentDate en el evento — se usa la fecha real del reverso
-/// (BaseDomainEvent.OccurredOn) como fecha del hecho contable.
+/// monto reversado. Sin PaymentDate en el evento — se usa la fecha operativa de la empresa
+/// (DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: nunca BaseDomainEvent.OccurredOn crudo en UTC, que
+/// desplaza el día calendario en Ecuador entre las 19:00 y 23:59) como fecha del hecho contable.
 /// </summary>
 public sealed class CollectionReversedPostingTranslator
     : INotificationHandler<CollectionReversedEvent>
@@ -22,26 +24,30 @@ public sealed class CollectionReversedPostingTranslator
     private const string FactTypeName = "CollectionReversed";
 
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<CollectionReversedPostingTranslator> _logger;
 
     public CollectionReversedPostingTranslator(
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<CollectionReversedPostingTranslator> logger
     )
     {
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
     public async Task Handle(CollectionReversedEvent e, CancellationToken ct)
     {
+        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
             SourceModuleName,
             FactTypeName,
             e.PaymentId,
-            DateOnly.FromDateTime(e.OccurredOn),
+            entryDate,
             0m,
             0m,
             0m,

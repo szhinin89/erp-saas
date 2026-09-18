@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
@@ -28,6 +29,13 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid CreatedBy = Guid.NewGuid();
+    private static readonly DateOnly CompanyToday = new(2026, 9, 17);
+
+    private static ICompanyClock StubCompanyClock() =>
+        Mock.Of<ICompanyClock>(c =>
+            c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())
+            == Task.FromResult(CompanyToday)
+        );
 
     private static PurchaseCreditNoteAuthorizedEvent AuthorizedEvent(
         Guid creditNoteId,
@@ -222,7 +230,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m), CancellationToken.None);
 
@@ -265,7 +273,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         // Subtotal 100 + VAT (100+10)*15%=16.5 + ICE 10 = 126.5 — mismo cálculo que
         // PurchaseCreditNoteTests.Authorize_con_ICE_propaga_IceAmount... — montos ya resueltos por
@@ -309,7 +317,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(
             AuthorizedEvent(creditNoteId, subtotal: 100m, vat: 15m, appliedToPayable: 121m, irbpnrAmount: 6m),
@@ -351,7 +359,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m), CancellationToken.None);
 
@@ -391,7 +399,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(AuthorizedEvent(creditNoteId, 100m, 15m, 115m, iceAmount: 0m), CancellationToken.None);
 
@@ -430,7 +438,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(AuthorizedEvent(creditNoteId, subtotal: 100m, vat: 16.5m, appliedToPayable: 126.5m, iceAmount: 10m), CancellationToken.None);
 
@@ -467,7 +475,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync(existing);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(AuthorizedEvent(creditNoteId), CancellationToken.None);
 
@@ -501,7 +509,7 @@ public sealed class PurchaseCreditNotePostingTranslatorTests
             .ReturnsAsync((JournalEntry?)null);
 
         var engine = m.BuildEngine();
-        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
+        var translator = new PurchaseCreditNoteAuthorizedPostingTranslator(engine, StubCompanyClock(), NullLogger<PurchaseCreditNoteAuthorizedPostingTranslator>.Instance);
 
         await translator.Handle(AuthorizedEvent(creditNoteId), CancellationToken.None);
 

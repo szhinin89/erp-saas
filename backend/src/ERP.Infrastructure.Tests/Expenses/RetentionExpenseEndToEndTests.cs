@@ -348,6 +348,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
         var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
 
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));
@@ -382,7 +383,7 @@ public sealed class RetentionExpenseEndToEndTests : IAsyncLifetime
     /// </summary>
     private async Task SeedAccountingChartAsync(ErpDbContext db)
     {
-        var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
         await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
     }
 

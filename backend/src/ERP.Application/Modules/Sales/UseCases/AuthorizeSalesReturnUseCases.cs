@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.DTOs;
@@ -88,6 +89,7 @@ public sealed class AuthorizeSalesReturnHandler
     private readonly ICurrentUser _u;
     private readonly ILogger<AuthorizeSalesReturnHandler> _logger;
     private readonly ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
+    private readonly ICompanyClock _companyClock;
 
     public AuthorizeSalesReturnHandler(
         ISalesReturnRepository returnRepo,
@@ -105,7 +107,8 @@ public sealed class AuthorizeSalesReturnHandler
         ICurrentBranch b,
         ICurrentUser u,
         ILogger<AuthorizeSalesReturnHandler> logger,
-        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider
+        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider,
+        ICompanyClock companyClock
     )
     {
         _returnRepo = returnRepo;
@@ -124,6 +127,7 @@ public sealed class AuthorizeSalesReturnHandler
         _u = u;
         _logger = logger;
         _precisionPolicyProvider = precisionPolicyProvider;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<SalesReturnDto>> Handle(
@@ -242,6 +246,7 @@ public sealed class AuthorizeSalesReturnHandler
             // tiempo). SALES-PRESENTATIONS-02: reingresa QuantityInBaseUom/BaseUomCode — la
             // devolución siempre hereda la presentación de la línea de venta original, nunca
             // Quantity/UomCode crudos.
+            var kardexEffectiveDate = await _companyClock.TodayAsync(cid, tid, ct);
             foreach (var line in salesReturn.Lines)
             {
                 if (line.ItemId is null || line.WarehouseId is null)
@@ -255,7 +260,7 @@ public sealed class AuthorizeSalesReturnHandler
                     StockMovementType.SaleReturn,
                     line.QuantityInBaseUom,
                     line.BaseUomCode,
-                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    kardexEffectiveDate,
                     $"DEV-{salesReturn.ReturnNumber}",
                     salesReturn.Id,
                     "SalesReturn",

@@ -28,6 +28,18 @@ public sealed class CompanyClock : ICompanyClock
         return DateOnly.FromDateTime(localNow);
     }
 
+    public async Task<DateOnly> LocalDateAsync(
+        Guid companyId,
+        Guid tenantId,
+        DateTime utcInstant,
+        CancellationToken ct = default
+    )
+    {
+        var tz = await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct);
+        var instantUtc = DateTime.SpecifyKind(utcInstant, DateTimeKind.Utc);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(instantUtc, tz));
+    }
+
     public async Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(
         Guid companyId,
         Guid tenantId,

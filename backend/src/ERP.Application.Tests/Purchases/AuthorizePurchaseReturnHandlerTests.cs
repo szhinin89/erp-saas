@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -306,6 +307,12 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             b.SetupGet(x => x.BranchId).Returns(BranchId);
             var u = new Mock<ICurrentUser>();
             u.SetupGet(x => x.UserId).Returns(UserId);
+            var companyClock = new Mock<ICompanyClock>();
+            companyClock
+                .Setup(c =>
+                    c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(new DateOnly(2026, 9, 17));
 
             return new AuthorizePurchaseReturnHandler(
                 ReturnRepo.Object,
@@ -321,6 +328,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 t.Object,
                 b.Object,
                 user ?? u.Object,
+                companyClock.Object,
                 CreditNoteRepo.Object,
                 ReceptionRepo.Object
             );

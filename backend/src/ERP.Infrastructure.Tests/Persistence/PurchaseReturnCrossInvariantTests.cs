@@ -388,7 +388,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentCompany(() => _companyId),
             new FixedCurrentBranch(() => _branchId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock()
         );
 
     private CancelPurchaseReturnHandler BuildCancelPurchaseReturnHandler(ErpDbContext db) =>
@@ -405,7 +406,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock()
         );
 
     private ApplySupplierCreditHandler BuildApplyHandler(ErpDbContext db) =>

@@ -45,6 +45,7 @@ public sealed class RideDependencyInjectionTests
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         var configuration = new ConfigurationBuilder().Build();
 
         services.AddSingleton<IConfiguration>(configuration);

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
@@ -13,13 +14,17 @@ public sealed class PricingResolver : IPricingResolver
     private readonly IPricingRuleRepository _rules;
     private readonly IPricingAdjustmentStrategyResolver _strategies;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
+    private readonly ICompanyClock _companyClock;
 
     public PricingResolver(
         IItemRepository items,
         IPriceListRepository priceLists,
         IPricingRuleRepository rules,
         IPricingAdjustmentStrategyResolver strategies,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICompanyClock companyClock
     )
     {
         _items = items;
@@ -27,6 +32,8 @@ public sealed class PricingResolver : IPricingResolver
         _rules = rules;
         _strategies = strategies;
         _t = t;
+        _c = c;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<PricingResult>> ResolveAsync(
@@ -64,7 +71,8 @@ public sealed class PricingResolver : IPricingResolver
             return Result<PricingResult>.ValidationFailure(
                 $"La lista de precios '{priceList.Code}' está deshabilitada."
             );
-        if (!priceList.IsValidOn(DateOnly.FromDateTime(DateTime.UtcNow)))
+        var companyToday = await _companyClock.TodayAsync(_c.CompanyId, tenantId, ct);
+        if (!priceList.IsValidOn(companyToday))
             return Result<PricingResult>.ValidationFailure(
                 $"La lista de precios '{priceList.Code}' no está vigente en la fecha actual."
             );

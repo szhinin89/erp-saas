@@ -142,6 +142,7 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         // TaxVat/TaxIce), no una regla artificial de test.
         var bootstrap = new ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep(
             db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<
                 ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep
             >.Instance
@@ -184,6 +185,7 @@ public sealed class SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationT
         );
 
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));

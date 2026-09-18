@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -43,26 +44,30 @@ public sealed class PurchaseCreditNoteAuthorizedPostingTranslator
     private const string FactTypeName = "PurchaseCreditNoteAuthorized";
 
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<PurchaseCreditNoteAuthorizedPostingTranslator> _logger;
 
     public PurchaseCreditNoteAuthorizedPostingTranslator(
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<PurchaseCreditNoteAuthorizedPostingTranslator> logger
     )
     {
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
     public async Task Handle(PurchaseCreditNoteAuthorizedEvent e, CancellationToken ct)
     {
+        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
             SourceModuleName,
             FactTypeName,
             e.PurchaseCreditNoteId,
-            DateOnly.FromDateTime(e.OccurredOn),
+            entryDate,
             Subtotal: e.Subtotal,
             TotalVat: e.VatAmount,
             TotalIce: e.IceAmount,

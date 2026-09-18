@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -23,24 +24,28 @@ public sealed class PurchaseReturnAuthorizedPostingTranslator
     : INotificationHandler<PurchaseReturnAuthorizedEvent>
 {
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<PurchaseReturnAuthorizedPostingTranslator> _logger;
 
     public PurchaseReturnAuthorizedPostingTranslator(
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<PurchaseReturnAuthorizedPostingTranslator> logger
     )
     {
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
     public async Task Handle(PurchaseReturnAuthorizedEvent e, CancellationToken ct)
     {
+        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
         var fact = PurchaseReturnPostingFactBuilder.Build(
             e.TenantId!.Value,
             e.CompanyId,
             e.PurchaseReturnId,
-            DateOnly.FromDateTime(e.OccurredOn),
+            entryDate,
             e.AuthorizedVatTotal,
             e.AuthorizedIceTotal,
             e.AuthorizedIrbpnrTotal,

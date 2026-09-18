@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
@@ -32,6 +33,15 @@ public sealed class StockAdjustmentBranchOwnershipTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid ItemId = Guid.NewGuid();
     private static readonly Guid ReasonId = Guid.NewGuid();
+    private static readonly DateOnly AdjustmentDate = new(2026, 9, 17);
+
+    private static ICompanyClock StubCompanyClock()
+    {
+        var mock = new Mock<ICompanyClock>();
+        mock.Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AdjustmentDate);
+        return mock.Object;
+    }
 
     private static Warehouse CreateWarehouse(Guid branchId) =>
         Warehouse.Create(
@@ -120,7 +130,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 Tenant.Object,
                 Company.Object,
                 Branch.Object,
-                User.Object
+                User.Object,
+                StubCompanyClock()
             );
     }
 
@@ -218,7 +229,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 WarehouseRepo.Object,
                 Tenant.Object,
                 Branch.Object,
-                User.Object
+                User.Object,
+                StubCompanyClock()
             );
     }
 
@@ -238,7 +250,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
             ReasonId,
             null,
             UserId,
-            CompanyId
+            CompanyId,
+            AdjustmentDate
         );
         adj.ReplaceLines(
             new[]
@@ -398,7 +411,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 WarehouseRepo.Object,
                 Tenant.Object,
                 Branch.Object,
-                User.Object
+                User.Object,
+                StubCompanyClock()
             );
     }
 

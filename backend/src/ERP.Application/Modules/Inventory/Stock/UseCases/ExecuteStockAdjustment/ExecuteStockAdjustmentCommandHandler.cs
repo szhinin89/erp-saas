@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.Mapping;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -30,6 +31,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
+    private readonly ICompanyClock _companyClock;
 
     public ExecuteStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -38,7 +40,8 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         IWarehouseRepository warehouseRepo,
         ICurrentTenant tenant,
         ICurrentBranch branch,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyClock companyClock
     )
     {
         _adjRepo = adjRepo;
@@ -48,6 +51,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         _tenant = tenant;
         _branch = branch;
         _user = user;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
@@ -113,7 +117,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         }
 
         var uid = _user.UserId;
-        var effectiveDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var effectiveDate = await _companyClock.TodayAsync(adj.CompanyId, tid, ct);
         var movementType = isIngreso ? StockMovementType.PositiveAdjust : StockMovementType.NegativeAdjust;
 
         foreach (var line in adj.Lines)

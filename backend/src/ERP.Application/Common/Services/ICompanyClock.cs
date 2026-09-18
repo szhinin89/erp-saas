@@ -22,4 +22,17 @@ public interface ICompanyClock
         Guid tenantId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Fecha calendario, en la zona horaria de la empresa, de un instante UTC arbitrario (pasado o
+    /// presente) — a diferencia de <see cref="TodayAsync"/> (siempre "ahora"), usado para
+    /// reconstruir/remediar la fecha de negocio de un evento histórico ya ocurrido (ej. un
+    /// <c>AuthorizedAtUtc</c> ya persistido) sin re-derivarlo de UTC crudo.
+    /// </summary>
+    Task<DateOnly> LocalDateAsync(
+        Guid companyId,
+        Guid tenantId,
+        DateTime utcInstant,
+        CancellationToken ct = default
+    );
 }

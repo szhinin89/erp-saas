@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -166,6 +167,11 @@ public sealed class CancelPurchaseHandlerTests
         }
         var effectiveRetentionCanceller = retentionCanceller ?? new RetentionCanceller(payableRepo.Object);
 
+        var companyClock = new Mock<ICompanyClock>();
+        companyClock
+            .Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DateOnly(2026, 9, 17));
+
         return new CancelPurchaseHandler(
             repo.Object,
             payableRepo.Object,
@@ -179,6 +185,7 @@ public sealed class CancelPurchaseHandlerTests
             company.Object,
             branch.Object,
             user.Object,
+            companyClock.Object,
             receptionRepo?.Object
         );
     }

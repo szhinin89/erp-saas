@@ -118,11 +118,17 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     public int Order => CompanyBootstrapStepOrder.Accounting;
 
     private readonly ErpDbContext _db;
+    private readonly ERP.Application.Common.Services.ICompanyClock _companyClock;
     private readonly ILogger<AccountingBootstrapStep> _logger;
 
-    public AccountingBootstrapStep(ErpDbContext db, ILogger<AccountingBootstrapStep> logger)
+    public AccountingBootstrapStep(
+        ErpDbContext db,
+        ERP.Application.Common.Services.ICompanyClock companyClock,
+        ILogger<AccountingBootstrapStep> logger
+    )
     {
         _db = db;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
@@ -742,7 +748,11 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             }
         }
 
-        var currentYear = DateTime.UtcNow.Year;
+        // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: año fiscal a sembrar según el día operativo de la
+        // empresa (ICompanyClock), nunca DateTime.UtcNow.Year — evita crear el período del año
+        // equivocado si el bootstrap corre en la ventana horaria en que UTC ya cruzó el 1 de enero
+        // pero en Ecuador todavía es 31 de diciembre (o viceversa).
+        var currentYear = (await _companyClock.TodayAsync(companyId, tenantId, cancellationToken)).Year;
         var hasPeriodForYear = await _db
             .AccountingPeriods.IgnoreQueryFilters()
             .AnyAsync(

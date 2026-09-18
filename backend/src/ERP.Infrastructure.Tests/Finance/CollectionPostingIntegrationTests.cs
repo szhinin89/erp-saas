@@ -269,6 +269,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
         services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
         );

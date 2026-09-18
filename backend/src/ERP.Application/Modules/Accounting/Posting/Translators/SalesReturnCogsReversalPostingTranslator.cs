@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Events;
 using MediatR;
@@ -32,16 +33,19 @@ public sealed class SalesReturnCogsReversalPostingTranslator
 
     private readonly IStockRepository _stockRepository;
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<SalesReturnCogsReversalPostingTranslator> _logger;
 
     public SalesReturnCogsReversalPostingTranslator(
         IStockRepository stockRepository,
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<SalesReturnCogsReversalPostingTranslator> logger
     )
     {
         _stockRepository = stockRepository;
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
@@ -66,13 +70,14 @@ public sealed class SalesReturnCogsReversalPostingTranslator
             return;
         }
 
+        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
             SourceModuleName,
             FactTypeName,
             e.SalesReturnId,
-            DateOnly.FromDateTime(e.OccurredOn),
+            entryDate,
             Subtotal: 0m,
             TotalVat: 0m,
             TotalIce: 0m,

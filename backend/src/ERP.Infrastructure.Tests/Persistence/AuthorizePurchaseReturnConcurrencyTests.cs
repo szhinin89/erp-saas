@@ -337,6 +337,7 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
             new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId))
         );
 

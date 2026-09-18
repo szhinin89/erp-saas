@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
@@ -109,6 +110,10 @@ public sealed class CancelSalesInvoiceHandlerTests
         branch.Setup(b => b.BranchId).Returns(activeBranchId ?? BranchId);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
+        var companyClock = new Mock<ICompanyClock>();
+        companyClock
+            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DateOnly(2026, 9, 17));
 
         var handler = new CancelSalesInvoiceHandler(
             repo.Object,
@@ -118,7 +123,8 @@ public sealed class CancelSalesInvoiceHandlerTests
             tenant.Object,
             company.Object,
             branch.Object,
-            user.Object
+            user.Object,
+            companyClock.Object
         );
 
         return (handler, stockRepo, inv);

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -63,6 +64,7 @@ public sealed class AuthorizePurchaseReturnHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyClock _companyClock;
     private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
     private readonly ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? _receptionRepo;
 
@@ -80,6 +82,7 @@ public sealed class AuthorizePurchaseReturnHandler
         ICurrentTenant t,
         ICurrentBranch b,
         ICurrentUser u,
+        ICompanyClock companyClock,
         IPurchaseCreditNoteRepository? creditNoteRepo = null,
         ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
@@ -97,6 +100,7 @@ public sealed class AuthorizePurchaseReturnHandler
         _t = t;
         _b = b;
         _u = u;
+        _companyClock = companyClock;
         _creditNoteRepo = creditNoteRepo;
         _receptionRepo = receptionRepo;
     }
@@ -391,6 +395,11 @@ public sealed class AuthorizePurchaseReturnHandler
 
             try
             {
+                var effectiveDate = await _companyClock.TodayAsync(
+                    purchaseReturn.CompanyId,
+                    tid,
+                    ct
+                );
                 foreach (var line in purchaseReturn.Lines)
                 {
                     await _stockRepo.AppendMovementAsync(
@@ -401,7 +410,7 @@ public sealed class AuthorizePurchaseReturnHandler
                         StockMovementType.PurchaseReturn,
                         -line.Quantity,
                         uomCodeByDetailId[line.OriginalInvoiceDetailId],
-                        DateOnly.FromDateTime(DateTime.UtcNow),
+                        effectiveDate,
                         $"Devolución {purchaseReturn.ReturnNumber}",
                         purchaseReturn.Id,
                         "PurchaseReturn",

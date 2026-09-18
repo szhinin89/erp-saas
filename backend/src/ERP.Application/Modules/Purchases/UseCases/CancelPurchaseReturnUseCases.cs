@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -60,6 +61,7 @@ public sealed class CancelPurchaseReturnHandler
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly ICompanyClock _companyClock;
     private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
     private readonly IPurchaseReceptionDocumentRepository? _receptionRepo;
 
@@ -73,6 +75,7 @@ public sealed class CancelPurchaseReturnHandler
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
         ICurrentUser u,
+        ICompanyClock companyClock,
         IPurchaseCreditNoteRepository? creditNoteRepo = null,
         IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
@@ -86,6 +89,7 @@ public sealed class CancelPurchaseReturnHandler
         _dbEx = dbEx;
         _t = t;
         _u = u;
+        _companyClock = companyClock;
         _creditNoteRepo = creditNoteRepo;
         _receptionRepo = receptionRepo;
     }
@@ -207,6 +211,11 @@ public sealed class CancelPurchaseReturnHandler
 
                 // ── Reversa de inventario: movimiento inverso (+Quantity), mismo UnitCost, misma
                 // bodega (§9.1, diseño Fase 10) ──
+                var effectiveDate = await _companyClock.TodayAsync(
+                    purchaseReturn.CompanyId,
+                    tid,
+                    ct
+                );
                 foreach (var line in purchaseReturn.Lines)
                 {
                     var originalLine = invoice.Lines.FirstOrDefault(l =>
@@ -220,7 +229,7 @@ public sealed class CancelPurchaseReturnHandler
                         StockMovementType.PurchaseReturn,
                         line.Quantity,
                         originalLine?.UomCode ?? "UNIT",
-                        DateOnly.FromDateTime(DateTime.UtcNow),
+                        effectiveDate,
                         $"ANULACIÓN devolución {purchaseReturn.ReturnNumber}",
                         purchaseReturn.Id,
                         "PurchaseReturn",

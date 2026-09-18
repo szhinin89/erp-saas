@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,26 +21,30 @@ public sealed class SupplierCreditAppliedPostingTranslator
     private const string FactTypeName = "SupplierCreditApplied";
 
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<SupplierCreditAppliedPostingTranslator> _logger;
 
     public SupplierCreditAppliedPostingTranslator(
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<SupplierCreditAppliedPostingTranslator> logger
     )
     {
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
     public async Task Handle(SupplierCreditAppliedEvent e, CancellationToken ct)
     {
+        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
         var fact = new PostingFact(
             e.TenantId!.Value,
             e.CompanyId,
             SourceModuleName,
             FactTypeName,
             e.SupplierCreditMovementId,
-            DateOnly.FromDateTime(e.OccurredOn),
+            entryDate,
             Subtotal: 0m,
             TotalVat: 0m,
             TotalIce: 0m,

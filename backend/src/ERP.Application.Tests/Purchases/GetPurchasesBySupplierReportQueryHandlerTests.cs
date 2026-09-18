@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.UseCases.GetPurchasesBySupplierReport;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -28,11 +29,20 @@ public sealed class GetPurchasesBySupplierReportQueryHandlerTests
     {
         public Mock<IPurchaseInvoiceRepository> Repo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
+        public Mock<ICurrentCompany> Company { get; } = new();
+        public Mock<ICompanyClock> CompanyClock { get; } = new();
 
-        public Fixture() => Tenant.Setup(t => t.TenantId).Returns(TenantId);
+        public Fixture()
+        {
+            Tenant.Setup(t => t.TenantId).Returns(TenantId);
+            Company.Setup(c => c.CompanyId).Returns(CompanyId);
+            CompanyClock
+                .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DateOnly(2026, 9, 17));
+        }
 
         public GetPurchasesBySupplierReportQueryHandler BuildHandler() =>
-            new(Repo.Object, Tenant.Object);
+            new(Repo.Object, Tenant.Object, Company.Object, CompanyClock.Object);
     }
 
     private static PurchaseInvoice CreateInvoice(decimal unitPrice, bool confirm, bool cancel = false)

@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -101,10 +102,16 @@ public sealed class SalesReturnPostingPipelineTests
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
         public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
         public Mock<IAccountRepository> Accounts { get; } = new();
+        public Mock<ICompanyClock> CompanyClock { get; } = new();
         public Mock<ILogger<SalesReturnAuthorizedPostingTranslator>> Logger { get; } = new();
 
         public Mocks()
         {
+            CompanyClock
+                .Setup(c =>
+                    c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(EntryDate);
             Accounts
                 .Setup(r =>
                     r.GetByIdAsync(
@@ -151,14 +158,16 @@ public sealed class SalesReturnPostingPipelineTests
             );
 
         public SalesReturnAuthorizedPostingTranslator BuildTranslator(IPostingEngine engine) =>
-            new(engine, Logger.Object);
+            new(engine, CompanyClock.Object, Logger.Object);
     }
+
+    private static readonly DateOnly EntryDate = new(2026, 9, 17);
 
     [Fact]
     public async Task Pipeline_completo_genera_JournalEntry_balanceado_para_SalesReturn()
     {
         var evt = Event();
-        var entryDate = DateOnly.FromDateTime(evt.OccurredOn);
+        var entryDate = EntryDate;
         var m = new Mocks();
 
         m.JournalEntries.Setup(r =>

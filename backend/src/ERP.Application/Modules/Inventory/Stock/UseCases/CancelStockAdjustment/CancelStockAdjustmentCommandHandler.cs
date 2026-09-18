@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.Mapping;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -26,6 +27,7 @@ public sealed class CancelStockAdjustmentCommandHandler
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
+    private readonly ICompanyClock _companyClock;
 
     public CancelStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -34,7 +36,8 @@ public sealed class CancelStockAdjustmentCommandHandler
         IWarehouseRepository warehouseRepo,
         ICurrentTenant tenant,
         ICurrentBranch branch,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyClock companyClock
     )
     {
         _adjRepo = adjRepo;
@@ -44,6 +47,7 @@ public sealed class CancelStockAdjustmentCommandHandler
         _tenant = tenant;
         _branch = branch;
         _user = user;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
@@ -67,7 +71,7 @@ public sealed class CancelStockAdjustmentCommandHandler
             );
 
         var uid = _user.UserId;
-        var effectiveDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var effectiveDate = await _companyClock.TodayAsync(adj.CompanyId, tid, ct);
         var isIngreso = adj.MovementType == StockAdjustment.MovementTypeIngreso;
         // Reversa siempre en tipo contrario: un Ingreso posteó PositiveAdjust, su reversa es
         // NegativeAdjust (y viceversa) — nunca reutiliza el mismo tipo de movimiento original.

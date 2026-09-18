@@ -91,7 +91,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         // Plan de cuentas + PostingRules REALES (incluida la corrección de este ticket) — no una
         // regla sintética: esta suite existe justamente para probar que el seed real usa la cuenta
         // correcta, nunca inventario.
-        var bootstrap = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        var bootstrap = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
         await bootstrap.ExecuteAsync(new ERP.Application.Common.Interfaces.CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
     }
 
@@ -119,6 +119,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
 
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));

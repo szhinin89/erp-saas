@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Finance.Events;
@@ -25,13 +26,23 @@ public sealed class CollectionReversedPostingTranslatorTests
             "Error de digitación"
         );
 
+    private static readonly DateOnly CompanyToday = new(2026, 9, 17);
+
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
+        public Mock<ICompanyClock> CompanyClock { get; } = new();
         public Mock<ILogger<CollectionReversedPostingTranslator>> Logger { get; } = new();
 
+        public Mocks()
+        {
+            CompanyClock
+                .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(CompanyToday);
+        }
+
         public CollectionReversedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, Logger.Object);
+            new(PostingEngine.Object, CompanyClock.Object, Logger.Object);
 
         public void VerifyWarningLogged(Times times) =>
             Logger.Verify(
@@ -78,6 +89,13 @@ public sealed class CollectionReversedPostingTranslatorTests
         captured.TotalVat.Should().Be(0m);
         captured.TotalIce.Should().Be(0m);
         captured.TotalDiscount.Should().Be(0m);
+        // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: EntryDate sale de ICompanyClock, nunca de
+        // BaseDomainEvent.OccurredOn crudo en UTC.
+        captured.EntryDate.Should().Be(CompanyToday);
+        m.CompanyClock.Verify(
+            c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]

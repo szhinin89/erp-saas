@@ -5,7 +5,8 @@ namespace ERP.Application.Modules.Dashboard;
 
 /// <summary>
 /// KPIs operativos tenant-scoped para el dashboard principal.
-/// AsOf defaults to today (UTC) when null.
+/// AsOf por defecto es "hoy" en el día operativo de la empresa (ICompanyClock) cuando es null —
+/// DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01, nunca DateTime.UtcNow crudo.
 /// </summary>
 public sealed record GetDashboardKpisQuery(DateTime? AsOf = null)
     : IRequest<Result<DashboardKpisDto>>,

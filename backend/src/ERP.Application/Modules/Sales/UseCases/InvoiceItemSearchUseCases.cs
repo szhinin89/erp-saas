@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Common;
@@ -22,6 +23,7 @@ public sealed class SearchItemsForInvoiceHandler
     private readonly IPricingAdjustmentStrategyResolver _strategies;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
+    private readonly ICompanyClock _companyClock;
 
     public SearchItemsForInvoiceHandler(
         IInvoiceItemSearchRepository repo,
@@ -30,7 +32,8 @@ public sealed class SearchItemsForInvoiceHandler
         IPricingRuleRepository rules,
         IPricingAdjustmentStrategyResolver strategies,
         ICurrentTenant tenant,
-        ICurrentCompany company
+        ICurrentCompany company,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
@@ -40,6 +43,7 @@ public sealed class SearchItemsForInvoiceHandler
         _strategies = strategies;
         _tenant = tenant;
         _company = company;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<IReadOnlyList<InvoiceItemSearchResultDto>>> Handle(
@@ -78,7 +82,11 @@ public sealed class SearchItemsForInvoiceHandler
         // activas), sin importar cuántos ítems trajo la búsqueda — nunca N+1 por resultado. Mismo
         // patrón que GetItemPricingSimulationQueryHandler. Si no hay lista default vigente, la
         // búsqueda sigue funcionando igual que antes (sin datos de descuento).
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _companyClock.TodayAsync(
+            _company.CompanyId,
+            _tenant.TenantId,
+            cancellationToken
+        );
         var defaultList = await _priceLists.GetDefaultAsync(_tenant.TenantId, cancellationToken);
         if (defaultList is not null && (!defaultList.IsActive || !defaultList.IsValidOn(today)))
             defaultList = null;

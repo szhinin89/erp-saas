@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -39,16 +40,19 @@ public sealed partial class PurchaseReturnPostingRemediationService
 {
     private readonly ErpDbContext _db;
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<PurchaseReturnPostingRemediationService> _logger;
 
     public PurchaseReturnPostingRemediationService(
         ErpDbContext db,
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<PurchaseReturnPostingRemediationService> logger
     )
     {
         _db = db;
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
@@ -120,11 +124,17 @@ public sealed partial class PurchaseReturnPostingRemediationService
                 continue;
             }
 
+            var entryDate = await _companyClock.LocalDateAsync(
+                r.CompanyId,
+                r.TenantId,
+                r.AuthorizedAtUtc.Value,
+                cancellationToken
+            );
             var fact = PurchaseReturnPostingFactBuilder.Build(
                 r.TenantId,
                 r.CompanyId,
                 r.Id,
-                DateOnly.FromDateTime(r.AuthorizedAtUtc.Value),
+                entryDate,
                 r.AuthorizedVatTotal ?? 0m,
                 r.AuthorizedIceTotal ?? 0m,
                 r.AuthorizedIrbpnrTotal ?? 0m,

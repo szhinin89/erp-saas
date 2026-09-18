@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.TestSupport;
@@ -309,7 +310,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            CompanyClockCtx()
         );
 
         return (handler, stockRepo, returnRepo);
@@ -325,6 +327,12 @@ public sealed class AuthorizeSalesReturnHandlerTests
         Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId);
 
     private static ICurrentUser UserCtx() => Mock.Of<ICurrentUser>(u => u.UserId == UserId);
+
+    private static ICompanyClock CompanyClockCtx() =>
+        Mock.Of<ICompanyClock>(c =>
+            c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            == Task.FromResult(new DateOnly(2026, 9, 17))
+        );
 
     private static AuthorizeSalesReturnCommand FullRefundCashCommand(
         Guid salesReturnId,
@@ -702,7 +710,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            CompanyClockCtx()
         );
 
         var result = await handler.Handle(
@@ -1104,7 +1113,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 new FixedCurrentBranch(_branchId),
                 new FixedCurrentUser(_createdBy),
                 Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-                PrecisionPolicyTestDouble.Mock()
+                PrecisionPolicyTestDouble.Mock(),
+                CompanyClockCtx()
             );
 
         [Fact]

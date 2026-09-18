@@ -429,7 +429,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             BuildPostingEngine(db),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new AlwaysTodayCompanyClock()
         );
 
     private static PostingEngine BuildPostingEngine(ErpDbContext db) =>
@@ -456,7 +457,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
-            new FixedCurrentUser(_userId)
+            new FixedCurrentUser(_userId),
+            new AlwaysTodayCompanyClock()
         );
 
     private ApplySupplierCreditHandler BuildApplyHandler(ErpDbContext db) =>

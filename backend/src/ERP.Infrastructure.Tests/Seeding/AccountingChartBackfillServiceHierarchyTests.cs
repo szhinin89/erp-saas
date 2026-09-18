@@ -45,7 +45,7 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
         new(
             db,
             new FakeHostEnvironment(isProduction: false),
-            new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance),
+            new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance),
             NullLogger<AccountingChartBackfillService>.Instance
         );
 
@@ -344,7 +344,7 @@ public sealed class AccountingChartBackfillServiceHierarchyTests
         // las cuentas legacy que ya existían con padre null).
         await using (var db = NewDbContext(dbName))
         {
-            var step = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+            var step = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
             await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
         }
 

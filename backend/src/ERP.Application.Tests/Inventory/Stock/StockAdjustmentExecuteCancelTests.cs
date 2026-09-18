@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -25,6 +26,15 @@ public sealed class StockAdjustmentExecuteCancelTests
     private static readonly Guid ItemId = Guid.NewGuid();
     private static readonly Guid ReasonId = Guid.NewGuid();
     private static readonly Guid WarehouseId = Guid.NewGuid();
+    private static readonly DateOnly AdjustmentDate = new(2026, 9, 17);
+
+    private static ICompanyClock StubCompanyClock()
+    {
+        var mock = new Mock<ICompanyClock>();
+        mock.Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AdjustmentDate);
+        return mock.Object;
+    }
 
     private static Warehouse CreateWarehouse() =>
         Warehouse.Create(
@@ -62,7 +72,8 @@ public sealed class StockAdjustmentExecuteCancelTests
             ReasonId,
             "Observaciones",
             UserId,
-            CompanyId
+            CompanyId,
+            AdjustmentDate
         );
         adj.ReplaceLines(
             new[]
@@ -121,7 +132,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                 WarehouseRepo.Object,
                 Tenant.Object,
                 Branch.Object,
-                User.Object
+                User.Object,
+                StubCompanyClock()
             );
     }
 
@@ -233,6 +245,10 @@ public sealed class StockAdjustmentExecuteCancelTests
         var line = adj.Lines.Single();
         line.CurrentStockAfter.Should().Be(5m);
         line.UnitCostBase.Should().Be(10m);
+        // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: el movimiento de Kardex usa el día operativo de
+        // la empresa (ICompanyClock), nunca DateOnly.FromDateTime(DateTime.UtcNow).
+        captured.Should().NotBeNull();
+        captured!.EffectiveDate.Should().Be(AdjustmentDate);
         harness.StockRepo.Verify(
             r => r.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
             Times.Once
@@ -317,7 +333,8 @@ public sealed class StockAdjustmentExecuteCancelTests
             ReasonId,
             null, // sin notas
             UserId,
-            CompanyId
+            CompanyId,
+            AdjustmentDate
         );
         adj.ReplaceLines(
             new[]
@@ -413,7 +430,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                 WarehouseRepo.Object,
                 Tenant.Object,
                 Branch.Object,
-                User.Object
+                User.Object,
+                StubCompanyClock()
             );
     }
 

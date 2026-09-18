@@ -72,7 +72,7 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         // Company nueva: Plan de Cuentas retail + AccountingPeriod + MinimalPostingRules (incluye
         // "Expenses"/"DocumentConfirmed" desde ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01). Sin
         // ningún fixture local de PostingRule.
-        var bootstrapStep = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        var bootstrapStep = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
         await bootstrapStep.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _createdBy));
     }
 
@@ -101,6 +101,7 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         var db = new ErpDbContext(options, new FixedCurrentTenant(_tenantId), deferred, new FixedCurrentCompany(_companyId));
 
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(_tenantId));

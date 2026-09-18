@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -58,6 +59,8 @@ public sealed class GetItemPricingSimulationQueryHandler
     private readonly IPriceListItemRepository _assignments;
     private readonly IPricingAdjustmentStrategyResolver _strategies;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
+    private readonly ICompanyClock _companyClock;
 
     public GetItemPricingSimulationQueryHandler(
         IItemRepository items,
@@ -65,7 +68,9 @@ public sealed class GetItemPricingSimulationQueryHandler
         IPricingRuleRepository rules,
         IPriceListItemRepository assignments,
         IPricingAdjustmentStrategyResolver strategies,
-        ICurrentTenant t
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICompanyClock companyClock
     )
     {
         _items = items;
@@ -74,6 +79,8 @@ public sealed class GetItemPricingSimulationQueryHandler
         _assignments = assignments;
         _strategies = strategies;
         _t = t;
+        _c = c;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<IReadOnlyList<ItemPricingSimulationRowDto>>> Handle(
@@ -124,7 +131,7 @@ public sealed class GetItemPricingSimulationQueryHandler
             );
 
         // 2 queries totales (o 1 sin ItemId), sin importar cuántas listas existan (nunca N+1).
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _companyClock.TodayAsync(_c.CompanyId, tenantId, ct);
         var activeLists = (await _priceLists.GetAllAsync(tenantId, true, null, ct))
             .Where(pl => pl.IsValidOn(today))
             .ToList();

@@ -51,7 +51,7 @@ public sealed class ExpensesCatalogBootstrapStepTests
         Guid actorId
     )
     {
-        var accountingStep = new AccountingBootstrapStep(db, NullLogger<AccountingBootstrapStep>.Instance);
+        var accountingStep = new AccountingBootstrapStep(db, new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance);
         await accountingStep.ExecuteAsync(new CompanyBootstrapContext(tenantId, companyId, actorId));
     }
 

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -16,6 +17,7 @@ public sealed class ConfirmStockTransferCommandHandler
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
+    private readonly ICompanyClock _companyClock;
 
     public ConfirmStockTransferCommandHandler(
         IStockTransferRepository repo,
@@ -23,7 +25,8 @@ public sealed class ConfirmStockTransferCommandHandler
         IInterBranchAccessGuard interBranchGuard,
         ICurrentTenant tenant,
         ICurrentCompany company,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
@@ -32,6 +35,7 @@ public sealed class ConfirmStockTransferCommandHandler
         _tenant = tenant;
         _company = company;
         _user = user;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<StockTransferDto>> Handle(
@@ -60,7 +64,7 @@ public sealed class ConfirmStockTransferCommandHandler
         if (!access.IsSuccess)
             return Result<StockTransferDto>.Failure(access.Error!);
 
-        var effectiveDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var effectiveDate = await _companyClock.TodayAsync(cid, tid, ct);
 
         foreach (var line in transfer.Lines)
         {

@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -21,14 +22,17 @@ public sealed class PurchaseReturnCancelledPostingTranslator
     private const string FactTypeName = "PurchaseReturnCancelled";
 
     private readonly IPostingEngine _postingEngine;
+    private readonly ICompanyClock _companyClock;
     private readonly ILogger<PurchaseReturnCancelledPostingTranslator> _logger;
 
     public PurchaseReturnCancelledPostingTranslator(
         IPostingEngine postingEngine,
+        ICompanyClock companyClock,
         ILogger<PurchaseReturnCancelledPostingTranslator> logger
     )
     {
         _postingEngine = postingEngine;
+        _companyClock = companyClock;
         _logger = logger;
     }
 
@@ -39,6 +43,7 @@ public sealed class PurchaseReturnCancelledPostingTranslator
 
         var costVarianceDebit = Math.Max(e.CostVarianceTotal!.Value, 0m);
         var costVarianceCredit = Math.Max(-e.CostVarianceTotal!.Value, 0m);
+        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
 
         var fact = new PostingFact(
             e.TenantId!.Value,
@@ -46,7 +51,7 @@ public sealed class PurchaseReturnCancelledPostingTranslator
             SourceModuleName,
             FactTypeName,
             e.PurchaseReturnId,
-            DateOnly.FromDateTime(e.OccurredOn),
+            entryDate,
             Subtotal: 0m,
             TotalVat: e.AuthorizedVatTotal!.Value,
             TotalIce: e.AuthorizedIceTotal!.Value,

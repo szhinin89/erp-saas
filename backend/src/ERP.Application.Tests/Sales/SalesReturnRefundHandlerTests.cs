@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.TestSupport;
@@ -414,7 +415,11 @@ public sealed class SalesReturnRefundHandlerTests
             branch,
             user,
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            Mock.Of<ICompanyClock>(c =>
+                c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                == Task.FromResult(new DateOnly(2026, 9, 17))
+            )
         );
 
         return (handler, uow, stockRepo);

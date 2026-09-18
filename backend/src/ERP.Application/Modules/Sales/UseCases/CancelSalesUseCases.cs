@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -22,6 +23,7 @@ public sealed class CancelSalesInvoiceHandler
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyClock _companyClock;
 
     public CancelSalesInvoiceHandler(
         ISalesInvoiceRepository repo,
@@ -31,7 +33,8 @@ public sealed class CancelSalesInvoiceHandler
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyClock companyClock
     )
     {
         _repo = repo;
@@ -42,6 +45,7 @@ public sealed class CancelSalesInvoiceHandler
         _c = c;
         _b = b;
         _u = u;
+        _companyClock = companyClock;
     }
 
     public async Task<Result<SalesInvoiceDto>> Handle(
@@ -83,6 +87,7 @@ public sealed class CancelSalesInvoiceHandler
         // SALES-PRESENTATIONS-02: debe revertir exactamente lo que se descontó al autorizar
         // (QuantityInBaseUom/BaseUomCode) — nunca Quantity/UomCode crudos, o el stock queda
         // desincronizado en cuanto la línea tenga ConversionFactor != 1.
+        var effectiveDate = await _companyClock.TodayAsync(_c.CompanyId, _t.TenantId, ct);
         foreach (var line in inv.Lines)
         {
             if (line.ItemId is null || line.WarehouseId is null)
@@ -96,7 +101,7 @@ public sealed class CancelSalesInvoiceHandler
                 StockMovementType.SaleReturn,
                 line.QuantityInBaseUom,
                 line.BaseUomCode,
-                DateOnly.FromDateTime(DateTime.UtcNow),
+                effectiveDate,
                 $"ANULACIÓN: {inv.InvoiceNumber}",
                 inv.Id,
                 "SalesInvoice",

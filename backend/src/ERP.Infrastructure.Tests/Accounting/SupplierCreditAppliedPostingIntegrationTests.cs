@@ -185,6 +185,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         );
 
         var services = new ServiceCollection();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddLogging();
         services.AddSingleton(db);
         services.AddSingleton<ICurrentTenant>(new FixedCurrentTenant(tenantId));
