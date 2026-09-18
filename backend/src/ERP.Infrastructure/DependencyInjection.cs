@@ -952,8 +952,7 @@ public static class DependencyInjection
         services.AddScoped<MasterDataClassificationBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, SalesBootstrapStep>();
         services.AddScoped<PaymentMethodSriMappingBackfillService>();
-        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01
-        services.AddScoped<PaymentMethodAccountBackfillService>();
+        services.AddScoped<CashRegisterAccountingAccountBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, CajaBootstrapStep>();
         services.AddScoped<AccountingBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep>(sp =>

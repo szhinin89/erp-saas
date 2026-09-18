@@ -42,6 +42,58 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     private static readonly Guid PaymentTermId = Guid.NewGuid();
     private static readonly Guid PaymentMethodId = Guid.NewGuid();
     private static readonly Guid CashSessionId = Guid.NewGuid();
+    private static readonly Guid CashRegisterId = Guid.NewGuid();
+    private static readonly Guid CashAccountingAccountId = Guid.NewGuid();
+
+    /// <summary>
+    /// SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Efectivo resuelve su cuenta contable
+    /// exclusivamente desde <c>CashRegister.AccountingAccountId</c> de la caja de
+    /// <see cref="CashSessionId"/> (fijado en la factura al crear el borrador). Estos mocks por
+    /// defecto reproducen una caja activa con cuenta contable configurada — comportamiento feliz
+    /// idéntico al que tenían las pruebas de Efectivo antes de este ticket.
+    /// </summary>
+    private static (
+        Mock<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository> cashSessionRepo,
+        Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository> cashRegisterRepo
+    ) DefaultCashRegisterMocks(bool cashRegisterHasAccount = true, bool cashRegisterActive = true)
+    {
+        var session = ERP.Domain.Modules.Caja.Entities.CashSession.Open(
+            TenantId,
+            CompanyId,
+            BranchId,
+            UserId,
+            CashRegisterId,
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001-001",
+            0m,
+            UserId
+        );
+        var cashSessionRepo = new Mock<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository>();
+        cashSessionRepo
+            .Setup(r => r.GetByIdAsync(TenantId, CashSessionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var cashRegister = ERP.Domain.Modules.Caja.Entities.CashRegister.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            "CAJA-01",
+            "Caja Principal",
+            UserId
+        );
+        if (cashRegisterHasAccount)
+            cashRegister.SetAccountingAccount(CashAccountingAccountId, UserId);
+        if (!cashRegisterActive)
+            cashRegister.Disable(UserId);
+        var cashRegisterRepo = new Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>();
+        cashRegisterRepo
+            .Setup(r => r.GetByIdAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cashRegister);
+
+        return (cashSessionRepo, cashRegisterRepo);
+    }
 
     /// <summary>ADR-033, Fase 2 P1: la condición de pago del borrador siempre está activa por
     /// defecto en estas pruebas (foco en fecha/stock/política fiscal, no en el guard de
@@ -214,7 +266,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         Mock<IPaymentMethodRepository>? paymentMethodRepoOverride = null,
         Mock<IPaymentMethodAccountRepository>? paymentMethodAccountRepoOverride = null,
         Mock<ICompanyBankAccountRepository>? bankAccountRepoOverride = null,
-        Mock<IAccountRepository>? accountRepoOverride = null
+        Mock<IAccountRepository>? accountRepoOverride = null,
+        Mock<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository>? cashSessionRepoOverride =
+            null,
+        Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>? cashRegisterRepoOverride =
+            null
     )
     {
         var preferences = new Mock<IOperationalPreferencesResolver>();
@@ -320,6 +376,33 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         // Transferencia (todos usan Efectivo por defecto), así que estos mocks nunca se invocan.
         var bankAccountRepo = bankAccountRepoOverride ?? new Mock<ICompanyBankAccountRepository>();
         var accountRepo = accountRepoOverride ?? new Mock<IAccountRepository>();
+        if (accountRepoOverride is null)
+            accountRepo
+                .Setup(r =>
+                    r.GetByIdAsync(
+                        TenantId,
+                        CompanyId,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(ActiveAccount());
+
+        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Efectivo (el método por defecto de este
+        // bloque) resuelve su cuenta contable desde CashRegister — ver DefaultCashRegisterMocks.
+        Mock<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository> cashSessionRepo;
+        Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository> cashRegisterRepo;
+        if (cashSessionRepoOverride is null || cashRegisterRepoOverride is null)
+        {
+            var defaults = DefaultCashRegisterMocks();
+            cashSessionRepo = cashSessionRepoOverride ?? defaults.cashSessionRepo;
+            cashRegisterRepo = cashRegisterRepoOverride ?? defaults.cashRegisterRepo;
+        }
+        else
+        {
+            cashSessionRepo = cashSessionRepoOverride;
+            cashRegisterRepo = cashRegisterRepoOverride;
+        }
 
         postingEngine = new Mock<IPostingEngine>();
         postingEngine
@@ -352,6 +435,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepo.Object,
             paymentMethodAccountRepo.Object,
             bankAccountRepo.Object,
+            cashSessionRepo.Object,
+            cashRegisterRepo.Object,
             accountRepo.Object,
             postingEngine.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
@@ -465,6 +550,17 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultOperationalPreferences(allowSellWithoutStock));
 
+        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Efectivo (método por defecto de este bloque)
+        // se resuelve antes de llegar a la validación de stock, así que necesita un mock funcional
+        // (no un Mock.Of<> vacío) igual que BuildHandler.
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(ActiveAccount());
+        var (cashSessionRepo, cashRegisterRepo) = DefaultCashRegisterMocks();
+
         var handler = new AuthorizeSalesInvoiceHandler(
             repo.Object,
             Mock.Of<ISalesReceivableRepository>(),
@@ -482,7 +578,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepo.Object,
             paymentMethodAccountRepo.Object,
             Mock.Of<ICompanyBankAccountRepository>(),
-            Mock.Of<IAccountRepository>(),
+            cashSessionRepo.Object,
+            cashRegisterRepo.Object,
+            accountRepo.Object,
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -701,6 +799,17 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultOperationalPreferences());
 
+        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Efectivo (método por defecto de este bloque)
+        // se resuelve antes de llegar a la validación de stock, así que necesita un mock funcional
+        // (no un Mock.Of<> vacío) igual que BuildHandler.
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo
+            .Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(ActiveAccount());
+        var (cashSessionRepo, cashRegisterRepo) = DefaultCashRegisterMocks();
+
         var handler = new AuthorizeSalesInvoiceHandler(
             repo.Object,
             Mock.Of<ISalesReceivableRepository>(),
@@ -718,7 +827,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             paymentMethodRepo.Object,
             paymentMethodAccountRepo.Object,
             Mock.Of<ICompanyBankAccountRepository>(),
-            Mock.Of<IAccountRepository>(),
+            cashSessionRepo.Object,
+            cashRegisterRepo.Object,
+            accountRepo.Object,
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
@@ -776,6 +887,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<IPaymentMethodRepository>(),
             Mock.Of<IPaymentMethodAccountRepository>(),
             Mock.Of<ICompanyBankAccountRepository>(),
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository>(),
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(),
             Mock.Of<IAccountRepository>(),
             Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
@@ -2062,46 +2175,48 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     // ── SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 ──────────────────────────────────────────
 
     [Fact]
-    public async Task Transferencia_sin_cuenta_configurada_bloquea_la_autorizacion_con_mensaje_claro()
+    public async Task Tarjeta_sin_cuenta_configurada_bloquea_la_autorizacion_con_mensaje_claro()
     {
-        // Reproduce el bug reportado: "Transferencia Bancaria" sin PaymentMethodAccount configurado
-        // para la Company activa. La autorización debe rechazarse ANTES de capturar secuencial/
-        // tocar inventario — nunca contabilizar silenciosamente contra Caja general.
+        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Tarjeta/Cheque son los ÚNICOS métodos que
+        // siguen resolviendo su cuenta contable vía PaymentMethodAccount; sin una fila configurada
+        // para la Company activa, la autorización debe rechazarse ANTES de capturar secuencial/
+        // tocar inventario — nunca contabilizar silenciosamente contra Efectivo/Caja general.
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoiceWithHeaderSriCode(today, headerSriPaymentMethodCode: "01", unitPrice: 100m);
         var total = ExpectedGrandTotal(100m);
 
-        var transferMethodId = Guid.NewGuid();
+        var cardMethodId = Guid.NewGuid();
         var payment = SalesInvoicePayment.Create(
             inv.Id,
             TenantId,
-            transferMethodId,
-            "16",
-            "Transferencia Bancaria",
+            cardMethodId,
+            "19",
+            "Tarjeta de Crédito",
             total
         );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
         paymentMethodRepo
-            .Setup(r => r.GetByIdAsync(TenantId, transferMethodId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(TenantId, cardMethodId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 PaymentMethod.Create(
                     TenantId,
-                    "TRANSFERENCIA",
-                    "Transferencia Bancaria",
+                    "TARJETA",
+                    "Tarjeta de Crédito",
                     true,
                     false,
                     2,
                     UserId,
-                    sriPaymentMethodCode: "16"
+                    detailType: Domain.Modules.Sales.Enums.PaymentMethodDetailType.Card,
+                    sriPaymentMethodCode: "19"
                 )
             );
 
         // Mapa NO vacío (contiene una entrada de OTRO método) — activa el gate estricto de la
-        // Company (ya "migró": al menos un PaymentMethodAccount configurado) sin incluir
-        // Transferencia — reproduce exactamente el caso reportado: cualquier otro método sin
-        // cuenta configurada bloquea, nunca cae en Caja general en silencio.
+        // Company (ya "migró": al menos un PaymentMethodAccount configurado) sin incluir Tarjeta —
+        // reproduce exactamente el caso reportado: cualquier método Tarjeta/Cheque sin cuenta
+        // configurada bloquea, nunca cae en Caja general en silencio.
         var paymentMethodAccountRepo = new Mock<IPaymentMethodAccountRepository>();
         paymentMethodAccountRepo
             .Setup(r =>
@@ -2134,7 +2249,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Transferencia Bancaria");
+        result.Error.Should().Contain("Tarjeta de Crédito");
         result.Error.Should().Contain("cuenta contable");
         inv.Status.Should()
             .Be(

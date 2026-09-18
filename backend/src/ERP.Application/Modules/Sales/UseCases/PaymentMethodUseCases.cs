@@ -11,6 +11,22 @@ namespace ERP.Application.Modules.Sales.UseCases;
 
 // ── DTOs ────────────────────────────────────────────────────────────────
 
+/// <summary>SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — de dónde sale la cuenta contable con la que este método de pago postea sus cobros de venta. Ver docs/accounting/SALES_COLLECTION_ACCOUNT_ROUTING.md.</summary>
+public enum PaymentMethodAccountSource
+{
+    /// <summary>Efectivo — <c>CashRegister.AccountingAccountId</c> de la caja de la venta.</summary>
+    CashRegister,
+
+    /// <summary>Transferencia — <c>CompanyBankAccount.AccountingAccountId</c> de la cuenta bancaria elegida.</summary>
+    CompanyBankAccount,
+
+    /// <summary>Tarjeta/Cheque — <see cref="ERP.Domain.Modules.Sales.Entities.PaymentMethodAccount"/>, la única configuración manual posible.</summary>
+    PaymentMethodAccount,
+
+    /// <summary>Crédito — regla contable de Cuentas por Cobrar, resuelta al momento del cobro (RegisterCollectionCommand), nunca aquí.</summary>
+    AccountingRule,
+}
+
 public sealed record PaymentMethodDto(
     Guid Id,
     string Code,
@@ -22,11 +38,15 @@ public sealed record PaymentMethodDto(
     PaymentMethodDetailType DetailType,
     string? SriPaymentMethodCode,
     /// <summary>
-    /// SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — cuenta contable configurada para este método de
-    /// pago en la Company activa (null si no se ha configurado ninguna — un método no-Crédito sin
-    /// esta cuenta bloquea la autorización de cualquier venta que lo use, ver
-    /// AuthorizeSalesInvoiceHandler). Sin significado para métodos <c>IsCreditAllowed = true</c>
-    /// (Crédito no mueve Caja/Bancos).
+    /// SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — de dónde sale la cuenta contable de este método
+    /// (ver <see cref="PaymentMethodAccountSource"/>). Fuente única por método: nunca hay una
+    /// segunda configuración posible para el mismo método de pago.
+    /// </summary>
+    PaymentMethodAccountSource AccountSource,
+    /// <summary>
+    /// Cuenta contable configurada — solo tiene valor cuando <see cref="AccountSource"/> es
+    /// <see cref="PaymentMethodAccountSource.PaymentMethodAccount"/> (Tarjeta/Cheque). Para
+    /// Efectivo/Transferencia/Crédito siempre es <c>null</c>: su cuenta no se configura aquí.
     /// </summary>
     Guid? AccountingAccountId
 );
@@ -147,8 +167,17 @@ public sealed class GetPaymentMethodsHandler
     internal static PaymentMethodDto ToDto(
         PaymentMethod pm,
         IReadOnlyDictionary<Guid, Domain.Modules.Sales.Entities.PaymentMethodAccount>? accountMap = null
-    ) =>
-        new(
+    )
+    {
+        var source = ResolveAccountSource(pm);
+        var accountingAccountId =
+            source == PaymentMethodAccountSource.PaymentMethodAccount
+            && accountMap is not null
+            && accountMap.TryGetValue(pm.Id, out var link)
+                ? link.AccountingAccountId
+                : (Guid?)null;
+
+        return new PaymentMethodDto(
             pm.Id,
             pm.Code,
             pm.Name,
@@ -158,10 +187,22 @@ public sealed class GetPaymentMethodsHandler
             pm.SortOrder,
             pm.DetailType,
             pm.SriPaymentMethodCode,
-            accountMap is not null && accountMap.TryGetValue(pm.Id, out var link)
-                ? link.AccountingAccountId
-                : null
+            source,
+            accountingAccountId
         );
+    }
+
+    /// <summary>SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — única fuente de verdad para mapear un método de pago a su fuente contable. No duplicar este switch en ningún otro lugar.</summary>
+    internal static PaymentMethodAccountSource ResolveAccountSource(PaymentMethod pm)
+    {
+        if (pm.IsCreditAllowed)
+            return PaymentMethodAccountSource.AccountingRule;
+        if (pm.DetailType == PaymentMethodDetailType.Transfer)
+            return PaymentMethodAccountSource.CompanyBankAccount;
+        if (pm.DetailType is PaymentMethodDetailType.Card or PaymentMethodDetailType.Check)
+            return PaymentMethodAccountSource.PaymentMethodAccount;
+        return PaymentMethodAccountSource.CashRegister;
+    }
 }
 
 public sealed class GetPaymentMethodByIdHandler
@@ -343,6 +384,9 @@ public sealed record SetPaymentMethodAccountCommand(Guid PaymentMethodId, Guid A
 /// Valida que la cuenta exista, pertenezca a la Company activa, esté activa y admita movimiento —
 /// mismo criterio de <c>PostingAccountGuard</c> (tiempo de posting), aplicado aquí en tiempo de
 /// configuración para no permitir guardar una cuenta que de todos modos rechazaría toda venta.
+/// SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — además rechaza el método de pago si su fuente
+/// contable no es <see cref="PaymentMethodAccountSource.PaymentMethodAccount"/> (Tarjeta/Cheque):
+/// Efectivo/Transferencia/Crédito resuelven su cuenta desde Cajas/Bancos/CxC — nunca aquí.
 /// </summary>
 public sealed class SetPaymentMethodAccountValidator
     : AbstractValidator<SetPaymentMethodAccountCommand>
@@ -359,6 +403,22 @@ public sealed class SetPaymentMethodAccountValidator
                 async (id, ct) => await paymentMethodRepo.GetByIdAsync(t.TenantId, id, ct) is not null
             )
             .WithMessage("Método de pago no encontrado.");
+
+        RuleFor(x => x.PaymentMethodId)
+            .MustAsync(
+                async (id, ct) =>
+                {
+                    var pm = await paymentMethodRepo.GetByIdAsync(t.TenantId, id, ct);
+                    return pm is null
+                        || GetPaymentMethodsHandler.ResolveAccountSource(pm)
+                            == PaymentMethodAccountSource.PaymentMethodAccount;
+                }
+            )
+            .WithMessage(
+                "Solo se puede configurar una cuenta contable para métodos de pago tipo Tarjeta o "
+                    + "Cheque. Efectivo resuelve su cuenta desde la caja registradora, Transferencia "
+                    + "desde la cuenta bancaria elegida y Crédito desde la regla de Cuentas por Cobrar."
+            );
 
         RuleFor(x => x.AccountingAccountId)
             .MustAsync(
@@ -407,6 +467,16 @@ public sealed class SetPaymentMethodAccountHandler
         var pm = await _repo.GetByIdAsync(_t.TenantId, cmd.PaymentMethodId, ct);
         if (pm is null)
             return Result<PaymentMethodDto>.NotFound("Método de pago no encontrado.");
+
+        if (
+            GetPaymentMethodsHandler.ResolveAccountSource(pm)
+            != PaymentMethodAccountSource.PaymentMethodAccount
+        )
+            return Result<PaymentMethodDto>.ValidationFailure(
+                "Solo se puede configurar una cuenta contable para métodos de pago tipo Tarjeta o "
+                    + "Cheque. Efectivo resuelve su cuenta desde la caja registradora, Transferencia "
+                    + "desde la cuenta bancaria elegida y Crédito desde la regla de Cuentas por Cobrar."
+            );
 
         var existing = await _accountLinkRepo.GetAsync(_t.TenantId, _c.CompanyId, pm.Id, ct);
         Domain.Modules.Sales.Entities.PaymentMethodAccount link;

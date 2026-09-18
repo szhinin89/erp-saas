@@ -468,25 +468,22 @@ if (args.Contains("backfill-payment-method-sri-mapping"))
     return;
 }
 
-// Comando de una sola vez (SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01): backfill idempotente de
-// PaymentMethodAccount (EFECTIVO -> Caja general) para companies creadas antes de este ticket —
-// sin esto, toda venta al contado de una company existente empezaría a fallar fail-closed (sin
-// cuenta configurada) en vez de seguir contabilizando contra Caja general como siempre. Nunca
-// siembra cuenta para Transferencia/Tarjeta/Cheque (requiere configuración explícita del
-// administrador). No es un endpoint HTTP ni un IGlobalBootstrapStep — operación de despliegue
-// explícita: `dotnet run -- backfill-payment-method-account`. Sale sin iniciar el host web.
-if (args.Contains("backfill-payment-method-account"))
+// Comando de una sola vez (SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01): backfill idempotente de
+// CashRegister.AccountingAccountId (-> Caja general) para companies creadas antes de este ticket
+// — sin esto, toda venta al contado de una company existente con una caja sin cuenta configurada
+// empezaría a fallar fail-closed (AuthorizeSalesInvoiceHandler ya no cae en PaymentMethodAccount
+// para Efectivo). No es un endpoint HTTP ni un IGlobalBootstrapStep — operación de despliegue
+// explícita: `dotnet run -- backfill-cash-register-accounting-account`. Sale sin iniciar el host web.
+if (args.Contains("backfill-cash-register-accounting-account"))
 {
-    using var paymentMethodAccountBackfillScope = app.Services.CreateScope();
-    var paymentMethodAccountBackfillService =
-        paymentMethodAccountBackfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.PaymentMethodAccountBackfillService>();
-    var paymentMethodAccountResult = await paymentMethodAccountBackfillService.RunAsync();
+    using var cashRegisterAccountBackfillScope = app.Services.CreateScope();
+    var cashRegisterAccountBackfillService =
+        cashRegisterAccountBackfillScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.CashRegisterAccountingAccountBackfillService>();
+    var cashRegisterAccountResult = await cashRegisterAccountBackfillService.RunAsync();
     Console.WriteLine(
-        $"[backfill-payment-method-account] Companies procesadas: {paymentMethodAccountResult.CompaniesProcessed}. "
-            + $"Filas creadas: {paymentMethodAccountResult.RowsCreated}. "
-            + $"Sin método EFECTIVO: {paymentMethodAccountResult.SkippedNoEfectivoMethod}. "
-            + $"Sin cuenta Caja general activa/postable: {paymentMethodAccountResult.SkippedNoCajaGeneralAccount}. "
-            + $"Ya configuradas: {paymentMethodAccountResult.SkippedAlreadyConfigured}."
+        $"[backfill-cash-register-accounting-account] Companies con cajas pendientes: {cashRegisterAccountResult.CompaniesProcessed}. "
+            + $"Cajas actualizadas: {cashRegisterAccountResult.RowsUpdated}. "
+            + $"Sin cuenta Caja general activa/postable: {cashRegisterAccountResult.SkippedNoCajaGeneralAccount}."
     );
     return;
 }

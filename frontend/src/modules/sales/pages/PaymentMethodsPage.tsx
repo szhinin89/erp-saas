@@ -79,7 +79,7 @@ export function PaymentMethodsPage() {
   };
 
   const startConfigureAccount = (pm: PaymentMethodDto) => {
-    if (pm.isCreditAllowed) return;
+    if (pm.accountSource !== "PaymentMethodAccount") return;
     setEditing(pm);
     setFAccountingAccountId(pm.accountingAccountId ?? "");
     setTab("cuenta");
@@ -180,14 +180,22 @@ export function PaymentMethodsPage() {
       key: "accountingAccountId",
       header: "Cuenta Contable",
       render: (pm) => {
-        if (pm.isCreditAllowed)
-          return <span className="zh-text-muted zh-text-xs">N/A (Crédito)</span>;
-        if (!pm.accountingAccountId)
-          return <Badge variant="error" label="Sin configurar" />;
-        const acc = (accountsState.data ?? []).find(
-          (a) => a.id === pm.accountingAccountId,
-        );
-        return acc ? `${acc.code} — ${acc.name}` : pm.accountingAccountId;
+        switch (pm.accountSource) {
+          case "CashRegister":
+            return <span className="zh-text-muted zh-text-xs">Según caja registradora</span>;
+          case "CompanyBankAccount":
+            return <span className="zh-text-muted zh-text-xs">Según cuenta bancaria</span>;
+          case "AccountingRule":
+            return <span className="zh-text-muted zh-text-xs">Según regla contable</span>;
+          case "PaymentMethodAccount": {
+            if (!pm.accountingAccountId)
+              return <Badge variant="error" label="Sin configurar" />;
+            const acc = (accountsState.data ?? []).find(
+              (a) => a.id === pm.accountingAccountId,
+            );
+            return acc ? `${acc.code} — ${acc.name}` : pm.accountingAccountId;
+          }
+        }
       },
     },
     {
@@ -201,14 +209,15 @@ export function PaymentMethodsPage() {
       align: "right",
       render: (pm) => (
         <div className="prd-td-actions">
-          <ZHIconButton
-            icon="account_balance"
-            title={pm.isCreditAllowed ? `${pm.name} no requiere cuenta contable (permite crédito)` : `Configurar cuenta contable de ${pm.name}`}
-            ariaLabel={`Configurar cuenta contable de ${pm.name}`}
-            variant="primary"
-            disabled={pm.isCreditAllowed}
-            onClick={() => startConfigureAccount(pm)}
-          />
+          {pm.accountSource === "PaymentMethodAccount" && (
+            <ZHIconButton
+              icon="account_balance"
+              title={`Configurar cuenta contable de ${pm.name}`}
+              ariaLabel={`Configurar cuenta contable de ${pm.name}`}
+              variant="primary"
+              onClick={() => startConfigureAccount(pm)}
+            />
+          )}
           <ZHIconButton
             icon={pm.isActive ? "toggle_off" : "toggle_on"}
             title={pm.isActive ? `Desactivar método de pago ${pm.code}` : `Activar método de pago ${pm.code}`}

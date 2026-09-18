@@ -407,6 +407,21 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
             _adminId,
             EmissionPointId
         );
+        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Efectivo resuelve su cuenta contable
+        // exclusivamente desde CashRegister.AccountingAccountId (AuthorizeSalesInvoiceHandler es
+        // fail-closed sin ella); una caja recién creada "a mano" (como haría un admin real desde
+        // Cajas registradoras) debe configurarla antes de usarse para ventas.
+        var cajaGeneralAccountId = await db
+            .Accounts.IgnoreQueryFilters()
+            .Where(a =>
+                a.TenantId == TenantId
+                && a.CompanyId == CompanyId
+                && a.Code
+                    == ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.01.001")
+            )
+            .Select(a => a.Id)
+            .FirstAsync();
+        register.SetAccountingAccount(cajaGeneralAccountId, _adminId);
         db.CashRegisters.Add(register);
         await db.SaveChangesAsync();
         return register.Id;

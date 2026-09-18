@@ -3,6 +3,16 @@ import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 /** Esquema de detalle que la UI debe capturar al registrar un pago — viene del catálogo, nunca se infiere del código. */
 export type PaymentMethodDetailType = "None" | "Card" | "Transfer" | "Check";
 
+/**
+ * SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — de dónde sale la cuenta contable de este método.
+ * Fuente única por método: nunca hay una segunda configuración posible para el mismo método.
+ */
+export type PaymentMethodAccountSource =
+  | "CashRegister" // Efectivo — según la caja registradora de la venta.
+  | "CompanyBankAccount" // Transferencia — según la cuenta bancaria elegida.
+  | "PaymentMethodAccount" // Tarjeta/Cheque — única configuración manual posible (accountingAccountId).
+  | "AccountingRule"; // Crédito — regla de Cuentas por Cobrar, resuelta al momento del cobro.
+
 export type PaymentMethodDto = {
   id: string;
   code: string;
@@ -15,10 +25,11 @@ export type PaymentMethodDto = {
   /** SALES-PAYMENT-METHOD-SRI-MAPPING-SSOT-01: código del catálogo sri_payment_method mapeado a
    * esta forma de cobro (null = sin mapeo propio, la emisión cae al default de empresa). */
   sriPaymentMethodCode: string | null;
-  /** SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01: cuenta contable (Caja/Bancos) configurada para
-   * esta forma de cobro en la empresa activa — null si no se ha configurado ninguna. Un método
-   * no-Crédito sin esta cuenta bloquea la autorización de cualquier venta que lo use. Sin
-   * significado para métodos con isCreditAllowed=true. */
+  /** SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — fuente de la cuenta contable de este método. */
+  accountSource: PaymentMethodAccountSource;
+  /** Cuenta contable configurada — solo tiene valor cuando accountSource es
+   * "PaymentMethodAccount" (Tarjeta/Cheque). Para Efectivo/Transferencia/Crédito siempre es
+   * null: su cuenta no se configura aquí. */
   accountingAccountId: string | null;
 };
 

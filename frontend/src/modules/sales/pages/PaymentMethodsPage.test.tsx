@@ -66,6 +66,7 @@ const ACTIVE_PM: PaymentMethodDto = {
   sortOrder: 1,
   detailType: "None",
   sriPaymentMethodCode: "01",
+  accountSource: "CashRegister",
   accountingAccountId: null,
 };
 

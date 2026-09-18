@@ -117,6 +117,7 @@ function buildPaymentMethod(
     sortOrder: 1,
     detailType: "None",
     sriPaymentMethodCode: null,
+    accountSource: "CashRegister",
     accountingAccountId: null,
     ...overrides,
   };

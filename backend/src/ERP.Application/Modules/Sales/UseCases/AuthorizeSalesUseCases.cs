@@ -54,6 +54,8 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly IPaymentMethodRepository _paymentMethodRepo;
     private readonly IPaymentMethodAccountRepository _paymentMethodAccountRepo;
     private readonly ICompanyBankAccountRepository _bankAccountRepo;
+    private readonly ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository _cashSessionRepo;
+    private readonly ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository _cashRegisterRepo;
     private readonly IAccountRepository _accountRepo;
     private readonly IPostingEngine _postingEngine;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
@@ -81,6 +83,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         IPaymentMethodRepository paymentMethodRepo,
         IPaymentMethodAccountRepository paymentMethodAccountRepo,
         ICompanyBankAccountRepository bankAccountRepo,
+        ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository cashSessionRepo,
+        ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository cashRegisterRepo,
         IAccountRepository accountRepo,
         IPostingEngine postingEngine,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
@@ -108,6 +112,8 @@ public sealed class AuthorizeSalesInvoiceHandler
         _paymentMethodRepo = paymentMethodRepo;
         _paymentMethodAccountRepo = paymentMethodAccountRepo;
         _bankAccountRepo = bankAccountRepo;
+        _cashSessionRepo = cashSessionRepo;
+        _cashRegisterRepo = cashRegisterRepo;
         _accountRepo = accountRepo;
         _postingEngine = postingEngine;
         _logger = logger;
@@ -244,28 +250,22 @@ public sealed class AuthorizeSalesInvoiceHandler
                 cashApplied += payment.Amount;
         }
 
-        // ── SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 ───────────────────────
-        // Resuelve, para cada método de pago NO-Crédito realmente usado en esta venta, la cuenta
-        // contable de la Company activa (PaymentMethodAccount) que debe recibir el débito de
-        // "dinero real cobrado" en el asiento Sales/InvoiceIssued — nunca la cuenta fija histórica
-        // ("Caja general" para cualquier método).
-        //
-        // Gate de activación por Company (nunca por Code/Name hardcodeado — evita acoplar esta
-        // regla a un valor mágico como "EFECTIVO", que ni siquiera es estable entre entornos: los
-        // fixtures de integración crean PaymentMethod con Code="01"/Name="Efectivo"): si la Company
-        // activa TODAVÍA no tiene NINGÚN PaymentMethodAccount configurado (no ha migrado — nunca
-        // corrió el backfill ni configuró nada manualmente), esta venta se contabiliza EXACTAMENTE
-        // como antes de este ticket (cashByAccount vacío -> SalesInvoiceAuthorizedPostingTranslator
-        // usa la línea fija histórica para el 100% del monto, sin bloquear nada) — así ninguna
-        // company/entorno existente se rompe el día que este código se despliega. En cuanto la
-        // Company tiene AL MENOS UN PaymentMethodAccount configurado (el backfill de Efectivo → Caja
-        // general corre automáticamente en el bootstrap/backfill de Accounting, así que en la
-        // práctica esto se activa solo), la regla pasa a ser estricta: CUALQUIER método no-Crédito
-        // usado sin cuenta configurada bloquea la autorización — fail-closed, nunca un fallback
-        // oculto a Caja general (el bug reportado por este ticket).
+        // ── SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 ─────────────────────────
+        // Cada método de pago NO-Crédito resuelve la cuenta contable del asiento Sales/InvoiceIssued
+        // desde exactamente UNA fuente — nunca hay una segunda configuración posible ni fallback
+        // entre fuentes:
+        //   - Transferencia (DetailType.Transfer)  -> CompanyBankAccount.AccountingAccountId
+        //   - Efectivo      (DetailType.None)       -> CashRegister.AccountingAccountId (la caja de
+        //                                              la sesión de esta venta, inv.CashSessionId)
+        //   - Tarjeta/Cheque (DetailType.Card/Check) -> PaymentMethodAccount.AccountingAccountId
+        //   - Crédito (IsCreditAllowed)              -> ya excluido arriba (resuelve por CxC)
+        // Fail-closed incondicional: sin la cuenta correspondiente activa y postable, la
+        // autorización se bloquea antes de capturar secuencial/generar el asiento.
         var companyAccountMap = await _paymentMethodAccountRepo.GetMapAsync(tid, cid, ct);
         var cashByAccount = new Dictionary<Guid, decimal>();
         var missingAccountMethodNames = new List<string>();
+        Guid? cashRegisterAccountingAccountId = null;
+        var cashRegisterResolved = false;
         foreach (var payment in inv.Payments)
         {
             if (
@@ -274,15 +274,10 @@ public sealed class AuthorizeSalesInvoiceHandler
             )
                 continue;
 
-            // ── SALES-TRANSFER-BANK-ACCOUNT-01 ──────────────────────────────────────
-            // Transferencia SIEMPRE resuelve su cuenta contable desde
-            // CompanyBankAccount.AccountingAccountId — nunca desde PaymentMethodAccount cuando
-            // el método es realmente Transferencia (PaymentMethod.DetailType, no Code/Name). Es
-            // fail-closed incondicional (no depende de si la Company "migró" PaymentMethodAccount):
-            // sin una cuenta bancaria activa y postable, la autorización se bloquea antes de
-            // capturar secuencial/generar el asiento. No confía en el CompanyBankAccountId
-            // persistido en el borrador — lo revalida aquí por si la cuenta fue desactivada
-            // después de crear el borrador (mismo criterio que el re-chequeo de PaymentTerm).
+            // ── Transferencia — SIEMPRE CompanyBankAccount.AccountingAccountId ───────
+            // No confía en el CompanyBankAccountId persistido en el borrador — lo revalida aquí
+            // por si la cuenta fue desactivada después de crear el borrador (mismo criterio que
+            // el re-chequeo de PaymentTerm).
             if (method.DetailType == PaymentMethodDetailType.Transfer)
             {
                 if (payment.TransferDetail?.CompanyBankAccountId is not { } bankAccountId)
@@ -324,18 +319,75 @@ public sealed class AuthorizeSalesInvoiceHandler
                 continue;
             }
 
-            if (companyAccountMap.Count == 0)
-                continue;
-
-            if (!companyAccountMap.TryGetValue(payment.PaymentMethodId, out var link))
+            // ── Tarjeta/Cheque — SIEMPRE PaymentMethodAccount.AccountingAccountId ────
+            if (
+                method.DetailType == PaymentMethodDetailType.Card
+                || method.DetailType == PaymentMethodDetailType.Check
+            )
             {
-                if (!missingAccountMethodNames.Contains(method.Name))
-                    missingAccountMethodNames.Add(method.Name);
+                if (!companyAccountMap.TryGetValue(payment.PaymentMethodId, out var link))
+                {
+                    if (!missingAccountMethodNames.Contains(method.Name))
+                        missingAccountMethodNames.Add(method.Name);
+                    continue;
+                }
+
+                cashByAccount.TryGetValue(link.AccountingAccountId, out var existingCard);
+                cashByAccount[link.AccountingAccountId] = existingCard + payment.Amount;
                 continue;
             }
 
-            cashByAccount.TryGetValue(link.AccountingAccountId, out var existing);
-            cashByAccount[link.AccountingAccountId] = existing + payment.Amount;
+            // ── Efectivo — SIEMPRE CashRegister.AccountingAccountId de la caja de esta venta ──
+            if (!cashRegisterResolved)
+            {
+                cashRegisterResolved = true;
+                var session = await _cashSessionRepo.GetByIdAsync(tid, inv.CashSessionId, ct);
+                if (session is null)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        "La sesión de caja de esta venta ya no existe."
+                    );
+
+                var cashRegister = await _cashRegisterRepo.GetByIdAsync(
+                    tid,
+                    session.CashRegisterId,
+                    ct
+                );
+                if (cashRegister is null || cashRegister.CompanyId != cid)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        "La caja de esta venta no existe o no pertenece a esta empresa."
+                    );
+                if (!cashRegister.IsActive)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        "La caja de esta venta está inactiva."
+                    );
+                if (cashRegister.AccountingAccountId is not { } cashAccountId)
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        "La caja de esta venta no tiene una cuenta contable configurada. "
+                            + "Configúrela en Cajas registradoras antes de emitir esta factura."
+                    );
+
+                var cashAccountingAccount = await _accountRepo.GetByIdAsync(
+                    tid,
+                    cid,
+                    cashAccountId,
+                    ct
+                );
+                if (
+                    cashAccountingAccount is null
+                    || !cashAccountingAccount.IsActive
+                    || !cashAccountingAccount.AllowsPosting
+                )
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        "La cuenta contable de la caja de esta venta no es postable o está inactiva. "
+                            + "Configúrela en Cajas registradoras antes de emitir esta factura."
+                    );
+
+                cashRegisterAccountingAccountId = cashAccountId;
+            }
+
+            var resolvedCashAccountId = cashRegisterAccountingAccountId!.Value;
+            cashByAccount.TryGetValue(resolvedCashAccountId, out var existingCash);
+            cashByAccount[resolvedCashAccountId] = existingCash + payment.Amount;
         }
 
         if (missingAccountMethodNames.Count > 0)

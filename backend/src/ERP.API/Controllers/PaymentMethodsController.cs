@@ -82,10 +82,12 @@ public sealed class PaymentMethodsController : ControllerBase
         this.ToOkOrBadRequest(await _mediator.Send(new TogglePaymentMethodCommand(id), ct));
 
     /// <summary>
-    /// SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — configura, para la Company activa, la cuenta
-    /// contable (Caja/Bancos) que debe recibir el débito de "dinero real cobrado" cuando este
-    /// método de pago se usa en una venta. Sin esta configuración, toda venta con este método
-    /// (salvo Efectivo, ya vinculado por defecto a Caja general) es rechazada al autorizar.
+    /// SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — configura, para la Company activa, la cuenta
+    /// contable que debe recibir el débito de "dinero real cobrado" cuando este método de pago se
+    /// usa en una venta. Solo aplica a métodos Tarjeta/Cheque (rechazado en Application si el
+    /// método es Efectivo/Transferencia/Crédito — esos resuelven su cuenta desde
+    /// CashRegister/CompanyBankAccount/reglas de CxC, nunca desde aquí). Sin esta configuración,
+    /// toda venta con Tarjeta/Cheque es rechazada al autorizar.
     /// DESTINOS-CONTABLES-COBROS-VENTAS-01 — exige el permiso contable dedicado (no
     /// sales.update): es una configuración contable, no una acción de Ventas.
     /// </summary>

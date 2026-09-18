@@ -48,20 +48,19 @@ public sealed class SalesInvoiceAuthorizedPostingTranslator
         if (pendingBalance < 0)
             pendingBalance = 0;
 
-        // SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01: si Application (AuthorizeSalesInvoiceHandler)
-        // resolvio el desglose de e.CashApplied por cuenta contable real (CashByAccount, una por
-        // cada PaymentMethodAccount configurado y usado en la venta), esas cuentas se contabilizan
-        // via PostingFact.Allocations (EXPENSES-POSTING-ALLOCATIONS-06, mismo mecanismo ya usado
-        // por Gastos para N cuentas dinamicas), nunca via la cuenta fija de PostingRuleLine.
-        // e.CashByAccount NO tiene por que sumar e.CashApplied: Application deliberadamente deja
-        // afuera el monto de EFECTIVO sin PaymentMethodAccount configurado (compatibilidad con
-        // companies/entornos que no han migrado — ver comentario en AuthorizeSalesInvoiceHandler).
-        // factCashApplied transporta exactamente ese remanente no cubierto por allocations, para
-        // que la linea fija historica de la PostingRule ("Caja general") lo contabilice como
-        // siempre — nunca se pierde ni se duplica un centavo del Debe total. Sin desglose
-        // (CashByAccount vacio: callers/tests que no lo proveen), comportamiento IDENTICO al
-        // anterior: factCashApplied = e.CashApplied completo, sin allocations, cuenta fija de la
-        // PostingRule (compatibilidad total con Lote 1/2/3 ya cerrados).
+        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01: Application (AuthorizeSalesInvoiceHandler)
+        // resuelve, para CADA pago no-Crédito de la venta, la cuenta contable real desde su única
+        // fuente de verdad (Efectivo -> CashRegister, Transferencia -> CompanyBankAccount,
+        // Tarjeta/Cheque -> PaymentMethodAccount; fail-closed incondicional, sin excepciones) — el
+        // desglose resultante (CashByAccount) se contabiliza vía PostingFact.Allocations
+        // (EXPENSES-POSTING-ALLOCATIONS-06, mismo mecanismo ya usado por Gastos para N cuentas
+        // dinámicas), nunca vía la cuenta fija de PostingRuleLine. En producción, CashByAccount
+        // siempre cubre el 100% de e.CashApplied (Application no autoriza la venta si algún método
+        // queda sin cuenta resuelta) — factCashApplied da 0 y solo existen allocations. El camino
+        // "sin desglose" (CashByAccount vacío, factCashApplied = e.CashApplied completo contra la
+        // cuenta fija histórica de la PostingRule) es exclusivamente una conveniencia para tests
+        // que construyen el evento/fact directamente sin pasar por el handler — nunca ocurre en un
+        // flujo real de autorización.
         IReadOnlyCollection<PostingAllocation>? cashAllocations = null;
         var factCashApplied = e.CashApplied;
         if (e.CashByAccount.Count > 0)
