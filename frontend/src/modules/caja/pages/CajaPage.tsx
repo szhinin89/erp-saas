@@ -37,7 +37,7 @@ export function CajaPage() {
   const [expandedMethodId, setExpandedMethodId] = useState<string | null>(null);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
 
-  const statusLabel = (s: string) => (s === "Open" ? "Abierta" : "Cerrada");
+  const statusLabel = (s: string) => (s === "Open" ? t("caja.session.status.open") : t("caja.session.status.closed"));
   const statusBadge = (s: string): BadgeVariant =>
     s === "Open" ? "success" : "neutral";
 
@@ -47,64 +47,64 @@ export function CajaPage() {
   // desglose por forma del expandible vienen de SalesInvoice+SalesInvoicePayment+PaymentMethod
   // (informativo) — ya incluidos en la fila por el backend, sin requests adicionales al expandir.
   const sessionColumns: ZHDataTableColumn<CashSessionListItemDto>[] = [
-    { key: "openedAt", header: "Apertura", render: (s) => formatDateTime(s.openedAt) },
-    { key: "closedAt", header: "Cierre", render: (s) => (s.closedAt ? formatDateTime(s.closedAt) : "—") },
-    { key: "cashRegister", header: "Caja", render: (s) => s.cashRegisterCodeSnapshot },
-    { key: "emissionPoint", header: "P. emisión", render: (s) => s.emissionPointCodeSnapshot },
-    { key: "user", header: "Cajero", render: (s) => s.userName ?? "—" },
+    { key: "openedAt", header: t("caja.movementType.opening"), render: (s) => formatDateTime(s.openedAt) },
+    { key: "closedAt", header: t("caja.session.closing"), render: (s) => (s.closedAt ? formatDateTime(s.closedAt) : "—") },
+    { key: "cashRegister", header: t("caja.session.register"), render: (s) => s.cashRegisterCodeSnapshot },
+    { key: "emissionPoint", header: t("caja.session.emissionPointShort"), render: (s) => s.emissionPointCodeSnapshot },
+    { key: "user", header: t("caja.session.cashier"), render: (s) => s.userName ?? "—" },
     {
       key: "status",
-      header: "Estado",
+      header: t("common.status"),
       render: (s) => <Badge variant={statusBadge(s.status)} label={statusLabel(s.status)} />,
     },
-    { key: "invoices", header: "Facturas", align: "center", render: (s) => s.invoiceCount },
+    { key: "invoices", header: t("caja.session.invoices"), align: "center", render: (s) => s.invoiceCount },
     {
       key: "totalInvoiced",
-      header: "Total facturado",
+      header: t("caja.session.totalInvoiced"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (s) => formatMoneyWithSymbol(s.totalInvoiced),
     },
     {
       key: "expectedCash",
-      header: "Efectivo esperado",
+      header: t("caja.session.expectedCash"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (s) => formatMoneyWithSymbol(s.expectedCash),
     },
     {
       key: "countedAmount",
-      header: "Contado",
+      header: t("caja.session.counted"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (s) => (s.countedAmount != null ? formatMoneyWithSymbol(s.countedAmount) : "—"),
     },
     {
       key: "difference",
-      header: "Diferencia",
+      header: t("caja.session.difference"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (s) => (s.difference != null ? formatMoneyWithSymbol(s.difference) : "—"),
     },
-    { key: "movements", header: "Movimientos", align: "center", render: (s) => s.movementCount },
+    { key: "movements", header: t("caja.session.movements"), align: "center", render: (s) => s.movementCount },
     {
       key: "actions",
-      header: "Acciones",
+      header: t("common.actions"),
       align: "center",
       render: (s) => (
         <>
           <ZHIconButton
             icon={expandedSessionId === s.id ? "expand_less" : "expand_more"}
             variant="ghost"
-            title={expandedSessionId === s.id ? "Ocultar resumen" : "Ver resumen del turno"}
-            ariaLabel={expandedSessionId === s.id ? "Ocultar resumen" : "Ver resumen del turno"}
+            title={expandedSessionId === s.id ? t("caja.session.hideSummary") : t("caja.session.viewSummary")}
+            ariaLabel={expandedSessionId === s.id ? t("caja.session.hideSummary") : t("caja.session.viewSummary")}
             onClick={() => setExpandedSessionId((prev) => (prev === s.id ? null : s.id))}
           />
           <ZHIconButton
             icon="visibility"
             variant="ghost"
-            title={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
-            ariaLabel={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
+            title={t("caja.session.viewSession", { date: formatDateTime(s.openedAt) })}
+            ariaLabel={t("caja.session.viewSession", { date: formatDateTime(s.openedAt) })}
             onClick={() => ctx.loadDetail(s.id)}
           />
         </>
@@ -115,7 +115,7 @@ export function CajaPage() {
   const sessionListByMethodColumns: ZHDataTableColumn<CashSessionListCollectionByMethodDto>[] = [
     {
       key: "method",
-      header: "Forma",
+      header: t("caja.session.method"),
       render: (m) => (
         <>
           {m.paymentMethodName}{" "}
@@ -123,10 +123,10 @@ export function CajaPage() {
         </>
       ),
     },
-    { key: "invoices", header: "Facturas", align: "center", render: (m) => m.invoiceCount },
+    { key: "invoices", header: t("caja.session.invoices"), align: "center", render: (m) => m.invoiceCount },
     {
       key: "amount",
-      header: "Total",
+      header: t("common.total"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (m) => formatMoneyWithSymbol(m.amount),
@@ -137,19 +137,19 @@ export function CajaPage() {
   // (cashMovementTypeLabel, incluye SaleRefund); Motivo/Usuario vienen ya resueltos por el
   // backend en el propio movimiento (ReasonName/CreatedByName) — sin requests adicionales.
   const sessionMovementColumns: ZHDataTableColumn<CashMovementDto>[] = [
-    { key: "date", header: "Fecha/Hora", render: (m) => formatDateTime(m.createdAt) },
-    { key: "type", header: "Tipo", render: (m) => cashMovementTypeLabel(m.movementType) },
-    { key: "reason", header: "Motivo", render: (m) => m.reasonName ?? "—" },
-    { key: "description", header: "Descripción", render: (m) => m.description },
-    { key: "amount", header: "Monto", align: "right", cellClassName: "zh-table-cell--num", render: (m) => formatMoneyWithSymbol(m.amount) },
-    { key: "user", header: "Usuario", render: (m) => m.createdByName ?? "—" },
-    { key: "reference", header: "Referencia", render: (m) => m.referenceNumber ?? "—" },
+    { key: "date", header: t("caja.movements.table.date"), render: (m) => formatDateTime(m.createdAt) },
+    { key: "type", header: t("caja.movements.table.type"), render: (m) => cashMovementTypeLabel(t, m.movementType) },
+    { key: "reason", header: t("caja.movements.table.reason"), render: (m) => m.reasonName ?? "—" },
+    { key: "description", header: t("caja.movements.table.description"), render: (m) => m.description },
+    { key: "amount", header: t("caja.movements.table.amount"), align: "right", cellClassName: "zh-table-cell--num", render: (m) => formatMoneyWithSymbol(m.amount) },
+    { key: "user", header: t("caja.movements.table.user"), render: (m) => m.createdByName ?? "—" },
+    { key: "reference", header: t("caja.movements.table.reference"), render: (m) => m.referenceNumber ?? "—" },
   ];
 
   const arqueoColumns: ZHDataTableColumn<CashClosingCountDto>[] = [
-    { key: "denomination", header: "Denominación", render: (c) => c.denominationLabel },
-    { key: "quantity", header: "Cantidad", align: "center", render: (c) => c.quantity },
-    { key: "total", header: "Total", align: "right", cellClassName: "zh-table-cell--num", render: (c) => formatMoneyWithSymbol(c.total) },
+    { key: "denomination", header: t("caja.session.denomination"), render: (c) => c.denominationLabel },
+    { key: "quantity", header: t("caja.session.quantity"), align: "center", render: (c) => c.quantity },
+    { key: "total", header: t("common.total"), align: "right", cellClassName: "zh-table-cell--num", render: (c) => formatMoneyWithSymbol(c.total) },
   ];
 
   // ── CASH-SESSION-COLLECTION-SUMMARY-01/UX-02 — Cobros del turno != efectivo físico de caja ──
@@ -171,36 +171,36 @@ export function CajaPage() {
   ): ZHDataTableColumn<CashSessionCollectionByMethodDto>[] => [
     {
       key: "method",
-      header: "Forma/código",
+      header: t("caja.session.methodCode"),
       render: (m) => (
         <>
           {m.paymentMethodName} <span className="cj-collection-code">({m.paymentMethodCode})</span>
           {m.isCreditAllowed && (
-            <Badge variant="neutral" label="Crédito" className="cj-collection-credit-badge" />
+            <Badge variant="neutral" label={t("caja.session.credit")} className="cj-collection-credit-badge" />
           )}
         </>
       ),
     },
-    { key: "invoices", header: "Facturas distintas", align: "center", render: (m) => m.invoiceCount },
-    { key: "operations", header: "Operaciones", align: "center", render: (m) => m.operationCount },
+    { key: "invoices", header: t("caja.session.distinctInvoices"), align: "center", render: (m) => m.invoiceCount },
+    { key: "operations", header: t("caja.session.operations"), align: "center", render: (m) => m.operationCount },
     {
       key: "amount",
-      header: "Total",
+      header: t("common.total"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (m) => formatMoneyWithSymbol(m.amount),
     },
     {
       key: "percent",
-      header: "% del cobrado",
+      header: t("caja.session.percentCollected"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (m) => percentOfCollected(m, totalCollected),
     },
-    { key: "destination", header: "Destino", render: (m) => m.destination },
+    { key: "destination", header: t("caja.session.destination"), render: (m) => m.destination },
     {
       key: "detail",
-      header: "Detalle",
+      header: t("caja.session.detail"),
       align: "center",
       render: (m) => (
         <ZHIconButton
@@ -208,10 +208,10 @@ export function CajaPage() {
           variant="ghost"
           title={
             expandedMethodId === m.paymentMethodId
-              ? "Ocultar detalle"
-              : `Ver detalle de ${m.paymentMethodName}`
+              ? t("caja.session.hideDetail")
+              : t("caja.session.viewMethod", { method: m.paymentMethodName })
           }
-          ariaLabel={`Ver detalle de ${m.paymentMethodName}`}
+          ariaLabel={t("caja.session.viewMethod", { method: m.paymentMethodName })}
           onClick={() =>
             setExpandedMethodId((prev) =>
               prev === m.paymentMethodId ? null : m.paymentMethodId,
@@ -223,38 +223,38 @@ export function CajaPage() {
   ];
 
   const collectionDetailColumns: ZHDataTableColumn<CashSessionCollectionDetailDto>[] = [
-    { key: "authorizedAt", header: "Fecha/Hora", render: (d) => formatDateTime(d.authorizedAt) },
-    { key: "invoiceNumber", header: "Factura", render: (d) => d.invoiceNumber },
-    { key: "customer", header: "Cliente", render: (d) => d.customerName },
+    { key: "authorizedAt", header: t("caja.movements.table.date"), render: (d) => formatDateTime(d.authorizedAt) },
+    { key: "invoiceNumber", header: t("caja.session.invoice"), render: (d) => d.invoiceNumber },
+    { key: "customer", header: t("caja.session.customer"), render: (d) => d.customerName },
     {
       key: "invoiceTotal",
-      header: "Total factura",
+      header: t("caja.session.invoiceTotal"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (d) => formatMoneyWithSymbol(d.invoiceTotal),
     },
     {
       key: "amount",
-      header: "Monto (esta forma)",
+      header: t("caja.session.methodAmount"),
       align: "right",
       cellClassName: "zh-table-cell--num",
       render: (d) => formatMoneyWithSymbol(d.amount),
     },
     {
       key: "mixed",
-      header: "Completa/Mixta",
+      header: t("caja.session.paymentScope"),
       align: "center",
       render: (d) => (
         <Badge
           variant={d.isMixedPayment ? "warning" : "neutral"}
-          label={d.isMixedPayment ? "Mixta" : "Completa"}
+          label={d.isMixedPayment ? t("caja.session.mixed") : t("caja.session.full")}
         />
       ),
     },
-    { key: "reference", header: "Referencia/comprobante", render: (d) => d.reference ?? "—" },
+    { key: "reference", header: t("caja.session.referenceReceipt"), render: (d) => d.reference ?? "—" },
     {
       key: "destination",
-      header: "Destino",
+      header: t("caja.session.destination"),
       render: (d) => {
         if (!d.destinationBankName) return "—";
         return (
@@ -272,14 +272,14 @@ export function CajaPage() {
 
   return (
     <PageShell
-      title={t("caja.title", "Turno de caja")}
-      kicker={t("caja.kicker", "Gestión de efectivo")}
+      title={t("caja.title")}
+      kicker={t("caja.kicker")}
     >
       <div className="cj-content">
         {ctx.mySession && ctx.tab === "listado" && (
           <ZHPageNotice
             variant="info"
-            message={`Caja abierta — Saldo: ${formatMoneyWithSymbol(ctx.mySession.currentBalance)}`}
+            message={t("caja.session.openBalance", { balance: formatMoneyWithSymbol(ctx.mySession.currentBalance) })}
           />
         )}
 
@@ -300,7 +300,7 @@ export function CajaPage() {
                   <span className="material-symbols-outlined zh-icon-md">
                     add
                   </span>
-                  Abrir Caja
+                  {t("caja.session.open")}
                 </ZHBtn>
               )}
               <div className="cj-toolbar-spacer" />
@@ -309,9 +309,9 @@ export function CajaPage() {
                 onChange={(e) => ctx.setStatusFilter(e.target.value)}
                 className="cj-filter-select"
               >
-                <option value="">Todos</option>
-                <option value="Open">Abiertas</option>
-                <option value="Closed">Cerradas</option>
+                <option value="">{t("common.all")}</option>
+                <option value="Open">{t("caja.session.status.openPlural")}</option>
+                <option value="Closed">{t("caja.session.status.closedPlural")}</option>
               </select>
               <ZHBtn
                 variant="secondary"
@@ -331,7 +331,7 @@ export function CajaPage() {
               loading={ctx.listLoading}
               showRowNumber
               tableClassName="table--compact table--neutral"
-              emptyMessage="Sin sesiones de caja."
+              emptyMessage={t("caja.session.emptySessions")}
             />
 
             {/* CASH-SESSION-LIST-SUMMARY-01 — expandible: resumen ventas / cobros por forma /
@@ -345,43 +345,43 @@ export function CajaPage() {
                 return (
                   <div className="cj-collection-detail-wrap">
                     <h5 className="cj-collection-detail-title">
-                      Resumen del turno — {formatDateTime(s.openedAt)}
+                      {t("caja.session.shiftSummary", { date: formatDateTime(s.openedAt) })}
                     </h5>
 
                     <div className="cj-summary-grid">
-                      <SummaryCard label="Facturas" value={String(s.invoiceCount)} />
-                      <SummaryCard label="Total facturado" value={formatMoneyWithSymbol(s.totalInvoiced)} />
-                      <SummaryCard label="Cajero" value={s.userName ?? "—"} />
+                      <SummaryCard label={t("caja.session.invoices")} value={String(s.invoiceCount)} />
+                      <SummaryCard label={t("caja.session.totalInvoiced")} value={formatMoneyWithSymbol(s.totalInvoiced)} />
+                      <SummaryCard label={t("caja.session.cashier")} value={s.userName ?? "—"} />
                       <SummaryCard
-                        label="Cerrado por"
-                        value={s.closedByName ?? (s.status === "Open" ? "Turno abierto" : "—")}
+                        label={t("caja.session.closedBy")}
+                        value={s.closedByName ?? (s.status === "Open" ? t("caja.session.openShift") : "—")}
                       />
                     </div>
 
-                    <h6 className="cj-collection-detail-subtitle">Cobros por forma</h6>
+                    <h6 className="cj-collection-detail-subtitle">{t("caja.session.collectionsByMethod")}</h6>
                     <ZHDataTable
                       columns={sessionListByMethodColumns}
                       rows={s.byPaymentMethod}
                       rowKey={(m) => m.paymentMethodId}
                       tableClassName="table--compact table--neutral"
-                      emptyMessage="Sin cobros registrados en este turno."
+                      emptyMessage={t("caja.session.emptyCollections")}
                     />
 
-                    <h6 className="cj-collection-detail-subtitle">Caja física</h6>
+                    <h6 className="cj-collection-detail-subtitle">{t("caja.session.physicalRegister")}</h6>
                     <div className="cj-summary-grid">
-                      <SummaryCard label="Apertura" value={formatMoneyWithSymbol(s.openingAmount)} />
-                      <SummaryCard label="Ventas en efectivo" value={formatMoneyWithSymbol(s.saleIncomeCash)} />
-                      <SummaryCard label="Ingresos manuales" value={formatMoneyWithSymbol(s.manualIncomeCash)} />
-                      <SummaryCard label="Egresos manuales" value={formatMoneyWithSymbol(s.manualExpenseCash)} />
-                      <SummaryCard label="Saldo esperado" value={formatMoneyWithSymbol(s.expectedCash)} highlight />
+                      <SummaryCard label={t("caja.movementType.opening")} value={formatMoneyWithSymbol(s.openingAmount)} />
+                      <SummaryCard label={t("caja.session.cashSales")} value={formatMoneyWithSymbol(s.saleIncomeCash)} />
+                      <SummaryCard label={t("caja.session.manualIncome")} value={formatMoneyWithSymbol(s.manualIncomeCash)} />
+                      <SummaryCard label={t("caja.session.manualExpense")} value={formatMoneyWithSymbol(s.manualExpenseCash)} />
+                      <SummaryCard label={t("caja.session.expectedBalance")} value={formatMoneyWithSymbol(s.expectedCash)} highlight />
                       {s.status === "Closed" && (
                         <>
                           <SummaryCard
-                            label="Contado"
+                            label={t("caja.session.counted")}
                             value={formatMoneyWithSymbol(s.countedAmount ?? 0)}
                           />
                           <SummaryCard
-                            label="Diferencia"
+                            label={t("caja.session.difference")}
                             value={formatMoneyWithSymbol(s.difference ?? 0)}
                             highlight={(s.difference ?? 0) !== 0}
                           />
@@ -397,18 +397,18 @@ export function CajaPage() {
         {/* ═══════════════════════ ABRIR CAJA ════════════════════════ */}
         {ctx.tab === "abrir" && (
           <div className="prd-section cj-form-narrow">
-            <h3 className="cj-section-title">Abrir Caja</h3>
+            <h3 className="cj-section-title">{t("caja.session.open")}</h3>
             {ctx.cashRegisters.length === 0 && (
               <ZHPageNotice
                 variant="warning"
-                message="No hay cajas disponibles en la sucursal activa. Contacte al administrador para configurar una."
+                message={t("caja.session.noRegisters")}
               />
             )}
             <form onSubmit={ctx.handleOpen}>
               <ZHField
                 density="compact"
                 className="zh-mb-12"
-                label="Sucursal activa"
+                label={t("caja.session.activeBranch")}
               >
                 <input
                   type="text"
@@ -421,7 +421,7 @@ export function CajaPage() {
               <ZHField
                 density="compact"
                 className="zh-mb-12"
-                label="Caja"
+                label={t("caja.session.register")}
                 required
                 fieldError={
                   ctx.openForm.formState.errors.cashRegisterId?.message
@@ -431,7 +431,7 @@ export function CajaPage() {
                   {...ctx.openForm.register("cashRegisterId")}
                   disabled={ctx.cashRegisters.length === 0}
                 >
-                  <option value="">Seleccione...</option>
+                  <option value="">{t("caja.movements.form.selectPlaceholder")}</option>
                   {ctx.cashRegisters.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.code} — {r.name}
@@ -446,15 +446,15 @@ export function CajaPage() {
               {ctx.selectedRegister && (
                 <div className="cj-summary-grid zh-mb-12">
                   <SummaryCard
-                    label="Sucursal"
+                    label={t("caja.session.branch")}
                     value={ctx.selectedRegister.branchName}
                   />
                   <SummaryCard
-                    label="Establecimiento"
+                    label={t("caja.session.establishment")}
                     value={ctx.selectedRegister.establishmentCode ?? "—"}
                   />
                   <SummaryCard
-                    label="Punto de emisión"
+                    label={t("caja.session.emissionPoint")}
                     value={ctx.selectedRegister.emissionPointCode ?? "—"}
                   />
                 </div>
@@ -463,7 +463,7 @@ export function CajaPage() {
               <ZHField
                 density="compact"
                 className="zh-mb-12"
-                label="Monto de apertura"
+                label={t("caja.session.openingAmount")}
                 required
                 fieldError={
                   ctx.openForm.formState.errors.openingAmount?.message
@@ -476,7 +476,7 @@ export function CajaPage() {
                 />
               </ZHField>
 
-              <ZHField density="compact" className="zh-mb-12" label="Notas">
+              <ZHField density="compact" className="zh-mb-12" label={t("caja.session.notes")}>
                 <ZhTextarea {...ctx.openForm.register("notes")} rows={2} />
               </ZHField>
 
@@ -486,13 +486,13 @@ export function CajaPage() {
                   type="submit"
                   disabled={ctx.saving || ctx.cashRegisters.length === 0}
                 >
-                  {ctx.saving ? "Abriendo..." : "Abrir Caja"}
+                  {ctx.saving ? t("caja.session.opening") : t("caja.session.open")}
                 </ZHBtn>
                 <ZHBtn
                   variant="secondary"
                   onClick={() => ctx.setTab("listado")}
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </ZHBtn>
               </div>
             </form>
@@ -513,9 +513,9 @@ export function CajaPage() {
                 <span className="material-symbols-outlined zh-icon-md">
                   arrow_back
                 </span>{" "}
-                Volver
+                {t("common.back")}
               </ZHBtn>
-              <h3>Sesión de Caja</h3>
+              <h3>{t("caja.session.title")}</h3>
               <Badge
                 variant={statusBadge(ctx.viewing.status)}
                 label={statusLabel(ctx.viewing.status)}
@@ -527,10 +527,10 @@ export function CajaPage() {
                     <span className="material-symbols-outlined zh-icon-md">
                       add
                     </span>{" "}
-                    Registrar movimiento
+                    {t("caja.movements.recordButton")}
                   </ZHBtn>
                   <ZHBtn variant="destructive" onClick={ctx.startClose}>
-                    Cerrar Caja
+                    {t("caja.session.close")}
                   </ZHBtn>
                 </>
               )}
@@ -540,17 +540,17 @@ export function CajaPage() {
                 exclusivamente de CashSessionDto (emissionPointCodeSnapshot) — nunca de un lookup
                 manual a EmissionPoint. */}
             <div className="cj-summary-grid">
-              <SummaryCard label="Sucursal" value={ctx.branchName ?? "—"} />
+              <SummaryCard label={t("caja.session.branch")} value={ctx.branchName ?? "—"} />
               <SummaryCard
-                label="Caja"
+                label={t("caja.session.register")}
                 value={`${ctx.viewing.cashRegisterCodeSnapshot} — ${ctx.viewing.cashRegisterNameSnapshot}`}
               />
               <SummaryCard
-                label="Punto de emisión"
+                label={t("caja.session.emissionPoint")}
                 value={ctx.viewing.emissionPointCodeSnapshot}
               />
               <SummaryCard
-                label="Estado"
+                label={t("common.status")}
                 value={statusLabel(ctx.viewing.status)}
               />
             </div>
@@ -558,42 +558,51 @@ export function CajaPage() {
             {/* CASH-SESSION-COLLECTION-SUMMARY-UX-02 — "Efectivo físico" es la única sección que
                 afecta apertura/cierre/arqueo (CashSession/CashMovement). Todo lo que sigue debajo
                 (Resumen de ventas y cobros / Cobros por forma) es informativo y nunca cambia estos
-                valores, aunque haya ventas por Transferencia/Tarjeta/Cheque/Crédito. */}
-            <h4 className="cj-section-title">Efectivo físico</h4>
+                valores, aunque haya ventas por Transferencia/Tarjeta/Cheque/Crédito.
+                TREASURY-CASH-ARCHITECTURE-I18N-AUDIT-04 — esta misma regla, ya documentada para
+                desarrolladores arriba, se explica también al usuario (mismo patrón ZHPageNotice
+                variant="info" que documentFlows.separationNotice): esta confusión ya generó un
+                audit dedicado (AUDIT-CASH-SESSION-COLLECTION-SUMMARY-MISMATCH-01). */}
+            <ZHPageNotice
+              variant="info"
+              message={t(
+                "caja.session.separationNotice")}
+            />
+            <h4 className="cj-section-title">{t("caja.session.physicalCash")}</h4>
             <div className="cj-summary-grid">
               <SummaryCard
-                label="Apertura"
+                label={t("caja.movementType.opening")}
                 value={formatMoneyWithSymbol(ctx.viewing.openingAmount)}
               />
               <SummaryCard
-                label="Ingresos"
+                label={t("caja.session.income")}
                 value={formatMoneyWithSymbol(ctx.viewing.totalIncome)}
               />
               <SummaryCard
-                label="Egresos"
+                label={t("caja.session.expense")}
                 value={formatMoneyWithSymbol(ctx.viewing.totalExpense)}
               />
               <SummaryCard
-                label="Saldo esperado"
+                label={t("caja.session.expectedBalance")}
                 value={formatMoneyWithSymbol(ctx.viewing.currentBalance)}
                 highlight
               />
               {ctx.viewing.status === "Closed" && (
                 <>
                   <SummaryCard
-                    label="Esperado"
+                    label={t("caja.session.expected")}
                     value={formatMoneyWithSymbol(
                       ctx.viewing.expectedAmount ?? 0,
                     )}
                   />
                   <SummaryCard
-                    label="Contado"
+                    label={t("caja.session.counted")}
                     value={formatMoneyWithSymbol(
                       ctx.viewing.countedAmount ?? 0,
                     )}
                   />
                   <SummaryCard
-                    label="Diferencia"
+                    label={t("caja.session.difference")}
                     value={formatMoneyWithSymbol(ctx.viewing.difference ?? 0)}
                     highlight={(ctx.viewing.difference ?? 0) !== 0}
                   />
@@ -604,36 +613,36 @@ export function CajaPage() {
             {/* Informativo: ventas/cobros del turno, separado del efectivo físico de arriba.
                 "Cobros del turno" != "efectivo físico de caja" — Transferencia/Tarjeta/Cheque/
                 Crédito aparecen aquí pero nunca modifican Apertura/Ingresos/Egresos/Saldo. */}
-            <h4 className="cj-section-title cj-section-title--spaced">Resumen de ventas y cobros</h4>
+            <h4 className="cj-section-title cj-section-title--spaced">{t("caja.session.salesCollections")}</h4>
             {ctx.collectionSummaryLoading && !ctx.collectionSummary ? (
-              <p className="cj-collection-loading">Cargando resumen de cobros…</p>
+              <p className="cj-collection-loading">{t("caja.session.loadingCollections")}</p>
             ) : (
               <>
                 <div className="cj-summary-grid">
                   <SummaryCard
-                    label="Facturas autorizadas"
+                    label={t("caja.session.authorizedInvoices")}
                     value={String(ctx.collectionSummary?.invoiceCount ?? 0)}
                   />
                   <SummaryCard
-                    label="Total facturado"
+                    label={t("caja.session.totalInvoiced")}
                     value={formatMoneyWithSymbol(ctx.collectionSummary?.totalInvoiced ?? 0)}
                   />
                   <SummaryCard
-                    label="Total cobrado"
+                    label={t("caja.session.totalCollected")}
                     value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCollected ?? 0)}
                   />
                   <SummaryCard
-                    label="Vendido a crédito"
+                    label={t("caja.session.creditSales")}
                     value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCredit ?? 0)}
                   />
                 </div>
-                <h5 className="cj-collection-detail-title">Cobros por forma</h5>
+                <h5 className="cj-collection-detail-title">{t("caja.session.collectionsByMethod")}</h5>
                 <ZHDataTable
                   columns={collectionByMethodColumns(ctx.collectionSummary?.totalCollected ?? 0)}
                   rows={ctx.collectionSummary?.byPaymentMethod ?? []}
                   rowKey={(m) => m.paymentMethodId}
                   tableClassName="table--compact table--neutral"
-                  emptyMessage="Sin cobros registrados en este turno."
+                  emptyMessage={t("caja.session.emptyCollections")}
                 />
                 {expandedMethodId &&
                   (() => {
@@ -644,14 +653,14 @@ export function CajaPage() {
                     return (
                       <div className="cj-collection-detail-wrap">
                         <h5 className="cj-collection-detail-title">
-                          Detalle — {expanded.paymentMethodName}
+                          {t("caja.session.methodDetail", { method: expanded.paymentMethodName })}
                         </h5>
                         <ZHDataTable
                           columns={collectionDetailColumns}
                           rows={expanded.details}
                           rowKey={(d) => `${d.invoiceId}-${expanded.paymentMethodId}`}
                           tableClassName="table--compact table--neutral"
-                          emptyMessage="Sin facturas."
+                          emptyMessage={t("caja.session.emptyInvoices")}
                         />
                       </div>
                     );
@@ -659,20 +668,20 @@ export function CajaPage() {
               </>
             )}
 
-            <h4 className="cj-section-title">Movimientos</h4>
+            <h4 className="cj-section-title">{t("caja.session.movements")}</h4>
             <ZHDataTable
               columns={sessionMovementColumns}
               rows={ctx.viewing.movements}
               rowKey={(m) => m.id}
               tableClassName="table--compact table--neutral"
-              emptyMessage="Sin movimientos."
+              emptyMessage={t("caja.session.emptyMovements")}
             />
 
             {ctx.viewing.status === "Closed" &&
               ctx.viewing.closingCounts.length > 0 && (
                 <>
                   <h4 className="cj-section-title cj-section-title--spaced">
-                    Arqueo
+                    {t("caja.session.cashCount")}
                   </h4>
                   <ZHDataTable
                     columns={arqueoColumns}
@@ -682,7 +691,7 @@ export function CajaPage() {
                   />
                   {ctx.viewing.closeNotes && (
                     <p className="cj-close-notes">
-                      <strong>Notas:</strong> {ctx.viewing.closeNotes}
+                      <strong>{t("caja.session.notes")}:</strong> {ctx.viewing.closeNotes}
                     </p>
                   )}
                 </>
@@ -694,10 +703,12 @@ export function CajaPage() {
                 movimiento" arriba). */}
             {ctx.viewing.status === "Open" && (
               <ZHModal
+                closeLabel={t("common.close")}
                 open={ctx.movementModalOpen}
                 onClose={ctx.closeMovementModal}
                 size="md"
-                title="Registrar movimiento manual de efectivo"
+                title={t(
+                  "caja.movements.modal.title")}
                 closeOnBackdrop={!ctx.saving}
               >
                 <form
@@ -707,14 +718,16 @@ export function CajaPage() {
                   <ZHField
                     density="compact"
                     className="cj-movement-field--type"
-                    label="Tipo"
+                    label={t("caja.movements.form.type")}
                     required
                     fieldError={
                       ctx.movementForm.formState.errors.movementType?.message
                     }
                   >
                     <select {...ctx.movementForm.register("movementType")}>
-                      <option value="">Seleccione...</option>
+                      <option value="">
+                        {t("caja.movements.form.selectPlaceholder")}
+                      </option>
                       {ctx.movementTypes.map((mt) => (
                         <option key={mt.value} value={mt.value}>
                           {mt.label}
@@ -728,7 +741,7 @@ export function CajaPage() {
                   <ZHField
                     density="compact"
                     className="cj-movement-field--reason"
-                    label="Motivo"
+                    label={t("caja.movements.form.reason")}
                     required
                     fieldError={
                       ctx.movementForm.formState.errors.reasonId?.message
@@ -744,10 +757,11 @@ export function CajaPage() {
                     >
                       <option value="">
                         {ctx.reasonsLoading
-                          ? "Cargando motivos..."
+                          ? t("caja.movements.form.reasonLoading")
                           : ctx.movementForm.watch("movementType") && ctx.reasons.length === 0
-                            ? "Sin motivos configurados para este tipo"
-                            : "Seleccione..."}
+                            ? t(
+                                "caja.movements.form.reasonEmpty")
+                            : t("caja.movements.form.selectPlaceholder")}
                       </option>
                       {ctx.reasons.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -759,7 +773,7 @@ export function CajaPage() {
                   <ZHField
                     density="compact"
                     className="cj-movement-field--amount"
-                    label="Monto"
+                    label={t("caja.movements.form.amount")}
                     required
                     fieldError={
                       ctx.movementForm.formState.errors.amount?.message
@@ -774,7 +788,7 @@ export function CajaPage() {
                   <ZHField
                     density="compact"
                     className="cj-movement-field--desc"
-                    label="Descripción adicional"
+                    label={t("caja.movements.form.description")}
                     required
                     fieldError={
                       ctx.movementForm.formState.errors.description?.message
@@ -786,11 +800,17 @@ export function CajaPage() {
                     />
                   </ZHField>
                   {ctx.saveError && (
-                    <ZHPageNotice variant="error" message="Error" detail={ctx.saveError} />
+                    <ZHPageNotice
+                      variant="error"
+                      message={t("common.errorPrefix")}
+                      detail={ctx.saveError}
+                    />
                   )}
                   <div className="cj-actions">
                     <ZHBtn variant="primary" type="submit" disabled={ctx.saving}>
-                      {ctx.saving ? "Registrando..." : "Registrar"}
+                      {ctx.saving
+                        ? t("common.saving")
+                        : t("caja.movements.form.submit")}
                     </ZHBtn>
                     <ZHBtn
                       variant="secondary"
@@ -798,7 +818,7 @@ export function CajaPage() {
                       disabled={ctx.saving}
                       onClick={ctx.closeMovementModal}
                     >
-                      Cancelar
+                      {t("common.cancel")}
                     </ZHBtn>
                   </div>
                 </form>
@@ -819,18 +839,18 @@ export function CajaPage() {
                 <span className="material-symbols-outlined zh-icon-md">
                   arrow_back
                 </span>{" "}
-                Volver
+                {t("common.back")}
               </ZHBtn>
-              <h3>Cerrar Caja — Arqueo</h3>
+              <h3>{t("caja.session.closeCount")}</h3>
             </div>
 
             <div className="cj-close-summary">
               <div>
-                <strong>Saldo esperado:</strong>{" "}
+                <strong>{t("caja.session.expectedBalance")}:</strong>{" "}
                 {formatMoneyWithSymbol(ctx.viewing.currentBalance)}
               </div>
               <div>
-                <strong>Contado:</strong>{" "}
+                <strong>{t("caja.session.counted")}:</strong>{" "}
                 {formatMoneyWithSymbol(ctx.countedTotal)}
               </div>
               <div
@@ -840,7 +860,7 @@ export function CajaPage() {
                     : "cj-close-diff--ok"
                 }
               >
-                <strong>Diferencia:</strong>{" "}
+                <strong>{t("caja.session.difference")}:</strong>{" "}
                 {formatMoneyWithSymbol(
                   ctx.countedTotal - ctx.viewing.currentBalance,
                 )}
@@ -851,9 +871,9 @@ export function CajaPage() {
               <table className="pf-table zh-mb-16">
                 <thead>
                   <tr>
-                    <th>Denominación</th>
-                    <th className="zh-text-align-center">Cantidad</th>
-                    <th className="zh-text-align-right">Total</th>
+                    <th>{t("caja.session.denomination")}</th>
+                    <th className="zh-text-align-center">{t("caja.session.quantity")}</th>
+                    <th className="zh-text-align-right">{t("common.total")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -881,7 +901,7 @@ export function CajaPage() {
                 <tfoot>
                   <tr>
                     <td colSpan={2} className="cj-arqueo-total">
-                      Total contado
+                      {t("caja.session.totalCounted")}
                     </td>
                     <td className="zh-table-cell--num cj-arqueo-total">
                       {formatMoneyWithSymbol(ctx.countedTotal)}
@@ -893,7 +913,7 @@ export function CajaPage() {
               <ZHField
                 density="compact"
                 className="zh-mb-12"
-                label="Notas de cierre"
+                label={t("caja.session.closeNotes")}
               >
                 <ZhTextarea {...ctx.closeForm.register("closeNotes")} rows={2} />
               </ZHField>
@@ -904,13 +924,13 @@ export function CajaPage() {
                   type="submit"
                   disabled={ctx.saving}
                 >
-                  {ctx.saving ? "Cerrando..." : "Confirmar Cierre"}
+                  {ctx.saving ? t("caja.session.closingProgress") : t("caja.session.confirmClose")}
                 </ZHBtn>
                 <ZHBtn
                   variant="secondary"
                   onClick={() => ctx.setTab("detalle")}
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </ZHBtn>
               </div>
             </form>

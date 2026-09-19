@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../../i18n/i18n";
 import { Badge, EmptyState, LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
@@ -31,37 +32,49 @@ export function CashMovementReasonListTab({
   onEdit,
   onToggle,
 }: Props) {
+  const { t } = useI18n();
   const [confirmRow, setConfirmRow] = useState<CashMovementReasonDto | null>(null);
 
   if (loading) return <LoadingState />;
   if (reasons.length === 0)
-    return <EmptyState message="No hay motivos de movimientos registrados aún." />;
+    return (
+      <EmptyState
+        message={t(
+          "caja.movementReasons.messages.empty",
+          "No hay motivos de movimientos registrados aún.",
+        )}
+      />
+    );
 
   const sorted = [...reasons].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const columns: ZHDataTableColumn<CashMovementReasonDto>[] = [
     {
       key: "code",
-      header: "Código",
+      header: t("caja.movementReasons.table.code", "Código"),
       render: (row) => <Badge label={row.code} variant="neutral" size="md" code />,
     },
-    { key: "name", header: "Nombre", render: (row) => row.name },
+    {
+      key: "name",
+      header: t("caja.movementReasons.table.name", "Nombre"),
+      render: (row) => row.name,
+    },
     {
       key: "movementType",
-      header: "Tipo",
-      render: (row) => cashMovementTypeLabel(row.movementType),
+      header: t("caja.movementReasons.table.type", "Tipo"),
+      render: (row) => cashMovementTypeLabel(t, row.movementType),
     },
     {
       key: "sortOrder",
-      header: "Orden",
+      header: t("caja.movementReasons.table.sortOrder", "Orden"),
       render: (row) => <span className="mono">{row.sortOrder}</span>,
     },
     {
       key: "status",
-      header: "Estado",
+      header: t("caja.movementReasons.table.status", "Estado"),
       render: (row) => (
         <Badge
-          label={row.isActive ? "Activo" : "Inactivo"}
+          label={row.isActive ? t("common.active", "Activo") : t("common.inactive", "Inactivo")}
           variant={row.isActive ? "green" : "gray"}
           size="md"
         />
@@ -71,7 +84,7 @@ export function CashMovementReasonListTab({
       ? [
           {
             key: "actions",
-            header: "Acciones",
+            header: t("caja.movementReasons.table.actions", "Acciones"),
             align: "right" as const,
             render: (row: CashMovementReasonDto) => (
               <div className="prd-actions-cell">
@@ -79,8 +92,8 @@ export function CashMovementReasonListTab({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  title="Editar"
-                  aria-label={`Editar ${row.name}`}
+                  title={t("common.edit", "Editar")}
+                  aria-label={`${t("common.edit", "Editar")} ${row.name}`}
                   disabled={toggling}
                   onClick={() => onEdit(row)}
                 >
@@ -89,9 +102,11 @@ export function CashMovementReasonListTab({
                 <ZHIconButton
                   icon={row.isActive ? "block" : "check_circle"}
                   variant={row.isActive ? "danger" : "success"}
-                  title={row.isActive ? "Desactivar" : "Activar"}
+                  title={row.isActive ? t("common.deactivate", "Desactivar") : t("common.activate", "Activar")}
                   ariaLabel={
-                    row.isActive ? `Desactivar ${row.name}` : `Activar ${row.name}`
+                    row.isActive
+                      ? `${t("common.deactivate", "Desactivar")} ${row.name}`
+                      : `${t("common.activate", "Activar")} ${row.name}`
                   }
                   disabled={toggling}
                   onClick={() => setConfirmRow(row)}
@@ -115,17 +130,31 @@ export function CashMovementReasonListTab({
 
       <ZHConfirmModal
         open={!!confirmRow}
-        title={confirmRow?.isActive ? "Desactivar motivo" : "Activar motivo"}
+        title={
+          confirmRow?.isActive
+            ? t("caja.movementReasons.toggle.disable.title", "Desactivar motivo")
+            : t("caja.movementReasons.toggle.activate.title", "Activar motivo")
+        }
         message={
           <p className="zh-confirm-message">
             {confirmRow?.isActive
-              ? "Dejará de estar disponible para nuevos movimientos manuales de caja. Los movimientos existentes no cambian."
-              : "Volverá a estar disponible para nuevos movimientos manuales de caja."}{" "}
+              ? t(
+                  "caja.movementReasons.toggle.disable.warning",
+                  "Dejará de estar disponible para nuevos movimientos manuales de caja. Los movimientos existentes no cambian.",
+                )
+              : t(
+                  "caja.movementReasons.toggle.activate.warning",
+                  "Volverá a estar disponible para nuevos movimientos manuales de caja.",
+                )}{" "}
             <strong>{confirmRow?.name}</strong>
           </p>
         }
-        confirmLabel={confirmRow?.isActive ? "Desactivar" : "Activar"}
-        cancelLabel="Cancelar"
+        confirmLabel={
+          confirmRow?.isActive
+            ? t("common.deactivate", "Desactivar")
+            : t("common.activate", "Activar")
+        }
+        cancelLabel={t("common.cancel", "Cancelar")}
         variant={confirmRow?.isActive ? "danger" : "default"}
         onConfirm={() => {
           const row = confirmRow;

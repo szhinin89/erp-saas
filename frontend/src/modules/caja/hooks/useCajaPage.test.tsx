@@ -7,7 +7,11 @@ import {
   render,
   screen,
   cleanup,
+  fireEvent,
 } from "@testing-library/react";
+import { I18nProvider, useI18n } from "../../../i18n/i18n";
+import { dictionaries, storageKey } from "../../../i18n/dictionaries";
+import { CajaPage } from "../pages/CajaPage";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useAuthStore } from "../../../store/authStore";
 import { cajaService } from "../api/cajaService";
@@ -151,6 +155,7 @@ function setCountedQuantity(
 }
 
 beforeEach(() => {
+  localStorage.removeItem(storageKey);
   vi.clearAllMocks();
   useActiveBranchStore.setState({
     branch: { id: "branch-1", name: "Quito Norte", isMainBranch: true },
@@ -188,6 +193,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  localStorage.removeItem(storageKey);
   useAuthStore.setState({
     user: null,
     isAuthenticated: false,
@@ -199,7 +205,7 @@ afterEach(() => {
 
 describe("useCajaPage", () => {
   it("carga las cajas disponibles de la sucursal activa al montar", async () => {
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() =>
       expect(result.current.cashRegisters).toEqual(registers),
@@ -208,7 +214,7 @@ describe("useCajaPage", () => {
   });
 
   it("selecciona automáticamente la primera caja disponible", async () => {
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
@@ -216,7 +222,7 @@ describe("useCajaPage", () => {
   });
 
   it("muestra la sucursal activa desde el store, no desde un lookup propio", () => {
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     expect(result.current.branchName).toBe("Quito Norte");
   });
@@ -224,7 +230,7 @@ describe("useCajaPage", () => {
   it("la apertura envía cashRegisterId y nunca emissionPointId", async () => {
     const session = buildSession();
     vi.mocked(cajaService.open).mockResolvedValue(session);
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
@@ -255,7 +261,7 @@ describe("useCajaPage", () => {
   it("después de abrir muestra la sesión en el detalle con sus datos de caja/punto de emisión", async () => {
     const session = buildSession();
     vi.mocked(cajaService.open).mockResolvedValue(session);
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
@@ -277,7 +283,7 @@ describe("useCajaPage", () => {
     vi.mocked(cajaService.open).mockRejectedValue({
       response: { data: { message: { user: "La caja está deshabilitada." } } },
     });
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
@@ -295,7 +301,7 @@ describe("useCajaPage", () => {
 
 describe("useCajaPage — abrir turno: confirmación y feedback (CRITICAL-CONFIRMATIONS-CASH-02)", () => {
   async function setupOpenReady() {
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
     );
@@ -442,7 +448,7 @@ describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITIC
     vi.mocked(cajaService.getCashMovementReasons).mockImplementation((movementType) =>
       Promise.resolve(movementType === "ManualExpense" ? manualExpenseReasons : manualIncomeReasons),
     );
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
     await waitFor(() => expect(result.current.mySession).toEqual(session));
     await act(async () => {
       await result.current.loadDetail(session.id);
@@ -565,7 +571,7 @@ describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MO
     vi.mocked(cajaService.getCashMovementReasons).mockImplementation((movementType) =>
       Promise.resolve(movementType === "ManualExpense" ? manualExpenseReasons : manualIncomeReasons),
     );
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
     await waitFor(() => expect(result.current.mySession).toEqual(session));
     await act(async () => {
       await result.current.loadDetail(session.id);
@@ -676,7 +682,7 @@ describe("useCajaPage — cerrar turno: confirmación y feedback (CRITICAL-CONFI
     const session = buildSession({ currentBalance });
     vi.mocked(cajaService.getMy).mockResolvedValue(session);
     vi.mocked(cajaService.getById).mockResolvedValue(session);
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
     await waitFor(() => expect(result.current.mySession).toEqual(session));
     await act(async () => {
       await result.current.loadDetail(session.id);
@@ -849,7 +855,7 @@ describe("useCajaPage — resumen de cobros del turno (CASH-SESSION-COLLECTION-S
     };
     vi.mocked(cajaService.getById).mockResolvedValue(session);
     vi.mocked(cajaService.getCollectionSummary).mockResolvedValue(summary);
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await act(async () => {
       await result.current.loadDetail(session.id);
@@ -866,7 +872,7 @@ describe("useCajaPage — resumen de cobros del turno (CASH-SESSION-COLLECTION-S
     const session = buildSession();
     vi.mocked(cajaService.getById).mockResolvedValue(session);
     vi.mocked(cajaService.getCollectionSummary).mockRejectedValue(new Error("network error"));
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await act(async () => {
       await result.current.loadDetail(session.id);
@@ -878,7 +884,7 @@ describe("useCajaPage — resumen de cobros del turno (CASH-SESSION-COLLECTION-S
 
   it("al abrir una caja nueva, limpia el resumen de cobros de una sesión anterior", async () => {
     vi.mocked(cajaService.open).mockResolvedValue(buildSession());
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
     );
@@ -899,7 +905,7 @@ describe("useCajaPage — no usa diálogos nativos", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
     vi.mocked(cajaService.open).mockResolvedValue(buildSession());
-    const { result } = renderHook(() => useCajaPage());
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
     await waitFor(() =>
       expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
     );
@@ -916,5 +922,55 @@ describe("useCajaPage — no usa diálogos nativos", () => {
     confirmSpy.mockRestore();
     promptSpy.mockRestore();
     alertSpy.mockRestore();
+  });
+});
+
+describe.each(["en", "qu"] as const)("cash i18n %s", (locale) => {
+  it("renders opening, detail, manual movement dialog and closing with localized labels", async () => {
+    localStorage.setItem(storageKey, locale);
+    const dict = dictionaries[locale];
+    vi.mocked(cajaService.open).mockResolvedValue(buildSession());
+    render(<I18nProvider><CajaPage /></I18nProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(dict["caja.session.open"]) }));
+    await screen.findByDisplayValue("Quito Norte");
+    expect(screen.getByText(dict["caja.session.activeBranch"])).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole("combobox").getAttribute("disabled")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: dict["caja.session.open"] }));
+    await screen.findByRole("heading", { name: dict["caja.session.title"] });
+    expect(message.confirm).toHaveBeenCalledWith(expect.objectContaining({
+      title: dict["caja.session.openTitle"], cancelLabel: dict["common.cancel"],
+    }));
+    expect(message.success).toHaveBeenCalledWith(dict["caja.session.openSuccess"]);
+    expect(screen.getByText(dict["caja.session.separationNotice"])).toBeTruthy();
+    expect(screen.getByRole("heading", { name: dict["caja.session.physicalCash"] })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: dict["caja.session.salesCollections"] })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(dict["caja.movements.recordButton"]) }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: dict["caja.movements.modal.title"] })).toBeTruthy();
+    expect(screen.getByRole("option", { name: dict["caja.movementType.manualIncome"] }).getAttribute("value")).toBe("ManualIncome");
+    fireEvent.click(screen.getByRole("button", { name: dict["common.close"] }));
+    fireEvent.click(screen.getByRole("button", { name: dict["caja.session.close"] }));
+    expect(screen.getByRole("heading", { name: dict["caja.session.closeCount"] })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: dict["caja.session.denomination"] })).toBeTruthy();
+    vi.mocked(message.confirm).mockResolvedValue(false);
+    fireEvent.click(screen.getByRole("button", { name: dict["caja.session.confirmClose"] }));
+    await waitFor(() => expect(message.confirm).toHaveBeenLastCalledWith(expect.objectContaining({
+      title: dict["caja.session.closeTitle"], variant: "danger",
+    })));
+    expect(cajaService.close).not.toHaveBeenCalled();
+  });
+
+  it("updates validation and error messages after a locale switch without translating identifiers", async () => {
+    const { result } = renderHook(() => ({ page: useCajaPage(), i18n: useI18n() }), { wrapper: I18nProvider });
+    await waitFor(() => expect(result.current.page.cashRegisters).toHaveLength(2));
+    act(() => result.current.i18n.setLocale(locale));
+    act(() => result.current.page.openForm.setValue("cashRegisterId", ""));
+    await act(async () => { await result.current.page.handleOpen(); });
+    expect(result.current.page.openForm.getFieldState("cashRegisterId").error?.message)
+      .toBe(dictionaries[locale]["caja.validation.register"]);
+    vi.mocked(cajaService.getById).mockRejectedValue(new Error("unavailable"));
+    await act(async () => { await result.current.page.loadDetail("session-1"); });
+    expect(result.current.page.saveError).toBe(dictionaries[locale]["caja.session.loadError"]);
+    expect(result.current.page.movementTypes.map(item => item.value)).toEqual(["ManualIncome", "ManualExpense", "Withdrawal"]);
   });
 });

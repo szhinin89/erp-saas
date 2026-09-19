@@ -210,7 +210,7 @@ export function logApiDevError(err: unknown): void {
 /** Mensaje para mostrar en UI: cuerpo de error, red sin respuesta, o texto genérico. */
 export function formatApiRequestError(
   err: unknown,
-  labels: { offline?: string; generic: string },
+  labels: { offline?: string; unauthorized?: string; generic: string },
 ): string {
   logApiDevError(err);
   const fromApi = readApiErrorMessage(err);
@@ -221,7 +221,7 @@ export function formatApiRequestError(
       return labels.offline ?? labels.generic;
     }
     if (err.response.status === 401) {
-      return "Sesión expirada o no autorizada. Vuelve a iniciar sesión.";
+      return labels.unauthorized ?? "Sesión expirada o no autorizada. Vuelve a iniciar sesión.";
     }
     const data = err.response.data;
     if (data && typeof data === "object" && !Array.isArray(data)) {

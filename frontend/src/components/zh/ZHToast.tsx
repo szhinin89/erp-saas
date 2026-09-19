@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useMessageStore } from "../../lib/messages/_internal/messageStore";
 import { MESSAGE_CONFIG } from "../../lib/messages/messageDefaults";
+import { useI18n } from "../../i18n/i18n";
 
 export function ZHToast() {
   const queue = useMessageStore((s) => s.queue);
@@ -31,6 +32,7 @@ function ZHToastItem(props: {
   createdAt: number;
   onDismiss: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const { id, type, message, persistent, onDismiss } = props;
 
   const handleDismiss = useCallback(() => onDismiss(id), [id, onDismiss]);
@@ -51,7 +53,7 @@ function ZHToastItem(props: {
         type="button"
         className="zh-toast__close"
         onClick={handleDismiss}
-        aria-label="Cerrar notificación"
+        aria-label={t("common.closeNotification")}
       >
         <span className="material-symbols-outlined zh-icon-md">close</span>
       </button>

@@ -4,7 +4,7 @@ import { z } from "zod";
  * TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 — validación del formulario de administración de
  * CashMovementReason (nivel 1: Zod + RHF). `movementType` no se restringe aquí a un enum
  * cerrado: el <select> del formulario ya solo ofrece las opciones de
- * `MANUAL_CASH_MOVEMENT_TYPES` (única fuente SSOT, ver constants/cashMovementTypes.ts) — el
+ * `manualCashMovementTypeOptions(t)` (única fuente SSOT, ver constants/cashMovementTypes.ts) — el
  * backend (FluentValidation) vuelve a validar todo, incluida la unicidad del `code` por
  * Tenant+Company, que un schema de cliente no puede conocer (llega por `applyServerErrors`).
  */

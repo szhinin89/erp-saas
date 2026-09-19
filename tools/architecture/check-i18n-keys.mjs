@@ -11,15 +11,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { REPO_ROOT } from './shared/fs-utils.mjs';
 import { createCheckResult, addViolation, addWarning } from './shared/report-utils.mjs';
+import { inspectLocale } from './shared/locale-integrity.mjs';
 
 export const CHECK_NAME = 'i18n-keys';
 
 const LOCALES_DIR = path.join(REPO_ROOT, 'frontend/src/i18n/locales');
 
-function loadLocale(name) {
+function loadLocale(name, result) {
   const p = path.join(LOCALES_DIR, `${name}.json`);
-  if (!fs.existsSync(p)) return null;
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
+  if (!fs.existsSync(p)) {
+    addViolation(result, { rule: 'F-i18n-missing-locale', file: p, message: `locale ${name}.json not found` });
+    return null;
+  }
+  const { dictionary, duplicates } = inspectLocale(fs.readFileSync(p, 'utf8'));
+  for (const key of duplicates) {
+    addViolation(result, { rule: 'F-i18n-duplicate', file: p, message: `duplicate key in ${name}: ${key}` });
+  }
+  return dictionary;
 }
 
 function flatKeys(obj, prefix = '') {
@@ -41,9 +49,9 @@ function flatKeys(obj, prefix = '') {
 export function runCheckI18nKeys() {
   const result = createCheckResult(CHECK_NAME);
 
-  const es = loadLocale('es');
-  const en = loadLocale('en');
-  const qu = loadLocale('qu');
+  const es = loadLocale('es', result);
+  const en = loadLocale('en', result);
+  const qu = loadLocale('qu', result);
 
   if (!es) {
     addViolation(result, { rule: 'F-i18n-missing-locale', file: 'frontend/src/i18n/locales/es.json', message: 'locale es.json not found' });

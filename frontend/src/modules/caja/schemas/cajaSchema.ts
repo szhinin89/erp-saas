@@ -1,18 +1,20 @@
 import { z } from "zod";
 
+type Translate = (key: string, params?: Record<string, string | number>) => string;
+
 // ── Open session schema ────────────────────────────────────────────────
 // El punto de emisión ya no se elige manualmente (ADR — Rediseño del módulo de Caja): el usuario
 // selecciona una caja (CashRegister) de la sucursal activa; el servidor resuelve el punto de
 // emisión desde el CashRegister elegido.
-export const openCashSessionSchema = z.object({
-  cashRegisterId: z.string().min(1, "Seleccione una caja."),
+export const openCashSessionSchema = (t: Translate) => z.object({
+  cashRegisterId: z.string().min(1, t("caja.validation.register")),
   openingAmount: z.coerce
-    .number()
-    .min(0, "El monto de apertura no puede ser negativo."),
-  notes: z.string().max(500).optional().default(""),
+    .number({ invalid_type_error: t("caja.validation.number") })
+    .min(0, t("caja.validation.openingAmount")),
+  notes: z.string().max(500, t("caja.validation.maxLength", { max: 500 })).optional().default(""),
 });
 
-export type OpenCashSessionFormValues = z.infer<typeof openCashSessionSchema>;
+export type OpenCashSessionFormValues = z.infer<ReturnType<typeof openCashSessionSchema>>;
 
 export function emptyOpenForm(): OpenCashSessionFormValues {
   return { cashRegisterId: "", openingAmount: 0, notes: "" };
@@ -21,42 +23,42 @@ export function emptyOpenForm(): OpenCashSessionFormValues {
 // ── Record movement schema ─────────────────────────────────────────────
 // TREASURY-CASH-MANUAL-MOVEMENTS-01 — reasonId obligatorio: el motivo viene del catálogo dinámico
 // filtrado por Tipo (ver cajaService.getCashMovementReasons), nunca texto libre ni hardcodeado.
-export const recordMovementSchema = z.object({
-  movementType: z.string().min(1, "Seleccione el tipo de movimiento."),
-  reasonId: z.string().min(1, "Seleccione el motivo."),
-  amount: z.coerce.number().positive("El monto debe ser mayor a cero."),
-  description: z.string().min(1, "La descripción es obligatoria.").max(300),
+export const recordMovementSchema = (t: Translate) => z.object({
+  movementType: z.string().min(1, t("caja.validation.movementType")),
+  reasonId: z.string().min(1, t("caja.validation.reason")),
+  amount: z.coerce.number({ invalid_type_error: t("caja.validation.number") }).positive(t("caja.validation.amount")),
+  description: z.string().min(1, t("caja.validation.description")).max(300, t("caja.validation.maxLength", { max: 300 })),
 });
 
-export type RecordMovementFormValues = z.infer<typeof recordMovementSchema>;
+export type RecordMovementFormValues = z.infer<ReturnType<typeof recordMovementSchema>>;
 
 export function emptyMovementForm(): RecordMovementFormValues {
   return { movementType: "", reasonId: "", amount: 0, description: "" };
 }
 
 // ── Closing count schema ───────────────────────────────────────────────
-export const closingCountSchema = z.object({
-  _key: z.number(),
+export const closingCountSchema = (t: Translate) => z.object({
+  _key: z.number({ invalid_type_error: t("caja.validation.number") }),
   denominationValue: z.coerce
-    .number()
-    .positive("El valor debe ser mayor a cero."),
-  denominationLabel: z.string().min(1, "La etiqueta es obligatoria.").max(30),
+    .number({ invalid_type_error: t("caja.validation.number") })
+    .positive(t("caja.validation.value")),
+  denominationLabel: z.string().min(1, t("caja.validation.label")).max(30, t("caja.validation.maxLength", { max: 30 })),
   quantity: z.coerce
-    .number()
-    .int()
-    .min(0, "La cantidad no puede ser negativa."),
+    .number({ invalid_type_error: t("caja.validation.number") })
+    .int(t("caja.validation.integer"))
+    .min(0, t("caja.validation.quantity")),
 });
 
-export type ClosingCountFormValues = z.infer<typeof closingCountSchema>;
+export type ClosingCountFormValues = z.infer<ReturnType<typeof closingCountSchema>>;
 
-export const closeCashSessionSchema = z.object({
+export const closeCashSessionSchema = (t: Translate) => z.object({
   closingCounts: z
-    .array(closingCountSchema)
-    .min(1, "Agregue al menos una denominación."),
-  closeNotes: z.string().max(500).optional().default(""),
+    .array(closingCountSchema(t))
+    .min(1, t("caja.validation.denomination")),
+  closeNotes: z.string().max(500, t("caja.validation.maxLength", { max: 500 })).optional().default(""),
 });
 
-export type CloseCashSessionFormValues = z.infer<typeof closeCashSessionSchema>;
+export type CloseCashSessionFormValues = z.infer<ReturnType<typeof closeCashSessionSchema>>;
 
 // ── USD denominations ──────────────────────────────────────────────────
 export const USD_DENOMINATIONS: { value: number; label: string }[] = [

@@ -92,6 +92,15 @@ describe("CashMovementReasonsAdminPage", () => {
     expect(cajaService.listCashMovementReasons).toHaveBeenCalledWith(true);
   });
 
+  it("TREASURY-CASH-ARCHITECTURE-I18N-AUDIT-04: muestra el aviso informativo sobre Código/Tipo inmutables (ZHPageNotice variant=info, mismo patrón que documentFlows.separationNotice)", async () => {
+    renderPage();
+    await screen.findByText("CAMBIO_CAJA");
+
+    expect(
+      screen.getByText(/El código y el tipo se definen al crear el motivo/),
+    ).toBeTruthy();
+  });
+
   it("oculta las acciones de gestión sin el permiso manage", async () => {
     grant(["caja.view"]);
     renderPage();

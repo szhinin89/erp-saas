@@ -9,7 +9,8 @@ import type {
   CashSessionCollectionSummaryDto,
   CashMovementReasonDto,
 } from "../api/cajaService";
-import { MANUAL_CASH_MOVEMENT_TYPES } from "../constants/cashMovementTypes";
+import { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
+import { useI18n } from "../../../i18n/i18n";
 import {
   openCashSessionSchema,
   emptyOpenForm,
@@ -31,6 +32,8 @@ import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
 type Tab = "listado" | "abrir" | "detalle" | "cerrar";
 
 export function useCajaPage() {
+  const { t } = useI18n();
+
   // ── Page state ─────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("listado");
   const [listItems, setListItems] = useState<CashSessionListItemDto[]>([]);
@@ -56,19 +59,19 @@ export function useCajaPage() {
 
   // ── Forms ──────────────────────────────────────────────────────────
   const openForm = useForm<OpenCashSessionFormValues>({
-    resolver: zodResolver(openCashSessionSchema),
+    resolver: zodResolver(openCashSessionSchema(t)),
     defaultValues: emptyOpenForm(),
     mode: "onBlur",
   });
 
   const movementForm = useForm<RecordMovementFormValues>({
-    resolver: zodResolver(recordMovementSchema),
+    resolver: zodResolver(recordMovementSchema(t)),
     defaultValues: emptyMovementForm(),
     mode: "onBlur",
   });
 
   const closeForm = useForm<CloseCashSessionFormValues>({
-    resolver: zodResolver(closeCashSessionSchema),
+    resolver: zodResolver(closeCashSessionSchema(t)),
     defaultValues: { closingCounts: defaultClosingCounts(), closeNotes: "" },
     mode: "onBlur",
   });
@@ -126,10 +129,10 @@ export function useCajaPage() {
       setViewing(s);
       setTab("detalle");
     } catch {
-      setSaveError("No se pudo cargar la sesión.");
+      setSaveError(t("caja.session.loadError"));
     }
     fetchCollectionSummary(id);
-  }, []);
+  }, [t]);
 
   // ── Collection summary — informativo, nunca bloquea el detalle de caja si falla. ────
   const fetchCollectionSummary = useCallback(async (cashSessionId: string) => {
@@ -143,8 +146,9 @@ export function useCajaPage() {
     setCollectionSummaryLoading(false);
   }, []);
 
-  // ── Movement types — única fuente compartida (frontend/backend enum en paridad) ─────
-  const movementTypes = MANUAL_CASH_MOVEMENT_TYPES;
+  // ── Movement types — única fuente compartida (frontend/backend enum en paridad), etiquetas
+  // resueltas vía i18n (TREASURY-CASH-ARCHITECTURE-I18N-AUDIT-04) ─────
+  const movementTypes = useMemo(() => manualCashMovementTypeOptions(t), [t]);
 
   // ── Motivos (TREASURY-CASH-MANUAL-MOVEMENTS-01) — catálogo dinámico del backend, filtrado
   // por Tenant+Company (server-side) y por el Tipo ya elegido — nunca hardcodeado en frontend.
@@ -209,35 +213,33 @@ export function useCajaPage() {
 
     const register = cashRegisters.find((r) => r.id === data.cashRegisterId);
     const confirmed = await message.confirm({
-      title: "Abrir turno de caja",
+      title: t("caja.session.openTitle"),
       message: (
         <>
           <p className="zh-confirm-message">
-            Se iniciará un turno operativo de caja. Mientras esté abierto, todas las ventas y
-            movimientos registrados en esta caja quedarán asociados a este turno hasta que se
-            cierre.
+            {t("caja.session.openExplanation")}
           </p>
           <p className="zh-confirm-message">
             {register ? (
               <>
-                Caja: <strong>{register.code} — {register.name}</strong> ({register.branchName}
+                {t("caja.session.register")}: <strong>{register.code} — {register.name}</strong> ({register.branchName}
                 ).
                 <br />
               </>
             ) : null}
             {currentUserName ? (
               <>
-                Usuario: <strong>{currentUserName}</strong>.
+                {t("caja.movements.table.user")}: <strong>{currentUserName}</strong>.
                 <br />
               </>
             ) : null}
-            Monto inicial: <strong>{formatMoneyWithSymbol(data.openingAmount)}</strong>.
+            {t("caja.session.initialAmount")}: <strong>{formatMoneyWithSymbol(data.openingAmount)}</strong>.
           </p>
         </>
       ),
       variant: "warning",
-      confirmLabel: "Abrir caja",
-      cancelLabel: "Cancelar",
+      confirmLabel: t("caja.session.confirmOpen"),
+      cancelLabel: t("common.cancel"),
     });
     if (!confirmed) return;
 
@@ -255,14 +257,14 @@ export function useCajaPage() {
       openForm.reset(emptyOpenForm());
       setTab("detalle");
       fetchList();
-      message.success("Caja abierta correctamente.");
+      message.success(t("caja.session.openSuccess"));
     } catch (err: unknown) {
       const applied = applyServerErrors(err, openForm.setError, (msg) =>
         setSaveError(msg),
       );
       if (!applied)
         setSaveError(
-          formatApiRequestError(err, { generic: "No se pudo abrir la caja." }),
+          formatApiRequestError(err, { unauthorized: t("caja.session.unauthorized"), generic: t("caja.session.openError") }),
         );
     }
     setSaving(false);
@@ -282,21 +284,21 @@ export function useCajaPage() {
     const isIncome = data.movementType === "ManualIncome";
 
     const confirmed = await message.confirm({
-      title: isIncome ? "Registrar ingreso de caja" : "Registrar egreso de caja",
+      title: isIncome ? t("caja.session.incomeTitle") : t("caja.session.expenseTitle"),
       message: (
         <p className="zh-confirm-message">
-          Tipo: <strong>{typeLabel}</strong>
+          {t("caja.movements.table.type")}: <strong>{typeLabel}</strong>
           <br />
-          Motivo: <strong>{reasonLabel}</strong>
+          {t("caja.movements.table.reason")}: <strong>{reasonLabel}</strong>
           <br />
-          Concepto: <strong>{data.description}</strong>
+          {t("caja.session.concept")}: <strong>{data.description}</strong>
           <br />
-          Monto: <strong>{formatMoneyWithSymbol(data.amount)}</strong>
+          {t("caja.movements.table.amount")}: <strong>{formatMoneyWithSymbol(data.amount)}</strong>
         </p>
       ),
       variant: isIncome ? "warning" : "danger",
-      confirmLabel: isIncome ? "Registrar ingreso" : "Registrar egreso",
-      cancelLabel: "Cancelar",
+      confirmLabel: isIncome ? t("caja.session.recordIncome") : t("caja.session.recordExpense"),
+      cancelLabel: t("common.cancel"),
     });
     if (!confirmed) return;
 
@@ -313,14 +315,15 @@ export function useCajaPage() {
       setMovementModalOpen(false);
       await loadDetail(viewing.id);
       fetchMySession();
-      message.success("Movimiento registrado correctamente.");
+      message.success(t("caja.session.movementSuccess"));
     } catch (err: unknown) {
       // A diferencia de abrir/cerrar caja, aquí el ticket exige explícitamente un toast
       // message.error con el mensaje real del backend — se muestra siempre (además de resaltar
       // el campo específico vía applyServerErrors cuando el 422 viene mapeado por campo).
       applyServerErrors(err, movementForm.setError, () => {});
       const errorMessage = formatApiRequestError(err, {
-        generic: "No se pudo registrar el movimiento.",
+        unauthorized: t("caja.session.unauthorized"),
+        generic: t("caja.session.movementError"),
       });
       setSaveError(errorMessage);
       message.error(errorMessage);
@@ -356,31 +359,29 @@ export function useCajaPage() {
     const hasMismatch = difference !== 0;
 
     const confirmed = await message.confirm({
-      title: "Cerrar turno de caja",
+      title: t("caja.session.closeTitle"),
       message: (
         <>
           <p className="zh-confirm-message">
-            Vas a cerrar este turno de caja. Al confirmar, el turno finaliza y no se podrán
-            registrar más movimientos en esta sesión.
+            {t("caja.session.closeExplanation")}
           </p>
           <p className="zh-confirm-message">
-            Esperado: <strong>{formatMoneyWithSymbol(expected)}</strong>
+            {t("caja.session.expected")}: <strong>{formatMoneyWithSymbol(expected)}</strong>
             <br />
-            Contado: <strong>{formatMoneyWithSymbol(counted)}</strong>
+            {t("caja.session.counted")}: <strong>{formatMoneyWithSymbol(counted)}</strong>
             <br />
-            Diferencia: <strong>{formatMoneyWithSymbol(difference)}</strong>
+            {t("caja.session.difference")}: <strong>{formatMoneyWithSymbol(difference)}</strong>
           </p>
           {hasMismatch ? (
             <p className="zh-confirm-message">
-              <strong>Hay una diferencia entre el saldo esperado y lo contado.</strong> Revisa
-              el arqueo antes de continuar si no es intencional.
+              <strong>{t("caja.session.mismatch")}</strong> {t("caja.session.reviewCount")}
             </p>
           ) : null}
         </>
       ),
       variant: hasMismatch ? "danger" : "warning",
-      confirmLabel: "Confirmar cierre",
-      cancelLabel: "Cancelar",
+      confirmLabel: t("caja.session.confirmClosing"),
+      cancelLabel: t("common.cancel"),
     });
     if (!confirmed) return;
 
@@ -399,14 +400,14 @@ export function useCajaPage() {
       setMySession(null);
       setTab("detalle");
       fetchList();
-      message.success("Caja cerrada correctamente.");
+      message.success(t("caja.session.closeSuccess"));
     } catch (err: unknown) {
       const applied = applyServerErrors(err, closeForm.setError, (msg) =>
         setSaveError(msg),
       );
       if (!applied)
         setSaveError(
-          formatApiRequestError(err, { generic: "No se pudo cerrar la caja." }),
+          formatApiRequestError(err, { unauthorized: t("caja.session.unauthorized"), generic: t("caja.session.closeError") }),
         );
     }
     setSaving(false);

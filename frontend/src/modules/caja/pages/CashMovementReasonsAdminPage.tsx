@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../../i18n/i18n";
 import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
@@ -19,13 +20,21 @@ import "./CashMovementReasonsAdminPage.css";
  * Lista → Editor (`ConfigTabsLayout`) que ya usan Bodegas/Motivos de ajuste — no se inventa un
  * layout de configuración nuevo. Usa exclusivamente la API existente de
  * TREASURY-CASH-MANUAL-MOVEMENTS-01 (cajaService), sin lógica ni endpoint duplicados.
+ *
+ * TREASURY-CASH-ARCHITECTURE-I18N-AUDIT-04 — el aviso informativo bajo el header sigue
+ * exactamente el patrón ya existente en el proyecto para explicar una regla de pantalla
+ * (`ZHPageNotice variant="info"`, ver `documentFlows.separationNotice` en
+ * DocumentFlowPoliciesPage) — no se crea un componente "ArchitectureNotice" nuevo.
  */
 export function CashMovementReasonsAdminPage() {
+  const { t } = useI18n();
   const page = useCashMovementReasonsAdminPage();
   const [activeTab, setActiveTab] = useState<"list" | "editor">("list");
 
   if (!page.canView) {
-    return <NoAccessPage title="Motivos de movimientos" />;
+    return (
+      <NoAccessPage title={t("caja.movementReasons.title", "Motivos de movimientos")} />
+    );
   }
 
   const handleOpenCreate = () => {
@@ -43,6 +52,16 @@ export function CashMovementReasonsAdminPage() {
     setActiveTab("list");
   };
 
+  const architectureNotice = (
+    <ZHPageNotice
+      variant="info"
+      message={t(
+        "caja.movementReasons.architectureNotice",
+        "Los motivos de movimientos clasifican los ingresos, egresos y retiros manuales de caja de esta empresa. El código y el tipo se definen al crear el motivo y luego no cambian, para mantener consistente el historial. Puede modificar el nombre, el orden y el estado; los movimientos ya registrados conservan siempre el motivo que usaron.",
+      )}
+    />
+  );
+
   const listContent = (
     <>
       {!page.loading && (
@@ -51,21 +70,21 @@ export function CashMovementReasonsAdminPage() {
             layout="horizontal"
             icon="list_alt"
             tone="primary"
-            label="Total motivos"
+            label={t("caja.movementReasons.kpi.total", "Total motivos")}
             value={String(page.totals.total)}
           />
           <ReportKpiCard
             layout="horizontal"
             icon="check_circle"
             tone="primary"
-            label="Motivos activos"
+            label={t("caja.movementReasons.kpi.active", "Motivos activos")}
             value={String(page.totals.active)}
           />
           <ReportKpiCard
             layout="horizontal"
             icon="block"
             tone="error"
-            label="Motivos inactivos"
+            label={t("caja.movementReasons.kpi.inactive", "Motivos inactivos")}
             value={String(page.totals.inactive)}
           />
         </div>
@@ -83,26 +102,35 @@ export function CashMovementReasonsAdminPage() {
 
   return (
     <ErpPageTemplate
-      kicker="Tesorería"
-      title="Motivos de movimientos"
-      subtitle="Catálogo de motivos disponibles al registrar un movimiento manual de efectivo en Caja."
+      kicker={t("caja.kicker", "Gestión de efectivo")}
+      title={t("caja.movementReasons.title", "Motivos de movimientos")}
+      subtitle={t(
+        "caja.movementReasons.subtitle",
+        "Catálogo de motivos disponibles al registrar un movimiento manual de efectivo en Caja.",
+      )}
       action={
         page.canManage ? (
           <ZHBtn variant="primary" size="md" type="button" onClick={handleOpenCreate}>
             <span className="material-symbols-outlined">add</span>
-            Nuevo motivo
+            {t("caja.movementReasons.new", "Nuevo motivo")}
           </ZHBtn>
         ) : null
       }
     >
       {page.error && (
-        <ZHPageNotice variant="error" message="Error:" detail={page.error} />
+        <ZHPageNotice variant="error" message={t("common.errorPrefix", "Error:")} detail={page.error} />
       )}
+
+      {architectureNotice}
 
       <ConfigTabsLayout
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        editorLabel={page.editingId ? "Editar motivo" : "Registrar motivo"}
+        editorLabel={
+          page.editingId
+            ? t("caja.movementReasons.editor.edit", "Editar motivo")
+            : t("caja.movementReasons.editor.new", "Registrar motivo")
+        }
         editorIcon={page.editingId ? "edit" : "add_box"}
         listContent={listContent}
         editorContent={
@@ -121,10 +149,14 @@ export function CashMovementReasonsAdminPage() {
               <span className="material-symbols-outlined cfg-empty-panel__icon">
                 list_alt
               </span>
-              <p className="cfg-empty-panel__title">Seleccione o cree un motivo</p>
+              <p className="cfg-empty-panel__title">
+                {t("caja.movementReasons.editor.emptyTitle", "Seleccione o cree un motivo")}
+              </p>
               <p className="cfg-empty-panel__sub">
-                Use el botón Nuevo motivo en la cabecera o seleccione uno desde la lista para
-                editar.
+                {t(
+                  "caja.movementReasons.editor.emptySub",
+                  "Use el botón Nuevo motivo en la cabecera o seleccione uno desde la lista para editar.",
+                )}
               </p>
             </div>
           )

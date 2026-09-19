@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useI18n } from "../../../i18n/i18n";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
 import { readApiErrorMessage } from "../../lib/apiError";
@@ -23,6 +24,7 @@ import { cajaService, type CashMovementReasonDto } from "../api/cajaService";
  * sin duplicar ninguna validación ni endpoint nuevo.
  */
 export function useCashMovementReasonsAdminPage() {
+  const { t } = useI18n();
   const { canShow } = usePermissionsUi();
 
   const canView = canShow("caja.view");
@@ -54,12 +56,13 @@ export function useCashMovementReasonsAdminPage() {
       setItems((await cajaService.listCashMovementReasons(true)) ?? []);
     } catch (err) {
       setError(
-        readApiErrorMessage(err) ?? "No se pudieron cargar los motivos de movimientos.",
+        readApiErrorMessage(err) ??
+          t("caja.movementReasons.messages.listError", "No se pudieron cargar los motivos de movimientos."),
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void fetchList();
@@ -116,7 +119,7 @@ export function useCashMovementReasonsAdminPage() {
           sortOrder: values.sortOrder,
         });
         await fetchList();
-        message.success("Motivo actualizado correctamente.");
+        message.success(t("caja.movementReasons.messages.updated", "Motivo actualizado correctamente."));
       } else {
         // companyId no se envía: el backend lo resuelve del contexto autenticado.
         const created = await cajaService.createCashMovementReason({
@@ -127,14 +130,16 @@ export function useCashMovementReasonsAdminPage() {
         });
         await fetchList();
         setEditingId(created.id);
-        message.success("Motivo creado correctamente.");
+        message.success(t("caja.movementReasons.messages.created", "Motivo creado correctamente."));
       }
     } catch (err) {
       const applied = applyServerErrors(err, form.setError, (msg) =>
         setSaveError(msg),
       );
       if (!applied) {
-        setSaveError(readApiErrorMessage(err) ?? "No se pudo guardar el motivo.");
+        setSaveError(
+          readApiErrorMessage(err) ?? t("caja.movementReasons.messages.saveError", "No se pudo guardar el motivo."),
+        );
       }
     } finally {
       setSaving(false);
@@ -149,16 +154,22 @@ export function useCashMovementReasonsAdminPage() {
       try {
         await cajaService.toggleCashMovementReason(row.id);
         await fetchList();
-        message.success(row.isActive ? "Motivo desactivado." : "Motivo activado.");
+        message.success(
+          row.isActive
+            ? t("caja.movementReasons.messages.disabled", "Motivo desactivado.")
+            : t("caja.movementReasons.messages.enabled", "Motivo activado."),
+        );
       } catch (err) {
-        const msg = readApiErrorMessage(err) ?? "No se pudo cambiar el estado del motivo.";
+        const msg =
+          readApiErrorMessage(err) ??
+          t("caja.movementReasons.messages.toggleError", "No se pudo cambiar el estado del motivo.");
         setError(msg);
         message.error(msg);
       } finally {
         setToggling(false);
       }
     },
-    [canManage, fetchList],
+    [canManage, fetchList, t],
   );
 
   return {
