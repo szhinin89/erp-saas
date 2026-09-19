@@ -20,11 +20,17 @@ internal static class CajaMapper
     /// un snapshot propio de <see cref="CashSession"/>.
     /// </param>
     /// <param name="defaultCustomer"></param>
+    /// <param name="userNameById">
+    /// TREASURY-CASH-MANUAL-MOVEMENTS-01 — nombres de usuario ya resueltos en batch (una consulta
+    /// para todos los <c>CreatedBy</c> distintos de los movimientos) por el llamador — nunca una
+    /// consulta por movimiento. Vacío por defecto para no romper callers que no lo necesiten.
+    /// </param>
     public static CashSessionDto ToDto(
         CashSession s,
         string? emissionType,
         (Guid? Id, string? Name) defaultWarehouse,
-        (Guid? Id, string? Name) defaultCustomer
+        (Guid? Id, string? Name) defaultCustomer,
+        IReadOnlyDictionary<Guid, string>? userNameById = null
     ) =>
         new(
             s.Id,
@@ -54,7 +60,7 @@ internal static class CajaMapper
             s.TotalIncome,
             s.TotalExpense,
             s.CurrentBalance,
-            s.Movements.Select(MapMovement).ToList(),
+            s.Movements.Select(m => MapMovement(m, userNameById)).ToList(),
             s.ClosingCounts.Select(MapClosingCount).ToList(),
             s.CreatedAt,
             s.UpdatedAt
@@ -142,7 +148,10 @@ internal static class CajaMapper
         );
     }
 
-    private static CashMovementDto MapMovement(CashMovement m) =>
+    private static CashMovementDto MapMovement(
+        CashMovement m,
+        IReadOnlyDictionary<Guid, string>? userNameById = null
+    ) =>
         new(
             m.Id,
             m.MovementType.ToString(),
@@ -150,9 +159,12 @@ internal static class CajaMapper
             m.Description,
             m.CreatedAt,
             m.CreatedBy,
+            userNameById?.GetValueOrDefault(m.CreatedBy),
             m.ReferenceType.ToString(),
             m.ReferenceId,
-            m.ReferenceNumber
+            m.ReferenceNumber,
+            m.ReasonId,
+            m.ReasonName
         );
 
     private static CashClosingCountDto MapClosingCount(CashClosingCount c) =>
@@ -187,4 +199,7 @@ internal static class CajaMapper
             r.CreatedAt,
             r.UpdatedAt
         );
+
+    public static CashMovementReasonDto ToDto(CashMovementReason r) =>
+        new(r.Id, r.Code, r.Name, r.MovementType.ToString(), r.IsActive, r.SortOrder);
 }

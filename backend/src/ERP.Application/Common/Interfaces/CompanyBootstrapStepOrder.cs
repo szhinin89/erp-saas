@@ -34,6 +34,12 @@ public static class CompanyBootstrapStepOrder
     public const int Caja = 45;
 
     /// <summary>
+    /// TREASURY-CASH-MANUAL-MOVEMENTS-01 — motivos por defecto de movimiento manual de caja
+    /// (Ingreso/Egreso manual, Retiro). Solo necesita TenantId/CompanyId — no depende de Caja.
+    /// </summary>
+    public const int CashMovementReasons = 46;
+
+    /// <summary>
     /// Plan de cuentas mínimo + período contable anual (ACCOUNTING-INITIAL-CHART-SEED-11). No
     /// depende de ningún otro step — solo necesita TenantId/CompanyId.
     /// </summary>

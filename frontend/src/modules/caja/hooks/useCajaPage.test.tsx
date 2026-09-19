@@ -15,6 +15,8 @@ import type {
   CashRegisterDto,
   CashSessionDto,
   CashSessionCollectionSummaryDto,
+  CashMovementReasonDto,
+  CashMovementDto,
 } from "../api/cajaService";
 import { useCajaPage } from "./useCajaPage";
 import { message } from "../../../lib/messages";
@@ -29,6 +31,7 @@ vi.mock("../api/cajaService", () => ({
     close: vi.fn(),
     recordMovement: vi.fn(),
     getCollectionSummary: vi.fn(),
+    getCashMovementReasons: vi.fn(),
   },
 }));
 
@@ -179,6 +182,7 @@ beforeEach(() => {
     totalCredit: 0,
     byPaymentMethod: [],
   });
+  vi.mocked(cajaService.getCashMovementReasons).mockResolvedValue([]);
   vi.mocked(message.confirm).mockResolvedValue(true);
 });
 
@@ -388,11 +392,56 @@ describe("useCajaPage — abrir turno: confirmación y feedback (CRITICAL-CONFIR
   });
 });
 
+const manualIncomeReasons: CashMovementReasonDto[] = [
+  {
+    id: "reason-1",
+    code: "CAMBIO_CAJA",
+    name: "Cambio de caja chica",
+    movementType: "ManualIncome",
+    isActive: true,
+    sortOrder: 1,
+  },
+];
+const manualExpenseReasons: CashMovementReasonDto[] = [
+  {
+    id: "reason-2",
+    code: "COMPRA_INSUMOS",
+    name: "Compra de insumos",
+    movementType: "ManualExpense",
+    isActive: true,
+    sortOrder: 1,
+  },
+];
+
+function mockMovementDto(
+  overrides: Partial<CashMovementDto> & {
+    id: string;
+    movementType: string;
+    amount: number;
+    description: string;
+  },
+): CashMovementDto {
+  return {
+    createdAt: "2026-07-19T11:00:00Z",
+    createdBy: "user-1",
+    createdByName: "Ana Perez",
+    referenceType: "Manual",
+    referenceId: null,
+    referenceNumber: null,
+    reasonId: "reason-1",
+    reasonName: "Cambio de caja chica",
+    ...overrides,
+  };
+}
+
 describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITICAL-CONFIRMATIONS-CASH-02)", () => {
   async function setupMovementReady() {
     const session = buildSession();
     vi.mocked(cajaService.getMy).mockResolvedValue(session);
     vi.mocked(cajaService.getById).mockResolvedValue(session);
+    vi.mocked(cajaService.getCashMovementReasons).mockImplementation((movementType) =>
+      Promise.resolve(movementType === "ManualExpense" ? manualExpenseReasons : manualIncomeReasons),
+    );
     const { result } = renderHook(() => useCajaPage());
     await waitFor(() => expect(result.current.mySession).toEqual(session));
     await act(async () => {
@@ -401,23 +450,19 @@ describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITIC
     act(() => {
       result.current.movementForm.setValue("movementType", "ManualIncome");
       result.current.movementForm.setValue("amount", 40);
-      result.current.movementForm.setValue("description", "Cambio de caja chica");
+      result.current.movementForm.setValue("description", "Ajuste de fondo fijo");
+    });
+    await waitFor(() => expect(result.current.reasons).toEqual(manualIncomeReasons));
+    act(() => {
+      result.current.movementForm.setValue("reasonId", "reason-1");
     });
     return result;
   }
 
   it("pide confirmación con tipo/concepto/monto antes de registrar", async () => {
-    vi.mocked(cajaService.recordMovement).mockResolvedValue({
-      id: "mv-1",
-      movementType: "ManualIncome",
-      amount: 40,
-      description: "Cambio de caja chica",
-      createdAt: "2026-07-19T11:00:00Z",
-      createdBy: "user-1",
-      referenceType: "Manual",
-      referenceId: null,
-      referenceNumber: null,
-    });
+    vi.mocked(cajaService.recordMovement).mockResolvedValue(
+      mockMovementDto({ id: "mv-1", movementType: "ManualIncome", amount: 40, description: "Ajuste de fondo fijo" }),
+    );
     const result = await setupMovementReady();
 
     await act(async () => {
@@ -431,26 +476,30 @@ describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITIC
     renderLastConfirmMessage();
     expect(screen.getByText(/Ingreso manual/)).toBeTruthy();
     expect(screen.getByText(/Cambio de caja chica/)).toBeTruthy();
+    expect(screen.getByText(/Ajuste de fondo fijo/)).toBeTruthy();
     expect(screen.getByText(/\$40\.00/)).toBeTruthy();
   });
 
   it("usa variant danger para egreso manual", async () => {
-    vi.mocked(cajaService.recordMovement).mockResolvedValue({
-      id: "mv-2",
-      movementType: "ManualExpense",
-      amount: 15,
-      description: "Compra de insumos",
-      createdAt: "2026-07-19T11:00:00Z",
-      createdBy: "user-1",
-      referenceType: "Manual",
-      referenceId: null,
-      referenceNumber: null,
-    });
+    vi.mocked(cajaService.recordMovement).mockResolvedValue(
+      mockMovementDto({
+        id: "mv-2",
+        movementType: "ManualExpense",
+        amount: 15,
+        description: "Compra de insumos",
+        reasonId: "reason-2",
+        reasonName: "Compra de insumos",
+      }),
+    );
     const result = await setupMovementReady();
     act(() => {
       result.current.movementForm.setValue("movementType", "ManualExpense");
       result.current.movementForm.setValue("description", "Compra de insumos");
       result.current.movementForm.setValue("amount", 15);
+    });
+    await waitFor(() => expect(result.current.reasons).toEqual(manualExpenseReasons));
+    act(() => {
+      result.current.movementForm.setValue("reasonId", "reason-2");
     });
 
     await act(async () => {
@@ -473,17 +522,9 @@ describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITIC
   });
 
   it("al registrar exitosamente muestra message.success", async () => {
-    vi.mocked(cajaService.recordMovement).mockResolvedValue({
-      id: "mv-1",
-      movementType: "ManualIncome",
-      amount: 40,
-      description: "Cambio de caja chica",
-      createdAt: "2026-07-19T11:00:00Z",
-      createdBy: "user-1",
-      referenceType: "Manual",
-      referenceId: null,
-      referenceNumber: null,
-    });
+    vi.mocked(cajaService.recordMovement).mockResolvedValue(
+      mockMovementDto({ id: "mv-1", movementType: "ManualIncome", amount: 40, description: "Cambio de caja chica" }),
+    );
     const result = await setupMovementReady();
 
     await act(async () => {
@@ -513,6 +554,120 @@ describe("useCajaPage — registrar movimiento: confirmación y feedback (CRITIC
       "El monto excede el límite permitido.",
     );
     expect(message.success).not.toHaveBeenCalled();
+  });
+});
+
+describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02)", () => {
+  async function setupMovementReady() {
+    const session = buildSession();
+    vi.mocked(cajaService.getMy).mockResolvedValue(session);
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    vi.mocked(cajaService.getCashMovementReasons).mockImplementation((movementType) =>
+      Promise.resolve(movementType === "ManualExpense" ? manualExpenseReasons : manualIncomeReasons),
+    );
+    const { result } = renderHook(() => useCajaPage());
+    await waitFor(() => expect(result.current.mySession).toEqual(session));
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
+    return result;
+  }
+
+  it("el modal inicia cerrado", async () => {
+    const result = await setupMovementReady();
+    expect(result.current.movementModalOpen).toBe(false);
+  });
+
+  it("openMovementModal abre el modal con el formulario limpio", async () => {
+    const result = await setupMovementReady();
+
+    act(() => {
+      result.current.movementForm.setValue("movementType", "ManualIncome");
+      result.current.movementForm.setValue("amount", 40);
+    });
+    act(() => {
+      result.current.openMovementModal();
+    });
+
+    expect(result.current.movementModalOpen).toBe(true);
+    expect(result.current.movementForm.getValues("movementType")).toBe("");
+    expect(result.current.movementForm.getValues("amount")).toBe(0);
+  });
+
+  it("closeMovementModal cierra el modal y limpia el formulario (cancelar)", async () => {
+    const result = await setupMovementReady();
+
+    act(() => {
+      result.current.openMovementModal();
+      result.current.movementForm.setValue("movementType", "Withdrawal");
+      result.current.movementForm.setValue("description", "Depósito banco");
+    });
+    act(() => {
+      result.current.closeMovementModal();
+    });
+
+    expect(result.current.movementModalOpen).toBe(false);
+    expect(result.current.movementForm.getValues("movementType")).toBe("");
+    expect(result.current.movementForm.getValues("description")).toBe("");
+  });
+
+  it("al registrar correctamente, cierra el modal y refresca sesión/movimientos/resumen", async () => {
+    vi.mocked(message.confirm).mockResolvedValue(true);
+    vi.mocked(cajaService.recordMovement).mockResolvedValue(
+      mockMovementDto({ id: "mv-1", movementType: "ManualIncome", amount: 40, description: "Ajuste de fondo fijo" }),
+    );
+    const result = await setupMovementReady();
+
+    act(() => {
+      result.current.openMovementModal();
+      result.current.movementForm.setValue("movementType", "ManualIncome");
+      result.current.movementForm.setValue("amount", 40);
+      result.current.movementForm.setValue("description", "Ajuste de fondo fijo");
+    });
+    await waitFor(() => expect(result.current.reasons).toEqual(manualIncomeReasons));
+    act(() => {
+      result.current.movementForm.setValue("reasonId", "reason-1");
+    });
+
+    vi.mocked(cajaService.getCollectionSummary).mockClear();
+    vi.mocked(cajaService.getById).mockClear();
+    vi.mocked(cajaService.getMy).mockClear();
+
+    await act(async () => {
+      await result.current.handleRecordMovement();
+    });
+
+    expect(result.current.movementModalOpen).toBe(false);
+    expect(cajaService.getById).toHaveBeenCalledWith(result.current.viewing!.id);
+    expect(cajaService.getCollectionSummary).toHaveBeenCalledWith(result.current.viewing!.id);
+    expect(cajaService.getMy).toHaveBeenCalled();
+  });
+
+  it("si el registro falla, el modal permanece abierto para mostrar el error", async () => {
+    vi.mocked(message.confirm).mockResolvedValue(true);
+    vi.mocked(cajaService.recordMovement).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 422, data: { data: { errors: ["El motivo seleccionado está inactivo."] } } },
+    });
+    const result = await setupMovementReady();
+
+    act(() => {
+      result.current.openMovementModal();
+      result.current.movementForm.setValue("movementType", "ManualIncome");
+      result.current.movementForm.setValue("amount", 40);
+      result.current.movementForm.setValue("description", "Cambio de caja chica");
+    });
+    await waitFor(() => expect(result.current.reasons).toEqual(manualIncomeReasons));
+    act(() => {
+      result.current.movementForm.setValue("reasonId", "reason-1");
+    });
+
+    await act(async () => {
+      await result.current.handleRecordMovement();
+    });
+
+    expect(result.current.movementModalOpen).toBe(true);
+    expect(result.current.saveError).toBe("El motivo seleccionado está inactivo.");
   });
 });
 

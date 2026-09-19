@@ -7,7 +7,9 @@ import type {
   CashSessionListItemDto,
   CashRegisterDto,
   CashSessionCollectionSummaryDto,
+  CashMovementReasonDto,
 } from "../api/cajaService";
+import { MANUAL_CASH_MOVEMENT_TYPES } from "../constants/cashMovementTypes";
 import {
   openCashSessionSchema,
   emptyOpenForm,
@@ -141,12 +143,61 @@ export function useCajaPage() {
     setCollectionSummaryLoading(false);
   }, []);
 
-  // ── Movement type labels ───────────────────────────────────────────
-  const movementTypes = [
-    { value: "ManualIncome", label: "Ingreso manual" },
-    { value: "ManualExpense", label: "Egreso manual" },
-    { value: "Withdrawal", label: "Retiro" },
-  ];
+  // ── Movement types — única fuente compartida (frontend/backend enum en paridad) ─────
+  const movementTypes = MANUAL_CASH_MOVEMENT_TYPES;
+
+  // ── Motivos (TREASURY-CASH-MANUAL-MOVEMENTS-01) — catálogo dinámico del backend, filtrado
+  // por Tenant+Company (server-side) y por el Tipo ya elegido — nunca hardcodeado en frontend.
+  const [reasons, setReasons] = useState<CashMovementReasonDto[]>([]);
+  const [reasonsLoading, setReasonsLoading] = useState(false);
+  const selectedMovementType = movementForm.watch("movementType");
+
+  useEffect(() => {
+    if (!selectedMovementType) {
+      setReasons([]);
+      return;
+    }
+    let cancelled = false;
+    setReasonsLoading(true);
+    cajaService
+      .getCashMovementReasons(selectedMovementType)
+      .then((items) => {
+        if (!cancelled) setReasons(items);
+      })
+      .catch(() => {
+        if (!cancelled) setReasons([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReasonsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMovementType]);
+
+  // El motivo elegido para un Tipo ya no es válido si el usuario cambia el Tipo — se limpia para
+  // no enviar un ReasonId incompatible (el backend lo rechazaría de todas formas, fail-closed).
+  useEffect(() => {
+    movementForm.setValue("reasonId", "");
+  }, [selectedMovementType]);
+
+  // ── Modal "Registrar movimiento manual de efectivo" (TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02) —
+  // reemplaza el formulario inline permanente; misma movementForm/handleRecordMovement de siempre,
+  // solo cambia dónde se muestra. Solo disponible con turno abierto (ver botón en CajaPage).
+  const [movementModalOpen, setMovementModalOpen] = useState(false);
+
+  const openMovementModal = useCallback(() => {
+    movementForm.reset(emptyMovementForm());
+    setSaveError("");
+    setMovementModalOpen(true);
+  }, []);
+
+  const closeMovementModal = useCallback(() => {
+    if (saving) return;
+    movementForm.reset(emptyMovementForm());
+    setSaveError("");
+    setMovementModalOpen(false);
+  }, [saving]);
 
   // ── Open session ───────────────────────────────────────────────────
   // CRITICAL-CONFIRMATIONS-CASH-02: abrir un turno es una acción con impacto de dinero
@@ -227,6 +278,7 @@ export function useCajaPage() {
     const typeLabel =
       movementTypes.find((mt) => mt.value === data.movementType)?.label ??
       data.movementType;
+    const reasonLabel = reasons.find((r) => r.id === data.reasonId)?.name ?? "";
     const isIncome = data.movementType === "ManualIncome";
 
     const confirmed = await message.confirm({
@@ -234,6 +286,8 @@ export function useCajaPage() {
       message: (
         <p className="zh-confirm-message">
           Tipo: <strong>{typeLabel}</strong>
+          <br />
+          Motivo: <strong>{reasonLabel}</strong>
           <br />
           Concepto: <strong>{data.description}</strong>
           <br />
@@ -251,10 +305,12 @@ export function useCajaPage() {
     try {
       await cajaService.recordMovement(viewing.id, {
         movementType: data.movementType,
+        reasonId: data.reasonId,
         amount: data.amount,
         description: data.description,
       });
       movementForm.reset(emptyMovementForm());
+      setMovementModalOpen(false);
       await loadDetail(viewing.id);
       fetchMySession();
       message.success("Movimiento registrado correctamente.");
@@ -378,6 +434,11 @@ export function useCajaPage() {
     movementForm,
     handleRecordMovement,
     movementTypes,
+    reasons,
+    reasonsLoading,
+    movementModalOpen,
+    openMovementModal,
+    closeMovementModal,
     closeForm,
     handleClose,
     startClose,

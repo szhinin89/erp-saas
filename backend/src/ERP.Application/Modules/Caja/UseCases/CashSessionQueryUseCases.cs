@@ -46,6 +46,7 @@ public sealed class GetCashSessionByIdHandler
     private readonly ICashSessionRepository _repo;
     private readonly IEmissionPointRepository _epRepo;
     private readonly ICashRegisterRepository _crRepo;
+    private readonly IAccessRepository _accessRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
 
@@ -53,6 +54,7 @@ public sealed class GetCashSessionByIdHandler
         ICashSessionRepository repo,
         IEmissionPointRepository epRepo,
         ICashRegisterRepository crRepo,
+        IAccessRepository accessRepo,
         ICurrentTenant t,
         ICurrentBranch b
     )
@@ -60,6 +62,7 @@ public sealed class GetCashSessionByIdHandler
         _repo = repo;
         _epRepo = epRepo;
         _crRepo = crRepo;
+        _accessRepo = accessRepo;
         _t = t;
         _b = b;
     }
@@ -75,12 +78,21 @@ public sealed class GetCashSessionByIdHandler
 
         var ep = await _epRepo.GetByIdAsync(session.EmissionPointId, _t.TenantId, ct);
         var register = await _crRepo.GetByIdAsync(_t.TenantId, session.CashRegisterId, ct);
+
+        // TREASURY-CASH-MANUAL-MOVEMENTS-01 — un solo query para todos los CreatedBy distintos de
+        // los movimientos ("usuario" en el listado de Movimientos), nunca N+1 por movimiento.
+        var userIds = session.Movements.Select(m => m.CreatedBy).Distinct().ToList();
+        var userNameById = userIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : (await _accessRepo.GetUsersByIdsAsync(userIds, ct)).ToDictionary(u => u.Id, u => u.FullName);
+
         return Result<CashSessionDto>.Success(
             CajaMapper.ToDto(
                 session,
                 ep?.EmissionType.ToString(),
                 (register?.DefaultWarehouseId, register?.DefaultWarehouse?.Name),
-                (register?.DefaultCustomerId, register?.DefaultCustomer?.Name.LegalName)
+                (register?.DefaultCustomerId, register?.DefaultCustomer?.Name.LegalName),
+                userNameById
             )
         );
     }
@@ -184,6 +196,7 @@ public sealed class GetMyCashSessionHandler
     private readonly ICashSessionRepository _repo;
     private readonly IEmissionPointRepository _epRepo;
     private readonly ICashRegisterRepository _crRepo;
+    private readonly IAccessRepository _accessRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
@@ -191,6 +204,7 @@ public sealed class GetMyCashSessionHandler
         ICashSessionRepository repo,
         IEmissionPointRepository epRepo,
         ICashRegisterRepository crRepo,
+        IAccessRepository accessRepo,
         ICurrentTenant t,
         ICurrentUser u
     )
@@ -198,6 +212,7 @@ public sealed class GetMyCashSessionHandler
         _repo = repo;
         _epRepo = epRepo;
         _crRepo = crRepo;
+        _accessRepo = accessRepo;
         _t = t;
         _u = u;
     }
@@ -214,12 +229,19 @@ public sealed class GetMyCashSessionHandler
 
         var ep = await _epRepo.GetByIdAsync(full.EmissionPointId, _t.TenantId, ct);
         var register = await _crRepo.GetByIdAsync(_t.TenantId, full.CashRegisterId, ct);
+
+        var userIds = full.Movements.Select(m => m.CreatedBy).Distinct().ToList();
+        var userNameById = userIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : (await _accessRepo.GetUsersByIdsAsync(userIds, ct)).ToDictionary(u => u.Id, u => u.FullName);
+
         return Result<CashSessionDto?>.Success(
             CajaMapper.ToDto(
                 full,
                 ep?.EmissionType.ToString(),
                 (register?.DefaultWarehouseId, register?.DefaultWarehouse?.Name),
-                (register?.DefaultCustomerId, register?.DefaultCustomer?.Name.LegalName)
+                (register?.DefaultCustomerId, register?.DefaultCustomer?.Name.LegalName),
+                userNameById
             )
         );
     }

@@ -274,6 +274,7 @@ public sealed class CashSessionBranchScopeTests
     private sealed class MovementFixture
     {
         public Mock<ICashSessionRepository> Repo { get; } = new();
+        public Mock<ICashMovementReasonRepository> ReasonRepo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
@@ -285,8 +286,21 @@ public sealed class CashSessionBranchScopeTests
             User.Setup(u => u.UserId).Returns(UserId);
         }
 
+        /// <summary>Motivo válido (mismo tenant/company de la sesión, activo, compatible con ManualIncome) — usado por los tests de esta clase que no ejercitan la validación del motivo en sí.</summary>
+        public Guid SetupValidReason(Guid companyId)
+        {
+            var reason = ERP.Domain.Modules.Caja.Entities.CashMovementReason.Create(
+                TenantId, companyId, "INGRESO", "Ingreso manual",
+                ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualIncome, 1, UserId
+            );
+            ReasonRepo
+                .Setup(r => r.GetByIdAsync(TenantId, companyId, reason.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(reason);
+            return reason.Id;
+        }
+
         public RecordCashMovementHandler BuildHandler() =>
-            new(Repo.Object, Tenant.Object, Branch.Object, User.Object);
+            new(Repo.Object, ReasonRepo.Object, Tenant.Object, Branch.Object, User.Object);
     }
 
     [Fact]
@@ -296,10 +310,11 @@ public sealed class CashSessionBranchScopeTests
         var f = new MovementFixture(activeBranchId: BranchAId);
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
+        var reasonId = f.SetupValidReason(session.CompanyId);
 
         var result = await f.BuildHandler()
             .Handle(
-                new RecordCashMovementCommand(session.Id, "ManualIncome", 20m, "Ingreso manual"),
+                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual"),
                 CancellationToken.None
             );
 
@@ -315,10 +330,11 @@ public sealed class CashSessionBranchScopeTests
         var f = new MovementFixture(activeBranchId: BranchAId);
         f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
+        var reasonId = f.SetupValidReason(session.CompanyId);
 
         var result = await f.BuildHandler()
             .Handle(
-                new RecordCashMovementCommand(session.Id, "ManualIncome", 20m, "Ingreso manual"),
+                new RecordCashMovementCommand(session.Id, "ManualIncome", reasonId, 20m, "Ingreso manual"),
                 CancellationToken.None
             );
 
@@ -333,6 +349,7 @@ public sealed class CashSessionBranchScopeTests
         public Mock<ICashSessionRepository> Repo { get; } = new();
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
         public Mock<ICashRegisterRepository> CrRepo { get; } = new();
+        public Mock<IAccessRepository> AccessRepo { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
 
@@ -340,10 +357,13 @@ public sealed class CashSessionBranchScopeTests
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
+            AccessRepo
+                .Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<IdentityUser>());
         }
 
         public GetCashSessionByIdHandler BuildHandler() =>
-            new(Repo.Object, EpRepo.Object, CrRepo.Object, Tenant.Object, Branch.Object);
+            new(Repo.Object, EpRepo.Object, CrRepo.Object, AccessRepo.Object, Tenant.Object, Branch.Object);
     }
 
     [Fact]
@@ -374,6 +394,33 @@ public sealed class CashSessionBranchScopeTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Id.Should().Be(session.Id);
+    }
+
+    /// <summary>TREASURY-CASH-MANUAL-MOVEMENTS-01 — un movimiento manual creado ANTES de este
+    /// ticket (sin ReasonId, columna agregada por migración) debe seguir visible en el historial:
+    /// el mapeo no debe fallar ni ocultar la fila solo porque ReasonId/ReasonName sean null.</summary>
+    [Fact]
+    public async Task Movimiento_legacy_sin_ReasonId_sigue_visible_en_el_historial()
+    {
+        var session = CreateOpenSession(BranchAId);
+        session.RecordMovement(
+            ERP.Domain.Modules.Caja.Enums.CashMovementType.ManualExpense,
+            15m,
+            "Egreso histórico sin motivo (previo a este ticket)",
+            UserId
+        );
+        var f = new GetByIdFixture(activeBranchId: BranchAId);
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        var result = await f.BuildHandler()
+            .Handle(new GetCashSessionByIdQuery(session.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var legacyMovement = result.Value!.Movements.Single(m => m.MovementType == "ManualExpense");
+        legacyMovement.ReasonId.Should().BeNull();
+        legacyMovement.ReasonName.Should().BeNull();
+        legacyMovement.Amount.Should().Be(15m);
     }
 
     // ── GetCashSessionListHandler ────────────────────────────────────────

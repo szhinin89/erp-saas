@@ -169,7 +169,9 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         Guid createdBy,
         CashReferenceType referenceType = CashReferenceType.None,
         Guid? referenceId = null,
-        string? referenceNumber = null
+        string? referenceNumber = null,
+        Guid? reasonId = null,
+        string? reasonName = null
     )
     {
         EnsureOpen();
@@ -177,6 +179,13 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
             throw new InvalidOperationException(
                 "No se puede registrar un movimiento de apertura manualmente."
             );
+        // TREASURY-CASH-MANUAL-MOVEMENTS-01 — "el motivo es obligatorio para movimientos
+        // manuales" es una regla del FORMULARIO de registro manual (RecordCashMovementHandler),
+        // no un invariante de este agregado: CashMovementType.ManualExpense/ManualIncome también
+        // los crean flujos internos ajenos a ese formulario (p. ej. RegisterSupplierCreditRefund/
+        // ReverseSupplierCreditRefund en Finance, sin motivo elegido por un usuario) y no deben
+        // romperse por una regla que no les aplica. reasonId/reasonName siguen siendo simples
+        // datos opcionales aquí — quien los necesite obligatorios los exige en su propia capa.
 
         var movement = CashMovement.Create(
             Id,
@@ -188,7 +197,9 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
             createdBy,
             referenceType,
             referenceId,
-            referenceNumber
+            referenceNumber,
+            reasonId,
+            reasonName
         );
 
         _movements.Add(movement);

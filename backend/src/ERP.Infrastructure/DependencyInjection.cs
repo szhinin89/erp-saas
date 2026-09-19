@@ -905,6 +905,10 @@ public static class DependencyInjection
             ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository,
             ERP.Infrastructure.Persistence.Repositories.Caja.CashSessionRepository
         >();
+        services.AddScoped<
+            ERP.Domain.Modules.Caja.Interfaces.ICashMovementReasonRepository,
+            ERP.Infrastructure.Persistence.Repositories.Caja.CashMovementReasonRepository
+        >();
 
         // ── Company Config ───────────────────────────────────────────────────
         // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.4)
@@ -954,6 +958,7 @@ public static class DependencyInjection
         services.AddScoped<PaymentMethodSriMappingBackfillService>();
         services.AddScoped<CashRegisterAccountingAccountBackfillService>();
         services.AddScoped<ICompanyBootstrapStep, CajaBootstrapStep>();
+        services.AddScoped<ICompanyBootstrapStep, CashMovementReasonsBootstrapStep>();
         services.AddScoped<AccountingBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep>(sp =>
             sp.GetRequiredService<AccountingBootstrapStep>()

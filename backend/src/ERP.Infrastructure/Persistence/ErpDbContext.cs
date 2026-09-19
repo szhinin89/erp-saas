@@ -435,6 +435,7 @@ public class ErpDbContext : DbContext
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<CashMovement> CashMovements => Set<CashMovement>();
     public DbSet<CashClosingCount> CashClosingCounts => Set<CashClosingCount>();
+    public DbSet<CashMovementReason> CashMovementReasons => Set<CashMovementReason>();
 
     private Guid CurrentTenantId => FilterTenantId;
 

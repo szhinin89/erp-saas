@@ -37,6 +37,18 @@ public sealed class CashMovement : IMustHaveTenant
     public Guid? ReferenceId { get; private set; }
     public string? ReferenceNumber { get; private set; }
 
+    /// <summary>
+    /// TREASURY-CASH-MANUAL-MOVEMENTS-01 — motivo del catálogo <c>CashMovementReason</c> elegido
+    /// por el usuario. Nullable por compatibilidad histórica (movimientos creados antes de este
+    /// ticket, y los tipos de sistema Opening/SaleIncome/SaleRefund, que nunca llevan motivo).
+    /// </summary>
+    public Guid? ReasonId { get; private set; }
+
+    /// <summary>Snapshot del nombre del motivo al momento de crear el movimiento — mismo criterio
+    /// que <c>SalesInvoicePayment.PaymentMethodName</c>: el histórico no debe cambiar si el motivo
+    /// se renombra o desactiva después.</summary>
+    public string? ReasonName { get; private set; }
+
     private CashMovement() { }
 
     internal static CashMovement Create(
@@ -49,7 +61,9 @@ public sealed class CashMovement : IMustHaveTenant
         Guid createdBy,
         CashReferenceType referenceType = CashReferenceType.None,
         Guid? referenceId = null,
-        string? referenceNumber = null
+        string? referenceNumber = null,
+        Guid? reasonId = null,
+        string? reasonName = null
     )
     {
         if (cashSessionId == Guid.Empty)
@@ -73,6 +87,8 @@ public sealed class CashMovement : IMustHaveTenant
             ReferenceType = referenceType,
             ReferenceId = referenceId,
             ReferenceNumber = referenceNumber?.Trim(),
+            ReasonId = reasonId,
+            ReasonName = string.IsNullOrWhiteSpace(reasonName) ? null : reasonName.Trim(),
         };
     }
 }

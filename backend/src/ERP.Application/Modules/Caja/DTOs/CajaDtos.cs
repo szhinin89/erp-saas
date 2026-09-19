@@ -68,6 +68,9 @@ public sealed record CashSessionDto(
     DateTime? UpdatedAt
 );
 
+/// <param name="ReasonId">TREASURY-CASH-MANUAL-MOVEMENTS-01 — null en movimientos de sistema (Opening/SaleIncome/SaleRefund) y en histórico anterior a este ticket.</param>
+/// <param name="ReasonName">Snapshot del nombre del motivo al momento del movimiento — nunca se resincroniza si el motivo cambia después.</param>
+/// <param name="CreatedByName">Nombre del usuario que registró el movimiento — resuelto en batch (IAccessRepository), null si el usuario ya no existe.</param>
 public sealed record CashMovementDto(
     Guid Id,
     string MovementType,
@@ -75,9 +78,26 @@ public sealed record CashMovementDto(
     string Description,
     DateTime CreatedAt,
     Guid CreatedBy,
+    string? CreatedByName,
     string ReferenceType,
     Guid? ReferenceId,
-    string? ReferenceNumber
+    string? ReferenceNumber,
+    Guid? ReasonId,
+    string? ReasonName
+);
+
+// ── TREASURY-CASH-MANUAL-MOVEMENTS-01 ───────────────────────────────────
+// Catálogo administrable de motivos de movimiento manual de caja — SSOT dinámico, scope
+// obligatorio Tenant+Company (nunca compartido entre empresas). MovementType restringe el motivo
+// a exactamente uno de ManualIncome/ManualExpense/Withdrawal.
+
+public sealed record CashMovementReasonDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string MovementType,
+    bool IsActive,
+    int SortOrder
 );
 
 public sealed record CashClosingCountDto(

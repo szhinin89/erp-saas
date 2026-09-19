@@ -53,6 +53,16 @@ public sealed class CashMovementConfiguration : IEntityTypeConfiguration<CashMov
             .HasColumnName("reference_number")
             .HasMaxLength(CashMovement.ReferenceNumberMaxLen);
 
+        // ── Motivo (TREASURY-CASH-MANUAL-MOVEMENTS-01) ─────────────────
+        // Sin FK: CashMovement no consulta CashMovementReason directamente (mismo criterio de
+        // "hijo del agregado CashSession" del resto de la entidad) — ReasonName es el snapshot
+        // que sostiene la visualización aunque el motivo se renombre/desactive después.
+        builder.Property(x => x.ReasonId).HasColumnName("reason_id");
+        builder
+            .Property(x => x.ReasonName)
+            .HasColumnName("reason_name")
+            .HasMaxLength(CashMovementReason.NameMaxLen);
+
         // ── Indexes ─────────────────────────────────────────────────
         builder
             .HasIndex(x => new { x.TenantId, x.CashSessionId })

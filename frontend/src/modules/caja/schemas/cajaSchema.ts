@@ -19,8 +19,11 @@ export function emptyOpenForm(): OpenCashSessionFormValues {
 }
 
 // ── Record movement schema ─────────────────────────────────────────────
+// TREASURY-CASH-MANUAL-MOVEMENTS-01 — reasonId obligatorio: el motivo viene del catálogo dinámico
+// filtrado por Tipo (ver cajaService.getCashMovementReasons), nunca texto libre ni hardcodeado.
 export const recordMovementSchema = z.object({
   movementType: z.string().min(1, "Seleccione el tipo de movimiento."),
+  reasonId: z.string().min(1, "Seleccione el motivo."),
   amount: z.coerce.number().positive("El monto debe ser mayor a cero."),
   description: z.string().min(1, "La descripción es obligatoria.").max(300),
 });
@@ -28,7 +31,7 @@ export const recordMovementSchema = z.object({
 export type RecordMovementFormValues = z.infer<typeof recordMovementSchema>;
 
 export function emptyMovementForm(): RecordMovementFormValues {
-  return { movementType: "", amount: 0, description: "" };
+  return { movementType: "", reasonId: "", amount: 0, description: "" };
 }
 
 // ── Closing count schema ───────────────────────────────────────────────

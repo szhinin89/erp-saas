@@ -52,6 +52,7 @@ public sealed class CashSessionController : ControllerBase
                 new RecordCashMovementCommand(
                     id,
                     request.MovementType,
+                    request.ReasonId,
                     request.Amount,
                     request.Description,
                     request.ReferenceType,
@@ -98,6 +99,7 @@ public sealed record CloseCashSessionRequest(
 
 public sealed record RecordCashMovementRequest(
     string MovementType,
+    Guid ReasonId,
     decimal Amount,
     string Description,
     string? ReferenceType = null,

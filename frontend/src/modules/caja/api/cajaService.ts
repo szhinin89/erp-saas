@@ -2,9 +2,13 @@ import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 const BASE = "/api/v1/cash-sessions";
 const REGISTERS_BASE = "/api/v1/cash-registers";
+const REASONS_BASE = "/api/v1/cash-movement-reasons";
 
 // ── DTOs ─────────────────────────────────────────────────────────────────
 
+/** TREASURY-CASH-MANUAL-MOVEMENTS-01 — reasonId/reasonName null en movimientos de sistema
+ * (Opening/SaleIncome/SaleRefund) y en histórico anterior a este ticket; createdByName puede ser
+ * null si el usuario ya no existe. */
 export interface CashMovementDto {
   id: string;
   movementType: string;
@@ -12,9 +16,26 @@ export interface CashMovementDto {
   description: string;
   createdAt: string;
   createdBy: string;
+  createdByName: string | null;
   referenceType: string;
   referenceId: string | null;
   referenceNumber: string | null;
+  reasonId: string | null;
+  reasonName: string | null;
+}
+
+// ── TREASURY-CASH-MANUAL-MOVEMENTS-01 ───────────────────────────────────
+// Catálogo administrable de motivos de movimiento manual de caja — SSOT dinámico, scope
+// obligatorio Tenant+Company. Consumido por el select "Motivo" del formulario de registro manual.
+
+export interface CashMovementReasonDto {
+  id: string;
+  code: string;
+  name: string;
+  /** "ManualIncome" | "ManualExpense" | "Withdrawal" — nunca un tipo de sistema. */
+  movementType: string;
+  isActive: boolean;
+  sortOrder: number;
 }
 
 export interface CashClosingCountDto {
@@ -199,6 +220,7 @@ export interface CloseCashSessionPayload {
 
 export interface RecordMovementPayload {
   movementType: string;
+  reasonId: string;
   amount: number;
   description: string;
   referenceType?: string;
@@ -328,4 +350,11 @@ export const cajaService = {
 
   getCollectionSummary: (id: string) =>
     apiGet<CashSessionCollectionSummaryDto>(`${BASE}/${id}/collection-summary`),
+
+  /** TREASURY-CASH-MANUAL-MOVEMENTS-01 — motivos activos filtrados por tipo de movimiento
+   * (Tenant+Company siempre resueltos server-side, nunca enviados por el cliente). */
+  getCashMovementReasons: (movementType: string) =>
+    apiGet<CashMovementReasonDto[]>(
+      `${REASONS_BASE}?movementType=${encodeURIComponent(movementType)}`,
+    ),
 };

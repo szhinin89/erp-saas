@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-17T23:38:25.708Z",
+  "generatedAt": "2026-09-19T12:58:28.590Z",
   "summary": {
-    "total": 130,
-    "allowed": 130,
+    "total": 131,
+    "allowed": 131,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -22,6 +22,7 @@
     "/api/electronic-invoicing",
     "/api/electronic-documents",
     "/api/cash",
+    "/api/cash-movement-reasons",
     "/api/cash-registers",
     "/api/cash-sessions",
     "/api/config",
@@ -232,6 +233,14 @@
       "endpoint": "/api/v1/auth/switch-company",
       "files": [
         "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/cash-movement-reasons",
+      "files": [
+        "frontend/src/modules/caja/api/cajaService.ts"
       ],
       "legacy": false,
       "allowed": true
