@@ -1,6 +1,5 @@
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {
   ZhDecimalInput,
@@ -27,6 +26,7 @@ import type {
   CashSessionCollectionDetailDto,
 } from "../api/cajaService";
 import { cashMovementTypeLabel } from "../constants/cashMovementTypes";
+import { ManualCashMovementModal } from "../components/ManualCashMovementModal";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
@@ -705,139 +705,30 @@ export function CajaPage() {
                 </>
               )}
 
-            {/* TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02 — mismo movementForm/handleRecordMovement/
-                reasons/movementTypes de siempre (useCajaPage), solo cambia de formulario inline
-                permanente a modal; solo alcanzable con turno abierto (botón "Registrar
-                movimiento" arriba).
-                TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 / -PERMISSION-06 — nunca se
-                renderiza el modal si falta cualquiera de las tres condiciones (empresa lo
-                permite, usuario tiene `caja.record`, turno abierto), aunque `movementModalOpen`
-                quedara en true por algún motivo (ver guard en openMovementModal). */}
+            {/* TREASURY-CASH-MANUAL-MOVEMENT-SHARED-MODAL-07 — el markup vive en
+                ManualCashMovementModal (componente compartido, puramente presentacional);
+                CajaPage/useCajaPage siguen siendo los únicos dueños de las reglas de habilitación
+                (empresa lo permite, usuario tiene `caja.record`, turno abierto — ver guard en
+                openMovementModal) y de toda la lógica de negocio (endpoint, TenantId/CompanyId,
+                refresco de detalle/saldo/movimientos/resumen). Solo alcanzable con turno abierto
+                (botón "Registrar movimiento" arriba). */}
             {ctx.viewing.status === "Open" &&
               ctx.allowManualMovements &&
               ctx.canRecordManualMovements && (
-              <ZHModal
-                closeLabel={t("common.close")}
-                open={ctx.movementModalOpen}
-                onClose={ctx.closeMovementModal}
-                size="md"
-                title={t(
-                  "caja.movements.modal.title")}
-                closeOnBackdrop={!ctx.saving}
-              >
-                <form
+                <ManualCashMovementModal
+                  open={ctx.movementModalOpen}
+                  saving={ctx.saving}
+                  saveError={ctx.saveError}
+                  register={ctx.movementForm.register}
+                  errors={ctx.movementForm.formState.errors}
+                  selectedMovementType={ctx.selectedMovementType}
+                  movementTypes={ctx.movementTypes}
+                  reasons={ctx.reasons}
+                  reasonsLoading={ctx.reasonsLoading}
                   onSubmit={ctx.handleRecordMovement}
-                  className="cj-movement-form"
-                >
-                  <ZHField
-                    density="compact"
-                    className="cj-movement-field--type"
-                    label={t("caja.movements.form.type")}
-                    required
-                    fieldError={
-                      ctx.movementForm.formState.errors.movementType?.message
-                    }
-                  >
-                    <select {...ctx.movementForm.register("movementType")}>
-                      <option value="">
-                        {t("caja.movements.form.selectPlaceholder")}
-                      </option>
-                      {ctx.movementTypes.map((mt) => (
-                        <option key={mt.value} value={mt.value}>
-                          {mt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </ZHField>
-                  {/* TREASURY-CASH-MANUAL-MOVEMENTS-01 — motivo dinámico desde el backend
-                      (CashMovementReason), filtrado por Tenant+Company+Tipo — nunca texto libre
-                      ni una lista hardcodeada en el frontend. */}
-                  <ZHField
-                    density="compact"
-                    className="cj-movement-field--reason"
-                    label={t("caja.movements.form.reason")}
-                    required
-                    fieldError={
-                      ctx.movementForm.formState.errors.reasonId?.message
-                    }
-                  >
-                    <select
-                      {...ctx.movementForm.register("reasonId")}
-                      disabled={
-                        !ctx.movementForm.watch("movementType") ||
-                        ctx.reasonsLoading ||
-                        ctx.reasons.length === 0
-                      }
-                    >
-                      <option value="">
-                        {ctx.reasonsLoading
-                          ? t("caja.movements.form.reasonLoading")
-                          : ctx.movementForm.watch("movementType") && ctx.reasons.length === 0
-                            ? t(
-                                "caja.movements.form.reasonEmpty")
-                            : t("caja.movements.form.selectPlaceholder")}
-                      </option>
-                      {ctx.reasons.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </ZHField>
-                  <ZHField
-                    density="compact"
-                    className="cj-movement-field--amount"
-                    label={t("caja.movements.form.amount")}
-                    required
-                    fieldError={
-                      ctx.movementForm.formState.errors.amount?.message
-                    }
-                  >
-                    <ZhDecimalInput
-                      {...ctx.movementForm.register("amount")}
-                      decimals={2}
-                      positiveOnly
-                    />
-                  </ZHField>
-                  <ZHField
-                    density="compact"
-                    className="cj-movement-field--desc"
-                    label={t("caja.movements.form.description")}
-                    required
-                    fieldError={
-                      ctx.movementForm.formState.errors.description?.message
-                    }
-                  >
-                    <input
-                      type="text"
-                      {...ctx.movementForm.register("description")}
-                    />
-                  </ZHField>
-                  {ctx.saveError && (
-                    <ZHPageNotice
-                      variant="error"
-                      message={t("common.errorPrefix")}
-                      detail={ctx.saveError}
-                    />
-                  )}
-                  <div className="cj-actions">
-                    <ZHBtn variant="primary" type="submit" disabled={ctx.saving}>
-                      {ctx.saving
-                        ? t("common.saving")
-                        : t("caja.movements.form.submit")}
-                    </ZHBtn>
-                    <ZHBtn
-                      variant="secondary"
-                      type="button"
-                      disabled={ctx.saving}
-                      onClick={ctx.closeMovementModal}
-                    >
-                      {t("common.cancel")}
-                    </ZHBtn>
-                  </div>
-                </form>
-              </ZHModal>
-            )}
+                  onClose={ctx.closeMovementModal}
+                />
+              )}
           </div>
         )}
 

@@ -482,6 +482,7 @@ export function useCajaPage() {
     movementTypes,
     reasons,
     reasonsLoading,
+    selectedMovementType,
     movementModalOpen,
     openMovementModal,
     closeMovementModal,
