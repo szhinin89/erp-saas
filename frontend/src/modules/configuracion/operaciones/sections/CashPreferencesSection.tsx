@@ -74,6 +74,16 @@ export function CashPreferencesSection() {
               {...register("maxAllowedDifference")}
             />
           </ZHField>
+
+          <ZHToggle
+            label={t("settings.operations.cash.allowManualInOutMovementsLabel")}
+            description={t("settings.operations.cash.allowManualInOutMovementsDesc")}
+            value={page.allowManualInOutMovementsValue}
+            onChange={(next) =>
+              page.setValue("allowManualInOutMovements", next, { shouldDirty: true })
+            }
+            disabled={page.saving || !page.canEdit}
+          />
         </div>
       </div>
 

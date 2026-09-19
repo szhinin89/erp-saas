@@ -523,12 +523,18 @@ export function CajaPage() {
               <div className="cj-detail-header-spacer" />
               {ctx.viewing.status === "Open" && (
                 <>
-                  <ZHBtn variant="secondary" onClick={ctx.openMovementModal}>
-                    <span className="material-symbols-outlined zh-icon-md">
-                      add
-                    </span>{" "}
-                    {t("caja.movements.recordButton")}
-                  </ZHBtn>
+                  {/* TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — el botón (y por lo
+                      tanto el modal, más abajo) solo existen si la empresa activa tiene
+                      habilitados los movimientos manuales; el catálogo de motivos, el modal y el
+                      endpoint son exactamente los mismos, solo cambia si se muestran. */}
+                  {ctx.allowManualMovements && (
+                    <ZHBtn variant="secondary" onClick={ctx.openMovementModal}>
+                      <span className="material-symbols-outlined zh-icon-md">
+                        add
+                      </span>{" "}
+                      {t("caja.movements.recordButton")}
+                    </ZHBtn>
+                  )}
                   <ZHBtn variant="destructive" onClick={ctx.startClose}>
                     {t("caja.session.close")}
                   </ZHBtn>
@@ -700,8 +706,11 @@ export function CajaPage() {
             {/* TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02 — mismo movementForm/handleRecordMovement/
                 reasons/movementTypes de siempre (useCajaPage), solo cambia de formulario inline
                 permanente a modal; solo alcanzable con turno abierto (botón "Registrar
-                movimiento" arriba). */}
-            {ctx.viewing.status === "Open" && (
+                movimiento" arriba).
+                TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — nunca se renderiza el modal si
+                la empresa tiene deshabilitados los movimientos manuales, aunque `movementModalOpen`
+                quedara en true por algún motivo (ver guard en openMovementModal). */}
+            {ctx.viewing.status === "Open" && ctx.allowManualMovements && (
               <ZHModal
                 closeLabel={t("common.close")}
                 open={ctx.movementModalOpen}

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.UseCases;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -29,6 +30,17 @@ public sealed class RecordCashMovementHandlerTests
             "CAJA-01", "Caja Principal", Guid.NewGuid(), "001", 100m, UserId
         );
 
+    private static OperationalPreferences Preferences(bool allowManualInOutMovements = true) =>
+        new(
+            SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
+            Cash: new CashPreferences(true, true, 0m, true, allowManualInOutMovements, true),
+            Purchases: new PurchasesPreferences(null, true, true, true, false),
+            Inventory: new InventoryPreferences(false, true, false, 0m),
+            Printing: new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
+            ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
+            Notifications: new NotificationsPreferences(true, false, "es")
+        );
+
     private static CashMovementReason ValidReason(
         CashMovementType type = CashMovementType.ManualIncome,
         Guid? tenantId = null,
@@ -51,6 +63,7 @@ public sealed class RecordCashMovementHandlerTests
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
+        public Mock<IOperationalPreferencesResolver> PreferencesResolver { get; } = new();
 
         public Fixture()
         {
@@ -58,10 +71,15 @@ public sealed class RecordCashMovementHandlerTests
             Branch.Setup(b => b.BranchId).Returns(BranchId);
             User.Setup(u => u.UserId).Returns(UserId);
             User.Setup(u => u.FullName).Returns("Cajero Test");
+            // Default habilitado: preserva el comportamiento de los tests existentes que no
+            // ejercitan el gate de TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05.
+            PreferencesResolver
+                .Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Preferences());
         }
 
         public RecordCashMovementHandler BuildHandler() =>
-            new(CashRepo.Object, ReasonRepo.Object, Tenant.Object, Branch.Object, User.Object);
+            new(CashRepo.Object, ReasonRepo.Object, Tenant.Object, Branch.Object, User.Object, PreferencesResolver.Object);
     }
 
     private static RecordCashMovementCommand Command(
@@ -194,6 +212,68 @@ public sealed class RecordCashMovementHandlerTests
             "ni siquiera debe consultarse el catálogo de motivos para un tipo de sistema"
         );
         f.CashRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 ────────────────
+    // AllowManualInOutMovements (OrgSettingKeys.Cash) es el SSOT reutilizado — scope Tenant+
+    // Company vía IOperationalPreferencesResolver, default true (preserva empresas existentes).
+
+    [Fact]
+    public async Task Empresa_con_AllowManualInOutMovements_habilitado_permite_el_movimiento()
+    {
+        var session = OpenSession();
+        var reason = ValidReason();
+        var f = new Fixture();
+        f.PreferencesResolver.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Preferences(allowManualInOutMovements: true));
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+
+        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
+    public async Task Empresa_con_AllowManualInOutMovements_deshabilitado_rechaza_el_movimiento()
+    {
+        var session = OpenSession();
+        var reason = ValidReason();
+        var f = new Fixture();
+        f.PreferencesResolver.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Preferences(allowManualInOutMovements: false));
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+
+        var result = await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no permite registrar movimientos manuales");
+        f.CashRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        // Fail-closed antes de tocar el catálogo de motivos o la sesión — una API directa no
+        // puede saltarse la restricción cambiando el motivo/tipo, porque nunca llega a validarlos.
+        f.ReasonRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.CashRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Preferencia_se_resuelve_para_el_tenant_y_company_del_contexto_actual_no_uno_arbitrario()
+    {
+        // El resolver ya encapsula el scope Tenant+Company (ICurrentTenant/ICurrentCompany del
+        // resolver, nunca un CompanyId del body) — este test documenta que el handler llama al
+        // resolver ambient (ResolveAsync sin parámetros) exactamente una vez, sin pasar ningún
+        // Company/Tenant explícito desde el comando.
+        var session = OpenSession();
+        var reason = ValidReason();
+        var f = new Fixture();
+        f.CashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        f.ReasonRepo.Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+
+        await f.BuildHandler().Handle(Command(session.Id, reason.Id), CancellationToken.None);
+
+        f.PreferencesResolver.Verify(p => p.ResolveAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

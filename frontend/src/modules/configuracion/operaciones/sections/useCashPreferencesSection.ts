@@ -37,6 +37,7 @@ export function useCashPreferencesSection() {
       requireReasonForDifference: true,
       allowCloseWithDifference: true,
       maxAllowedDifference: 0,
+      allowManualInOutMovements: true,
     },
   });
 
@@ -50,6 +51,7 @@ export function useCashPreferencesSection() {
   } = form;
   const requireReasonForDifferenceValue = watch("requireReasonForDifference");
   const allowCloseWithDifferenceValue = watch("allowCloseWithDifference");
+  const allowManualInOutMovementsValue = watch("allowManualInOutMovements");
 
   const resetFromData = (dto: CashPreferencesDto) => {
     setFullGroup(dto);
@@ -57,6 +59,7 @@ export function useCashPreferencesSection() {
       requireReasonForDifference: dto.requireReasonForDifference,
       allowCloseWithDifference: dto.allowCloseWithDifference,
       maxAllowedDifference: dto.maxAllowedDifference,
+      allowManualInOutMovements: dto.allowManualInOutMovements,
     });
   };
 
@@ -111,6 +114,7 @@ export function useCashPreferencesSection() {
     isDirty,
     requireReasonForDifferenceValue,
     allowCloseWithDifferenceValue,
+    allowManualInOutMovementsValue,
     register,
     setValue,
     onSubmit,

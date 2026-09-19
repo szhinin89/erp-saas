@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
+using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -71,13 +72,15 @@ public sealed class RecordCashMovementHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly IOperationalPreferencesResolver _preferences;
 
     public RecordCashMovementHandler(
         ICashSessionRepository repo,
         ICashMovementReasonRepository reasonRepo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        IOperationalPreferencesResolver preferences
     )
     {
         _repo = repo;
@@ -85,6 +88,7 @@ public sealed class RecordCashMovementHandler
         _t = t;
         _b = b;
         _u = u;
+        _preferences = preferences;
     }
 
     public async Task<Result<CashMovementDto>> Handle(
@@ -100,6 +104,17 @@ public sealed class RecordCashMovementHandler
         if (!AllowedManualTypes.Contains(movementType))
             return Result<CashMovementDto>.ValidationFailure(
                 "Este tipo de movimiento no se puede registrar manualmente — solo Ingreso manual, Egreso manual o Retiro."
+            );
+
+        // TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — reutiliza el SSOT existente de
+        // preferencias operativas (OrgSettingKeys.Cash.AllowManualInOutMovements, scope
+        // Tenant+Company, default true para no romper empresas existentes) en vez de crear una
+        // configuración paralela. Fail-closed: se valida ANTES de tocar el catálogo de motivos o
+        // la sesión — una API directa nunca puede saltarse esto porque el frontend nunca decide.
+        var preferences = await _preferences.ResolveAsync(ct);
+        if (!preferences.Cash.AllowManualInOutMovements)
+            return Result<CashMovementDto>.ValidationFailure(
+                "Esta empresa no permite registrar movimientos manuales de caja. Contacte al administrador para habilitarlo en Preferencias operativas."
             );
 
         var referenceType = CashReferenceType.None;

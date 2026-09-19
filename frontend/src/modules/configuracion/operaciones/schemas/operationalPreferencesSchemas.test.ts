@@ -46,6 +46,7 @@ describe("cashPreferencesSchema", () => {
         requireReasonForDifference: false,
         allowCloseWithDifference: true,
         maxAllowedDifference: 5,
+        allowManualInOutMovements: true,
       }).success,
     ).toBe(true);
   });
@@ -56,6 +57,7 @@ describe("cashPreferencesSchema", () => {
         requireReasonForDifference: "yes",
         allowCloseWithDifference: true,
         maxAllowedDifference: 5,
+        allowManualInOutMovements: true,
       }).success,
     ).toBe(false);
   });
@@ -66,6 +68,18 @@ describe("cashPreferencesSchema", () => {
         requireReasonForDifference: false,
         allowCloseWithDifference: true,
         maxAllowedDifference: -1,
+        allowManualInOutMovements: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rechaza allowManualInOutMovements no booleano", () => {
+    expect(
+      cashPreferencesSchema.safeParse({
+        requireReasonForDifference: false,
+        allowCloseWithDifference: true,
+        maxAllowedDifference: 5,
+        allowManualInOutMovements: "true",
       }).success,
     ).toBe(false);
   });

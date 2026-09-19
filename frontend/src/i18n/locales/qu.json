@@ -1244,6 +1244,8 @@
   "settings.operations.cash.allowCloseWithDifferenceDesc": "Sichus mana kachun, caja wichqay siempre harkakun sichus arqueo mana exacto tupanchu.",
   "settings.operations.cash.maxAllowedDifferenceLabel": "Ashtawan atisqa diferencia",
   "settings.operations.cash.maxAllowedDifferenceHint": "0 nin mana limitechu (diferenciayoq wichqaypas kachun ñawpaqta).",
+  "settings.operations.cash.allowManualInOutMovementsLabel": "Caja kuyuykunata ruwayta saqiy",
+  "settings.operations.cash.allowManualInOutMovementsDesc": "Caja tiyaypi, qullqi haykuyta, lluqsiyta, hurquyta rurayta saqin.",
   "settings.operations.printing.title": "Tirilla imprimiy",
   "settings.operations.printing.printAgentNote": "Impresora ashtawan papel kichkanta caja sapanpi ZH Print Agentpi allichakun (/admin) — kaypi ERP imprimiy ruwayllata churanchik.",
   "settings.operations.printing.modeLabel": "Imprimiy modo",

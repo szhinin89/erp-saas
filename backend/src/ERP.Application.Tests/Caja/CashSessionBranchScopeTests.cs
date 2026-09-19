@@ -32,7 +32,8 @@ public sealed class CashSessionBranchScopeTests
     private static OperationalPreferences DefaultPreferences(
         bool requireReasonForDifference = true,
         bool allowCloseWithDifference = true,
-        decimal maxAllowedDifference = 0m
+        decimal maxAllowedDifference = 0m,
+        bool allowManualInOutMovements = true
     ) =>
         new(
             SalesPos: new SalesPosPreferences(true, false, true, 0m, null, false, false, null, null),
@@ -41,7 +42,7 @@ public sealed class CashSessionBranchScopeTests
                 allowCloseWithDifference,
                 maxAllowedDifference,
                 requireReasonForDifference,
-                true,
+                allowManualInOutMovements,
                 true
             ),
             Purchases: new PurchasesPreferences(null, true, true, true, false),
@@ -278,12 +279,17 @@ public sealed class CashSessionBranchScopeTests
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
+        public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
 
         public MovementFixture(Guid activeBranchId)
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             User.Setup(u => u.UserId).Returns(UserId);
+            // TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — default habilitado: preserva el
+            // comportamiento de los tests existentes de esta clase, que no ejercitan el gate.
+            Preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(DefaultPreferences());
         }
 
         /// <summary>Motivo válido (mismo tenant/company de la sesión, activo, compatible con ManualIncome) — usado por los tests de esta clase que no ejercitan la validación del motivo en sí.</summary>
@@ -300,7 +306,7 @@ public sealed class CashSessionBranchScopeTests
         }
 
         public RecordCashMovementHandler BuildHandler() =>
-            new(Repo.Object, ReasonRepo.Object, Tenant.Object, Branch.Object, User.Object);
+            new(Repo.Object, ReasonRepo.Object, Tenant.Object, Branch.Object, User.Object, Preferences.Object);
     }
 
     [Fact]

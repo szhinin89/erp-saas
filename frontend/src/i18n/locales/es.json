@@ -1367,6 +1367,8 @@
   "settings.operations.cash.allowCloseWithDifferenceDesc": "Si está desactivado, el cierre de caja se bloquea siempre que el arqueo no cuadre exactamente con lo esperado.",
   "settings.operations.cash.maxAllowedDifferenceLabel": "Diferencia máxima permitida",
   "settings.operations.cash.maxAllowedDifferenceHint": "0 significa sin límite adicional (el cierre con diferencia igual requiere estar habilitado arriba).",
+  "settings.operations.cash.allowManualInOutMovementsLabel": "Permitir movimientos manuales de caja",
+  "settings.operations.cash.allowManualInOutMovementsDesc": "Permite registrar ingresos, egresos y retiros manuales durante un turno de caja.",
   "settings.operations.printing.title": "Impresión de tirilla de venta",
   "settings.operations.printing.printAgentNote": "El ancho de papel y la impresora se configuran por caja en ZH Print Agent (panel local /admin) — aquí solo se define el comportamiento de impresión desde el ERP.",
   "settings.operations.printing.modeLabel": "Modo de impresión",

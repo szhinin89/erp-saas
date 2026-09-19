@@ -18,6 +18,7 @@ export const cashPreferencesSchema = z.object({
   requireReasonForDifference: z.boolean(),
   allowCloseWithDifference: z.boolean(),
   maxAllowedDifference: z.coerce.number().min(0),
+  allowManualInOutMovements: z.boolean(),
 });
 export type CashPreferencesValues = z.infer<typeof cashPreferencesSchema>;
 

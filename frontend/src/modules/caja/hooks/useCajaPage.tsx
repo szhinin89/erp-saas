@@ -10,6 +10,7 @@ import type {
   CashMovementReasonDto,
 } from "../api/cajaService";
 import { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
+import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
 import { useI18n } from "../../../i18n/i18n";
 import {
   openCashSessionSchema,
@@ -56,6 +57,35 @@ export function useCajaPage() {
   const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
   const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
   const currentUserName = useAuthStore((s) => s.user?.fullName) ?? null;
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
+
+  // ── TREASURY-CASH-COMPANY-SETTING-05A — reutiliza el SSOT existente de preferencias
+  // operativas (settings.operations, cash.allow_manual_in_out_movements) en vez de una
+  // configuración paralela. Fail-closed en el frontend: el botón/modal solo se muestran cuando la
+  // preferencia terminó de cargar Y su valor es explícitamente true — mientras carga, si falla, o
+  // si el valor es false, se ocultan (nunca se asume true). El backend (RecordCashMovementHandler)
+  // sigue siendo la autoridad real y ya rechaza fail-closed independientemente de esto — este
+  // cambio es puramente de UI, para no mostrar un botón que el backend igual rechazaría ni, peor,
+  // sugerir que la función está disponible cuando no se pudo confirmar. Se recarga al cambiar de
+  // empresa activa (companySessionVersion), igual que el resto de pantallas que leen esta
+  // configuración. ──
+  const [allowManualMovements, setAllowManualMovements] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAllowManualMovements(false);
+    operationalPreferencesService
+      .getPreferences()
+      .then((dto) => {
+        if (!cancelled) setAllowManualMovements(dto.cash.allowManualInOutMovements);
+      })
+      .catch(() => {
+        if (!cancelled) setAllowManualMovements(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companySessionVersion]);
 
   // ── Forms ──────────────────────────────────────────────────────────
   const openForm = useForm<OpenCashSessionFormValues>({
@@ -191,10 +221,14 @@ export function useCajaPage() {
   const [movementModalOpen, setMovementModalOpen] = useState(false);
 
   const openMovementModal = useCallback(() => {
+    // Defensa en profundidad: aunque el botón que dispara esto ya está oculto cuando la empresa
+    // tiene deshabilitados los movimientos manuales, nunca abrir el modal si por algún motivo se
+    // invoca igual — el backend rechazaría el submit de todas formas (fail-closed real).
+    if (!allowManualMovements) return;
     movementForm.reset(emptyMovementForm());
     setSaveError("");
     setMovementModalOpen(true);
-  }, []);
+  }, [allowManualMovements]);
 
   const closeMovementModal = useCallback(() => {
     if (saving) return;
@@ -430,6 +464,7 @@ export function useCajaPage() {
     cashRegisters,
     branchName,
     selectedRegister,
+    allowManualMovements,
     openForm,
     handleOpen,
     movementForm,

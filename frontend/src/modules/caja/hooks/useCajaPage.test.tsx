@@ -24,6 +24,8 @@ import type {
 } from "../api/cajaService";
 import { useCajaPage } from "./useCajaPage";
 import { message } from "../../../lib/messages";
+import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
+import type { OperationalPreferencesDto } from "../../configuracion/operaciones/api/operationalPreferencesService";
 
 vi.mock("../api/cajaService", () => ({
   cajaService: {
@@ -36,6 +38,12 @@ vi.mock("../api/cajaService", () => ({
     recordMovement: vi.fn(),
     getCollectionSummary: vi.fn(),
     getCashMovementReasons: vi.fn(),
+  },
+}));
+
+vi.mock("../../configuracion/operaciones/api/operationalPreferencesService", () => ({
+  operationalPreferencesService: {
+    getPreferences: vi.fn(),
   },
 }));
 
@@ -141,6 +149,67 @@ function buildSession(overrides: Partial<CashSessionDto> = {}): CashSessionDto {
   };
 }
 
+/** DTO mínimo de settings.operations — solo `cash.allowManualInOutMovements` importa a Caja;
+ * el resto se rellena con valores neutros para satisfacer el tipo del mock. */
+function buildOperationalPreferences(
+  allowManualInOutMovements = true,
+): OperationalPreferencesDto {
+  return {
+    salesPos: {
+      requireOpenCashSession: true,
+      allowManualPrice: false,
+      allowManualDiscount: true,
+      maxDiscountPercent: 0,
+      requireCustomerAboveAmount: null,
+      allowSellWithoutStock: false,
+      askBeforeIssue: false,
+      defaultPriceListId: null,
+      defaultCustomerId: null,
+    },
+    cash: {
+      requireOpeningAmount: true,
+      allowCloseWithDifference: true,
+      maxAllowedDifference: 0,
+      requireReasonForDifference: true,
+      allowManualInOutMovements,
+      requireReasonForMovements: true,
+    },
+    purchases: {
+      defaultWarehouseId: null,
+      allowConfirmWithoutReceptionXml: true,
+      updateCostOnConfirm: true,
+      allowManualCostChange: true,
+      requireReasonForCostChange: false,
+    },
+    inventory: {
+      allowNegativeStock: false,
+      requireReasonForAdjustment: true,
+      requireApprovalForLargeAdjustment: false,
+      largeAdjustmentThresholdAmount: 0,
+    },
+    printing: {
+      salesReceiptMode: "AskBeforePrint",
+      salesReceiptCopies: 1,
+      salesReceiptPaperWidth: "80mm",
+      salesReceiptIncludeLogo: false,
+      salesReceiptIncludeAccessKey: true,
+      salesReceiptIncludeCashier: true,
+      salesReceiptOpenCashDrawer: false,
+    },
+    electronicDocuments: {
+      autoRetryEnabled: true,
+      maxRetryAttempts: 3,
+      generateRideOnAuthorization: true,
+      emailOnAuthorization: true,
+    },
+    notifications: {
+      salesInvoiceAuthorizedEnabled: true,
+      sendCopyToCompanyEmail: false,
+      defaultLanguage: "es",
+    },
+  };
+}
+
 /** Reemplaza el array `closingCounts` completo (no un sub-path anidado) para que RHF `watch()`
  * devuelva una referencia nueva y `countedTotal` (useMemo) recalcule — igual que ocurre en la
  * pantalla real, donde cada input está `register()`-ado y sí dispara ese cambio de referencia. */
@@ -189,6 +258,9 @@ beforeEach(() => {
   });
   vi.mocked(cajaService.getCashMovementReasons).mockResolvedValue([]);
   vi.mocked(message.confirm).mockResolvedValue(true);
+  vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+    buildOperationalPreferences(true),
+  );
 });
 
 afterEach(() => {
@@ -674,6 +746,157 @@ describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MO
 
     expect(result.current.movementModalOpen).toBe(true);
     expect(result.current.saveError).toBe("El motivo seleccionado está inactivo.");
+  });
+});
+
+describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-COMPANY-SETTING-05A: fail-closed en frontend)", () => {
+  it("true (ya resuelto): expone allowManualMovements=true y permite abrir el modal", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(true),
+    );
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
+    act(() => result.current.openMovementModal());
+    expect(result.current.movementModalOpen).toBe(true);
+  });
+
+  it("false (ya resuelto): expone allowManualMovements=false y openMovementModal no abre el modal", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(false),
+    );
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(false));
+    act(() => result.current.openMovementModal());
+    expect(result.current.movementModalOpen).toBe(false);
+  });
+
+  it("mientras carga: allowManualMovements empieza en false (oculto), nunca en true", async () => {
+    let resolveFn: (dto: ReturnType<typeof buildOperationalPreferences>) => void;
+    vi.mocked(operationalPreferencesService.getPreferences).mockReturnValue(
+      new Promise((resolve) => {
+        resolveFn = resolve;
+      }),
+    );
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    // Aún no se resolvió la promesa: debe seguir oculto, nunca asumir true mientras carga.
+    expect(result.current.allowManualMovements).toBe(false);
+
+    await act(async () => {
+      resolveFn(buildOperationalPreferences(true));
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
+  });
+
+  it("si falla la carga de preferencias, queda oculto (false) — nunca se asume true", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences).mockRejectedValue(
+      new Error("network error"),
+    );
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(operationalPreferencesService.getPreferences).toHaveBeenCalled());
+    expect(result.current.allowManualMovements).toBe(false);
+    act(() => result.current.openMovementModal());
+    expect(result.current.movementModalOpen).toBe(false);
+  });
+
+  async function renderDetailView() {
+    const session = buildSession();
+    const listItem = {
+      id: session.id,
+      userId: session.userId,
+      userName: "Ana Perez",
+      cashRegisterId: session.cashRegisterId,
+      cashRegisterCodeSnapshot: session.cashRegisterCodeSnapshot,
+      cashRegisterNameSnapshot: session.cashRegisterNameSnapshot,
+      emissionPointId: session.emissionPointId,
+      emissionPointCodeSnapshot: session.emissionPointCodeSnapshot,
+      openedAt: session.openedAt,
+      openingAmount: session.openingAmount,
+      status: session.status,
+      currentBalance: session.currentBalance,
+      expectedCash: session.currentBalance,
+      countedAmount: null,
+      movementCount: 0,
+      closedAt: null,
+      closedBy: null,
+      closedByName: null,
+      difference: null,
+      invoiceCount: 0,
+      totalInvoiced: 0,
+      saleIncomeCash: 0,
+      manualIncomeCash: 0,
+      manualExpenseCash: 0,
+      byPaymentMethod: [],
+      createdAt: session.createdAt,
+    };
+    vi.mocked(cajaService.getMy).mockResolvedValue(session);
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    vi.mocked(cajaService.list).mockResolvedValue({
+      items: [listItem],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
+
+    render(
+      <I18nProvider>
+        <CajaPage />
+      </I18nProvider>,
+    );
+
+    const viewButton = await screen.findByRole("button", {
+      name: /Ver detalle de sesión/,
+    });
+    fireEvent.click(viewButton);
+    await screen.findByText("Sesión de Caja");
+  }
+
+  it("botón + Registrar movimiento visible en el detalle del turno cuando la empresa lo permite", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(true),
+    );
+
+    await renderDetailView();
+
+    expect(await screen.findByText("Registrar movimiento")).toBeTruthy();
+  });
+
+  it("botón + Registrar movimiento oculto cuando la empresa lo tiene deshabilitado", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(false),
+    );
+
+    await renderDetailView();
+
+    await waitFor(() =>
+      expect(operationalPreferencesService.getPreferences).toHaveBeenCalled(),
+    );
+    await waitFor(() => expect(screen.queryByText("Registrar movimiento")).toBeNull());
+    // "Cerrar Caja" (otra acción del turno abierto) sigue disponible — solo se oculta el botón
+    // de movimientos manuales.
+    expect(screen.getByText("Cerrar Caja")).toBeTruthy();
+  });
+
+  it("cambiar de empresa (companySessionVersion) vuelve a pedir la preferencia", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences)
+      .mockResolvedValueOnce(buildOperationalPreferences(true))
+      .mockResolvedValueOnce(buildOperationalPreferences(false));
+    const { result, rerender } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
+    expect(operationalPreferencesService.getPreferences).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      useAuthStore.setState((s) => ({ companySessionVersion: s.companySessionVersion + 1 }));
+    });
+    rerender();
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(false));
+    expect(operationalPreferencesService.getPreferences).toHaveBeenCalledTimes(2);
   });
 });
 
