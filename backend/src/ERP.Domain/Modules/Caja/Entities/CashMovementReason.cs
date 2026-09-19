@@ -68,8 +68,14 @@ public sealed class CashMovementReason : MasterEntity, ITenantScopedEntity, ICom
         return reason;
     }
 
-    /// <summary>Code inmutable tras la creación — mismo convenio que otros catálogos (PaymentMethod, InventoryAdjustmentReason).</summary>
-    public void Update(string name, CashMovementType movementType, int sortOrder, Guid updatedBy)
+    /// <summary>
+    /// TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03A — Code y MovementType son inmutables tras la
+    /// creación (mismo convenio que Code en otros catálogos: PaymentMethod, InventoryAdjustment
+    /// Reason). Cambiar el tipo de un motivo ya usado reclasificaría movimientos históricos que
+    /// referencian este Id (ReasonId/ReasonName en CashMovement) sin que el usuario lo pidiera —
+    /// solo Name/SortOrder son editables; IsActive se gestiona exclusivamente vía Enable/Disable.
+    /// </summary>
+    public void Update(string name, int sortOrder, Guid updatedBy)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
@@ -78,10 +84,8 @@ public sealed class CashMovementReason : MasterEntity, ITenantScopedEntity, ICom
                 $"El nombre no puede superar {NameMaxLen} caracteres.",
                 nameof(name)
             );
-        EnsureManualMovementType(movementType);
 
         Name = name.Trim();
-        MovementType = movementType;
         SortOrder = sortOrder;
         SetUpdated(updatedBy);
     }

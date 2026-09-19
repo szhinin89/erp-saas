@@ -228,6 +228,24 @@ export interface RecordMovementPayload {
   referenceNumber?: string;
 }
 
+// ── TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 / 03A ───────────────────────
+// Payloads del CRUD administrable — Code y MovementType son inmutables tras crear (Update no los
+// incluye, igual que el backend); TenantId/CompanyId nunca se envían, el backend los resuelve de
+// ICurrentTenant/ICurrentCompany.
+
+export interface CreateCashMovementReasonPayload {
+  code: string;
+  name: string;
+  movementType: string;
+  sortOrder: number;
+}
+
+export interface UpdateCashMovementReasonPayload {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
 // ── CASH-SESSION-COLLECTION-SUMMARY-01 / UX-02 ──────────────────────────
 // Resumen informativo de ventas/cobros del turno — separado del efectivo físico de
 // CashSessionDto (totalIncome/currentBalance arriba). "Cobros del turno" != "efectivo físico de
@@ -352,9 +370,28 @@ export const cajaService = {
     apiGet<CashSessionCollectionSummaryDto>(`${BASE}/${id}/collection-summary`),
 
   /** TREASURY-CASH-MANUAL-MOVEMENTS-01 — motivos activos filtrados por tipo de movimiento
-   * (Tenant+Company siempre resueltos server-side, nunca enviados por el cliente). */
+   * (Tenant+Company siempre resueltos server-side, nunca enviados por el cliente). Usado por el
+   * select "Motivo" del formulario de registro manual. */
   getCashMovementReasons: (movementType: string) =>
     apiGet<CashMovementReasonDto[]>(
       `${REASONS_BASE}?movementType=${encodeURIComponent(movementType)}`,
     ),
+
+  // ── TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 — mismo endpoint /cash-movement-reasons, sin
+  // filtro de tipo e incluyendo inactivos: la pantalla de administración gestiona el catálogo
+  // completo (todos los tipos manuales, activos e inactivos). ──
+  listCashMovementReasons: (includeInactive = false) =>
+    apiGet<CashMovementReasonDto[]>(
+      `${REASONS_BASE}?includeInactive=${includeInactive ? "true" : "false"}`,
+    ),
+
+  createCashMovementReason: (payload: CreateCashMovementReasonPayload) =>
+    apiPost<CashMovementReasonDto>(REASONS_BASE, payload),
+
+  updateCashMovementReason: (id: string, payload: UpdateCashMovementReasonPayload) =>
+    apiPut<CashMovementReasonDto>(`${REASONS_BASE}/${id}`, payload),
+
+  /** El backend no recibe un estado deseado: Toggle siempre invierte IsActive del registro actual. */
+  toggleCashMovementReason: (id: string) =>
+    apiPost<CashMovementReasonDto>(`${REASONS_BASE}/${id}/toggle`, {}),
 };

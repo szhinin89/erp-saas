@@ -162,6 +162,10 @@ const CashRegistersPage = lazyNamedPage(
   () => import("../modules/cashRegisters/pages/CashRegistersPage"),
   "CashRegistersPage",
 );
+const CashMovementReasonsAdminPage = lazyNamedPage(
+  () => import("../modules/caja/pages/CashMovementReasonsAdminPage"),
+  "CashMovementReasonsAdminPage",
+);
 const BrandsPage = lazyNamedPage(
   () => import("../modules/items/catalog/pages/BrandsPage"),
   "BrandsPage",
@@ -341,6 +345,11 @@ export const catalogRoutes = [
     key="treasury-cash-registers"
     path="/treasury/cash/registers"
     element={<CashRegistersPage />}
+  />,
+  <Route
+    key="treasury-cash-movement-reasons"
+    path="/treasury/cash/movement-reasons"
+    element={<CashMovementReasonsAdminPage />}
   />,
   <Route
     key="cash-legacy"

@@ -40,6 +40,20 @@ public static class TreasuryModule
     )]
     public const string CajaSessions = "/treasury/cash";
 
+    // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03: catálogo administrable de motivos de movimiento
+    // manual de caja (CashMovementReason, SSOT dinámico) — hermano de "Turno de Caja", no bajo
+    // "Configuración" porque no es una preferencia sino un catálogo con su propio CRUD.
+    [NavItem(
+        "Motivos de movimientos",
+        Permission = CajaPermissions.View,
+        LabelKey = "app.nav.item.caja.movementReasons",
+        SortOrder = 15,
+        Id = "f5000000-0000-4000-9000-000000000011",
+        ParentId = "f5000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = CajaPermissions.Manage
+    )]
+    public const string CashMovementReasons = "/treasury/cash/movement-reasons";
+
     [NavItem(
         "Configuración",
         LabelKey = "app.nav.item.caja.configuration",

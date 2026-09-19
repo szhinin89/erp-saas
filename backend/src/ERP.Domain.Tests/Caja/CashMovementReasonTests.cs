@@ -79,28 +79,33 @@ public sealed class CashMovementReasonTests
     }
 
     [Fact]
-    public void Update_cambia_Name_MovementType_y_SortOrder_pero_no_Code()
+    public void Update_cambia_Name_y_SortOrder_pero_no_Code_ni_MovementType()
     {
+        // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03A — MovementType es inmutable tras crear, igual
+        // que Code: Update ya ni siquiera recibe un parámetro para cambiarlo.
         var reason = CashMovementReason.Create(
             TenantId, CompanyId, "ORIGINAL", "Nombre original", CashMovementType.ManualIncome, 1, UserId
         );
 
-        reason.Update("Nombre nuevo", CashMovementType.ManualExpense, 5, UserId);
+        reason.Update("Nombre nuevo", 5, UserId);
 
         reason.Code.Should().Be("ORIGINAL", "Code es inmutable tras la creación");
+        reason.MovementType.Should().Be(
+            CashMovementType.ManualIncome,
+            "MovementType es inmutable tras la creación"
+        );
         reason.Name.Should().Be("Nombre nuevo");
-        reason.MovementType.Should().Be(CashMovementType.ManualExpense);
         reason.SortOrder.Should().Be(5);
     }
 
     [Fact]
-    public void Update_con_tipo_de_sistema_falla()
+    public void Update_con_nombre_vacio_falla()
     {
         var reason = CashMovementReason.Create(
             TenantId, CompanyId, "X", "X", CashMovementType.ManualIncome, 1, UserId
         );
 
-        var act = () => reason.Update("X", CashMovementType.SaleIncome, 1, UserId);
+        var act = () => reason.Update("", 1, UserId);
 
         act.Should().Throw<ArgumentException>();
     }

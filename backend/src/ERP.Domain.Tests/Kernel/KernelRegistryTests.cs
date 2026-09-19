@@ -357,6 +357,8 @@ public sealed class KernelRegistryTests
         {
             "/treasury/cash/group",
             "/treasury/cash",
+            // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03
+            "/treasury/cash/movement-reasons",
             "/treasury/cash/configuration-group",
             "/treasury/cash/registers",
             "/settings/operations?tab=cash",

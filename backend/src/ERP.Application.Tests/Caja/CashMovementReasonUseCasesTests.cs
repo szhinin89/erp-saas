@@ -115,12 +115,44 @@ public sealed class CashMovementReasonUseCasesTests
 
         var handler = new UpdateCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
         var result = await handler.Handle(
-            new UpdateCashMovementReasonCommand(Guid.NewGuid(), "X", "ManualIncome", 1),
+            new UpdateCashMovementReasonCommand(Guid.NewGuid(), "X", 1),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    // ── TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03A ────────────────────────────
+    // MovementType inmutable tras crear, igual que Code — UpdateCashMovementReasonCommand ya ni
+    // siquiera acepta el campo, así que no hay forma de que el handler lo cambie.
+
+    [Fact]
+    public async Task Update_cambia_Name_y_SortOrder_pero_nunca_MovementType_ni_Code()
+    {
+        var reason = CashMovementReason.Create(
+            TenantId, CompanyId, "ORIGINAL", "Nombre original", CashMovementType.Withdrawal, 1, UserId
+        );
+        var f = new Fixture();
+        f.Repo
+            .Setup(r => r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reason);
+
+        var handler = new UpdateCashMovementReasonHandler(f.Repo.Object, f.Tenant.Object, f.Company.Object, f.User.Object);
+        var result = await handler.Handle(
+            new UpdateCashMovementReasonCommand(reason.Id, "Nombre nuevo", 9),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Name.Should().Be("Nombre nuevo");
+        result.Value.SortOrder.Should().Be(9);
+        result.Value.Code.Should().Be("ORIGINAL");
+        result.Value.MovementType.Should().Be(CashMovementType.Withdrawal.ToString());
+        reason.MovementType.Should().Be(
+            CashMovementType.Withdrawal,
+            "un registro existente nunca cambia de clasificación por una edición"
+        );
     }
 
     [Fact]

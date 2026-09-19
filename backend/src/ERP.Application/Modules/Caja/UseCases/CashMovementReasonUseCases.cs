@@ -33,10 +33,14 @@ public sealed record CreateCashMovementReasonCommand(
     int SortOrder = 0
 ) : IRequest<Result<CashMovementReasonDto>>, ICompanyScopedRequest;
 
+/// <summary>
+/// TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03A — MovementType no se incluye: es inmutable tras
+/// crear, igual que Code (ver <see cref="CashMovementReason.Update"/>). Solo Name/SortOrder son
+/// editables; IsActive se gestiona exclusivamente vía <see cref="ToggleCashMovementReasonCommand"/>.
+/// </summary>
 public sealed record UpdateCashMovementReasonCommand(
     Guid Id,
     string Name,
-    string MovementType,
     int SortOrder
 ) : IRequest<Result<CashMovementReasonDto>>, ICompanyScopedRequest;
 
@@ -73,9 +77,6 @@ public sealed class UpdateCashMovementReasonValidator
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(CashMovementReason.NameMaxLen);
-        RuleFor(x => x.MovementType)
-            .Must(MovementTypeValidation.IsManualType)
-            .WithMessage("MovementType debe ser ManualIncome, ManualExpense o Withdrawal.");
     }
 }
 
@@ -211,8 +212,7 @@ public sealed class UpdateCashMovementReasonHandler
         if (reason is null)
             return Result<CashMovementReasonDto>.NotFound("Motivo no encontrado.");
 
-        var movementType = Enum.Parse<CashMovementType>(cmd.MovementType, true);
-        reason.Update(cmd.Name, movementType, cmd.SortOrder, _u.UserId);
+        reason.Update(cmd.Name, cmd.SortOrder, _u.UserId);
         await _repo.SaveChangesAsync(ct);
 
         return Result<CashMovementReasonDto>.Success(CajaMapper.ToDto(reason));
