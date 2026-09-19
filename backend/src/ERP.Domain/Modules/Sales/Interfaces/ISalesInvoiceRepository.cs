@@ -84,6 +84,33 @@ public interface ISalesInvoiceRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// CASH-SESSION-COLLECTION-SUMMARY-01 — proyección plana (una fila por pago) de las facturas
+    /// AUTORIZADAS de una sesión de caja, para armar el resumen de cobros del turno sin cargar el
+    /// agregado completo (líneas/impuestos) ni traer Draft/Cancelled. Una factura con N formas de
+    /// pago produce N filas con el mismo InvoiceId/InvoiceNumber/GrandTotal — el handler agrupa por
+    /// InvoiceId para "facturas distintas" y por PaymentMethodId para el desglose por forma.
+    /// </summary>
+    Task<IReadOnlyList<SalesInvoiceCashSessionPaymentRow>> GetCollectionSummaryByCashSessionAsync(
+        Guid tenantId,
+        Guid branchId,
+        Guid cashSessionId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// CASH-SESSION-LIST-SUMMARY-01 — misma proyección que
+    /// <see cref="GetCollectionSummaryByCashSessionAsync"/> pero para VARIAS sesiones a la vez (una
+    /// página del listado de turnos): un solo query para toda la página en vez de N+1 por fila.
+    /// El handler agrupa por <see cref="SalesInvoiceCashSessionPaymentRow.CashSessionId"/>.
+    /// </summary>
+    Task<IReadOnlyList<SalesInvoiceCashSessionPaymentRow>> GetCollectionSummaryByCashSessionsAsync(
+        Guid tenantId,
+        Guid branchId,
+        IReadOnlyCollection<Guid> cashSessionIds,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(SalesInvoice invoice, CancellationToken ct = default);
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,
@@ -102,3 +129,35 @@ public interface ISalesInvoiceRepository
     Task RemovePaymentSchedulesByInvoiceAsync(Guid invoiceId, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
+
+/// <summary>
+/// CASH-SESSION-COLLECTION-SUMMARY-01/UX-02 — una fila por <c>SalesInvoicePayment</c> de una
+/// factura autorizada del turno. <see cref="PaymentMethodName"/> es el snapshot ya guardado en el
+/// pago (<c>SalesInvoicePayment.PaymentMethodName</c>) — no requiere join con el catálogo vivo de
+/// <c>PaymentMethod</c> para mostrar el nombre; el handler solo une contra el catálogo para
+/// resolver <c>IsCreditAllowed</c>/<c>DetailType</c> (datos que el snapshot del pago no guarda).
+/// Los campos <c>Transfer*</c> vienen del owned type <c>PaymentTransferDetail</c> (incluido
+/// automáticamente por EF, sin join adicional) — todos null cuando el pago no es Transferencia.
+/// </summary>
+public sealed record SalesInvoiceCashSessionPaymentRow(
+    Guid CashSessionId,
+    Guid InvoiceId,
+    string InvoiceNumber,
+    DateTime AuthorizedAt,
+    string CustomerName,
+    decimal GrandTotal,
+    Guid PaymentMethodId,
+    string PaymentMethodCode,
+    string PaymentMethodName,
+    decimal Amount,
+    /// <summary>Referencia/comprobante genérico capturado en el pago (<c>SalesInvoicePayment.Reference</c>) — aplica a cualquier forma de pago.</summary>
+    string? Reference,
+    /// <summary>Solo Transferencia — cuenta bancaria destino real (SALES-TRANSFER-BANK-ACCOUNT-01). Null en pagos anteriores a ese ticket o en otras formas de pago.</summary>
+    Guid? TransferCompanyBankAccountId,
+    /// <summary>Solo Transferencia legacy — texto libre de banco anterior a <see cref="TransferCompanyBankAccountId"/>. Nunca escrito por código nuevo.</summary>
+    string? TransferLegacyBankName,
+    /// <summary>Solo Transferencia — número de comprobante de la operación bancaria.</summary>
+    string? TransferReceiptNumber,
+    /// <summary>Solo Transferencia — fecha de la operación bancaria.</summary>
+    DateOnly? TransferDate
+);

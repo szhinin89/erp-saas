@@ -13,13 +13,17 @@ import {
   type BadgeVariant,
 } from "../../../components/PageShell";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { formatDateTime } from "../../../lib/formatters/dateFormatters";
+import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../i18n/i18n";
 import { useCajaPage } from "../hooks/useCajaPage";
+import { useState } from "react";
 import type {
   CashSessionListItemDto,
+  CashSessionListCollectionByMethodDto,
   CashMovementDto,
   CashClosingCountDto,
+  CashSessionCollectionByMethodDto,
+  CashSessionCollectionDetailDto,
 } from "../api/cajaService";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
@@ -28,6 +32,8 @@ import "./CajaPage.css";
 export function CajaPage() {
   const { t } = useI18n();
   const ctx = useCajaPage();
+  const [expandedMethodId, setExpandedMethodId] = useState<string | null>(null);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
 
   const statusLabel = (s: string) => (s === "Open" ? "Abierta" : "Cerrada");
   const statusBadge = (s: string): BadgeVariant =>
@@ -44,17 +50,44 @@ export function CajaPage() {
     return map[t] ?? t;
   };
 
+  // ── CASH-SESSION-LIST-SUMMARY-01 — tabla compacta + fila expandible ────────────────
+  // Efectivo esperado/Monto contado/Diferencia/Movimientos siguen viniendo de CashSession/
+  // CashMovement (efectivo físico, SSOT sin cambios). Facturas del turno/Total facturado y el
+  // desglose por forma del expandible vienen de SalesInvoice+SalesInvoicePayment+PaymentMethod
+  // (informativo) — ya incluidos en la fila por el backend, sin requests adicionales al expandir.
   const sessionColumns: ZHDataTableColumn<CashSessionListItemDto>[] = [
     { key: "openedAt", header: "Apertura", render: (s) => formatDateTime(s.openedAt) },
-    { key: "openingAmount", header: "Monto Apertura", align: "right", cellClassName: "zh-table-cell--num", render: (s) => formatMoneyWithSymbol(s.openingAmount) },
-    { key: "balance", header: "Saldo", align: "right", cellClassName: "zh-table-cell--num", render: (s) => formatMoneyWithSymbol(s.currentBalance) },
-    { key: "movements", header: "Movimientos", align: "center", render: (s) => s.movementCount },
+    { key: "closedAt", header: "Cierre", render: (s) => (s.closedAt ? formatDateTime(s.closedAt) : "—") },
+    { key: "cashRegister", header: "Caja", render: (s) => s.cashRegisterCodeSnapshot },
+    { key: "emissionPoint", header: "P. emisión", render: (s) => s.emissionPointCodeSnapshot },
+    { key: "user", header: "Cajero", render: (s) => s.userName ?? "—" },
     {
       key: "status",
       header: "Estado",
       render: (s) => <Badge variant={statusBadge(s.status)} label={statusLabel(s.status)} />,
     },
-    { key: "closedAt", header: "Cierre", render: (s) => (s.closedAt ? formatDateTime(s.closedAt) : "—") },
+    { key: "invoices", header: "Facturas", align: "center", render: (s) => s.invoiceCount },
+    {
+      key: "totalInvoiced",
+      header: "Total facturado",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (s) => formatMoneyWithSymbol(s.totalInvoiced),
+    },
+    {
+      key: "expectedCash",
+      header: "Efectivo esperado",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (s) => formatMoneyWithSymbol(s.expectedCash),
+    },
+    {
+      key: "countedAmount",
+      header: "Contado",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (s) => (s.countedAmount != null ? formatMoneyWithSymbol(s.countedAmount) : "—"),
+    },
     {
       key: "difference",
       header: "Diferencia",
@@ -62,19 +95,50 @@ export function CajaPage() {
       cellClassName: "zh-table-cell--num",
       render: (s) => (s.difference != null ? formatMoneyWithSymbol(s.difference) : "—"),
     },
+    { key: "movements", header: "Movimientos", align: "center", render: (s) => s.movementCount },
     {
       key: "actions",
       header: "Acciones",
       align: "center",
       render: (s) => (
-        <ZHIconButton
-          icon="visibility"
-          variant="ghost"
-          title={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
-          ariaLabel={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
-          onClick={() => ctx.loadDetail(s.id)}
-        />
+        <>
+          <ZHIconButton
+            icon={expandedSessionId === s.id ? "expand_less" : "expand_more"}
+            variant="ghost"
+            title={expandedSessionId === s.id ? "Ocultar resumen" : "Ver resumen del turno"}
+            ariaLabel={expandedSessionId === s.id ? "Ocultar resumen" : "Ver resumen del turno"}
+            onClick={() => setExpandedSessionId((prev) => (prev === s.id ? null : s.id))}
+          />
+          <ZHIconButton
+            icon="visibility"
+            variant="ghost"
+            title={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
+            ariaLabel={`Ver detalle de sesión ${formatDateTime(s.openedAt)}`}
+            onClick={() => ctx.loadDetail(s.id)}
+          />
+        </>
       ),
+    },
+  ];
+
+  const sessionListByMethodColumns: ZHDataTableColumn<CashSessionListCollectionByMethodDto>[] = [
+    {
+      key: "method",
+      header: "Forma",
+      render: (m) => (
+        <>
+          {m.paymentMethodName}{" "}
+          <span className="cj-collection-code">({m.paymentMethodCode})</span>
+        </>
+      ),
+    },
+    { key: "invoices", header: "Facturas", align: "center", render: (m) => m.invoiceCount },
+    {
+      key: "amount",
+      header: "Total",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => formatMoneyWithSymbol(m.amount),
     },
   ];
 
@@ -90,6 +154,124 @@ export function CajaPage() {
     { key: "denomination", header: "Denominación", render: (c) => c.denominationLabel },
     { key: "quantity", header: "Cantidad", align: "center", render: (c) => c.quantity },
     { key: "total", header: "Total", align: "right", cellClassName: "zh-table-cell--num", render: (c) => formatMoneyWithSymbol(c.total) },
+  ];
+
+  // ── CASH-SESSION-COLLECTION-SUMMARY-01/UX-02 — Cobros del turno != efectivo físico de caja ──
+  // Esta tabla y sus detalles son puramente informativos: se calculan en vivo desde
+  // SalesInvoice+SalesInvoicePayment+PaymentMethod y jamás afectan totalIncome/currentBalance
+  // (efectivo físico), que siguen viniendo solo de CashSession/CashMovement arriba. El backend ya
+  // entrega byPaymentMethod en el orden fijo de UX (Efectivo, Transferencia, Tarjeta, Cheque,
+  // Crédito; otros después) — el frontend nunca reordena ni agrupa por nombre.
+  const percentOfCollected = (
+    m: CashSessionCollectionByMethodDto,
+    totalCollected: number,
+  ): string => {
+    if (m.isCreditAllowed || totalCollected <= 0) return "—";
+    return `${((m.amount / totalCollected) * 100).toFixed(1)}%`;
+  };
+
+  const collectionByMethodColumns = (
+    totalCollected: number,
+  ): ZHDataTableColumn<CashSessionCollectionByMethodDto>[] => [
+    {
+      key: "method",
+      header: "Forma/código",
+      render: (m) => (
+        <>
+          {m.paymentMethodName} <span className="cj-collection-code">({m.paymentMethodCode})</span>
+          {m.isCreditAllowed && (
+            <Badge variant="neutral" label="Crédito" className="cj-collection-credit-badge" />
+          )}
+        </>
+      ),
+    },
+    { key: "invoices", header: "Facturas distintas", align: "center", render: (m) => m.invoiceCount },
+    { key: "operations", header: "Operaciones", align: "center", render: (m) => m.operationCount },
+    {
+      key: "amount",
+      header: "Total",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => formatMoneyWithSymbol(m.amount),
+    },
+    {
+      key: "percent",
+      header: "% del cobrado",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (m) => percentOfCollected(m, totalCollected),
+    },
+    { key: "destination", header: "Destino", render: (m) => m.destination },
+    {
+      key: "detail",
+      header: "Detalle",
+      align: "center",
+      render: (m) => (
+        <ZHIconButton
+          icon={expandedMethodId === m.paymentMethodId ? "expand_less" : "expand_more"}
+          variant="ghost"
+          title={
+            expandedMethodId === m.paymentMethodId
+              ? "Ocultar detalle"
+              : `Ver detalle de ${m.paymentMethodName}`
+          }
+          ariaLabel={`Ver detalle de ${m.paymentMethodName}`}
+          onClick={() =>
+            setExpandedMethodId((prev) =>
+              prev === m.paymentMethodId ? null : m.paymentMethodId,
+            )
+          }
+        />
+      ),
+    },
+  ];
+
+  const collectionDetailColumns: ZHDataTableColumn<CashSessionCollectionDetailDto>[] = [
+    { key: "authorizedAt", header: "Fecha/Hora", render: (d) => formatDateTime(d.authorizedAt) },
+    { key: "invoiceNumber", header: "Factura", render: (d) => d.invoiceNumber },
+    { key: "customer", header: "Cliente", render: (d) => d.customerName },
+    {
+      key: "invoiceTotal",
+      header: "Total factura",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (d) => formatMoneyWithSymbol(d.invoiceTotal),
+    },
+    {
+      key: "amount",
+      header: "Monto (esta forma)",
+      align: "right",
+      cellClassName: "zh-table-cell--num",
+      render: (d) => formatMoneyWithSymbol(d.amount),
+    },
+    {
+      key: "mixed",
+      header: "Completa/Mixta",
+      align: "center",
+      render: (d) => (
+        <Badge
+          variant={d.isMixedPayment ? "warning" : "neutral"}
+          label={d.isMixedPayment ? "Mixta" : "Completa"}
+        />
+      ),
+    },
+    { key: "reference", header: "Referencia/comprobante", render: (d) => d.reference ?? "—" },
+    {
+      key: "destination",
+      header: "Destino",
+      render: (d) => {
+        if (!d.destinationBankName) return "—";
+        return (
+          <>
+            {d.destinationBankName}
+            {d.destinationAccountMasked ? ` — ${d.destinationAccountMasked}` : ""}
+            {d.transferDate ? (
+              <span className="cj-collection-transfer-date"> ({formatDate(d.transferDate)})</span>
+            ) : null}
+          </>
+        );
+      },
+    },
   ];
 
   return (
@@ -155,6 +337,64 @@ export function CajaPage() {
               tableClassName="table--compact table--neutral"
               emptyMessage="Sin sesiones de caja."
             />
+
+            {/* CASH-SESSION-LIST-SUMMARY-01 — expandible: resumen ventas / cobros por forma /
+                caja física / fechas+usuario, todo ya presente en la fila (sin request adicional).
+                "Caja física" es la única sección que afecta apertura/cierre/arqueo; el resto es
+                informativo (SalesInvoice+SalesInvoicePayment+PaymentMethod). */}
+            {expandedSessionId &&
+              (() => {
+                const s = ctx.listItems.find((i) => i.id === expandedSessionId);
+                if (!s) return null;
+                return (
+                  <div className="cj-collection-detail-wrap">
+                    <h5 className="cj-collection-detail-title">
+                      Resumen del turno — {formatDateTime(s.openedAt)}
+                    </h5>
+
+                    <div className="cj-summary-grid">
+                      <SummaryCard label="Facturas" value={String(s.invoiceCount)} />
+                      <SummaryCard label="Total facturado" value={formatMoneyWithSymbol(s.totalInvoiced)} />
+                      <SummaryCard label="Cajero" value={s.userName ?? "—"} />
+                      <SummaryCard
+                        label="Cerrado por"
+                        value={s.closedByName ?? (s.status === "Open" ? "Turno abierto" : "—")}
+                      />
+                    </div>
+
+                    <h6 className="cj-collection-detail-subtitle">Cobros por forma</h6>
+                    <ZHDataTable
+                      columns={sessionListByMethodColumns}
+                      rows={s.byPaymentMethod}
+                      rowKey={(m) => m.paymentMethodId}
+                      tableClassName="table--compact table--neutral"
+                      emptyMessage="Sin cobros registrados en este turno."
+                    />
+
+                    <h6 className="cj-collection-detail-subtitle">Caja física</h6>
+                    <div className="cj-summary-grid">
+                      <SummaryCard label="Apertura" value={formatMoneyWithSymbol(s.openingAmount)} />
+                      <SummaryCard label="Ventas en efectivo" value={formatMoneyWithSymbol(s.saleIncomeCash)} />
+                      <SummaryCard label="Ingresos manuales" value={formatMoneyWithSymbol(s.manualIncomeCash)} />
+                      <SummaryCard label="Egresos manuales" value={formatMoneyWithSymbol(s.manualExpenseCash)} />
+                      <SummaryCard label="Saldo esperado" value={formatMoneyWithSymbol(s.expectedCash)} highlight />
+                      {s.status === "Closed" && (
+                        <>
+                          <SummaryCard
+                            label="Contado"
+                            value={formatMoneyWithSymbol(s.countedAmount ?? 0)}
+                          />
+                          <SummaryCard
+                            label="Diferencia"
+                            value={formatMoneyWithSymbol(s.difference ?? 0)}
+                            highlight={(s.difference ?? 0) !== 0}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         )}
 
@@ -311,6 +551,11 @@ export function CajaPage() {
               />
             </div>
 
+            {/* CASH-SESSION-COLLECTION-SUMMARY-UX-02 — "Efectivo físico" es la única sección que
+                afecta apertura/cierre/arqueo (CashSession/CashMovement). Todo lo que sigue debajo
+                (Resumen de ventas y cobros / Cobros por forma) es informativo y nunca cambia estos
+                valores, aunque haya ventas por Transferencia/Tarjeta/Cheque/Crédito. */}
+            <h4 className="cj-section-title">Efectivo físico</h4>
             <div className="cj-summary-grid">
               <SummaryCard
                 label="Apertura"
@@ -325,7 +570,7 @@ export function CajaPage() {
                 value={formatMoneyWithSymbol(ctx.viewing.totalExpense)}
               />
               <SummaryCard
-                label="Saldo actual"
+                label="Saldo esperado"
                 value={formatMoneyWithSymbol(ctx.viewing.currentBalance)}
                 highlight
               />
@@ -351,6 +596,64 @@ export function CajaPage() {
                 </>
               )}
             </div>
+
+            {/* Informativo: ventas/cobros del turno, separado del efectivo físico de arriba.
+                "Cobros del turno" != "efectivo físico de caja" — Transferencia/Tarjeta/Cheque/
+                Crédito aparecen aquí pero nunca modifican Apertura/Ingresos/Egresos/Saldo. */}
+            <h4 className="cj-section-title cj-section-title--spaced">Resumen de ventas y cobros</h4>
+            {ctx.collectionSummaryLoading && !ctx.collectionSummary ? (
+              <p className="cj-collection-loading">Cargando resumen de cobros…</p>
+            ) : (
+              <>
+                <div className="cj-summary-grid">
+                  <SummaryCard
+                    label="Facturas autorizadas"
+                    value={String(ctx.collectionSummary?.invoiceCount ?? 0)}
+                  />
+                  <SummaryCard
+                    label="Total facturado"
+                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalInvoiced ?? 0)}
+                  />
+                  <SummaryCard
+                    label="Total cobrado"
+                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCollected ?? 0)}
+                  />
+                  <SummaryCard
+                    label="Vendido a crédito"
+                    value={formatMoneyWithSymbol(ctx.collectionSummary?.totalCredit ?? 0)}
+                  />
+                </div>
+                <h5 className="cj-collection-detail-title">Cobros por forma</h5>
+                <ZHDataTable
+                  columns={collectionByMethodColumns(ctx.collectionSummary?.totalCollected ?? 0)}
+                  rows={ctx.collectionSummary?.byPaymentMethod ?? []}
+                  rowKey={(m) => m.paymentMethodId}
+                  tableClassName="table--compact table--neutral"
+                  emptyMessage="Sin cobros registrados en este turno."
+                />
+                {expandedMethodId &&
+                  (() => {
+                    const expanded = ctx.collectionSummary?.byPaymentMethod.find(
+                      (m) => m.paymentMethodId === expandedMethodId,
+                    );
+                    if (!expanded) return null;
+                    return (
+                      <div className="cj-collection-detail-wrap">
+                        <h5 className="cj-collection-detail-title">
+                          Detalle — {expanded.paymentMethodName}
+                        </h5>
+                        <ZHDataTable
+                          columns={collectionDetailColumns}
+                          rows={expanded.details}
+                          rowKey={(d) => `${d.invoiceId}-${expanded.paymentMethodId}`}
+                          tableClassName="table--compact table--neutral"
+                          emptyMessage="Sin facturas."
+                        />
+                      </div>
+                    );
+                  })()}
+              </>
+            )}
 
             {ctx.viewing.status === "Open" && (
               <div className="cj-movement-form-wrap">

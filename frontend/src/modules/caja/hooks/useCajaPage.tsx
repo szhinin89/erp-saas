@@ -6,6 +6,7 @@ import type {
   CashSessionDto,
   CashSessionListItemDto,
   CashRegisterDto,
+  CashSessionCollectionSummaryDto,
 } from "../api/cajaService";
 import {
   openCashSessionSchema,
@@ -39,6 +40,12 @@ export function useCajaPage() {
   // ── Current session ────────────────────────────────────────────────
   const [mySession, setMySession] = useState<CashSessionDto | null>(null);
   const [viewing, setViewing] = useState<CashSessionDto | null>(null);
+
+  // ── Collection summary (CASH-SESSION-COLLECTION-SUMMARY-01) — informativo,
+  // separado del efectivo físico de `viewing` (totalIncome/currentBalance no cambian). ──
+  const [collectionSummary, setCollectionSummary] =
+    useState<CashSessionCollectionSummaryDto | null>(null);
+  const [collectionSummaryLoading, setCollectionSummaryLoading] = useState(false);
 
   // ── Reference data ─────────────────────────────────────────────────
   const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
@@ -119,6 +126,19 @@ export function useCajaPage() {
     } catch {
       setSaveError("No se pudo cargar la sesión.");
     }
+    fetchCollectionSummary(id);
+  }, []);
+
+  // ── Collection summary — informativo, nunca bloquea el detalle de caja si falla. ────
+  const fetchCollectionSummary = useCallback(async (cashSessionId: string) => {
+    setCollectionSummaryLoading(true);
+    try {
+      const summary = await cajaService.getCollectionSummary(cashSessionId);
+      setCollectionSummary(summary);
+    } catch {
+      setCollectionSummary(null);
+    }
+    setCollectionSummaryLoading(false);
   }, []);
 
   // ── Movement type labels ───────────────────────────────────────────
@@ -180,6 +200,7 @@ export function useCajaPage() {
       });
       setMySession(session);
       setViewing(session);
+      setCollectionSummary(null);
       openForm.reset(emptyOpenForm());
       setTab("detalle");
       fetchList();
@@ -347,6 +368,8 @@ export function useCajaPage() {
     saving,
     mySession,
     viewing,
+    collectionSummary,
+    collectionSummaryLoading,
     cashRegisters,
     branchName,
     selectedRegister,

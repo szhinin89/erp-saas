@@ -11,7 +11,11 @@ import {
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useAuthStore } from "../../../store/authStore";
 import { cajaService } from "../api/cajaService";
-import type { CashRegisterDto, CashSessionDto } from "../api/cajaService";
+import type {
+  CashRegisterDto,
+  CashSessionDto,
+  CashSessionCollectionSummaryDto,
+} from "../api/cajaService";
 import { useCajaPage } from "./useCajaPage";
 import { message } from "../../../lib/messages";
 
@@ -24,6 +28,7 @@ vi.mock("../api/cajaService", () => ({
     open: vi.fn(),
     close: vi.fn(),
     recordMovement: vi.fn(),
+    getCollectionSummary: vi.fn(),
   },
 }));
 
@@ -167,6 +172,13 @@ beforeEach(() => {
     pageSize: 25,
   });
   vi.mocked(cajaService.getMy).mockResolvedValue(null);
+  vi.mocked(cajaService.getCollectionSummary).mockResolvedValue({
+    invoiceCount: 0,
+    totalInvoiced: 0,
+    totalCollected: 0,
+    totalCredit: 0,
+    byPaymentMethod: [],
+  });
   vi.mocked(message.confirm).mockResolvedValue(true);
 });
 
@@ -629,6 +641,99 @@ describe("useCajaPage — cerrar turno: confirmación y feedback (CRITICAL-CONFI
     expect(result.current.saveError).toBe("No se pudo procesar el cierre.");
     expect(result.current.viewing?.status).toBe("Open");
     expect(message.success).not.toHaveBeenCalled();
+  });
+});
+
+describe("useCajaPage — resumen de cobros del turno (CASH-SESSION-COLLECTION-SUMMARY-01)", () => {
+  it("al cargar el detalle, pide el resumen de cobros de esa sesión y lo expone separado del efectivo físico", async () => {
+    const session = buildSession({ totalIncome: 0, currentBalance: 100 });
+    const summary: CashSessionCollectionSummaryDto = {
+      invoiceCount: 2,
+      totalInvoiced: 22.59,
+      totalCollected: 2.59,
+      totalCredit: 20,
+      byPaymentMethod: [
+        {
+          paymentMethodId: "pm-efectivo",
+          paymentMethodCode: "EFECTIVO",
+          paymentMethodName: "Efectivo",
+          isCreditAllowed: false,
+          invoiceCount: 1,
+          operationCount: 1,
+          amount: 1.59,
+          destination: "Caja física",
+          details: [
+            {
+              invoiceId: "inv-1",
+              invoiceNumber: "001-001-000000005",
+              authorizedAt: "2026-09-18T10:00:00Z",
+              customerName: "Cliente Test",
+              invoiceTotal: 2.59,
+              amount: 1.59,
+              isMixedPayment: true,
+              reference: null,
+              destinationBankName: null,
+              destinationAccountMasked: null,
+              transferReceiptNumber: null,
+              transferDate: null,
+            },
+          ],
+        },
+        {
+          paymentMethodId: "pm-credito",
+          paymentMethodCode: "CREDITO",
+          paymentMethodName: "Crédito",
+          isCreditAllowed: true,
+          invoiceCount: 1,
+          operationCount: 1,
+          amount: 20,
+          destination: "Cuentas por Cobrar",
+          details: [],
+        },
+      ],
+    };
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    vi.mocked(cajaService.getCollectionSummary).mockResolvedValue(summary);
+    const { result } = renderHook(() => useCajaPage());
+
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
+
+    expect(cajaService.getCollectionSummary).toHaveBeenCalledWith(session.id);
+    expect(result.current.collectionSummary).toEqual(summary);
+    // El resumen de cobros nunca debe alterar el efectivo físico de `viewing`.
+    expect(result.current.viewing?.totalIncome).toBe(0);
+    expect(result.current.viewing?.currentBalance).toBe(100);
+  });
+
+  it("si falla la consulta del resumen, no rompe la carga del detalle de la sesión", async () => {
+    const session = buildSession();
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    vi.mocked(cajaService.getCollectionSummary).mockRejectedValue(new Error("network error"));
+    const { result } = renderHook(() => useCajaPage());
+
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
+
+    expect(result.current.viewing).toEqual(session);
+    expect(result.current.collectionSummary).toBeNull();
+  });
+
+  it("al abrir una caja nueva, limpia el resumen de cobros de una sesión anterior", async () => {
+    vi.mocked(cajaService.open).mockResolvedValue(buildSession());
+    const { result } = renderHook(() => useCajaPage());
+    await waitFor(() =>
+      expect(result.current.openForm.getValues("cashRegisterId")).toBe("reg-1"),
+    );
+    act(() => result.current.openForm.setValue("openingAmount", 100));
+
+    await act(async () => {
+      await result.current.handleOpen();
+    });
+
+    expect(result.current.collectionSummary).toBeNull();
   });
 });
 

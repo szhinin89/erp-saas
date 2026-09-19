@@ -92,6 +92,41 @@
   margin-top: var(--space-5);
 }
 
+/* ── Resumen de cobros (CASH-SESSION-COLLECTION-SUMMARY-01) ── */
+.cj-collection-loading {
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+}
+.cj-collection-credit-badge {
+  margin-left: var(--space-2);
+}
+.cj-collection-detail-wrap {
+  margin: var(--space-3) 0 var(--space-5);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle, transparent);
+}
+.cj-collection-detail-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+.cj-collection-detail-subtitle {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-label-sm-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.cj-collection-code {
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-sm-size);
+}
+.cj-collection-transfer-date {
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-sm-size);
+}
+
 /* ── Arqueo table ── */
 .cj-arqueo-table {
   max-width: 400px;

@@ -196,6 +196,85 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
             .AsNoTracking()
             .ToListAsync(ct);
 
+    public async Task<
+        IReadOnlyList<SalesInvoiceCashSessionPaymentRow>
+    > GetCollectionSummaryByCashSessionAsync(
+        Guid tenantId,
+        Guid branchId,
+        Guid cashSessionId,
+        CancellationToken ct = default
+    ) =>
+        await Scoped(tenantId)
+            .Where(x =>
+                x.BranchId == branchId
+                && x.CashSessionId == cashSessionId
+                && x.Status == SalesInvoiceStatus.Authorized
+            )
+            .SelectMany(
+                x => x.Payments,
+                (x, p) => new SalesInvoiceCashSessionPaymentRow(
+                    x.CashSessionId,
+                    x.Id,
+                    x.InvoiceNumber,
+                    x.UpdatedAt ?? x.CreatedAt,
+                    x.Customer.Name,
+                    x.AuthorizedGrandTotal!.Value,
+                    p.PaymentMethodId,
+                    p.PaymentMethodCode,
+                    p.PaymentMethodName,
+                    p.Amount,
+                    p.Reference,
+                    p.TransferDetail == null ? null : p.TransferDetail.CompanyBankAccountId,
+                    p.TransferDetail == null ? null : p.TransferDetail.BankName,
+                    p.TransferDetail == null ? null : p.TransferDetail.ReceiptNumber,
+                    p.TransferDetail == null ? null : p.TransferDetail.TransferDate
+                )
+            )
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+    public async Task<
+        IReadOnlyList<SalesInvoiceCashSessionPaymentRow>
+    > GetCollectionSummaryByCashSessionsAsync(
+        Guid tenantId,
+        Guid branchId,
+        IReadOnlyCollection<Guid> cashSessionIds,
+        CancellationToken ct = default
+    )
+    {
+        if (cashSessionIds.Count == 0)
+            return Array.Empty<SalesInvoiceCashSessionPaymentRow>();
+
+        return await Scoped(tenantId)
+            .Where(x =>
+                x.BranchId == branchId
+                && cashSessionIds.Contains(x.CashSessionId)
+                && x.Status == SalesInvoiceStatus.Authorized
+            )
+            .SelectMany(
+                x => x.Payments,
+                (x, p) => new SalesInvoiceCashSessionPaymentRow(
+                    x.CashSessionId,
+                    x.Id,
+                    x.InvoiceNumber,
+                    x.UpdatedAt ?? x.CreatedAt,
+                    x.Customer.Name,
+                    x.AuthorizedGrandTotal!.Value,
+                    p.PaymentMethodId,
+                    p.PaymentMethodCode,
+                    p.PaymentMethodName,
+                    p.Amount,
+                    p.Reference,
+                    p.TransferDetail == null ? null : p.TransferDetail.CompanyBankAccountId,
+                    p.TransferDetail == null ? null : p.TransferDetail.BankName,
+                    p.TransferDetail == null ? null : p.TransferDetail.ReceiptNumber,
+                    p.TransferDetail == null ? null : p.TransferDetail.TransferDate
+                )
+            )
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
     public Task AddAsync(SalesInvoice invoice, CancellationToken ct = default) =>
         _db.SalesInvoices.AddAsync(invoice, ct).AsTask();
 

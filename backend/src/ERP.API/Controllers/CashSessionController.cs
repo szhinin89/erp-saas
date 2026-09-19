@@ -84,6 +84,11 @@ public sealed class CashSessionController : ControllerBase
     [Authorize(Policy = $"perm:{CajaPermissions.View}")]
     public async Task<IActionResult> GetMy(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetMyCashSessionQuery(), ct), "OK");
+
+    [HttpGet("{id:guid}/collection-summary")]
+    [Authorize(Policy = $"perm:{CajaPermissions.View}")]
+    public async Task<IActionResult> GetCollectionSummary(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetCashSessionCollectionSummaryQuery(id), ct));
 }
 
 public sealed record CloseCashSessionRequest(

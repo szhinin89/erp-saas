@@ -1,5 +1,8 @@
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Caja.Enums;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Modules.Caja;
 
@@ -57,22 +60,87 @@ internal static class CajaMapper
             s.UpdatedAt
         );
 
-    public static CashSessionListDto ToListDto(CashSession s) =>
-        new(
+    /// <summary>
+    /// CASH-SESSION-LIST-SUMMARY-01 — fila del listado de turnos. <paramref name="collectionRows"/>
+    /// es el subconjunto de filas (de un solo query por página, ver
+    /// <c>ISalesInvoiceRepository.GetCollectionSummaryByCashSessionsAsync</c>) que pertenece a ESTA
+    /// sesión — nunca una consulta propia por fila (evita N+1). <paramref name="methodById"/> es el
+    /// catálogo de PaymentMethod ya cargado una vez para toda la página.
+    /// </summary>
+    public static CashSessionListDto ToListDto(
+        CashSession s,
+        string? userName,
+        string? closedByName,
+        IReadOnlyList<SalesInvoiceCashSessionPaymentRow> collectionRows,
+        IReadOnlyDictionary<Guid, PaymentMethod> methodById
+    )
+    {
+        var expectedCash = s.Status == CashSessionStatus.Closed
+            ? s.ExpectedAmount ?? s.CurrentBalance
+            : s.CurrentBalance;
+
+        var invoiceCount = collectionRows.Select(r => r.InvoiceId).Distinct().Count();
+        var totalInvoiced = collectionRows.GroupBy(r => r.InvoiceId).Sum(g => g.First().GrandTotal);
+
+        var saleIncomeCash = s.Movements
+            .Where(m => m.MovementType == CashMovementType.SaleIncome)
+            .Sum(m => m.Amount);
+        var manualIncomeCash = s.Movements
+            .Where(m => m.MovementType == CashMovementType.ManualIncome)
+            .Sum(m => m.Amount);
+        // "Egresos manuales" = acciones deliberadas del cajero (ManualExpense/Withdrawal) — nunca
+        // incluye SaleRefund, que es el reverso automático de una devolución, no una acción manual.
+        var manualExpenseCash = s.Movements
+            .Where(m => m.MovementType is CashMovementType.ManualExpense or CashMovementType.Withdrawal)
+            .Sum(m => m.Amount);
+
+        var byMethod = collectionRows
+            .GroupBy(r => r.PaymentMethodId)
+            .Select(g =>
+            {
+                methodById.TryGetValue(g.Key, out var method);
+                return new CashSessionListCollectionByMethodDto(
+                    g.Key,
+                    g.First().PaymentMethodCode,
+                    g.First().PaymentMethodName,
+                    method?.IsCreditAllowed ?? false,
+                    g.Select(r => r.InvoiceId).Distinct().Count(),
+                    g.Sum(r => r.Amount)
+                );
+            })
+            .OrderBy(m => PaymentMethodDisplayOrder.Rank(methodById.GetValueOrDefault(m.PaymentMethodId)))
+            .ThenBy(m => m.PaymentMethodName)
+            .ToList();
+
+        return new CashSessionListDto(
             s.Id,
             s.UserId,
+            userName,
             s.CashRegisterId,
             s.CashRegisterCodeSnapshot,
+            s.CashRegisterNameSnapshot,
             s.EmissionPointId,
+            s.EmissionPointCodeSnapshot,
             s.OpenedAt,
             s.OpeningAmount,
             s.Status.ToString(),
             s.CurrentBalance,
+            expectedCash,
+            s.CountedAmount,
             s.Movements.Count,
             s.ClosedAt,
+            s.ClosedBy,
+            closedByName,
             s.Difference,
+            invoiceCount,
+            totalInvoiced,
+            saleIncomeCash,
+            manualIncomeCash,
+            manualExpenseCash,
+            byMethod,
             s.CreatedAt
         );
+    }
 
     private static CashMovementDto MapMovement(CashMovement m) =>
         new(

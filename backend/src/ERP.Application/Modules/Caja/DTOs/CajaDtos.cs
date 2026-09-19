@@ -88,20 +88,70 @@ public sealed record CashClosingCountDto(
     decimal Total
 );
 
+/// <summary>
+/// CASH-SESSION-LIST-SUMMARY-01 — fila del listado de turnos con información operativa y
+/// financiera. SSOT sin cambios: <see cref="CurrentBalance"/>/<see cref="ExpectedCash"/>/
+/// <see cref="CountedAmount"/>/<see cref="Difference"/> vienen de CashSession/CashMovement
+/// (efectivo físico, igual que antes); <see cref="InvoiceCount"/>/<see cref="TotalInvoiced"/>/
+/// <see cref="ByPaymentMethod"/> vienen de SalesInvoice+SalesInvoicePayment+PaymentMethod
+/// (informativo, calculado en vivo, nunca persistido) — ver <see cref="CashSessionCollectionSummaryDto"/>.
+/// </summary>
+/// <param name="UserName">Cajero que abrió el turno — resuelto en batch (IAccessRepository), null si el usuario ya no existe.</param>
+/// <param name="ClosedByName">Quien cerró el turno — null si sigue abierto o el usuario ya no existe.</param>
+/// <param name="ExpectedCash">
+/// Efectivo físico esperado ahora mismo: <see cref="CurrentBalance"/> si el turno sigue abierto,
+/// o el <c>ExpectedAmount</c> congelado al momento del cierre si ya cerró (mismo valor,
+/// distinto momento de lectura — nunca dos cálculos).
+/// </param>
+/// <param name="CountedAmount">Solo turnos cerrados — monto físico contado en el arqueo.</param>
+/// <param name="InvoiceCount">Facturas AUTORIZADAS del turno (Draft/Cancelled excluidas).</param>
+/// <param name="TotalInvoiced">Suma de GrandTotal de esas facturas (una vez por factura).</param>
+/// <param name="SaleIncomeCash">Solo ventas en Efectivo que movieron el cajón físico (CashMovementType.SaleIncome) — subconjunto de TotalInvoiced/TotalCollected, no un monto adicional.</param>
+/// <param name="ManualIncomeCash">Ingresos manuales de caja (CashMovementType.ManualIncome).</param>
+/// <param name="ManualExpenseCash">Egresos manuales de caja (ManualExpense + Withdrawal) — no incluye SaleRefund (reverso automático de una devolución, no una acción manual).</param>
+/// <param name="ByPaymentMethod">Desglose informativo por forma — mismo criterio que <see cref="CashSessionCollectionByMethodDto"/> pero sin el detalle por factura (ver el detalle del turno para eso).</param>
 public sealed record CashSessionListDto(
     Guid Id,
     Guid UserId,
+    string? UserName,
     Guid CashRegisterId,
     string CashRegisterCodeSnapshot,
+    string CashRegisterNameSnapshot,
     Guid EmissionPointId,
+    string EmissionPointCodeSnapshot,
     DateTime OpenedAt,
     decimal OpeningAmount,
     string Status,
     decimal CurrentBalance,
+    decimal ExpectedCash,
+    decimal? CountedAmount,
     int MovementCount,
     DateTime? ClosedAt,
+    Guid? ClosedBy,
+    string? ClosedByName,
     decimal? Difference,
+    int InvoiceCount,
+    decimal TotalInvoiced,
+    decimal SaleIncomeCash,
+    decimal ManualIncomeCash,
+    decimal ManualExpenseCash,
+    IReadOnlyList<CashSessionListCollectionByMethodDto> ByPaymentMethod,
     DateTime CreatedAt
+);
+
+/// <param name="PaymentMethodId">SSOT del agrupamiento — nunca se agrupa por nombre.</param>
+/// <param name="PaymentMethodCode"></param>
+/// <param name="PaymentMethodName"></param>
+/// <param name="IsCreditAllowed"></param>
+/// <param name="InvoiceCount">Facturas distintas que usaron esta forma en el turno.</param>
+/// <param name="Amount">Suma de los montos aplicados con esta forma en el turno.</param>
+public sealed record CashSessionListCollectionByMethodDto(
+    Guid PaymentMethodId,
+    string PaymentMethodCode,
+    string PaymentMethodName,
+    bool IsCreditAllowed,
+    int InvoiceCount,
+    decimal Amount
 );
 
 public sealed record CashSessionListResponse(
@@ -169,4 +219,81 @@ public sealed record EmissionPointLookupForBranchDto(
     string Code,
     string? Name,
     string EstablishmentCode
+);
+
+// ── CASH-SESSION-COLLECTION-SUMMARY-01 / UX-02 ───────────────────────────
+// SSOT: Efectivo físico vive exclusivamente en CashSession/CashMovement (TotalIncome/
+// CurrentBalance arriba, sin cambios). Este resumen es informativo — se calcula en vivo desde
+// SalesInvoice+SalesInvoicePayment+PaymentMethod, nunca se persiste ni duplica el estado de Caja.
+// "Cobros del turno" (cuánto se facturó/cobró y en qué forma) es un concepto distinto de
+// "efectivo físico de caja" (lo único que afecta apertura/cierre/arqueo). UX-02 solo agrega
+// profundidad informativa (código, operaciones, destino, detalle de transferencia) — ningún campo
+// nuevo participa en TotalCollected/TotalCredit/PhysicalCashApplied ni en el posting contable.
+
+/// <param name="InvoiceCount">Facturas AUTORIZADAS del turno (Draft/Cancelled excluidas). Una factura con varias formas de pago cuenta una sola vez.</param>
+/// <param name="TotalInvoiced">Suma de GrandTotal de esas facturas (una vez por factura, no por forma de pago).</param>
+/// <param name="TotalCollected">Suma de montos cobrados con formas de pago NO marcadas IsCreditAllowed — dinero real recibido en cualquier forma (incluye no-efectivo), no confundir con efectivo físico.</param>
+/// <param name="TotalCredit">Suma de montos registrados con forma de pago IsCreditAllowed (venta a crédito) — informativo, nunca afecta CashSession.</param>
+/// <param name="ByPaymentMethod">Desglose por forma de pago, incluyendo Crédito (informativo).</param>
+public sealed record CashSessionCollectionSummaryDto(
+    int InvoiceCount,
+    decimal TotalInvoiced,
+    decimal TotalCollected,
+    decimal TotalCredit,
+    IReadOnlyList<CashSessionCollectionByMethodDto> ByPaymentMethod
+);
+
+/// <param name="PaymentMethodId">SSOT del agrupamiento — nunca se agrupa por nombre (dos PaymentMethodId distintos con el mismo nombre, p. ej. uno huérfano/legacy, deben verse como dos filas separadas).</param>
+/// <param name="PaymentMethodCode"></param>
+/// <param name="PaymentMethodName"></param>
+/// <param name="IsCreditAllowed">Informativo — permite al frontend distinguir Crédito del resto sin repetir la regla.</param>
+/// <param name="InvoiceCount">Facturas distintas que usaron esta forma (una factura con 2 pagos de la misma forma cuenta 1 vez).</param>
+/// <param name="OperationCount">Líneas de pago (operaciones) con esta forma — puede superar InvoiceCount cuando una factura tiene 2 pagos con la misma forma.</param>
+/// <param name="Amount">Suma de los montos aplicados con esta forma — nunca el total de la factura si la venta fue mixta.</param>
+/// <param name="Destination">
+/// CASH-SESSION-COLLECTION-SUMMARY-UX-02 — etiqueta contable genérica derivada de
+/// <c>PaymentMethod.DetailType</c>/<c>IsCreditAllowed</c>/<c>AffectsPhysicalCash</c> (ya cargados,
+/// sin queries adicionales): "Caja física" (Efectivo), "Cuenta bancaria" (Transferencia — la
+/// cuenta específica de cada operación va en el detalle), "Cuenta configurada" (Tarjeta/Cheque),
+/// "Cuentas por Cobrar" (Crédito). Nunca inventa una cuenta contable real — es solo la categoría
+/// de destino, la misma usada por <c>PaymentMethodAccountSource</c> en Sales.
+/// </param>
+/// <param name="Details"></param>
+public sealed record CashSessionCollectionByMethodDto(
+    Guid PaymentMethodId,
+    string PaymentMethodCode,
+    string PaymentMethodName,
+    bool IsCreditAllowed,
+    int InvoiceCount,
+    int OperationCount,
+    decimal Amount,
+    string Destination,
+    IReadOnlyList<CashSessionCollectionDetailDto> Details
+);
+
+/// <param name="InvoiceId"></param>
+/// <param name="InvoiceNumber"></param>
+/// <param name="AuthorizedAt"></param>
+/// <param name="CustomerName"></param>
+/// <param name="InvoiceTotal">GrandTotal de la factura — para contrastar visualmente contra <see cref="Amount"/> cuando la venta fue mixta.</param>
+/// <param name="Amount">Monto de ESTA forma de pago en ESTA factura — no el GrandTotal de la factura si hubo venta mixta.</param>
+/// <param name="IsMixedPayment">true si la factura tiene más de una línea de pago (de cualquier forma) — "Completa" vs "Mixta" en la UI.</param>
+/// <param name="Reference">Referencia/comprobante genérico del pago (<c>SalesInvoicePayment.Reference</c>) — usado cuando el pago no es Transferencia (que tiene su propio comprobante, ver <see cref="TransferReceiptNumber"/>).</param>
+/// <param name="DestinationBankName">Solo Transferencia — nombre real del banco (resuelto desde <c>CompanyBankAccount</c>/catálogo de bancos, o el texto legacy si la operación es anterior a SALES-TRANSFER-BANK-ACCOUNT-01). Null en cualquier otra forma.</param>
+/// <param name="DestinationAccountMasked">Solo Transferencia — alias + número de cuenta enmascarado (últimos 4 dígitos). Null si no hay cuenta bancaria configurada resuelta.</param>
+/// <param name="TransferReceiptNumber">Solo Transferencia — comprobante de la operación bancaria.</param>
+/// <param name="TransferDate">Solo Transferencia — fecha de la operación bancaria.</param>
+public sealed record CashSessionCollectionDetailDto(
+    Guid InvoiceId,
+    string InvoiceNumber,
+    DateTime AuthorizedAt,
+    string CustomerName,
+    decimal InvoiceTotal,
+    decimal Amount,
+    bool IsMixedPayment,
+    string? Reference,
+    string? DestinationBankName,
+    string? DestinationAccountMasked,
+    string? TransferReceiptNumber,
+    DateOnly? TransferDate
 );

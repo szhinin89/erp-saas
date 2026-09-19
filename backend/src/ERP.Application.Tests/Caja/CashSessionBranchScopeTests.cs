@@ -1,9 +1,13 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.UseCases;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -388,9 +392,25 @@ public sealed class CashSessionBranchScopeTests
                 r.GetPagedAsync(TenantId, BranchAId, null, 1, 25, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((new List<CashSession> { CreateOpenSession(BranchAId) }, 1));
+        var invoiceRepo = new Mock<ISalesInvoiceRepository>();
+        invoiceRepo
+            .Setup(r => r.GetCollectionSummaryByCashSessionsAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.ListAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PaymentMethod>());
+        var accessRepo = new Mock<IAccessRepository>();
+        accessRepo
+            .Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<IdentityUser>());
 
         var handler = new GetCashSessionListHandler(
             repo.Object,
+            invoiceRepo.Object,
+            paymentMethodRepo.Object,
+            accessRepo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchAId)
         );
@@ -427,9 +447,25 @@ public sealed class CashSessionBranchScopeTests
                 r.GetPagedAsync(TenantId, BranchBId, null, 1, 25, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((new List<CashSession> { CreateOpenSession(BranchBId) }, 1));
+        var invoiceRepo = new Mock<ISalesInvoiceRepository>();
+        invoiceRepo
+            .Setup(r => r.GetCollectionSummaryByCashSessionsAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<SalesInvoiceCashSessionPaymentRow>());
+        var paymentMethodRepo = new Mock<IPaymentMethodRepository>();
+        paymentMethodRepo
+            .Setup(r => r.ListAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PaymentMethod>());
+        var accessRepo = new Mock<IAccessRepository>();
+        accessRepo
+            .Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<IdentityUser>());
 
         var handler = new GetCashSessionListHandler(
             repo.Object,
+            invoiceRepo.Object,
+            paymentMethodRepo.Object,
+            accessRepo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchBId)
         );
