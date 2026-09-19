@@ -26,6 +26,7 @@ import { useCajaPage } from "./useCajaPage";
 import { message } from "../../../lib/messages";
 import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
 import type { OperationalPreferencesDto } from "../../configuracion/operaciones/api/operationalPreferencesService";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 vi.mock("../api/cajaService", () => ({
   cajaService: {
@@ -46,6 +47,21 @@ vi.mock("../../configuracion/operaciones/api/operationalPreferencesService", () 
     getPreferences: vi.fn(),
   },
 }));
+
+vi.mock("../../../access/usePermissionsUi", () => ({
+  usePermissionsUi: vi.fn(),
+}));
+
+/** TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06 — por defecto el usuario de prueba tiene todos
+ * los permisos ("caja.record" incluido); los tests que necesiten simular su ausencia llaman a
+ * `grantPermissions([...])` con una lista explícita. */
+function grantPermissions(granted: string[] | "all" = "all") {
+  vi.mocked(usePermissionsUi).mockReturnValue({
+    canShow: (key: string) => granted === "all" || granted.includes(key),
+    has: () => true,
+    isAdminRole: false,
+  } as unknown as ReturnType<typeof usePermissionsUi>);
+}
 
 vi.mock("../../../lib/messages", () => ({
   message: {
@@ -261,6 +277,7 @@ beforeEach(() => {
   vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
     buildOperationalPreferences(true),
   );
+  grantPermissions("all");
 });
 
 afterEach(() => {
@@ -750,13 +767,18 @@ describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MO
 });
 
 describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-COMPANY-SETTING-05A: fail-closed en frontend)", () => {
-  it("true (ya resuelto): expone allowManualMovements=true y permite abrir el modal", async () => {
+  it("true (ya resuelto) + turno abierto + permiso: expone allowManualMovements=true y permite abrir el modal", async () => {
     vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
       buildOperationalPreferences(true),
     );
+    const session = buildSession();
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
     const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
 
     await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
     act(() => result.current.openMovementModal());
     expect(result.current.movementModalOpen).toBe(true);
   });
@@ -897,6 +919,190 @@ describe("useCajaPage — AllowManualInOutMovements por empresa (TREASURY-CASH-C
 
     await waitFor(() => expect(result.current.allowManualMovements).toBe(false));
     expect(operationalPreferencesService.getPreferences).toHaveBeenCalledTimes(2);
+  });
+
+  it("botón oculto si el turno está cerrado, aunque la empresa lo permita", async () => {
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(true),
+    );
+    const closedSession = buildSession({
+      status: "Closed",
+      closedAt: "2026-07-19T18:00:00Z",
+      closedBy: "user-1",
+    });
+    vi.mocked(cajaService.getMy).mockResolvedValue(null);
+    vi.mocked(cajaService.getById).mockResolvedValue(closedSession);
+    vi.mocked(cajaService.list).mockResolvedValue({
+      items: [
+        {
+          id: closedSession.id,
+          userId: closedSession.userId,
+          userName: "Ana Perez",
+          cashRegisterId: closedSession.cashRegisterId,
+          cashRegisterCodeSnapshot: closedSession.cashRegisterCodeSnapshot,
+          cashRegisterNameSnapshot: closedSession.cashRegisterNameSnapshot,
+          emissionPointId: closedSession.emissionPointId,
+          emissionPointCodeSnapshot: closedSession.emissionPointCodeSnapshot,
+          openedAt: closedSession.openedAt,
+          openingAmount: closedSession.openingAmount,
+          status: closedSession.status,
+          currentBalance: closedSession.currentBalance,
+          expectedCash: closedSession.currentBalance,
+          countedAmount: closedSession.currentBalance,
+          movementCount: 0,
+          closedAt: closedSession.closedAt,
+          closedBy: closedSession.closedBy,
+          closedByName: "Ana Perez",
+          difference: 0,
+          invoiceCount: 0,
+          totalInvoiced: 0,
+          saleIncomeCash: 0,
+          manualIncomeCash: 0,
+          manualExpenseCash: 0,
+          byPaymentMethod: [],
+          createdAt: closedSession.createdAt,
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
+
+    render(
+      <I18nProvider>
+        <CajaPage />
+      </I18nProvider>,
+    );
+    const viewButton = await screen.findByRole("button", { name: /Ver detalle de sesión/ });
+    fireEvent.click(viewButton);
+    await screen.findByText("Sesión de Caja");
+
+    expect(screen.queryByText("Registrar movimiento")).toBeNull();
+    // Tampoco "Cerrar Caja" — el turno ya está cerrado, no hay acciones de turno abierto.
+    expect(screen.queryByText("Cerrar Caja")).toBeNull();
+  });
+});
+
+describe("useCajaPage — permiso caja.record (TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06)", () => {
+  it("empresa permite + usuario CON caja.record: expone canRecordManualMovements=true y permite abrir el modal", async () => {
+    grantPermissions(["caja.record"]);
+    const session = buildSession();
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
+    expect(result.current.canRecordManualMovements).toBe(true);
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
+    act(() => result.current.openMovementModal());
+    expect(result.current.movementModalOpen).toBe(true);
+  });
+
+  it("empresa permite + usuario SIN caja.record: expone canRecordManualMovements=false y openMovementModal no abre el modal", async () => {
+    grantPermissions([]); // ningún permiso, ni siquiera caja.view
+    const session = buildSession();
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(true));
+    expect(result.current.canRecordManualMovements).toBe(false);
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
+    act(() => result.current.openMovementModal());
+    expect(result.current.movementModalOpen).toBe(false);
+  });
+
+  it("empresa NO permite + usuario CON caja.record: sigue oculto — ambas condiciones deben cumplirse", async () => {
+    grantPermissions(["caja.record"]);
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(false),
+    );
+    const session = buildSession();
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.allowManualMovements).toBe(false));
+    expect(result.current.canRecordManualMovements).toBe(true);
+    await act(async () => {
+      await result.current.loadDetail(session.id);
+    });
+    act(() => result.current.openMovementModal());
+    expect(result.current.movementModalOpen).toBe(false);
+  });
+
+  it("botón + Registrar movimiento oculto en el detalle si el usuario no tiene caja.record, aunque la empresa lo permita", async () => {
+    grantPermissions([]);
+    vi.mocked(operationalPreferencesService.getPreferences).mockResolvedValue(
+      buildOperationalPreferences(true),
+    );
+    const session = buildSession();
+    const listItem = {
+      id: session.id,
+      userId: session.userId,
+      userName: "Ana Perez",
+      cashRegisterId: session.cashRegisterId,
+      cashRegisterCodeSnapshot: session.cashRegisterCodeSnapshot,
+      cashRegisterNameSnapshot: session.cashRegisterNameSnapshot,
+      emissionPointId: session.emissionPointId,
+      emissionPointCodeSnapshot: session.emissionPointCodeSnapshot,
+      openedAt: session.openedAt,
+      openingAmount: session.openingAmount,
+      status: session.status,
+      currentBalance: session.currentBalance,
+      expectedCash: session.currentBalance,
+      countedAmount: null,
+      movementCount: 0,
+      closedAt: null,
+      closedBy: null,
+      closedByName: null,
+      difference: null,
+      invoiceCount: 0,
+      totalInvoiced: 0,
+      saleIncomeCash: 0,
+      manualIncomeCash: 0,
+      manualExpenseCash: 0,
+      byPaymentMethod: [],
+      createdAt: session.createdAt,
+    };
+    vi.mocked(cajaService.getMy).mockResolvedValue(session);
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    vi.mocked(cajaService.list).mockResolvedValue({
+      items: [listItem],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
+
+    render(
+      <I18nProvider>
+        <CajaPage />
+      </I18nProvider>,
+    );
+    const viewButton = await screen.findByRole("button", { name: /Ver detalle de sesión/ });
+    fireEvent.click(viewButton);
+    await screen.findByText("Sesión de Caja");
+
+    await waitFor(() => expect(screen.queryByText("Registrar movimiento")).toBeNull());
+    // "Cerrar Caja" no depende de caja.record — sigue visible.
+    expect(screen.getByText("Cerrar Caja")).toBeTruthy();
+  });
+
+  it("cambiar de usuario/contexto (permisos) actualiza la disponibilidad sin recargar la página", async () => {
+    grantPermissions(["caja.record"]);
+    const session = buildSession();
+    vi.mocked(cajaService.getById).mockResolvedValue(session);
+    const { result, rerender } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+
+    await waitFor(() => expect(result.current.canRecordManualMovements).toBe(true));
+
+    // Simula un cambio de usuario/rol activo (ej. impersonar, cambiar de perfil) que cambia el
+    // conjunto de permisos que devuelve usePermissionsUi — sin recargar el hook desde cero.
+    grantPermissions([]);
+    rerender();
+
+    expect(result.current.canRecordManualMovements).toBe(false);
   });
 });
 

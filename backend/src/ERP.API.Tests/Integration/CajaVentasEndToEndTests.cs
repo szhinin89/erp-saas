@@ -2,6 +2,10 @@ using ERP.API.Tests.Support;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Configuration.Constants;
+using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Configuration.Enums;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.MasterData.Constants;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
@@ -351,6 +355,104 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         Client.DefaultRequestHeaders.Add("X-Branch-Id", branchId.ToString());
     }
 
+    /// <summary>
+    /// TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06 — variante con rol/perfil granular (mismo
+    /// patrón que InventoryAdjustmentsFlowFixture.CreateUserWithBranchAccessAsync(role, profileId)):
+    /// si <paramref name="profileId"/> es null, el rol pasado gobierna (Admin bypasea todo perm:
+    /// check); si se especifica, la membresía queda ligada a ese AccessProfile (permisos granulares).
+    /// </summary>
+    public async Task<Guid> CreateUserWithBranchAccessAsync(
+        string role,
+        Guid? profileId,
+        params Guid[] branchIds
+    )
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var user = IdentityUser.Create(
+            $"user-{Guid.NewGuid():N}",
+            "Usuario",
+            "E2E",
+            $"user-{Guid.NewGuid():N}@example.com",
+            "hash",
+            _adminId
+        );
+        db.IdentityUsers.Add(user);
+        await db.SaveChangesAsync();
+
+        var membership = CompanyUserMembership.Create(CompanyId, user.Id, role, profileId, _adminId);
+        db.CompanyUserMemberships.Add(membership);
+        await db.SaveChangesAsync();
+
+        foreach (var branchId in branchIds)
+            db.CompanyUserBranches.Add(
+                CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, branchId, _adminId)
+            );
+        await db.SaveChangesAsync();
+
+        return user.Id;
+    }
+
+    /// <summary>Crea un AccessProfile con exactamente los permisos indicados (IsAllowed=true) — mismo patrón que InventoryAdjustmentsFlowFixture.</summary>
+    public async Task<Guid> CreateProfileWithPermissionsAsync(string name, params string[] permissionKeys)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var profile = AccessProfile.Create(TenantId, name, null, _adminId);
+        db.AccessProfiles.Add(profile);
+        await db.SaveChangesAsync();
+
+        foreach (var key in permissionKeys)
+            db.AccessProfilePermissions.Add(
+                AccessProfilePermission.Create(TenantId, profile.Id, key, true, _adminId)
+            );
+        await db.SaveChangesAsync();
+
+        return profile.Id;
+    }
+
+    /// <summary>
+    /// Cliente HTTP dedicado a un usuario/rol distinto del admin del fixture — mismo mecanismo que
+    /// InventoryAdjustmentsFlowFixture.CreateClientForUser (nuevo HttpClient con su propio JWT +
+    /// header de sucursal, y actualiza el ICurrentUser mutable compartido).
+    /// </summary>
+    public HttpClient CreateClientForUser(Guid userId, string role, Guid branchId)
+    {
+        _baseFactory.MutableUser.UserId = userId;
+        var client = Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(TenantId, userId, role: role)
+        );
+        client.DefaultRequestHeaders.Add("X-Branch-Id", branchId.ToString());
+        return client;
+    }
+
+    /// <summary>Crea/aplica un OrgSetting Company-scope real (mismo mecanismo que usa UpdateOperationalPreferencesCommandHandler) — no un mock.</summary>
+    public async Task SetOrgSettingAsync(string key, string value, SettingDataType dataType)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        db.Set<OrgSetting>()
+            .Add(OrgSetting.Create(TenantId, CompanyId, OrgScope.Company, CompanyId, key, value, dataType, _adminId));
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Motivo de movimiento manual válido (ManualIncome) para esta empresa — catálogo real, sin mocks.</summary>
+    public async Task<Guid> CreateManualIncomeReasonAsync(string code)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var reason = CashMovementReason.Create(
+            TenantId, CompanyId, code, "Motivo E2E", CashMovementType.ManualIncome, 1, _adminId
+        );
+        db.Set<CashMovementReason>().Add(reason);
+        await db.SaveChangesAsync();
+        return reason.Id;
+    }
+
     public IServiceScope CreateDbScope() => Factory.Services.CreateScope();
 }
 
@@ -647,6 +749,123 @@ public sealed class CajaVentasEndToEndTests : IClassFixture<CajaVentasFlowFixtur
 
         invoice.CashSessionId.Should().Be(session.Id).And.NotBe(bogusCashSessionId);
         invoice.EmissionPointId.Should().Be(_f.EmissionPointId).And.NotBe(bogusEmissionPointId);
+    }
+
+    /// <summary>
+    /// TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06 — verifica el pipeline REAL de autorización
+    /// granular para "caja.record" (no el bypass de Admin, ya cubierto implícitamente por los
+    /// demás escenarios), y su independencia respecto de la configuración de empresa
+    /// AllowManualInOutMovements (TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05): ambas reglas
+    /// deben cumplirse — ninguna sustituye a la otra. Ejercita
+    /// RuntimePermissionAuthorizer/PermissionHandler/EffectivePermissionKeysProvider reales contra
+    /// PostgreSQL, mismo mecanismo que Escenario7c en InventoryAdjustmentsEndToEndTests — no
+    /// introduce infraestructura de test nueva.
+    /// </summary>
+    [Fact]
+    public async Task Registrar_movimiento_manual_exige_permiso_caja_record_y_configuracion_de_empresa()
+    {
+        // ── Turno abierto por un usuario con acceso total (Admin) — precondición común a todos
+        // los sub-escenarios; lo que se prueba es la autorización de registrar el movimiento, no
+        // la apertura del turno. ──
+        var adminUserId = await _f.CreateUserWithBranchAccessAsync(_f.BranchAId);
+        _f.SetActiveContext(adminUserId, _f.BranchAId);
+        var openResponse = await _f.Client.PostAsJsonAsync(
+            "/api/v1/cash-sessions/open",
+            new { cashRegisterId = _f.CashRegisterA1Id, openingAmount = 100m, notes = (string?)null }
+        );
+        openResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var session = (
+            await openResponse.Content.ReadFromJsonAsync<Envelope<CashSessionResponseDto>>(JsonOptions)
+        )!.Data!;
+        var reasonId = await _f.CreateManualIncomeReasonAsync("PERM06-INGRESO");
+
+        object MovementBody() =>
+            new
+            {
+                movementType = "ManualIncome",
+                reasonId,
+                amount = 15m,
+                description = "Ingreso E2E permiso granular",
+            };
+
+        // ── 1) Empresa permite (default true) + usuario SIN caja.record → 403 ──────────────
+        var noRecordProfileId = await _f.CreateProfileWithPermissionsAsync(
+            "Solo Vista Caja",
+            CajaPermissions.View
+        );
+        var noRecordUserId = await _f.CreateUserWithBranchAccessAsync(
+            "Operador",
+            noRecordProfileId,
+            _f.BranchAId
+        );
+        var noRecordClient = _f.CreateClientForUser(noRecordUserId, "Operador", _f.BranchAId);
+
+        var forbiddenResponse = await noRecordClient.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/movements",
+            MovementBody()
+        );
+        forbiddenResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        // La lectura (view) sí debe funcionar para este usuario — el gate es específico de Record.
+        var getAsViewOnly = await noRecordClient.GetAsync($"/api/v1/cash-sessions/{session.Id}");
+        getAsViewOnly.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // ── 2) Empresa permite (default true) + usuario CON caja.record → éxito ────────────
+        var recordProfileId = await _f.CreateProfileWithPermissionsAsync(
+            "Vista y Registro de Movimientos",
+            CajaPermissions.View,
+            CajaPermissions.Record
+        );
+        var recordUserId = await _f.CreateUserWithBranchAccessAsync(
+            "Operador",
+            recordProfileId,
+            _f.BranchAId
+        );
+        var recordClient = _f.CreateClientForUser(recordUserId, "Operador", _f.BranchAId);
+
+        var allowedResponse = await recordClient.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/movements",
+            MovementBody()
+        );
+        allowedResponse
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Created, await allowedResponse.Content.ReadAsStringAsync());
+
+        // ── 3) Empresa deshabilita AllowManualInOutMovements + mismo usuario CON caja.record
+        // → rechazado por configuración (422, NO 403) — el permiso por sí solo no basta. ──────
+        await _f.SetOrgSettingAsync(
+            OrgSettingKeys.Cash.AllowManualInOutMovements,
+            "false",
+            SettingDataType.Bool
+        );
+
+        var rejectedByConfigResponse = await recordClient.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/movements",
+            MovementBody()
+        );
+        rejectedByConfigResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        // Restaura el contexto de usuario mutable compartido al admin del fixture y cierra el
+        // turno que abrió este test — CashRegisterA1Id es compartido por otros Facts de esta
+        // clase (IClassFixture: mismo Postgres para todos), y "una caja abierta por registradora"
+        // es un invariante real que bloquearía a los demás si esta sesión quedara abierta.
+        _f.SetActiveContext(adminUserId, _f.BranchAId);
+        var closeResponse = await _f.Client.PostAsJsonAsync(
+            $"/api/v1/cash-sessions/{session.Id}/close",
+            new
+            {
+                closingCounts = new[]
+                {
+                    new { denominationValue = 100m, denominationLabel = "$100", quantity = 1 },
+                    new { denominationValue = 10m, denominationLabel = "$10", quantity = 1 },
+                    new { denominationValue = 5m, denominationLabel = "$5", quantity = 1 },
+                },
+                closeNotes = (string?)null,
+            }
+        );
+        closeResponse
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK, await closeResponse.Content.ReadAsStringAsync());
     }
 }
 

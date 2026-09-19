@@ -523,11 +523,13 @@ export function CajaPage() {
               <div className="cj-detail-header-spacer" />
               {ctx.viewing.status === "Open" && (
                 <>
-                  {/* TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — el botón (y por lo
-                      tanto el modal, más abajo) solo existen si la empresa activa tiene
-                      habilitados los movimientos manuales; el catálogo de motivos, el modal y el
+                  {/* TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 / -PERMISSION-06 — el
+                      botón (y por lo tanto el modal, más abajo) solo existen si se cumplen las
+                      tres condiciones: la empresa activa permite movimientos manuales, el usuario
+                      tiene el permiso `caja.record`, y el turno está abierto (ya cubierto por la
+                      condición externa de este bloque). El catálogo de motivos, el modal y el
                       endpoint son exactamente los mismos, solo cambia si se muestran. */}
-                  {ctx.allowManualMovements && (
+                  {ctx.allowManualMovements && ctx.canRecordManualMovements && (
                     <ZHBtn variant="secondary" onClick={ctx.openMovementModal}>
                       <span className="material-symbols-outlined zh-icon-md">
                         add
@@ -707,10 +709,13 @@ export function CajaPage() {
                 reasons/movementTypes de siempre (useCajaPage), solo cambia de formulario inline
                 permanente a modal; solo alcanzable con turno abierto (botón "Registrar
                 movimiento" arriba).
-                TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 — nunca se renderiza el modal si
-                la empresa tiene deshabilitados los movimientos manuales, aunque `movementModalOpen`
+                TREASURY-CASH-MANUAL-MOVEMENTS-COMPANY-SETTING-05 / -PERMISSION-06 — nunca se
+                renderiza el modal si falta cualquiera de las tres condiciones (empresa lo
+                permite, usuario tiene `caja.record`, turno abierto), aunque `movementModalOpen`
                 quedara en true por algún motivo (ver guard en openMovementModal). */}
-            {ctx.viewing.status === "Open" && ctx.allowManualMovements && (
+            {ctx.viewing.status === "Open" &&
+              ctx.allowManualMovements &&
+              ctx.canRecordManualMovements && (
               <ZHModal
                 closeLabel={t("common.close")}
                 open={ctx.movementModalOpen}

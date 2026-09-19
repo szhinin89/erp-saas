@@ -50,7 +50,11 @@ describe("cash locale integrity", () => {
   it("resolves every literal cash translation key in all three locales with matching interpolation", () => {
     for (const file of ["pages/CajaPage.tsx", "hooks/useCajaPage.tsx", "schemas/cajaSchema.ts", "constants/cashMovementTypes.ts"]) {
       const source = readFileSync(resolve(`src/modules/caja/${file}`), "utf8");
-      for (const match of source.matchAll(/"((?:caja|common)\.[\w.]+)"/g)) {
+      // canShow(...) toma keys de PERMISOS (p. ej. "caja.record"), un namespace plano y distinto
+      // del de i18n (siempre anidado, "caja.<grupo>.<campo>") — se excluyen de este chequeo de
+      // traducciones porque nunca deben existir como key de diccionario.
+      for (const match of source.matchAll(/canShow\(\s*"[^"]+"\s*\)|"((?:caja|common)\.[\w.]+)"/g)) {
+        if (match[1] === undefined) continue;
         const key = match[1];
         const params = (text: string) => [...text.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]).sort();
         for (const locale of ["es", "en", "qu"] as const) {

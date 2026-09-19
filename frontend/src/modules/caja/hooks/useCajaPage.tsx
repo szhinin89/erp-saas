@@ -12,6 +12,7 @@ import type {
 import { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
 import { operationalPreferencesService } from "../../configuracion/operaciones/api/operationalPreferencesService";
 import { useI18n } from "../../../i18n/i18n";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
   openCashSessionSchema,
   emptyOpenForm,
@@ -34,6 +35,12 @@ type Tab = "listado" | "abrir" | "detalle" | "cerrar";
 
 export function useCajaPage() {
   const { t } = useI18n();
+  const { canShow } = usePermissionsUi();
+  // TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06 — `caja.record` ya existía y ya está enforced
+  // fail-closed en el backend (CashSessionController.RecordMovement, [Authorize(Policy=
+  // "perm:caja.record")]) desde antes de este ticket; solo faltaba que el frontend lo conociera
+  // para no mostrar una acción que el backend igual rechazaría con 403.
+  const canRecordManualMovements = canShow("caja.record");
 
   // ── Page state ─────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("listado");
@@ -221,14 +228,16 @@ export function useCajaPage() {
   const [movementModalOpen, setMovementModalOpen] = useState(false);
 
   const openMovementModal = useCallback(() => {
-    // Defensa en profundidad: aunque el botón que dispara esto ya está oculto cuando la empresa
-    // tiene deshabilitados los movimientos manuales, nunca abrir el modal si por algún motivo se
-    // invoca igual — el backend rechazaría el submit de todas formas (fail-closed real).
-    if (!allowManualMovements) return;
+    // Defensa en profundidad (TREASURY-CASH-MANUAL-MOVEMENTS-PERMISSION-06): aunque el botón que
+    // dispara esto ya está oculto si falta cualquiera de las tres condiciones (empresa lo
+    // permite, usuario tiene `caja.record`, turno abierto), nunca abrir el modal si por algún
+    // motivo se invoca igual — el backend rechazaría el submit de todas formas (fail-closed real,
+    // 403 sin permiso o 422 por configuración de empresa).
+    if (!allowManualMovements || !canRecordManualMovements || viewing?.status !== "Open") return;
     movementForm.reset(emptyMovementForm());
     setSaveError("");
     setMovementModalOpen(true);
-  }, [allowManualMovements]);
+  }, [allowManualMovements, canRecordManualMovements, viewing]);
 
   const closeMovementModal = useCallback(() => {
     if (saving) return;
@@ -465,6 +474,7 @@ export function useCajaPage() {
     branchName,
     selectedRegister,
     allowManualMovements,
+    canRecordManualMovements,
     openForm,
     handleOpen,
     movementForm,
