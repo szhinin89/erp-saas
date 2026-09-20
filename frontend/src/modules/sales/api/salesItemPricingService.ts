@@ -20,6 +20,12 @@ export interface SalesItemPricingDto {
 }
 
 export const salesItemPricingService = {
-  get: (itemId: string) =>
-    apiGet<SalesItemPricingDto>(`${BASE}/items/${itemId}/pricing`),
+  /** SALES-CONTEXTUAL-PRICING-READ-06A: customerId es el cliente actualmente seleccionado en la
+   * venta (o undefined si aún no hay uno) — Sales solo lo informa, nunca decide qué lista de
+   * precios corresponde; eso lo resuelve IPricingResolver en el backend (Customer →
+   * CompanyDefault → PVP). */
+  get: (itemId: string, customerId?: string) =>
+    apiGet<SalesItemPricingDto>(`${BASE}/items/${itemId}/pricing`, {
+      params: customerId ? { customerId } : undefined,
+    }),
 };

@@ -59,6 +59,14 @@ public sealed class CreateSalesDraftHandlerTests
 
         public Fixture()
         {
+            // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
+            // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
+            // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
+            Pricing
+                .Setup(p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>()
+                ));
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
@@ -717,9 +725,9 @@ public sealed class CreateSalesDraftHandlerTests
         f.ItemRepo
             .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.Pricing
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PricingResult>.Failure("Sin precio configurado."));
+        // SALES-CONTEXTUAL-PRICING-DRAFT-06B: sin setup explícito de ResolveManyAsync — usa el
+        // default de la Fixture (diccionario vacío = "sin pricing resuelto"), equivalente al
+        // Failure de antes; este test no evalúa el snapshot de pricing, solo la presentación.
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
         f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
         f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
@@ -761,9 +769,8 @@ public sealed class CreateSalesDraftHandlerTests
         f.ItemRepo
             .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        f.Pricing
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PricingResult>.Failure("Sin precio configurado."));
+        // SALES-CONTEXTUAL-PRICING-DRAFT-06B: sin setup explícito de ResolveManyAsync — usa el
+        // default de la Fixture (diccionario vacío = "sin pricing resuelto").
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
         f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
         f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
@@ -1062,21 +1069,29 @@ public sealed class CreateSalesDraftHandlerTests
             .ReturnsAsync(warehouse);
 
         var priceListId = Guid.NewGuid();
+        // SALES-CONTEXTUAL-PRICING-DRAFT-06B: ResolveManyAsync en batch, no ResolveAsync por
+        // ítem — mismo PricingResult que antes, ahora envuelto en el diccionario por ItemId.
         f.Pricing
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .Setup(p => p.ResolveManyAsync(
+                It.Is<PricingBatchContext>(c => c.ItemIds.Contains(item.Id)),
+                It.IsAny<CancellationToken>()
+            ))
             .ReturnsAsync(
-                Result<PricingResult>.Success(
-                    new PricingResult(
-                        item.Id,
-                        priceListId,
-                        "MAYORISTA",
-                        "Lista Mayorista",
-                        "USD",
-                        BasePrice: 100m,
-                        RuleApplied: "PercentDiscount:5 (lista)",
-                        UnitPrice: 95m,
-                        RuleDescription: "Descuento 5% (regla general)"
-                    )
+                Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>
+                    {
+                        [item.Id] = new PricingResult(
+                            item.Id,
+                            priceListId,
+                            "MAYORISTA",
+                            "Lista Mayorista",
+                            "USD",
+                            BasePrice: 100m,
+                            RuleApplied: "PercentDiscount:5 (lista)",
+                            UnitPrice: 95m,
+                            RuleDescription: "Descuento 5% (regla general)"
+                        ),
+                    }
                 )
             );
 
@@ -1192,21 +1207,29 @@ public sealed class CreateSalesDraftHandlerTests
             .Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
 
+        // SALES-CONTEXTUAL-PRICING-DRAFT-06B: ResolveManyAsync en batch, no ResolveAsync por
+        // ítem — mismo PricingResult que antes, ahora envuelto en el diccionario por ItemId.
         f.Pricing
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .Setup(p => p.ResolveManyAsync(
+                It.Is<PricingBatchContext>(c => c.ItemIds.Contains(item.Id)),
+                It.IsAny<CancellationToken>()
+            ))
             .ReturnsAsync(
-                Result<PricingResult>.Success(
-                    new PricingResult(
-                        item.Id,
-                        Guid.NewGuid(),
-                        "MAYORISTA",
-                        "Lista Mayorista",
-                        "USD",
-                        BasePrice: 2.00m,
-                        RuleApplied: "PercentDiscount:5 (lista)",
-                        UnitPrice: 2.00m,
-                        RuleDescription: "Descuento 5% (regla general)"
-                    )
+                Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>
+                    {
+                        [item.Id] = new PricingResult(
+                            item.Id,
+                            Guid.NewGuid(),
+                            "MAYORISTA",
+                            "Lista Mayorista",
+                            "USD",
+                            BasePrice: 2.00m,
+                            RuleApplied: "PercentDiscount:5 (lista)",
+                            UnitPrice: 2.00m,
+                            RuleDescription: "Descuento 5% (regla general)"
+                        ),
+                    }
                 )
             );
 
@@ -1382,5 +1405,336 @@ public sealed class CreateSalesDraftHandlerTests
             .BeNull(
                 "la sesión de caja se resuelve desde ICurrentCashSession, nunca desde el cliente"
             );
+    }
+
+    // ── SALES-CONTEXTUAL-PRICING-DRAFT-06B ──────────────────────────────────────────────────
+    // Create y Update comparten SalesLineBuilder.BuildAsync, así que estos escenarios validan
+    // que el snapshot comercial de la línea (PriceListId/PriceListName/ListPriceAtSale/
+    // PricingSource/DiscountSource/DiscountDescription) sale exclusivamente del PricingResult
+    // contextual (PricingContext/PricingBatchContext con CustomerId), nunca de una lista
+    // resuelta dentro de Sales. Nota: CustomerId es un Guid no-nullable tanto en
+    // CreateSalesDraftCommand como en UpdateSalesDraftCommand — el escenario "CustomerId null
+    // si el dominio lo permite" no aplica estructuralmente en Sales y no se fuerza con un test.
+
+    private Item CreateContextualItem(string sku = "SKU-CTX") =>
+        Item.Create(
+            TenantId,
+            sku,
+            "Item contextual",
+            "Item contextual",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(maxDiscountPercent: 20m),
+            ItemStockConfig.Create(tracksStock: false),
+            UserId
+        );
+
+    private static CreateSalesDraftCommand CommandFor(Item item, decimal unitPrice) =>
+        new(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(item.Id, "Item contextual", 1, unitPrice, "10") }
+        );
+
+    private static void SetupOpenCash(Fixture f)
+    {
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+    }
+
+    private static void SetupPricing(Fixture f, Item item, PricingResult pricing) =>
+        f.Pricing
+            .Setup(p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c =>
+                        c.ItemIds.Contains(item.Id) && c.CustomerId == CustomerId
+                    ),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult> { [item.Id] = pricing }
+                )
+            );
+
+    [Fact]
+    public async Task Escenario1_cliente_MAYORISTA_con_item_asignado_congela_snapshot_MAYORISTA()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var priceListId = Guid.NewGuid();
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                priceListId,
+                "MAYORISTA",
+                "Lista Mayorista",
+                "USD",
+                BasePrice: 100m,
+                RuleApplied: "PriceListItem (lista)",
+                UnitPrice: 90m,
+                RuleDescription: "Precio de lista MAYORISTA"
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 90m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.PriceListId.Should().Be(priceListId);
+        line.PriceListName.Should().Be("Lista Mayorista");
+        line.ListPriceAtSale.Should().Be(100m);
+    }
+
+    [Fact]
+    public async Task Escenario2_item_no_en_lista_del_cliente_pero_si_en_Default_usa_snapshot_Default()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var defaultListId = Guid.NewGuid();
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                defaultListId,
+                "DEFAULT",
+                "Lista General",
+                "USD",
+                BasePrice: 50m,
+                RuleApplied: null,
+                UnitPrice: 50m
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 50m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.PriceListId.Should().Be(defaultListId);
+        line.PriceListName.Should().Be("Lista General");
+    }
+
+    [Fact]
+    public async Task Escenario3_item_en_ninguna_lista_usa_PVP_con_PriceListId_null()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                null,
+                "PVP",
+                "Precio de venta al público",
+                "USD",
+                BasePrice: 30m,
+                RuleApplied: null,
+                UnitPrice: 30m
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 30m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.PriceListId.Should().BeNull();
+        line.PriceListName.Should().Be("Precio de venta al público");
+    }
+
+    [Fact]
+    public async Task Escenario4_excepcion_de_cliente_en_la_lista_congela_snapshot_de_la_excepcion()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var priceListId = Guid.NewGuid();
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                priceListId,
+                "MAYORISTA",
+                "Lista Mayorista",
+                "USD",
+                BasePrice: 100m,
+                RuleApplied: "PriceListItemException (excepción cliente)",
+                UnitPrice: 70m,
+                RuleDescription: "Precio de excepción para este cliente"
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 70m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = captured!.Lines.Single();
+        line.DiscountDescription.Should().Be("Precio de excepción para este cliente");
+        line.ListPriceAtSale.Should().Be(100m);
+    }
+
+    [Fact]
+    public async Task Escenario5_cliente_sin_lista_asignada_usa_Default()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var defaultListId = Guid.NewGuid();
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                defaultListId,
+                "DEFAULT",
+                "Lista General",
+                "USD",
+                BasePrice: 40m,
+                RuleApplied: null,
+                UnitPrice: 40m
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 40m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Lines.Single().PriceListId.Should().Be(defaultListId);
+    }
+
+    [Fact]
+    public async Task Escenario9a_precio_manual_dentro_del_descuento_maximo_se_conserva_sin_sobrescribir()
+    {
+        // El UnitPrice enviado por el frontend (manual, 85 — 15% de descuento sobre 100, dentro
+        // del MaxDiscountPercent=20 configurado en CreateContextualItem) debe persistir tal cual,
+        // aunque el PricingResult contextual devuelva un UnitPrice distinto (95).
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                Guid.NewGuid(),
+                "MAYORISTA",
+                "Lista Mayorista",
+                "USD",
+                BasePrice: 100m,
+                RuleApplied: "PercentDiscount:5 (lista)",
+                UnitPrice: 95m
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 85m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Lines.Single().UnitPrice.Should().Be(85m);
+    }
+
+    [Fact]
+    public async Task Escenario9b_precio_manual_que_excede_el_descuento_maximo_es_rechazado()
+    {
+        // Referencia contextual = 95 (UnitPrice del PricingResult). MaxDiscountPercent=20 =>
+        // mínimo permitido = 95 * 0.80 = 76. Un UnitPrice manual de 50 debe seguir rechazándose,
+        // igual que antes de 06B — solo cambió DE DÓNDE sale la referencia (contextual en vez de
+        // la resolución sin cliente), no la regla de validación en sí.
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id,
+                Guid.NewGuid(),
+                "MAYORISTA",
+                "Lista Mayorista",
+                "USD",
+                BasePrice: 100m,
+                RuleApplied: "PercentDiscount:5 (lista)",
+                UnitPrice: 95m
+            )
+        );
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 50m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("descuento máximo");
+        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Escenario10_pasa_CustomerId_del_comando_al_PricingBatchContext_fail_closed()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(item.Id, null, "PVP", "PVP", "USD", 10m, null, 10m)
+        );
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 10m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.Pricing.Verify(
+            p => p.ResolveManyAsync(
+                It.Is<PricingBatchContext>(c => c.CustomerId == CustomerId),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
     }
 }

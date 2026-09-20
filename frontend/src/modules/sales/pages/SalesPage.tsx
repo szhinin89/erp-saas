@@ -424,6 +424,7 @@ export function SalesPage() {
               onWarehouseChange={ctx.handleWarehouseChange}
               vatRates={ctx.vatRatesMap}
               focusSignal={ctx.productSearchFocusKey}
+              customerId={ctx.formWatch.customerId || undefined}
             />
           </div>
 

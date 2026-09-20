@@ -63,6 +63,14 @@ public sealed class SalesDraftSpecialTaxTests
 
         public Fixture()
         {
+            // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
+            // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
+            // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
+            Pricing
+                .Setup(p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>()
+                ));
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(

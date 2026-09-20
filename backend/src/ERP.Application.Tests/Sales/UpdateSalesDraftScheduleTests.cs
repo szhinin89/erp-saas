@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
+using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Configuration.Interfaces;
@@ -8,7 +9,9 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -55,6 +58,14 @@ public sealed class UpdateSalesDraftScheduleTests
 
         public Fixture()
         {
+            // SALES-CONTEXTUAL-PRICING-DRAFT-06B: default "sin pricing resuelto" (diccionario
+            // vacío) para los tests de esta suite que no le importa el pricing contextual — evita
+            // depender del comportamiento de Moq para mocks sin configurar en un método nuevo.
+            Pricing
+                .Setup(p => p.ResolveManyAsync(It.IsAny<PricingBatchContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>()
+                ));
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<PaymentTerm>.Success(DefaultPt));
@@ -588,5 +599,120 @@ public sealed class UpdateSalesDraftScheduleTests
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.PaymentSchedules.Sum(s => s.Amount).Should().Be(55m);
         inv.PaymentSchedules.Sum(s => s.Amount).Should().NotBe(inv.GrandTotal);
+    }
+
+    // ── SALES-CONTEXTUAL-PRICING-DRAFT-06B ──────────────────────────────────────────────────
+    // Update comparte SalesLineBuilder.BuildAsync con Create: mismo comportamiento de pricing
+    // contextual. Este escenario cubre el caso propio de Update que Create no puede ejercer:
+    // el CustomerId cambia entre el estado existente del Draft y el comando de actualización, y
+    // el pricing de las líneas reprocesadas debe resolverse con el CustomerId NUEVO (del
+    // comando), sin recalcular automáticamente el UnitPrice enviado.
+
+    private static Item ContextualItem() =>
+        Item.Create(
+            TenantId,
+            "SKU-CTX-UPD",
+            "Item contextual update",
+            "Item contextual update",
+            Guid.NewGuid(),
+            "UNIT",
+            ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(),
+            ItemStockConfig.Create(tracksStock: false),
+            UserId
+        );
+
+    [Fact]
+    public async Task Escenario7_cambio_de_CustomerId_en_Update_usa_el_CustomerId_nuevo_para_pricing()
+    {
+        var f = new Fixture();
+        var inv = f.ExistingInvoice();
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+
+        var newCustomerId = Guid.NewGuid();
+        var newCustomerBp = BusinessPartner.Create(TenantId, "05", "1710034065", 1, "Cliente Nuevo", UserId);
+        f.BpRepo.Setup(r => r.GetByIdAsync(newCustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(newCustomerBp);
+
+        var item = ContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+
+        var oldCustomerListId = Guid.NewGuid();
+        var newCustomerListId = Guid.NewGuid();
+        f.Pricing
+            .Setup(p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c => c.ItemIds.Contains(item.Id) && c.CustomerId == CustomerId),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>
+                    {
+                        [item.Id] = new PricingResult(
+                            item.Id, oldCustomerListId, "MAYORISTA", "Lista Mayorista", "USD",
+                            BasePrice: 100m, RuleApplied: null, UnitPrice: 90m
+                        ),
+                    }
+                )
+            );
+        f.Pricing
+            .Setup(p =>
+                p.ResolveManyAsync(
+                    It.Is<PricingBatchContext>(c => c.ItemIds.Contains(item.Id) && c.CustomerId == newCustomerId),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
+                    new Dictionary<Guid, PricingResult>
+                    {
+                        [item.Id] = new PricingResult(
+                            item.Id, newCustomerListId, "DEFAULT", "Lista General", "USD",
+                            BasePrice: 80m, RuleApplied: null, UnitPrice: 80m
+                        ),
+                    }
+                )
+            );
+
+        var cmd = new UpdateSalesDraftCommand(
+            inv.Id,
+            newCustomerId,
+            inv.IssueDate,
+            new List<SalesLineInput> { new(item.Id, "Item contextual update", 1, 80m, "10") }
+        );
+
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var line = inv.Lines.Single();
+        line.PriceListId.Should().Be(newCustomerListId);
+        line.PriceListName.Should().Be("Lista General");
+        line.UnitPrice.Should().Be(80m); // UnitPrice del comando, no sobrescrito
+        f.Pricing.Verify(
+            p => p.ResolveManyAsync(
+                It.Is<PricingBatchContext>(c => c.CustomerId == newCustomerId),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+        f.Pricing.Verify(
+            p => p.ResolveManyAsync(
+                It.Is<PricingBatchContext>(c => c.CustomerId == CustomerId),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Escenario8_autorizacion_no_recalcula_snapshots_de_pricing()
+    {
+        // AuthorizeSalesInvoiceHandler no participa en absoluto de SalesLineBuilder — el snapshot
+        // se congela únicamente en Create/Update. Confirmación estructural: el tipo no depende
+        // de IPricingResolver.
+        var authorizeHandlerType = typeof(ERP.Application.Modules.Sales.UseCases.AuthorizeSalesInvoiceHandler);
+        var ctorParams = authorizeHandlerType.GetConstructors().Single().GetParameters();
+        ctorParams.Should().NotContain(p => p.ParameterType == typeof(IPricingResolver));
     }
 }

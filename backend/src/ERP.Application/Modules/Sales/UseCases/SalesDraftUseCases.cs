@@ -385,6 +385,7 @@ public sealed class CreateSalesDraftHandler
             cmd.Lines,
             invoiceId,
             tid,
+            cmd.CustomerId,
             _itemRepo,
             _tax,
             _pricing,
@@ -749,6 +750,7 @@ public sealed class UpdateSalesDraftHandler
                 cmd.Lines,
                 inv.Id,
                 _t.TenantId,
+                cmd.CustomerId,
                 _itemRepo,
                 _tax,
                 _pricing,
@@ -1059,6 +1061,7 @@ file static class SalesLineBuilder
         List<SalesLineInput> inputs,
         Guid invoiceId,
         Guid tid,
+        Guid customerId,
         IItemRepository itemRepo,
         ISriTaxResolver tax,
         IPricingResolver pricingResolver,
@@ -1074,6 +1077,31 @@ file static class SalesLineBuilder
         // de la misma bodega) — solo LEE el catálogo, nunca lo modifica.
         var warehouseNameCache = new Dictionary<Guid, string?>();
         var lines = new List<SalesInvoiceDetail>();
+
+        // SALES-CONTEXTUAL-PRICING-DRAFT-06B: una sola llamada batch al Pricing Engine para
+        // TODOS los ítems del documento (nunca una por línea — evita N+1 cuando el Draft tiene
+        // muchas líneas, incluso repitiendo el mismo ítem con distinta presentación/bodega).
+        // Mismo contexto comercial (CustomerId → Customer/CompanyDefault/PVP) que ya usa la
+        // lectura de Sales (GetSalesItemPricingQuery/SearchItemsForInvoiceQuery) — Sales sigue
+        // sin consultar PriceListCustomer/PriceListItem/PricingRule ni PricingCalculation
+        // directamente, todo eso vive en IPricingResolver.
+        var itemIdsInDraft = inputs
+            .Where(l => l.ItemId.HasValue)
+            .Select(l => l.ItemId!.Value)
+            .Distinct()
+            .ToList();
+        IReadOnlyDictionary<Guid, PricingResult> pricingByItemId =
+            new Dictionary<Guid, PricingResult>();
+        if (itemIdsInDraft.Count > 0)
+        {
+            var pricingBatch = await pricingResolver.ResolveManyAsync(
+                new PricingBatchContext(itemIdsInDraft, customerId),
+                ct
+            );
+            if (pricingBatch.IsSuccess)
+                pricingByItemId = pricingBatch.Value!;
+        }
+
         foreach (var l in inputs)
         {
             // POS-DISCOUNT-RULES-01 (sales.pos.allow_manual_discount / max_discount_percent):
@@ -1200,16 +1228,17 @@ file static class SalesLineBuilder
                         ? irbpnrConfig.TaxCatalogCode
                         : null;
 
-                // Pricing Engine v2 (SSOT del precio de venta) — resuelve el precio vigente
+                // Pricing Engine v2 (SSOT del precio de venta) — ya resuelto en batch arriba
+                // (una sola llamada para todo el Draft, con el mismo PricingContext(itemId,
+                // customerId) que usa la lectura de Sales) — aquí solo se consume el resultado
                 // para validar el piso de descuento configurado en el maestro del ítem. El precio
                 // resuelto es siempre por unidad base — al vender por presentación (ej. caja x12),
                 // el piso de descuento se escala por conversionFactor (SALES-PRESENTATIONS-02);
                 // no se crea una tabla de precios por presentación, ni se toca PricingResolver.
-                var pricingResult = await pricingResolver.ResolveAsync(item.Id, ct: ct);
-                if (pricingResult.IsSuccess)
+                if (pricingByItemId.TryGetValue(item.Id, out var resolvedPricing))
                 {
-                    pricingResultValue = pricingResult.Value;
-                    var resolvedPrice = pricingResult.Value!.UnitPrice * conversionFactor;
+                    pricingResultValue = resolvedPricing;
+                    var resolvedPrice = resolvedPricing.UnitPrice * conversionFactor;
                     var maxDiscountPercent = item.SaleConfig.MaxDiscountPercent;
                     if (maxDiscountPercent.HasValue)
                     {

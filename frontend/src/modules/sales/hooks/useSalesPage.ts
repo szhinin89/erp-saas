@@ -833,9 +833,15 @@ export function useSalesPage() {
 
       // Precio dinámico: SSOT es el Pricing Engine v2 (PricingResolver), resuelto
       // puntualmente al seleccionar el ítem — no se usa el precio base del buscador.
+      // SALES-CONTEXTUAL-PRICING-READ-06A: se informa el cliente actual (o ninguno) — Sales no
+      // decide qué lista corresponde, solo deja que el backend resuelva Customer → CompanyDefault
+      // → PVP con ese dato.
       let pricing;
       try {
-        pricing = await salesItemPricingService.get(item.id);
+        pricing = await salesItemPricingService.get(
+          item.id,
+          getValues("customerId") || undefined,
+        );
       } catch (err: unknown) {
         message.error(
           extractErrorText(err, "No se pudo obtener el precio del producto."),

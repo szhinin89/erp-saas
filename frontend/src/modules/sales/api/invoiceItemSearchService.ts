@@ -36,10 +36,11 @@ export interface InvoiceItemSearchResultDto {
   /** Si el texto buscado coincidió con el barcode de una presentación específica (no la unidad
    * base), esa presentación debe autoseleccionarse al agregar la línea — ver useSalesPage.ts. */
   matchedPackagingLevelId: string | null;
-  /** SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: presentes solo cuando la lista de precios default
-   * aplica un descuento/recargo sobre este ítem — salePriceWithoutTax/finalSalePrice de arriba
-   * siguen siendo el precio base sin resolver. Null = sin ajuste, el precio final real es el
-   * ya mostrado arriba. */
+  /** SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01 / SALES-CONTEXTUAL-PRICING-READ-06A: presentes
+   * solo cuando IPricingResolver resolvió una lista (cliente o default) que aplica un
+   * descuento/recargo sobre este ítem — salePriceWithoutTax/finalSalePrice de arriba siguen
+   * siendo el precio base sin resolver. Null = sin ajuste, el precio final real es el ya
+   * mostrado arriba. */
   priceListName: string | null;
   discountDescription: string | null;
   discountedSalePriceWithoutTax: number | null;
@@ -47,6 +48,9 @@ export interface InvoiceItemSearchResultDto {
 }
 
 export const invoiceItemSearchService = {
-  search: (params: { q: string; warehouseId?: string; pageSize?: number }) =>
+  /** SALES-CONTEXTUAL-PRICING-READ-06A: customerId es el cliente actualmente seleccionado en la
+   * venta (o undefined si aún no hay uno) — Sales solo lo informa, nunca decide qué lista de
+   * precios corresponde; eso lo resuelve IPricingResolver en el backend. */
+  search: (params: { q: string; warehouseId?: string; pageSize?: number; customerId?: string }) =>
     apiGet<InvoiceItemSearchResultDto[]>(`${BASE}/item-search`, { params }),
 };

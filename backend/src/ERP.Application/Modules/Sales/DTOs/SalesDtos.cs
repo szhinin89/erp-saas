@@ -302,13 +302,14 @@ public sealed record InvoiceItemMatch(
 );
 
 /// <summary>
-/// SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: SalePriceWithoutTax/FinalSalePrice siguen siendo el
-/// precio base sin resolver (ver comentario de InvoiceItemMatch) — DiscountedSalePriceWithoutTax/
-/// DiscountedFinalSalePrice son el mismo precio ya resuelto por la lista de precios default
-/// (PricingCalculation.Resolve, mismo cálculo que usa PricingResolver — no se reimplementa),
-/// solo para que el buscador pueda anticipar "este ítem trae descuento de lista" antes de
-/// seleccionarlo. Null cuando no hay lista de precios default vigente o no aplica ninguna regla
-/// (BasePrice == precio resuelto): en ese caso el precio final real es el ya mostrado arriba.
+/// SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01 / SALES-CONTEXTUAL-PRICING-READ-06A:
+/// SalePriceWithoutTax/FinalSalePrice siguen siendo el precio base sin resolver (ver comentario
+/// de InvoiceItemMatch) — DiscountedSalePriceWithoutTax/DiscountedFinalSalePrice son el mismo
+/// precio ya resuelto por IPricingResolver.ResolveManyAsync (Customer → CompanyDefault → PVP,
+/// nunca recalculado en Sales), solo para que el buscador pueda anticipar "este ítem trae
+/// descuento de lista" antes de seleccionarlo. Null cuando ningún candidato (cliente ni default)
+/// tiene el ítem asignado, o la lista aplicable no trae ningún ajuste (BasePrice == precio
+/// resuelto): en ese caso el precio final real es el ya mostrado arriba.
 /// </summary>
 public sealed record InvoiceItemSearchResultDto(
     Guid Id,

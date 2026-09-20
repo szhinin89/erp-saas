@@ -35,6 +35,11 @@ interface SalesInvoiceDetailsSectionProps {
   vatRates?: Record<string, number>;
   /** Cambia (se incrementa) cada vez que el buscador de productos debe recibir foco — UX retail. */
   focusSignal?: number;
+  /** SALES-CONTEXTUAL-PRICING-READ-06A: cliente actualmente seleccionado en la venta (o
+   * undefined si aún no hay uno) — se reenvía tal cual al buscador de ítems para que el backend
+   * (IPricingResolver) resuelva Customer → CompanyDefault → PVP. Este componente nunca decide
+   * qué lista de precios corresponde. */
+  customerId?: string;
 }
 
 export function SalesInvoiceDetailsSection({
@@ -52,6 +57,7 @@ export function SalesInvoiceDetailsSection({
   onWarehouseChange,
   vatRates,
   focusSignal,
+  customerId,
 }: SalesInvoiceDetailsSectionProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<InvoiceItemSearchResultDto[]>([]);
@@ -105,6 +111,7 @@ export function SalesInvoiceDetailsSection({
           q: query.trim(),
           warehouseId: selectedWarehouseId || undefined,
           pageSize: 10,
+          customerId,
         });
         if (version === searchVersionRef.current) {
           setResults(res);
@@ -117,7 +124,7 @@ export function SalesInvoiceDetailsSection({
       }
     }, 300);
     return () => clearTimeout(debounceRef.current);
-  }, [query, open, selectedWarehouseId]);
+  }, [query, open, selectedWarehouseId, customerId]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -186,6 +193,7 @@ export function SalesInvoiceDetailsSection({
           q: query.trim(),
           warehouseId: selectedWarehouseId || undefined,
           pageSize: 10,
+          customerId,
         });
         if (version !== searchVersionRef.current) return;
         setResults(res);

@@ -1,52 +1,48 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Common;
-using ERP.Domain.Modules.Pricing.Entities;
-using ERP.Domain.Modules.Pricing.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 
-public sealed record SearchItemsForInvoiceQuery(string Query, Guid? WarehouseId, int PageSize = 10)
-    : IRequest<Result<IReadOnlyList<InvoiceItemSearchResultDto>>>,
-        IBranchScopedRequest;
+/// <summary>
+/// SALES-CONTEXTUAL-PRICING-READ-06A: <see cref="CustomerId"/> es opcional — Sales solo informa
+/// el cliente actualmente seleccionado (o null); nunca decide qué PriceList corresponde ni
+/// consulta PriceListCustomer/PriceListItem/PricingRule directamente. Toda esa resolución vive
+/// en IPricingResolver (Customer → CompanyDefault → PVP).
+/// </summary>
+public sealed record SearchItemsForInvoiceQuery(
+    string Query,
+    Guid? WarehouseId,
+    int PageSize = 10,
+    Guid? CustomerId = null
+) : IRequest<Result<IReadOnlyList<InvoiceItemSearchResultDto>>>, IBranchScopedRequest;
 
 public sealed class SearchItemsForInvoiceHandler
     : IRequestHandler<SearchItemsForInvoiceQuery, Result<IReadOnlyList<InvoiceItemSearchResultDto>>>
 {
     private readonly IInvoiceItemSearchRepository _repo;
     private readonly ISriCatalogResolver _sri;
-    private readonly IPriceListRepository _priceLists;
-    private readonly IPricingRuleRepository _rules;
-    private readonly IPriceListItemRepository _assignments;
-    private readonly IPricingAdjustmentStrategyResolver _strategies;
+    private readonly IPricingResolver _pricingResolver;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
-    private readonly ICompanyClock _companyClock;
 
     public SearchItemsForInvoiceHandler(
         IInvoiceItemSearchRepository repo,
         ISriCatalogResolver sri,
-        IPriceListRepository priceLists,
-        IPricingRuleRepository rules,
-        IPriceListItemRepository assignments,
-        IPricingAdjustmentStrategyResolver strategies,
+        IPricingResolver pricingResolver,
         ICurrentTenant tenant,
-        ICurrentCompany company,
-        ICompanyClock companyClock
+        ICurrentCompany company
     )
     {
         _repo = repo;
         _sri = sri;
-        _priceLists = priceLists;
-        _rules = rules;
-        _assignments = assignments;
-        _strategies = strategies;
+        _pricingResolver = pricingResolver;
         _tenant = tenant;
         _company = company;
-        _companyClock = companyClock;
     }
 
     public async Task<Result<IReadOnlyList<InvoiceItemSearchResultDto>>> Handle(
@@ -81,36 +77,24 @@ public sealed class SearchItemsForInvoiceHandler
         var vatMap = await _sri.ResolveVatRatesAsync(vatCodes, cancellationToken);
         var iceMap = await _sri.ResolveIceRatesAsync(iceCodes, cancellationToken);
 
-        // SALES-PRICE-LIST-DISCOUNT-VISIBILITY-01: 2 queries totales (lista default + sus reglas
-        // activas), sin importar cuántos ítems trajo la búsqueda — nunca N+1 por resultado. Mismo
-        // patrón que GetItemPricingSimulationQueryHandler. Si no hay lista default vigente, la
-        // búsqueda sigue funcionando igual que antes (sin datos de descuento).
-        var today = await _companyClock.TodayAsync(
-            _company.CompanyId,
-            _tenant.TenantId,
+        // SALES-CONTEXTUAL-PRICING-READ-06A: una sola llamada batch al Pricing Engine para TODOS
+        // los ítems del resultado — Sales ya NO resuelve PriceList default, PriceListItem ni
+        // PricingRule por su cuenta (eso vivía aquí antes, ver SALES-ITEM-SEARCH-PRICELIST-
+        // ASSIGNMENT-AUDIT-03/PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02). ResolveManyAsync ya
+        // documenta su propio conteo de queries (~2 + 3×candidatos, nunca por ítem) — sin
+        // importar cuántos resultados traiga la búsqueda.
+        var pricingResult = await _pricingResolver.ResolveManyAsync(
+            new PricingBatchContext(matches.Select(m => m.Id).ToList(), request.CustomerId),
             cancellationToken
         );
-        var defaultList = await _priceLists.GetDefaultAsync(_tenant.TenantId, cancellationToken);
-        if (defaultList is not null && (!defaultList.IsActive || !defaultList.IsValidOn(today)))
-            defaultList = null;
-        var rulesByItemId = defaultList is null
-            ? new Dictionary<Guid, PricingRule>()
-            : (await _rules.GetByPriceListAsync(_tenant.TenantId, defaultList.Id, cancellationToken))
-                .ToDictionary(r => r.ItemId);
-
-        // PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02 (mismo criterio, tercer call-site): la regla
-        // general de la lista default (o su excepción por ítem) solo puede sugerirse aquí para
-        // ítems con una PriceListItem ACTIVA en esa lista — sin eso, este bloque bypaseaba el
-        // Pricing Engine mostrando "Promo" a cualquier ítem sin importar asignación. Mismo patrón
-        // de "2/3 queries totales, nunca N+1" que ya usa este handler.
-        var assignedItemIds = defaultList is null
-            ? new HashSet<Guid>()
-            : (await _assignments.GetByPriceListAsync(_tenant.TenantId, defaultList.Id, cancellationToken))
-                .Select(a => a.ItemId)
-                .ToHashSet();
+        if (!pricingResult.IsSuccess)
+            return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.ValidationFailure(
+                pricingResult.Error!
+            );
+        var pricingByItemId = pricingResult.Value!;
 
         var results = matches
-            .Select(m => Enrich(m, vatMap, iceMap, defaultList, rulesByItemId, assignedItemIds, _strategies))
+            .Select(m => Enrich(m, vatMap, iceMap, pricingByItemId))
             .ToList();
         return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(results);
     }
@@ -119,10 +103,7 @@ public sealed class SearchItemsForInvoiceHandler
         InvoiceItemMatch match,
         IReadOnlyDictionary<string, SriVatInfo> vatMap,
         IReadOnlyDictionary<string, SriIceInfo> iceMap,
-        PriceList? defaultList,
-        IReadOnlyDictionary<Guid, PricingRule> rulesByItemId,
-        IReadOnlySet<Guid> assignedItemIds,
-        IPricingAdjustmentStrategyResolver strategies
+        IReadOnlyDictionary<Guid, PricingResult> pricingByItemId
     )
     {
         var vatInfo = !string.IsNullOrWhiteSpace(match.VatCode)
@@ -153,27 +134,22 @@ public sealed class SearchItemsForInvoiceHandler
             finalSalePrice = taxInclusive;
         }
 
+        // SALES-CONTEXTUAL-PRICING-READ-06A: "Promo" solo se muestra cuando el PricingResult
+        // trae una regla realmente aplicada (excepción o regla general con efecto) — mismo
+        // criterio que antes (RuleApplied != null), ahora decidido por IPricingResolver, nunca
+        // recalculado aquí. Sin entrada en pricingByItemId (ítem sin BaseSalePrice) o con
+        // RuleApplied null (PVP o lista sin ajuste), no hay promo — comportamiento sin cambios.
         string? priceListName = null;
         string? discountDescription = null;
         decimal? discountedSalePriceWithoutTax = null;
         decimal? discountedFinalSalePrice = null;
-        if (defaultList is not null && match.SalePriceWithoutTax.HasValue && assignedItemIds.Contains(match.Id))
+        if (pricingByItemId.TryGetValue(match.Id, out var pricing) && pricing.RuleApplied is not null)
         {
-            rulesByItemId.TryGetValue(match.Id, out var itemRule);
-            var (netPrice, ruleApplied) = PricingCalculation.Resolve(
-                match.SalePriceWithoutTax.Value,
-                itemRule,
-                defaultList,
-                strategies
-            );
-            if (ruleApplied is not null)
-            {
-                priceListName = defaultList.Name;
-                discountDescription = PricingCalculation.Summarize(itemRule, defaultList).Description;
-                discountedSalePriceWithoutTax = netPrice;
-                var (_, _, discountedTaxInclusive) = SriTaxCalculator.Compute(netPrice, vatPct, icePct);
-                discountedFinalSalePrice = discountedTaxInclusive;
-            }
+            priceListName = pricing.PriceListName;
+            discountDescription = pricing.RuleDescription;
+            discountedSalePriceWithoutTax = pricing.UnitPrice;
+            var (_, _, discountedTaxInclusive) = SriTaxCalculator.Compute(pricing.UnitPrice, vatPct, icePct);
+            discountedFinalSalePrice = discountedTaxInclusive;
         }
 
         return new InvoiceItemSearchResultDto(

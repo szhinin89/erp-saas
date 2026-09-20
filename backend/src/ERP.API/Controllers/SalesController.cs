@@ -144,11 +144,12 @@ public sealed class SalesController : ControllerBase
         [FromQuery] string? q,
         [FromQuery] Guid? warehouseId,
         [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? customerId = null,
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new SearchItemsForInvoiceQuery(q ?? string.Empty, warehouseId, pageSize),
+                new SearchItemsForInvoiceQuery(q ?? string.Empty, warehouseId, pageSize, customerId),
                 ct
             ),
             "OK"
@@ -161,8 +162,11 @@ public sealed class SalesController : ControllerBase
     /// </summary>
     [HttpGet("items/{itemId:guid}/pricing")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
-    public async Task<IActionResult> GetItemPricing(Guid itemId, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new GetSalesItemPricingQuery(itemId), ct));
+    public async Task<IActionResult> GetItemPricing(
+        Guid itemId,
+        [FromQuery] Guid? customerId,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(new GetSalesItemPricingQuery(itemId, customerId), ct));
 }
 
 public record SalesApplyDiscountRequest(decimal DiscountPct);

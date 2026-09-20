@@ -107,7 +107,7 @@ public sealed class GetSalesItemPricingQueryHandlerTests
             )
             .ReturnsAsync(item);
         f.PricingResolver
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<PricingResult>.Success(SamplePricing(item.Id)));
 
         var result = await f.BuildHandler()
@@ -140,7 +140,7 @@ public sealed class GetSalesItemPricingQueryHandlerTests
             )
             .ReturnsAsync(item);
         f.PricingResolver
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<PricingResult>.Success(pricing));
         f.TaxResolver
             .Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
@@ -188,7 +188,7 @@ public sealed class GetSalesItemPricingQueryHandlerTests
             )
             .ReturnsAsync(item);
         f.PricingResolver
-            .Setup(p => p.ResolveAsync(item.Id, null, It.IsAny<CancellationToken>()))
+            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, null), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<PricingResult>.Success(SamplePricing(item.Id)));
         f.TaxResolver
             .Setup(t => t.GetIceRateWithNameAsync("3021", It.IsAny<CancellationToken>()))
@@ -200,6 +200,33 @@ public sealed class GetSalesItemPricingQueryHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.IceCode.Should().Be("3021");
         result.Value!.IceName.Should().Be("ICE 50%");
+    }
+
+    [Fact]
+    public async Task Propaga_el_CustomerId_de_la_query_al_PricingContext()
+    {
+        // SALES-CONTEXTUAL-PRICING-READ-06A: Sales solo informa el cliente actual — nunca decide
+        // qué lista corresponde. El handler debe pasar exactamente el CustomerId recibido.
+        var item = CreateItem();
+        var customerId = Guid.NewGuid();
+        var f = new Fixture();
+        f.ItemRepo
+            .Setup(r =>
+                r.GetByIdWithSpecialTaxConfigurationsAsync(item.Id, TenantId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(item);
+        f.PricingResolver
+            .Setup(p => p.ResolveAsync(new PricingContext(item.Id, customerId), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PricingResult>.Success(SamplePricing(item.Id)));
+
+        var result = await f.BuildHandler()
+            .Handle(new GetSalesItemPricingQuery(item.Id, customerId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.PricingResolver.Verify(
+            p => p.ResolveAsync(new PricingContext(item.Id, customerId), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -236,7 +263,7 @@ public sealed class GetSalesItemPricingQueryHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         f.PricingResolver.Verify(
-            p => p.ResolveAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
+            p => p.ResolveAsync(It.IsAny<PricingContext>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

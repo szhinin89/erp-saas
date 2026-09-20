@@ -53,7 +53,10 @@ function makeResult(
   };
 }
 
-function renderSection(onAddItemLine = vi.fn().mockResolvedValue(undefined)) {
+function renderSection(
+  onAddItemLine = vi.fn().mockResolvedValue(undefined),
+  customerId?: string,
+) {
   const utils = render(
     <SalesInvoiceDetailsSection
       lines={[]}
@@ -67,6 +70,7 @@ function renderSection(onAddItemLine = vi.fn().mockResolvedValue(undefined)) {
       selectedWarehouseId=""
       onWarehouseChange={vi.fn()}
       vatRates={{ "10": 15 }}
+      customerId={customerId}
     />,
   );
   return { onAddItemLine, ...utils };
@@ -130,6 +134,28 @@ describe("SalesInvoiceDetailsSection — integración con el buscador de product
     typeQuery("xyz");
     await screen.findByText(/Sin resultados para/i);
     expect(container.querySelector(".sf-search-columns-header")).toBeNull();
+  });
+
+  it("SALES-CONTEXTUAL-PRICING-READ-06A: envía el customerId actualmente seleccionado al buscador", async () => {
+    searchMock.mockResolvedValue([]);
+    renderSection(vi.fn(), "cust-1");
+    typeQuery("club");
+    await waitFor(() =>
+      expect(searchMock).toHaveBeenCalledWith(
+        expect.objectContaining({ q: "club", customerId: "cust-1" }),
+      ),
+    );
+  });
+
+  it("SALES-CONTEXTUAL-PRICING-READ-06A: sin cliente seleccionado, customerId va undefined (el backend decide CompanyDefault → PVP)", async () => {
+    searchMock.mockResolvedValue([]);
+    renderSection(vi.fn(), undefined);
+    typeQuery("club");
+    await waitFor(() =>
+      expect(searchMock).toHaveBeenCalledWith(
+        expect.objectContaining({ q: "club", customerId: undefined }),
+      ),
+    );
   });
 
   it("no introduce estilos inline en la sección de resultados", async () => {

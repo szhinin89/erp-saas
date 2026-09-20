@@ -60,7 +60,10 @@ public sealed class GetSalesItemPricingQueryHandler
                 $"El producto '{item.Code.Description}' está inactivo o no está habilitado para venta."
             );
 
-        var pricingResult = await _pricingResolver.ResolveAsync(request.ItemId, ct: ct);
+        var pricingResult = await _pricingResolver.ResolveAsync(
+            new PricingContext(request.ItemId, request.CustomerId),
+            ct
+        );
         if (!pricingResult.IsSuccess)
             return Result<SalesItemPricingDto>.ValidationFailure(pricingResult.Error!);
 
