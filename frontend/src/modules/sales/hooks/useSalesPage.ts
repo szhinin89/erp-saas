@@ -57,6 +57,7 @@ import {
   toLocalIsoDate,
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
+import { isEditableTarget } from "../../../lib/inputUtils";
 import {
   readApiErrorMessage,
   readApiErrorMessages,
@@ -162,6 +163,22 @@ export type IssuePhase =
   "idle" | "confirm" | "processing" | "success" | "error";
 export type IssueErrorKind = "internal" | "communication";
 export type IssueErrorInfo = { kind: IssueErrorKind; message: string };
+
+/**
+ * SALES-QUICK-CUSTOMER-MODAL-FIX-07A: decisión pura del atajo global F8 ("Emitir Factura"),
+ * extraída del listener de teclado para poder testearla sin montar todo useSalesPage. Nunca
+ * dispara mientras el foco está en un control editable (p. ej. un modal abierto sobre la
+ * página) — ver SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07.
+ */
+export function shouldTriggerF8Emit(
+  e: Pick<KeyboardEvent, "key" | "target">,
+  ctx: { tab: Tab; issuePhase: IssuePhase; canEmit: boolean },
+): boolean {
+  if (e.key !== "F8") return false;
+  if (isEditableTarget(e.target)) return false;
+  if (ctx.tab !== "nuevo" || ctx.issuePhase !== "idle" || !ctx.canEmit) return false;
+  return true;
+}
 
 // Pasos 0-1 (Validando/Guardando) son awaits reales del formulario y de
 // persistDraft. Pasos 2-5 ocurren dentro de un único request atómico en el
@@ -1615,10 +1632,12 @@ export function useSalesPage() {
   }, [issueResult, xmlDownloading]);
 
   // F8: mismo disparador que el botón "Emitir Factura" — única fuente de verdad (canEmit).
+  // SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07: F8 tampoco es un carácter tecleable, pero se guarda
+  // el mismo guard explícito que F2 — ningún atajo global de Sales debe reaccionar mientras el
+  // foco está en un control editable (p. ej. dentro de un modal abierto sobre la página).
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "F8") return;
-      if (tab !== "nuevo" || issuePhase !== "idle" || !canEmit) return;
+      if (!shouldTriggerF8Emit(e, { tab, issuePhase, canEmit })) return;
       e.preventDefault();
       openIssueFlow();
     }

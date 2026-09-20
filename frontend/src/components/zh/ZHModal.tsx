@@ -30,6 +30,19 @@ export function ZHModal({
 }: ZHModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07 — causa raíz del bug "no se puede escribir en el
+  // modal": muchos llamadores pasan un onClose inline (`onCancel={() => setModal(false)}`), una
+  // función NUEVA en cada render. Si onClose estuviera en el arreglo de dependencias del efecto
+  // de abajo, CUALQUIER re-render del padre (incluido el que dispara cada tecla al escribir en
+  // un input controlado dentro del modal) recreaba el efecto — y este volvía a enfocar el primer
+  // control del modal (`firstFocusable?.focus()`), robándole el foco al campo donde el usuario
+  // estaba escribiendo. Guardar onClose en un ref desacopla "abrir/cerrar + enfocar una sola vez"
+  // de la identidad del callback: el efecto principal depende SOLO de `open`.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -37,7 +50,7 @@ export function ZHModal({
     document.body.style.overflow = "hidden";
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
 
@@ -50,7 +63,7 @@ export function ZHModal({
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

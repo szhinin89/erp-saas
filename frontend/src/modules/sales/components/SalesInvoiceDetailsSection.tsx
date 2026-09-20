@@ -10,6 +10,7 @@ import { HELP_KEYS } from "../../../help";
 import { SalesItemSearchResultsGrid } from "./SalesItemSearchResultsGrid";
 import { SalesInvoiceLinesGrid } from "./SalesInvoiceLinesGrid";
 import { formatVatLabel } from "../utils/salesCalc";
+import { isEditableTarget } from "../../../lib/inputUtils";
 import "../styles/sales-product-card.css";
 
 interface SalesInvoiceDetailsSectionProps {
@@ -79,9 +80,13 @@ export function SalesInvoiceDetailsSection({
   }, [focusSignal]);
 
   // Atajo global F2: reenfoca el buscador de productos desde cualquier parte de la página.
+  // SALES-QUICK-CUSTOMER-MODAL-INPUT-FIX-07: nunca debe robar el foco de un campo editable
+  // (p. ej. mientras se escribe en el modal "Crear Cliente") — F2 es una tecla de función, así
+  // que nunca forma parte de texto tecleado, pero el guard queda explícito para que ningún atajo
+  // global de Sales pueda interceptar foco desde un control editable.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "F2" && !disabled) {
+      if (e.key === "F2" && !disabled && !isEditableTarget(e.target)) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
