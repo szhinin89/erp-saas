@@ -3905,5 +3905,21 @@
   "pricing.ux.option.PercentDiscount": "Discount %",
   "pricing.ux.option.PercentMarkup": "Markup %",
   "pricing.ux.option.FixedPrice": "Fixed price",
-  "pricing.ux.option.FixedAdjustment": "Fixed adjustment"
+  "pricing.ux.option.FixedAdjustment": "Fixed adjustment",
+  "pricing.ux.customersTab": "List customers",
+  "pricing.ux.customersHint": "Assigned customers use this list instead of the company's default list. A customer can only have one active list at a time.",
+  "pricing.ux.assignCustomer": "Assign customer",
+  "pricing.ux.searchCustomer": "Search customer by name or ID...",
+  "pricing.ux.customer": "Customer",
+  "pricing.ux.identification": "ID",
+  "pricing.ux.removeCustomer": "Remove customer",
+  "pricing.ux.removeCustomerConfirm": "Remove {{name}} from this list? They will go back to the company's default list.",
+  "pricing.ux.customerRemoved": "Customer removed from the list.",
+  "pricing.ux.customerAssigned": "Customer assigned to the list.",
+  "pricing.ux.customerSwitched": "Customer moved to this list.",
+  "pricing.ux.switchConfirmTitle": "Customer already has another active list",
+  "pricing.ux.switchConfirmMessage": "This customer currently uses {{currentList}}. Switch them to {{newList}}?",
+  "pricing.ux.switchConfirm": "Switch",
+  "pricing.ux.noCustomers": "This list has no customers assigned yet.",
+  "pricing.ux.noResults": "No results."
 }

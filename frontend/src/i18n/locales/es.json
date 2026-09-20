@@ -3905,5 +3905,21 @@
   "pricing.ux.option.PercentDiscount": "Descuento %",
   "pricing.ux.option.PercentMarkup": "Recargo %",
   "pricing.ux.option.FixedPrice": "Precio fijo",
-  "pricing.ux.option.FixedAdjustment": "Ajuste fijo"
+  "pricing.ux.option.FixedAdjustment": "Ajuste fijo",
+  "pricing.ux.customersTab": "Clientes de la lista",
+  "pricing.ux.customersHint": "Los clientes asignados usan esta lista en lugar de la lista predeterminada de la empresa. Un cliente solo puede tener una lista activa a la vez.",
+  "pricing.ux.assignCustomer": "Asignar cliente",
+  "pricing.ux.searchCustomer": "Buscar cliente por nombre o identificación...",
+  "pricing.ux.customer": "Cliente",
+  "pricing.ux.identification": "Identificación",
+  "pricing.ux.removeCustomer": "Quitar cliente",
+  "pricing.ux.removeCustomerConfirm": "¿Quitar a {{name}} de esta lista? Volverá a usar la lista predeterminada de la empresa.",
+  "pricing.ux.customerRemoved": "Cliente quitado de la lista.",
+  "pricing.ux.customerAssigned": "Cliente asignado a la lista.",
+  "pricing.ux.customerSwitched": "Cliente movido a esta lista.",
+  "pricing.ux.switchConfirmTitle": "Cliente con otra lista activa",
+  "pricing.ux.switchConfirmMessage": "Este cliente actualmente usa {{currentList}}. ¿Desea cambiarlo a {{newList}}?",
+  "pricing.ux.switchConfirm": "Cambiar",
+  "pricing.ux.noCustomers": "Esta lista todavía no tiene clientes asignados.",
+  "pricing.ux.noResults": "Sin resultados."
 }

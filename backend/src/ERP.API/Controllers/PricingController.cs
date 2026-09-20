@@ -1,5 +1,6 @@
 using ERP.API.Attributes;
 using ERP.API.Extensions;
+using ERP.Application.Modules.Pricing.UseCases.PriceListCustomers;
 using ERP.Application.Modules.Pricing.UseCases.PriceListItems;
 using ERP.Application.Modules.Pricing.UseCases.PriceLists;
 using ERP.Application.Modules.Pricing.UseCases.PricingRules;
@@ -88,6 +89,52 @@ public sealed class PricingController : ControllerBase
         );
 
     // ══════════════════════════════════════════════════════════════════════
+    // PRICE LIST CUSTOMERS (PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B) — todavía NO
+    // consumido por Sales, solo administración desde /products/pricing.
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Clientes actualmente asignados (activos) a esta lista.</summary>
+    [HttpGet("price-lists/{id:guid}/customers")]
+    [Authorize(Policy = $"perm:{PricingPermissions.View}")]
+    public async Task<IActionResult> GetPriceListCustomers(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetPriceListCustomersQuery(id), ct),
+            "OK"
+        );
+
+    /// <summary>
+    /// Asigna un cliente a esta lista. Si el cliente ya tiene otra lista activa, devuelve
+    /// Status=Conflict sin escribir nada (nunca un error técnico) — el llamador debe reenviar
+    /// con ConfirmSwitch=true tras confirmación explícita del usuario para completar el cambio.
+    /// </summary>
+    [HttpPost("price-lists/{id:guid}/customers")]
+    [Authorize(Policy = $"perm:{PricingPermissions.Update}")]
+    public async Task<IActionResult> AssignCustomerToPriceList(
+        Guid id,
+        [FromBody] AssignPriceListCustomerRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new AssignCustomerToPriceListCommand(id, request.CustomerId, request.ConfirmSwitch),
+                ct
+            ),
+            "OK"
+        );
+
+    /// <summary>Quita (desactiva) la asignación de un cliente a esta lista — nunca borrado físico.</summary>
+    [HttpDelete("price-lists/{id:guid}/customers/{customerId:guid}")]
+    [Authorize(Policy = $"perm:{PricingPermissions.Update}")]
+    public async Task<IActionResult> RemovePriceListCustomer(
+        Guid id,
+        Guid customerId,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new DisablePriceListCustomerCommand(id, customerId), ct)
+        );
+
+    // ══════════════════════════════════════════════════════════════════════
     // PRICING RULES
     // ══════════════════════════════════════════════════════════════════════
 
@@ -128,3 +175,5 @@ public sealed class PricingController : ControllerBase
     public async Task<IActionResult> RemovePricingRule(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new RemovePricingRuleCommand(id), ct));
 }
+
+public sealed record AssignPriceListCustomerRequest(Guid CustomerId, bool ConfirmSwitch = false);

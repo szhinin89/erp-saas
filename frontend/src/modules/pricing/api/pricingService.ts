@@ -78,6 +78,27 @@ export interface PriceListAssignedItemDto {
   baseSalePrice: number | null;
 }
 
+/** Cliente asignado a una PriceList — identidad + nombre para mostrar, sin datos de pricing. */
+export interface PriceListCustomerDto {
+  customerId: string;
+  customerName: string;
+  customerIdentificationNumber: string | null;
+}
+
+/** Espejo de PriceListCustomerAssignStatus (backend) — nunca se infiere en el cliente. */
+export type PriceListCustomerAssignStatus =
+  "Assigned" | "AlreadyActive" | "Conflict" | "Switched";
+
+/** Resultado de priceListCustomerService.assign — "Conflict" exige confirmación explícita del
+ *  usuario antes de reintentar con confirmSwitch=true (ver PriceListCustomersTab); nunca se
+ *  cambia de lista en silencio. conflictingPriceListId/Name solo vienen poblados cuando status
+ *  es "Conflict". */
+export interface PriceListCustomerAssignResultDto {
+  status: PriceListCustomerAssignStatus;
+  conflictingPriceListId: string | null;
+  conflictingPriceListName: string | null;
+}
+
 /** Espejo de PriceSource (backend) — de dónde proviene el precio resuelto de un ítem en una lista. */
 export type PriceSource = "BasePrice" | "GeneralRule" | "Exception";
 
@@ -188,6 +209,26 @@ export const priceListService = {
   getAssignedItems: (id: string) =>
     apiGet<PriceListAssignedItemDto[]>(
       `${BASE}/price-lists/${id}/assigned-items`,
+    ),
+};
+
+/** PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B — administración de clientes por lista de precios.
+ *  Todavía no consumido por Sales; solo /products/pricing → tab "Clientes de la lista". */
+export const priceListCustomerService = {
+  list: (priceListId: string) =>
+    apiGet<PriceListCustomerDto[]>(
+      `${BASE}/price-lists/${priceListId}/customers`,
+    ),
+  /** Si status="Conflict", no se escribió nada — reintentar con confirmSwitch=true tras
+   *  confirmación explícita del usuario para completar el cambio de lista. */
+  assign: (priceListId: string, customerId: string, confirmSwitch = false) =>
+    apiPost<PriceListCustomerAssignResultDto>(
+      `${BASE}/price-lists/${priceListId}/customers`,
+      { customerId, confirmSwitch },
+    ),
+  remove: (priceListId: string, customerId: string) =>
+    apiDelete<boolean>(
+      `${BASE}/price-lists/${priceListId}/customers/${customerId}`,
     ),
 };
 

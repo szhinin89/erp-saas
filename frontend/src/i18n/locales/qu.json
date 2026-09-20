@@ -3906,5 +3906,21 @@
   "pricing.ux.option.PercentDiscount": "Pishiy %",
   "pricing.ux.option.PercentMarkup": "Yapay %",
   "pricing.ux.option.FixedPrice": "Takya chani",
-  "pricing.ux.option.FixedAdjustment": "Takya allichiy"
+  "pricing.ux.option.FixedAdjustment": "Takya allichiy",
+  "pricing.ux.customersTab": "Listapa runakuna",
+  "pricing.ux.customersHint": "Akllashka runakuna kay listata churan, mana tukuy kamachiy listata. Shuk runaka shuklla rurak listata charin.",
+  "pricing.ux.assignCustomer": "Runata akllay",
+  "pricing.ux.searchCustomer": "Runata shutin niraq mashkay...",
+  "pricing.ux.customer": "Runa",
+  "pricing.ux.identification": "Identificación",
+  "pricing.ux.removeCustomer": "Runata anchuchiy",
+  "pricing.ux.removeCustomerConfirm": "¿{{name}}-ta kay listamanta anchuchiyta munanki? Tukuy kamachiy listaman kutin.",
+  "pricing.ux.customerRemoved": "Runa listamanta anchuchishka.",
+  "pricing.ux.customerAssigned": "Runa listaman akllashka.",
+  "pricing.ux.customerSwitched": "Runa kay listaman kuyuchishka.",
+  "pricing.ux.switchConfirmTitle": "Runa shuk rurak listata charin",
+  "pricing.ux.switchConfirmMessage": "Kay runaka {{currentList}} charin. ¿{{newList}}-man kuyuchiyta munanki?",
+  "pricing.ux.switchConfirm": "Kuyuchiy",
+  "pricing.ux.noCustomers": "Kay lista manaraq runakunata charin.",
+  "pricing.ux.noResults": "Mana imapash tarishka."
 }

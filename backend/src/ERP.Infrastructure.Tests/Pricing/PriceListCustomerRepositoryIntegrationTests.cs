@@ -232,4 +232,44 @@ public sealed class PriceListCustomerRepositoryIntegrationTests : IAsyncLifetime
             resultsForOtherTenant.Should().ContainSingle().Which.PriceListId.Should().Be(otherListId);
         }
     }
+
+    [Fact]
+    public async Task Si_falla_la_nueva_asignacion_la_desactivacion_de_la_anterior_tambien_se_revierte()
+    {
+        // PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B: el "switch" (desactivar A + activar/crear B) se
+        // hace con UN solo SaveChangesAsync — mismo mecanismo transaccional de EF/Postgres que ya
+        // prueba esta suite para la unicidad. Se fuerza el fallo de la mitad "nueva" (FK a una
+        // PriceList inexistente) para comprobar que la mitad "vieja" (Disable) no queda huérfana.
+        var customerId = Guid.NewGuid();
+        Guid assignmentId;
+
+        await using (var scope = _serviceProvider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var assignment = PriceListCustomer.Create(_tenantId, _companyId, _priceListAId, customerId, _userId);
+            db.PriceListCustomers.Add(assignment);
+            await db.SaveChangesAsync();
+            assignmentId = assignment.Id;
+        }
+
+        await using (var scope = _serviceProvider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var assignment = await db.PriceListCustomers.FirstAsync(a => a.Id == assignmentId);
+            assignment.Disable(_userId);
+            db.PriceListCustomers.Add(
+                PriceListCustomer.Create(_tenantId, _companyId, Guid.NewGuid(), customerId, _userId)
+            );
+
+            var act = async () => await db.SaveChangesAsync();
+            await act.Should().ThrowAsync<DbUpdateException>();
+        }
+
+        await using (var verify = _serviceProvider.CreateAsyncScope())
+        {
+            var db = verify.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var assignment = await db.PriceListCustomers.FirstAsync(a => a.Id == assignmentId);
+            assignment.IsActive.Should().BeTrue("el Disable() de la mitad 'vieja' debe revertirse junto con el INSERT fallido");
+        }
+    }
 }

@@ -29,12 +29,13 @@ import {
   formatRuleGeneral,
 } from "../api/pricingService";
 import { PriceListExceptionsTab } from "./PriceListExceptionsTab";
+import { PriceListCustomersTab } from "./PriceListCustomersTab";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 
 import "../../../styles/shared/items-catalog.css";
 
-type Tab = "resumen" | "listado" | "nuevo" | "productos" | "excepciones";
+type Tab = "resumen" | "listado" | "nuevo" | "productos" | "excepciones" | "clientes";
 
 export function PriceListsPage() {
   const { t } = useI18n();
@@ -197,11 +198,16 @@ export function PriceListsPage() {
       icon: editing ? "edit" : "add_box",
     },
     ...(editing
-      ? [{ id: "productos" as Tab, label: t("pricing.ux.products"), icon: "inventory_2" }, { id: "excepciones" as Tab, label: t("pricing.ux.exceptions"), icon: "rule" }]
+      ? [
+          { id: "productos" as Tab, label: t("pricing.ux.products"), icon: "inventory_2" },
+          { id: "excepciones" as Tab, label: t("pricing.ux.exceptions"), icon: "rule" },
+          { id: "clientes" as Tab, label: t("pricing.ux.customersTab"), icon: "group" },
+        ]
       : []),
   ];
 
-  const preservesEditing = (id: Tab) => id === "nuevo" || id === "productos" || id === "excepciones";
+  const preservesEditing = (id: Tab) =>
+    id === "nuevo" || id === "productos" || id === "excepciones" || id === "clientes";
 
   const priceListColumns: ZHDataTableColumn<PriceListDto>[] = [
     { key: "code", header: "Código", render: (pl) => <span className="prd-td-code">{pl.code}</span> },
@@ -496,6 +502,12 @@ export function PriceListsPage() {
       {/* EXCEPCIONES (PricingRule) — solo con una lista cargada */}
       {(tab === "excepciones" || tab === "productos") && editing && (
         <PriceListExceptionsTab key={editing.id} priceList={editing} mode={tab === "productos" ? "products" : "exceptions"} />
+      )}
+
+      {/* CLIENTES (PriceListCustomer, PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B) — administración
+          únicamente; todavía sin consumo desde Sales. */}
+      {tab === "clientes" && editing && (
+        <PriceListCustomersTab key={editing.id} priceList={editing} />
       )}
     </ErpPageTemplate>
   );
