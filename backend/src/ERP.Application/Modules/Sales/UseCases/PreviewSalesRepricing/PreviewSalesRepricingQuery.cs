@@ -34,5 +34,10 @@ public sealed record SalesRepricingPreviewItemDto(
     string NewPriceListName,
     PriceListSelectionSource? OldSelectionSource,
     PriceListSelectionSource? NewSelectionSource,
-    string? NewDiscountDescription
+    string? NewDiscountDescription,
+    // SALES-CUSTOMER-REPRICE-METADATA-06C2A: precio de lista ANTES de cualquier descuento
+    // (PricingResult.BasePrice del cliente nuevo) — sin esto, el frontend no podía reconstruir
+    // el mismo estado de línea que produce addLineWithItem (ver SalesItemPricingDto.basePrice,
+    // mismo campo en el endpoint de pricing puntual).
+    decimal NewBasePrice
 );

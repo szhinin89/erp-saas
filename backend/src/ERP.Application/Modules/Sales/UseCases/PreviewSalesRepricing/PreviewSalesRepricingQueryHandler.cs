@@ -74,7 +74,8 @@ public sealed class PreviewSalesRepricingQueryHandler
                     newResult.PriceListName,
                     oldResult.SelectionSource,
                     newResult.SelectionSource,
-                    newResult.RuleDescription
+                    newResult.RuleDescription,
+                    newResult.BasePrice
                 )
             );
         }

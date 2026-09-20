@@ -39,6 +39,11 @@ import type { SalesInvoiceDefaultsDto } from "../api/salesDefaultsService";
 import { salesRuntimeContextService } from "../api/salesRuntimeContextService";
 import type { SalesRuntimeContextDto } from "../api/salesRuntimeContextService";
 import { salesItemPricingService } from "../api/salesItemPricingService";
+import {
+  useSalesCustomerRepricing,
+  applyRepricingPlanToLines,
+  mapResolvedPricingToLineFields,
+} from "./useSalesCustomerRepricing";
 import { bankAccountService } from "../../finance/api/bankAccountService";
 import type { CompanyBankAccountDto } from "../../finance/api/bankAccountService";
 import { bankService } from "../../settings/banks/api/bankService";
@@ -849,7 +854,6 @@ export function useSalesPage() {
         return;
       }
 
-      const pvp = pricing.unitPrice ?? undefined;
       const cost =
         item.averageCost != null && item.averageCost > 0
           ? item.averageCost
@@ -866,7 +870,16 @@ export function useSalesPage() {
       // (backend tampoco lo consume en esta fase — ver SalesLinePackagingResolver).
       const defaultPresentation = resolveDefaultLinePresentation(item);
       const { packagingLevelId, uomCode, conversionFactor } = defaultPresentation;
-      const unitPrice = (pvp ?? 0) * conversionFactor;
+      // SALES-CUSTOMER-REPRICE-METADATA-06C2A: mismo mapeo Pricing → línea que usa el repricing
+      // de cambio de cliente (useSalesCustomerRepricing) — única fuente de esta semántica.
+      const pricingFields = mapResolvedPricingToLineFields(
+        pricing.unitPrice ?? 0,
+        pricing.basePrice,
+        pricing.priceListName,
+        pricing.discountDescription,
+        conversionFactor,
+      );
+      const { unitPrice } = pricingFields;
 
       const currentLines = getValues("lines");
 
@@ -902,7 +915,6 @@ export function useSalesPage() {
         warehouseId: lineWarehouseId,
         description: `${item.sku} — ${item.description}`,
         quantity: 1,
-        unitPrice,
         vatCode,
         discountPct: 0,
         iceCode: iceCode ?? undefined,
@@ -912,11 +924,7 @@ export function useSalesPage() {
         conversionFactor,
         _sku: item.sku,
         _name: item.description,
-        _pvp: pvp,
-        _basePrice: pricing.basePrice,
-        _priceListName: pricing.priceListName,
-        _discountDescription: pricing.discountDescription,
-        _isManualPrice: false,
+        ...pricingFields,
         _cost: cost,
         _stockQty: stockQty,
         _stockWarehouse: selectedWh?.name,
@@ -1158,7 +1166,10 @@ export function useSalesPage() {
   }, [getValues, resetForm]);
 
   // ── Customer change handler ────────────────────────────────────────
-  const handleCustomerChange = useCallback(
+  // SALES-CUSTOMER-CHANGE-REPRICE-UX-06C2: aplicación "real" del cambio de cliente (customerId,
+  // perfil, paymentTerm/schedule) — sin tocar líneas. Se usa tanto en el camino directo (sin
+  // líneas o sin diferencias de precio) como tras confirmar el modal de repricing.
+  const applyCustomerChangeCore = useCallback(
     async (c: CustomerPickerRow | null) => {
       setValue("customerId", c?.id ?? "", {
         shouldValidate: true,
@@ -1180,6 +1191,54 @@ export function useSalesPage() {
     },
     [setValue, loadCustomerProfile],
   );
+
+  const repricing = useSalesCustomerRepricing({
+    applyCustomerChange: applyCustomerChangeCore,
+    applyPlanToLines: (plan) => {
+      const currentLines = getValues("lines");
+      setValue("lines", applyRepricingPlanToLines(currentLines, plan), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    },
+    onPreviewError: () => {
+      // Fail-closed: si no se pudo calcular el nuevo precio, no se cambia el cliente ni se toca
+      // ninguna línea — mejor no aplicar el cambio que aplicarlo con precios desactualizados.
+      message.error(
+        "No se pudo calcular el nuevo precio para el cliente seleccionado. El cliente no fue cambiado — intente nuevamente.",
+      );
+    },
+  });
+
+  const handleCustomerChange = useCallback(
+    (c: CustomerPickerRow | null) => {
+      const currentLines = getValues("lines");
+      const decimals = getPrecisionPolicy().salesUnitPriceDecimals;
+      void repricing.requestCustomerChange(
+        c,
+        currentLines.map((l) => ({
+          key: l._key,
+          itemId: l.itemId,
+          description: l.description,
+          unitPrice: l.unitPrice,
+          conversionFactor: l.conversionFactor,
+          _pvp: l._pvp,
+          _basePrice: l._basePrice,
+          _priceListName: l._priceListName,
+          _discountDescription: l._discountDescription,
+        })),
+        getValues("customerId") || undefined,
+        decimals,
+      );
+    },
+    [getValues, repricing],
+  );
+
+  const confirmRepricing = useCallback(() => {
+    void repricing.confirm();
+  }, [repricing]);
+
+  const cancelRepricing = useCallback(() => repricing.cancel(), [repricing]);
 
   // ── Load for edit ──────────────────────────────────────────────────
   const loadForEdit = useCallback(
@@ -1860,6 +1919,14 @@ export function useSalesPage() {
     customerProfile,
     setCustomerProfile,
     handleCustomerChange,
+
+    // SALES-CUSTOMER-CHANGE-REPRICE-UX-06C2: modal de confirmación de repricing al cambiar de
+    // cliente con líneas ya cargadas — repricingModal es null salvo cuando hay al menos una
+    // línea con diferencia de precio pendiente de confirmar.
+    repricingLoading: repricing.loading,
+    repricingModal: repricing.pending,
+    confirmRepricing,
+    cancelRepricing,
 
     // Reference data
     paymentTermsList,

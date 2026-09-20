@@ -18,6 +18,10 @@ export interface SalesRepricingPreviewItemDto {
   oldSelectionSource: PriceListSelectionSourceDto;
   newSelectionSource: PriceListSelectionSourceDto;
   newDiscountDescription: string | null;
+  /** SALES-CUSTOMER-REPRICE-METADATA-06C2A: precio de lista ANTES de cualquier descuento del
+   * cliente nuevo (PricingResult.BasePrice tal cual, sin recalcular) — necesario para que el
+   * repricing de una línea deje el mismo estado que addLineWithItem. */
+  newBasePrice: number;
 }
 
 export interface PreviewSalesRepricingRequest {

@@ -123,6 +123,9 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         item.NewPriceListId.Should().Be(listB);
         item.OldSelectionSource.Should().Be(PriceListSelectionSource.Customer);
         item.NewSelectionSource.Should().Be(PriceListSelectionSource.Customer);
+        // SALES-CUSTOMER-REPRICE-METADATA-06C2A: NewBasePrice = PricingResult.BasePrice del
+        // cliente nuevo tal cual, sin recalcular.
+        item.NewBasePrice.Should().Be(100m);
     }
 
     [Fact]
@@ -256,6 +259,9 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         item.OldPriceListId.Should().BeNull();
         item.NewPriceListId.Should().Be(listId);
         item.Changed.Should().BeTrue();
+        // Regla general con descuento real (20/25=0.8): NewBasePrice=25 se conserva íntegro,
+        // independiente de que NewResolvedPrice (20) ya venga descontado.
+        item.NewBasePrice.Should().Be(25m);
     }
 
     [Fact]
@@ -285,6 +291,9 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         item.OldPriceListId.Should().Be(listId);
         item.NewPriceListId.Should().BeNull();
         item.Changed.Should().BeTrue();
+        // Sin descuento (PVP): NewResolvedPrice == NewBasePrice, ambos 25.
+        item.NewBasePrice.Should().Be(25m);
+        item.NewResolvedPrice.Should().Be(item.NewBasePrice);
     }
 
     [Fact]
@@ -317,6 +326,9 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
         var item = result.Value!.Single();
         item.Changed.Should().BeTrue();
         item.NewDiscountDescription.Should().Be("Precio de excepción para este cliente");
+        // La excepción de cliente sigue siendo una regla sobre la misma lista/BasePrice — el
+        // BasePrice de 100 se conserva igual que en la regla general.
+        item.NewBasePrice.Should().Be(100m);
     }
 
     [Fact]

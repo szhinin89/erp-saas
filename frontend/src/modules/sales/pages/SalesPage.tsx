@@ -7,7 +7,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { ZhTextInput } from "../../../components/zh/inputs";
-import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
+import { ZHConfirmModal, ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
 import { ZHSectionHelp } from "../../../components/zh/help";
@@ -275,7 +275,7 @@ export function SalesPage() {
                 <CustomerPicker
                   value={ctx.formWatch.customerId || null}
                   onChange={ctx.handleCustomerChange}
-                  disabled={ctx.fieldDisabled}
+                  disabled={ctx.fieldDisabled || ctx.repricingLoading}
                   onCreateNew={ctx.openNewCustomerModal}
                   onEditSelected={
                     ctx.customerProfile ? ctx.openEditCustomerModal : undefined
@@ -750,6 +750,57 @@ export function SalesPage() {
         confirmLabel="Anular"
         onCancel={() => ctx.setModalCancelReason(false)}
         onConfirm={ctx.handleCancel}
+      />
+
+      <ZHConfirmModal
+        open={!!ctx.repricingModal}
+        variant="warning"
+        title="Cambio de cliente"
+        message={
+          ctx.repricingModal && (
+            <div className="sales-repricing-modal">
+              <p className="zh-confirm-message">
+                El cambio de cliente modifica los precios de{" "}
+                {ctx.repricingModal.rows.length} producto
+                {ctx.repricingModal.rows.length === 1 ? "" : "s"}.
+              </p>
+              <div className="zh-table-wrap">
+                <table className="zh-table zh-table--compact">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Precio actual</th>
+                      <th>Nuevo precio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ctx.repricingModal.rows.map((row) => (
+                      <tr key={row.key}>
+                        <td>{row.description}</td>
+                        <td>
+                          <ZHMoneyValue
+                            value={row.currentUnitPrice}
+                            decimals={getPrecisionPolicy().salesUnitPriceDecimals}
+                          />
+                        </td>
+                        <td>
+                          <ZHMoneyValue
+                            value={row.fields.unitPrice}
+                            decimals={getPrecisionPolicy().salesUnitPriceDecimals}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        }
+        confirmLabel="Cambiar cliente y recalcular"
+        cancelLabel="Cancelar"
+        onCancel={ctx.cancelRepricing}
+        onConfirm={ctx.confirmRepricing}
       />
 
       {ctx.editing && (
