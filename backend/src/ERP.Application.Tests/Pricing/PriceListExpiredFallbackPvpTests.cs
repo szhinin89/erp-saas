@@ -33,6 +33,7 @@ public sealed class PriceListExpiredFallbackPvpTests
         public Mock<IItemRepository> Items { get; } = new();
         public Mock<IPriceListRepository> PriceLists { get; } = new();
         public Mock<IPricingRuleRepository> Rules { get; } = new();
+        public Mock<IPriceListItemRepository> Assignments { get; } = new();
         public Mock<IPricingAdjustmentStrategyResolver> Strategies { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
@@ -55,6 +56,19 @@ public sealed class PriceListExpiredFallbackPvpTests
                     )
                 )
                 .ReturnsAsync((PricingRule?)null);
+            // Por defecto, asignado y activo — los tests de vigencia de esta suite no cubren
+            // asignación (eso lo cubre PricingListAssignmentEnforcementTests). Los tests de
+            // asignación de este archivo sobreescriben este setup explícitamente.
+            Assignments
+                .Setup(a =>
+                    a.FindByKeyAsync(
+                        TenantId,
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(PriceListItem.Create(TenantId, CompanyId, Guid.NewGuid(), Guid.NewGuid(), UserId));
         }
 
         public PricingResolver Build() =>
@@ -62,6 +76,7 @@ public sealed class PriceListExpiredFallbackPvpTests
                 Items.Object,
                 PriceLists.Object,
                 Rules.Object,
+                Assignments.Object,
                 Strategies.Object,
                 Tenant.Object,
                 Company.Object,

@@ -22,6 +22,7 @@ public sealed class PricingResolver : IPricingResolver
     private readonly IItemRepository _items;
     private readonly IPriceListRepository _priceLists;
     private readonly IPricingRuleRepository _rules;
+    private readonly IPriceListItemRepository _assignments;
     private readonly IPricingAdjustmentStrategyResolver _strategies;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -31,6 +32,7 @@ public sealed class PricingResolver : IPricingResolver
         IItemRepository items,
         IPriceListRepository priceLists,
         IPricingRuleRepository rules,
+        IPriceListItemRepository assignments,
         IPricingAdjustmentStrategyResolver strategies,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -40,6 +42,7 @@ public sealed class PricingResolver : IPricingResolver
         _items = items;
         _priceLists = priceLists;
         _rules = rules;
+        _assignments = assignments;
         _strategies = strategies;
         _t = t;
         _c = c;
@@ -78,23 +81,24 @@ public sealed class PricingResolver : IPricingResolver
         var listApplies = priceList is not null && priceList.IsActive && priceList.IsValidOn(companyToday);
 
         if (!listApplies)
-        {
             return Result<PricingResult>.Success(
-                new PricingResult(
-                    itemId,
-                    null,
-                    BasePriceCode,
-                    BasePriceName,
-                    priceList?.CurrencyCode ?? DefaultCurrencyCode,
-                    basePrice,
-                    null,
-                    Math.Round(basePrice, 6, MidpointRounding.AwayFromZero)
-                )
+                BasePriceResult(itemId, basePrice, priceList?.CurrencyCode)
             );
-        }
+
+        // PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02: la regla de una PriceList (general o excepción)
+        // solo aplica a ítems asignados y activos en ESA lista — un ítem sin PriceListItem activo
+        // para (priceList.Id, itemId) cae al mismo fallback de precio base que una lista
+        // inactiva/vencida (PRICE-LIST-EXPIRED-FALLBACK-PVP-01). La asignación deja de ser solo
+        // una compuerta administrativa para crear excepciones — ahora también gobierna si la
+        // regla general de la lista aplica al resolver el precio real de venta.
+        var assignment = await _assignments.FindByKeyAsync(tenantId, priceList!.Id, itemId, ct);
+        if (assignment is not { IsActive: true })
+            return Result<PricingResult>.Success(
+                BasePriceResult(itemId, basePrice, priceList.CurrencyCode)
+            );
 
         // 3. Resolve Rule — regla específica del ítem (si existe) > regla general de la lista > sin ajuste
-        var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList!.Id, itemId, ct);
+        var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList.Id, itemId, ct);
 
         // 4. Precedencia + redondeo — núcleo compartido con la simulación batch (GetItemPricingSimulation).
         var (unitPrice, ruleApplied) = PricingCalculation.Resolve(
@@ -120,4 +124,16 @@ public sealed class PricingResolver : IPricingResolver
             )
         );
     }
+
+    private static PricingResult BasePriceResult(Guid itemId, decimal basePrice, string? currencyCode) =>
+        new(
+            itemId,
+            null,
+            BasePriceCode,
+            BasePriceName,
+            currencyCode ?? DefaultCurrencyCode,
+            basePrice,
+            null,
+            Math.Round(basePrice, 6, MidpointRounding.AwayFromZero)
+        );
 }

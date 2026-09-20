@@ -164,16 +164,31 @@ public sealed class GetItemPricingSimulationQueryHandler
         var rows = new List<ItemPricingSimulationRowDto>(activeLists.Count);
         foreach (var priceList in activeLists)
         {
-            itemRulesByList.TryGetValue(priceList.Id, out var itemRule);
-            if (previewRule?.PriceListId == priceList.Id)
-                itemRule = previewRule;
-            var (netPrice, _) = PricingCalculation.Resolve(
-                basePrice.Value,
-                itemRule,
-                priceList,
-                _strategies
-            );
-            var ruleSummary = PricingCalculation.Summarize(itemRule, priceList);
+            var isAssigned = assignedListIds.Contains(priceList.Id);
+
+            // PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02: con ItemId presente, ni la excepción ni la
+            // regla general de la lista aplican sin una PriceListItem activa para (priceList.Id,
+            // itemId) — mismo criterio que PricingResolver.ResolveAsync. Sin ItemId (ítem aún no
+            // creado) el concepto de asignación no existe todavía: se preserva el comportamiento
+            // documentado de "corre solo con las reglas generales de cada PriceList" (IsAssigned
+            // se sigue reportando false, sin item no hay asignación real que reportar).
+            var appliesRule = !q.ItemId.HasValue || isAssigned;
+
+            decimal netPrice;
+            PricingRuleSummaryDto ruleSummary;
+            if (appliesRule)
+            {
+                itemRulesByList.TryGetValue(priceList.Id, out var itemRule);
+                if (previewRule?.PriceListId == priceList.Id)
+                    itemRule = previewRule;
+                (netPrice, _) = PricingCalculation.Resolve(basePrice.Value, itemRule, priceList, _strategies);
+                ruleSummary = PricingCalculation.Summarize(itemRule, priceList);
+            }
+            else
+            {
+                netPrice = Math.Round(basePrice.Value, 6, MidpointRounding.AwayFromZero);
+                ruleSummary = new PricingRuleSummaryDto(PriceSource.BasePrice, null, null, "Precio base");
+            }
 
             // Precio neto (sin impuestos) — el piso de descuento se calcula sobre el mismo
             // precio neto, nunca sobre un precio con IVA/ICE incluido (eso es responsabilidad
@@ -192,7 +207,7 @@ public sealed class GetItemPricingSimulationQueryHandler
                     priceList.Code,
                     priceList.Name,
                     priceList.CurrencyCode,
-                    assignedListIds.Contains(priceList.Id),
+                    isAssigned,
                     ruleSummary,
                     netPrice,
                     maxDiscount,
