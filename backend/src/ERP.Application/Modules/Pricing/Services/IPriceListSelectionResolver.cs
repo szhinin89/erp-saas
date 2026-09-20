@@ -36,7 +36,9 @@ public sealed record PriceListSelectionResult(
 /// nunca aquí.
 ///
 /// Jerarquía y orden de los candidatos:
-///   1. Cliente tiene PriceListCustomer activa cuya PriceList es activa y vigente → candidato Customer.
+///   1. Con <c>customerId</c> informado: cliente tiene PriceListCustomer activa cuya PriceList
+///      es activa y vigente → candidato Customer. Sin <c>customerId</c> (null), este paso se
+///      omite por completo — nunca se consulta PriceListCustomer.
 ///   2. PriceList.IsDefault de la empresa, activa y vigente → candidato CompanyDefault.
 ///   3. Si la lista del cliente y la default son LA MISMA PriceList, se devuelve un único
 ///      candidato (Customer) — nunca duplicado.
@@ -47,8 +49,16 @@ public sealed record PriceListSelectionResult(
 /// </summary>
 public interface IPriceListSelectionResolver
 {
+    /// <summary>
+    /// PRICING-CONTEXT-NULL-CUSTOMER-05C1: <paramref name="customerId"/> es opcional —
+    /// <c>null</c> significa explícitamente "sin cliente" y omite la consulta de
+    /// PriceListCustomer (nunca un <see cref="Guid.Empty"/> usado como sentinel mágico). Un
+    /// <see cref="Guid.Empty"/> explícito se trata como cualquier otro id real: se consulta
+    /// igual, y como ningún PriceListCustomer real tiene ese id, simplemente no encuentra
+    /// asignación — mismo resultado que cualquier cliente sin lista propia, sin caso especial.
+    /// </summary>
     Task<IReadOnlyList<PriceListSelectionResult>> ResolveAsync(
-        Guid customerId,
+        Guid? customerId,
         CancellationToken ct = default
     );
 }

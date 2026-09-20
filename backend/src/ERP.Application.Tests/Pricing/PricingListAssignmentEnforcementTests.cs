@@ -36,6 +36,7 @@ public sealed class PricingListAssignmentEnforcementTests
         public Mock<IPriceListRepository> PriceLists { get; } = new();
         public Mock<IPricingRuleRepository> Rules { get; } = new();
         public Mock<IPriceListItemRepository> Assignments { get; } = new();
+        public Mock<IPriceListSelectionResolver> Selection { get; } = new();
         public Mock<IPricingAdjustmentStrategyResolver> Strategies { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
@@ -56,6 +57,7 @@ public sealed class PricingListAssignmentEnforcementTests
                 PriceLists.Object,
                 Rules.Object,
                 Assignments.Object,
+                Selection.Object,
                 Strategies.Object,
                 Tenant.Object,
                 Company.Object,

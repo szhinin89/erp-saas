@@ -29,7 +29,7 @@ public sealed class PriceListSelectionResolver : IPriceListSelectionResolver
     }
 
     public async Task<IReadOnlyList<PriceListSelectionResult>> ResolveAsync(
-        Guid customerId,
+        Guid? customerId,
         CancellationToken ct = default
     )
     {
@@ -37,27 +37,32 @@ public sealed class PriceListSelectionResolver : IPriceListSelectionResolver
         var today = await _companyClock.TodayAsync(_c.CompanyId, tenantId, ct);
         var candidates = new List<PriceListSelectionResult>(2);
 
-        // 1. Lista del cliente — como máximo una relación ACTIVA por (Tenant, Company, Customer)
-        // está garantizado en BD (índice único parcial), así que FirstOrDefault sobre las activas
-        // nunca es ambiguo.
-        var customerAssignments = await _customerLists.GetByCustomerAsync(tenantId, customerId, ct);
-        var activeCustomerAssignment = customerAssignments.FirstOrDefault(a => a.IsActive);
+        // 1. Lista del cliente — solo se consulta si customerId viene informado. NULL significa
+        // explícitamente "sin cliente" y omite por completo PriceListCustomer (nunca se usa
+        // Guid.Empty como sentinel mágico — PRICING-CONTEXT-NULL-CUSTOMER-05C1). Como máximo una
+        // relación ACTIVA por (Tenant, Company, Customer) está garantizado en BD (índice único
+        // parcial), así que FirstOrDefault sobre las activas nunca es ambiguo.
         PriceList? customerList = null;
-        if (activeCustomerAssignment is not null)
+        if (customerId.HasValue)
         {
-            customerList = await _priceLists.GetByIdAsync(
-                tenantId,
-                activeCustomerAssignment.PriceListId,
-                ct
-            );
-            if (Applies(customerList, today))
-                candidates.Add(
-                    new PriceListSelectionResult(
-                        customerList!.Id,
-                        customerList.Name,
-                        PriceListSelectionSource.Customer
-                    )
+            var customerAssignments = await _customerLists.GetByCustomerAsync(tenantId, customerId.Value, ct);
+            var activeCustomerAssignment = customerAssignments.FirstOrDefault(a => a.IsActive);
+            if (activeCustomerAssignment is not null)
+            {
+                customerList = await _priceLists.GetByIdAsync(
+                    tenantId,
+                    activeCustomerAssignment.PriceListId,
+                    ct
                 );
+                if (Applies(customerList, today))
+                    candidates.Add(
+                        new PriceListSelectionResult(
+                            customerList!.Id,
+                            customerList.Name,
+                            PriceListSelectionSource.Customer
+                        )
+                    );
+            }
         }
 
         // 2. Lista default de la empresa — mismo criterio de vigencia que PricingResolver

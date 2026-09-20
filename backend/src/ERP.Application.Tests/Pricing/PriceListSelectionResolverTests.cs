@@ -271,4 +271,63 @@ public sealed class PriceListSelectionResolverTests
         );
         f.Company.VerifyGet(c => c.CompanyId, Times.AtLeastOnce);
     }
+
+    [Fact]
+    public async Task CustomerId_null_omite_la_consulta_de_cliente_y_devuelve_solo_default()
+    {
+        // PRICING-CONTEXT-NULL-CUSTOMER-05C1: null es "sin cliente" — nunca consulta
+        // PriceListCustomer, ni siquiera con un Guid.Empty sentinel.
+        var f = new Fixture();
+        var defaultList = CreateList("GEN", isDefault: true);
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+
+        var result = await f.Build().ResolveAsync(null, CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].PriceListId.Should().Be(defaultList.Id);
+        result[0].Source.Should().Be(PriceListSelectionSource.CompanyDefault);
+        f.CustomerLists.Verify(
+            r => r.GetByCustomerAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CustomerId_null_y_sin_default_valida_devuelve_coleccion_vacia()
+    {
+        var f = new Fixture();
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync((PriceList?)null);
+
+        var result = await f.Build().ResolveAsync(null, CancellationToken.None);
+
+        result.Should().BeEmpty();
+        f.CustomerLists.Verify(
+            r => r.GetByCustomerAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Guid_Empty_explicito_se_trata_como_cualquier_otro_customerId_sin_caso_especial()
+    {
+        // PRICING-CONTEXT-NULL-CUSTOMER-05C1: Guid.Empty NO es un sentinel mágico de "sin
+        // cliente" — se consulta PriceListCustomer normalmente para ese id; como ningún cliente
+        // real tiene ese Guid, simplemente no encuentra asignación (mismo resultado que
+        // Cliente_sin_relacion_devuelve_solo_el_candidato_default, pero con Guid.Empty explícito).
+        var f = new Fixture();
+        var defaultList = CreateList("GEN", isDefault: true);
+        f.CustomerLists
+            .Setup(r => r.GetByCustomerAsync(TenantId, Guid.Empty, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PriceListCustomer>());
+        f.PriceLists.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(defaultList);
+
+        var result = await f.Build().ResolveAsync(Guid.Empty, CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].Source.Should().Be(PriceListSelectionSource.CompanyDefault);
+        f.CustomerLists.Verify(
+            r => r.GetByCustomerAsync(TenantId, Guid.Empty, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
 }

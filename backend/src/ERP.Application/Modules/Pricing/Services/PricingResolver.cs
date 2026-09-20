@@ -23,6 +23,7 @@ public sealed class PricingResolver : IPricingResolver
     private readonly IPriceListRepository _priceLists;
     private readonly IPricingRuleRepository _rules;
     private readonly IPriceListItemRepository _assignments;
+    private readonly IPriceListSelectionResolver _selection;
     private readonly IPricingAdjustmentStrategyResolver _strategies;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -33,6 +34,7 @@ public sealed class PricingResolver : IPricingResolver
         IPriceListRepository priceLists,
         IPricingRuleRepository rules,
         IPriceListItemRepository assignments,
+        IPriceListSelectionResolver selection,
         IPricingAdjustmentStrategyResolver strategies,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -43,6 +45,7 @@ public sealed class PricingResolver : IPricingResolver
         _priceLists = priceLists;
         _rules = rules;
         _assignments = assignments;
+        _selection = selection;
         _strategies = strategies;
         _t = t;
         _c = c;
@@ -85,22 +88,90 @@ public sealed class PricingResolver : IPricingResolver
                 BasePriceResult(itemId, basePrice, priceList?.CurrencyCode)
             );
 
-        // PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02: la regla de una PriceList (general o excepción)
-        // solo aplica a ítems asignados y activos en ESA lista — un ítem sin PriceListItem activo
-        // para (priceList.Id, itemId) cae al mismo fallback de precio base que una lista
-        // inactiva/vencida (PRICE-LIST-EXPIRED-FALLBACK-PVP-01). La asignación deja de ser solo
-        // una compuerta administrativa para crear excepciones — ahora también gobierna si la
-        // regla general de la lista aplica al resolver el precio real de venta.
-        var assignment = await _assignments.FindByKeyAsync(tenantId, priceList!.Id, itemId, ct);
-        if (assignment is not { IsActive: true })
-            return Result<PricingResult>.Success(
-                BasePriceResult(itemId, basePrice, priceList.CurrencyCode)
+        var resolved = await TryResolveAgainstListAsync(tenantId, itemId, priceList!, basePrice, null, ct);
+        return Result<PricingResult>.Success(
+            resolved ?? BasePriceResult(itemId, basePrice, priceList!.CurrencyCode)
+        );
+    }
+
+    /// <summary>
+    /// PRICING-CONTEXTUAL-RESOLUTION-05C: recorre los candidatos de IPriceListSelectionResolver
+    /// en orden (Customer → CompanyDefault → ...) y usa el primero cuyo ítem tenga un
+    /// PriceListItem activo — exactamente el mismo criterio de asignación que ya aplica
+    /// ResolveAsync(Guid, Guid?, ct) para la lista default, ahora repetido por candidato en vez
+    /// de una sola lista fija. Sin CustomerId, el único candidato posible es CompanyDefault — el
+    /// comportamiento es idéntico al de hoy.
+    /// </summary>
+    public async Task<Result<PricingResult>> ResolveAsync(
+        PricingContext context,
+        CancellationToken ct = default
+    )
+    {
+        var tenantId = _t.TenantId;
+
+        var item = await _items.GetByIdLightAsync(context.ItemId, tenantId, ct);
+        if (item is null)
+            return Result<PricingResult>.NotFound("Ítem no encontrado.");
+        if (!item.BaseSalePrice.HasValue)
+            return Result<PricingResult>.ValidationFailure(
+                "El ítem no tiene precio base configurado. Verifique el maestro de productos."
             );
+        var basePrice = item.BaseSalePrice.Value;
 
-        // 3. Resolve Rule — regla específica del ítem (si existe) > regla general de la lista > sin ajuste
+        // IPriceListSelectionResolver ya filtra vigencia/activación de cada PriceList candidata
+        // (PRICE-LIST-EXPIRED-FALLBACK-PVP-01) y ya deduplica cuando la lista del cliente
+        // coincide con la default (PRICING-PRICE-LIST-SELECTION-CANDIDATES-05A1) — "misma
+        // evaluación" cuando ambas son la misma lista, nunca se evalúa dos veces. CustomerId nulo
+        // se propaga tal cual (PRICING-CONTEXT-NULL-CUSTOMER-05C1) — nunca se sustituye por
+        // Guid.Empty como sentinel.
+        var candidates = await _selection.ResolveAsync(context.CustomerId, ct);
+
+        foreach (var candidate in candidates)
+        {
+            var priceList = await _priceLists.GetByIdAsync(tenantId, candidate.PriceListId, ct);
+            if (priceList is null)
+                continue;
+
+            var resolved = await TryResolveAgainstListAsync(
+                tenantId,
+                context.ItemId,
+                priceList,
+                basePrice,
+                candidate.Source,
+                ct
+            );
+            if (resolved is not null)
+                return Result<PricingResult>.Success(resolved);
+        }
+
+        // Ningún candidato tenía el ítem asignado y activo — mismo fallback final que la lista
+        // explícita/default inaplicable.
+        return Result<PricingResult>.Success(BasePriceResult(context.ItemId, basePrice, null));
+    }
+
+    /// <summary>
+    /// PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02: la regla de una PriceList (general o excepción)
+    /// solo aplica a ítems asignados y activos en ESA lista. Null = el ítem no está asignado (o
+    /// la asignación está deshabilitada) — el llamador decide el siguiente paso (lista default,
+    /// siguiente candidato, o PVP).
+    /// </summary>
+    private async Task<PricingResult?> TryResolveAgainstListAsync(
+        Guid tenantId,
+        Guid itemId,
+        PriceList priceList,
+        decimal basePrice,
+        PriceListSelectionSource? selectionSource,
+        CancellationToken ct
+    )
+    {
+        var assignment = await _assignments.FindByKeyAsync(tenantId, priceList.Id, itemId, ct);
+        if (assignment is not { IsActive: true })
+            return null;
+
+        // Resolve Rule — regla específica del ítem (si existe) > regla general de la lista > sin
+        // ajuste. Precedencia + redondeo: núcleo compartido con la simulación batch
+        // (GetItemPricingSimulation) — nunca reimplementado aquí.
         var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList.Id, itemId, ct);
-
-        // 4. Precedencia + redondeo — núcleo compartido con la simulación batch (GetItemPricingSimulation).
         var (unitPrice, ruleApplied) = PricingCalculation.Resolve(
             basePrice,
             itemRule,
@@ -110,18 +181,17 @@ public sealed class PricingResolver : IPricingResolver
         var ruleDescription =
             ruleApplied is null ? null : PricingCalculation.Summarize(itemRule, priceList).Description;
 
-        return Result<PricingResult>.Success(
-            new PricingResult(
-                itemId,
-                priceList.Id,
-                priceList.Code,
-                priceList.Name,
-                priceList.CurrencyCode,
-                basePrice,
-                ruleApplied,
-                unitPrice,
-                ruleDescription
-            )
+        return new PricingResult(
+            itemId,
+            priceList.Id,
+            priceList.Code,
+            priceList.Name,
+            priceList.CurrencyCode,
+            basePrice,
+            ruleApplied,
+            unitPrice,
+            ruleDescription,
+            selectionSource
         );
     }
 

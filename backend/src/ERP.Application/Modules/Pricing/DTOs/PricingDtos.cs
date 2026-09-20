@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Pricing.Services;
+
 namespace ERP.Application.Modules.Pricing.DTOs;
 
 public sealed record PriceListDto(
@@ -98,6 +100,10 @@ public sealed record PricingRuleSetResultDto(
 /// (PVP/base), nunca se bloquea por el estado de la lista; en ese caso <c>PriceListCode</c>/
 /// <c>PriceListName</c> quedan en el sentinel "Precio base" y <c>RuleApplied</c>/<c>RuleDescription</c>
 /// en null, exactamente igual que cuando SÍ hay lista pero no aplica ninguna regla.</summary>
+// SelectionSource (PRICING-CONTEXTUAL-RESOLUTION-05C): de qué candidato vino la lista usada
+// (Customer vs CompanyDefault) — solo se completa cuando la resolución pasó por
+// IPricingResolver.ResolveAsync(PricingContext, ct). Null en el ResolveAsync explícito (lista
+// forzada, sin selección de candidatos) y en el fallback a BaseSalePrice (ningún candidato aplicó).
 public sealed record PricingResult(
     Guid ItemId,
     Guid? PriceListId,
@@ -107,5 +113,6 @@ public sealed record PricingResult(
     decimal BasePrice,
     string? RuleApplied,
     decimal UnitPrice,
-    string? RuleDescription = null
+    string? RuleDescription = null,
+    PriceListSelectionSource? SelectionSource = null
 );
