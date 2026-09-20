@@ -32,6 +32,7 @@ public sealed class InvoiceItemSearchCompanyClockTests
         public Mock<ISriCatalogResolver> Sri { get; } = new();
         public Mock<IPriceListRepository> PriceLists { get; } = new();
         public Mock<IPricingRuleRepository> Rules { get; } = new();
+        public Mock<IPriceListItemRepository> Assignments { get; } = new();
         public Mock<IPricingAdjustmentStrategyResolver> Strategies { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
@@ -85,6 +86,14 @@ public sealed class InvoiceItemSearchCompanyClockTests
                     r.GetByPriceListAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(Array.Empty<PricingRule>());
+            // Esta suite cubre vigencia por CompanyClock, no asignación (eso lo cubre
+            // SalesItemSearchPriceListAssignmentTests) — el ítem de prueba se asume asignado y
+            // activo en la lista default por defecto.
+            Assignments
+                .Setup(a =>
+                    a.GetByPriceListAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(new[] { PriceListItem.Create(TenantId, CompanyId, Guid.NewGuid(), ItemId, UserId) });
 
             var percentDiscount = new Mock<IPricingAdjustmentStrategy>();
             percentDiscount
@@ -101,6 +110,7 @@ public sealed class InvoiceItemSearchCompanyClockTests
                 Sri.Object,
                 PriceLists.Object,
                 Rules.Object,
+                Assignments.Object,
                 Strategies.Object,
                 Tenant.Object,
                 Company.Object,

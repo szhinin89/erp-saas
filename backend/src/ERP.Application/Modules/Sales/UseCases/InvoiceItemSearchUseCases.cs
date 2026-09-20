@@ -20,6 +20,7 @@ public sealed class SearchItemsForInvoiceHandler
     private readonly ISriCatalogResolver _sri;
     private readonly IPriceListRepository _priceLists;
     private readonly IPricingRuleRepository _rules;
+    private readonly IPriceListItemRepository _assignments;
     private readonly IPricingAdjustmentStrategyResolver _strategies;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -30,6 +31,7 @@ public sealed class SearchItemsForInvoiceHandler
         ISriCatalogResolver sri,
         IPriceListRepository priceLists,
         IPricingRuleRepository rules,
+        IPriceListItemRepository assignments,
         IPricingAdjustmentStrategyResolver strategies,
         ICurrentTenant tenant,
         ICurrentCompany company,
@@ -40,6 +42,7 @@ public sealed class SearchItemsForInvoiceHandler
         _sri = sri;
         _priceLists = priceLists;
         _rules = rules;
+        _assignments = assignments;
         _strategies = strategies;
         _tenant = tenant;
         _company = company;
@@ -95,8 +98,19 @@ public sealed class SearchItemsForInvoiceHandler
             : (await _rules.GetByPriceListAsync(_tenant.TenantId, defaultList.Id, cancellationToken))
                 .ToDictionary(r => r.ItemId);
 
+        // PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02 (mismo criterio, tercer call-site): la regla
+        // general de la lista default (o su excepción por ítem) solo puede sugerirse aquí para
+        // ítems con una PriceListItem ACTIVA en esa lista — sin eso, este bloque bypaseaba el
+        // Pricing Engine mostrando "Promo" a cualquier ítem sin importar asignación. Mismo patrón
+        // de "2/3 queries totales, nunca N+1" que ya usa este handler.
+        var assignedItemIds = defaultList is null
+            ? new HashSet<Guid>()
+            : (await _assignments.GetByPriceListAsync(_tenant.TenantId, defaultList.Id, cancellationToken))
+                .Select(a => a.ItemId)
+                .ToHashSet();
+
         var results = matches
-            .Select(m => Enrich(m, vatMap, iceMap, defaultList, rulesByItemId, _strategies))
+            .Select(m => Enrich(m, vatMap, iceMap, defaultList, rulesByItemId, assignedItemIds, _strategies))
             .ToList();
         return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(results);
     }
@@ -107,6 +121,7 @@ public sealed class SearchItemsForInvoiceHandler
         IReadOnlyDictionary<string, SriIceInfo> iceMap,
         PriceList? defaultList,
         IReadOnlyDictionary<Guid, PricingRule> rulesByItemId,
+        IReadOnlySet<Guid> assignedItemIds,
         IPricingAdjustmentStrategyResolver strategies
     )
     {
@@ -142,7 +157,7 @@ public sealed class SearchItemsForInvoiceHandler
         string? discountDescription = null;
         decimal? discountedSalePriceWithoutTax = null;
         decimal? discountedFinalSalePrice = null;
-        if (defaultList is not null && match.SalePriceWithoutTax.HasValue)
+        if (defaultList is not null && match.SalePriceWithoutTax.HasValue && assignedItemIds.Contains(match.Id))
         {
             rulesByItemId.TryGetValue(match.Id, out var itemRule);
             var (netPrice, ruleApplied) = PricingCalculation.Resolve(
