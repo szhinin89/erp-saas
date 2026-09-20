@@ -69,6 +69,7 @@ import {
 import { applyServerErrors } from "../../lib/validationErrors";
 import { cajaSessionLookupFacade } from "../../caja/facades/cajaSessionLookupFacade";
 import type { CashSessionDto } from "../../caja/facades/cajaSessionLookupFacade";
+import { useManualCashMovementFlow } from "../../caja/hooks/useManualCashMovementFlow";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 import type { ElectronicInvoicingStatusDto } from "../../configuracion/facturacionElectronica/api/electronicInvoicingService";
@@ -316,6 +317,19 @@ export function useSalesPage() {
   }, [checkCashSession]);
 
   const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
+
+  // ── SALES-MANUAL-CASH-MOVEMENT-INTEGRATION-08 — reutiliza tal cual el flujo de movimiento
+  // manual ya construido para Caja (mismo hook, mismo endpoint, mismo permiso `caja.record`,
+  // misma configuración de empresa AllowManualInOutMovements, mismo catálogo CashMovementReason).
+  // "Turno abierto" aquí es exactamente `myCashSession` (GET /cash-sessions/my ya resuelto arriba
+  // vía cajaSessionLookupFacade): un valor no nulo YA significa "hay una sesión abierta para este
+  // usuario" (ver comentario de `hasCashSession` arriba) — nunca se acepta un CashSessionId
+  // elegido por la UI. Al registrar con éxito no se recarga nada de Ventas (el documento en curso
+  // no cambia); Sales tampoco muestra hoy ningún indicador de saldo de caja que deba refrescarse.
+  const manualCashMovement = useManualCashMovementFlow({
+    cashSessionId: myCashSession?.id ?? null,
+    isSessionOpen: myCashSession?.status === "Open",
+  });
 
   // ── Customer state ─────────────────────────────────────────────────
   const [customerProfile, setCustomerProfile] =
@@ -1858,6 +1872,9 @@ export function useSalesPage() {
     cashSessionCheckError,
     refreshCashSession,
     branchName,
+
+    // SALES-MANUAL-CASH-MOVEMENT-INTEGRATION-08 — mismo flujo que /treasury/cash, ver arriba.
+    manualCashMovement,
 
     // Derived
     isDraft,

@@ -762,7 +762,9 @@ describe("useCajaPage — modal de registrar movimiento (TREASURY-CASH-MANUAL-MO
     });
 
     expect(result.current.movementModalOpen).toBe(true);
-    expect(result.current.saveError).toBe("El motivo seleccionado está inactivo.");
+    // SALES-MANUAL-CASH-MOVEMENT-INTEGRATION-08 — el error del flujo de movimiento ahora vive en
+    // su propio estado (movementSaveError), separado del saveError de abrir/cerrar turno.
+    expect(result.current.movementSaveError).toBe("El motivo seleccionado está inactivo.");
   });
 });
 

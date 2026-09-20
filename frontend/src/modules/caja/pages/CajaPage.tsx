@@ -717,8 +717,8 @@ export function CajaPage() {
               ctx.canRecordManualMovements && (
                 <ManualCashMovementModal
                   open={ctx.movementModalOpen}
-                  saving={ctx.saving}
-                  saveError={ctx.saveError}
+                  saving={ctx.movementSaving}
+                  saveError={ctx.movementSaveError}
                   register={ctx.movementForm.register}
                   errors={ctx.movementForm.formState.errors}
                   selectedMovementType={ctx.selectedMovementType}

@@ -48,7 +48,7 @@ describe("cash locale integrity", () => {
   });
 
   it("resolves every literal cash translation key in all three locales with matching interpolation", () => {
-    for (const file of ["pages/CajaPage.tsx", "hooks/useCajaPage.tsx", "schemas/cajaSchema.ts", "constants/cashMovementTypes.ts", "components/ManualCashMovementModal.tsx"]) {
+    for (const file of ["pages/CajaPage.tsx", "hooks/useCajaPage.tsx", "hooks/useManualCashMovementFlow.tsx", "schemas/cajaSchema.ts", "constants/cashMovementTypes.ts", "components/ManualCashMovementModal.tsx"]) {
       const source = readFileSync(resolve(`src/modules/caja/${file}`), "utf8");
       // canShow(...) toma keys de PERMISOS (p. ej. "caja.record"), un namespace plano y distinto
       // del de i18n (siempre anidado, "caja.<grupo>.<campo>") — se excluyen de este chequeo de
@@ -66,7 +66,7 @@ describe("cash locale integrity", () => {
   });
 
   it("has no untranslated JSX text or visible string props in the cash page and confirmations", () => {
-    for (const file of ["pages/CajaPage.tsx", "hooks/useCajaPage.tsx", "components/ManualCashMovementModal.tsx"]) {
+    for (const file of ["pages/CajaPage.tsx", "hooks/useCajaPage.tsx", "hooks/useManualCashMovementFlow.tsx", "components/ManualCashMovementModal.tsx"]) {
       const source = readFileSync(resolve(`src/modules/caja/${file}`), "utf8");
       const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
       const hardcodes: string[] = [];

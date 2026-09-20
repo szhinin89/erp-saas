@@ -48,6 +48,11 @@ vi.mock("../hooks/useSalesPage", () => ({
 
 import { SalesPage } from "./SalesPage";
 
+vi.mock("../../caja/components/ManualCashMovementModal", () => ({
+  ManualCashMovementModal: () => null,
+}));
+
+
 function renderSalesPage() {
   return render(
     <MemoryRouter>
@@ -178,6 +183,22 @@ function buildCtx(
 
     hasCashSession: true,
     myCashSession: null,
+    manualCashMovement: {
+      allowManualMovements: false,
+      canRecordManualMovements: false,
+      saving: false,
+      saveError: null,
+      setSaveError: () => {},
+      movementForm: { register: () => ({}), formState: { errors: {} } },
+      movementTypes: [],
+      reasons: [],
+      reasonsLoading: false,
+      selectedMovementType: null,
+      movementModalOpen: false,
+      openMovementModal: () => {},
+      closeMovementModal: () => {},
+      handleRecordMovement: () => {},
+    },
     branchName: null,
 
     isDraft: true,

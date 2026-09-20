@@ -22,6 +22,7 @@ import { QuickCustomerModal } from "../components/QuickCustomerModal";
 import { SalesElectronicDiagnosticDrawer } from "../components/SalesElectronicDiagnosticDrawer";
 import { SalesIssueModal } from "../components/SalesIssueModal";
 import { CashSessionNotice } from "../components/CashSessionNotice";
+import { ManualCashMovementModal } from "../../caja/components/ManualCashMovementModal";
 import { SalesFormChecklist } from "../components/SalesFormChecklist";
 import { SalesEmissionConfigSection } from "../components/SalesEmissionConfigSection";
 import { EmitButton } from "../components/EmitButton";
@@ -454,6 +455,28 @@ export function SalesPage() {
             <div className="sf-bottombar__spacer" />
 
             <div className="sf-bottombar__primary-actions">
+              {/* SALES-MANUAL-CASH-MOVEMENT-INTEGRATION-08 — misma regla de disponibilidad que
+                  /treasury/cash (empresa lo permite + usuario tiene caja.record + turno abierto),
+                  resuelta por el mismo hook compartido; nunca decidida aquí. `myCashSession` no
+                  nulo ya significa "hay un turno abierto para este usuario" (ver useSalesPage.ts,
+                  GET /cash-sessions/my). Fail-closed: cualquier condición en falso/cargando/error
+                  oculta el botón. */}
+              {ctx.manualCashMovement.allowManualMovements &&
+                ctx.manualCashMovement.canRecordManualMovements &&
+                ctx.myCashSession?.status === "Open" && (
+                  <ZHBtn
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={ctx.manualCashMovement.openMovementModal}
+                  >
+                    <span className="material-symbols-outlined zh-icon-lg">
+                      add
+                    </span>
+                    Movimiento de caja
+                  </ZHBtn>
+                )}
+
               <ZHBtn
                 type="button"
                 variant="secondary"
@@ -571,6 +594,24 @@ export function SalesPage() {
       )}
 
       {/* ═══════════════════════════ MODALS ═══════════════════════════ */}
+
+      {/* SALES-MANUAL-CASH-MOVEMENT-INTEGRATION-08 — exactamente el mismo componente que usa
+          /treasury/cash (ManualCashMovementModal), controlado por el mismo hook compartido
+          (useManualCashMovementFlow, vía ctx.manualCashMovement) — cero lógica de negocio nueva
+          en Sales, mismo endpoint/permiso/configuración de empresa que Caja. */}
+      <ManualCashMovementModal
+        open={ctx.manualCashMovement.movementModalOpen}
+        saving={ctx.manualCashMovement.saving}
+        saveError={ctx.manualCashMovement.saveError}
+        register={ctx.manualCashMovement.movementForm.register}
+        errors={ctx.manualCashMovement.movementForm.formState.errors}
+        selectedMovementType={ctx.manualCashMovement.selectedMovementType}
+        movementTypes={ctx.manualCashMovement.movementTypes}
+        reasons={ctx.manualCashMovement.reasons}
+        reasonsLoading={ctx.manualCashMovement.reasonsLoading}
+        onSubmit={ctx.manualCashMovement.handleRecordMovement}
+        onClose={ctx.manualCashMovement.closeMovementModal}
+      />
 
       <PaymentDetailModal
         open={ctx.modalDetail}
