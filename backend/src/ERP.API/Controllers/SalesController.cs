@@ -6,6 +6,7 @@ using ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 using ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
 using ERP.Application.Modules.Sales.UseCases.GetSalesReceiptPrintPayload;
 using ERP.Application.Modules.Sales.UseCases.GetSalesRuntimeContext;
+using ERP.Application.Modules.Sales.UseCases.PreviewSalesRepricing;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -167,6 +168,19 @@ public sealed class SalesController : ControllerBase
         [FromQuery] Guid? customerId,
         CancellationToken ct
     ) => this.ToOkOrBadRequest(await _mediator.Send(new GetSalesItemPricingQuery(itemId, customerId), ct));
+
+    /// <summary>
+    /// SALES-CUSTOMER-REPRICING-PREVIEW-06C1: previsualiza cómo cambiaría el precio de un
+    /// conjunto de ítems si el cliente pasara de OldCustomerId a NewCustomerId — solo lectura, no
+    /// aplica ningún cambio en ninguna factura. Pensado para el flujo de cambio de cliente con
+    /// líneas ya cargadas (aún no implementado en el frontend).
+    /// </summary>
+    [HttpPost("pricing/repricing-preview")]
+    [Authorize(Policy = $"perm:{SalesPermissions.View}")]
+    public async Task<IActionResult> PreviewRepricing(
+        [FromBody] PreviewSalesRepricingQuery query,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(query, ct));
 }
 
 public record SalesApplyDiscountRequest(decimal DiscountPct);
