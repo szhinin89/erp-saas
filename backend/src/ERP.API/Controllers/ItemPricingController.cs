@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.Application.Modules.Pricing.UseCases.PricingRules;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Items.UseCases.Profitability;
 using ERP.Application.Modules.Pricing.UseCases.ItemPricingSimulation;
@@ -60,7 +61,8 @@ public sealed class ItemPricingController : ControllerBase
                 new GetItemPricingSimulationQuery(
                     id,
                     request.BaseSalePrice,
-                    request.MaxDiscountPercent
+                    request.MaxDiscountPercent,
+                    request.ExceptionPreview
                 ),
                 ct
             ),
@@ -85,7 +87,8 @@ public sealed class ItemPricingController : ControllerBase
                 new GetItemPricingSimulationQuery(
                     null,
                     request.BaseSalePrice,
-                    request.MaxDiscountPercent
+                    request.MaxDiscountPercent,
+                    request.ExceptionPreview
                 ),
                 ct
             ),
@@ -127,7 +130,8 @@ public record SimulatePriceRequest(decimal NewPvp);
 
 public record PricingSimulationRequest(
     decimal? BaseSalePrice = null,
-    decimal? MaxDiscountPercent = null
+    decimal? MaxDiscountPercent = null,
+    SetPricingRuleCommand? ExceptionPreview = null
 );
 
 public record SetItemPriceListsRequest(IReadOnlyList<Guid> PriceListIds);

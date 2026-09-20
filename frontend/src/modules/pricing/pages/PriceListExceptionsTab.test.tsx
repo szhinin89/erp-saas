@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { I18nProvider } from "../../../i18n/i18n";
 import { PriceListExceptionsTab } from "./PriceListExceptionsTab";
 import {
+  pricingSimulationService,
   pricingRuleService,
   priceListService,
   type PriceListDto,
@@ -25,6 +26,7 @@ vi.mock("../api/pricingService", async () => {
   );
   return {
     ...actual,
+    pricingSimulationService: { simulate: vi.fn() },
     priceListService: {
       getAssignedItems: vi.fn(),
     },
@@ -84,6 +86,7 @@ afterEach(() => cleanup());
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(pricingSimulationService.simulate).mockResolvedValue([{ priceListId: "pl-1", netPrice: 9, ruleSummary: { source: "Exception", type: "PercentDiscount", value: 10, description: "" } }]);
   vi.mocked(priceListService.getAssignedItems).mockResolvedValue([ASSIGNED_ITEM]);
   vi.mocked(pricingRuleService.list).mockResolvedValue([RULE]);
   vi.mocked(message.confirm).mockResolvedValue(true);
@@ -127,5 +130,60 @@ describe("PriceListExceptionsTab — eliminar excepción: sin window.confirm", (
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(pricingRuleService.remove).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("PRICING-LIST-UX-01", () => {
+  const show = (mode: "products" | "exceptions" = "exceptions") => render(
+    <I18nProvider><PriceListExceptionsTab priceList={PRICE_LIST} mode={mode} /></I18nProvider>,
+  );
+
+  it("blocks exceptions for an empty list", async () => {
+    vi.mocked(priceListService.getAssignedItems).mockResolvedValue([]);
+    show();
+    await waitFor(() => expect(screen.getAllByText("Primero asigna productos a esta lista.").length).toBeGreaterThan(0));
+    expect((screen.getByRole("button", { name: /Nueva excepción/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("offers only assigned products, never the global catalog or orphan rules", async () => {
+    vi.mocked(pricingRuleService.list).mockResolvedValue([RULE, { ...RULE, id: "orphan", itemId: "not-assigned" }]);
+    show();
+    await screen.findByText("Producto Uno");
+    fireEvent.click(screen.getByRole("button", { name: /Nueva excepción/ }));
+    const selector = screen.getByLabelText("Producto de la lista") as HTMLSelectElement;
+    expect(Array.from(selector.options).map((option) => option.value)).toEqual(["", "item-1"]);
+    expect(screen.queryByPlaceholderText("Buscar por SKU o nombre...")).toBeNull();
+  });
+
+  it("saves a valid exception and displays the server-calculated preview", async () => {
+    vi.mocked(pricingRuleService.set).mockResolvedValue({ status: "Created", pricingRuleId: "rule-1", existingRuleType: null, existingRuleValue: null });
+    show();
+    await screen.findByText("Producto Uno");
+    fireEvent.click(screen.getByTitle("Editar excepción"));
+    await waitFor(() => expect(pricingSimulationService.simulate).toHaveBeenCalledWith("item-1", {
+      priceListId: "pl-1", itemId: "item-1", ruleType: "PercentDiscount", ruleValue: 10,
+    }));
+    expect(screen.getAllByText(/USD 9/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /Guardar/ }));
+    await waitFor(() => expect(pricingRuleService.set).toHaveBeenCalledWith({ priceListId: "pl-1", itemId: "item-1", ruleType: "PercentDiscount", ruleValue: 10 }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("shows a business validation message for 422, not Axios status text", async () => {
+    vi.mocked(pricingRuleService.set).mockRejectedValue({ isAxiosError: true, message: "Request failed with status code 422", response: { status: 422, data: { message: { user: "Validación fallida" }, data: { errors: ["El ítem no está asignado a esta lista."] } } } });
+    show();
+    await screen.findByText("Producto Uno");
+    fireEvent.click(screen.getByTitle("Editar excepción"));
+    fireEvent.click(screen.getByRole("button", { name: /Guardar/ }));
+    expect(await screen.findByText("El ítem no está asignado a esta lista.")).toBeTruthy();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+  });
+
+  it("renders calculated prices from the backend without applying rules again", async () => {
+    vi.mocked(pricingSimulationService.simulate).mockResolvedValue([{ priceListId: "pl-1", netPrice: 7.123456, ruleSummary: { source: "Exception", type: "FixedPrice", value: 7.123456, description: "" } }]);
+    show("products");
+    expect(await screen.findByText(/USD 7/)).toBeTruthy();
+    expect(screen.getByText("Precio calculado")).toBeTruthy();
   });
 });

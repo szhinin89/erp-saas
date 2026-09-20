@@ -207,11 +207,12 @@ public sealed class GetItemsAssignedToPriceListHandler
 
         // 2 queries totales, sin importar cuántos ítems tenga la lista (nunca N+1).
         var assignments = await _assignmentRepo.GetByPriceListAsync(tenantId, q.PriceListId, ct);
-        var itemIds = assignments.Select(a => a.ItemId).ToList();
+        var itemIds = assignments.Where(a => a.IsActive).Select(a => a.ItemId).ToList();
 
         var items = await _itemRepo.GetByIdsLightAsync(itemIds, tenantId, ct);
 
         var rows = items
+            .Where(i => i.IsActive)
             .Select(i => new PriceListAssignedItemDto(
                 i.Id,
                 i.Code.SKU,

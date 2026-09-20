@@ -6,6 +6,8 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;
 using MediatR;
+using FluentValidation;
+using ERP.Application.Modules.Pricing.UseCases.PricingRules;
 
 namespace ERP.Application.Modules.Pricing.UseCases.ItemPricingSimulation;
 
@@ -44,8 +46,21 @@ public sealed record ItemPricingSimulationRowDto(
 public sealed record GetItemPricingSimulationQuery(
     Guid? ItemId,
     decimal? BaseSalePriceOverride = null,
-    decimal? MaxDiscountPercentOverride = null
+    decimal? MaxDiscountPercentOverride = null,
+    SetPricingRuleCommand? ExceptionPreview = null
 ) : IRequest<Result<IReadOnlyList<ItemPricingSimulationRowDto>>>, ICompanyScopedRequest;
+
+public sealed class GetItemPricingSimulationQueryValidator : AbstractValidator<GetItemPricingSimulationQuery>
+{
+    public GetItemPricingSimulationQueryValidator()
+    {
+        When(q => q.ExceptionPreview != null, () =>
+        {
+            RuleFor(q => q.ExceptionPreview!).SetValidator(new SetPricingRuleCommandValidator());
+            RuleFor(q => q.ItemId).NotNull().Equal(q => q.ExceptionPreview!.ItemId);
+        });
+    }
+}
 
 public sealed class GetItemPricingSimulationQueryHandler
     : IRequestHandler<
@@ -125,6 +140,16 @@ public sealed class GetItemPricingSimulationQueryHandler
             assignedListIds = [];
         }
 
+        PricingRule? previewRule = null;
+        if (q.ExceptionPreview is { } preview)
+        {
+            if (q.ItemId != preview.ItemId || !assignedListIds.Contains(preview.PriceListId))
+                return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.ValidationFailure(
+                    "El ítem no está asignado a esta lista de precios (o la asignación está deshabilitada).");
+            previewRule = PricingRule.Create(tenantId, _c.CompanyId, preview.PriceListId,
+                preview.ItemId, preview.RuleType, preview.RuleValue, Guid.Empty);
+        }
+
         if (!basePrice.HasValue)
             return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.Success(
                 Array.Empty<ItemPricingSimulationRowDto>()
@@ -140,6 +165,8 @@ public sealed class GetItemPricingSimulationQueryHandler
         foreach (var priceList in activeLists)
         {
             itemRulesByList.TryGetValue(priceList.Id, out var itemRule);
+            if (previewRule?.PriceListId == priceList.Id)
+                itemRule = previewRule;
             var (netPrice, _) = PricingCalculation.Resolve(
                 basePrice.Value,
                 itemRule,

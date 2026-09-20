@@ -140,7 +140,14 @@ export function formatRuleGeneral(
   ruleType: string | null,
   ruleValue: number | null,
   currencyCode: string,
+  translate?: (key: string, params?: Record<string, string | number>) => string,
 ): string {
+  if (translate) {
+    if (!ruleType || ruleValue == null) return translate("pricing.ux.rule.none");
+    const value = ruleType === "FixedPrice" ? `${currencyCode} ${ruleValue}`
+      : ruleType === "FixedAdjustment" && ruleValue >= 0 ? `+${ruleValue}` : ruleValue;
+    return translate(`pricing.ux.rule.${ruleType}`, { value });
+  }
   if (!ruleType || ruleValue == null) return "Sin regla";
   switch (ruleType) {
     case "PercentDiscount":
@@ -206,4 +213,11 @@ export const pricingRuleService = {
   enable: (p: EnablePricingRulePayload) =>
     apiPost<PricingRuleDto>(`${BASE}/pricing-rules/enable`, p),
   remove: (id: string) => apiDelete<boolean>(`${BASE}/pricing-rules/${id}`),
+};
+
+/** Existing read-only simulation; prices and draft precedence are resolved by the backend. */
+export const pricingSimulationService = {
+  simulate: (itemId: string, exceptionPreview?: SetPricingRulePayload) =>
+    apiPost<{ priceListId: string; netPrice: number; ruleSummary: PricingRuleSummaryDto }[]>(
+      `/api/v1/items/${itemId}/pricing-simulation`, { exceptionPreview }),
 };

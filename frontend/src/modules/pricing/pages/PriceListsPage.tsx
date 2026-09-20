@@ -1,8 +1,11 @@
 ﻿import { useCallback, useEffect, useState } from "react";
+import { useI18n } from "../../../i18n/i18n";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { Link } from "react-router-dom";
 
 import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
@@ -31,9 +34,11 @@ import { message } from "../../../lib/messages";
 
 import "../../../styles/shared/items-catalog.css";
 
-type Tab = "resumen" | "listado" | "nuevo" | "excepciones";
+type Tab = "resumen" | "listado" | "nuevo" | "productos" | "excepciones";
 
 export function PriceListsPage() {
+  const { t } = useI18n();
+  const { canShow } = usePermissionsUi();
   const pp = getPrecisionPolicy();
   const [tab, setTab] = useState<Tab>("listado");
   const [items, setItems] = useState<PriceListDto[]>([]);
@@ -113,6 +118,7 @@ export function PriceListsPage() {
 
     setSaving(true);
     try {
+      let saved: PriceListDto;
       if (editing) {
         // isDefault no se edita desde este catálogo — único punto de escritura:
         // Configuración → Ventas (priceListService.setDefault). Se reenvía sin cambios.
@@ -126,7 +132,7 @@ export function PriceListsPage() {
           ruleType,
           ruleValue,
         };
-        await priceListService.update(editing.id, p);
+        saved = await priceListService.update(editing.id, p);
       } else {
         // Las listas nuevas nunca nacen predeterminadas — se promueven desde Configuración → Ventas.
         const p: CreatePriceListPayload = {
@@ -139,32 +145,13 @@ export function PriceListsPage() {
           ruleType,
           ruleValue,
         };
-        await priceListService.create(p);
+        saved = await priceListService.create(p);
       }
-      resetForm();
-      setTab("listado");
+      startEdit(saved);
+      setTab("productos");
       fetchItems();
     } catch (e: unknown) {
-      const error = e as {
-        response?: {
-          data?: {
-            message?: {
-              user?: string;
-            };
-            data?: {
-              errors?: string[];
-            };
-          };
-        };
-        message?: string;
-      };
-
-      const msg =
-        error.response?.data?.message?.user ??
-        error.response?.data?.data?.errors?.[0] ??
-        error.message ??
-        "Error al guardar.";
-      setError(msg);
+      setError(formatApiRequestError(e, { generic: t("pricing.ux.error") }));
     }
     setSaving(false);
   };
@@ -210,11 +197,11 @@ export function PriceListsPage() {
       icon: editing ? "edit" : "add_box",
     },
     ...(editing
-      ? [{ id: "excepciones" as Tab, label: "Excepciones", icon: "rule" }]
+      ? [{ id: "productos" as Tab, label: t("pricing.ux.products"), icon: "inventory_2" }, { id: "excepciones" as Tab, label: t("pricing.ux.exceptions"), icon: "rule" }]
       : []),
   ];
 
-  const preservesEditing = (id: Tab) => id === "nuevo" || id === "excepciones";
+  const preservesEditing = (id: Tab) => id === "nuevo" || id === "productos" || id === "excepciones";
 
   const priceListColumns: ZHDataTableColumn<PriceListDto>[] = [
     { key: "code", header: "Código", render: (pl) => <span className="prd-td-code">{pl.code}</span> },
@@ -223,7 +210,7 @@ export function PriceListsPage() {
     {
       key: "generalRule",
       header: "Regla General",
-      render: (pl) => formatRuleGeneral(pl.ruleType, pl.ruleValue, pl.currencyCode),
+      render: (pl) => formatRuleGeneral(pl.ruleType, pl.ruleValue, pl.currencyCode, t),
     },
     {
       key: "default",
@@ -255,7 +242,7 @@ export function PriceListsPage() {
             title={pl.isActive ? `Desactivar lista de precios ${pl.code}` : `Activar lista de precios ${pl.code}`}
             ariaLabel={pl.isActive ? `Desactivar lista de precios ${pl.code}` : `Activar lista de precios ${pl.code}`}
             variant={pl.isActive ? "danger" : "success"}
-            disabled={togglingId === pl.id}
+            disabled={togglingId === pl.id || !canShow("pricing.update")}
             onClick={() => void handleToggle(pl)}
           />
         </div>
@@ -268,24 +255,12 @@ export function PriceListsPage() {
       title="Listas de Precios"
       subtitle="Administra las listas de precios de la empresa."
     >
+      <p className="zh-text-muted">{t("pricing.ux.workflow")}</p>
       {/* Tabs */}
-      <div className="prd-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            className={`prd-tab-btn ${tab === t.id ? "prd-tab-btn--active" : ""}`}
-            onClick={() => {
-              if (!preservesEditing(t.id)) resetForm();
-              setTab(t.id);
-            }}
-          >
-            <span className="material-symbols-outlined zh-icon-lg">
-              {t.icon}
-            </span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <ZHTabBar tabs={tabs} activeTab={tab} onChange={(id) => {
+        if (!preservesEditing(id)) resetForm();
+        setTab(id);
+      }} />
 
       {/* RESUMEN */}
       {tab === "resumen" && (
@@ -411,7 +386,7 @@ export function PriceListsPage() {
                 >
                   {RULE_TYPE_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
-                      {o.label}
+                      {t(`pricing.ux.option.${o.value || "none"}`)}
                     </option>
                   ))}
                 </ZhSelect>
@@ -502,7 +477,7 @@ export function PriceListsPage() {
           </p>
 
           <div className="prd-crud-actions">
-            <ZHBtn onClick={handleSave} disabled={saving || !fName.trim()}>
+            <ZHBtn onClick={handleSave} disabled={saving || !fName.trim() || !canShow(editing ? "pricing.update" : "pricing.create")}>
               <span className="material-symbols-outlined zh-icon-lg">save</span>
               {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
             </ZHBtn>
@@ -519,8 +494,8 @@ export function PriceListsPage() {
       )}
 
       {/* EXCEPCIONES (PricingRule) — solo con una lista cargada */}
-      {tab === "excepciones" && editing && (
-        <PriceListExceptionsTab priceList={editing} />
+      {(tab === "excepciones" || tab === "productos") && editing && (
+        <PriceListExceptionsTab key={editing.id} priceList={editing} mode={tab === "productos" ? "products" : "exceptions"} />
       )}
     </ErpPageTemplate>
   );
