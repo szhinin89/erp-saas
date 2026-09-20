@@ -150,6 +150,92 @@ public sealed class PricingResolver : IPricingResolver
     }
 
     /// <summary>
+    /// PRICING-CONTEXTUAL-BATCH-RESOLUTION-05D: misma decisión exacta que
+    /// ResolveAsync(PricingContext, ct) (vía BuildResultForList, núcleo compartido), aplicada a
+    /// N ítems con consultas en batch — NUNCA una por ítem.
+    ///
+    /// Queries totales, independientes de cuántos ítems traiga el batch:
+    ///   1. IPriceListSelectionResolver.ResolveAsync — 1 llamada (que internamente hace ~2-3
+    ///      queries propias, ya documentadas en PriceListSelectionResolver).
+    ///   2. IItemRepository.GetByIdsLightAsync — 1 query para TODOS los ítems del batch.
+    ///   3. Por cada candidato (típicamente 1-2: Customer y/o CompanyDefault): 1 query de
+    ///      PriceList + 1 de PriceListItem activos de esa lista + 1 de PricingRule activas de esa
+    ///      lista = 3 queries por candidato.
+    /// Total aproximado: ~2 + 3×candidatos (usualmente 5-8 queries), sin importar si el batch
+    /// trae 1 ítem o 500 — nunca N+1.
+    /// </summary>
+    public async Task<Result<IReadOnlyDictionary<Guid, PricingResult>>> ResolveManyAsync(
+        PricingBatchContext context,
+        CancellationToken ct = default
+    )
+    {
+        var tenantId = _t.TenantId;
+        var itemIds = context.ItemIds.Distinct().ToList();
+        var results = new Dictionary<Guid, PricingResult>();
+        if (itemIds.Count == 0)
+            return Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(results);
+
+        // 1 query: mismos candidatos ordenados que usa el resolver single — una sola fuente de
+        // verdad de "qué listas corresponden a este cliente", nunca reimplementada aquí.
+        var candidates = await _selection.ResolveAsync(context.CustomerId, ct);
+
+        // 1 query: ítems + BaseSalePrice en batch. Ítems inexistentes o sin BaseSalePrice
+        // simplemente no aparecen en el resultado — un ítem inválido no invalida el batch
+        // completo (a diferencia del ResolveAsync single, que sí falla para ese único ítem).
+        var items = await _items.GetByIdsLightAsync(itemIds, tenantId, ct);
+        var basePriceByItemId = items
+            .Where(i => i.BaseSalePrice.HasValue)
+            .ToDictionary(i => i.Id, i => i.BaseSalePrice!.Value);
+
+        // 3 queries por candidato (nunca por ítem): la PriceList en sí, sus PriceListItem
+        // activos (para saber qué ítems están asignados) y sus PricingRule activas (para
+        // resolver excepción por ítem sin una query adicional cada vez).
+        var priceListsById = new Dictionary<Guid, PriceList>();
+        var assignedItemIdsByList = new Dictionary<Guid, HashSet<Guid>>();
+        var rulesByListAndItem = new Dictionary<Guid, IReadOnlyDictionary<Guid, PricingRule>>();
+
+        foreach (var candidate in candidates)
+        {
+            var priceList = await _priceLists.GetByIdAsync(tenantId, candidate.PriceListId, ct);
+            if (priceList is null)
+                continue;
+            priceListsById[candidate.PriceListId] = priceList;
+
+            var assignments = await _assignments.GetByPriceListAsync(tenantId, candidate.PriceListId, ct);
+            assignedItemIdsByList[candidate.PriceListId] = assignments.Select(a => a.ItemId).ToHashSet();
+
+            var rules = await _rules.GetByPriceListAsync(tenantId, candidate.PriceListId, ct);
+            rulesByListAndItem[candidate.PriceListId] = rules.ToDictionary(r => r.ItemId);
+        }
+
+        // Decisión por ítem: 100% en memoria, ninguna consulta adicional — recorre los mismos
+        // candidatos en el mismo orden que ResolveAsync(PricingContext, ct).
+        foreach (var itemId in itemIds)
+        {
+            if (!basePriceByItemId.TryGetValue(itemId, out var basePrice))
+                continue;
+
+            PricingResult? resolved = null;
+            foreach (var candidate in candidates)
+            {
+                if (
+                    !priceListsById.TryGetValue(candidate.PriceListId, out var priceList)
+                    || !assignedItemIdsByList[candidate.PriceListId].Contains(itemId)
+                )
+                    continue;
+
+                rulesByListAndItem[candidate.PriceListId].TryGetValue(itemId, out var itemRule);
+                resolved = BuildResultForList(itemId, priceList, basePrice, itemRule, candidate.Source, _strategies);
+                break;
+            }
+
+            results[itemId] = resolved ?? BasePriceResult(itemId, basePrice, null);
+        }
+
+        return Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(results);
+    }
+
+    /// <summary>
     /// PRICING-LIST-ASSIGNMENT-ENFORCEMENT-02: la regla de una PriceList (general o excepción)
     /// solo aplica a ítems asignados y activos en ESA lista. Null = el ítem no está asignado (o
     /// la asignación está deshabilitada) — el llamador decide el siguiente paso (lista default,
@@ -168,16 +254,30 @@ public sealed class PricingResolver : IPricingResolver
         if (assignment is not { IsActive: true })
             return null;
 
+        var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList.Id, itemId, ct);
+        return BuildResultForList(itemId, priceList, basePrice, itemRule, selectionSource, _strategies);
+    }
+
+    /// <summary>
+    /// Núcleo puro (sin I/O) compartido por ResolveAsync y ResolveManyAsync — PRICING-CONTEXTUAL-
+    /// BATCH-RESOLUTION-05D: un solo lugar decide "excepción &gt; regla general &gt; PVP" para
+    /// que single y batch nunca puedan divergir. Asume que el llamador YA confirmó que el ítem
+    /// está asignado (activo) a <paramref name="priceList"/> — esta función no vuelve a
+    /// verificarlo.
+    /// </summary>
+    private static PricingResult BuildResultForList(
+        Guid itemId,
+        PriceList priceList,
+        decimal basePrice,
+        PricingRule? itemRule,
+        PriceListSelectionSource? selectionSource,
+        IPricingAdjustmentStrategyResolver strategies
+    )
+    {
         // Resolve Rule — regla específica del ítem (si existe) > regla general de la lista > sin
         // ajuste. Precedencia + redondeo: núcleo compartido con la simulación batch
         // (GetItemPricingSimulation) — nunca reimplementado aquí.
-        var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList.Id, itemId, ct);
-        var (unitPrice, ruleApplied) = PricingCalculation.Resolve(
-            basePrice,
-            itemRule,
-            priceList,
-            _strategies
-        );
+        var (unitPrice, ruleApplied) = PricingCalculation.Resolve(basePrice, itemRule, priceList, strategies);
         var ruleDescription =
             ruleApplied is null ? null : PricingCalculation.Summarize(itemRule, priceList).Description;
 

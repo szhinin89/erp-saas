@@ -30,6 +30,14 @@ namespace ERP.Application.Modules.Pricing.Services;
 /// </summary>
 public sealed record PricingContext(Guid ItemId, Guid? CustomerId = null);
 
+/// <summary>
+/// Contexto comercial para <see cref="IPricingResolver.ResolveManyAsync"/> — mismo criterio que
+/// <see cref="PricingContext"/> pero para varios ítems en una sola llamada (PRICING-CONTEXTUAL-
+/// BATCH-RESOLUTION-05D). Pensado para consumidores tipo "buscador de ítems" que hoy resuelven
+/// precio ítem-por-ítem y no deberían — ver SearchItemsForInvoiceHandler (Sales), aún NO migrado.
+/// </summary>
+public sealed record PricingBatchContext(IReadOnlyList<Guid> ItemIds, Guid? CustomerId = null);
+
 public interface IPricingResolver
 {
     Task<Result<PricingResult>> ResolveAsync(
@@ -45,4 +53,18 @@ public interface IPricingResolver
     /// fórmula — delega el cálculo por-lista a la misma ruta que <see cref="ResolveAsync(Guid, Guid?, CancellationToken)"/>.
     /// </summary>
     Task<Result<PricingResult>> ResolveAsync(PricingContext context, CancellationToken ct = default);
+
+    /// <summary>
+    /// PRICING-CONTEXTUAL-BATCH-RESOLUTION-05D: misma decisión exacta que
+    /// <see cref="ResolveAsync(PricingContext, CancellationToken)"/> (candidatos → asignación →
+    /// excepción/regla general/PVP), aplicada a N ítems con las consultas de candidatos,
+    /// asignaciones y reglas en batch (nunca una por ítem). Ítems inexistentes o sin
+    /// <c>BaseSalePrice</c> simplemente no aparecen en el resultado — un ítem inválido no
+    /// invalida el batch completo (a diferencia de <see cref="ResolveAsync(Guid, Guid?, CancellationToken)"/>,
+    /// que sí falla para un único ítem inválido).
+    /// </summary>
+    Task<Result<IReadOnlyDictionary<Guid, PricingResult>>> ResolveManyAsync(
+        PricingBatchContext context,
+        CancellationToken ct = default
+    );
 }
