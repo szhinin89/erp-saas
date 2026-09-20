@@ -352,6 +352,10 @@ public static class DependencyInjection
             ERP.Domain.Modules.Pricing.Interfaces.IPriceListItemRepository,
             ERP.Infrastructure.Persistence.Repositories.Pricing.PriceListItemRepository
         >();
+        services.AddScoped<
+            ERP.Domain.Modules.Pricing.Interfaces.IPriceListCustomerRepository,
+            ERP.Infrastructure.Persistence.Repositories.Pricing.PriceListCustomerRepository
+        >();
 
         // ── Accounting BC (ADR-026 — fundamentos) ───────────────────────────────
         services.AddScoped<
@@ -594,6 +598,10 @@ public static class DependencyInjection
         services.AddScoped<
             ERP.Application.Modules.Pricing.Services.IPricingResolver,
             ERP.Application.Modules.Pricing.Services.PricingResolver
+        >();
+        services.AddScoped<
+            ERP.Application.Modules.Pricing.Services.IPriceListSelectionResolver,
+            ERP.Application.Modules.Pricing.Services.PriceListSelectionResolver
         >();
 
         // ── Ride BC (walking skeleton — Fase 4 del plan de implementación, ADR-025) ──────────

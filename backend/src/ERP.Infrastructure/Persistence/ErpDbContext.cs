@@ -290,6 +290,7 @@ public class ErpDbContext : DbContext
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<PricingRule> PricingRules => Set<PricingRule>();
     public DbSet<PriceListItem> PriceListItems => Set<PriceListItem>();
+    public DbSet<PriceListCustomer> PriceListCustomers => Set<PriceListCustomer>();
     public DbSet<PricingRuleAudit> PricingRuleAudits => Set<PricingRuleAudit>();
     public DbSet<PriceListItemAudit> PriceListItemAudits => Set<PriceListItemAudit>();
     public DbSet<PriceListAudit> PriceListAudits => Set<PriceListAudit>();
