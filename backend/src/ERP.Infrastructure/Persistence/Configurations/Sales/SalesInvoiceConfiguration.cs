@@ -76,6 +76,26 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
             }
         );
 
+        // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B — aditiva, nullable, sin backfill.
+        builder
+            .Property(x => x.CustomerPreferredPriceListId)
+            .HasColumnName("customer_preferred_price_list_id");
+        builder
+            .Property(x => x.CustomerPreferredPriceListName)
+            .HasColumnName("customer_preferred_price_list_name")
+            .HasMaxLength(SalesInvoice.CustomerPreferredPriceListNameMaxLen);
+        builder
+            .HasOne<ERP.Domain.Modules.Pricing.Entities.PriceList>()
+            .WithMany()
+            .HasForeignKey(x => x.CustomerPreferredPriceListId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1 — aditiva, nullable, sin backfill.
+        builder
+            .Property(x => x.PricingTraceabilityVersion)
+            .HasColumnName("pricing_traceability_version");
+
         // ── Moneda ──────────────────────────────────────────────────
         builder
             .Property(x => x.CurrencyCode)

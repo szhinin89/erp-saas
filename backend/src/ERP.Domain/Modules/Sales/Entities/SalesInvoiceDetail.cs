@@ -21,6 +21,7 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     public const int PricingSourceMaxLen = 50;
     public const int DiscountSourceMaxLen = 50;
     public const int DiscountDescriptionMaxLen = 300;
+    public const int SelectionSourceMaxLen = 20;
 
     // ── Identity ────────────────────────────────────────────────────────
     public Guid Id { get; private set; }
@@ -81,6 +82,21 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     /// distinto de <see cref="PricingSource"/>/<c>RuleDescription</c> del Pricing Engine, que
     /// describe el origen del PRECIO, no del descuento manual de línea.</summary>
     public string? DiscountDescription { get; private set; }
+
+    /// <summary>
+    /// SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: de qué candidato salió <see cref="PriceListId"/>/
+    /// <see cref="PriceListName"/> — <c>"Customer"</c> (lista propia asignada al cliente),
+    /// <c>"CompanyDefault"</c> (fallback a la lista default de la empresa) o <c>null</c> (PVP, sin
+    /// ninguna lista aplicable al ítem). Snapshot de solo texto (nunca un enum de Pricing) a
+    /// propósito — ERP.Domain no puede depender de ERP.Application.Modules.Pricing; el mapeo desde
+    /// <c>PricingResult.SelectionSource</c> ocurre en <c>SalesLineBuilder</c> (capa Application),
+    /// el único lugar que conoce ambos tipos. Es un dato independiente de
+    /// <see cref="PriceListId"/>/<see cref="PriceListName"/>: sin él, no se puede distinguir
+    /// históricamente "la lista propia del cliente" de "la lista default de la empresa que
+    /// coincidió con esa asignación en ese momento" — una distinción que la configuración actual
+    /// de <c>PriceList.IsDefault</c> no puede reconstruir después.
+    /// </summary>
+    public string? SelectionSource { get; private set; }
 
     // ── UoM ─────────────────────────────────────────────────────────────
     public Guid? PackagingLevelId { get; private set; }
@@ -396,7 +412,8 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         string? priceListName,
         string? pricingSource,
         string? discountSource,
-        string? discountDescription
+        string? discountDescription,
+        string? selectionSource = null
     )
     {
         EnsureNotFrozen();
@@ -411,6 +428,7 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         DiscountDescription = string.IsNullOrWhiteSpace(discountDescription)
             ? null
             : discountDescription.Trim();
+        SelectionSource = string.IsNullOrWhiteSpace(selectionSource) ? null : selectionSource.Trim();
     }
 
     // ── Sort ────────────────────────────────────────────────────────────

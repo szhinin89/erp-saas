@@ -45,6 +45,7 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPricingResolver> Pricing { get; } = new();
+        public Mock<IPriceListSelectionResolver> PriceListSelection { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
         public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
         public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
@@ -67,6 +68,12 @@ public sealed class CreateSalesDraftHandlerTests
                 .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
                     new Dictionary<Guid, PricingResult>()
                 ));
+            // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia" (lista
+            // vacía de candidatos) — mismo motivo que el default de Pricing de arriba, evita
+            // depender del comportamiento de Moq para un método sin configurar explícitamente.
+            PriceListSelection
+                .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
@@ -179,6 +186,7 @@ public sealed class CreateSalesDraftHandlerTests
                 EpRepo.Object,
                 Tax.Object,
                 Pricing.Object,
+                PriceListSelection.Object,
                 CompanyTaxRepo.Object,
                 WarehouseRepo.Object,
                 CostService.Object,
@@ -1736,5 +1744,285 @@ public sealed class CreateSalesDraftHandlerTests
             ),
             Times.Once
         );
+    }
+
+    // ── SALES-PRICING-TRACEABILITY-SNAPSHOT-07B ─────────────────────────────────────────────
+    // CustomerPreferredPriceListId/Name (cabecera) y SelectionSource (línea) — snapshot histórico
+    // resuelto vía IPriceListSelectionResolver (mismo servicio de Pricing que ya consulta
+    // PricingResolver internamente), nunca PriceListCustomer directo desde Sales.
+
+    private static void SetupPreferredList(Fixture f, PriceListSelectionResult? candidate) =>
+        f.PriceListSelection
+            .Setup(p => p.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                candidate is null
+                    ? Array.Empty<PriceListSelectionResult>()
+                    : new[] { candidate }
+            );
+
+    [Fact]
+    public async Task Escenario07B_1_cliente_con_MAYORISTA_pero_ningun_item_la_usa_cabecera_conserva_MAYORISTA()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var mayoristaId = Guid.NewGuid();
+        var defaultListId = Guid.NewGuid();
+        // El cliente SÍ tiene MAYORISTA asignada (candidato Customer)...
+        SetupPreferredList(
+            f,
+            new PriceListSelectionResult(mayoristaId, "MAYORISTA001", PriceListSelectionSource.Customer)
+        );
+        // ...pero el ítem no está asignado ahí — PricingResolver cae a CompanyDefault para la línea.
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id, defaultListId, "DEFAULT", "Lista General", "USD",
+                BasePrice: 50m, RuleApplied: null, UnitPrice: 50m,
+                SelectionSource: PriceListSelectionSource.CompanyDefault
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 50m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.CustomerPreferredPriceListId.Should().Be(mayoristaId);
+        captured.CustomerPreferredPriceListName.Should().Be("MAYORISTA001");
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1: toda factura nueva queda marcada v1.
+        captured.PricingTraceabilityVersion.Should().Be(1);
+        var line = captured.Lines.Single();
+        line.PriceListId.Should().Be(defaultListId);
+        line.SelectionSource.Should().Be("CompanyDefault");
+    }
+
+    [Fact]
+    public async Task Escenario07B_2_item_usa_la_lista_del_cliente_SelectionSource_Customer()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var listId = Guid.NewGuid();
+        SetupPreferredList(
+            f,
+            new PriceListSelectionResult(listId, "MAYORISTA001", PriceListSelectionSource.Customer)
+        );
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id, listId, "MAYORISTA001", "MAYORISTA001", "USD",
+                BasePrice: 100m, RuleApplied: "PriceListItem (lista)", UnitPrice: 90m,
+                SelectionSource: PriceListSelectionSource.Customer
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 90m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Lines.Single().SelectionSource.Should().Be("Customer");
+    }
+
+    [Fact]
+    public async Task Escenario07B_3_fallback_a_CompanyDefault_SelectionSource_CompanyDefault()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPreferredList(f, null); // cliente sin lista propia
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id, Guid.NewGuid(), "GENERAL", "Lista General", "USD",
+                BasePrice: 40m, RuleApplied: null, UnitPrice: 40m,
+                SelectionSource: PriceListSelectionSource.CompanyDefault
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 40m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Lines.Single().SelectionSource.Should().Be("CompanyDefault");
+        captured.CustomerPreferredPriceListId.Should().BeNull();
+        captured.CustomerPreferredPriceListName.Should().BeNull();
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1: version=1 confirma que el null de arriba es
+        // "cliente sin lista" real, no trazabilidad no capturada.
+        captured.PricingTraceabilityVersion.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Escenario07B_4_PVP_sin_ninguna_lista_SelectionSource_null()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPreferredList(f, null);
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id, null, "PVP", "Precio de venta al público", "USD",
+                BasePrice: 25m, RuleApplied: null, UnitPrice: 25m,
+                SelectionSource: null
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 25m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Lines.Single().SelectionSource.Should().BeNull();
+        captured.Lines.Single().PriceListId.Should().BeNull();
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1: version=1 confirma que el null de
+        // SelectionSource es PVP real, no trazabilidad no capturada.
+        captured.PricingTraceabilityVersion.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Escenario07B_5_renombrar_o_desactivar_la_lista_despues_no_altera_el_snapshot()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        var listId = Guid.NewGuid();
+        SetupPreferredList(
+            f,
+            new PriceListSelectionResult(listId, "MAYORISTA001", PriceListSelectionSource.Customer)
+        );
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(
+                item.Id, listId, "MAYORISTA001", "MAYORISTA001", "USD",
+                BasePrice: 100m, RuleApplied: null, UnitPrice: 100m,
+                SelectionSource: PriceListSelectionSource.Customer
+            )
+        );
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+        await f.BuildHandler().Handle(CommandFor(item, 100m), CancellationToken.None);
+
+        // La lista "cambia de nombre" después de vender — el snapshot ya persistido no se
+        // recalcula ni vuelve a consultar Pricing al leer la factura (GetSalesInvoiceByIdHandler
+        // solo mapea lo que ya está en el agregado, ver SalesMapper.ToDto).
+        f.PriceListSelection
+            .Setup(p => p.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[]
+                {
+                    new PriceListSelectionResult(listId, "MAYORISTA001-RENOMBRADA", PriceListSelectionSource.Customer),
+                }
+            );
+
+        var repo = new Mock<ISalesInvoiceRepository>();
+        repo.Setup(r => r.GetByIdAsync(TenantId, captured!.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(captured);
+        var edocRepo =
+            new Mock<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository>();
+        edocRepo
+            .Setup(r => r.GetBySourceAsync(TenantId, "Sales", captured!.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument?)null);
+        var getHandler = new GetSalesInvoiceByIdHandler(
+            repo.Object,
+            edocRepo.Object,
+            f.Tenant.Object,
+            f.Branch.Object
+        );
+
+        var getResult = await getHandler.Handle(
+            new GetSalesInvoiceByIdQuery(captured!.Id),
+            CancellationToken.None
+        );
+
+        getResult.IsSuccess.Should().BeTrue(getResult.Error);
+        getResult.Value!.CustomerPreferredPriceListName.Should().Be("MAYORISTA001");
+        getResult.Value!.Lines.Single().PriceListName.Should().Be("MAYORISTA001");
+    }
+
+    [Fact]
+    public async Task Escenario07B_8_TenantCompany_fail_closed_resuelve_una_sola_vez_con_el_cliente_correcto()
+    {
+        var f = new Fixture();
+        SetupOpenCash(f);
+        var item = CreateContextualItem();
+        f.ItemRepo.Setup(r => r.GetByIdAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        SetupPreferredList(f, null);
+        SetupPricing(
+            f,
+            item,
+            new PricingResult(item.Id, null, "PVP", "PVP", "USD", 10m, null, 10m)
+        );
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler().Handle(CommandFor(item, 10m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        // Ambiente Tenant+Company se resuelve dentro de IPriceListSelectionResolver (misma
+        // garantía fail-closed que PricingResolver ya tiene, ver PricingContextualResolutionTests)
+        // — Sales solo debe pasar el CustomerId correcto, una sola vez por request.
+        f.PriceListSelection.Verify(
+            p => p.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    // ── SALES-PRICING-TRACEABILITY-VERSION-07B1 ─────────────────────────────────────────────
+
+    [Fact]
+    public void Escenario07B1_documento_legacy_sin_snapshot_de_pricing_queda_en_version_null()
+    {
+        // Una factura creada ANTES de 07B nunca llamó SetPreferredPriceListSnapshot — no hay
+        // backfill, así que PricingTraceabilityVersion se queda null para siempre. Ese null NUNCA
+        // debe leerse como "sin lista preferente": significa "no se sabe".
+        var legacyInvoice = SalesInvoice.CreateDraft(
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            ERP.Domain.Modules.Sales.ValueObjects.CustomerSnapshot.Create(
+                "Cliente Legacy", "1710034065", "05"
+            ),
+            invoiceNumber: "LEGACY-001",
+            issueDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            createdBy: UserId,
+            paymentTerm: ERP.Domain.Modules.Sales.ValueObjects.PaymentTermSnapshot.Create(
+                Guid.NewGuid(), "Contado", 1, 0
+            ),
+            cashSessionId: Guid.NewGuid()
+        );
+
+        legacyInvoice.PricingTraceabilityVersion.Should().BeNull();
+        legacyInvoice.CustomerPreferredPriceListId.Should().BeNull();
+        legacyInvoice.CustomerPreferredPriceListName.Should().BeNull();
     }
 }

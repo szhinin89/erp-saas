@@ -162,6 +162,13 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
         var preferences = new Mock<IOperationalPreferencesResolver>();
         preferences.Setup(p => p.ResolveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(DefaultPreferences());
 
+        // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia" — evita
+        // depender del comportamiento de Moq para un método sin configurar explícitamente.
+        var priceListSelection = new Mock<IPriceListSelectionResolver>();
+        priceListSelection
+            .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
+
         var handler = new UpdateSalesDraftHandler(
             repo.Object,
             bpRepo.Object,
@@ -173,6 +180,7 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             Mock.Of<IItemRepository>(),
             Mock.Of<ISriTaxResolver>(),
             Mock.Of<IPricingResolver>(),
+            priceListSelection.Object,
             companyTaxRepo.Object,
             Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository>(),
             Mock.Of<ERP.Application.Common.Interfaces.IAverageCostService>(),

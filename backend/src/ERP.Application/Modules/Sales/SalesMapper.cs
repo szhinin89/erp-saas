@@ -26,6 +26,9 @@ internal static class SalesMapper
             i.Customer.IdentificationType,
             i.Customer.Email,
             i.Customer.Address,
+            i.CustomerPreferredPriceListId,
+            i.CustomerPreferredPriceListName,
+            i.PricingTraceabilityVersion,
             i.DocTypeCode,
             i.SriPaymentMethodCode,
             i.InvoiceNumber,
@@ -137,6 +140,7 @@ internal static class SalesMapper
             l.PriceListName,
             l.PricingSource,
             l.DiscountSource,
-            l.DiscountDescription
+            l.DiscountDescription,
+            l.SelectionSource
         );
 }

@@ -49,6 +49,7 @@ public sealed class SalesDraftSpecialTaxTests
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPricingResolver> Pricing { get; } = new();
+        public Mock<IPriceListSelectionResolver> PriceListSelection { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
         public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
         public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
@@ -71,6 +72,10 @@ public sealed class SalesDraftSpecialTaxTests
                 .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
                     new Dictionary<Guid, PricingResult>()
                 ));
+            // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia".
+            PriceListSelection
+                .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
@@ -184,6 +189,7 @@ public sealed class SalesDraftSpecialTaxTests
                 EpRepo.Object,
                 Tax.Object,
                 Pricing.Object,
+                PriceListSelection.Object,
                 CompanyTaxRepo.Object,
                 WarehouseRepo.Object,
                 CostService.Object,

@@ -1154,8 +1154,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             priceListName: "Lista General",
             pricingSource: "BaseSalePrice",
             discountSource: null,
-            discountDescription: null
+            discountDescription: null,
+            selectionSource: "CompanyDefault"
         );
+        var preferredListId = Guid.NewGuid();
+        inv.SetPreferredPriceListSnapshot(preferredListId, "MAYORISTA001");
 
         var (handler, _, _) = BuildHandler(inv, today);
 
@@ -1177,6 +1180,13 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         frozenLine.PricingSource.Should().Be("BaseSalePrice");
         frozenLine.DiscountSource.Should().BeNull();
         frozenLine.DiscountDescription.Should().BeNull();
+        // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: Authorize tampoco toca SelectionSource (línea)
+        // ni CustomerPreferredPriceListId/Name (cabecera) — mismo criterio "solo Freeze/ApplyTaxes".
+        frozenLine.SelectionSource.Should().Be("CompanyDefault");
+        inv.CustomerPreferredPriceListId.Should().Be(preferredListId);
+        inv.CustomerPreferredPriceListName.Should().Be("MAYORISTA001");
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1: tampoco toca la versión de captura.
+        inv.PricingTraceabilityVersion.Should().Be(1);
     }
 
     [Fact]

@@ -39,6 +39,18 @@ public sealed record SalesInvoiceDto(
     string CustomerIdentificationType,
     string? CustomerEmail,
     string? CustomerAddress,
+    // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: snapshot histórico de la lista de precios EXPLÍCITA
+    // del cliente (PriceListCustomer) al momento de vender — null si el cliente no tenía ninguna
+    // asignada. NUNCA es la lista default de la empresa; eso se resuelve por línea (ver
+    // SalesInvoiceDetailDto.SelectionSource). Informativo para la cabecera de la UI — cada línea
+    // puede haber usado una lista distinta si el ítem no estaba asignado a esta.
+    Guid? CustomerPreferredPriceListId,
+    string? CustomerPreferredPriceListName,
+    // SALES-PRICING-TRACEABILITY-VERSION-07B1: null = documento anterior a 07B, trazabilidad de
+    // selección NO capturada — CustomerPreferredPriceListId/Name y
+    // SalesInvoiceDetailDto.SelectionSource en null NUNCA deben leerse como "sin lista"/"PVP" en
+    // ese caso. 1 = captura vigente, donde esos mismos null sí son un dato real.
+    int? PricingTraceabilityVersion,
     string DocTypeCode,
     string? SriPaymentMethodCode,
     string InvoiceNumber,
@@ -161,7 +173,11 @@ public sealed record SalesInvoiceDetailDto(
     string? PriceListName,
     string? PricingSource,
     string? DiscountSource,
-    string? DiscountDescription
+    string? DiscountDescription,
+    // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: "Customer" | "CompanyDefault" | null (PVP) — de
+    // qué candidato salió PriceListId/PriceListName, snapshot puro (nunca un enum de Pricing acá,
+    // ver SalesInvoiceDetail.SelectionSource).
+    string? SelectionSource
 );
 
 public sealed record SalesReceiptPrintPayloadDto(

@@ -140,6 +140,12 @@ public sealed class SalesInvoiceDetailConfiguration : IEntityTypeConfiguration<S
             .Property(x => x.DiscountDescription)
             .HasColumnName("discount_description")
             .HasMaxLength(SalesInvoiceDetail.DiscountDescriptionMaxLen);
+        // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B — aditiva, mismo patrón que las columnas de
+        // snapshot de arriba (nullable, sin backfill para filas existentes).
+        builder
+            .Property(x => x.SelectionSource)
+            .HasColumnName("selection_source")
+            .HasMaxLength(SalesInvoiceDetail.SelectionSourceMaxLen);
 
         builder.Ignore(x => x.LineSubtotal);
         builder.Ignore(x => x.TaxableBase);

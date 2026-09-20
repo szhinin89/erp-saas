@@ -260,6 +260,7 @@ public sealed class CreateSalesDraftHandler
     private readonly IEmissionPointRepository _epRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPricingResolver _pricing;
+    private readonly IPriceListSelectionResolver _priceListSelection;
     private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IAverageCostService _costService;
@@ -284,6 +285,7 @@ public sealed class CreateSalesDraftHandler
         IEmissionPointRepository epRepo,
         ISriTaxResolver tax,
         IPricingResolver pricing,
+        IPriceListSelectionResolver priceListSelection,
         ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
         IWarehouseRepository warehouseRepo,
         IAverageCostService costService,
@@ -308,6 +310,7 @@ public sealed class CreateSalesDraftHandler
         _epRepo = epRepo;
         _tax = tax;
         _pricing = pricing;
+        _priceListSelection = priceListSelection;
         _companyTaxRepo = companyTaxRepo;
         _warehouseRepo = warehouseRepo;
         _costService = costService;
@@ -397,6 +400,15 @@ public sealed class CreateSalesDraftHandler
         );
         if (linesResult.Error is not null)
             return linesResult.Error;
+
+        // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: lista EXPLÍCITA del cliente (PriceListCustomer
+        // activa y vigente) para la cabecera — nunca la CompanyDefault. Mismo servicio de Pricing
+        // que ya usa PricingResolver internamente (IPriceListSelectionResolver), Sales nunca
+        // consulta PriceListCustomer directamente. Una sola llamada por request, no por línea.
+        var preferredCandidates = await _priceListSelection.ResolveAsync(cmd.CustomerId, ct);
+        var preferredCustomerList = preferredCandidates.FirstOrDefault(c =>
+            c.Source == PriceListSelectionSource.Customer
+        );
 
         var provisionalGrandTotal = linesResult.Lines.Sum(l => l.TaxInclusiveTotal);
 
@@ -540,6 +552,10 @@ public sealed class CreateSalesDraftHandler
         );
 
         inv.ReplaceLines(linesResult.Lines, _u.UserId);
+        inv.SetPreferredPriceListSnapshot(
+            preferredCustomerList?.PriceListId,
+            preferredCustomerList?.PriceListName
+        );
 
         // SALES-SETTLEMENT-CREDIT-01 — cronograma/CxC solo por el saldo pendiente, nunca por el
         // total, y solo cuando efectivamente queda algo por cobrar.
@@ -593,6 +609,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly IItemRepository _itemRepo;
     private readonly ISriTaxResolver _tax;
     private readonly IPricingResolver _pricing;
+    private readonly IPriceListSelectionResolver _priceListSelection;
     private readonly ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository _companyTaxRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IAverageCostService _costService;
@@ -615,6 +632,7 @@ public sealed class UpdateSalesDraftHandler
         IItemRepository itemRepo,
         ISriTaxResolver tax,
         IPricingResolver pricing,
+        IPriceListSelectionResolver priceListSelection,
         ERP.Domain.Modules.Company.Interfaces.ICompanySpecialTaxResponsibilityRepository companyTaxRepo,
         IWarehouseRepository warehouseRepo,
         IAverageCostService costService,
@@ -637,6 +655,7 @@ public sealed class UpdateSalesDraftHandler
         _itemRepo = itemRepo;
         _tax = tax;
         _pricing = pricing;
+        _priceListSelection = priceListSelection;
         _companyTaxRepo = companyTaxRepo;
         _warehouseRepo = warehouseRepo;
         _costService = costService;
@@ -765,6 +784,18 @@ public sealed class UpdateSalesDraftHandler
 
             await _repo.RemoveLinesByInvoiceAsync(inv.Id, linesResult.Lines, ct);
             inv.ReplaceLines(linesResult.Lines, _u.UserId);
+
+            // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: se refresca en cada Update mientras la
+            // factura sigue en Draft (cmd.CustomerId puede haber cambiado) — nunca se toca desde
+            // Authorize (SetPreferredPriceListSnapshot exige EnsureDraft).
+            var preferredCandidates = await _priceListSelection.ResolveAsync(cmd.CustomerId, ct);
+            var preferredCustomerList = preferredCandidates.FirstOrDefault(c =>
+                c.Source == PriceListSelectionSource.Customer
+            );
+            inv.SetPreferredPriceListSnapshot(
+                preferredCustomerList?.PriceListId,
+                preferredCustomerList?.PriceListName
+            );
 
             // SALES-SETTLEMENT-CREDIT-01 — los pagos se resuelven ANTES que el cronograma: el
             // saldo pendiente (que decide si hace falta cronograma/CxC y de qué tamaño) depende de
@@ -1395,7 +1426,12 @@ file static class SalesLineBuilder
                 pricingResultValue?.PriceListName,
                 pricingSource,
                 discountSource,
-                discountDescription
+                discountDescription,
+                // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: mapeo a string plano — SalesLineBuilder
+                // (capa Application) es el único lugar que puede ver tanto el enum de Pricing
+                // (PriceListSelectionSource) como el snapshot de Sales (string?); el dominio de
+                // Sales nunca referencia el tipo de Pricing.
+                pricingResultValue?.SelectionSource?.ToString()
             );
 
             lines.Add(line);

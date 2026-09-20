@@ -43,6 +43,7 @@ public sealed class UpdateSalesDraftScheduleTests
         public Mock<IItemRepository> ItemRepo { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IPricingResolver> Pricing { get; } = new();
+        public Mock<IPriceListSelectionResolver> PriceListSelection { get; } = new();
         public Mock<ICompanySpecialTaxResponsibilityRepository> CompanyTaxRepo { get; } = new();
         public Mock<ERP.Domain.Modules.Inventory.Interfaces.IWarehouseRepository> WarehouseRepo { get; } = new();
         public Mock<ERP.Application.Common.Interfaces.IAverageCostService> CostService { get; } = new();
@@ -66,6 +67,10 @@ public sealed class UpdateSalesDraftScheduleTests
                 .ReturnsAsync(Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(
                     new Dictionary<Guid, PricingResult>()
                 ));
+            // SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: default "cliente sin lista propia".
+            PriceListSelection
+                .Setup(p => p.ResolveAsync(It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
             CreditPolicy
                 .Setup(p => p.GetCashFallbackAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<PaymentTerm>.Success(DefaultPt));
@@ -130,6 +135,7 @@ public sealed class UpdateSalesDraftScheduleTests
                 ItemRepo.Object,
                 Tax.Object,
                 Pricing.Object,
+                PriceListSelection.Object,
                 CompanyTaxRepo.Object,
                 WarehouseRepo.Object,
                 CostService.Object,
@@ -704,6 +710,51 @@ public sealed class UpdateSalesDraftScheduleTests
             Times.Never
         );
     }
+
+    [Fact]
+    public async Task Escenario07B_6_Update_Draft_refresca_el_snapshot_de_cabecera_mientras_sigue_Draft()
+    {
+        var f = new Fixture();
+        var inv = f.ExistingInvoice();
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1: la factura existente nunca pasó por
+        // SetPreferredPriceListSnapshot (fixture previa a 07B) — arranca en null.
+        inv.PricingTraceabilityVersion.Should().BeNull();
+        f.Repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+
+        // Estado inicial: sin lista propia asignada.
+        f.PriceListSelection
+            .Setup(p => p.ResolveAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PriceListSelectionResult>());
+
+        var newListId = Guid.NewGuid();
+        f.PriceListSelection
+            .Setup(p => p.ResolveAsync(NewCustomerIdForSnapshotTest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new[]
+                {
+                    new PriceListSelectionResult(newListId, "MAYORISTA001", PriceListSelectionSource.Customer),
+                }
+            );
+
+        var newCustomerBp = BusinessPartner.Create(
+            TenantId, "05", "1710034065", 1, "Cliente Con Lista", UserId
+        );
+        f.BpRepo
+            .Setup(r => r.GetByIdAsync(NewCustomerIdForSnapshotTest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(newCustomerBp);
+
+        var cmd = Fixture.BaseCommand(inv) with { CustomerId = NewCustomerIdForSnapshotTest };
+
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.CustomerPreferredPriceListId.Should().Be(newListId);
+        inv.CustomerPreferredPriceListName.Should().Be("MAYORISTA001");
+        // SALES-PRICING-TRACEABILITY-VERSION-07B1: Update Draft establece v1 (pasó de null a 1).
+        inv.PricingTraceabilityVersion.Should().Be(1);
+    }
+
+    private static readonly Guid NewCustomerIdForSnapshotTest = Guid.NewGuid();
 
     [Fact]
     public async Task Escenario8_autorizacion_no_recalcula_snapshots_de_pricing()

@@ -35,6 +35,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public const int NotesMaxLen = 500;
     public const int CurrencyCodeMaxLen = 3;
     public const int CancelReasonMaxLen = 500;
+    public const int CustomerPreferredPriceListNameMaxLen = 150;
 
     // ── Documento ───────────────────────────────────────────────────
     // Default: SRI código "01" = Factura (fuente de verdad: tabla sri_doc_types)
@@ -50,6 +51,36 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     // ── Cliente (snapshot fiscal — SRI exige datos al momento de emisión) ──
     public Guid CustomerId { get; private set; }
     public CustomerSnapshot Customer { get; private set; } = null!;
+
+    // ── SALES-PRICING-TRACEABILITY-SNAPSHOT-07B ─────────────────────
+    /// <summary>
+    /// Snapshot histórico de la lista de precios EXPLÍCITAMENTE asignada al cliente
+    /// (<c>PriceListCustomer</c> activa y vigente) al momento de vender — resuelta vía
+    /// <c>IPriceListSelectionResolver</c> (Pricing), nunca consultado directamente desde Sales.
+    /// Representa SOLO la preferencia propia del cliente: si el cliente no tiene ninguna lista
+    /// asignada, ambos campos quedan <c>null</c> — NUNCA se guarda aquí la lista default de la
+    /// empresa como si fuera del cliente (eso es un fallback por línea, ver
+    /// <see cref="SalesInvoiceDetail.SelectionSource"/>). Es informativo para la cabecera de la
+    /// UI ("Lista preferente: X") — cada línea puede haber usado una lista distinta (o PVP) si el
+    /// ítem no estaba asignado a esta. Solo se actualiza en Create/Update Draft; Authorize nunca
+    /// lo toca (ver <see cref="SetPreferredPriceListSnapshot"/>, guardado por <c>EnsureDraft</c>).
+    /// </summary>
+    public Guid? CustomerPreferredPriceListId { get; private set; }
+
+    /// <summary>Nombre visible de <see cref="CustomerPreferredPriceListId"/> — snapshot (sobrevive
+    /// a que la lista cambie de nombre o se desactive después).</summary>
+    public string? CustomerPreferredPriceListName { get; private set; }
+
+    /// <summary>
+    /// SALES-PRICING-TRACEABILITY-VERSION-07B1: distingue "sin lista/PVP real" de "trazabilidad
+    /// de selección no capturada" (documentos anteriores a 07B). <c>null</c> = versión anterior,
+    /// donde <see cref="CustomerPreferredPriceListId"/>/<see cref="SalesInvoiceDetail.SelectionSource"/>
+    /// nulos NUNCA deben interpretarse como "sin lista"/"PVP" — simplemente no se capturaban.
+    /// <c>1</c> = captura vigente (07B): esos mismos campos en <c>null</c> sí significan
+    /// legítimamente "sin lista preferente"/"PVP". Se fija en Create/Update Draft, nunca en
+    /// Authorize ni por backfill — un documento legado se queda en <c>null</c> para siempre.
+    /// </summary>
+    public int? PricingTraceabilityVersion { get; private set; }
 
     // ── Moneda ──────────────────────────────────────────────────────
     public string CurrencyCode { get; private set; } = "USD";
@@ -229,6 +260,30 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
             _lines.Add(line);
         }
         SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// SALES-PRICING-TRACEABILITY-VERSION-07B1: versión de captura vigente — ver
+    /// <see cref="PricingTraceabilityVersion"/>. Único valor válido hoy; documentos creados antes
+    /// de 07B se quedan en <c>null</c> para siempre (sin backfill).
+    /// </summary>
+    public const int CurrentPricingTraceabilityVersion = 1;
+
+    // ── SALES-PRICING-TRACEABILITY-SNAPSHOT-07B ─────────────────────
+    /// <summary>
+    /// Congela la lista de precios explícita del cliente resuelta al momento de Create/Update
+    /// Draft (ver <see cref="CustomerPreferredPriceListId"/>), junto con
+    /// <see cref="PricingTraceabilityVersion"/>. Solo Draft — nunca se llama desde Authorize, así
+    /// que ambos quedan fijos desde el momento en que se emite la factura.
+    /// </summary>
+    public void SetPreferredPriceListSnapshot(Guid? priceListId, string? priceListName)
+    {
+        EnsureDraft();
+        CustomerPreferredPriceListId = priceListId;
+        CustomerPreferredPriceListName = string.IsNullOrWhiteSpace(priceListName)
+            ? null
+            : priceListName.Trim();
+        PricingTraceabilityVersion = CurrentPricingTraceabilityVersion;
     }
 
     public void ApplyGlobalDiscount(decimal pct, Guid updatedBy)
