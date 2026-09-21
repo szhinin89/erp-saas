@@ -38,3 +38,27 @@ public sealed record UpdateCompanyPrecisionPolicyInput(
     int ConversionFactorDecimals,
     decimal SettlementToleranceAmount
 );
+
+/// <summary>
+/// ERP-PRECISION-POLICY-SSOT-CLEANUP-04: un campo de la política — key pública, tipo, rango y valor
+/// por defecto (el del perfil Estándar comercial). Sale de <c>PrecisionPolicyDefinitions</c>.
+/// </summary>
+public sealed record PrecisionFieldMetadataDto(
+    string Key,
+    string Kind,
+    decimal Min,
+    decimal Max,
+    decimal DefaultValue
+);
+
+/// <summary>Perfil predefinido con los valores que fija para cada key. Personalizado no aparece: no tiene valores propios.</summary>
+public sealed record PrecisionProfileMetadataDto(
+    string ProfileType,
+    IReadOnlyDictionary<string, decimal> Values
+);
+
+/// <summary>Definiciones + perfiles predefinidos — metadata estática, igual para todas las empresas.</summary>
+public sealed record PrecisionPolicyMetadataDto(
+    IReadOnlyList<PrecisionFieldMetadataDto> Fields,
+    IReadOnlyList<PrecisionProfileMetadataDto> Profiles
+);

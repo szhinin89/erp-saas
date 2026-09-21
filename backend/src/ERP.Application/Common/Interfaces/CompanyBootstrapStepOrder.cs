@@ -9,6 +9,12 @@ namespace ERP.Application.Common.Interfaces;
 /// </summary>
 public static class CompanyBootstrapStepOrder
 {
+    /// <summary>
+    /// ERP-PRECISION-POLICY-SSOT-CLEANUP-04 — <c>CompanyPrecisionPolicy</c> por defecto (perfil
+    /// Estándar comercial). No depende de ningún otro step — solo TenantId/CompanyId.
+    /// </summary>
+    public const int PrecisionPolicy = 5;
+
     /// <summary>Sucursal Principal, Bodega Principal, Establecimiento, Punto de Emisión.</summary>
     public const int Organization = 10;
 

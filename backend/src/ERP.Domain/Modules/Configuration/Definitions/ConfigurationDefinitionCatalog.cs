@@ -27,7 +27,6 @@ public static class ConfigurationDefinitionCatalog
         var definitions = InvoiceConfigurationDefinitions
             .All()
             .Concat(SalesConfigurationDefinitions.All())
-            .Concat(PresentationConfigurationDefinitions.All())
             .Concat(CompanyBrandingConfigurationDefinitions.All())
             .Concat(CatalogConfigurationDefinitions.All())
             .Concat(CommunicationsConfigurationDefinitions.All())

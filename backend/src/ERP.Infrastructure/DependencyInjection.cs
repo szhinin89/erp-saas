@@ -953,6 +953,7 @@ public static class DependencyInjection
         >();
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
         services.AddScoped<ICompanyBootstrapService, CompanyBootstrapOrchestrator>();
+        services.AddScoped<ICompanyBootstrapStep, PrecisionPolicyBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, OrganizationBootstrapStep>();
         services.AddScoped<BankCatalogSeeder>();
         services.AddScoped<ICompanyBootstrapStep, BankCatalogBootstrapStep>();

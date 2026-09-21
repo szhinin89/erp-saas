@@ -1,11 +1,13 @@
 import { apiGet, apiPut } from "../../modules/lib/apiEnvelope";
 
 /**
- * COMPANY-PRECISION-POLICY-SSOT-01. Única fuente frontend de precisión operativa de la empresa
- * (reemplazó por completo a `decimal.config.ts`, eliminado en
- * COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07). `moneyDecimals` /
- * `taxDecimals` / `accountingDecimals` son FIJOS del sistema (FiscalPrecision backend) — nunca
- * editables desde esta pantalla, incluidos solo para que el frontend tenga un único objeto.
+ * Cliente frontend de la política de precisión de la empresa. El BACKEND es la única fuente de
+ * verdad de valores, defaults, rangos, perfiles y lock (CompanyPrecisionPolicy +
+ * PrecisionPolicyDefinitions): aquí NO existe ningún valor por defecto ni rango escrito a mano.
+ * Si la API falla, se propaga el error — nunca se inventan valores.
+ *
+ * `moneyDecimals` / `taxDecimals` / `accountingDecimals` son FIJOS del sistema (FiscalPrecision
+ * backend) — nunca editables desde la pantalla de precisión.
  */
 export type PrecisionProfileType = "StandardCommercial" | "HighPrecision" | "Custom";
 
@@ -28,60 +30,67 @@ export type PrecisionPolicy = {
   accountingDecimals: number;
 };
 
-export const PRECISION_POLICY_DEFAULTS: PrecisionPolicy = {
-  profileType: "StandardCommercial",
-  salesUnitPriceDecimals: 2,
-  purchaseUnitPriceDecimals: 4,
-  quantityDecimals: 4,
-  percentageDecimals: 2,
-  unitCostDecimals: 6,
-  averageCostDecimals: 6,
-  conversionFactorDecimals: 6,
-  settlementToleranceAmount: 0.01,
-  isLocked: false,
-  lockedAt: null,
-  lockedReason: null,
-  moneyDecimals: 2,
-  taxDecimals: 2,
-  accountingDecimals: 2,
+/** Metadata estática (GET /precision-policy/metadata): definiciones y perfiles predefinidos. */
+export type PrecisionFieldMetadata = {
+  key: string;
+  kind: "Decimals" | "Amount";
+  min: number;
+  max: number;
+  defaultValue: number;
 };
 
-export const HIGH_PRECISION_DEFAULTS: Pick<
-  PrecisionPolicy,
-  | "salesUnitPriceDecimals"
-  | "purchaseUnitPriceDecimals"
-  | "quantityDecimals"
-  | "percentageDecimals"
-  | "unitCostDecimals"
-  | "averageCostDecimals"
-  | "conversionFactorDecimals"
-  | "settlementToleranceAmount"
-> = {
-  salesUnitPriceDecimals: 4,
-  purchaseUnitPriceDecimals: 6,
-  quantityDecimals: 6,
-  percentageDecimals: 4,
-  unitCostDecimals: 6,
-  averageCostDecimals: 6,
-  conversionFactorDecimals: 8,
-  settlementToleranceAmount: 0.01,
+export type PrecisionProfileMetadata = {
+  profileType: Exclude<PrecisionProfileType, "Custom">;
+  values: Record<string, number>;
 };
 
-let _cache: PrecisionPolicy | null = null;
+export type PrecisionPolicyMetadata = {
+  fields: PrecisionFieldMetadata[];
+  profiles: PrecisionProfileMetadata[];
+};
 
-export async function loadPrecisionPolicy(): Promise<PrecisionPolicy> {
-  try {
-    const cfg = await apiGet<PrecisionPolicy>("/api/v1/config/precision-policy");
-    _cache = cfg;
-    return cfg;
-  } catch {
-    _cache = PRECISION_POLICY_DEFAULTS;
-    return PRECISION_POLICY_DEFAULTS;
+export class PrecisionPolicyNotLoadedError extends Error {
+  constructor() {
+    super(
+      "La configuración de precisión de la empresa no está cargada. No se usan valores por defecto.",
+    );
+    this.name = "PrecisionPolicyNotLoadedError";
   }
 }
 
+let _cache: PrecisionPolicy | null = null;
+
+const BASE = "/api/v1/config/precision-policy";
+
+/** Carga la política de la empresa activa y la deja disponible para `getPrecisionPolicy()`. Lanza si la API falla. */
+export async function loadPrecisionPolicy(): Promise<PrecisionPolicy> {
+  const cfg = await apiGet<PrecisionPolicy>(BASE);
+  _cache = cfg;
+  return cfg;
+}
+
+export function loadPrecisionPolicyMetadata(): Promise<PrecisionPolicyMetadata> {
+  return apiGet<PrecisionPolicyMetadata>(`${BASE}/metadata`);
+}
+
+export function isPrecisionPolicyLoaded(): boolean {
+  return _cache !== null;
+}
+
+/** Olvida la política cacheada (logout / cambio de empresa) — evita usar la de otra empresa. */
+export function clearPrecisionPolicy(): void {
+  _cache = null;
+}
+
+/** Política cargada de la empresa activa. Lanza `PrecisionPolicyNotLoadedError` si aún no se cargó. */
 export function getPrecisionPolicy(): PrecisionPolicy {
-  return _cache ?? PRECISION_POLICY_DEFAULTS;
+  if (!_cache) throw new PrecisionPolicyNotLoadedError();
+  return _cache;
+}
+
+/** Solo tests: fija la política cacheada sin pasar por la API. */
+export function setPrecisionPolicyForTests(policy: PrecisionPolicy | null): void {
+  _cache = policy;
 }
 
 export type UpdatePrecisionPolicyInput = Omit<
@@ -92,10 +101,7 @@ export type UpdatePrecisionPolicyInput = Omit<
 export async function savePrecisionPolicy(
   input: UpdatePrecisionPolicyInput,
 ): Promise<PrecisionPolicy> {
-  const result = await apiPut<PrecisionPolicy>(
-    "/api/v1/config/precision-policy",
-    input,
-  );
+  const result = await apiPut<PrecisionPolicy>(BASE, input);
   _cache = result;
   return result;
 }

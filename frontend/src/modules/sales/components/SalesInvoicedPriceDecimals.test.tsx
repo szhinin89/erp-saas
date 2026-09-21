@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { SalesInvoiceDetailsSection } from "./SalesInvoiceDetailsSection";
 import { SalesRepricingTable } from "./SalesRepricingTable";
 import { roundToDecimals } from "../../../lib/sanitizers";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { buildRepricingPlan, mapResolvedPricingToLineFields } from "../hooks/useSalesCustomerRepricing";
 import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
 import type { WarehouseDto } from "../../inventory/types";
@@ -19,7 +20,7 @@ vi.mock("../../../lib/config/precisionPolicy.config", async (importOriginal) => 
   return {
     ...actual,
     getPrecisionPolicy: () => ({
-      ...actual.PRECISION_POLICY_DEFAULTS,
+      ...TEST_PRECISION_POLICY,
       salesUnitPriceDecimals: salesDecimals,
     }),
   };

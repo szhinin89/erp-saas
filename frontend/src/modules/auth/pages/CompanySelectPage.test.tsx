@@ -35,6 +35,7 @@ vi.mock("../../company-management/api/companyManagementService", () => ({
 
 vi.mock("../../../lib/config/precisionPolicy.config", () => ({
   loadPrecisionPolicy: vi.fn(),
+  clearPrecisionPolicy: vi.fn(),
 }));
 
 vi.mock("../../../lib/session/devSessionLog", () => ({

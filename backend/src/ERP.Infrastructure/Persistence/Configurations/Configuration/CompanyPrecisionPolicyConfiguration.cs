@@ -19,35 +19,35 @@ public sealed class CompanyPrecisionPolicyConfiguration : IEntityTypeConfigurati
             {
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_sales_unit_price",
-                    "sales_unit_price_decimals BETWEEN 2 AND 8"
+                    PrecisionPolicyDefinitions.CheckSql("sales_unit_price_decimals", PrecisionPolicyDefinitions.SalesUnitPriceDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_purchase_unit_price",
-                    "purchase_unit_price_decimals BETWEEN 2 AND 8"
+                    PrecisionPolicyDefinitions.CheckSql("purchase_unit_price_decimals", PrecisionPolicyDefinitions.PurchaseUnitPriceDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_quantity",
-                    "quantity_decimals BETWEEN 0 AND 6"
+                    PrecisionPolicyDefinitions.CheckSql("quantity_decimals", PrecisionPolicyDefinitions.QuantityDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_percentage",
-                    "percentage_decimals BETWEEN 2 AND 6"
+                    PrecisionPolicyDefinitions.CheckSql("percentage_decimals", PrecisionPolicyDefinitions.PercentageDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_unit_cost",
-                    "unit_cost_decimals BETWEEN 2 AND 8"
+                    PrecisionPolicyDefinitions.CheckSql("unit_cost_decimals", PrecisionPolicyDefinitions.UnitCostDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_average_cost",
-                    "average_cost_decimals BETWEEN 2 AND 8"
+                    PrecisionPolicyDefinitions.CheckSql("average_cost_decimals", PrecisionPolicyDefinitions.AverageCostDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_conversion_factor",
-                    "conversion_factor_decimals BETWEEN 2 AND 8"
+                    PrecisionPolicyDefinitions.CheckSql("conversion_factor_decimals", PrecisionPolicyDefinitions.ConversionFactorDecimals)
                 );
                 t.HasCheckConstraint(
                     "ck_company_precision_policy_settlement_tolerance",
-                    "settlement_tolerance_amount BETWEEN 0.00 AND 0.02"
+                    PrecisionPolicyDefinitions.CheckSql("settlement_tolerance_amount", PrecisionPolicyDefinitions.SettlementToleranceAmount)
                 );
             }
         );

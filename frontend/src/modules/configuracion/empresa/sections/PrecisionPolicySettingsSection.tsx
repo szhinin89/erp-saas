@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
@@ -10,8 +10,9 @@ import { useAsync } from "../../../../hooks/useAsync";
 import {
   loadPrecisionPolicy,
   savePrecisionPolicy,
-  HIGH_PRECISION_DEFAULTS,
+  loadPrecisionPolicyMetadata,
   type PrecisionPolicy,
+  type PrecisionPolicyMetadata,
   type PrecisionProfileType,
 } from "../../../../lib/config/precisionPolicy.config";
 import { applyServerErrors } from "../../../lib/validationErrors";
@@ -19,48 +20,31 @@ import { formatApiRequestError } from "../../../lib/apiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { PRECISION_SECTIONS, precisionExample } from "../precisionPolicyFields";
 import {
-  precisionPolicySchema,
+  assertPrecisionMetadata,
+  buildPrecisionPolicySchema,
   type PrecisionPolicyFormValues,
 } from "../schemas/precisionPolicySchema";
 
-const STANDARD_COMMERCIAL_VALUES: Omit<PrecisionPolicyFormValues, "profileType"> = {
-  salesUnitPriceDecimals: 2,
-  purchaseUnitPriceDecimals: 4,
-  quantityDecimals: 4,
-  percentageDecimals: 2,
-  unitCostDecimals: 6,
-  averageCostDecimals: 6,
-  conversionFactorDecimals: 6,
-  settlementToleranceAmount: 0.01,
+type ProfileValues = Omit<PrecisionPolicyFormValues, "profileType">;
+
+const PROFILE_TITLES: Record<PrecisionProfileType, string> = {
+  StandardCommercial: "Estándar comercial",
+  HighPrecision: "Alta precisión",
+  Custom: "Personalizado",
 };
 
-const HIGH_PRECISION_VALUES: Omit<PrecisionPolicyFormValues, "profileType"> =
-  HIGH_PRECISION_DEFAULTS;
+const PROFILE_ORDER: PrecisionProfileType[] = ["StandardCommercial", "HighPrecision", "Custom"];
 
-const PROFILE_CARDS: {
-  id: PrecisionProfileType;
-  title: string;
-  description: string;
-  values?: Omit<PrecisionPolicyFormValues, "profileType">;
-}[] = [
-  {
-    id: "StandardCommercial",
-    title: "Estándar comercial",
-    description: "Ventas 2 · Compras 4 · Cantidad 4 · % 2 · Costo 6 · Costo prom. 6 · Factor 6",
-    values: STANDARD_COMMERCIAL_VALUES,
-  },
-  {
-    id: "HighPrecision",
-    title: "Alta precisión",
-    description: "Ventas 4 · Compras 6 · Cantidad 6 · % 4 · Costo 6 · Costo prom. 6 · Factor 8",
-    values: HIGH_PRECISION_VALUES,
-  },
-  {
-    id: "Custom",
-    title: "Personalizado",
-    description: "Configura cada campo dentro de su rango permitido.",
-  },
-];
+type PrecisionScreenData = { policy: PrecisionPolicy; metadata: PrecisionPolicyMetadata };
+
+async function loadPrecisionScreenData(): Promise<PrecisionScreenData> {
+  const [policy, metadata] = await Promise.all([
+    loadPrecisionPolicy(),
+    loadPrecisionPolicyMetadata(),
+  ]);
+  assertPrecisionMetadata(metadata);
+  return { policy, metadata };
+}
 
 const DISCLAIMER_TEXT =
   "Esta configuración define cómo la empresa captura y calcula valores unitarios, cantidades, costos y tolerancia operativa. No modifica impuestos, totales fiscales, caja, CxC/CxP, contabilidad ni documentos ya autorizados.";
@@ -69,13 +53,53 @@ export function PrecisionPolicySettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
   const canView = canShow("erp.companies.view");
+  const screen = useAsync(loadPrecisionScreenData);
+
+  if (!canView) return <NoAccessPage title={t("settings.company.title")} />;
+  if (screen.loading) return <LoadingState />;
+  // Sin política/metadata del backend NO se muestra formulario ni se inventan valores.
+  if (!screen.data) {
+    return (
+      <>
+        <ZHPageNotice
+          variant="error"
+          message={t("settings.company.precision.loadError")}
+          detail={screen.error ?? undefined}
+        />
+        <ZHBtn variant="secondary" size="md" type="button" onClick={() => screen.refetch()}>
+          {t("settings.company.precision.retry")}
+        </ZHBtn>
+      </>
+    );
+  }
+  return (
+    <PrecisionPolicyForm
+      policy={screen.data.policy}
+      metadata={screen.data.metadata}
+      reload={screen.refetch}
+    />
+  );
+}
+
+function PrecisionPolicyForm({
+  policy,
+  metadata,
+  reload,
+}: {
+  policy: PrecisionPolicy;
+  metadata: PrecisionPolicyMetadata;
+  reload: () => void;
+}) {
+  const { canShow } = usePermissionsUi();
+  const { t } = useI18n();
   const canEdit = canShow("erp.companies.update");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const cfgState = useAsync(() => loadPrecisionPolicy());
+  const schema = useMemo(() => buildPrecisionPolicySchema(metadata), [metadata]);
+  const profiles = useMemo(() => buildProfiles(metadata), [metadata]);
 
   const {
     register,
@@ -86,28 +110,27 @@ export function PrecisionPolicySettingsSection() {
     setError: setFieldError,
     formState: { errors, isDirty },
   } = useForm<PrecisionPolicyFormValues>({
-    resolver: zodResolver(precisionPolicySchema),
-    defaultValues: { profileType: "StandardCommercial", ...STANDARD_COMMERCIAL_VALUES },
+    resolver: zodResolver(schema),
+    defaultValues: toFormValues(policy),
   });
 
   // El bloqueo se deriva SINCRÓNICAMENTE de la policy cargada (no de un efecto posterior): así no
   // existe ninguna ventana en la que el formulario parezca editable estando bloqueado.
   const [lockedByLastSave, setLocked] = useState<PrecisionPolicy | null>(null);
-  const locked = lockedByLastSave ?? (cfgState.data?.isLocked ? cfgState.data : null);
+  const locked = lockedByLastSave ?? (policy.isLocked ? policy : null);
 
   useEffect(() => {
-    if (!cfgState.data) return;
-    reset(toFormValues(cfgState.data));
-  }, [cfgState.data, reset]);
+    reset(toFormValues(policy));
+  }, [policy, reset]);
 
   const profileType = watch("profileType");
 
   const selectProfile = (id: PrecisionProfileType) => {
     if (!canEdit || locked) return;
-    const card = PROFILE_CARDS.find((c) => c.id === id);
     setValue("profileType", id, { shouldDirty: true });
-    if (card?.values) {
-      for (const [key, value] of Object.entries(card.values)) {
+    const values = profiles[id];
+    if (values) {
+      for (const [key, value] of Object.entries(values)) {
         setValue(key as keyof PrecisionPolicyFormValues, value, {
           shouldDirty: true,
         });
@@ -124,7 +147,7 @@ export function PrecisionPolicySettingsSection() {
       const result = await savePrecisionPolicy(values);
       setSaved(true);
       if (result.isLocked) setLocked(result);
-      cfgState.refetch();
+      reload();
     } catch (err) {
       const applied = applyServerErrors(err, setFieldError, (msg) =>
         setSaveError(msg),
@@ -138,7 +161,7 @@ export function PrecisionPolicySettingsSection() {
         );
       // 409 (policy bloqueada por operación real detectada en este mismo intento):
       // refetch para reflejar isLocked=true de inmediato, sin esperar recarga manual.
-      cfgState.refetch();
+      reload();
     } finally {
       setSaving(false);
     }
@@ -147,11 +170,8 @@ export function PrecisionPolicySettingsSection() {
   const handleDiscard = () => {
     setSaveError(null);
     setSaved(false);
-    if (cfgState.data) reset(toFormValues(cfgState.data));
+    reset(toFormValues(policy));
   };
-
-  if (!canView) return <NoAccessPage title={t("settings.company.title")} />;
-  if (cfgState.loading) return <LoadingState />;
 
   const readOnly = !canEdit || !!locked;
   // Los campos individuales solo se editan con el perfil Personalizado; con los perfiles
@@ -160,13 +180,6 @@ export function PrecisionPolicySettingsSection() {
 
   return (
     <>
-      {cfgState.error && (
-        <ZHPageNotice
-          variant="error"
-          message={t("common.errorPrefix")}
-          detail={cfgState.error}
-        />
-      )}
       {saveError && (
         <ZHPageNotice
           variant="error"
@@ -200,16 +213,16 @@ export function PrecisionPolicySettingsSection() {
 
             <div role="radiogroup" aria-label="Perfil de precisión" className="zh-mb-16">
               <ZHGrid cols={3}>
-                {PROFILE_CARDS.map((card) => {
-                  const active = profileType === card.id;
+                {PROFILE_ORDER.map((id) => {
+                  const active = profileType === id;
                   return (
                     <ZHBtn
-                      key={card.id}
+                      key={id}
                       type="button"
                       variant={active ? "primary" : "secondary"}
                       size="md"
                       disabled={readOnly}
-                      onClick={() => selectProfile(card.id)}
+                      onClick={() => selectProfile(id)}
                       aria-checked={active}
                       role="radio"
                       style={{
@@ -221,9 +234,9 @@ export function PrecisionPolicySettingsSection() {
                         gap: 4,
                       }}
                     >
-                      <strong>{card.title}</strong>
+                      <strong>{PROFILE_TITLES[id]}</strong>
                       <span className="zh-text-muted" style={{ fontSize: "0.85em", fontWeight: 400 }}>
-                        {card.description}
+                        {profileSummary(id, profiles, t)}
                       </span>
                     </ZHBtn>
                   );
@@ -277,7 +290,7 @@ export function PrecisionPolicySettingsSection() {
                   >
                     <ZhDecimalInput
                       disabled={fieldsDisabled}
-                      decimals={2}
+                      decimals={policy.moneyDecimals}
                       positiveOnly
                       {...register("settlementToleranceAmount")}
                     />
@@ -339,4 +352,25 @@ function toFormValues(cfg: PrecisionPolicy): PrecisionPolicyFormValues {
     conversionFactorDecimals: cfg.conversionFactorDecimals,
     settlementToleranceAmount: cfg.settlementToleranceAmount,
   };
+}
+
+/** Valores de cada perfil predefinido, tal cual los entrega el backend (Custom no tiene valores). */
+function buildProfiles(
+  metadata: PrecisionPolicyMetadata,
+): Partial<Record<PrecisionProfileType, ProfileValues>> {
+  const out: Partial<Record<PrecisionProfileType, ProfileValues>> = {};
+  for (const p of metadata.profiles) out[p.profileType] = p.values as unknown as ProfileValues;
+  return out;
+}
+
+function profileSummary(
+  id: PrecisionProfileType,
+  profiles: Partial<Record<PrecisionProfileType, ProfileValues>>,
+  t: (key: string) => string,
+): string {
+  const values = profiles[id];
+  if (!values) return t("settings.company.precision.profile.custom");
+  return PRECISION_SECTIONS.flatMap((s) => s.fields)
+    .map((f) => `${t(`settings.company.precision.field.${f.i18nKey}.label`)} ${values[f.name]}`)
+    .join(" · ");
 }

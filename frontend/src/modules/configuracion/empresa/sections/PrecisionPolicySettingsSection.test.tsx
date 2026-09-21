@@ -5,17 +5,20 @@ import { I18nProvider } from "../../../../i18n/i18n";
 import { dictionaries } from "../../../../i18n/dictionaries";
 import { precisionExample, PRECISION_SECTIONS } from "../precisionPolicyFields";
 import type { PrecisionPolicy } from "../../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_METADATA } from "../../../../test/precisionPolicyFixture";
 
 // ERP-PRECISION-POLICY-SETTINGS-UX-02 — estructura, ejemplos dinámicos y bloqueo de la pantalla
 // de precisión decimal por empresa. No cambia rangos, defaults ni cálculos.
 
 const loadMock = vi.fn();
 const saveMock = vi.fn();
+const metadataMock = vi.fn();
 vi.mock("../../../../lib/config/precisionPolicy.config", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../../lib/config/precisionPolicy.config")>();
   return {
     ...actual,
     loadPrecisionPolicy: () => loadMock(),
+    loadPrecisionPolicyMetadata: () => metadataMock(),
     savePrecisionPolicy: (v: unknown) => saveMock(v),
   };
 });
@@ -52,6 +55,7 @@ function policy(overrides: Partial<PrecisionPolicy> = {}): PrecisionPolicy {
 
 async function renderSection(p: PrecisionPolicy) {
   loadMock.mockResolvedValue(p);
+  metadataMock.mockResolvedValue(TEST_PRECISION_METADATA);
   const utils = render(
     <I18nProvider>
       <PrecisionPolicySettingsSection />
@@ -67,6 +71,7 @@ const input = (name: string) =>
 beforeEach(() => {
   canEdit = true;
   loadMock.mockReset();
+  metadataMock.mockReset();
   saveMock.mockReset();
   localStorage.clear();
 });
@@ -266,9 +271,88 @@ describe("i18n ES/EN/QU", () => {
     "settings.company.precision.fiscal.title",
     "settings.company.precision.fiscal.body",
     "settings.company.precision.locked",
+    "settings.company.precision.loadError",
+    "settings.company.precision.retry",
+    "settings.company.precision.profile.custom",
+    "session.precisionPolicy.loadError",
+    "session.precisionPolicy.retry",
   ];
   it.each(["es", "en", "qu"] as const)("locale %s tiene todas las claves", (locale) => {
     for (const key of keys) expect(dictionaries[locale][key], `${locale}:${key}`).toBeTruthy();
     expect(dictionaries[locale]["settings.company.precision.example"]).toContain("{{value}}");
+  });
+});
+
+describe("ERP-PRECISION-POLICY-SSOT-CLEANUP-04 — la pantalla solo consume la API", () => {
+  it("las tarjetas de perfil muestran los números de la metadata del backend", async () => {
+    const meta = structuredClone(TEST_PRECISION_METADATA);
+    meta.profiles[1].values.salesUnitPriceDecimals = 7; // valor inventado solo aquí
+    loadMock.mockResolvedValue(policy());
+    metadataMock.mockResolvedValue(meta);
+    render(
+      <I18nProvider>
+        <PrecisionPolicySettingsSection />
+      </I18nProvider>,
+    );
+    const card = await screen.findByRole("radio", { name: /Alta precisión/ });
+    expect(card.textContent).toContain("Precio unitario de venta 7");
+  });
+
+  it("el rango del schema sale de la metadata (max 3 → 4 es rechazado)", async () => {
+    const meta = structuredClone(TEST_PRECISION_METADATA);
+    meta.fields.find((f) => f.key === "salesUnitPriceDecimals")!.max = 3;
+    loadMock.mockResolvedValue(policy({ profileType: "Custom" }));
+    metadataMock.mockResolvedValue(meta);
+    render(
+      <I18nProvider>
+        <PrecisionPolicySettingsSection />
+      </I18nProvider>,
+    );
+    await screen.findByTestId("precision-section-prices");
+    fireEvent.change(input("salesUnitPriceDecimals"), { target: { value: "4" } });
+    fireEvent.submit(document.querySelector("form")!);
+    await new Promise((r) => setTimeout(r, 30));
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it("si la API de política falla muestra error + reintentar y NO muestra formulario", async () => {
+    loadMock.mockRejectedValue(new Error("boom"));
+    metadataMock.mockResolvedValue(TEST_PRECISION_METADATA);
+    render(
+      <I18nProvider>
+        <PrecisionPolicySettingsSection />
+      </I18nProvider>,
+    );
+    await screen.findByText(/No se pudo cargar la configuración de precisión/);
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeTruthy();
+    expect(screen.queryByTestId("precision-section-prices")).toBeNull();
+    expect(document.querySelector("form")).toBeNull();
+  });
+
+  it("si falla la metadata tampoco se inventan valores", async () => {
+    loadMock.mockResolvedValue(policy());
+    metadataMock.mockRejectedValue(new Error("boom"));
+    render(
+      <I18nProvider>
+        <PrecisionPolicySettingsSection />
+      </I18nProvider>,
+    );
+    await screen.findByText(/No se pudo cargar la configuración de precisión/);
+    expect(document.querySelector("form")).toBeNull();
+  });
+
+  it("metadata incompleta = error (no se completa con valores propios)", async () => {
+    loadMock.mockResolvedValue(policy());
+    metadataMock.mockResolvedValue({
+      ...TEST_PRECISION_METADATA,
+      fields: TEST_PRECISION_METADATA.fields.filter((f) => f.key !== "quantityDecimals"),
+    });
+    render(
+      <I18nProvider>
+        <PrecisionPolicySettingsSection />
+      </I18nProvider>,
+    );
+    await screen.findByText(/No se pudo cargar la configuración de precisión/);
+    expect(document.querySelector("form")).toBeNull();
   });
 });

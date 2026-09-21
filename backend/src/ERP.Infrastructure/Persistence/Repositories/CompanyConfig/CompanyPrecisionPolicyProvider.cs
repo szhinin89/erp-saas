@@ -39,20 +39,9 @@ public sealed class CompanyPrecisionPolicyProvider : ICompanyPrecisionPolicyProv
         var tenantId = _tenant.TenantId;
         var companyId = _company.CompanyId;
 
-        var policy = await _repo.FindAsync(tenantId, companyId, ct);
-        if (policy is null)
-        {
-            // Fallback perezoso: empresa creada después del backfill de la migración. Se crea con
-            // el perfil "Estándar comercial" y se persiste antes de devolver — nunca se devuelve
-            // un default en memoria sin fila real detrás.
-            policy = CompanyPrecisionPolicy.CreateStandardCommercial(
-                tenantId,
-                companyId,
-                _currentUser.UserId
-            );
-            await _repo.AddAsync(policy, ct);
-            await _repo.SaveChangesAsync(ct);
-        }
+        var policy =
+            await _repo.FindAsync(tenantId, companyId, ct)
+            ?? throw new CompanyPrecisionPolicyMissingException(companyId);
 
         return ToDto(policy);
     }

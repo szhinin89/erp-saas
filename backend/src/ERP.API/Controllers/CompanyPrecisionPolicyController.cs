@@ -26,6 +26,11 @@ public sealed class CompanyPrecisionPolicyController : ControllerBase
     public async Task<IActionResult> Get(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetCompanyPrecisionPolicyQuery(), ct), "OK");
 
+    /// <summary>Definiciones (keys/rangos/defaults) y perfiles predefinidos — metadata estática.</summary>
+    [HttpGet("metadata")]
+    public async Task<IActionResult> GetMetadata(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPrecisionPolicyMetadataQuery(), ct), "OK");
+
     [HttpPut]
     public async Task<IActionResult> Update(
         [FromBody] UpdateCompanyPrecisionPolicyCommand cmd,

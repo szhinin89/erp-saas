@@ -3953,5 +3953,10 @@
   "settings.company.precision.customHint": "Kutin «Personalizado» perfilta akllay sapa killkata allichinapak.",
   "settings.company.precision.fiscal.title": "Precisión fiscal",
   "settings.company.precision.fiscal.body": "Subtotalkuna, impuestokuna, totalkuna kaypi mana allichishkachu. Sistemapa fiscal, monetario reglakunata catinkuna.",
-  "settings.company.precision.locked": "Kay empresa ña operacionkunata killkan. Decimal precisión wichkashka kan, ñawpa killkakunata katichinkapak."
+  "settings.company.precision.locked": "Kay empresa ña operacionkunata killkan. Decimal precisión wichkashka kan, ñawpa killkakunata katichinkapak.",
+  "settings.company.precision.loadError": "Empresapa precisión configuracionta manam apamurqanchu. Mana valor ñawpaqmanta rikuchikunchu.",
+  "settings.company.precision.retry": "Yapamanta ruway",
+  "settings.company.precision.profile.custom": "Sapa campota allowasqa rangonpi churay.",
+  "session.precisionPolicy.loadError": "Empresapa precisión configuracionta manam apamurqanchu. Mana chaywan mana allinchu llamkay.",
+  "session.precisionPolicy.retry": "Yapamanta ruway"
 }

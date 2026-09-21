@@ -12,11 +12,18 @@ namespace ERP.Application.Modules.Companies;
 /// Fail-closed: si no hay empresa operativa activa, lanza <c>CompanyScopeException.NoCompanyContext()</c>
 /// — nunca devuelve un default silencioso.
 ///
-/// Fallback: si la empresa activa no tiene fila en <c>company_precision_policy</c> (caso de una
-/// empresa creada después del backfill de la migración), la crea de forma perezosa con el perfil
-/// "Estándar comercial" y la persiste antes de devolverla.
+/// Sin fallback: si la empresa activa no tiene fila en <c>company_precision_policy</c> lanza
+/// <see cref="CompanyPrecisionPolicyMissingException"/> — nunca crea ni inventa una política al leer.
+/// La fila la crea el bootstrap de empresa (CompanyProvisioningService) y la migración de backfill.
 /// </summary>
 public interface ICompanyPrecisionPolicyProvider
 {
     Task<EffectivePrecisionPolicyDto> GetEffectiveAsync(CancellationToken ct = default);
+}
+
+/// <summary>La empresa no tiene <c>CompanyPrecisionPolicy</c>: error de datos/aprovisionamiento, no un caso a "arreglar" en lectura.</summary>
+public sealed class CompanyPrecisionPolicyMissingException : InvalidOperationException
+{
+    public CompanyPrecisionPolicyMissingException(Guid companyId)
+        : base($"La empresa {companyId} no tiene configuración de precisión (company_precision_policy).") { }
 }

@@ -20,11 +20,6 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.Invoice.DefaultPaymentTermId };
         yield return new object[] { OrgSettingKeys.Invoice.DefaultWarehouseId };
         yield return new object[] { OrgSettingKeys.Sales.ConsumerFinalMaxAmount };
-        yield return new object[] { OrgSettingKeys.Presentation.DecimalSalesUnitPrice };
-        yield return new object[] { OrgSettingKeys.Presentation.DecimalPurchaseUnitPrice };
-        yield return new object[] { OrgSettingKeys.Presentation.DecimalQuantity };
-        yield return new object[] { OrgSettingKeys.Presentation.DecimalPercentage };
-        yield return new object[] { OrgSettingKeys.Presentation.DecimalTotalAmount };
         yield return new object[] { OrgSettingKeys.CompanyBranding.PrimaryColor };
         yield return new object[] { OrgSettingKeys.CompanyBranding.SecondaryColor };
         yield return new object[] { OrgSettingKeys.CompanyBranding.Slogan };
@@ -142,23 +137,6 @@ public sealed class ConfigurationDefinitionCatalogTests
         definition.IsValidValue("150.75").Should().BeTrue();
         definition.IsValidValue("-1").Should().BeFalse();
         definition.IsValidValue("not-a-number").Should().BeFalse();
-    }
-
-    [Theory]
-    [InlineData(OrgSettingKeys.Presentation.DecimalSalesUnitPrice)]
-    [InlineData(OrgSettingKeys.Presentation.DecimalPurchaseUnitPrice)]
-    [InlineData(OrgSettingKeys.Presentation.DecimalQuantity)]
-    [InlineData(OrgSettingKeys.Presentation.DecimalPercentage)]
-    [InlineData(OrgSettingKeys.Presentation.DecimalTotalAmount)]
-    public void presentation_decimal_valida_rango_0_a_6(string key)
-    {
-        ConfigurationDefinitionCatalog.TryGet(key, out var definition);
-
-        definition!.IsValidValue("0").Should().BeTrue();
-        definition.IsValidValue("6").Should().BeTrue();
-        definition.IsValidValue("-1").Should().BeFalse();
-        definition.IsValidValue("7").Should().BeFalse();
-        definition.IsValidValue("99").Should().BeFalse();
     }
 
     [Theory]

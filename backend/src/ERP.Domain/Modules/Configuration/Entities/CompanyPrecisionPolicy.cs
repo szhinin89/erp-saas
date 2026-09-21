@@ -6,9 +6,8 @@ namespace ERP.Domain.Configuration.Entities;
 /// <summary>
 /// COMPANY-PRECISION-POLICY-SSOT-01: SSOT dinámico de precisión numérica OPERATIVA por empresa
 /// (cuántos decimales captura/calcula la empresa para precios unitarios, cantidades, costos,
-/// porcentajes y tolerancia de cuadre). Reemplaza como fuente de cálculo a
-/// <c>OrgSettingKeys.Presentation</c> (namespace <c>presentation.decimal.*</c>, LEGACY — ver
-/// <see cref="ERP.Domain.Configuration.Constants.OrgSettingKeys.Presentation"/>).
+/// porcentajes y tolerancia de cuadre). Es la ÚNICA fuente de precisión operativa por empresa; sus
+/// keys, rangos y perfiles predefinidos viven en <see cref="PrecisionPolicyDefinitions"/>.
 ///
 /// NUNCA reemplaza ni expone los valores fiscales/contables fijos del sistema — esos siguen
 /// siendo <see cref="ERP.Domain.Common.FiscalPrecision"/> (Tax/Total/Percentage-fiscal/Accounting),
@@ -20,24 +19,6 @@ namespace ERP.Domain.Configuration.Entities;
 /// </summary>
 public sealed class CompanyPrecisionPolicy : AuditableEntity, ICompanyScopedEntity
 {
-    public const int SalesUnitPriceMin = 2;
-    public const int SalesUnitPriceMax = 8;
-    public const int PurchaseUnitPriceMin = 2;
-    public const int PurchaseUnitPriceMax = 8;
-    public const int QuantityMin = 0;
-    public const int QuantityMax = 6;
-    public const int PercentageMin = 2;
-    public const int PercentageMax = 6;
-    public const int UnitCostMin = 2;
-    public const int UnitCostMax = 8;
-    public const int AverageCostMin = 2;
-    public const int AverageCostMax = 8;
-    public const int ConversionFactorMin = 2;
-    public const int ConversionFactorMax = 8;
-
-    public const decimal SettlementToleranceMin = 0.00m;
-    public const decimal SettlementToleranceMax = 0.02m;
-
     public Guid CompanyId { get; private set; }
     public PrecisionProfileType ProfileType { get; private set; }
 
@@ -60,13 +41,13 @@ public sealed class CompanyPrecisionPolicy : AuditableEntity, ICompanyScopedEnti
         Guid tenantId,
         Guid companyId,
         Guid createdBy
-    ) => Create(tenantId, companyId, PrecisionProfileType.StandardCommercial, StandardCommercialDefaults(), createdBy);
+    ) => Create(tenantId, companyId, PrecisionProfileType.StandardCommercial, PrecisionPolicyDefinitions.Standard, createdBy);
 
     public static CompanyPrecisionPolicy CreateHighPrecision(
         Guid tenantId,
         Guid companyId,
         Guid createdBy
-    ) => Create(tenantId, companyId, PrecisionProfileType.HighPrecision, HighPrecisionDefaults(), createdBy);
+    ) => Create(tenantId, companyId, PrecisionProfileType.HighPrecision, PrecisionPolicyDefinitions.HighPrecision, createdBy);
 
     public static CompanyPrecisionPolicy CreateCustom(
         Guid tenantId,
@@ -112,8 +93,8 @@ public sealed class CompanyPrecisionPolicy : AuditableEntity, ICompanyScopedEnti
     {
         var values = profile switch
         {
-            PrecisionProfileType.StandardCommercial => StandardCommercialDefaults(),
-            PrecisionProfileType.HighPrecision => HighPrecisionDefaults(),
+            PrecisionProfileType.StandardCommercial => PrecisionPolicyDefinitions.Standard,
+            PrecisionProfileType.HighPrecision => PrecisionPolicyDefinitions.HighPrecision,
             PrecisionProfileType.Custom => customValues,
             _ => throw new ArgumentOutOfRangeException(nameof(profile)),
         };
@@ -149,30 +130,6 @@ public sealed class CompanyPrecisionPolicy : AuditableEntity, ICompanyScopedEnti
         ConversionFactorDecimals = v.ConversionFactorDecimals;
         SettlementToleranceAmount = v.SettlementToleranceAmount;
     }
-
-    public static PrecisionPolicyValues StandardCommercialDefaults() =>
-        new(
-            SalesUnitPriceDecimals: 2,
-            PurchaseUnitPriceDecimals: 4,
-            QuantityDecimals: 4,
-            PercentageDecimals: 2,
-            UnitCostDecimals: 6,
-            AverageCostDecimals: 6,
-            ConversionFactorDecimals: 6,
-            SettlementToleranceAmount: 0.01m
-        );
-
-    public static PrecisionPolicyValues HighPrecisionDefaults() =>
-        new(
-            SalesUnitPriceDecimals: 4,
-            PurchaseUnitPriceDecimals: 6,
-            QuantityDecimals: 6,
-            PercentageDecimals: 4,
-            UnitCostDecimals: 6,
-            AverageCostDecimals: 6,
-            ConversionFactorDecimals: 8,
-            SettlementToleranceAmount: 0.01m
-        );
 }
 
 /// <summary>
@@ -190,31 +147,28 @@ public sealed record PrecisionPolicyValues(
     decimal SettlementToleranceAmount
 )
 {
-    /// <summary>Lanza <see cref="ArgumentOutOfRangeException"/> si algún campo excede su rango permitido.</summary>
+    /// <summary>Lanza <see cref="ArgumentOutOfRangeException"/> si algún campo excede su rango (ver
+    /// <see cref="PrecisionPolicyDefinitions"/>, única fuente de rangos).</summary>
     public void EnsureWithinRange()
     {
-        Check(SalesUnitPriceDecimals, CompanyPrecisionPolicy.SalesUnitPriceMin, CompanyPrecisionPolicy.SalesUnitPriceMax, nameof(SalesUnitPriceDecimals));
-        Check(PurchaseUnitPriceDecimals, CompanyPrecisionPolicy.PurchaseUnitPriceMin, CompanyPrecisionPolicy.PurchaseUnitPriceMax, nameof(PurchaseUnitPriceDecimals));
-        Check(QuantityDecimals, CompanyPrecisionPolicy.QuantityMin, CompanyPrecisionPolicy.QuantityMax, nameof(QuantityDecimals));
-        Check(PercentageDecimals, CompanyPrecisionPolicy.PercentageMin, CompanyPrecisionPolicy.PercentageMax, nameof(PercentageDecimals));
-        Check(UnitCostDecimals, CompanyPrecisionPolicy.UnitCostMin, CompanyPrecisionPolicy.UnitCostMax, nameof(UnitCostDecimals));
-        Check(AverageCostDecimals, CompanyPrecisionPolicy.AverageCostMin, CompanyPrecisionPolicy.AverageCostMax, nameof(AverageCostDecimals));
-        Check(ConversionFactorDecimals, CompanyPrecisionPolicy.ConversionFactorMin, CompanyPrecisionPolicy.ConversionFactorMax, nameof(ConversionFactorDecimals));
-
-        if (
-            SettlementToleranceAmount < CompanyPrecisionPolicy.SettlementToleranceMin
-            || SettlementToleranceAmount > CompanyPrecisionPolicy.SettlementToleranceMax
-        )
-            throw new ArgumentOutOfRangeException(
-                nameof(SettlementToleranceAmount),
-                SettlementToleranceAmount,
-                $"Debe estar entre {CompanyPrecisionPolicy.SettlementToleranceMin} y {CompanyPrecisionPolicy.SettlementToleranceMax}."
-            );
+        Check(SalesUnitPriceDecimals, PrecisionPolicyDefinitions.SalesUnitPriceDecimals);
+        Check(PurchaseUnitPriceDecimals, PrecisionPolicyDefinitions.PurchaseUnitPriceDecimals);
+        Check(QuantityDecimals, PrecisionPolicyDefinitions.QuantityDecimals);
+        Check(PercentageDecimals, PrecisionPolicyDefinitions.PercentageDecimals);
+        Check(UnitCostDecimals, PrecisionPolicyDefinitions.UnitCostDecimals);
+        Check(AverageCostDecimals, PrecisionPolicyDefinitions.AverageCostDecimals);
+        Check(ConversionFactorDecimals, PrecisionPolicyDefinitions.ConversionFactorDecimals);
+        Check(SettlementToleranceAmount, PrecisionPolicyDefinitions.SettlementToleranceAmount);
     }
 
-    private static void Check(short value, int min, int max, string field)
+    private static void Check(decimal value, string key)
     {
-        if (value < min || value > max)
-            throw new ArgumentOutOfRangeException(field, value, $"Debe estar entre {min} y {max}.");
+        var def = PrecisionPolicyDefinitions.Get(key);
+        if (value < def.Min || value > def.Max)
+            throw new ArgumentOutOfRangeException(
+                key,
+                value,
+                FormattableString.Invariant($"Debe estar entre {def.Min} y {def.Max}.")
+            );
     }
 }

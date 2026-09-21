@@ -6,7 +6,10 @@ import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingS
 import { restoreSessionFromCookie } from "../lib/session/restoreSessionFromCookie";
 import { getAccessToken } from "../lib/session/authTokenMemory";
 import { initializeAuthBroadcastListener } from "../lib/session/authRefreshManager";
-import { loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
+import { clearPrecisionPolicy, loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
+import { useOptionalI18n } from "../i18n/i18n";
+import { ZHBtn } from "./zh/ZHForm";
+import { ZHPageNotice } from "./zh/ZHPageNotice";
 
 type Props = { children: ReactNode };
 
@@ -17,7 +20,17 @@ type Props = { children: ReactNode };
 export function SessionBootstrap({ children }: Props) {
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const companyId = useAuthStore((s) => s.user?.companyId ?? null);
+  const { t } = useOptionalI18n();
   const [ready, setReady] = useState(false);
+  // La política de precisión de la empresa se exige ANTES de renderizar la app: los módulos la
+  // leen de forma síncrona y no existen valores por defecto (fail-closed).
+  const [policyResult, setPolicyResult] = useState<{
+    companyId: string | null;
+    status: "ready" | "error";
+  } | null>(null);
+  const [policyAttempt, setPolicyAttempt] = useState(0);
+  const needsPolicy = ready && isAuthenticated && !!companyId;
 
   // Cada pestaña debe escuchar el logout remoto aun si no necesitó refresh.
   useEffect(() => {
@@ -57,15 +70,6 @@ export function SessionBootstrap({ children }: Props) {
 
     if (isAuthenticated) {
       void useSessionStore.getState().refresh();
-      // Config de precisión operativa por empresa — debe estar disponible antes de que
-      // cualquier módulo (Ventas, Compras, Items, Inventory, Expenses, Payables) formatee
-      // o valide montos. company_precision_policy / precisionPolicy.config.ts es la única
-      // SSOT frontend desde COMPANY-PRECISION-POLICY-FRONTEND-CONSUMERS-MIGRATION-07
-      // (2026-09-13): decimal.config.ts (legacy) fue eliminado del frontend tras confirmar
-      // cero consumidores productivos (ZhCurrencyInput pasó a fallback fijo de 2 decimales;
-      // la pantalla legacy DecimalSettingsSection.tsx fue eliminada por estar huérfana, ya
-      // reemplazada por PrecisionPolicySettingsSection).
-      void loadPrecisionPolicy();
       // Estado LOCAL de facturación electrónica (certificado/ambiente/URL) — alimenta
       // ZHElectronicEnvironmentBanner en cualquier pantalla emisora sin que cada una dispare su
       // propia petición. ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: refresh() nunca
@@ -79,7 +83,50 @@ export function SessionBootstrap({ children }: Props) {
     }
   }, [ready, isAuthenticated]);
 
+  // Política de precisión de la empresa (company_precision_policy, único SSOT). Se limpia al salir
+  // de sesión para que la política de una empresa nunca sobreviva a otra.
+  useEffect(() => {
+    if (!ready) return;
+    if (!needsPolicy) {
+      clearPrecisionPolicy();
+      return;
+    }
+    let cancelled = false;
+    loadPrecisionPolicy().then(
+      () => {
+        if (!cancelled) setPolicyResult({ companyId, status: "ready" });
+      },
+      () => {
+        if (!cancelled) setPolicyResult({ companyId, status: "error" });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, needsPolicy, companyId, policyAttempt]);
+
   if (!hasHydrated || !ready) return null;
+
+  // La política de OTRA empresa nunca vale: mientras no se resuelva la de la empresa activa, no hay app.
+  if (needsPolicy && policyResult?.companyId !== companyId) return null;
+  if (needsPolicy && policyResult?.status !== "ready") {
+    return (
+      <div>
+        <ZHPageNotice variant="error" message={t("session.precisionPolicy.loadError")} />
+        <ZHBtn
+          variant="primary"
+          size="md"
+          type="button"
+          onClick={() => {
+            setPolicyResult(null);
+            setPolicyAttempt((n) => n + 1);
+          }}
+        >
+          {t("session.precisionPolicy.retry")}
+        </ZHBtn>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

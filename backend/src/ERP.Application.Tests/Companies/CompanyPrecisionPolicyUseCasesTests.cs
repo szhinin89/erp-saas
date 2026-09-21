@@ -59,9 +59,12 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         FakeRepo Repo,
         Mock<ICurrentTenant> Tenant,
         Mock<ICurrentCompany> Company
-    ) BuildProvider(Guid tenantId, Guid companyId)
+    ) BuildProvider(Guid tenantId, Guid companyId, bool seed = true)
     {
         var repo = new FakeRepo();
+        // ERP-PRECISION-POLICY-SSOT-CLEANUP-04: la fila la crea el bootstrap de empresa, nunca la lectura.
+        if (seed)
+            repo.Rows.Add(CompanyPrecisionPolicy.CreateStandardCommercial(tenantId, companyId, UserId));
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(tenantId);
         var company = new Mock<ICurrentCompany>();
@@ -80,22 +83,32 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
     }
 
     [Fact]
-    public async Task Get_de_empresa_sin_fila_previa_crea_fallback_StandardCommercial()
+    public async Task Get_de_empresa_sin_fila_lanza_y_NO_crea_ninguna_policy()
     {
-        var (provider, repo, _, _) = BuildProvider(TenantA, CompanyA);
+        var (provider, repo, _, _) = BuildProvider(TenantA, CompanyA, seed: false);
+
+        var act = () => provider.GetEffectiveAsync();
+
+        await act.Should().ThrowAsync<CompanyPrecisionPolicyMissingException>();
+        repo.Rows.Should().BeEmpty("leer nunca escribe");
+    }
+
+    [Fact]
+    public async Task Get_de_empresa_con_fila_devuelve_los_valores_de_la_empresa()
+    {
+        var (provider, _, _, _) = BuildProvider(TenantA, CompanyA);
 
         var dto = await provider.GetEffectiveAsync();
 
         dto.ProfileType.Should().Be("StandardCommercial");
-        dto.SalesUnitPriceDecimals.Should().Be(2);
-        repo.Rows.Should().ContainSingle(r => r.TenantId == TenantA && r.CompanyId == CompanyA);
+        dto.SalesUnitPriceDecimals.Should().Be(PrecisionPolicyDefinitions.Standard.SalesUnitPriceDecimals);
     }
 
     [Fact]
     public async Task GetCompanyPrecisionPolicyHandler_retorna_la_policy_de_la_empresa_activa()
     {
-        var (provider, _, _, _) = BuildProvider(TenantA, CompanyA);
-        var handler = new GetCompanyPrecisionPolicyHandler(provider);
+        var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);
+        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
 
         var result = await handler.Handle(
             new GetCompanyPrecisionPolicyQuery(),
@@ -104,6 +117,94 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.ProfileType.Should().Be("StandardCommercial");
+    }
+
+    [Fact]
+    public async Task GetHandler_de_empresa_sin_policy_retorna_NotFound_sin_crear()
+    {
+        var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA, seed: false);
+        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+
+        var result = await handler.Handle(new GetCompanyPrecisionPolicyQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        repo.Rows.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetHandler_reporta_lock_efectivo_si_hay_operaciones_sin_escribir()
+    {
+        var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);
+        repo.HasOperations = true;
+        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+
+        var result = await handler.Handle(new GetCompanyPrecisionPolicyQuery(), CancellationToken.None);
+
+        result.Value!.IsLocked.Should().BeTrue();
+        result.Value.LockedReason.Should().Be(GetCompanyPrecisionPolicyHandler.EffectiveLockReason);
+        repo.Rows.Single().IsLocked.Should().BeFalse("GET no persiste el bloqueo");
+    }
+
+    [Fact]
+    public async Task GetHandler_sin_operaciones_no_esta_bloqueada()
+    {
+        var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA);
+        var handler = new GetCompanyPrecisionPolicyHandler(provider, repo, tenant.Object, company.Object);
+
+        var result = await handler.Handle(new GetCompanyPrecisionPolicyQuery(), CancellationToken.None);
+
+        result.Value!.IsLocked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Update_de_empresa_sin_policy_retorna_NotFound_y_no_crea()
+    {
+        var (provider, repo, tenant, company) = BuildProvider(TenantA, CompanyA, seed: false);
+        var handler = new UpdateCompanyPrecisionPolicyHandler(repo, provider, tenant.Object, company.Object, MockUser());
+
+        var result = await handler.Handle(
+            new UpdateCompanyPrecisionPolicyCommand("StandardCommercial", 2, 4, 4, 2, 6, 6, 6, 0.01m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        repo.Rows.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Metadata_expone_definiciones_y_perfiles_de_PrecisionPolicyDefinitions()
+    {
+        var result = await new GetPrecisionPolicyMetadataHandler().Handle(
+            new GetPrecisionPolicyMetadataQuery(),
+            CancellationToken.None
+        );
+
+        var meta = result.Value!;
+        meta.Fields.Select(f => f.Key).Should().Equal(PrecisionPolicyDefinitions.Fields.Select(f => f.Key));
+        var sales = meta.Fields.Single(f => f.Key == "salesUnitPriceDecimals");
+        (sales.Min, sales.Max, sales.DefaultValue).Should().Be((2m, 8m, 2m));
+        meta.Fields.Single(f => f.Key == "settlementToleranceAmount").Kind.Should().Be("Amount");
+        meta.Profiles.Select(p => p.ProfileType).Should().Equal("StandardCommercial", "HighPrecision");
+        meta.Profiles.Single(p => p.ProfileType == "HighPrecision").Values["conversionFactorDecimals"].Should().Be(8m);
+        meta.Profiles.Single(p => p.ProfileType == "StandardCommercial").Values["purchaseUnitPriceDecimals"].Should().Be(4m);
+    }
+
+    [Fact]
+    public void Definiciones_los_perfiles_predefinidos_respetan_los_rangos_y_el_validator_los_usa()
+    {
+        PrecisionPolicyDefinitions.Standard.EnsureWithinRange();
+        PrecisionPolicyDefinitions.HighPrecision.EnsureWithinRange();
+
+        var validator = new UpdateCompanyPrecisionPolicyCommandValidator();
+        var ok = new UpdateCompanyPrecisionPolicyCommand("Custom", 2, 8, 0, 6, 2, 8, 8, 0.02m);
+        validator.Validate(ok).IsValid.Should().BeTrue();
+        validator.Validate(ok with { SalesUnitPriceDecimals = 1 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { SalesUnitPriceDecimals = 9 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { QuantityDecimals = 7 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { SettlementToleranceAmount = 0.03m }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { ProfileType = "Nope" }).IsValid.Should().BeFalse();
     }
 
     [Fact]

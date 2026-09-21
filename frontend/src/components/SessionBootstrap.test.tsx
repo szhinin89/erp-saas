@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, waitFor } from "@testing-library/react";
+import { cleanup, render, waitFor } from "@testing-library/react";
 import { SessionBootstrap } from "./SessionBootstrap";
 import { useAuthStore } from "../store/authStore";
 import { useSessionStore } from "../store/sessionStore";
@@ -28,6 +28,7 @@ vi.mock(
 
 vi.mock("../lib/config/precisionPolicy.config", () => ({
   loadPrecisionPolicy: vi.fn().mockResolvedValue({}),
+  clearPrecisionPolicy: vi.fn(),
 }));
 
 vi.mock("../lib/session/authRefreshManager", () => ({
@@ -67,13 +68,16 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   resetStores();
 });
 
 describe("SessionBootstrap — estado de facturación electrónica", () => {
   it("al autenticarse, llama getStatus() sin checkConnectivity (nunca pide ping externo al SRI)", async () => {
     setAccessToken("fake-token");
-    useAuthStore.setState({ hasHydrated: true, isAuthenticated: true });
+    useAuthStore.setState({ hasHydrated: true, isAuthenticated: true,
+      user: { companyId: "c1" } as never,
+    });
 
     render(
       <SessionBootstrap>
@@ -105,5 +109,40 @@ describe("SessionBootstrap — estado de facturación electrónica", () => {
       expect(useElectronicInvoicingStatusStore.getState().isLoaded).toBe(false),
     );
     expect(electronicInvoicingService.getStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("SessionBootstrap — política de precisión (fail-closed)", () => {
+  it("con empresa: no renderiza la app hasta cargar la política; si falla muestra error y no la app", async () => {
+    setAccessToken("fake-token");
+    useAuthStore.setState({
+      hasHydrated: true,
+      isAuthenticated: true,
+      user: { companyId: "c1" } as never,
+    });
+    vi.mocked(loadPrecisionPolicy).mockRejectedValueOnce(new Error("down"));
+
+    const { queryByText, findByRole } = render(
+      <SessionBootstrap>
+        <div>app</div>
+      </SessionBootstrap>,
+    );
+    await findByRole("alert");
+    expect(queryByText("app")).toBeNull();
+  });
+
+  it("con empresa: renderiza la app cuando la política carga", async () => {
+    setAccessToken("fake-token");
+    useAuthStore.setState({
+      hasHydrated: true,
+      isAuthenticated: true,
+      user: { companyId: "c1" } as never,
+    });
+    const { findByText } = render(
+      <SessionBootstrap>
+        <div>app</div>
+      </SessionBootstrap>,
+    );
+    await findByText("app");
   });
 });

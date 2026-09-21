@@ -71,34 +71,6 @@ public static class OrgSettingKeys
     }
 
     /// <summary>
-    /// CONFIG-FOUNDATION-P1-01: precisión decimal de PRESENTACIÓN — cuántos decimales se
-    /// muestran/almacenan para cantidades, precios, costos, porcentajes y totales en pantalla.
-    /// Propietario: Empresa (scope=Company). Reemplaza el mecanismo paralelo GeneralParameter
-    /// (keys <c>decimal.*</c>), eliminado en esta entrega.
-    ///
-    /// NUNCA debe usarse para redondeo fiscal, tributario o de documentos autorizados — eso es
-    /// <see cref="global::ERP.Domain.Common.FiscalPrecision"/> (constante System, no
-    /// configurable, sin relación con este namespace). Mezclar ambos es exactamente el error que
-    /// esta migración corrige: antes de esta entrega existían dos sistemas de decimales sin
-    /// frontera documentada; ahora la frontera es "Presentation" = UI, "FiscalPrecision" = legal.
-    ///
-    /// LEGACY — deprecated by CompanyPrecisionPolicy (COMPANY-PRECISION-POLICY-SSOT-01), no usar
-    /// para cálculo nuevo. Ver <see cref="ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy"/>.
-    /// El endpoint que exponía estas keys (DecimalConfigController, GET/PUT
-    /// /api/v1/config/decimals) fue eliminado en
-    /// COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08 — no queda ninguna vía
-    /// activa de escritura. Namespace conservado solo por filas históricas existentes en
-    /// org_settings y como fixture de los guardrail tests de configuración.
-    /// </summary>
-    public static class Presentation
-    {
-        public const string DecimalSalesUnitPrice = "presentation.decimal.sales_unit_price";
-        public const string DecimalPurchaseUnitPrice = "presentation.decimal.purchase_unit_price";
-        public const string DecimalQuantity = "presentation.decimal.quantity";
-        public const string DecimalPercentage = "presentation.decimal.percentage";
-        public const string DecimalTotalAmount = "presentation.decimal.total_amount";
-    }
-    /// <summary>
     /// Configuración transversal de comunicaciones. Propietario: Empresa (scope=Company).
     /// Consumida por el módulo Communications para correo transaccional y futuros canales.
     /// </summary>

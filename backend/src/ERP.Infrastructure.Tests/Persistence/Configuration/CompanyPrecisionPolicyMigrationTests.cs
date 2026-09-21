@@ -129,7 +129,7 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
                     companyId,
                     OrgScope.Company,
                     companyId,
-                    OrgSettingKeys.Presentation.DecimalSalesUnitPrice,
+                    "presentation.decimal.sales_unit_price",
                     "6",
                     SettingDataType.Int,
                     createdBy
@@ -141,7 +141,7 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
                     companyId,
                     OrgScope.Company,
                     companyId,
-                    OrgSettingKeys.Presentation.DecimalPurchaseUnitPrice,
+                    "presentation.decimal.purchase_unit_price",
                     "0",
                     SettingDataType.Int,
                     createdBy
@@ -153,7 +153,7 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
                     companyId,
                     OrgScope.Company,
                     companyId,
-                    OrgSettingKeys.Presentation.DecimalQuantity,
+                    "presentation.decimal.quantity",
                     "4",
                     SettingDataType.Int,
                     createdBy
@@ -165,7 +165,7 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
                     companyId,
                     OrgScope.Company,
                     companyId,
-                    OrgSettingKeys.Presentation.DecimalPercentage,
+                    "presentation.decimal.percentage",
                     "6",
                     SettingDataType.Int,
                     createdBy
@@ -195,6 +195,72 @@ public sealed class CompanyPrecisionPolicyMigrationTests : IAsyncLifetime
             policy.AverageCostDecimals.Should().Be(6);
             policy.ConversionFactorDecimals.Should().Be(6);
             policy.SettlementToleranceAmount.Should().Be(0.01m);
+        }
+    }
+
+    private const string MigrationBeforeCleanup04 = "20260913230202_AddCompanyPrecisionPolicy";
+
+    [Fact]
+    public async Task Cleanup04_backfillea_empresas_sin_policy_con_las_definiciones_y_elimina_keys_legacy()
+    {
+        // ERP-PRECISION-POLICY-SSOT-CLEANUP-04: una empresa creada DESPUÉS del backfill original
+        // (sin fila) recibe la política Estándar comercial de PrecisionPolicyDefinitions, y las filas
+        // huérfanas presentation.decimal.* de org_settings se eliminan.
+        Guid tenantId;
+        Guid companyId;
+
+        await using (var db = CreateContext())
+        {
+            await db.Database.GetService<IMigrator>().MigrateAsync(MigrationBeforeCleanup04);
+
+            var createdBy = Guid.NewGuid();
+            var tenant = Tenant.Create("Test Tenant 4", $"test-{Guid.NewGuid():N}"[..16], createdBy);
+            var company = Company.CreateManaged(tenant.Id, "1790012345004", "Test S.A. 4", createdBy: createdBy);
+            db.Tenants.Add(tenant);
+            db.Companies.Add(company);
+            db.OrgSettings.Add(
+                OrgSetting.Create(
+                    tenant.Id,
+                    company.Id,
+                    OrgScope.Company,
+                    company.Id,
+                    "presentation.decimal.quantity",
+                    "5",
+                    SettingDataType.Int,
+                    createdBy
+                )
+            );
+            await db.SaveChangesAsync();
+            tenantId = tenant.Id;
+            companyId = company.Id;
+
+            (await db.CompanyPrecisionPolicies.IgnoreQueryFilters().AnyAsync(p => p.CompanyId == companyId))
+                .Should()
+                .BeFalse("la migración original ya corrió: esta empresa nace sin política");
+        }
+
+        await using (var db = CreateContext(tenantId, companyId))
+        {
+            await db.Database.GetService<IMigrator>().MigrateAsync();
+
+            var policy = await db.CompanyPrecisionPolicies.SingleAsync(p =>
+                p.TenantId == tenantId && p.CompanyId == companyId
+            );
+            var std = PrecisionPolicyDefinitions.Standard;
+            policy.ProfileType.Should().Be(PrecisionProfileType.StandardCommercial);
+            policy.SalesUnitPriceDecimals.Should().Be(std.SalesUnitPriceDecimals);
+            policy.PurchaseUnitPriceDecimals.Should().Be(std.PurchaseUnitPriceDecimals);
+            policy.QuantityDecimals.Should().Be(std.QuantityDecimals);
+            policy.PercentageDecimals.Should().Be(std.PercentageDecimals);
+            policy.UnitCostDecimals.Should().Be(std.UnitCostDecimals);
+            policy.AverageCostDecimals.Should().Be(std.AverageCostDecimals);
+            policy.ConversionFactorDecimals.Should().Be(std.ConversionFactorDecimals);
+            policy.SettlementToleranceAmount.Should().Be(std.SettlementToleranceAmount);
+            policy.IsLocked.Should().BeFalse();
+
+            (await db.OrgSettings.IgnoreQueryFilters().AnyAsync(s => s.Key.StartsWith("presentation.decimal.")))
+                .Should()
+                .BeFalse("las keys legacy ya no tienen definición ni consumidores");
         }
     }
 

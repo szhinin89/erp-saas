@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Configuration.Entities;
 using FluentValidation;
 using MediatR;
 
@@ -23,18 +24,84 @@ public sealed record UpdateCompanyPrecisionPolicyCommand(
 public sealed class GetCompanyPrecisionPolicyHandler
     : IRequestHandler<GetCompanyPrecisionPolicyQuery, Result<EffectivePrecisionPolicyDto>>
 {
-    private readonly ICompanyPrecisionPolicyProvider _provider;
+    /// <summary>Motivo reportado cuando el bloqueo es efectivo (hay operaciones) pero aún no se persistió.</summary>
+    public const string EffectiveLockReason =
+        "La empresa ya registró operaciones reales (ventas/compras/inventario/pagos/contabilidad).";
 
-    public GetCompanyPrecisionPolicyHandler(ICompanyPrecisionPolicyProvider provider) =>
+    private readonly ICompanyPrecisionPolicyProvider _provider;
+    private readonly ICompanyPrecisionPolicyRepository _repo;
+    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
+
+    public GetCompanyPrecisionPolicyHandler(
+        ICompanyPrecisionPolicyProvider provider,
+        ICompanyPrecisionPolicyRepository repo,
+        ICurrentTenant tenant,
+        ICurrentCompany company
+    )
+    {
         _provider = provider;
+        _repo = repo;
+        _tenant = tenant;
+        _company = company;
+    }
 
     public async Task<Result<EffectivePrecisionPolicyDto>> Handle(
         GetCompanyPrecisionPolicyQuery request,
         CancellationToken ct
     )
     {
-        var dto = await _provider.GetEffectiveAsync(ct);
+        EffectivePrecisionPolicyDto dto;
+        try
+        {
+            dto = await _provider.GetEffectiveAsync(ct);
+        }
+        catch (CompanyPrecisionPolicyMissingException ex)
+        {
+            return Result<EffectivePrecisionPolicyDto>.NotFound(ex.Message);
+        }
+
+        // Lock EFECTIVO: si ya hay operaciones reales la política está bloqueada aunque nadie haya
+        // intentado guardar todavía (el bloqueo persistido solo se escribe en el PUT). GET nunca escribe.
+        if (
+            !dto.IsLocked
+            && await _repo.HasRealOperationsAsync(_tenant.TenantId, _company.CompanyId, ct)
+        )
+            dto = dto with { IsLocked = true, LockedReason = EffectiveLockReason };
+
         return Result<EffectivePrecisionPolicyDto>.Success(dto);
+    }
+}
+
+public sealed record GetPrecisionPolicyMetadataQuery : IRequest<Result<PrecisionPolicyMetadataDto>>;
+
+public sealed class GetPrecisionPolicyMetadataHandler
+    : IRequestHandler<GetPrecisionPolicyMetadataQuery, Result<PrecisionPolicyMetadataDto>>
+{
+    public Task<Result<PrecisionPolicyMetadataDto>> Handle(
+        GetPrecisionPolicyMetadataQuery request,
+        CancellationToken ct
+    )
+    {
+        var fields = PrecisionPolicyDefinitions
+            .Fields.Select(f => new PrecisionFieldMetadataDto(f.Key, f.Kind.ToString(), f.Min, f.Max, f.Standard))
+            .ToList();
+
+        var profiles = new List<PrecisionProfileMetadataDto>
+        {
+            new(
+                nameof(Domain.Configuration.Enums.PrecisionProfileType.StandardCommercial),
+                PrecisionPolicyDefinitions.Fields.ToDictionary(f => f.Key, f => f.Standard)
+            ),
+            new(
+                nameof(Domain.Configuration.Enums.PrecisionProfileType.HighPrecision),
+                PrecisionPolicyDefinitions.Fields.ToDictionary(f => f.Key, f => f.HighPrecision)
+            ),
+        };
+
+        return Task.FromResult(
+            Result<PrecisionPolicyMetadataDto>.Success(new PrecisionPolicyMetadataDto(fields, profiles))
+        );
     }
 }
 
@@ -56,15 +123,29 @@ public sealed class UpdateCompanyPrecisionPolicyCommandValidator
 
         // Los rangos individuales solo se aplican realmente cuando ProfileType = Custom (Standard
         // y HighPrecision ignoran estos campos y fuerzan sus propios valores fijos en el handler),
-        // pero se validan siempre para rechazar temprano un payload evidentemente corrupto.
-        RuleFor(x => x.SalesUnitPriceDecimals).InclusiveBetween(2, 8);
-        RuleFor(x => x.PurchaseUnitPriceDecimals).InclusiveBetween(2, 8);
-        RuleFor(x => x.QuantityDecimals).InclusiveBetween(0, 6);
-        RuleFor(x => x.PercentageDecimals).InclusiveBetween(2, 6);
-        RuleFor(x => x.UnitCostDecimals).InclusiveBetween(2, 8);
-        RuleFor(x => x.AverageCostDecimals).InclusiveBetween(2, 8);
-        RuleFor(x => x.ConversionFactorDecimals).InclusiveBetween(2, 8);
-        RuleFor(x => x.SettlementToleranceAmount).InclusiveBetween(0.00m, 0.02m);
+        // pero se validan siempre para rechazar temprano un payload evidentemente corrupto. Los
+        // rangos salen de PrecisionPolicyDefinitions (única fuente), nunca de literales aquí.
+        RangeRule(x => x.SalesUnitPriceDecimals, PrecisionPolicyDefinitions.SalesUnitPriceDecimals);
+        RangeRule(x => x.PurchaseUnitPriceDecimals, PrecisionPolicyDefinitions.PurchaseUnitPriceDecimals);
+        RangeRule(x => x.QuantityDecimals, PrecisionPolicyDefinitions.QuantityDecimals);
+        RangeRule(x => x.PercentageDecimals, PrecisionPolicyDefinitions.PercentageDecimals);
+        RangeRule(x => x.UnitCostDecimals, PrecisionPolicyDefinitions.UnitCostDecimals);
+        RangeRule(x => x.AverageCostDecimals, PrecisionPolicyDefinitions.AverageCostDecimals);
+        RangeRule(x => x.ConversionFactorDecimals, PrecisionPolicyDefinitions.ConversionFactorDecimals);
+        RangeRule(x => x.SettlementToleranceAmount, PrecisionPolicyDefinitions.SettlementToleranceAmount);
+    }
+
+    private void RangeRule<T>(System.Linq.Expressions.Expression<Func<UpdateCompanyPrecisionPolicyCommand, T>> selector, string key)
+        where T : struct, IComparable<T>
+    {
+        var def = PrecisionPolicyDefinitions.Get(key);
+        RuleFor(selector)
+            .Must(v =>
+            {
+                var value = Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture);
+                return value >= def.Min && value <= def.Max;
+            })
+            .WithMessage(System.FormattableString.Invariant($"Debe estar entre {def.Min} y {def.Max}."));
     }
 }
 
@@ -101,15 +182,13 @@ public sealed class UpdateCompanyPrecisionPolicyHandler
         CancellationToken ct
     )
     {
-        // Fuerza la existencia de la fila (fallback perezoso) antes de decidir bloqueo/update.
-        await _provider.GetEffectiveAsync(ct);
-
         var tenantId = _tenant.TenantId;
         var companyId = _company.CompanyId;
 
         var policy = await _repo.FindAsync(tenantId, companyId, ct);
+        // Fail-closed: sin política no se crea ni se inventa una aquí (la crea el bootstrap/backfill).
         if (policy is null)
-            return Result<EffectivePrecisionPolicyDto>.Failure(
+            return Result<EffectivePrecisionPolicyDto>.NotFound(
                 "No se encontró la configuración de precisión de la empresa."
             );
 

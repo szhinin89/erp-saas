@@ -33,6 +33,7 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/AccountingChartBackfillService.cs", // backfill dev-only de companies ya existentes — mismo motivo que MasterDataClassificationBackfillService (hallazgo pre-existente, corregido en ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14)
         "src/ERP.Infrastructure/Seeding/ExpensesCatalogBackfillService.cs", // EXPENSES-CATALOG-BOOTSTRAP-09-FIX: backfill dev-only de companies ya existentes — mismo motivo que AccountingChartBackfillService
         "src/ERP.Infrastructure/Seeding/DefaultProfileSeeder.cs", // seeder needs cross-tenant visibility
+        "src/ERP.Infrastructure/Seeding/Steps/PrecisionPolicyBootstrapStep.cs", // ERP-PRECISION-POLICY-SSOT-CLEANUP-04: bootstrap needs cross-tenant visibility (empresa recién creada, sin tenant HTTP ambiente); filtro explícito TenantId+CompanyId, idempotente
         "src/ERP.Infrastructure/Seeding/Steps/CajaBootstrapStep.cs", // bootstrap needs cross-tenant visibility
         "src/ERP.Infrastructure/Seeding/E2E/E2ESeedService.cs", // provisioning E2E fuera de Production, bajo bandera explícita: mismo motivo que los *BootstrapStep (bootstrap needs cross-tenant visibility)
         "src/ERP.API/Health/MembershipConsistencyHealthCheck.cs", // health check sin contexto de tenant: mismo motivo que BusinessPartnerReconciliationService (chequeo de integridad cross-tenant de solo lectura)

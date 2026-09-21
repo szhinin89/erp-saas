@@ -172,13 +172,13 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     }
 
     [Fact]
-    public async Task Presentation_decimal_fuera_de_rango_se_rechaza()
+    public async Task Catalog_max_category_depth_fuera_de_rango_se_rechaza()
     {
         await using var db = CreateContext();
         var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
-            OrgSettingKeys.Presentation.DecimalQuantity,
-            "99",
+            OrgSettingKeys.Catalog.MaxCategoryDepth,
+            "0",
             SettingDataType.Int,
             OrgScope.Company,
             _companyId
@@ -279,10 +279,10 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
             OrgScope.Company,
         };
 
-        // Decimales de presentación.
+        // Catálogo (Int).
         yield return new object[]
         {
-            OrgSettingKeys.Presentation.DecimalQuantity,
+            OrgSettingKeys.Catalog.MaxCategoryDepth,
             "4",
             SettingDataType.Int,
             OrgScope.Company,
@@ -340,7 +340,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
         await using var db = CreateContext();
         var repo = new OrgSettingsRepository(db, new ConfigurationChangeLogger(db));
         var setting = BuildSetting(
-            OrgSettingKeys.Presentation.DecimalQuantity,
+            OrgSettingKeys.Catalog.MaxCategoryDepth,
             "4",
             SettingDataType.Int,
             OrgScope.Company,
@@ -350,7 +350,7 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
         await repo.UpsertAsync(setting);
         await repo.SaveChangesAsync();
 
-        (await ChangeLogsForAsync(OrgSettingKeys.Presentation.DecimalQuantity)).Should().BeEmpty();
+        (await ChangeLogsForAsync(OrgSettingKeys.Catalog.MaxCategoryDepth)).Should().BeEmpty();
     }
 
     [Fact]

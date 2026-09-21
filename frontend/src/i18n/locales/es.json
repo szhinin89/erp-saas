@@ -3952,5 +3952,10 @@
   "settings.company.precision.customHint": "Selecciona el perfil «Personalizado» para editar cada campo.",
   "settings.company.precision.fiscal.title": "Precisión fiscal",
   "settings.company.precision.fiscal.body": "Los subtotales, impuestos y totales no se configuran aquí. Siguen las reglas fiscales y monetarias del sistema.",
-  "settings.company.precision.locked": "Esta empresa ya registra operaciones. La precisión decimal está bloqueada para proteger la consistencia histórica."
+  "settings.company.precision.locked": "Esta empresa ya registra operaciones. La precisión decimal está bloqueada para proteger la consistencia histórica.",
+  "settings.company.precision.loadError": "No se pudo cargar la configuración de precisión de la empresa. No se muestran valores por defecto.",
+  "settings.company.precision.retry": "Reintentar",
+  "settings.company.precision.profile.custom": "Configura cada campo dentro de su rango permitido.",
+  "session.precisionPolicy.loadError": "No se pudo cargar la configuración de precisión de la empresa. Sin ella no es seguro operar.",
+  "session.precisionPolicy.retry": "Reintentar"
 }
