@@ -157,6 +157,9 @@ public sealed class GetSalesItemPricingQueryHandlerTests
         dto.PriceListCode.Should().Be(pricing.PriceListCode);
         dto.PriceListName.Should().Be(pricing.PriceListName);
         dto.DiscountDescription.Should().Be(pricing.RuleDescription);
+        // SALES-PRICING-UX-TRACEABILITY-07C: el id de lista pasa tal cual (null = PVP) para que la
+        // UI distinga PVP real del sentinel de nombre, sin hardcodear "Precio base".
+        dto.PriceListId.Should().Be(pricing.PriceListId);
         dto.VatCode.Should().Be("10");
         dto.VatName.Should().Be("IVA 15%");
         dto.MaxDiscountPercent.Should().Be(8m);

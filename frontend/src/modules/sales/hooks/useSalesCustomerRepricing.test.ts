@@ -53,7 +53,7 @@ const ITEM_B = "item-b";
 
 describe("SALES-CUSTOMER-REPRICE-METADATA-06C2A — mapResolvedPricingToLineFields", () => {
   it("_pvp/_basePrice quedan SIN escalar por conversionFactor; unitPrice SÍ se escala", () => {
-    const fields = mapResolvedPricingToLineFields(12, 15, "Lista Mayorista", "Descuento 20%", 6);
+    const fields = mapResolvedPricingToLineFields(12, 15, "Lista Mayorista", "Descuento 20%", 6, "list-1");
 
     expect(fields.unitPrice).toBe(72); // 12 * 6
     expect(fields._pvp).toBe(12);
@@ -76,6 +76,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — buildRepricingPlan", ()
         _basePrice: 100,
         _priceListName: "Lista General",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
     const preview = [
@@ -106,6 +107,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — buildRepricingPlan", ()
         _basePrice: 100,
         _priceListName: "Lista General",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
     const preview = [
@@ -135,6 +137,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — buildRepricingPlan", ()
         _basePrice: 90, // sin descuento con el cliente anterior
         _priceListName: "Lista A",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
     const preview = [
@@ -176,6 +179,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — buildRepricingPlan", ()
         _basePrice: 50,
         _priceListName: "Lista A",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
     const preview = [
@@ -216,6 +220,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — buildRepricingPlan", ()
         _basePrice: 85,
         _priceListName: "Lista A",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
     const preview = [
@@ -246,6 +251,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — buildRepricingPlan", ()
         _basePrice: 12,
         _priceListName: "Lista A",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
     // Mismo precio unitario base (12) pero distinta lista → metadataOnly, con unitPrice
@@ -299,7 +305,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — applyRepricingPlanToLin
         _isManualPrice: true,
       },
     ];
-    const fields = mapResolvedPricingToLineFields(70, 100, "Lista Mayorista", "Descuento 30%", 1);
+    const fields = mapResolvedPricingToLineFields(70, 100, "Lista Mayorista", "Descuento 30%", 1, "list-1");
     const plan: RepricingPlan = {
       priceChangedRows: [{ key: 1, itemId: ITEM_A, description: "Producto A", currentUnitPrice: 90, fields }],
       metadataOnlyRows: [],
@@ -343,6 +349,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — applyRepricingPlanToLin
             _basePrice: 100,
             _priceListName: "Lista Nueva",
             _discountDescription: "Descuento 10%",
+            _priceListId: "list-2",
           },
         },
       ],
@@ -435,6 +442,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — useSalesCustomerReprici
         _basePrice: 10,
         _priceListName: "PVP",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
 
@@ -466,6 +474,7 @@ describe("SALES-CUSTOMER-REPRICE-METADATA-SYNC-06C2B — useSalesCustomerReprici
         _basePrice: 10,
         _priceListName: "Lista Vieja",
         _discountDescription: null,
+        _priceListId: null,
       },
     ];
 

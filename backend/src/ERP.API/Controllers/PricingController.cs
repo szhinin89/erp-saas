@@ -1,5 +1,6 @@
 using ERP.API.Attributes;
 using ERP.API.Extensions;
+using ERP.Application.Modules.Pricing.UseCases.CustomerPriceListContext;
 using ERP.Application.Modules.Pricing.UseCases.PriceListCustomers;
 using ERP.Application.Modules.Pricing.UseCases.PriceListItems;
 using ERP.Application.Modules.Pricing.UseCases.PriceLists;
@@ -92,6 +93,19 @@ public sealed class PricingController : ControllerBase
     // PRICE LIST CUSTOMERS (PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B) — todavía NO
     // consumido por Sales, solo administración desde /products/pricing.
     // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// SALES-PRICING-UX-TRACEABILITY-07C: contexto read-only de listas de un cliente (lista propia
+    /// asignada vs. default de la empresa) para la cabecera de Ventas. Autoriza con el permiso de
+    /// lectura de Ventas porque su consumidor es el cajero, no el administrador de precios.
+    /// </summary>
+    [HttpGet("customers/{customerId:guid}/price-list-context")]
+    [Authorize(Policy = $"perm:{SalesPermissions.View}")]
+    public async Task<IActionResult> GetCustomerPriceListContext(Guid customerId, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetCustomerPriceListContextQuery(customerId), ct),
+            "OK"
+        );
 
     /// <summary>Clientes actualmente asignados (activos) a esta lista.</summary>
     [HttpGet("price-lists/{id:guid}/customers")]

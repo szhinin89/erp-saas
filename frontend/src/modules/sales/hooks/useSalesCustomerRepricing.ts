@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { roundToDecimals } from "../../../lib/sanitizers";
 import type { CustomerPickerRow } from "../../masterData/types/businessPartner.types";
 import {
   salesRepricingPreviewService,
@@ -42,6 +43,7 @@ export interface RepricingLineInput {
   _basePrice?: number;
   _priceListName?: string;
   _discountDescription?: string | null;
+  _priceListId?: string | null;
 }
 
 /**
@@ -58,6 +60,8 @@ export interface ResolvedPricingLineFields {
   _basePrice: number;
   _priceListName: string;
   _discountDescription: string | null;
+  /** SALES-PRICING-UX-TRACEABILITY-07C: null = PVP (ninguna lista aplicó). */
+  _priceListId: string | null;
   _isManualPrice: false;
 }
 
@@ -67,6 +71,7 @@ export function mapResolvedPricingToLineFields(
   priceListName: string,
   discountDescription: string | null,
   conversionFactor: number,
+  priceListId: string | null,
 ): ResolvedPricingLineFields {
   return {
     unitPrice: resolvedUnitPrice * conversionFactor,
@@ -74,6 +79,7 @@ export function mapResolvedPricingToLineFields(
     _basePrice: basePrice,
     _priceListName: priceListName,
     _discountDescription: discountDescription,
+    _priceListId: priceListId,
     _isManualPrice: false,
   };
 }
@@ -82,7 +88,7 @@ export function mapResolvedPricingToLineFields(
  * cuyo precio facturado NO cambia, sin tocar su manualidad. */
 export type PricingMetadataFields = Pick<
   ResolvedPricingLineFields,
-  "_pvp" | "_basePrice" | "_priceListName" | "_discountDescription"
+  "_pvp" | "_basePrice" | "_priceListName" | "_discountDescription" | "_priceListId"
 >;
 
 export interface RepricingRow {
@@ -112,10 +118,8 @@ export interface RepricingPlan {
   metadataOnlyRows: MetadataSyncRow[];
 }
 
-function roundTo(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
+// Misma regla de redondeo que el backend (mitad hacia arriba) — ver roundToDecimals.
+const roundTo = roundToDecimals;
 
 function metadataAlreadyInSync(
   line: RepricingLineInput,
@@ -129,7 +133,9 @@ function metadataAlreadyInSync(
     roundTo(line._basePrice, decimals) === roundTo(fields._basePrice, decimals);
   const nameMatches = (line._priceListName ?? null) === fields._priceListName;
   const discountMatches = (line._discountDescription ?? null) === fields._discountDescription;
-  return pvpMatches && baseMatches && nameMatches && discountMatches;
+  // 07C: undefined = línea sin captura en vivo (Draft recargado) → hay que sincronizarla.
+  const listIdMatches = line._priceListId !== undefined && line._priceListId === fields._priceListId;
+  return pvpMatches && baseMatches && nameMatches && discountMatches && listIdMatches;
 }
 
 /**
@@ -164,6 +170,7 @@ export function buildRepricingPlan(
       preview.newPriceListName,
       preview.newDiscountDescription,
       conversionFactor,
+      preview.newPriceListId,
     );
     const newUnitPrice = roundTo(fields.unitPrice, decimals);
     const currentUnitPrice = roundTo(line.unitPrice, decimals);
@@ -188,6 +195,7 @@ export function buildRepricingPlan(
           _basePrice: fields._basePrice,
           _priceListName: fields._priceListName,
           _discountDescription: fields._discountDescription,
+          _priceListId: fields._priceListId,
         },
       });
     }
@@ -211,6 +219,7 @@ export function applyRepricingPlanToLines<
     _basePrice?: number;
     _priceListName?: string;
     _discountDescription?: string | null;
+    _priceListId?: string | null;
     _isManualPrice?: boolean;
   },
 >(lines: T[], plan: RepricingPlan): T[] {

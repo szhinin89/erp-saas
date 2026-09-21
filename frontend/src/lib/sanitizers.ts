@@ -62,6 +62,22 @@ export function sanitizeDecimal(
   return negative && s.length > 0 ? `-${s}` : s;
 }
 
+/**
+ * Redondea a `decimals` con "mitad hacia arriba" (away from zero), igual que el backend
+ * (MidpointRounding.AwayFromZero). `Number.prototype.toFixed` NO sirve para esto: opera sobre el
+ * binario, así que (0.495).toFixed(2) === "0.49". Se desplaza el exponente como texto para evitar
+ * el error de punto flotante.
+ */
+export function roundToDecimals(value: number, decimals: number): number {
+  if (!Number.isFinite(value)) return value;
+  const sign = value < 0 ? -1 : 1;
+  // toPrecision(12) absorbe el ruido binario (1.4849999999999999 → 1.485) antes de redondear; los
+  // precios del ERP tienen como máximo 6 decimales, muy por debajo de 12 cifras significativas.
+  const normalized = Number(Math.abs(value).toPrecision(12));
+  const shifted = Math.round(Number(`${normalized}e${decimals}`));
+  return sign * Number(`${shifted}e-${decimals}`);
+}
+
 export function formatMoney(value: number, decimals = 2): string {
   return value.toFixed(decimals);
 }

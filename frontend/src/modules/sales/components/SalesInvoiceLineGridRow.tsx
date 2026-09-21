@@ -14,6 +14,9 @@ import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { useOptionalI18n } from "../../../i18n/i18n";
+import { roundToDecimals } from "../../../lib/sanitizers";
+import { resolveLinePriceListLabel } from "../utils/pricingTraceability";
 import {
   lineNet,
   calcLineTax,
@@ -81,6 +84,7 @@ export function SalesInvoiceLineGridRow({
   onRemove,
   index,
 }: SalesInvoiceLineGridRowProps) {
+  const { t } = useOptionalI18n();
   const dc = getPrecisionPolicy();
   const previewNet = lineNet(line);
   const previewTax = calcLineTax(line, vatRates);
@@ -112,6 +116,9 @@ export function SalesInvoiceLineGridRow({
   // solo para líneas recargadas de un borrador viejo sin el snapshot nuevo.
   const listPrice = readOnly ? line._listPriceAtSale : (line._basePrice ?? pvp);
   const priceListName = readOnly ? line._priceListNameAtSale : line._priceListName;
+  // SALES-PRICING-UX-TRACEABILITY-07C: texto secundario de lista efectiva o "PVP" — decidido solo
+  // con metadata/snapshots ya existentes (nunca recalcula ni infiere en documentos legacy).
+  const priceListLabel = resolveLinePriceListLabel(line, readOnly);
   const discountDescription = readOnly
     ? (line._discountDescriptionAtSale ?? null)
     : line._isManualPrice
@@ -226,13 +233,19 @@ export function SalesInvoiceLineGridRow({
           {listPrice != null ? (
             <div className="sf-product__pricelist-row">
               <ZHMoneyValue
-                value={listPrice}
+                value={roundToDecimals(listPrice, dc.salesUnitPriceDecimals)}
+                decimals={dc.salesUnitPriceDecimals}
                 emphasis="strong"
                 className="sf-product__pricelist-value sf-product__pricelist-value--bold"
               />
-              {priceListName && (
+              {priceListLabel.kind === "list" && (
                 <span className="sf-product__pricelist-name">
-                  {priceListName}
+                  {priceListLabel.name}
+                </span>
+              )}
+              {priceListLabel.kind === "pvp" && (
+                <span className="sf-product__pricelist-name">
+                  {t("sales.pricing.pvp")}
                 </span>
               )}
             </div>
@@ -326,10 +339,15 @@ export function SalesInvoiceLineGridRow({
               density="compact"
               decimals={dc.salesUnitPriceDecimals}
               positiveOnly
-              defaultValue={line.unitPrice}
-              onBlur={(e) =>
-                onUpdate(line._key, "unitPrice", Number(e.target.value) || 0)
-              }
+              defaultValue={roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)}
+              onBlur={(e) => {
+                // 07C3: solo cuenta como edición si el valor tecleado difiere del que se MUESTRA
+                // (redondeado a los decimales configurados). Un simple foco/blur no debe volver
+                // "manual" ni redondear silenciosamente un precio resuelto por Pricing.
+                const typed = Number(e.target.value) || 0;
+                if (typed === roundToDecimals(line.unitPrice, dc.salesUnitPriceDecimals)) return;
+                onUpdate(line._key, "unitPrice", typed);
+              }}
               disabled={disabled}
             />
           </ZHInputGroup>

@@ -43,6 +43,27 @@
   align-items: center;
   gap: var(--space-1);
 }
+/* SALES-PRICING-UX-TRACEABILITY-07C — lista preferente del cliente (cabecera) */
+.sales-price-list-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: var(--text-help-size);
+  line-height: var(--text-help-height);
+  color: var(--color-text-secondary);
+}
+.sales-price-list-context__primary {
+  font-weight: 600;
+}
+.sales-price-list-context__secondary {
+  opacity: 0.8;
+}
+.sales-price-list-context--muted .sales-price-list-context__primary {
+  font-weight: 400;
+  font-style: italic;
+}
 /* .sales-form-edit-btn ELIMINADO (Bloque 4D) — equivalente exacto .zh-mt-4 en zh-ui.css. */
 
 .sales-form-tax-section {

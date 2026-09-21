@@ -62,6 +62,16 @@ export const salesLineSchema = z.object({
   // línea (DiscountPct) de un descuento resuelto por el Pricing Engine v2, sin adivinar a partir
   // del texto de la descripción.
   _discountSourceAtSale: z.string().nullable().optional(),
+  // SALES-PRICING-UX-TRACEABILITY-07C: id de la lista efectiva EN VIVO (captura/repricing) —
+  // null = PVP (ninguna lista aplicó); undefined = línea sin captura en vivo (p. ej. Draft
+  // recargado). Solo para decidir el texto secundario de la línea, nunca se envía al backend.
+  _priceListId: z.string().nullable().optional(),
+  // Snapshot histórico (hidratado SOLO en loadForEdit): id de la lista efectiva, origen de la
+  // selección ("Customer" | "CompanyDefault" | null=PVP) y versión de trazabilidad de la factura
+  // (null = legacy: la ausencia de dato NUNCA se interpreta como PVP/sin lista).
+  _priceListIdAtSale: z.string().nullable().optional(),
+  _selectionSourceAtSale: z.string().nullable().optional(),
+  _traceabilityVersionAtSale: z.number().nullable().optional(),
   _warehouseNameAtSale: z.string().nullable().optional(),
   _unitCostAtSale: z.number().nullable().optional(),
   /** Presentaciones disponibles del ítem (snapshot tomado al agregar la línea desde el

@@ -15,6 +15,8 @@ import { HELP_KEYS } from "../../../help";
 import { formatMoney } from "../../../lib/sanitizers";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { CustomerPicker } from "../components/CustomerPicker";
+import { SalesPriceListContext } from "../components/SalesPriceListContext";
+import { SalesRepricingTable } from "../components/SalesRepricingTable";
 import { SalesInvoiceDetailsSection } from "../components/SalesInvoiceDetailsSection";
 import { PaymentDetailModal } from "../components/PaymentDetailModal";
 import { CreditSimulatorModal } from "../components/CreditSimulatorModal";
@@ -283,6 +285,7 @@ export function SalesPage() {
                   editLabel="Editar datos"
                 />
               </ZHField>
+              <SalesPriceListContext state={ctx.priceListHeader} />
               {ctx.customerProfile && (
                 <div className="sales-form-customer-profile">
                   {ctx.customerProfile.address && (
@@ -764,36 +767,10 @@ export function SalesPage() {
                 {ctx.repricingModal.rows.length} producto
                 {ctx.repricingModal.rows.length === 1 ? "" : "s"}.
               </p>
-              <div className="zh-table-wrap">
-                <table className="zh-table zh-table--compact">
-                  <thead>
-                    <tr>
-                      <th>Producto</th>
-                      <th>Precio actual</th>
-                      <th>Nuevo precio</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ctx.repricingModal.rows.map((row) => (
-                      <tr key={row.key}>
-                        <td>{row.description}</td>
-                        <td>
-                          <ZHMoneyValue
-                            value={row.currentUnitPrice}
-                            decimals={getPrecisionPolicy().salesUnitPriceDecimals}
-                          />
-                        </td>
-                        <td>
-                          <ZHMoneyValue
-                            value={row.fields.unitPrice}
-                            decimals={getPrecisionPolicy().salesUnitPriceDecimals}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <SalesRepricingTable
+                rows={ctx.repricingModal.rows}
+                decimals={getPrecisionPolicy().salesUnitPriceDecimals}
+              />
             </div>
           )
         }

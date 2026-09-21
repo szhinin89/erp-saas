@@ -109,7 +109,8 @@ public sealed class GetSalesItemPricingQueryHandler
                 pricingResult.Value!.PriceListCode,
                 pricingResult.Value!.BasePrice,
                 pricingResult.Value!.PriceListName,
-                pricingResult.Value!.RuleDescription
+                pricingResult.Value!.RuleDescription,
+                pricingResult.Value!.PriceListId
             )
         );
     }

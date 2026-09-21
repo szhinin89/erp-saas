@@ -58,6 +58,9 @@ import {
 } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import { isEditableTarget } from "../../../lib/inputUtils";
+import { mapInvoiceLinesToFormValues } from "../utils/salesInvoiceHydration";
+import { useCustomerPriceListContext } from "./useCustomerPriceListContext";
+import { resolvePriceListHeader } from "../utils/pricingTraceability";
 import {
   readApiErrorMessage,
   readApiErrorMessages,
@@ -489,6 +492,25 @@ export function useSalesPage() {
   const readOnly = !isDraft;
   const fieldDisabled = saving || readOnly;
 
+  // SALES-PRICING-UX-TRACEABILITY-07C: cabecera "Lista preferente". Editable → contexto LIVE de
+  // Pricing (refresca al cambiar de cliente; un error deja estado neutro, nunca bloquea la venta).
+  // Solo lectura → snapshot persistido de la factura, jamás una consulta viva.
+  const liveCustomerPriceListContext = useCustomerPriceListContext(
+    formWatch.customerId,
+    !readOnly,
+  );
+  const priceListHeader = resolvePriceListHeader({
+    hasCustomer: !!formWatch.customerId,
+    readOnly,
+    saved: editing
+      ? {
+          pricingTraceabilityVersion: editing.pricingTraceabilityVersion ?? null,
+          customerPreferredPriceListName: editing.customerPreferredPriceListName ?? null,
+        }
+      : null,
+    live: liveCustomerPriceListContext,
+  });
+
   const summary = useMemo(
     () => calcSummary(lines, vatRatesMap, iceRatesMap),
     [lines, vatRatesMap, iceRatesMap],
@@ -895,6 +917,7 @@ export function useSalesPage() {
         pricing.priceListName,
         pricing.discountDescription,
         conversionFactor,
+        pricing.priceListId,
       );
       const { unitPrice } = pricingFields;
 
@@ -1243,6 +1266,7 @@ export function useSalesPage() {
           _basePrice: l._basePrice,
           _priceListName: l._priceListName,
           _discountDescription: l._discountDescription,
+          _priceListId: l._priceListId,
         })),
         getValues("customerId") || undefined,
         decimals,
@@ -1273,39 +1297,7 @@ export function useSalesPage() {
           paymentTermId: null,
         });
 
-        const mappedLines: SalesLineFormValues[] = inv.lines.map((l, i) => ({
-          _key: i + 1,
-          itemId: l.itemId,
-          warehouseId: l.warehouseId,
-          description: l.description,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          vatCode: l.vatCode,
-          discountPct: l.discountPct,
-          iceCode: l.iceCode,
-          notes: l.notes,
-          packagingLevelId: l.packagingLevelId,
-          uomCode: l.uomCode,
-          baseUomCode: l.baseUomCode,
-          conversionFactor: l.conversionFactor,
-          _sku: l.snapshotSku ?? undefined,
-          _name: l.snapshotItemName ?? undefined,
-          // El backend solo persiste warehouseId para ítems que controlan stock
-          // (SalesLineBuilder) — su presencia es una señal segura de _tracksStock.
-          _tracksStock: l.warehouseId != null,
-          // SALES-HISTORICAL-PRICING-SNAPSHOT-01: snapshot histórico tal como quedó persistido en
-          // el Draft — nunca recalculado aquí. Null cuando el backend no tuvo el dato disponible
-          // al momento de vender (factura anterior a esta fase, o sin costo Kardex resuelto);
-          // SalesInvoiceLineGridRow (modo readOnly) debe mostrar eso como "no disponible", nunca
-          // fabricar un valor.
-          _listPriceAtSale: l.listPriceAtSale,
-          _priceListNameAtSale: l.priceListName,
-          _pricingSourceAtSale: l.pricingSource,
-          _discountDescriptionAtSale: l.discountDescription,
-          _discountSourceAtSale: l.discountSource,
-          _warehouseNameAtSale: l.warehouseName,
-          _unitCostAtSale: l.unitCostAtSale,
-        }));
+        const mappedLines: SalesLineFormValues[] = mapInvoiceLinesToFormValues(inv);
 
         const mappedPayments: SalesPaymentFormValues[] = (
           inv.payments ?? []
@@ -1938,6 +1930,7 @@ export function useSalesPage() {
     customerProfile,
     setCustomerProfile,
     handleCustomerChange,
+    priceListHeader,
 
     // SALES-CUSTOMER-CHANGE-REPRICE-UX-06C2: modal de confirmación de repricing al cambiar de
     // cliente con líneas ya cargadas — repricingModal es null salvo cuando hay al menos una

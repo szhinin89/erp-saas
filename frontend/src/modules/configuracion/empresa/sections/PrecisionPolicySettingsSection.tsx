@@ -17,6 +17,7 @@ import {
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { PRECISION_SECTIONS, precisionExample } from "../precisionPolicyFields";
 import {
   precisionPolicySchema,
   type PrecisionPolicyFormValues,
@@ -89,12 +90,14 @@ export function PrecisionPolicySettingsSection() {
     defaultValues: { profileType: "StandardCommercial", ...STANDARD_COMMERCIAL_VALUES },
   });
 
-  const [locked, setLocked] = useState<PrecisionPolicy | null>(null);
+  // El bloqueo se deriva SINCRÓNICAMENTE de la policy cargada (no de un efecto posterior): así no
+  // existe ninguna ventana en la que el formulario parezca editable estando bloqueado.
+  const [lockedByLastSave, setLocked] = useState<PrecisionPolicy | null>(null);
+  const locked = lockedByLastSave ?? (cfgState.data?.isLocked ? cfgState.data : null);
 
   useEffect(() => {
     if (!cfgState.data) return;
     reset(toFormValues(cfgState.data));
-    setLocked(cfgState.data.isLocked ? cfgState.data : null);
   }, [cfgState.data, reset]);
 
   const profileType = watch("profileType");
@@ -151,6 +154,9 @@ export function PrecisionPolicySettingsSection() {
   if (cfgState.loading) return <LoadingState />;
 
   const readOnly = !canEdit || !!locked;
+  // Los campos individuales solo se editan con el perfil Personalizado; con los perfiles
+  // predefinidos se muestran (valores del perfil) pero no se modifican.
+  const fieldsDisabled = readOnly || profileType !== "Custom";
 
   return (
     <>
@@ -174,12 +180,8 @@ export function PrecisionPolicySettingsSection() {
       {locked && (
         <ZHPageNotice
           variant="warning"
-          message="Configuración bloqueada"
-          detail={
-            locked.lockedReason
-              ? `Esta configuración está bloqueada porque la empresa ya inició operaciones. Para cambios posteriores se requiere autorización externa del representante de la empresa y proceso de soporte. (${locked.lockedReason})`
-              : "Esta configuración está bloqueada porque la empresa ya inició operaciones. Para cambios posteriores se requiere autorización externa del representante de la empresa y proceso de soporte."
-          }
+          message={t("settings.company.precision.locked")}
+          detail={locked.lockedReason ?? undefined}
         />
       )}
 
@@ -229,82 +231,70 @@ export function PrecisionPolicySettingsSection() {
               </ZHGrid>
             </div>
 
-            {profileType === "Custom" && (
-              <ZHGrid cols={2}>
-                <ZHField
-                  label="Precio unitario de venta (decimales)"
-                  error={errors.salesUnitPriceDecimals?.message}
-                >
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("salesUnitPriceDecimals")}
-                  />
-                </ZHField>
-                <ZHField
-                  label="Precio unitario de compra (decimales)"
-                  error={errors.purchaseUnitPriceDecimals?.message}
-                >
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("purchaseUnitPriceDecimals")}
-                  />
-                </ZHField>
-                <ZHField label="Cantidad (decimales)" error={errors.quantityDecimals?.message}>
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("quantityDecimals")}
-                  />
-                </ZHField>
-                <ZHField label="Porcentaje (decimales)" error={errors.percentageDecimals?.message}>
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("percentageDecimals")}
-                  />
-                </ZHField>
-                <ZHField label="Costo unitario (decimales)" error={errors.unitCostDecimals?.message}>
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("unitCostDecimals")}
-                  />
-                </ZHField>
-                <ZHField
-                  label="Costo promedio (decimales)"
-                  error={errors.averageCostDecimals?.message}
-                >
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("averageCostDecimals")}
-                  />
-                </ZHField>
-                <ZHField
-                  label="Factor de conversión (decimales)"
-                  error={errors.conversionFactorDecimals?.message}
-                >
-                  <ZhNumberInput
-                    disabled={readOnly}
-                    positiveOnly
-                    {...register("conversionFactorDecimals")}
-                  />
-                </ZHField>
-                <ZHField
-                  label="Tolerancia de cuadre (monto)"
-                  error={errors.settlementToleranceAmount?.message}
-                >
-                  <ZhDecimalInput
-                    disabled={readOnly}
-                    decimals={2}
-                    positiveOnly
-                    {...register("settlementToleranceAmount")}
-                  />
-                </ZHField>
-              </ZHGrid>
+            {!readOnly && profileType !== "Custom" && (
+              <p className="zh-text-muted zh-mb-16" data-testid="precision-custom-hint">
+                {t("settings.company.precision.customHint")}
+              </p>
             )}
+          </div>
+        </div>
+
+        {PRECISION_SECTIONS.map((section) => (
+          <div className="pg-section" key={section.id} data-testid={`precision-section-${section.id}`}>
+            <div className="pg-section-header">
+              <div className="pg-section-header-left">
+                <span className="material-symbols-outlined pg-section-icon">{section.icon}</span>
+                <p className="pg-section-label">
+                  {t(`settings.company.precision.section.${section.id}`)}
+                </p>
+              </div>
+            </div>
+            <div className="pg-section-body">
+              <ZHGrid cols={2}>
+                {section.fields.map((field) => (
+                  <ZHField
+                    key={field.name}
+                    label={t(`settings.company.precision.field.${field.i18nKey}.label`)}
+                    hint={t(`settings.company.precision.field.${field.i18nKey}.desc`)}
+                    error={errors[field.name]?.message}
+                  >
+                    <ZhNumberInput disabled={fieldsDisabled} positiveOnly {...register(field.name)} />
+                    <span
+                      className="zh-text-muted"
+                      data-testid={`precision-example-${field.name}`}
+                    >
+                      {t("settings.company.precision.example", {
+                        value: precisionExample(field.example, Number(watch(field.name))),
+                      })}
+                    </span>
+                  </ZHField>
+                ))}
+                {section.id === "other" && (
+                  <ZHField
+                    label={t("settings.company.precision.field.tolerance.label")}
+                    hint={t("settings.company.precision.field.tolerance.desc")}
+                    error={errors.settlementToleranceAmount?.message}
+                  >
+                    <ZhDecimalInput
+                      disabled={fieldsDisabled}
+                      decimals={2}
+                      positiveOnly
+                      {...register("settlementToleranceAmount")}
+                    />
+                  </ZHField>
+                )}
+              </ZHGrid>
+            </div>
+          </div>
+        ))}
+
+        <div className="pg-section" data-testid="precision-fiscal-block">
+          <div className="pg-section-body">
+            <ZHPageNotice
+              variant="info"
+              message={t("settings.company.precision.fiscal.title")}
+              detail={t("settings.company.precision.fiscal.body")}
+            />
           </div>
         </div>
 

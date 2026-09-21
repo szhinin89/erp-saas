@@ -261,7 +261,10 @@ public sealed record SalesItemPricingDto(
     string PriceListCode,
     decimal BasePrice,
     string PriceListName,
-    string? DiscountDescription
+    string? DiscountDescription,
+    // SALES-PRICING-UX-TRACEABILITY-07C: null = ninguna lista aplicó (PVP). Permite a la UI
+    // distinguir PVP real del sentinel de nombre "Precio base" sin hardcodear ese texto.
+    Guid? PriceListId
 );
 
 public sealed record SalesListDto(

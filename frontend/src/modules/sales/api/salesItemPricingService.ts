@@ -17,6 +17,8 @@ export interface SalesItemPricingDto {
   basePrice: number;
   priceListName: string;
   discountDescription: string | null;
+  /** SALES-PRICING-UX-TRACEABILITY-07C: null = ninguna lista aplicó (PVP). */
+  priceListId: string | null;
 }
 
 export const salesItemPricingService = {

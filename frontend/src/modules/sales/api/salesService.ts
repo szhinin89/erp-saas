@@ -45,6 +45,10 @@ export interface SalesInvoiceDetailDto {
   pricingSource: string | null;
   discountSource: string | null;
   discountDescription: string | null;
+  /** Opcional en TS (la API siempre lo envía): un payload sin el campo se trata como legacy.
+   * SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: "Customer" | "CompanyDefault" | null (PVP) — solo
+   * significativo cuando la factura tiene pricingTraceabilityVersion === 1. */
+  selectionSource?: string | null;
 }
 
 export interface CardDetailDto {
@@ -141,6 +145,13 @@ export interface SalesInvoiceDto {
   customerIdentificationType: string;
   customerEmail: string | null;
   customerAddress: string | null;
+  /** SALES-PRICING-TRACEABILITY-SNAPSHOT-07B: lista EXPLÍCITA del cliente al vender (nunca la
+   * default de la empresa). Solo significativo si pricingTraceabilityVersion === 1. */
+  customerPreferredPriceListId?: string | null;
+  customerPreferredPriceListName?: string | null;
+  /** SALES-PRICING-TRACEABILITY-VERSION-07B1: null = documento anterior a la captura de
+   * trazabilidad — un null en los campos de arriba/`selectionSource` NO significa "sin lista"/PVP. */
+  pricingTraceabilityVersion?: number | null;
   docTypeCode: string;
   sriPaymentMethodCode: string | null;
   invoiceNumber: string;

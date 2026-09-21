@@ -29,6 +29,24 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function translate(
+  locale: Locale,
+  key: string,
+  fallbackOrParams?: string | TParams,
+): string {
+  const dict = dictionaries[locale] ?? dictionaries[defaultLocale];
+  let text =
+    dict[key] ??
+    (typeof fallbackOrParams === "string" ? fallbackOrParams : undefined) ??
+    key;
+  if (fallbackOrParams && typeof fallbackOrParams === "object") {
+    for (const [param, value] of Object.entries(fallbackOrParams)) {
+      text = text.replaceAll(`{{${param}}}`, String(value));
+    }
+  }
+  return text;
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() =>
     safeGetStoredLocale(),
@@ -40,19 +58,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback<TFunction>(
-    (key, fallbackOrParams) => {
-      const dict = dictionaries[locale] ?? dictionaries[defaultLocale];
-      let text =
-        dict[key] ??
-        (typeof fallbackOrParams === "string" ? fallbackOrParams : undefined) ??
-        key;
-      if (fallbackOrParams && typeof fallbackOrParams === "object") {
-        for (const [param, value] of Object.entries(fallbackOrParams)) {
-          text = text.replaceAll(`{{${param}}}`, String(value));
-        }
-      }
-      return text;
-    },
+    (key, fallbackOrParams) => translate(locale, key, fallbackOrParams),
     [locale],
   );
 
@@ -62,6 +68,27 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+const fallbackI18n: I18nContextValue = {
+  locale: defaultLocale,
+  setLocale: () => {},
+  t: (key, fallbackOrParams) => translate(defaultLocale, key, fallbackOrParams),
+};
+
+/**
+ * Igual que `useI18n`, pero tolera la ausencia de `I18nProvider` SOLO en tests (`MODE === "test"`),
+ * donde muchos árboles de componentes se montan sin provider. Fuera de tests lanza igual que
+ * `useI18n`: el provider vive en `main.tsx`, así que su ausencia en la app real es un bug y no debe
+ * enmascararse con el idioma por defecto.
+ */
+export function useOptionalI18n(): I18nContextValue {
+  const ctx = useContext(I18nContext);
+  if (ctx) return ctx;
+  if (import.meta.env.MODE !== "test") {
+    throw new Error("useOptionalI18n must be used within I18nProvider (solo tests pueden omitirlo)");
+  }
+  return fallbackI18n;
 }
 
 export function useI18n() {

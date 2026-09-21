@@ -6,6 +6,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
+import { roundToDecimals } from "../../../lib/sanitizers";
 import { stockBadgeInfo, discountBadgeText } from "../utils/salesCalc";
 
 // SALES-ITEM-SEARCH-RESULTS-GRID-COMPONENT-01: extraído de SalesInvoiceDetailsSection —
@@ -158,7 +159,7 @@ export function SalesItemSearchResultsGrid({
               <>
                 <span className="sf-result__col sf-result__col-price-normal">
                   <ZHMoneyValue
-                    value={item.salePriceWithoutTax!}
+                    value={roundToDecimals(item.salePriceWithoutTax!, dc.salesUnitPriceDecimals)}
                     decimals={dc.salesUnitPriceDecimals}
                     className={
                       hasDiscount
@@ -188,7 +189,7 @@ export function SalesItemSearchResultsGrid({
                 <span className="sf-result__col sf-result__col-price-final">
                   {effectiveFinal != null && (
                     <ZHMoneyValue
-                      value={effectiveFinal}
+                      value={roundToDecimals(effectiveFinal, dc.salesUnitPriceDecimals)}
                       decimals={dc.salesUnitPriceDecimals}
                       className="sf-result__price-final"
                     />
