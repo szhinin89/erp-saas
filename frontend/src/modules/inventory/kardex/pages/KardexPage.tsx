@@ -127,11 +127,8 @@ export function KardexPage() {
   const policy = getPrecisionPolicy();
   const qty = policy.quantityDecimals;
   // INVENTORY-DECIMAL-SEMANTICS-01: "Costo Unit." y "Costo Promedio" son semánticamente costo
-  // (unitCostDecimals/averageCostDecimals), pero mantienen purchaseUnitPriceDecimals (mismo
-  // valor visible que antes con decimal.config.ts) porque ninguna de las dos columnas tiene
-  // cobertura de test sobre su formato de decimales — mismo criterio aplicado a PricingTab
-  // (commit 845fc701) e inventory.baseUnitCost de Compras (commit 5269406f). Reclasificación
-  // pendiente como decisión de negocio, no efecto de esta migración.
+  // (unitCostDecimals/averageCostDecimals), pero usan purchaseUnitPriceDecimals; reclasificarlas
+  // es una decisión de negocio pendiente.
   const cost = policy.purchaseUnitPriceDecimals;
   const total = policy.moneyDecimals;
 

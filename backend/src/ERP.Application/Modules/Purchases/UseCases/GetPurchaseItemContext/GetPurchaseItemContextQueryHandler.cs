@@ -46,8 +46,7 @@ public sealed class GetPurchaseItemContextQueryHandler
     )
     {
         var tid = _tenant.TenantId;
-        // COMPANY-PRECISION-POLICY-SSOT-01: reemplaza IDecimalConfigRepository (legacy) — ver
-        // ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.
+        // Política de precisión de la empresa — ver ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.
         var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
 
         // 1. ITEM — incluye empaques para que Compras pueda seleccionar presentación sin

@@ -48,11 +48,9 @@ export function AdjustmentLineCard({
   const { t } = useI18n();
   const { line } = view;
   const baseUnitWord = t("inventory.adjustments.lines.baseUnit", "unidades base");
-  // Estos campos no estaban conectados a decimal.config.ts (decimals={2}/{4} fijos) — se
-  // conectan directo a la política de precisión: cantidad/equivalencia/stock usan
-  // quantityDecimals, factor de conversión (baseQuantity de presentación) usa
-  // conversionFactorDecimals, costo unitario base usa unitCostDecimals. Mismo criterio que los
-  // 8 campos sin fuente previa migrados en Items/Pricing (commit 845fc701).
+  // Política de precisión de la empresa: cantidad/equivalencia/stock usan quantityDecimals,
+  // factor de conversión (baseQuantity de presentación) usa conversionFactorDecimals, costo
+  // unitario base usa unitCostDecimals.
   const policy = getPrecisionPolicy();
   const quantityDecimals = policy.quantityDecimals;
   const conversionFactorDecimals = policy.conversionFactorDecimals;

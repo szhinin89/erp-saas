@@ -34,8 +34,7 @@ export function StockAdjustmentFormPage() {
   const { t } = useI18n();
   const ctx = useStockAdjustmentFormPage();
   // Costo total (ejecutado/estimado) del documento — agregado, no costo unitario:
-  // moneyDecimals; no estaba conectado a decimal.config.ts (decimals fijo 2), mismo criterio de
-  // "traer al SSOT" que Items/Pricing (commit 845fc701).
+  // moneyDecimals.
   const totalCostDecimals = getPrecisionPolicy().moneyDecimals;
 
   if (!ctx.canView) {

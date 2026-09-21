@@ -447,7 +447,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 ReadinessActionTarget.CompanyBranding
             ),
             // Siempre resuelve con SystemDefault — informativo, nunca bloqueante.
-            Item("documents.presentationDecimals", true, ReadinessSeverity.Info, null, ReadinessActionTarget.DecimalSettings),
+            Item("documents.decimalPrecision", true, ReadinessSeverity.Info, null, ReadinessActionTarget.DecimalSettings),
             // No hay verificación real de generación de RIDE sin emitir un documento — informativo.
             Item("documents.ride", true, ReadinessSeverity.Info, null, ReadinessActionTarget.ElectronicInvoicingSettings),
         };

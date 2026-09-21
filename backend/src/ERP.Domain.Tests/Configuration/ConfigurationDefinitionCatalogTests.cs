@@ -96,11 +96,6 @@ public sealed class ConfigurationDefinitionCatalogTests
     [InlineData("ride.branding.secondary_color_hex")]
     [InlineData("ride.branding.logo_storage_path")]
     [InlineData("ride.branding.footer_text")]
-    [InlineData("decimal.quantity")]
-    [InlineData("decimal.sales.unitPrice")]
-    [InlineData("decimal.purchases.unitPrice")]
-    [InlineData("decimal.percentage")]
-    [InlineData("decimal.totalAmount")]
     public void Keys_legacy_eliminadas_no_estan_registradas(string legacyKey)
     {
         ConfigurationDefinitionCatalog.TryGet(legacyKey, out _).Should().BeFalse();

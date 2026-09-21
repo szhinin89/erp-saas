@@ -87,7 +87,7 @@ public sealed class GetItemProfitabilityHandler
         if (item is null)
             return Result<ItemProfitabilityDto>.NotFound("Producto no encontrado.");
 
-        // COMPANY-PRECISION-POLICY-SSOT-01: reemplaza IDecimalConfigRepository (legacy).
+        // Política de precisión de la empresa (CompanyPrecisionPolicy).
         var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
         var (totalQty, totalVal) = await _stockRepo.GetAggregatedStockAsync(tid, q.ItemId, ct);
         var avgCost =
@@ -204,7 +204,7 @@ public sealed class SimulateItemPricingHandler
         if (item is null)
             return Result<PriceSimulationDto>.NotFound("Producto no encontrado.");
 
-        // COMPANY-PRECISION-POLICY-SSOT-01: reemplaza IDecimalConfigRepository (legacy).
+        // Política de precisión de la empresa (CompanyPrecisionPolicy).
         var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
         var (totalQty, totalVal) = await _stockRepo.GetAggregatedStockAsync(tid, q.ItemId, ct);
         var avgCost =

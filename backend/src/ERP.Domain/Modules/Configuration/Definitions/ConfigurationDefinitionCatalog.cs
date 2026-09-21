@@ -9,11 +9,9 @@ namespace ERP.Domain.Configuration.Definitions;
 /// ConfigurationDefinition aquí (vía el archivo del módulo correspondiente en
 /// Definitions/Modules/) antes de poder escribirse — no hay forma de crear una key "al vuelo".
 ///
-/// Namespaces legacy eliminados en entregas previas (ride.branding.*, decimal.* de
-/// GeneralParameter) NO están registrados aquí a propósito: cualquier intento de escribirlos hoy
-/// falla como key desconocida, que es exactamente el comportamiento correcto — no existe camino
-/// de código que los genere, pero si alguien los reintrodujera por error, el guardrail los
-/// bloquea igual que cualquier otra key inventada.
+/// La precisión decimal NO es un setting de org_settings: vive únicamente en
+/// CompanyPrecisionPolicy (PrecisionPolicyDefinitions). Toda key no registrada aquí se rechaza
+/// como desconocida.
 /// </summary>
 public static class ConfigurationDefinitionCatalog
 {

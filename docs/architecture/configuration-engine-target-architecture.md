@@ -4,6 +4,7 @@
 > **Revisión:** CONFIGURATION-ENGINE-TARGET-ARCHITECTURE-REVIEW-01 — ver [Registro de cambios de la revisión](#registro-de-cambios-de-la-revisión-review-01) al final del documento.
 > **Alcance:** Reemplaza conceptualmente los mecanismos actuales dispersos (`OrgSetting`, `GeneralParameter`, `Company.BrandingConfiguration` JSON, flags `IsDefault`/`IsMain` sin constraint, `FiscalPrecision` hardcodeado, snapshots parciales) por una arquitectura única, tipada, auditable y con precedencia explícita.
 > **Regla de uso:** este documento es la fuente de verdad para dónde vive cualquier configuración futura. Si un parámetro nuevo no encaja limpio en un scope de la tabla de Fase 2, **no se crea** hasta resolver la ambigüedad aquí, no en el código.
+> **Precisión decimal (vigente):** todo lo que este documento dice sobre `GeneralParameter`, `decimal.*`, `presentation.decimal.*` o `DecimalConfigRepository` es HISTÓRICO y ya no existe en el sistema. La precisión decimal por empresa vive únicamente en `CompanyPrecisionPolicy` (definición única `PrecisionPolicyDefinitions`, `GET /precision-policy` + `/precision-policy/metadata`). Ver [frontend.md](frontend.md) y [data-standards.md](data-standards.md).
 
 ---
 
@@ -14,10 +15,10 @@ Investigación de código confirma que hoy coexisten **cinco mecanismos de confi
 | Mecanismo | Qué es | Problema |
 |---|---|---|
 | `OrgSetting` (`org_settings`) | Tabla scope+key+value tipado, con `OrgSettingKeys` como registro centralizado de keys, `OrgScope` enum (`Company,Branch,Establishment,EmissionPoint,Warehouse`) | Es el mecanismo más cercano al ideal, pero: unicidad de `(tenant,company,scope,scopeId,key)` no verificada como constraint DB; repositorio usa `IgnoreQueryFilters()` (bypass manual de tenant); sin auditoría; sin `RequiresSnapshot`/`IsSensitive`; scopes `User`, `Profile`, `CashRegister`, `Document` no existen en el enum |
-| `GeneralParameter` | Bag key/value genérico, usado hoy solo por `decimal.*` (`DecimalConfigRepository`) | Segunda fuente de verdad key/value paralela a `OrgSetting`, sin relación documentada entre ambas |
+| `GeneralParameter` | Bag key/value genérico, usado hoy solo por `decimal.*` (`DecimalConfigRepository`) | Segunda fuente de verdad key/value paralela a `OrgSetting`, sin relación documentada entre ambas **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]** |
 | `Company.BrandingConfiguration` (JSON string) | Blob JSON de branding | Tercer mecanismo de branding, **coexiste** con `ride.branding.*` en `OrgSetting` — dos fuentes para el mismo concepto. Corrección de esta revisión: el naming `ride.branding.*` es en sí mismo un defecto de diseño — la marca (`Company Branding`) es propiedad de la Company, y RIDE/PDF es solo uno de sus consumidores; ver Fase 11 |
 | Flags `IsDefault`/`IsMain` (`PriceList.IsDefault`, `Warehouse.IsMain`, `EmissionPoint.IsDefault`, `Branch.IsMainBranch`, `Establishment.IsMain`) | Booleano en la propia entidad de catálogo | **Ninguno tiene constraint único filtrado en DB** — nada impide dos `true` en el mismo scope hoy |
-| `FiscalPrecision` (constantes) vs `decimal.*` en `GeneralParameter` | Precisión fiscal hardcodeada vs precisión de presentación configurable | Dos sistemas de decimales sin frontera documentada — riesgo de que alguien use el configurable donde debía ir el fiscal fijo |
+| `FiscalPrecision` (constantes) vs `decimal.*` en `GeneralParameter` | Precisión fiscal hardcodeada vs precisión de presentación configurable | Dos sistemas de decimales sin frontera documentada — riesgo de que alguien use el configurable donde debía ir el fiscal fijo **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]** |
 
 Este diagnóstico es el punto de partida: la arquitectura objetivo no es "agregar una tabla más", es **consolidar estos cinco mecanismos en una sola jerarquía con reglas explícitas de quién gana**.
 
@@ -157,7 +158,7 @@ Los scopes `Form` y `User` son estructuralmente distintos del resto: **no config
 | Condición de pago | **Superado por [ADR-033](../decisions/ADR-033-payment-term-ssot-and-document-schedules.md).** Cadena vigente: documento explícito → default del tercero (rol + empresa) → **exigir selección explícita** (nunca fallback automático a un seed ni a "primer registro"). Fila mantenida solo como referencia histórica de esta tabla de precedencia; para la resolución real de condición de pago, ver ADR-033. | — | — | — | Ver ADR-033 (`ResolvePaymentTermDefault`, Fase 3) |
 | Método de pago | CashRegister/Profile, Module(Sales) | Caja/perfil si aplica → default de ventas/cobro de Company → método "efectivo" seed | Selección manual | No autoriza el documento sin método de pago explícito | `IPricingDefaultsResolver` / `ICashOperationPolicyResolver` |
 | Política Consumidor Final | Company, System | Company (`sales.consumer_final.max_amount`) → default por régimen tributario del System catalog → default conservador del System | Valor conservador documentado en System (nunca 0 implícito silente) | Ya implementado hoy en `SalesFiscalPolicyResolver` — patrón correcto, mantener | `ISalesFiscalPolicyResolver` |
-| Decimales (presentación) | Company, System | Company (`decimal.*` migrado desde `GeneralParameter` a `OrgSetting`) → System default | System default fijo | Nunca afecta cálculo fiscal, solo UI | `ICompanySettingsResolver` |
+| Decimales (presentación) | Company, System | Company (`decimal.*` migrado desde `GeneralParameter` a `OrgSetting`) → System default | System default fijo | Nunca afecta cálculo fiscal, solo UI | `ICompanySettingsResolver` **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]** |
 | Decimales (precisión fiscal real) | System únicamente | No hay cadena — es constante | `FiscalPrecision` hardcodeado, **no configurable por ningún scope** | N/A — es invariante de plataforma | Ninguno — acceso directo a constante, explícitamente fuera del motor de configuración |
 | Reglas de caja (ej. permitir venta sin sesión abierta) | Branch/Company (si se decide configurable) | Branch → Company | Invariante fija documentada (no se permite venta sin sesión) | Bloquea, comportamiento seguro por defecto | `ICashOperationPolicyResolver` |
 
@@ -245,7 +246,7 @@ Regla dura: **prohibido inyectar `IOrgSettingsRepository` directamente en un `Co
 
 | Resolver | Qué resuelve | Scopes que consulta | Fallback | Errores que devuelve | Módulo consumidor | Qué NO debe hacer |
 |---|---|---|---|---|---|---|
-| `ICompanySettingsResolver` | Config general de empresa (branding único, decimales de presentación, política consumidor final) | Company → System | Default de plataforma | `ConfigurationNotFoundException` solo si `FallbackStrategy=Error` | Company Settings UI, RIDE | Resolver nada de Branch/Warehouse — Principio 14 |
+| `ICompanySettingsResolver` | Config general de empresa (branding único, precisión decimal (CompanyPrecisionPolicy), política consumidor final) | Company → System | Default de plataforma | `ConfigurationNotFoundException` solo si `FallbackStrategy=Error` | Company Settings UI, RIDE | Resolver nada de Branch/Warehouse — Principio 14 |
 | `IBranchSettingsResolver` | Config operativa de sucursal | Branch → Company | Sube a Company solo si la Definition lo permite | igual | Sales, Inventory | Resolver reglas fiscales de Establishment (scope distinto) |
 | `IInvoiceDefaultsResolver` | Bodega default, doc type default, payment term default para facturación | User → CashRegister → Branch → Warehouse.IsMain | `RequireManualSelection` | `NoDefaultResolvedException` (no excepción genérica — el frontend debe poder distinguir "no hay default, elige tú" de "error real") | Sales (creación de factura) | No decide método de pago (eso es otro resolver) ni datos fiscales SRI |
 | `ISalesFiscalPolicyResolver` | Política consumidor final, umbral, régimen tributario aplicable | Company → System | Default conservador de System | — | Sales | No decide bodega/pago — solo política fiscal de venta |
@@ -287,7 +288,7 @@ Un `RuntimeContext` es la única superficie que el frontend/handler de negocio d
 **No incluye:** defaults de venta que no sean estrictamente de caja (eso vive en `SalesRuntimeContext`, que puede componer `CashRuntimeContext` internamente).
 
 ### 7.5 `CompanySettingsContext`
-**Incluye:** branding resuelto (fuente única `company.branding.*`, con Company como owner y RIDE como uno de sus consumidores — ver Fase 11), decimales de presentación, política consumidor final vigente.
+**Incluye:** branding resuelto (fuente única `company.branding.*`, con Company como owner y RIDE como uno de sus consumidores — ver Fase 11), precisión decimal (CompanyPrecisionPolicy), política consumidor final vigente.
 **No incluye:** nada operativo de sucursal/caja.
 **Reemplaza:** lectura directa de `Company.BrandingConfiguration` JSON desde cualquier consumidor que no sea el propio módulo de administración de branding.
 
@@ -353,7 +354,7 @@ Cómo evitar que cambios futuros alteren lectura histórica: el snapshot se mate
 | Unique `CompanyBpTradingSettings` por `(TenantId, CompanyId, BusinessPartnerId)` | Antes de producción (P1/P2) — confirmar si ya existe el índice; el doc-comment lo sugiere pero no fue verificado como constraint real |
 | `PaymentMethod.SriPaymentMethodCode` (FK opcional a `SriPaymentMethod`, obligatoria solo si el método participa en emisión electrónica) | Antes de producción (P2) — hoy la relación es un string suelto (`SriPaymentMethodCode` en `SalesInvoice`), no una FK real; ver matiz en Fase 11 (no todo `PaymentMethod` interno mapea 1:1 a SRI) |
 | CHECK de `CompanyBpTradingSettings` (ej. `CreditLimit >= 0`, `PaymentDays >= 0`, `Installments >= 1`) | Antes de producción (P1/P2) |
-| CHECK de rangos decimales (`decimal.* ∈ [0,6]`, ya aplicado hoy en `DecimalConfigRepository` a nivel de código, migrar a CHECK de DB) | Futuro (P3) — hoy funciona vía clamp en código, no es urgente moverlo a DB |
+| CHECK de rangos decimales (`decimal.* ∈ [0,6]`, ya aplicado hoy en `DecimalConfigRepository` a nivel de código, migrar a CHECK de DB) | Futuro (P3) — hoy funciona vía clamp en código, no es urgente moverlo a DB **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]** |
 | CHECK de colores si se tipa branding (hex válido) | Futuro (P3) — depende de si `company.branding.*` se tipa formalmente (ver Fase 11) |
 
 ---
@@ -362,7 +363,7 @@ Cómo evitar que cambios futuros alteren lectura histórica: el snapshot se mate
 
 | Mecanismo | Decisión | Detalle |
 |---|---|---|
-| `general_parameter` | **Eliminar** (tras migrar datos) | Sus 5 keys `decimal.*` se migran a `org_settings` con scope `Company`, registradas en `ConfigurationDefinition`. La tabla `general_parameter` se elimina — es la definición misma de "doble fuente de verdad" (Principio 3) |
+| `general_parameter` | **Eliminar** (tras migrar datos) | Sus 5 keys `decimal.*` se migran a `org_settings` con scope `Company`, registradas en `ConfigurationDefinition`. La tabla `general_parameter` se elimina — es la definición misma de "doble fuente de verdad" (Principio 3) **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]** |
 | `Company.BrandingConfiguration` JSON | **Eliminar**, migrar a keys tipadas de **Company Branding** | Hoy son dos branding stores para el mismo concepto, y ninguno de los dos nombra correctamente al dueño. Corrección de esta revisión: el owner de la marca es **Company Branding** (`company.branding.*`), no RIDE — RIDE/PDF es un *consumidor* de esas keys, igual que cualquier otro output futuro (portal de cliente, email, etc.) podría serlo. El JSON crudo se elimina porque viola el Principio 12 ("JSON crudo no debe usarse para reglas críticas") |
 | `ride.branding.*` OrgSettings | **Renombrar y reforzar** | Renombrar a `company.branding.*` (`OrgSettingKeys.Ride.*` → `OrgSettingKeys.Branding.*`) para que el naming refleje al dueño real (Company), no a un consumidor específico (RIDE). Tras el rename, extender `AllowedScopes` para permitir override a nivel `Branch` (hoy solo resuelve a `Company`, según el propio doc-comment de `OrgSettingsRideBrandingProvider` que lo marca como diseño futuro). `OrgSettingsRideBrandingProvider` pasa a ser un *lector* de `company.branding.*` (uno más entre los consumidores posibles), no el dueño del namespace |
 | `PriceList.IsDefault` | **Reforzar** | Agregar constraint único filtrado (Fase 10); mantener como columna de la entidad (es un catálogo, Principio 13 — no se convierte en `ConfigurationValue`, el *flag* vive en la entidad, pero su *cambio* se audita vía `ConfigurationChangeLog`) |
@@ -377,7 +378,7 @@ Cómo evitar que cambios futuros alteren lectura histórica: el snapshot se mate
 | `CompanyBpTradingSettings` | **Reforzar (mejora funcional P1, no requisito estructural del motor base)** | Agregar `PriceListId` (hoy falta — identificado en Fase 3, "Lista de precios" no tiene dónde configurarse por cliente). El motor de configuración en sí no depende de que este campo exista para funcionar — la precedencia BusinessPartner → Company queda declarada en Fase 3 y el resolver simplemente no encuentra valor en el scope BusinessPartner hasta que el campo se agregue, cayendo correctamente al siguiente nivel. Se prioriza cuando exista un flujo de negocio que ya lo necesite, no como parte de P0 |
 | `SriSettings` | **Reforzar** | Mantener 1-por-company; agregar snapshot de fingerprint de certificado en cada documento firmado (Fase 9) |
 | `FiscalPrecision` constants | **Mantener como System scope inmutable** | Es infraestructura CLOSED (Numeric Precision Standard, frozen 2026-06-25) — no entra al motor de configuración como "editable", entra solo como referencia documental de que su scope es `System` |
-| Decimal UI settings (`decimal.*`) | **Migrar** | De `GeneralParameter` a `org_settings`, scope `Company`, ver fila `general_parameter` arriba |
+| Decimal UI settings (`decimal.*`) | **Migrar** | De `GeneralParameter` a `org_settings`, scope `Company`, ver fila `general_parameter` arriba **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]** |
 
 ---
 
@@ -443,7 +444,7 @@ Ver tablas completas en Fases 2 (scopes), 3 (precedencia), 4 (ConfigurationDefin
 - Patrón de snapshot VO ya usado en `SalesInvoice` (`CustomerSnapshot`, `PaymentTermSnapshot`) — se extiende, no se reinventa.
 
 ### 12.13 Qué se migra
-- `GeneralParameter.decimal.*` → `org_settings`, scope `Company`.
+- `GeneralParameter.decimal.*` → `org_settings`, scope `Company`. **[SUPERADO — ERP-PRECISION-POLICY-LEGACY-PURGE-04A]**
 - `Company.BrandingConfiguration` JSON → `company.branding.*` en `org_settings` (renombrado desde `ride.branding.*`, con scope extendido a `Branch`; RIDE queda como consumidor, no como owner del namespace).
 - `SriPaymentMethodCode` string suelto en `SalesInvoice` → se mantiene el snapshot string (correcto, es histórico) pero se agrega FK real `PaymentMethod → SriPaymentMethod` para la fuente configurable viva.
 

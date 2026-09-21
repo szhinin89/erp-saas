@@ -52,9 +52,7 @@ export function StockAdjustmentsPage() {
 
   const totalCost = (row: StockAdjustmentDto) =>
     row.lines.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
-  // Costo total del documento (agregado de líneas), no costo unitario — moneyDecimals; no
-  // estaba conectado a decimal.config.ts (decimals fijo 2), mismo criterio de "traer al SSOT"
-  // que Items/Pricing (commit 845fc701).
+  // Costo total del documento (agregado de líneas), no costo unitario — moneyDecimals.
   const totalCostDecimals = getPrecisionPolicy().moneyDecimals;
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "N.º" (adjustmentNumber) sigue

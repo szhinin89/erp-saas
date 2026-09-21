@@ -53,10 +53,7 @@ function availabilityBadge(
 export function StockTransferPage() {
   const { t } = useI18n();
   const ctx = useStockTransferPage();
-  // Cantidad transferida no estaba conectada a decimal.config.ts (decimals={2} fijo) — se
-  // conecta directo a quantityDecimals de la política de precisión, igual que el resto de
-  // "Cantidad" del módulo (mismo criterio que los 8 campos sin fuente previa migrados en
-  // Items/Pricing, commit 845fc701).
+  // Cantidad transferida: quantityDecimals de la política de precisión de la empresa.
   const quantityDecimals = getPrecisionPolicy().quantityDecimals;
 
   const badge = ctx.transfer ? statusBadge(ctx.transfer.status, t) : null;

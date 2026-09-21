@@ -20,7 +20,7 @@ Decisiones arquitectónicas congeladas 2026-06-25. No modificar sin revisión ar
 - **Input obligatorio**: `ZhDecimalInput` para todo decimal, `ZhNumberInput` para enteros
 - **Separador**: solo punto (`.`) — coma prohibida
 - **Utilities**: `sanitizeDecimal()`, `parseDecimal()`, `formatMoney()` de `lib/sanitizers.ts`
-- **Decimales configurables**: `precisionPolicy.config.ts` carga desde `GET /api/v1/config/precision-policy` por empresa (`company_precision_policy`, SSOT — reemplaza el legacy `GET/PUT /api/v1/config/decimals`, eliminado en COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08)
+- **Decimales configurables**: `precisionPolicy.config.ts` carga desde `GET /api/v1/config/precision-policy` por empresa (`company_precision_policy`, SSOT; rangos/perfiles desde `/precision-policy/metadata`, sin defaults en frontend — reemplaza el legacy `GET/PUT /api/v1/config/decimals`, eliminado en COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08)
 
 ### Backend
 

@@ -27,7 +27,7 @@
 
 - **Backend**: entidad + provider fail-closed por tenant/company, perfiles Estándar comercial/Alta precisión/Personalizado, bloqueo operativo automático (409) al detectar la primera operación real (venta autorizada, compra confirmada, movimiento de inventario, pago, asiento posted) — sin endpoint de desbloqueo.
 - **Frontend**: migrado módulo por módulo (Sales → Purchases → Items/Pricing → Inventory → Expenses → Payables/Supplier Payments → consumidores compartidos) a `precisionPolicy.config.ts`. `decimal.config.ts` y la pantalla legacy de decimales fueron eliminados del frontend.
-- **Legacy backend**: endpoint `GET/PUT /api/v1/config/decimals` (`DecimalConfigController`) eliminado — cero consumidores confirmados por auditoría. `org_settings/Presentation` se conserva solo como respaldo de filas históricas y fixture de tests, sin vía de escritura activa.
+- **Legacy backend**: endpoint `GET/PUT /api/v1/config/decimals` (`DecimalConfigController`) eliminado — cero consumidores confirmados por auditoría. Las keys `org_settings` `presentation.decimal.*` fueron eliminadas (código, catálogo y filas de BD vía migración `PrecisionPolicyBackfillAndLegacyCleanup04`); `CompanyPrecisionPolicy` es la única funcionalidad de precisión decimal. Sin defaults en frontend: valores, rangos y perfiles salen de `GET /precision-policy` y `/precision-policy/metadata` (definición única backend `PrecisionPolicyDefinitions`); si la API falla, la app muestra error.
 
 **Commits**: `b907502a` (base backend) · `ffbfa763` (Sales) · `5269406f` (Purchases) · `845fc701` (Items/Pricing) · `d988fc71` (Inventory) · `8ff8ae6c` (Expenses) · `c82dba96` (Payables/Supplier Payments) · `97ce8e36` (retiro legacy frontend) · `71f29b9d` (retiro legacy backend).
 

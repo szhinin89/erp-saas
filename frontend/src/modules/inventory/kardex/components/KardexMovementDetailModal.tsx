@@ -46,12 +46,8 @@ export function KardexMovementDetailModal({
   const policy = getPrecisionPolicy();
   const qty = policy.quantityDecimals;
   // INVENTORY-DECIMAL-SEMANTICS-01: "Costo Unitario" y "Costo Promedio Corrido" son
-  // semánticamente costo (unitCostDecimals/averageCostDecimals), pero mantienen
-  // purchaseUnitPriceDecimals (mismo valor visible que antes con decimal.config.ts) porque
-  // ninguna de las dos métricas tiene cobertura de test sobre su formato de decimales — mismo
-  // criterio aplicado a PricingTab (commit 845fc701) e inventory.baseUnitCost de Compras
-  // (commit 5269406f). Reclasificación pendiente como decisión de negocio, no efecto de esta
-  // migración.
+  // semánticamente costo (unitCostDecimals/averageCostDecimals), pero usan
+  // purchaseUnitPriceDecimals; reclasificarlas es una decisión de negocio pendiente.
   const cost = policy.purchaseUnitPriceDecimals;
   const total = policy.moneyDecimals;
 

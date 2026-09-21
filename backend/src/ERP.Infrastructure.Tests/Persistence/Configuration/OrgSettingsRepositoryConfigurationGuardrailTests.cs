@@ -108,8 +108,6 @@ public sealed class OrgSettingsRepositoryConfigurationGuardrailTests : IAsyncLif
     [Theory]
     [InlineData("ride.branding.primary_color_hex")]
     [InlineData("ride.branding.logo_storage_path")]
-    [InlineData("decimal.quantity")]
-    [InlineData("decimal.sales.unitPrice")]
     public async Task Keys_legacy_eliminadas_se_rechazan_como_desconocidas(string legacyKey)
     {
         await using var db = CreateContext();

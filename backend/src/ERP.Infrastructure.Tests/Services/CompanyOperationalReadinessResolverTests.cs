@@ -394,7 +394,7 @@ public sealed class CompanyOperationalReadinessResolverTests
         brandingItem.BlockingArea.Should().BeNull();
     }
 
-    // 8. Decimales de presentación ausentes → Ready con defaults, no bloqueo.
+    // 8. Precisión decimal: ítem informativo siempre Ready, no bloquea.
     [Fact]
     public async Task Decimales_de_presentacion_siempre_Ready_por_fallback_system_default()
     {
@@ -403,7 +403,7 @@ public sealed class CompanyOperationalReadinessResolverTests
 
         var item = result
             .Sections.Single(s => s.Code == "documents")
-            .Items.Single(i => i.Code == "documents.presentationDecimals");
+            .Items.Single(i => i.Code == "documents.decimalPrecision");
 
         item.Status.Should().Be(ReadinessStatus.Ready);
         item.Severity.Should().Be(ReadinessSeverity.Info);
