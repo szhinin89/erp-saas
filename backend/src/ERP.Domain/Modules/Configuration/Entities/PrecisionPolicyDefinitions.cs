@@ -46,13 +46,13 @@ public static class PrecisionPolicyDefinitions
 
     public static IReadOnlyList<PrecisionFieldDefinition> Fields { get; } =
     [
-        new(SalesUnitPriceDecimals, PrecisionFieldKind.Decimals, 2, 8, 2, 4),
-        new(PurchaseUnitPriceDecimals, PrecisionFieldKind.Decimals, 2, 8, 4, 6),
+        new(SalesUnitPriceDecimals, PrecisionFieldKind.Decimals, 2, 6, 2, 4),
+        new(PurchaseUnitPriceDecimals, PrecisionFieldKind.Decimals, 2, 10, 4, 6),
         new(QuantityDecimals, PrecisionFieldKind.Decimals, 0, 6, 4, 6),
         new(PercentageDecimals, PrecisionFieldKind.Decimals, 2, 6, 2, 4),
-        new(UnitCostDecimals, PrecisionFieldKind.Decimals, 2, 8, 6, 6),
-        new(AverageCostDecimals, PrecisionFieldKind.Decimals, 2, 8, 6, 6),
-        new(ConversionFactorDecimals, PrecisionFieldKind.Decimals, 2, 8, 6, 8),
+        new(UnitCostDecimals, PrecisionFieldKind.Decimals, 2, 10, 6, 6),
+        new(AverageCostDecimals, PrecisionFieldKind.Decimals, 2, 10, 6, 6),
+        new(ConversionFactorDecimals, PrecisionFieldKind.Decimals, 2, 10, 6, 8),
         new(SettlementToleranceAmount, PrecisionFieldKind.Amount, 0.00m, 0.02m, 0.01m, 0.01m),
     ];
 

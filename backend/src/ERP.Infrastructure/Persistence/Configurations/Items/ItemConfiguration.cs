@@ -77,7 +77,7 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
                 sale.Property(s => s.IsForSale).HasColumnName("is_for_sale").IsRequired();
                 sale.Property(s => s.MaxDiscountPercent)
                     .HasColumnName("max_discount_percent")
-                    .HasPrecision(5, 2);
+                    .HasColumnType("numeric(9,6)");
                 sale.Property(s => s.IsAvailableOnWeb)
                     .HasColumnName("available_on_web")
                     .IsRequired();
@@ -113,11 +113,11 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
                 stock
                     .Property(s => s.MinStockQty)
                     .HasColumnName("min_stock_qty")
-                    .HasPrecision(14, 4);
+                    .HasColumnType("numeric(16,6)");
                 stock
                     .Property(s => s.MaxStockQty)
                     .HasColumnName("max_stock_qty")
-                    .HasPrecision(14, 4);
+                    .HasColumnType("numeric(16,6)");
             }
         );
 

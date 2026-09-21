@@ -20,17 +20,17 @@ public sealed class CurrentStockConfiguration : IEntityTypeConfiguration<Current
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.ReservedQuantity)
             .HasColumnName("reserved_quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.TotalStockValue)
             .HasColumnName("total_stock_value")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .IsRequired();
         builder.Property(x => x.LastUpdatedAt).HasColumnName("last_updated_at").IsRequired();
 

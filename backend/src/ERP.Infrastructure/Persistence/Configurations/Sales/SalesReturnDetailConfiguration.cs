@@ -50,18 +50,18 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
         builder
             .Property(x => x.ConversionFactor)
             .HasColumnName("conversion_factor")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .IsRequired();
         builder
             .Property(x => x.QuantityInBaseUom)
             .HasColumnName("quantity_in_base_uom")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
 
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.UnitPrice)
@@ -71,7 +71,7 @@ public sealed class SalesReturnDetailConfiguration : IEntityTypeConfiguration<Sa
         builder
             .Property(x => x.DiscountPct)
             .HasColumnName("discount_pct")
-            .HasColumnType("numeric(5,2)")
+            .HasColumnType("numeric(9,6)")
             .IsRequired();
         builder
             .Property(x => x.DiscountAmount)

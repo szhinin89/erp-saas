@@ -56,30 +56,30 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder
             .Property(x => x.ConversionFactor)
             .HasColumnName("conversion_factor")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .HasDefaultValue(1m)
             .IsRequired();
         builder
             .Property(x => x.QuantityInBaseUom)
             .HasColumnName("quantity_in_base_uom")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
 
         // ── Quantity & Price ────────────────────────────────────────────
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.UnitPrice)
             .HasColumnName("unit_price")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .IsRequired();
         builder
             .Property(x => x.DiscountPct)
             .HasColumnName("discount_pct")
-            .HasColumnType("numeric(5,2)")
+            .HasColumnType("numeric(9,6)")
             .IsRequired();
         builder
             .Property(x => x.DiscountAmount)
@@ -109,7 +109,7 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder
             .Property(x => x.LandedUnitCost)
             .HasColumnName("landed_unit_cost")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .HasDefaultValue(0m)
             .IsRequired();
         builder
@@ -158,7 +158,7 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder
             .Property(x => x.OrderedQuantity)
             .HasColumnName("ordered_quantity")
-            .HasColumnType("numeric(18,4)");
+            .HasColumnType("numeric(20,6)");
 
         // ── Purchase Reception Traceability ──────────────────────────────
         builder

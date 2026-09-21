@@ -18,7 +18,7 @@ public sealed class StockTransferLineConfiguration : IEntityTypeConfiguration<St
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.Description)

@@ -13,7 +13,7 @@ public sealed class PurchaseCreditNoteDetailConfiguration
         builder.ToTable("purchase_credit_note_details");
 
         builder.Property(x => x.PurchaseInvoiceDetailId).HasColumnName("purchase_invoice_detail_id");
-        builder.Property(x => x.Quantity).HasColumnName("quantity").HasColumnType("numeric(18,4)");
+        builder.Property(x => x.Quantity).HasColumnName("quantity").HasColumnType("numeric(20,6)");
         builder.Property(x => x.IceAmount).HasColumnName("ice_amount").HasColumnType("numeric(18,2)");
         builder.Property(x => x.IrbpnrAmount).HasColumnName("irbpnr_amount").HasColumnType("numeric(18,2)");
         builder.HasOne<PurchaseInvoiceDetail>().WithMany().HasForeignKey(x => x.PurchaseInvoiceDetailId)

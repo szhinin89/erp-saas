@@ -50,7 +50,7 @@ public sealed class ItemUnitConversionConfiguration : IEntityTypeConfiguration<I
             .HasColumnName("to_uom_code")
             .HasMaxLength(10)
             .IsRequired();
-        builder.Property(x => x.Factor).HasColumnName("factor").HasPrecision(14, 6).IsRequired();
+        builder.Property(x => x.Factor).HasColumnName("factor").HasColumnType("numeric(18,10)").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -110,7 +110,7 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
         builder
             .Property(x => x.BaseQuantity)
             .HasColumnName("base_quantity")
-            .HasPrecision(14, 4)
+            .HasColumnType("numeric(18,10)")
             .IsRequired();
         builder.Property(x => x.UomCode).HasColumnName("uom_code").HasMaxLength(10).IsRequired();
         builder.Property(x => x.Barcode).HasColumnName("barcode").HasMaxLength(100);

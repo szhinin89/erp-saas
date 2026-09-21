@@ -1,4 +1,4 @@
-using ERP.Domain.Configuration.Entities;
+﻿using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using FluentAssertions;
 
@@ -58,7 +58,11 @@ public sealed class CompanyPrecisionPolicyTests
 
     [Theory]
     [InlineData(1, 4, 4, 2, 6, 6, 6, 0.01)] // sales fuera de rango (min 2)
-    [InlineData(9, 4, 4, 2, 6, 6, 6, 0.01)] // sales fuera de rango (max 8)
+    [InlineData(7, 4, 4, 2, 6, 6, 6, 0.01)] // sales fuera de rango (max 6)
+    [InlineData(2, 11, 4, 2, 6, 6, 6, 0.01)] // purchase fuera de rango (max 10)
+    [InlineData(2, 4, 4, 2, 11, 6, 6, 0.01)] // unitCost fuera de rango (max 10)
+    [InlineData(2, 4, 4, 2, 6, 11, 6, 0.01)] // avgCost fuera de rango (max 10)
+    [InlineData(2, 4, 4, 2, 6, 6, 11, 0.01)] // factor fuera de rango (max 10)
     [InlineData(2, 4, 7, 2, 6, 6, 6, 0.01)] // quantity fuera de rango (max 6)
     [InlineData(2, 4, 4, 1, 6, 6, 6, 0.01)] // percentage fuera de rango (min 2)
     [InlineData(2, 4, 4, 2, 6, 6, 6, 0.03)] // tolerance fuera de rango (max 0.02)
@@ -93,7 +97,7 @@ public sealed class CompanyPrecisionPolicyTests
     public void UpdateProfile_a_StandardCommercial_ignora_los_valores_custom_recibidos()
     {
         var policy = CompanyPrecisionPolicy.CreateHighPrecision(TenantId, CompanyId, UserId);
-        var bogusCustomValues = new PrecisionPolicyValues(8, 8, 6, 6, 8, 8, 8, 0.02m);
+        var bogusCustomValues = new PrecisionPolicyValues(6, 10, 6, 6, 10, 10, 10, 0.02m);
 
         policy.UpdateProfile(PrecisionProfileType.StandardCommercial, bogusCustomValues, UserId);
 

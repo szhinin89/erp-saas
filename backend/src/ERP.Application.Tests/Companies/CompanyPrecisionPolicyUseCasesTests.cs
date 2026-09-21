@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Domain.Configuration.Entities;
@@ -184,7 +184,23 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         var meta = result.Value!;
         meta.Fields.Select(f => f.Key).Should().Equal(PrecisionPolicyDefinitions.Fields.Select(f => f.Key));
         var sales = meta.Fields.Single(f => f.Key == "salesUnitPriceDecimals");
-        (sales.Min, sales.Max, sales.DefaultValue).Should().Be((2m, 8m, 2m));
+        (sales.Min, sales.Max, sales.DefaultValue).Should().Be((2m, 6m, 2m));
+        // ERP-PRECISION-CAPACITY-05A: máximos aprobados expuestos por la metadata.
+        meta.Fields.ToDictionary(f => f.Key, f => f.Max)
+            .Should()
+            .BeEquivalentTo(
+                new Dictionary<string, decimal>
+                {
+                    ["salesUnitPriceDecimals"] = 6m,
+                    ["purchaseUnitPriceDecimals"] = 10m,
+                    ["unitCostDecimals"] = 10m,
+                    ["averageCostDecimals"] = 10m,
+                    ["conversionFactorDecimals"] = 10m,
+                    ["quantityDecimals"] = 6m,
+                    ["percentageDecimals"] = 6m,
+                    ["settlementToleranceAmount"] = 0.02m,
+                }
+            );
         meta.Fields.Single(f => f.Key == "settlementToleranceAmount").Kind.Should().Be("Amount");
         meta.Profiles.Select(p => p.ProfileType).Should().Equal("StandardCommercial", "HighPrecision");
         meta.Profiles.Single(p => p.ProfileType == "HighPrecision").Values["conversionFactorDecimals"].Should().Be(8m);
@@ -198,10 +214,14 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         PrecisionPolicyDefinitions.HighPrecision.EnsureWithinRange();
 
         var validator = new UpdateCompanyPrecisionPolicyCommandValidator();
-        var ok = new UpdateCompanyPrecisionPolicyCommand("Custom", 2, 8, 0, 6, 2, 8, 8, 0.02m);
+        var ok = new UpdateCompanyPrecisionPolicyCommand("Custom", 6, 10, 0, 6, 10, 10, 10, 0.02m);
         validator.Validate(ok).IsValid.Should().BeTrue();
         validator.Validate(ok with { SalesUnitPriceDecimals = 1 }).IsValid.Should().BeFalse();
-        validator.Validate(ok with { SalesUnitPriceDecimals = 9 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { SalesUnitPriceDecimals = 7 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { PurchaseUnitPriceDecimals = 11 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { UnitCostDecimals = 11 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { AverageCostDecimals = 11 }).IsValid.Should().BeFalse();
+        validator.Validate(ok with { ConversionFactorDecimals = 11 }).IsValid.Should().BeFalse();
         validator.Validate(ok with { QuantityDecimals = 7 }).IsValid.Should().BeFalse();
         validator.Validate(ok with { SettlementToleranceAmount = 0.03m }).IsValid.Should().BeFalse();
         validator.Validate(ok with { ProfileType = "Nope" }).IsValid.Should().BeFalse();

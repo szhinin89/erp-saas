@@ -39,17 +39,17 @@ public sealed class ExpenseLineConfiguration : IEntityTypeConfiguration<ExpenseL
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.UnitAmount)
             .HasColumnName("unit_amount")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .IsRequired();
         builder
             .Property(x => x.DiscountPct)
             .HasColumnName("discount_pct")
-            .HasColumnType("numeric(5,2)")
+            .HasColumnType("numeric(9,6)")
             .IsRequired();
         builder
             .Property(x => x.DiscountAmount)

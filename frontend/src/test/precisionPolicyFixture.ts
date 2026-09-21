@@ -29,13 +29,13 @@ export const TEST_PRECISION_POLICY: PrecisionPolicy = {
  */
 export const TEST_PRECISION_METADATA: PrecisionPolicyMetadata = {
   fields: [
-    { key: "salesUnitPriceDecimals", kind: "Decimals", min: 2, max: 8, defaultValue: 2 },
-    { key: "purchaseUnitPriceDecimals", kind: "Decimals", min: 2, max: 8, defaultValue: 4 },
+    { key: "salesUnitPriceDecimals", kind: "Decimals", min: 2, max: 6, defaultValue: 2 },
+    { key: "purchaseUnitPriceDecimals", kind: "Decimals", min: 2, max: 10, defaultValue: 4 },
     { key: "quantityDecimals", kind: "Decimals", min: 0, max: 6, defaultValue: 4 },
     { key: "percentageDecimals", kind: "Decimals", min: 2, max: 6, defaultValue: 2 },
-    { key: "unitCostDecimals", kind: "Decimals", min: 2, max: 8, defaultValue: 6 },
-    { key: "averageCostDecimals", kind: "Decimals", min: 2, max: 8, defaultValue: 6 },
-    { key: "conversionFactorDecimals", kind: "Decimals", min: 2, max: 8, defaultValue: 6 },
+    { key: "unitCostDecimals", kind: "Decimals", min: 2, max: 10, defaultValue: 6 },
+    { key: "averageCostDecimals", kind: "Decimals", min: 2, max: 10, defaultValue: 6 },
+    { key: "conversionFactorDecimals", kind: "Decimals", min: 2, max: 10, defaultValue: 6 },
     { key: "settlementToleranceAmount", kind: "Amount", min: 0, max: 0.02, defaultValue: 0.01 },
   ],
   profiles: [

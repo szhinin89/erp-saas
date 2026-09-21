@@ -26,7 +26,7 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.UomCode)
@@ -36,12 +36,12 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder
             .Property(x => x.PreviousQuantity)
             .HasColumnName("previous_quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder
             .Property(x => x.ResultQuantity)
             .HasColumnName("result_quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder.Property(x => x.SequenceNumber).HasColumnName("sequence_number").IsRequired();
         builder
@@ -56,7 +56,7 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         // P0-02 (diseño §10.3) — trazabilidad línea-a-línea genérica, reutilizable por cualquier
         // módulo futuro; no es la fuente de "cantidad ya devuelta" (consulta derivada de negocio).
         builder.Property(x => x.SourceDocLineId).HasColumnName("source_doc_line_id");
-        builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(18,6)");
+        builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(22,10)");
         builder
             .Property(x => x.TotalCost)
             .HasColumnName("total_cost")
@@ -64,7 +64,7 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder
             .Property(x => x.RunningAverageCost)
             .HasColumnName("running_average_cost")
-            .HasColumnType("numeric(18,6)")
+            .HasColumnType("numeric(22,10)")
             .IsRequired();
         builder
             .Property(x => x.RunningStockValue)

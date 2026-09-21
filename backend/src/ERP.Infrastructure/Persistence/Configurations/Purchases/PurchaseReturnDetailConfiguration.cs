@@ -25,11 +25,11 @@ public sealed class PurchaseReturnDetailConfiguration
         builder
             .Property(x => x.Quantity)
             .HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)")
+            .HasColumnType("numeric(20,6)")
             .IsRequired();
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id").IsRequired();
 
-        builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(18,6)");
+        builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(22,10)");
         builder.Property(x => x.VatCode).HasColumnName("vat_code").HasMaxLength(20);
         builder.Property(x => x.VatRate).HasColumnName("vat_rate").HasColumnType("numeric(5,2)");
         builder
