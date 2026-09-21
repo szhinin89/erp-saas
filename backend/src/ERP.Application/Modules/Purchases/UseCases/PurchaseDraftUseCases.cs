@@ -1,4 +1,6 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
+using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
@@ -515,6 +517,7 @@ public sealed class CreatePurchaseDraftHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IDatabaseExceptionTranslator _dbEx;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public CreatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
@@ -530,9 +533,11 @@ public sealed class CreatePurchaseDraftHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        IDatabaseExceptionTranslator dbEx
+        IDatabaseExceptionTranslator dbEx,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
@@ -733,6 +738,8 @@ public sealed class CreatePurchaseDraftHandler
     )
     {
         var lines = new List<PurchaseInvoiceDetail>();
+        // ERP-PRECISION-OPERATIONAL-05B: cantidad/costo unitario/factor según la política de la empresa.
+        var precision = await _precision.GetEffectiveAsync(ct);
         foreach (var l in inputs)
         {
             var vatCode = l.VatCode;
@@ -768,6 +775,35 @@ public sealed class CreatePurchaseDraftHandler
                     if (packagingResult.Error is not null)
                         return new(null!, packagingResult.Error);
                     packaging = packagingResult.Packaging!;
+                    packaging = packaging with
+                    {
+                        ConversionFactor = Math.Round(
+                            packaging.ConversionFactor,
+                            precision.ConversionFactorDecimals,
+                            MidpointRounding.AwayFromZero
+                        ),
+                    };
+                    if (packaging.ConversionFactor <= 0m)
+                        return new(
+                            null!, Result<PurchaseInvoiceDto>.ValidationFailure(
+                                $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
+                            )
+                        );
+                    packaging = packaging with
+                    {
+                        ConversionFactor = Math.Round(
+                            packaging.ConversionFactor,
+                            precision.ConversionFactorDecimals,
+                            MidpointRounding.AwayFromZero
+                        ),
+                    };
+                    if (packaging.ConversionFactor <= 0m)
+                        return new(
+                            null!,
+                            Result<PurchaseInvoiceDto>.ValidationFailure(
+                                $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
+                            )
+                        );
 
                     if (string.IsNullOrWhiteSpace(vatCode))
                         vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
@@ -812,7 +848,7 @@ public sealed class CreatePurchaseDraftHandler
                 tid,
                 l.Description,
                 l.Quantity,
-                l.UnitPrice,
+                await PurchaseUnitPriceNormalizer.NormalizeAsync(l, precision, _receptionRepo, tid, ct),
                 vatCode,
                 packaging.UomCode,
                 l.ItemId,
@@ -829,7 +865,9 @@ public sealed class CreatePurchaseDraftHandler
                 orderedQuantity: l.OrderedQuantity,
                 purchaseReceptionLineId: l.PurchaseReceptionLineId,
                 baseUomCode: packaging.BaseUomCode,
-                packagingLevelId: packaging.PackagingLevelId
+                packagingLevelId: packaging.PackagingLevelId,
+                quantityDecimals: precision.QuantityDecimals,
+                unitCostDecimals: precision.UnitCostDecimals
             );
             if (l.FreightAllocated.HasValue)
                 line.SetFreightAllocated(l.FreightAllocated.Value);
@@ -890,6 +928,7 @@ public sealed class UpdatePurchaseDraftHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
     private readonly IDatabaseExceptionTranslator _dbEx;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public UpdatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
@@ -901,9 +940,11 @@ public sealed class UpdatePurchaseDraftHandler
         IPurchaseReceptionDocumentRepository receptionRepo,
         ICurrentTenant t,
         ICurrentUser u,
-        IDatabaseExceptionTranslator dbEx
+        IDatabaseExceptionTranslator dbEx,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _bpRepo = bpRepo;
         _ptResolver = ptResolver;
@@ -1020,6 +1061,8 @@ public sealed class UpdatePurchaseDraftHandler
             );
 
             var lines = new List<PurchaseInvoiceDetail>();
+            // ERP-PRECISION-OPERATIONAL-05B: cantidad/costo unitario/factor según la política de la empresa.
+            var precision = await _precision.GetEffectiveAsync(ct);
             foreach (var l in cmd.Lines)
             {
                 var vatCode = l.VatCode;
@@ -1055,6 +1098,20 @@ public sealed class UpdatePurchaseDraftHandler
                         if (packagingResult.Error is not null)
                             return packagingResult.Error;
                         packaging = packagingResult.Packaging!;
+                        packaging = packaging with
+                        {
+                            ConversionFactor = Math.Round(
+                                packaging.ConversionFactor,
+                                precision.ConversionFactorDecimals,
+                                MidpointRounding.AwayFromZero
+                            ),
+                        };
+                        if (packaging.ConversionFactor <= 0m)
+                            return (
+                                Result<PurchaseInvoiceDto>.ValidationFailure(
+                                    $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
+                                )
+                            );
 
                         if (string.IsNullOrWhiteSpace(vatCode))
                             vatCode = item.TaxConfig.PurchaseVatCode ?? vatCode;
@@ -1096,7 +1153,7 @@ public sealed class UpdatePurchaseDraftHandler
                     _t.TenantId,
                     l.Description,
                     l.Quantity,
-                    l.UnitPrice,
+                    await PurchaseUnitPriceNormalizer.NormalizeAsync(l, precision, _receptionRepo, _t.TenantId, ct),
                     vatCode,
                     packaging.UomCode,
                     l.ItemId,
@@ -1113,7 +1170,9 @@ public sealed class UpdatePurchaseDraftHandler
                     orderedQuantity: l.OrderedQuantity,
                     purchaseReceptionLineId: l.PurchaseReceptionLineId,
                     baseUomCode: packaging.BaseUomCode,
-                    packagingLevelId: packaging.PackagingLevelId
+                    packagingLevelId: packaging.PackagingLevelId,
+                    quantityDecimals: precision.QuantityDecimals,
+                    unitCostDecimals: precision.UnitCostDecimals
                 );
                 if (l.FreightAllocated.HasValue)
                     line.SetFreightAllocated(l.FreightAllocated.Value);
@@ -1472,6 +1531,42 @@ public sealed class GetPurchaseListHandler
             .ToList();
         return Result<PurchaseListResponse>.Success(
             new PurchaseListResponse(dtos, total, q.PageNumber, q.PageSize)
+        );
+    }
+}
+
+/// <summary>
+/// ERP-PRECISION-OPERATIONAL-05B1/05B2 — punto único de normalización del precio unitario OPERATIVO de
+/// una línea de compra a <c>purchaseUnitPriceDecimals</c> (Create y Update de borrador).
+/// - Sin <c>PurchaseReceptionLineId</c> (captura manual): se normaliza.
+/// - Con <c>PurchaseReceptionLineId</c>: si el precio recibido es EXACTAMENTE el de la línea de
+///   recepción (snapshot fuente inmutable del XML SRI) se conserva tal cual; si fue modificado (o la
+///   línea de recepción ya no se puede resolver) es un valor operativo y se normaliza. El redondeo es
+///   idempotente: un precio editado que ya cumple la escala no cambia.
+/// La línea de recepción y el parser XML nunca se alteran.
+/// </summary>
+file static class PurchaseUnitPriceNormalizer
+{
+    public static async Task<decimal> NormalizeAsync(
+        PurchaseLineInput line,
+        EffectivePrecisionPolicyDto precision,
+        IPurchaseReceptionDocumentRepository receptionRepo,
+        Guid tenantId,
+        CancellationToken ct
+    )
+    {
+        if (line.PurchaseReceptionLineId is { } receptionLineId)
+        {
+            var document = await receptionRepo.GetByLineIdAsync(tenantId, receptionLineId, ct);
+            var original = document?.Lines.FirstOrDefault(l => l.Id == receptionLineId)?.UnitPrice;
+            if (original.HasValue && original.Value == line.UnitPrice)
+                return line.UnitPrice;
+        }
+
+        return Math.Round(
+            line.UnitPrice,
+            precision.PurchaseUnitPriceDecimals,
+            MidpointRounding.AwayFromZero
         );
     }
 }

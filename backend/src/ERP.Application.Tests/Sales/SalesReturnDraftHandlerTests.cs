@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Modules.Sales.Entities;
@@ -151,7 +152,8 @@ public sealed class SalesReturnDraftHandlerTests
             Tenant(),
             Company(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -190,7 +192,8 @@ public sealed class SalesReturnDraftHandlerTests
             Tenant(),
             Company(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -221,7 +224,8 @@ public sealed class SalesReturnDraftHandlerTests
             Tenant(),
             Company(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -263,7 +267,8 @@ public sealed class SalesReturnDraftHandlerTests
             Tenant(),
             Company(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -293,7 +298,8 @@ public sealed class SalesReturnDraftHandlerTests
             Tenant(),
             Company(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -322,7 +328,8 @@ public sealed class SalesReturnDraftHandlerTests
             Tenant(),
             Company(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -395,7 +402,8 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -451,7 +459,8 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -481,7 +490,8 @@ public sealed class SalesReturnDraftHandlerTests
             invoiceRepo.Object,
             Tenant(),
             Branch(),
-            User()
+            User(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(

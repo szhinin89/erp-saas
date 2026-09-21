@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Modules.Purchases;
@@ -107,6 +108,7 @@ public sealed class CreateSalesReturnDraftHandler
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public CreateSalesReturnDraftHandler(
         ISalesReturnRepository returnRepo,
@@ -114,9 +116,11 @@ public sealed class CreateSalesReturnDraftHandler
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _t = t;
@@ -155,6 +159,7 @@ public sealed class CreateSalesReturnDraftHandler
             invoice,
             _t.TenantId,
             _returnRepo,
+            (await _precision.GetEffectiveAsync(ct)).QuantityDecimals,
             ct
         );
         if (linesResult.Error is not null)
@@ -177,15 +182,18 @@ public sealed class UpdateSalesReturnDraftHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public UpdateSalesReturnDraftHandler(
         ISalesReturnRepository returnRepo,
         ISalesInvoiceRepository invoiceRepo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _t = t;
@@ -212,6 +220,7 @@ public sealed class UpdateSalesReturnDraftHandler
             invoice,
             _t.TenantId,
             _returnRepo,
+            (await _precision.GetEffectiveAsync(ct)).QuantityDecimals,
             ct
         );
         if (linesResult.Error is not null)
@@ -336,6 +345,7 @@ file static class SalesReturnLineBuilder
         SalesInvoice invoice,
         Guid tenantId,
         ISalesReturnRepository returnRepo,
+        int quantityDecimals,
         CancellationToken ct
     )
     {
@@ -394,7 +404,8 @@ file static class SalesReturnLineBuilder
                 originalLine.ConversionFactor,
                 originalLine.BaseUomCode,
                 originalLine.IceCalculationType,
-                iceExactAmount
+                iceExactAmount,
+                quantityDecimals
             );
 
             // IRBPNR no tiene campo escalar legacy — vive únicamente en Taxes, prorrateado por la

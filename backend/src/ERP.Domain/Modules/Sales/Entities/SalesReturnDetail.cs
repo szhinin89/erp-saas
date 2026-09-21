@@ -122,7 +122,8 @@ public sealed class SalesReturnDetail : IMustHaveTenant
         decimal conversionFactor = 1m,
         string? baseUomCode = null,
         SriTaxCalculationType iceCalculationType = SriTaxCalculationType.Percentage,
-        decimal? iceExactAmount = null
+        decimal? iceExactAmount = null,
+        int quantityDecimals = FiscalPrecision.Quantity
     )
     {
         if (originalInvoiceDetailId == Guid.Empty)
@@ -189,9 +190,10 @@ public sealed class SalesReturnDetail : IMustHaveTenant
             UomCode = uomCode.Trim().ToUpperInvariant(),
             BaseUomCode = (baseUomCode ?? uomCode).Trim().ToUpperInvariant(),
             ConversionFactor = conversionFactor,
+            // ERP-PRECISION-OPERATIONAL-05B: ver SalesInvoiceDetail.Create.
             QuantityInBaseUom = Math.Round(
                 quantity * conversionFactor,
-                FiscalPrecision.Quantity,
+                quantityDecimals,
                 MidpointRounding.AwayFromZero
             ),
             Quantity = quantity,

@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
@@ -243,7 +244,8 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         await stockRepo.AppendMovementAsync(
             _tenantId,
@@ -315,7 +317,8 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         var creditRepo = new SupplierCreditRepository(
             db,
@@ -338,6 +341,7 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),
             new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            StandardPrecisionPolicyProvider.Instance,
             new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId))
         );
 
@@ -375,6 +379,7 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
                 Mock.Of<ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository>(),
                 new RealDatabaseExceptionTranslator(), new FixedCurrentTenant(() => _tenantId), company,
                 new FixedCurrentBranch(() => _branchId), new FixedCurrentUser(_userId),
+                StandardPrecisionPolicyProvider.Instance,
                 new PurchaseReturnRepository(db, company));
             for (var i = 1; i <= 2; i++)
             {

@@ -1089,7 +1089,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 new StockRepository(
                     db,
                     new FixedCurrentCompany(_companyId),
-                    new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator()
+                    new ERP.Infrastructure.Persistence.PostgresDatabaseExceptionTranslator(),
+                    PrecisionPolicyTestDouble.Mock()
                 ),
                 new SalesReturnRefundHandler(
                     new ERP.Infrastructure.Persistence.Repositories.Caja.CashSessionRepository(

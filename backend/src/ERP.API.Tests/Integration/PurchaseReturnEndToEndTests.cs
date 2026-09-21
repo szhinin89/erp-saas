@@ -421,7 +421,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new StockRepository(
                 db,
                 new FixedCurrentCompany(() => _companyId),
-                new RealDatabaseExceptionTranslator()
+                new RealDatabaseExceptionTranslator(),
+                ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance
             ),
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
@@ -430,7 +431,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),
-            new AlwaysTodayCompanyClock()
+            new AlwaysTodayCompanyClock(),
+            ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance
         );
 
     private static PostingEngine BuildPostingEngine(ErpDbContext db) =>
@@ -452,7 +454,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new StockRepository(
                 db,
                 new FixedCurrentCompany(() => _companyId),
-                new RealDatabaseExceptionTranslator()
+                new RealDatabaseExceptionTranslator(),
+                ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance
             ),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),

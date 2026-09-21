@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
@@ -244,7 +245,8 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         await stockRepo.AppendMovementAsync(
             _tenantId,
@@ -316,7 +318,8 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         var creditRepo = new SupplierCreditRepository(
             db,
@@ -338,7 +341,8 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),
-            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock()
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var result = await handler.Handle(

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -14,7 +15,13 @@ internal sealed class StockAdjustmentLineResolver
 {
     private readonly IItemRepository _itemRepo;
 
-    public StockAdjustmentLineResolver(IItemRepository itemRepo) => _itemRepo = itemRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
+
+    public StockAdjustmentLineResolver(IItemRepository itemRepo, ICompanyPrecisionPolicyProvider precision)
+    {
+        _itemRepo = itemRepo;
+        _precision = precision;
+    }
 
     public async Task<Result<List<StockAdjustmentLine>>> ResolveAsync(
         Guid tenantId,
@@ -41,6 +48,8 @@ internal sealed class StockAdjustmentLineResolver
     {
         var lines = new List<StockAdjustmentLine>();
         short sort = 0;
+        // ERP-PRECISION-OPERATIONAL-05B: cantidad/costo unitario/factor según la política de la empresa.
+        var precision = await _precision.GetEffectiveAsync(ct);
         foreach (var input in inputs)
         {
             var item = await _itemRepo.GetByIdAsync(input.ItemId, tenantId, ct);
@@ -63,7 +72,15 @@ internal sealed class StockAdjustmentLineResolver
                         $"La presentación seleccionada para '{item.DefaultUomCode}' no es válida o está inactiva."
                     );
                 uomCode = level.UomCode;
-                conversionFactor = level.BaseQuantity;
+                conversionFactor = Math.Round(
+                    level.BaseQuantity,
+                    precision.ConversionFactorDecimals,
+                    MidpointRounding.AwayFromZero
+                );
+                if (conversionFactor <= 0)
+                    return Result<List<StockAdjustmentLine>>.ValidationFailure(
+                        $"El factor de conversión de la presentación de '{item.DefaultUomCode}' no es representable con {precision.ConversionFactorDecimals} decimales."
+                    );
             }
             else
             {
@@ -85,7 +102,9 @@ internal sealed class StockAdjustmentLineResolver
                     input.UnitCostBase,
                     input.LineNotes,
                     sort++,
-                    stockAdjustmentId
+                    stockAdjustmentId,
+                    quantityDecimals: precision.QuantityDecimals,
+                    unitCostDecimals: precision.UnitCostDecimals
                 )
             );
         }

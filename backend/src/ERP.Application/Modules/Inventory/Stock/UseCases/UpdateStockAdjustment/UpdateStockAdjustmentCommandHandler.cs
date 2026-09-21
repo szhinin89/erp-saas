@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
@@ -23,6 +24,7 @@ public sealed class UpdateStockAdjustmentCommandHandler
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
     private readonly StockAdjustmentLineResolver _lineResolver;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public UpdateStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -31,16 +33,18 @@ public sealed class UpdateStockAdjustmentCommandHandler
         IItemRepository itemRepo,
         ICurrentTenant tenant,
         ICurrentBranch branch,
-        ICurrentUser user
+        ICurrentUser user,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _adjRepo = adjRepo;
         _reasonRepo = reasonRepo;
         _warehouseRepo = warehouseRepo;
         _tenant = tenant;
         _branch = branch;
         _user = user;
-        _lineResolver = new StockAdjustmentLineResolver(itemRepo);
+        _lineResolver = new StockAdjustmentLineResolver(itemRepo, precision);
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(

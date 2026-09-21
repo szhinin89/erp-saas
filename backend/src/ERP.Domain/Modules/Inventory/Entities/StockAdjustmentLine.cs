@@ -52,7 +52,9 @@ public sealed class StockAdjustmentLine : ITenantScopedEntity, ICompanyOperation
         decimal? unitCostBase,
         string? lineNotes,
         short sortOrder,
-        Guid stockAdjustmentId = default
+        Guid stockAdjustmentId = default,
+        int quantityDecimals = FiscalPrecision.Quantity,
+        int unitCostDecimals = FiscalPrecision.UnitCost
     )
     {
         if (string.IsNullOrWhiteSpace(itemName))
@@ -77,11 +79,16 @@ public sealed class StockAdjustmentLine : ITenantScopedEntity, ICompanyOperation
                 nameof(unitCostBase)
             );
 
+        // ERP-PRECISION-OPERATIONAL-05B: cantidad y costo unitario operativos según la política de la
+        // empresa (la resuelve Application). TotalCost es derivado y conserva su escala fija.
         var quantityInBaseUom = Math.Round(
             quantity * conversionFactor,
-            FiscalPrecision.Quantity,
+            quantityDecimals,
             MidpointRounding.AwayFromZero
         );
+        unitCostBase = unitCostBase.HasValue
+            ? Math.Round(unitCostBase.Value, unitCostDecimals, MidpointRounding.AwayFromZero)
+            : null;
 
         return new StockAdjustmentLine
         {
@@ -118,16 +125,21 @@ public sealed class StockAdjustmentLine : ITenantScopedEntity, ICompanyOperation
     public void ApplyExecutionResult(
         decimal currentStockBefore,
         decimal currentStockAfter,
-        decimal? resolvedUnitCostBase
+        decimal? resolvedUnitCostBase,
+        int unitCostDecimals = FiscalPrecision.UnitCost
     )
     {
         CurrentStockBefore = currentStockBefore;
         CurrentStockAfter = currentStockAfter;
         if (resolvedUnitCostBase.HasValue)
         {
-            UnitCostBase = resolvedUnitCostBase;
+            UnitCostBase = Math.Round(
+                resolvedUnitCostBase.Value,
+                unitCostDecimals,
+                MidpointRounding.AwayFromZero
+            );
             TotalCost = Math.Round(
-                QuantityInBaseUom * resolvedUnitCostBase.Value,
+                QuantityInBaseUom * UnitCostBase.Value,
                 FiscalPrecision.UnitCost,
                 MidpointRounding.AwayFromZero
             );

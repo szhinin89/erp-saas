@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
@@ -196,6 +197,7 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
             new FixedCurrentCompany(() => _companyId),
             new FixedCurrentBranch(_branchId),
             new FixedCurrentUser(_userId),
+            StandardPrecisionPolicyProvider.Instance,
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId))
         );
 
@@ -289,6 +291,7 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
             new FixedCurrentCompany(() => _companyId),
             new FixedCurrentBranch(_branchId),
             new FixedCurrentUser(_userId),
+            StandardPrecisionPolicyProvider.Instance,
             returnRepo
         );
         var created = await createHandler.Handle(

@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
@@ -87,14 +88,17 @@ public sealed class ApplyGlobalDiscountHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public ApplyGlobalDiscountHandler(
         IPurchaseInvoiceRepository repo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _t = t;
         _b = b;
@@ -109,6 +113,8 @@ public sealed class ApplyGlobalDiscountHandler
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
+        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
@@ -133,14 +139,17 @@ public sealed class AllocateFreightHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public AllocateFreightHandler(
         IPurchaseInvoiceRepository repo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _t = t;
         _b = b;
@@ -155,6 +164,8 @@ public sealed class AllocateFreightHandler
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
+        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
@@ -180,15 +191,18 @@ public sealed class RecalculatePurchaseHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public RecalculatePurchaseHandler(
         IPurchaseInvoiceRepository repo,
         ISriTaxResolver tax,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _tax = tax;
         _t = t;
@@ -204,6 +218,8 @@ public sealed class RecalculatePurchaseHandler
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
+        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
                 "Solo se puede recalcular una compra en estado borrador."
@@ -282,14 +298,17 @@ public sealed class DistributePurchaseCostHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public DistributePurchaseCostHandler(
         IPurchaseInvoiceRepository repo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _t = t;
         _b = b;
@@ -304,6 +323,8 @@ public sealed class DistributePurchaseCostHandler
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
+        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 

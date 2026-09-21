@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -359,7 +360,8 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         var stockRepo = new ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository(
             db,
             new FixedCurrentCompany(_companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         await stockRepo.AppendMovementAsync(
             _tenantId,

@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.Common;
@@ -34,6 +35,7 @@ public sealed class CreateStockAdjustmentCommandHandler
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
     private readonly StockAdjustmentLineResolver _lineResolver;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public CreateStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -44,9 +46,11 @@ public sealed class CreateStockAdjustmentCommandHandler
         ICurrentCompany company,
         ICurrentBranch branch,
         ICurrentUser user,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _adjRepo = adjRepo;
         _reasonRepo = reasonRepo;
         _warehouseRepo = warehouseRepo;
@@ -56,7 +60,7 @@ public sealed class CreateStockAdjustmentCommandHandler
         _branch = branch;
         _user = user;
         _companyClock = companyClock;
-        _lineResolver = new StockAdjustmentLineResolver(itemRepo);
+        _lineResolver = new StockAdjustmentLineResolver(itemRepo, precision);
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(

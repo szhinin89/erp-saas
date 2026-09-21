@@ -105,6 +105,17 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
         await db.SaveChangesAsync();
         CompanyId = company.Id;
 
+        // ERP-PRECISION-OPERATIONAL-05B: el aprovisionamiento real de empresa crea la política de
+        // precisión; los handlers de ajuste la resuelven (fail-closed si no existe).
+        db.CompanyPrecisionPolicies.Add(
+            ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy.CreateStandardCommercial(
+                TenantId,
+                CompanyId,
+                _adminId
+            )
+        );
+        await db.SaveChangesAsync();
+
         // Fijar el contexto tenant/company mutable ANTES de seguir sembrando: Item levanta domain
         // events cuyos *AuditHandler leen ICurrentTenant/ICurrentCompany (mismo criterio que
         // SalesReturnFlowFixture).

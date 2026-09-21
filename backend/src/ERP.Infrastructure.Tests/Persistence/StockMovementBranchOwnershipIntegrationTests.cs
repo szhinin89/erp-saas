@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
@@ -183,7 +184,8 @@ public sealed class StockMovementBranchOwnershipIntegrationTests : IAsyncLifetim
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         var productId = Guid.NewGuid();
 
@@ -214,7 +216,8 @@ public sealed class StockMovementBranchOwnershipIntegrationTests : IAsyncLifetim
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         var productId = Guid.NewGuid();
 

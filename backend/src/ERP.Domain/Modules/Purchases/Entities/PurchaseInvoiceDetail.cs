@@ -175,7 +175,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         decimal? orderedQuantity = null,
         Guid? purchaseReceptionLineId = null,
         string? baseUomCode = null,
-        Guid? packagingLevelId = null
+        Guid? packagingLevelId = null,
+        int quantityDecimals = FiscalPrecision.Quantity,
+        int unitCostDecimals = FiscalPrecision.UnitCost
     )
     {
         if (string.IsNullOrWhiteSpace(description))
@@ -230,9 +232,10 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             BaseUomCode = (baseUomCode ?? uomCode).Trim().ToUpperInvariant(),
             ConversionFactor = conversionFactor,
             Quantity = quantity,
+            // ERP-PRECISION-OPERATIONAL-05B: cantidad operativa según la política de la empresa.
             QuantityInBaseUom = Math.Round(
                 quantity * conversionFactor,
-                FiscalPrecision.Quantity,
+                quantityDecimals,
                 MidpointRounding.AwayFromZero
             ),
             UnitPrice = unitPrice,
@@ -245,6 +248,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             PurchaseReceptionLineId = purchaseReceptionLineId,
             Notes = notes?.Trim(),
             IsFrozen = false,
+            _unitCostDecimals = unitCostDecimals,
         };
         line.RecalcDiscount();
         line.RecalcCosts();
@@ -371,6 +375,22 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         RecalcTaxes();
         SyncVatIntoCollection();
         RecalcCosts();
+    }
+
+    // ── Unit cost precision (ERP-PRECISION-OPERATIONAL-05B) ──────────────
+    // Escala de LandedUnitCost = unitCostDecimals de la política de la empresa. Es estado de
+    // cálculo NO persistido: Domain no consulta configuración — Application la fija al crear la
+    // línea (Create) o tras cargarla (PurchaseInvoice.ApplyUnitCostPrecision) antes de cualquier
+    // operación que recalcule costos (ApplyDiscount, prorrateo, Confirm).
+    private int _unitCostDecimals = FiscalPrecision.UnitCost;
+
+    internal void UseUnitCostPrecision(int decimals)
+    {
+        if (decimals is < 0 or > 10)
+            throw new ArgumentOutOfRangeException(nameof(decimals));
+        _unitCostDecimals = decimals;
+        if (!IsFrozen)
+            RecalcCosts();
     }
 
     // ── Freight & Other Costs ───────────────────────────────────────────
@@ -553,7 +573,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             QuantityInBaseUom > 0
                 ? Math.Round(
                     TotalLineCost / QuantityInBaseUom,
-                    FiscalPrecision.UnitCost,
+                    _unitCostDecimals,
                     MidpointRounding.AwayFromZero
                 )
                 : 0;

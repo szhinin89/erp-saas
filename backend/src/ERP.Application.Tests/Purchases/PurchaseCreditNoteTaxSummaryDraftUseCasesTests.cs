@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.UseCases;
@@ -162,7 +163,8 @@ public sealed class PurchaseCreditNoteTaxSummaryDraftUseCasesTests
                 FixedTenant(),
                 FixedCompany(),
                 FixedBranch(),
-                FixedUser()
+                FixedUser(),
+                PrecisionPolicyTestDouble.Mock()
             );
     }
 

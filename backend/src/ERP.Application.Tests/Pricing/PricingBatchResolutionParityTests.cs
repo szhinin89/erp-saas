@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
@@ -70,7 +71,8 @@ public sealed class PricingBatchResolutionParityTests
                 Strategies,
                 Tenant.Object,
                 Company.Object,
-                CompanyClock.Object
+                CompanyClock.Object,
+                PrecisionPolicyTestDouble.Mock()
             );
 
         public void RegisterItem(Item item) =>

@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
@@ -329,6 +330,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 b.Object,
                 user ?? u.Object,
                 companyClock.Object,
+                PrecisionPolicyTestDouble.Mock(),
                 CreditNoteRepo.Object,
                 ReceptionRepo.Object
             );
@@ -351,7 +353,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
         var user = Mock.Of<ICurrentUser>(u => u.UserId == UserId);
         var update = new UpdatePurchaseReturnDraftHandler(m.ReturnRepo.Object, m.InvoiceRepo.Object,
-            tenant, user, m.CreditNoteRepo.Object, m.ReceptionRepo.Object);
+            tenant, user, PrecisionPolicyTestDouble.Mock(), m.CreditNoteRepo.Object, m.ReceptionRepo.Object);
         var result = await update.Handle(new(f.Return.Id, "Cantidad corregida", [new(f.Line.Id, 2m)]), CancellationToken.None);
         result.IsSuccess.Should().BeTrue();
         note.TotalAmount.Should().Be(224m);

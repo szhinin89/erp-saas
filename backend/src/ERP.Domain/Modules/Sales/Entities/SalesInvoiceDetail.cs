@@ -220,7 +220,8 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         decimal conversionFactor = 1m,
         Guid? warehouseId = null,
         string? baseUomCode = null,
-        Guid? packagingLevelId = null
+        Guid? packagingLevelId = null,
+        int quantityDecimals = FiscalPrecision.Quantity
     )
     {
         if (string.IsNullOrWhiteSpace(description))
@@ -275,9 +276,11 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
             BaseUomCode = (baseUomCode ?? uomCode).Trim().ToUpperInvariant(),
             ConversionFactor = conversionFactor,
             Quantity = quantity,
+            // ERP-PRECISION-OPERATIONAL-05B: escala de cantidad operativa = quantityDecimals de la
+            // política de la empresa (la resuelve Application; el default preserva el histórico).
             QuantityInBaseUom = Math.Round(
                 quantity * conversionFactor,
-                FiscalPrecision.Quantity,
+                quantityDecimals,
                 MidpointRounding.AwayFromZero
             ),
             UnitPrice = unitPrice,

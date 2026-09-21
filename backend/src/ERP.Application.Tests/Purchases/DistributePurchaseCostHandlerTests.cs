@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Purchases.Entities;
@@ -59,7 +60,8 @@ public sealed class DistributePurchaseCostHandlerTests
             repo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == (activeBranchId ?? BranchId)),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
     }
 

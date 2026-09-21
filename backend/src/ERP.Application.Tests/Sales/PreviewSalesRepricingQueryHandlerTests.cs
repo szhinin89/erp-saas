@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
@@ -23,7 +24,7 @@ public sealed class PreviewSalesRepricingQueryHandlerTests
     {
         public Mock<IPricingResolver> Pricing { get; } = new();
 
-        public PreviewSalesRepricingQueryHandler BuildHandler() => new(Pricing.Object);
+        public PreviewSalesRepricingQueryHandler BuildHandler() => new(Pricing.Object, PrecisionPolicyTestDouble.Mock());
 
         public void SetupOld(Guid? customerId, IReadOnlyDictionary<Guid, PricingResult> dict) =>
             Pricing

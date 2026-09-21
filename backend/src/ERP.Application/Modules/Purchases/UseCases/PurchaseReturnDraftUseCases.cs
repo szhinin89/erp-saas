@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
@@ -341,16 +342,19 @@ public sealed class UpdatePurchaseReturnDraftHandler
     private readonly ICurrentUser _u;
     private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
     private readonly ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? _receptionRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public UpdatePurchaseReturnDraftHandler(
         IPurchaseReturnRepository returnRepo,
         IPurchaseInvoiceRepository invoiceRepo,
         ICurrentTenant t,
         ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision,
         IPurchaseCreditNoteRepository? creditNoteRepo = null,
         ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
     {
+        _precision = precision;
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _t = t;
@@ -426,7 +430,7 @@ public sealed class UpdatePurchaseReturnDraftHandler
             : await _creditNoteRepo.GetByLinkedPurchaseReturnIdAsync(tid, purchaseReturn.Id, ct);
         if (creditNote is not null)
         {
-            var resolved = await CreditNoteReturnLines.ResolveAsync(invoice, cmd.Lines, _returnRepo, tid, ct);
+            var resolved = await CreditNoteReturnLines.ResolveAsync(invoice, cmd.Lines, _returnRepo, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
             if (resolved.Error is not null)
                 return Result<PurchaseReturnDto>.ValidationFailure(resolved.Error);
             if (creditNote.Status != PurchaseCreditNoteStatus.Draft || purchaseReturn.Status != PurchaseReturnStatus.Draft)

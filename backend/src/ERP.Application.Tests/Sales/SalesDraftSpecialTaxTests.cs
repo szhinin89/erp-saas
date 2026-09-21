@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -200,7 +201,8 @@ public sealed class SalesDraftSpecialTaxTests
                 CashSession.Object,
                 Preferences.Object,
                 CreditPolicy.Object,
-                BankAccountRepo.Object
+                BankAccountRepo.Object,
+                PrecisionPolicyTestDouble.Mock()
             );
     }
 

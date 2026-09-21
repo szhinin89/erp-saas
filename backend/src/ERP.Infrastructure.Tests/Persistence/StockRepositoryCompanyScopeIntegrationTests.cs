@@ -1,4 +1,7 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
+using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -163,7 +166,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var seedRepo = new StockRepository(
             seedDb,
             new FixedCurrentCompany(_companyAId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         await seedRepo.AppendMovementAsync(
             _tenantId,
@@ -199,6 +203,91 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         );
     }
 
+    // ── ERP-PRECISION-OPERATIONAL-05B: costo promedio corrido según averageCostDecimals ──────────
+
+    private sealed class FixedPrecisionProvider(int averageCostDecimals) : ICompanyPrecisionPolicyProvider
+    {
+        public Task<EffectivePrecisionPolicyDto> GetEffectiveAsync(CancellationToken ct = default) =>
+            Task.FromResult(
+                new EffectivePrecisionPolicyDto(
+                    ProfileType: "Custom",
+                    SalesUnitPriceDecimals: 2,
+                    PurchaseUnitPriceDecimals: 4,
+                    QuantityDecimals: 4,
+                    PercentageDecimals: 2,
+                    UnitCostDecimals: 6,
+                    AverageCostDecimals: averageCostDecimals,
+                    ConversionFactorDecimals: 6,
+                    SettlementToleranceAmount: 0.01m,
+                    IsLocked: false,
+                    LockedAt: null,
+                    LockedReason: null,
+                    MoneyDecimals: 2,
+                    TaxDecimals: 2,
+                    AccountingDecimals: 2
+                )
+            );
+    }
+
+    private async Task<decimal> AppendTwoMovementsAndReadRunningAverageAsync(ICompanyPrecisionPolicyProvider precision)
+    {
+        var productId = Guid.NewGuid();
+        await using (var db = CreateContext(_companyBId))
+        {
+            var repo = new StockRepository(
+                db,
+                new FixedCurrentCompany(_companyBId),
+                new PostgresDatabaseExceptionTranslator(),
+                precision
+            );
+            // 3 u a costo 1 → valor 3; luego 4 u a costo 0 → valor 3 / 7 u = 0.428571428571...
+            foreach (var (qty, cost) in new[] { (3m, 1m), (4m, 0m) })
+            {
+                await repo.AppendMovementAsync(
+                    _tenantId,
+                    _companyBId,
+                    productId,
+                    _warehouseBId,
+                    StockMovementType.PositiveAdjust,
+                    qty,
+                    "UNIT",
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    "Costo promedio 05B",
+                    Guid.NewGuid(),
+                    "PurchaseInvoice",
+                    _userId,
+                    unitCost: cost
+                );
+                // Un movimiento por SaveChanges: la secuencia/Kardex se deriva del último persistido.
+                await repo.SaveChangesWithSequenceRetryAsync();
+            }
+        }
+
+        await using var readDb = CreateContext(_companyBId);
+        return await readDb
+            .Set<StockMovement>()
+            .Where(m => m.ProductId == productId)
+            .OrderByDescending(m => m.SequenceNumber)
+            .Select(m => m.RunningAverageCost)
+            .FirstAsync();
+    }
+
+    [Fact]
+    public async Task Costo_promedio_corrido_se_redondea_a_averageCostDecimals_de_la_politica_y_round_trip_10_decimales()
+    {
+        var average = await AppendTwoMovementsAndReadRunningAverageAsync(new FixedPrecisionProvider(10));
+
+        average.Should().Be(0.4285714286m);
+    }
+
+    [Fact]
+    public async Task Costo_promedio_corrido_respeta_una_politica_de_6_decimales()
+    {
+        var average = await AppendTwoMovementsAndReadRunningAverageAsync(new FixedPrecisionProvider(6));
+
+        average.Should().Be(0.428571m);
+    }
+
     [Fact]
     public async Task GetStockByWarehouseAsync_con_contexto_de_otra_empresa_no_devuelve_stock()
     {
@@ -206,7 +295,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var stock = await repo.GetStockByWarehouseAsync(_tenantId, _warehouseAId, null);
@@ -221,7 +311,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var stock = await repo.GetStockAsync(_tenantId, _warehouseAId, _productId);
@@ -236,7 +327,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var stock = await repo.GetStockByProductAsync(_tenantId, _productId);
@@ -251,7 +343,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var movements = await repo.GetMovementsAsync(_tenantId, _productId, _warehouseAId, null, null);
@@ -266,7 +359,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var movements = await repo.GetMovementsByProductAsync(_tenantId, _productId, null, null, null);
@@ -288,7 +382,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var movement = await repo.GetMovementByIdAsync(_tenantId, movementId);
@@ -310,7 +405,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyBId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var movements = await repo.GetMovementsByDocumentAsync(
@@ -329,7 +425,8 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         var repo = new StockRepository(
             db,
             new FixedCurrentCompany(_companyAId),
-            new PostgresDatabaseExceptionTranslator()
+            new PostgresDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var stock = await repo.GetStockByWarehouseAsync(_tenantId, _warehouseAId, null);

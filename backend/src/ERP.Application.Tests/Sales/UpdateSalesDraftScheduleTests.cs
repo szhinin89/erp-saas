@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -145,7 +146,8 @@ public sealed class UpdateSalesDraftScheduleTests
                 User.Object,
                 Preferences.Object,
                 CreditPolicy.Object,
-                BankAccountRepo.Object
+                BankAccountRepo.Object,
+                PrecisionPolicyTestDouble.Mock()
             );
 
         /// <summary>Factura Draft existente con una línea de 100 (VAT 15% => GrandTotal 115).</summary>

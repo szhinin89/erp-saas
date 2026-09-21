@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -76,6 +77,7 @@ public sealed class GetItemPricingSimulationQueryHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICompanyClock _companyClock;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public GetItemPricingSimulationQueryHandler(
         IItemRepository items,
@@ -85,7 +87,8 @@ public sealed class GetItemPricingSimulationQueryHandler
         IPricingAdjustmentStrategyResolver strategies,
         ICurrentTenant t,
         ICurrentCompany c,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
         _items = items;
@@ -96,6 +99,7 @@ public sealed class GetItemPricingSimulationQueryHandler
         _t = t;
         _c = c;
         _companyClock = companyClock;
+        _precision = precision;
     }
 
     public async Task<Result<IReadOnlyList<ItemPricingSimulationRowDto>>> Handle(
@@ -104,6 +108,8 @@ public sealed class GetItemPricingSimulationQueryHandler
     )
     {
         var tenantId = _t.TenantId;
+        // ERP-PRECISION-OPERATIONAL-05B: precio neto y piso de descuento son precios unitarios de venta.
+        var priceDecimals = (await _precision.GetEffectiveAsync(ct)).SalesUnitPriceDecimals;
 
         decimal? basePrice;
         decimal? maxDiscount;
@@ -181,12 +187,12 @@ public sealed class GetItemPricingSimulationQueryHandler
                 itemRulesByList.TryGetValue(priceList.Id, out var itemRule);
                 if (previewRule?.PriceListId == priceList.Id)
                     itemRule = previewRule;
-                (netPrice, _) = PricingCalculation.Resolve(basePrice.Value, itemRule, priceList, _strategies);
+                (netPrice, _) = PricingCalculation.Resolve(basePrice.Value, itemRule, priceList, _strategies, priceDecimals);
                 ruleSummary = PricingCalculation.Summarize(itemRule, priceList);
             }
             else
             {
-                netPrice = Math.Round(basePrice.Value, 6, MidpointRounding.AwayFromZero);
+                netPrice = Math.Round(basePrice.Value, priceDecimals, MidpointRounding.AwayFromZero);
                 ruleSummary = new PricingRuleSummaryDto(PriceSource.BasePrice, null, null, "Precio base");
             }
 
@@ -196,7 +202,7 @@ public sealed class GetItemPricingSimulationQueryHandler
             var minAllowedPrice = maxDiscount.HasValue
                 ? Math.Round(
                     netPrice * (1 - maxDiscount.Value / 100m),
-                    2,
+                    priceDecimals,
                     MidpointRounding.AwayFromZero
                 )
                 : netPrice;

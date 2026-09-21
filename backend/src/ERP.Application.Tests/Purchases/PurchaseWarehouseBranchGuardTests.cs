@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
@@ -147,7 +148,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchA),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            Mock.Of<IDatabaseExceptionTranslator>()
+            Mock.Of<IDatabaseExceptionTranslator>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(BuildCreateCommand(WhInBranchA), CancellationToken.None);
@@ -174,7 +176,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchA),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            Mock.Of<IDatabaseExceptionTranslator>()
+            Mock.Of<IDatabaseExceptionTranslator>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(BuildCreateCommand(WhInBranchB), CancellationToken.None);
@@ -236,7 +239,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<IPurchaseReceptionDocumentRepository>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            Mock.Of<IDatabaseExceptionTranslator>()
+            Mock.Of<IDatabaseExceptionTranslator>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
     [Fact]
@@ -331,7 +335,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchA),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            preferences.Object
+            preferences.Object,
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);

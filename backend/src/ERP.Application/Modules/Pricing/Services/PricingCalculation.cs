@@ -23,7 +23,8 @@ public static class PricingCalculation
         decimal basePrice,
         PricingRule? itemRule,
         PriceList priceList,
-        IPricingAdjustmentStrategyResolver strategies
+        IPricingAdjustmentStrategyResolver strategies,
+        int salesUnitPriceDecimals
     )
     {
         decimal unitPrice;
@@ -49,7 +50,9 @@ public static class PricingCalculation
                 break;
         }
 
-        unitPrice = Math.Round(unitPrice, 6, MidpointRounding.AwayFromZero);
+        // ERP-PRECISION-OPERATIONAL-05B: escala del precio unitario = salesUnitPriceDecimals de la
+        // política de la empresa (la resuelve Application; este núcleo puro no consulta configuración).
+        unitPrice = Math.Round(unitPrice, salesUnitPriceDecimals, MidpointRounding.AwayFromZero);
         if (unitPrice < 0)
             unitPrice = 0;
 

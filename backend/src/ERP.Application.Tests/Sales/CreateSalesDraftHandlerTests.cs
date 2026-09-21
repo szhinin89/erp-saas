@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -57,6 +58,10 @@ public sealed class CreateSalesDraftHandlerTests
         public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
         public Mock<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy> CreditPolicy { get; } = new();
         public Mock<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository> BankAccountRepo { get; } = new();
+
+        // ERP-PRECISION-OPERATIONAL-05B: política de precisión de la empresa (Estándar por defecto).
+        public ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider Precision { get; set; } =
+            PrecisionPolicyTestDouble.Mock();
 
         public Fixture()
         {
@@ -197,7 +202,8 @@ public sealed class CreateSalesDraftHandlerTests
                 CashSession.Object,
                 Preferences.Object,
                 CreditPolicy.Object,
-                BankAccountRepo.Object
+                BankAccountRepo.Object,
+                Precision
             );
 
         public static CreateSalesDraftCommand ValidCommand() =>
@@ -2024,5 +2030,94 @@ public sealed class CreateSalesDraftHandlerTests
         legacyInvoice.PricingTraceabilityVersion.Should().BeNull();
         legacyInvoice.CustomerPreferredPriceListId.Should().BeNull();
         legacyInvoice.CustomerPreferredPriceListName.Should().BeNull();
+    }
+
+    // ── ERP-PRECISION-OPERATIONAL-05B ─────────────────────────────────────────
+
+    private static ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider PolicyWith(
+        Func<ERP.Application.Modules.Companies.UseCases.PrecisionPolicy.EffectivePrecisionPolicyDto,
+            ERP.Application.Modules.Companies.UseCases.PrecisionPolicy.EffectivePrecisionPolicyDto> customize
+    )
+    {
+        var mock = new Mock<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>();
+        mock.Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customize(PrecisionPolicyTestDouble.DefaultDto()));
+        return mock.Object;
+    }
+
+    private static async Task<SalesInvoice> CreateDraftWithQuantityAsync(
+        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider? precision,
+        decimal quantity
+    )
+    {
+        var f = new Fixture();
+        if (precision is not null)
+            f.Precision = precision;
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var cmd = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", quantity, 1m, "10") }
+        );
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        return captured!;
+    }
+
+    [Fact]
+    public async Task Cantidad_base_de_la_linea_usa_quantityDecimals_de_la_politica_de_la_empresa()
+    {
+        var invoice = await CreateDraftWithQuantityAsync(
+            PolicyWith(p => p with { QuantityDecimals = 6 }),
+            1.1234567m
+        );
+
+        invoice.Lines.Single().QuantityInBaseUom.Should().Be(1.123457m);
+    }
+
+    [Fact]
+    public async Task Cantidad_base_de_la_linea_con_perfil_Estandar_conserva_4_decimales()
+    {
+        var invoice = await CreateDraftWithQuantityAsync(null, 1.1234567m);
+
+        invoice.Lines.Single().QuantityInBaseUom.Should().Be(1.1235m);
+    }
+
+    // ── ERP-PRECISION-OPERATIONAL-05B1: UnitPrice final = salesUnitPriceDecimals ──────────
+
+    [Theory]
+    [InlineData(2, 1.01)]
+    [InlineData(4, 1.0051)]
+    [InlineData(6, 1.005123)]
+    public async Task UnitPrice_manual_de_la_linea_se_normaliza_a_salesUnitPriceDecimals(int decimals, double expected)
+    {
+        var f = new Fixture();
+        f.Precision = PolicyWith(p => p with { SalesUnitPriceDecimals = decimals });
+        f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
+        f.CashSession.Setup(c => c.CashSessionId).Returns(Guid.NewGuid());
+        f.CashSession.Setup(c => c.EmissionPointId).Returns(Guid.NewGuid());
+        SalesInvoice? captured = null;
+        f.Repo.Setup(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesInvoice, CancellationToken>((inv, _) => captured = inv)
+            .Returns(Task.CompletedTask);
+
+        var cmd = new CreateSalesDraftCommand(
+            CustomerId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new List<SalesLineInput> { new(null, "Producto Test", 1m, 1.0051234m, "10") }
+        );
+        var result = await f.BuildHandler().Handle(cmd, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        captured!.Lines.Single().UnitPrice.Should().Be((decimal)expected);
     }
 }

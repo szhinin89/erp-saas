@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Payables.UseCases;
@@ -498,7 +499,8 @@ public sealed class ConfirmPurchaseHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            preferences.Object
+            preferences.Object,
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, repo, stockRepo, payables);
@@ -1044,7 +1046,8 @@ public sealed class ConfirmPurchaseHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            Mock.Of<IOperationalPreferencesResolver>()
+            Mock.Of<IOperationalPreferencesResolver>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
@@ -1098,7 +1101,8 @@ public sealed class ConfirmPurchaseHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            preferencesOverride.Object
+            preferencesOverride.Object,
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);

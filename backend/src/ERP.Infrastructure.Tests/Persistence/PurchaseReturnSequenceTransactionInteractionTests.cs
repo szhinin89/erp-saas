@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
@@ -160,7 +161,7 @@ public sealed class PurchaseReturnSequenceTransactionInteractionTests : IAsyncLi
     }
 
     private static StockRepository CreateRepo(ErpDbContext db, Guid companyId) =>
-        new(db, new FixedCurrentCompany(companyId), new PostgresDatabaseExceptionTranslator());
+        new(db, new FixedCurrentCompany(companyId), new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance);
 
     /// <summary>
     /// Escenario central de §16.3: transacción explícita ambiente + advisory lock +

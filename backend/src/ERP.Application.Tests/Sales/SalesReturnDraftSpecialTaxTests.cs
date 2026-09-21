@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Modules.Sales.Entities;
@@ -119,7 +120,8 @@ public sealed class SalesReturnDraftSpecialTaxTests
             .Returns(Task.CompletedTask);
 
         var handler = new CreateSalesReturnDraftHandler(
-            returnRepo.Object, invoiceRepo.Object, Tenant(), Company(), Branch(), User()
+            returnRepo.Object, invoiceRepo.Object, Tenant(), Company(), Branch(), User(),
+            PrecisionPolicyTestDouble.Mock()
         );
         var result = await handler.Handle(
             new CreateSalesReturnDraftCommand(

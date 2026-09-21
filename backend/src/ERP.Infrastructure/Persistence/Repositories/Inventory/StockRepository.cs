@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -21,6 +22,7 @@ public sealed class StockRepository : IStockRepository
     private readonly ErpDbContext _db;
     private readonly ICurrentCompany _company;
     private readonly IDatabaseExceptionTranslator _exceptionTranslator;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     private sealed record PendingMovement(
         Guid TenantId,
@@ -46,9 +48,11 @@ public sealed class StockRepository : IStockRepository
     public StockRepository(
         ErpDbContext db,
         ICurrentCompany company,
-        IDatabaseExceptionTranslator exceptionTranslator
+        IDatabaseExceptionTranslator exceptionTranslator,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _db = db;
         _company = company;
         _exceptionTranslator = exceptionTranslator;
@@ -204,7 +208,14 @@ public sealed class StockRepository : IStockRepository
         var resolvedUnitCost = r.UnitCost ?? lastRunningAvg;
         var resultQty = previousQty + r.Quantity;
         var newRunningStockValue = Math.Max(0m, lastRunningValue + r.Quantity * resolvedUnitCost);
-        var newRunningAverageCost = resultQty > 0m ? newRunningStockValue / resultQty : 0m;
+        // ERP-PRECISION-OPERATIONAL-05B: el costo promedio corrido se persiste con la escala
+        // averageCostDecimals de la política de la empresa (con la columna ya ampliada a numeric(22,10)
+        // ya no es la BD quien lo redondea). Fail-closed (05B1): el provider es obligatorio y lanza si
+        // no hay contexto de empresa o política — nunca hay fallback silencioso a 6 decimales.
+        var averageCostDecimals = (await _precision.GetEffectiveAsync(ct)).AverageCostDecimals;
+        var newRunningAverageCost = resultQty > 0m
+            ? Math.Round(newRunningStockValue / resultQty, averageCostDecimals, MidpointRounding.AwayFromZero)
+            : 0m;
 
         // Branch Ownership: el movimiento pertenece a la sucursal dueña de la bodega afectada,
         // no a la sucursal de sesión activa del operador — en una transferencia inter-sucursal,

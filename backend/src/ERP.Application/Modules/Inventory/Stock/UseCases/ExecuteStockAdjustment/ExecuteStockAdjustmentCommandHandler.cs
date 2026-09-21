@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
@@ -32,6 +33,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public ExecuteStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -41,9 +43,11 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         ICurrentTenant tenant,
         ICurrentBranch branch,
         ICurrentUser user,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _adjRepo = adjRepo;
         _reasonRepo = reasonRepo;
         _stockRepo = stockRepo;
@@ -118,6 +122,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
 
         var uid = _user.UserId;
         var effectiveDate = await _companyClock.TodayAsync(adj.CompanyId, tid, ct);
+        var precision = await _precision.GetEffectiveAsync(ct);
         var movementType = isIngreso ? StockMovementType.PositiveAdjust : StockMovementType.NegativeAdjust;
 
         foreach (var line in adj.Lines)
@@ -151,7 +156,14 @@ public sealed class ExecuteStockAdjustmentCommandHandler
             // disponible sin volver a leer CurrentStock.AverageCost (prohibido para costeo).
             var resolvedCost = isIngreso ? line.UnitCostBase : movement.RunningAverageCost;
 
-            line.ApplyExecutionResult(before, movement.ResultQuantity, resolvedCost);
+            // ERP-PRECISION-OPERATIONAL-05B: ingreso = costo unitario capturado (unitCostDecimals); egreso = costo
+            // promedio corrido del Kardex (averageCostDecimals).
+            line.ApplyExecutionResult(
+                before,
+                movement.ResultQuantity,
+                resolvedCost,
+                isIngreso ? precision.UnitCostDecimals : precision.AverageCostDecimals
+            );
         }
 
         adj.Execute(uid);

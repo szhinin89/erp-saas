@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
@@ -125,7 +126,7 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         // ── 1. "Confirmar compra" — entrada por compra (comportamiento no tocado por este ticket) ──
         await using (var db1 = CreateContext())
         {
-            var repo = new StockRepository(db1, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator());
+            var repo = new StockRepository(db1, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance);
             await repo.AppendMovementAsync(
                 _tenantId,
                 _companyId,
@@ -161,7 +162,7 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         // ── 2. "Anular compra" — StockMovementType.PurchaseCancelled propio, nunca PurchaseReturn ──
         await using (var db2 = CreateContext())
         {
-            var repo = new StockRepository(db2, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator());
+            var repo = new StockRepository(db2, new FixedCurrentCompany(_companyId), new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance);
             await repo.AppendMovementAsync(
                 _tenantId,
                 _companyId,

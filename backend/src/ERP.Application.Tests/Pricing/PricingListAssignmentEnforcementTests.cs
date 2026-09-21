@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
@@ -61,7 +62,8 @@ public sealed class PricingListAssignmentEnforcementTests
                 Strategies.Object,
                 Tenant.Object,
                 Company.Object,
-                CompanyClock.Object
+                CompanyClock.Object,
+                PrecisionPolicyTestDouble.Mock()
             );
     }
 

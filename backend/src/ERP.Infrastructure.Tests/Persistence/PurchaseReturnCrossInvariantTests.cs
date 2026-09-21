@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Finance.UseCases;
@@ -378,7 +379,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new StockRepository(
                 db,
                 new FixedCurrentCompany(() => _companyId),
-                new RealDatabaseExceptionTranslator()
+                new RealDatabaseExceptionTranslator(),
+                StandardPrecisionPolicyProvider.Instance
             ),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new RetentionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -401,7 +403,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new StockRepository(
                 db,
                 new FixedCurrentCompany(() => _companyId),
-                new RealDatabaseExceptionTranslator()
+                new RealDatabaseExceptionTranslator(),
+                StandardPrecisionPolicyProvider.Instance
             ),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),

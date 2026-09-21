@@ -31,6 +31,11 @@
 
 **Commits**: `b907502a` (base backend) · `ffbfa763` (Sales) · `5269406f` (Purchases) · `845fc701` (Items/Pricing) · `d988fc71` (Inventory) · `8ff8ae6c` (Expenses) · `c82dba96` (Payables/Supplier Payments) · `97ce8e36` (retiro legacy frontend) · `71f29b9d` (retiro legacy backend).
 
+### ERP-PRECISION-CAPACITY-05A / OPERATIONAL-05B (2026-09-21)
+
+- **05A (capacidad)**: máximos de `PrecisionPolicyDefinitions` alineados con la BD — venta 6; compra/costo/promedio/factor 10; cantidad 6; porcentaje 6 (migración `PrecisionCapacityAlignment05A`: columnas `numeric(22,10)`/`(18,10)`/`(20,6)`/`(16,6)`/`(9,6)`, normaliza `sales_unit_price_decimals > 6` a 6 y regenera los CHECK). `FiscalPrecision` y totales fiscales sin cambios.
+- **05B (operativo)**: Application resuelve `CompanyPrecisionPolicy` y pasa los dígitos a Domain (Domain no consulta configuración). Migrado: Pricing (precio unitario resuelto/simulación), Sales (cantidad base, factor, costo unitario del snapshot, precio lista), Purchases (cantidad base, `LandedUnitCost`, factor, devoluciones/NC), Inventory (ajustes: cantidad/costo/factor; costo promedio corrido del Kardex en `StockRepository`). Sin argumento, Domain conserva el comportamiento histórico. Con el perfil Estándar el precio unitario de venta pasa a 2 decimales (antes 6 fijo en Pricing).
+
 ### Pendientes no bloqueantes
 
 - `PRICING-LAB-COST-DECIMAL-SEMANTICS-01`: 3 métricas de costo en `PricingTab.tsx` (Items) mantienen la escala legacy (`purchaseUnitPriceDecimals`) en vez de `unitCostDecimals`/`averageCostDecimals` por falta de tests de formato — decisión de negocio pendiente.

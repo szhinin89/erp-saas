@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
@@ -131,7 +132,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 Company.Object,
                 Branch.Object,
                 User.Object,
-                StubCompanyClock()
+                StubCompanyClock(),
+                PrecisionPolicyTestDouble.Mock()
             );
     }
 
@@ -230,7 +232,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 Tenant.Object,
                 Branch.Object,
                 User.Object,
-                StubCompanyClock()
+                StubCompanyClock(),
+                PrecisionPolicyTestDouble.Mock()
             );
     }
 

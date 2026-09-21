@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Pricing.Services;
@@ -118,7 +119,8 @@ public sealed class PricingListUxTests
             new PercentDiscountStrategy(), new PercentMarkupStrategy(), new FixedAdjustmentStrategy(), new FixedPriceStrategy()
         });
         var handler = new GetItemPricingSimulationQueryHandler(_items.Object, _lists.Object, _rules.Object, _assignments.Object,
-            strategies, _tenant.Object, _company.Object, _clock.Object);
+            strategies, _tenant.Object, _company.Object, _clock.Object,
+            PrecisionPolicyTestDouble.Mock());
         var result = await handler.Handle(new GetItemPricingSimulationQuery(item.Id, ExceptionPreview:
             new SetPricingRuleCommand(list.Id, item.Id, type, value)), CancellationToken.None);
         result.IsSuccess.Should().BeTrue();

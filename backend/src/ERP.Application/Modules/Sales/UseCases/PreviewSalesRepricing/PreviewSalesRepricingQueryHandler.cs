@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Common;
@@ -11,7 +12,13 @@ public sealed class PreviewSalesRepricingQueryHandler
 {
     private readonly IPricingResolver _pricing;
 
-    public PreviewSalesRepricingQueryHandler(IPricingResolver pricing) => _pricing = pricing;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
+
+    public PreviewSalesRepricingQueryHandler(IPricingResolver pricing, ICompanyPrecisionPolicyProvider precision)
+    {
+        _pricing = pricing;
+        _precision = precision;
+    }
 
     public async Task<Result<IReadOnlyList<SalesRepricingPreviewItemDto>>> Handle(
         PreviewSalesRepricingQuery request,
@@ -45,6 +52,7 @@ public sealed class PreviewSalesRepricingQueryHandler
                 newPricing.Error!
             );
 
+        var priceDecimals = (await _precision.GetEffectiveAsync(ct)).SalesUnitPriceDecimals;
         var oldByItem = oldPricing.Value!;
         var newByItem = newPricing.Value!;
 
@@ -59,8 +67,8 @@ public sealed class PreviewSalesRepricingQueryHandler
             )
                 continue;
 
-            var oldPrice = Round(oldResult.UnitPrice);
-            var newPrice = Round(newResult.UnitPrice);
+            var oldPrice = Round(oldResult.UnitPrice, priceDecimals);
+            var newPrice = Round(newResult.UnitPrice, priceDecimals);
 
             items.Add(
                 new SalesRepricingPreviewItemDto(
@@ -83,9 +91,9 @@ public sealed class PreviewSalesRepricingQueryHandler
         return Result<IReadOnlyList<SalesRepricingPreviewItemDto>>.Success(items);
     }
 
-    // Misma precisión/regla que Sales/Pricing ya usan para comparar precios monetarios (ver
-    // SalesLineBuilder.BuildAsync — ListPriceAtSale/UnitPrice, FiscalPrecision.UnitCost = 6
-    // decimales, redondeo AwayFromZero) — evita falsos "Changed=true" por ruido de precisión.
-    private static decimal Round(decimal value) =>
-        Math.Round(value, FiscalPrecision.UnitCost, MidpointRounding.AwayFromZero);
+    // Misma precisión que Pricing usa para el precio unitario de venta (salesUnitPriceDecimals de la
+    // política de la empresa, ERP-PRECISION-OPERATIONAL-05B), redondeo AwayFromZero — evita falsos
+    // "Changed=true" por ruido de precisión.
+    private static decimal Round(decimal value, int decimals) =>
+        Math.Round(value, decimals, MidpointRounding.AwayFromZero);
 }

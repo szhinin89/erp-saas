@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
@@ -190,7 +191,8 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             preferences.Object,
             Mock.Of<ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy>(),
-            Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>()
+            Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         return (handler, inv);

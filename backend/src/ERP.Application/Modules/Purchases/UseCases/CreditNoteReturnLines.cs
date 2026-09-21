@@ -9,12 +9,13 @@ internal static class CreditNoteReturnLines
     internal static async Task<(List<PurchaseReturn.DraftLineInput> Returns,
         List<PurchaseCreditNote.DraftLineInput> Fiscal, string? Error)> ResolveAsync(
         PurchaseInvoice invoice, IReadOnlyList<PurchaseReturnDraftLineInput> inputs,
-        IPurchaseReturnRepository repository, Guid tenantId, CancellationToken ct)
+        IPurchaseReturnRepository repository, Guid tenantId, int quantityDecimals, CancellationToken ct)
     {
         var returns = new List<PurchaseReturn.DraftLineInput>();
         var fiscal = new List<PurchaseCreditNote.DraftLineInput>();
-        if (inputs.Count == 0 || inputs.Any(l => l.Quantity <= 0 || decimal.Round(l.Quantity, 4) != l.Quantity))
-            return (returns, fiscal, "Indique cantidades a devolver mayores a cero, con hasta cuatro decimales.");
+        if (inputs.Count == 0 || inputs.Any(l => l.Quantity <= 0 || decimal.Round(l.Quantity, quantityDecimals) != l.Quantity))
+            // ERP-PRECISION-OPERATIONAL-05B: decimales de cantidad = quantityDecimals de la política.
+            return (returns, fiscal, $"Indique cantidades a devolver mayores a cero, con hasta {quantityDecimals} decimales.");
         if (inputs.Select(l => l.OriginalInvoiceDetailId).Distinct().Count() != inputs.Count)
             return (returns, fiscal, "No se puede repetir una línea de la factura.");
         var returned = await repository.GetReturnedQuantitiesByInvoiceDetailIdsAsync(

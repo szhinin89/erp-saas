@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
@@ -67,6 +68,7 @@ public sealed class AuthorizePurchaseReturnHandler
     private readonly ICompanyClock _companyClock;
     private readonly IPurchaseCreditNoteRepository? _creditNoteRepo;
     private readonly ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? _receptionRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public AuthorizePurchaseReturnHandler(
         IPurchaseReturnRepository returnRepo,
@@ -83,10 +85,12 @@ public sealed class AuthorizePurchaseReturnHandler
         ICurrentBranch b,
         ICurrentUser u,
         ICompanyClock companyClock,
+        ICompanyPrecisionPolicyProvider precision,
         IPurchaseCreditNoteRepository? creditNoteRepo = null,
         ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository? receptionRepo = null
     )
     {
+        _precision = precision;
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _payableRepo = payableRepo;
@@ -339,7 +343,7 @@ public sealed class AuthorizePurchaseReturnHandler
                     throw new InvalidOperationException("La nota de crédito vinculada no está en borrador.");
                 var resolved = await CreditNoteReturnLines.ResolveAsync(invoice,
                     purchaseReturn.Lines.Select(l => new PurchaseReturnDraftLineInput(l.OriginalInvoiceDetailId, l.Quantity)).ToList(),
-                    _returnRepo, tid, ct);
+                    _returnRepo, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
                 if (resolved.Error is not null)
                     throw new InvalidOperationException(resolved.Error);
                 var total = resolved.Fiscal.Sum(l => l.Subtotal + l.VatAmount + l.IceAmount + l.IrbpnrAmount);

@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Services;
@@ -272,6 +274,7 @@ public sealed class CreateSalesDraftHandler
     private readonly IOperationalPreferencesResolver _preferences;
     private readonly ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy _creditPolicy;
     private readonly ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository _bankAccountRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public CreateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -296,9 +299,11 @@ public sealed class CreateSalesDraftHandler
         ICurrentCashSession cashSession,
         IOperationalPreferencesResolver preferences,
         ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy,
-        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo
+        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
@@ -396,6 +401,7 @@ public sealed class CreateSalesDraftHandler
             _costService,
             preferences.SalesPos,
             companyResponsibleCodes,
+            await _precision.GetEffectiveAsync(ct),
             ct
         );
         if (linesResult.Error is not null)
@@ -620,6 +626,7 @@ public sealed class UpdateSalesDraftHandler
     private readonly IOperationalPreferencesResolver _preferences;
     private readonly ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy _creditPolicy;
     private readonly ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository _bankAccountRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public UpdateSalesDraftHandler(
         ISalesInvoiceRepository repo,
@@ -642,9 +649,11 @@ public sealed class UpdateSalesDraftHandler
         ICurrentUser u,
         IOperationalPreferencesResolver preferences,
         ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy creditPolicy,
-        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo
+        ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository bankAccountRepo,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
@@ -777,6 +786,7 @@ public sealed class UpdateSalesDraftHandler
                 _costService,
                 preferences.SalesPos,
                 companyResponsibleCodes,
+                await _precision.GetEffectiveAsync(ct),
                 ct
             );
             if (linesResult.Error is not null)
@@ -1100,6 +1110,7 @@ file static class SalesLineBuilder
         IAverageCostService costService,
         SalesPosPreferences salesPosPreferences,
         IReadOnlyCollection<string> companyResponsibleCodes,
+        EffectivePrecisionPolicyDto precision,
         CancellationToken ct
     )
     {
@@ -1135,6 +1146,15 @@ file static class SalesLineBuilder
 
         foreach (var l in inputs)
         {
+            // ERP-PRECISION-OPERATIONAL-05B1: único punto donde el precio unitario (automático del
+            // Pricing Engine o manual, en Create y Update de borrador y tras un repricing) se
+            // normaliza a salesUnitPriceDecimals antes de persistirse en SalesInvoiceDetail.UnitPrice.
+            var unitPrice = Math.Round(
+                l.UnitPrice,
+                precision.SalesUnitPriceDecimals,
+                MidpointRounding.AwayFromZero
+            );
+
             // POS-DISCOUNT-RULES-01 (sales.pos.allow_manual_discount / max_discount_percent):
             // l.DiscountPct es siempre un descuento MANUAL de línea — un descuento por lista de
             // precios/promoción ya viene reflejado en l.UnitPrice (precio ya resuelto más bajo),
@@ -1215,7 +1235,19 @@ file static class SalesLineBuilder
 
                 uomCode = packagingSnapshot!.UomCode;
                 baseUomCode = packagingSnapshot.BaseUomCode;
-                conversionFactor = packagingSnapshot.ConversionFactor;
+                // ERP-PRECISION-OPERATIONAL-05B: el factor snapshot respeta conversionFactorDecimals.
+                conversionFactor = Math.Round(
+                    packagingSnapshot.ConversionFactor,
+                    precision.ConversionFactorDecimals,
+                    MidpointRounding.AwayFromZero
+                );
+                if (conversionFactor <= 0m)
+                    return new(
+                        null!,
+                        Result<SalesInvoiceDto>.ValidationFailure(
+                            $"Línea '{l.Description}': el factor de conversión de la presentación no es representable con {precision.ConversionFactorDecimals} decimales."
+                        )
+                    );
                 packagingLevelId = packagingSnapshot.PackagingLevelId;
 
                 // Kardex: la bodega de despacho es obligatoria por línea cuando el ítem
@@ -1274,7 +1306,7 @@ file static class SalesLineBuilder
                     if (maxDiscountPercent.HasValue)
                     {
                         var minAllowed = resolvedPrice * (1 - maxDiscountPercent.Value / 100m);
-                        if (l.UnitPrice < minAllowed)
+                        if (unitPrice < minAllowed)
                             return new(
                                 null!,
                                 Result<SalesInvoiceDto>.ValidationFailure(
@@ -1298,7 +1330,7 @@ file static class SalesLineBuilder
                 tid,
                 l.Description,
                 l.Quantity,
-                l.UnitPrice,
+                unitPrice,
                 vatCode,
                 uomCode,
                 l.ItemId,
@@ -1310,7 +1342,8 @@ file static class SalesLineBuilder
                 conversionFactor: conversionFactor,
                 warehouseId: warehouseId,
                 baseUomCode: baseUomCode,
-                packagingLevelId: packagingLevelId
+                packagingLevelId: packagingLevelId,
+                quantityDecimals: precision.QuantityDecimals
             );
 
             var taxResult = await SalesTaxHelper.ResolveTaxesAsync(line, tax, irbpnrCode, ct);
@@ -1347,9 +1380,11 @@ file static class SalesLineBuilder
                 );
                 if (averageCost > 0m)
                 {
+                    // ERP-PRECISION-OPERATIONAL-05B: costo unitario del snapshot → unitCostDecimals.
+                    // totalCostAtSale es derivado y conserva su escala fija (FiscalPrecision.UnitCost).
                     unitCostAtSale = Math.Round(
                         averageCost,
-                        FiscalPrecision.UnitCost,
+                        precision.UnitCostDecimals,
                         MidpointRounding.AwayFromZero
                     );
                     totalCostAtSale = Math.Round(
@@ -1371,7 +1406,7 @@ file static class SalesLineBuilder
                 pricingResultValue is not null
                     ? Math.Round(
                         pricingResultValue.BasePrice * conversionFactor,
-                        FiscalPrecision.UnitCost,
+                        precision.SalesUnitPriceDecimals,
                         MidpointRounding.AwayFromZero
                     )
                     : null;
@@ -1393,12 +1428,12 @@ file static class SalesLineBuilder
             // económica real (ej. regla que resuelve al mismo precio de lista) — en ese caso
             // decir "Descuento X% (regla)" es una mentira comercial (bug confirmado con evidencia
             // real de BD: discount_description no vacío con list_price_at_sale == unit_price).
-            // effectivePricingDiscount usa la misma precisión de precio unitario (FiscalPrecision.
-            // UnitCost, 6 decimales) que ListPriceAtSale/UnitPrice ya usan en este mismo método.
+            // effectivePricingDiscount usa la misma precisión de precio unitario (salesUnitPriceDecimals
+            // de la política de la empresa, ERP-PRECISION-OPERATIONAL-05B) que ListPriceAtSale/UnitPrice ya usan en este mismo método.
             var effectivePricingDiscount = listPriceAtSale.HasValue
                 ? Math.Round(
-                    listPriceAtSale.Value - l.UnitPrice,
-                    FiscalPrecision.UnitCost,
+                    listPriceAtSale.Value - unitPrice,
+                    precision.SalesUnitPriceDecimals,
                     MidpointRounding.AwayFromZero
                 )
                 : 0m;

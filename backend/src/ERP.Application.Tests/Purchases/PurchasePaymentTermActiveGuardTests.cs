@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.Services;
@@ -101,7 +102,8 @@ public sealed class PurchasePaymentTermActiveGuardTests
                 Company.Object,
                 Branch.Object,
                 User.Object,
-                DbEx.Object
+                DbEx.Object,
+                PrecisionPolicyTestDouble.Mock()
             );
 
         public static CreatePurchaseDraftCommand ValidCommand(Guid? paymentTermId = null) =>

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
@@ -28,6 +29,7 @@ public sealed class PricingResolver : IPricingResolver
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICompanyClock _companyClock;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public PricingResolver(
         IItemRepository items,
@@ -38,7 +40,8 @@ public sealed class PricingResolver : IPricingResolver
         IPricingAdjustmentStrategyResolver strategies,
         ICurrentTenant t,
         ICurrentCompany c,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
         _items = items;
@@ -50,6 +53,7 @@ public sealed class PricingResolver : IPricingResolver
         _t = t;
         _c = c;
         _companyClock = companyClock;
+        _precision = precision;
     }
 
     public async Task<Result<PricingResult>> ResolveAsync(
@@ -69,6 +73,9 @@ public sealed class PricingResolver : IPricingResolver
                 "El ítem no tiene precio base configurado. Verifique el maestro de productos."
             );
         var basePrice = item.BaseSalePrice.Value;
+        // ERP-PRECISION-OPERATIONAL-05B: el redondeo del precio unitario resuelto lo gobierna la
+        // política de precisión de la empresa activa (Application resuelve, Pricing no hardcodea).
+        var priceDecimals = (await _precision.GetEffectiveAsync(ct)).SalesUnitPriceDecimals;
 
         // 2. Resolve PriceList — PRICE-LIST-EXPIRED-FALLBACK-PVP-01: una lista inexistente,
         // deshabilitada, vencida o aún no vigente NUNCA bloquea la venta. Se ignora y se cae al
@@ -85,12 +92,12 @@ public sealed class PricingResolver : IPricingResolver
 
         if (!listApplies)
             return Result<PricingResult>.Success(
-                BasePriceResult(itemId, basePrice, priceList?.CurrencyCode)
+                BasePriceResult(itemId, basePrice, priceList?.CurrencyCode, priceDecimals)
             );
 
-        var resolved = await TryResolveAgainstListAsync(tenantId, itemId, priceList!, basePrice, null, ct);
+        var resolved = await TryResolveAgainstListAsync(tenantId, itemId, priceList!, basePrice, null, priceDecimals, ct);
         return Result<PricingResult>.Success(
-            resolved ?? BasePriceResult(itemId, basePrice, priceList!.CurrencyCode)
+            resolved ?? BasePriceResult(itemId, basePrice, priceList!.CurrencyCode, priceDecimals)
         );
     }
 
@@ -117,6 +124,7 @@ public sealed class PricingResolver : IPricingResolver
                 "El ítem no tiene precio base configurado. Verifique el maestro de productos."
             );
         var basePrice = item.BaseSalePrice.Value;
+        var priceDecimals = (await _precision.GetEffectiveAsync(ct)).SalesUnitPriceDecimals;
 
         // IPriceListSelectionResolver ya filtra vigencia/activación de cada PriceList candidata
         // (PRICE-LIST-EXPIRED-FALLBACK-PVP-01) y ya deduplica cuando la lista del cliente
@@ -138,6 +146,7 @@ public sealed class PricingResolver : IPricingResolver
                 priceList,
                 basePrice,
                 candidate.Source,
+                priceDecimals,
                 ct
             );
             if (resolved is not null)
@@ -146,7 +155,7 @@ public sealed class PricingResolver : IPricingResolver
 
         // Ningún candidato tenía el ítem asignado y activo — mismo fallback final que la lista
         // explícita/default inaplicable.
-        return Result<PricingResult>.Success(BasePriceResult(context.ItemId, basePrice, null));
+        return Result<PricingResult>.Success(BasePriceResult(context.ItemId, basePrice, null, priceDecimals));
     }
 
     /// <summary>
@@ -174,6 +183,8 @@ public sealed class PricingResolver : IPricingResolver
         var results = new Dictionary<Guid, PricingResult>();
         if (itemIds.Count == 0)
             return Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(results);
+
+        var priceDecimals = (await _precision.GetEffectiveAsync(ct)).SalesUnitPriceDecimals;
 
         // 1 query: mismos candidatos ordenados que usa el resolver single — una sola fuente de
         // verdad de "qué listas corresponden a este cliente", nunca reimplementada aquí.
@@ -225,11 +236,11 @@ public sealed class PricingResolver : IPricingResolver
                     continue;
 
                 rulesByListAndItem[candidate.PriceListId].TryGetValue(itemId, out var itemRule);
-                resolved = BuildResultForList(itemId, priceList, basePrice, itemRule, candidate.Source, _strategies);
+                resolved = BuildResultForList(itemId, priceList, basePrice, itemRule, candidate.Source, _strategies, priceDecimals);
                 break;
             }
 
-            results[itemId] = resolved ?? BasePriceResult(itemId, basePrice, null);
+            results[itemId] = resolved ?? BasePriceResult(itemId, basePrice, null, priceDecimals);
         }
 
         return Result<IReadOnlyDictionary<Guid, PricingResult>>.Success(results);
@@ -247,6 +258,7 @@ public sealed class PricingResolver : IPricingResolver
         PriceList priceList,
         decimal basePrice,
         PriceListSelectionSource? selectionSource,
+        int priceDecimals,
         CancellationToken ct
     )
     {
@@ -255,7 +267,7 @@ public sealed class PricingResolver : IPricingResolver
             return null;
 
         var itemRule = await _rules.GetActiveForItemInListAsync(tenantId, priceList.Id, itemId, ct);
-        return BuildResultForList(itemId, priceList, basePrice, itemRule, selectionSource, _strategies);
+        return BuildResultForList(itemId, priceList, basePrice, itemRule, selectionSource, _strategies, priceDecimals);
     }
 
     /// <summary>
@@ -271,13 +283,14 @@ public sealed class PricingResolver : IPricingResolver
         decimal basePrice,
         PricingRule? itemRule,
         PriceListSelectionSource? selectionSource,
-        IPricingAdjustmentStrategyResolver strategies
+        IPricingAdjustmentStrategyResolver strategies,
+        int priceDecimals
     )
     {
         // Resolve Rule — regla específica del ítem (si existe) > regla general de la lista > sin
         // ajuste. Precedencia + redondeo: núcleo compartido con la simulación batch
         // (GetItemPricingSimulation) — nunca reimplementado aquí.
-        var (unitPrice, ruleApplied) = PricingCalculation.Resolve(basePrice, itemRule, priceList, strategies);
+        var (unitPrice, ruleApplied) = PricingCalculation.Resolve(basePrice, itemRule, priceList, strategies, priceDecimals);
         var ruleDescription =
             ruleApplied is null ? null : PricingCalculation.Summarize(itemRule, priceList).Description;
 
@@ -295,7 +308,12 @@ public sealed class PricingResolver : IPricingResolver
         );
     }
 
-    private static PricingResult BasePriceResult(Guid itemId, decimal basePrice, string? currencyCode) =>
+    private static PricingResult BasePriceResult(
+        Guid itemId,
+        decimal basePrice,
+        string? currencyCode,
+        int priceDecimals
+    ) =>
         new(
             itemId,
             null,
@@ -304,6 +322,6 @@ public sealed class PricingResolver : IPricingResolver
             currencyCode ?? DefaultCurrencyCode,
             basePrice,
             null,
-            Math.Round(basePrice, 6, MidpointRounding.AwayFromZero)
+            Math.Round(basePrice, priceDecimals, MidpointRounding.AwayFromZero)
         );
 }

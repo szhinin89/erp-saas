@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
@@ -122,7 +123,8 @@ public sealed class PurchaseIceSpecificResolutionTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            Mock.Of<IDatabaseExceptionTranslator>()
+            Mock.Of<IDatabaseExceptionTranslator>(),
+            PrecisionPolicyTestDouble.Mock()
         );
 
     private static RecalculatePurchaseHandler BuildRecalculateHandler(
@@ -134,7 +136,8 @@ public sealed class PurchaseIceSpecificResolutionTests
             tax.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
 
     // ── Caso 1: create manual con ICE específico ────────────────────────────

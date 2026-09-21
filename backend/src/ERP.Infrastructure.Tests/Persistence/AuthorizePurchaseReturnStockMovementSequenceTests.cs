@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
@@ -246,7 +247,8 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         // Cada factura registra su propio ingreso — todas comparten el mismo Item/bodega, por lo
         // que todas compiten por el mismo "siguiente SequenceNumber" del Kardex.
@@ -320,7 +322,8 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
-            new RealDatabaseExceptionTranslator()
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
         );
         var creditRepo = new SupplierCreditRepository(
             db,
@@ -342,7 +345,8 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),
-            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock()
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            StandardPrecisionPolicyProvider.Instance
         );
 
         var result = await handler.Handle(

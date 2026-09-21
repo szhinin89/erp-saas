@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Payables.UseCases;
@@ -53,6 +54,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IOperationalPreferencesResolver _preferences;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public ConfirmPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -69,9 +71,11 @@ public sealed class ConfirmPurchaseHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
-        IOperationalPreferencesResolver preferences
+        IOperationalPreferencesResolver preferences,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _repo = repo;
         _stockRepo = stockRepo;
         _itemRepo = itemRepo;
@@ -101,6 +105,8 @@ public sealed class ConfirmPurchaseHandler
         var inv = await _repo.GetByIdAsync(tid, cmd.InvoiceId, ct);
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
+        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");

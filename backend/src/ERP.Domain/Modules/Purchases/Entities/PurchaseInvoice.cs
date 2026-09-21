@@ -285,6 +285,18 @@ public sealed class PurchaseInvoice
         SetUpdated(updatedBy);
     }
 
+    /// <summary>
+    /// ERP-PRECISION-OPERATIONAL-05B: fija en todas las líneas la escala de LandedUnitCost
+    /// (unitCostDecimals de la política de la empresa, resuelta por Application). Debe llamarse tras
+    /// cargar el agregado y antes de cualquier operación que recalcule costos (descuento global,
+    /// prorrateo de costos adicionales, Confirm). Las líneas ya congeladas conservan su valor.
+    /// </summary>
+    public void ApplyUnitCostPrecision(int unitCostDecimals)
+    {
+        foreach (var line in _lines)
+            line.UseUnitCostPrecision(unitCostDecimals);
+    }
+
     public void ApplyGlobalDiscount(decimal pct, Guid updatedBy)
     {
         EnsureDraft();

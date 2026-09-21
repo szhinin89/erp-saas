@@ -1,3 +1,4 @@
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Common;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.UseCases;
@@ -76,7 +77,8 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             repo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == Guid.NewGuid()),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -97,7 +99,8 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             repo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(
@@ -119,7 +122,8 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             repo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == Guid.NewGuid()),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(new AllocateFreightCommand(inv.Id), CancellationToken.None);
@@ -137,7 +141,8 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             repo.Object,
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(new AllocateFreightCommand(inv.Id), CancellationToken.None);
@@ -157,7 +162,8 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
             Mock.Of<ERP.Application.Modules.Purchases.Services.ISriTaxResolver>(),
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentBranch>(b => b.BranchId == Guid.NewGuid()),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId)
+            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
+            PrecisionPolicyTestDouble.Mock()
         );
 
         var result = await handler.Handle(new RecalculatePurchaseCommand(inv.Id), CancellationToken.None);

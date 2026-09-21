@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
@@ -123,7 +124,7 @@ public sealed class CreateDraftPurchaseCreditNoteValidator
         RuleForEach(x => x.ReturnLines).ChildRules(line =>
         {
             line.RuleFor(l => l.OriginalInvoiceDetailId).NotEmpty();
-            line.RuleFor(l => l.Quantity).GreaterThan(0).PrecisionScale(18, 4, true);
+            line.RuleFor(l => l.Quantity).GreaterThan(0).PrecisionScale(20, 6, true); // capacidad máxima; los decimales efectivos los aplica quantityDecimals (ERP-PRECISION-OPERATIONAL-05B)
         });
         RuleForEach(x => x.TaxSummaryLines)
             .ChildRules(line =>
@@ -201,6 +202,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly IPurchaseReturnRepository? _returnRepo;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
 
     public CreateDraftPurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
@@ -212,9 +214,11 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
         ICurrentCompany c,
         ICurrentBranch b,
         ICurrentUser u,
+        ICompanyPrecisionPolicyProvider precision,
         IPurchaseReturnRepository? returnRepo = null
     )
     {
+        _precision = precision;
         _creditNoteRepo = creditNoteRepo;
         _invoiceRepo = invoiceRepo;
         _payableRepo = payableRepo;
@@ -345,7 +349,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
             if (cmd.Lines.Count > 0)
                 return Result<PurchaseCreditNoteDto>.ValidationFailure("No se permiten líneas libres en una devolución.");
             var resolved = await CreditNoteReturnLines.ResolveAsync(invoice, cmd.ReturnLines ?? [],
-                _returnRepo!, tid, ct);
+                _returnRepo!, tid, (await _precision.GetEffectiveAsync(ct)).QuantityDecimals, ct);
             if (resolved.Error is not null)
                 return Result<PurchaseCreditNoteDto>.ValidationFailure(resolved.Error);
             lines = resolved.Fiscal;
