@@ -31,6 +31,38 @@ public sealed class RideRenderingSectionsTests
     private static byte[] CreateQrBytes(InvoiceRideDocumentLayout layout) =>
         RideQrCodeGeneratorTestFactory.Create().Generate(layout.Header.AccessKey);
 
+    [Theory]
+    [InlineData(false, 6, 4, "1.234567", "12.3457")]
+    [InlineData(true, 6, 4, "1.234567", "12.3457")]
+    [InlineData(false, 0, 6, "1", "12.345678")]
+    [InlineData(true, 0, 6, "1", "12.345678")]
+    public void Lines_use_company_scales_and_keep_fiscal_amounts_at_two(
+        bool creditNote, int quantityDecimals, int priceDecimals, string quantity, string price)
+    {
+        var source = RideRenderingFixtures.Minimal();
+        var line = ERP.Domain.Modules.Ride.ValueObjects.RideLine.Create(
+            "PRECISION", "Precision", 1.234567m, 12.345678m, 0.12m, 15.12m, []);
+        var model = ERP.Domain.Modules.Ride.ValueObjects.RideModel.Create(
+            source.Header, source.Issuer, source.Receiver, [line], source.TaxSummary,
+            source.Payments, source.AdditionalInfo);
+        IRideTemplate template = creditNote ? new CreditNoteRideTemplate() : new DefaultInvoiceRideTemplate();
+        var layout = (InvoiceRideDocumentLayout)template.Compose(
+            model, source.Branding, new RideLinePrecision(quantityDecimals, priceDecimals));
+        var svg = string.Join("", Document.Create(c => c.Page(p =>
+        {
+            p.Size(PageSizes.A4);
+            p.Content().Element(container => LinesSection.Compose(container, layout));
+        })).GenerateSvg());
+        var text = System.Xml.Linq.XDocument.Parse(svg).Descendants()
+            .Where(e => e.Name.LocalName == "text").Select(e => e.Value.Trim()).ToArray();
+        text.Should().Contain(quantity);
+        text.Should().Contain(price);
+        text.Should().Contain("0.12");
+        text.Should().Contain("15.12");
+        layout.Lines[0].Quantity.Should().Be(1.234567m);
+        layout.Lines[0].UnitPrice.Should().Be(12.345678m);
+    }
+
     [Fact]
     public void HeaderSection_renders_full_layout_without_throwing()
     {

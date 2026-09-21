@@ -71,11 +71,19 @@ export function sanitizeDecimal(
 export function roundToDecimals(value: number, decimals: number): number {
   if (!Number.isFinite(value)) return value;
   const sign = value < 0 ? -1 : 1;
-  // toPrecision(12) absorbe el ruido binario (1.4849999999999999 → 1.485) antes de redondear; los
-  // precios del ERP tienen como máximo 6 decimales, muy por debajo de 12 cifras significativas.
-  const normalized = Number(Math.abs(value).toPrecision(12));
-  const shifted = Math.round(Number(`${normalized}e${decimals}`));
-  return sign * Number(`${shifted}e-${decimals}`);
+  // Shift the decimal exponent without rounding significant digits, including e-notation.
+  const shift = (n: number, places: number): number => {
+    const [coefficient, exponent = "0"] = String(n).split("e");
+    return Number(`${coefficient}e${Number(exponent) + places}`);
+  };
+  const shifted = shift(Math.abs(value), decimals);
+  // At this magnitude Number already has no fractional precision at the requested scale.
+  if (shifted >= Number.MAX_SAFE_INTEGER) return value;
+  // Absorb only floating-point noise around a midpoint (e.g. 1.4849999999999999).
+  const whole = Math.floor(shifted);
+  const tolerance = Number.EPSILON * shifted;
+  const rounded = whole + (shifted - whole >= 0.5 - tolerance ? 1 : 0);
+  return sign * shift(rounded, -decimals);
 }
 
 export function formatMoney(value: number, decimals = 2): string {

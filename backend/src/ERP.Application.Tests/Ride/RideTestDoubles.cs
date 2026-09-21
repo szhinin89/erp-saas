@@ -27,7 +27,7 @@ internal sealed class FakeRideTemplate(RideDocumentType documentType) : IRideTem
 {
     public RideDocumentType DocumentType => documentType;
 
-    public IRideDocumentLayout Compose(RideModel model, RideBranding branding) =>
+    public IRideDocumentLayout Compose(RideModel model, RideBranding branding, RideLinePrecision precision) =>
         new FakeRideDocumentLayout();
 }
 

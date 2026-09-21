@@ -208,18 +208,14 @@ describe("ZHMoneyValue — decimals", () => {
     );
   });
 
-  it("decimals negativo usa fallback seguro (se recorta a 0)", () => {
-    render(<ZHMoneyValue value={100} decimals={-2} />);
-    expect(document.querySelector(".zh-money-value__amount")?.textContent).toBe(
-      "100",
-    );
+  it.each([undefined, "en-US"])("respects 10 decimals with locale %s", (locale) => {
+    render(<ZHMoneyValue value={0.0045783210} decimals={10} locale={locale} />);
+    expect(document.querySelector(".zh-money-value__amount")?.textContent).toBe("0.0045783210");
   });
 
-  it("decimals excesivo se limita (recorte a 6)", () => {
+  it("does not impose a frontend maximum", () => {
     render(<ZHMoneyValue value={100} decimals={12} />);
-    expect(document.querySelector(".zh-money-value__amount")?.textContent).toBe(
-      "100.000000",
-    );
+    expect(document.querySelector(".zh-money-value__amount")?.textContent).toBe("100.000000000000");
   });
 
   it("currencySymbol sigue renderizando con decimals custom", () => {

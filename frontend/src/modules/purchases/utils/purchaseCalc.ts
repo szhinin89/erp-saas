@@ -1,3 +1,4 @@
+import { roundToDecimals } from "../../../lib/sanitizers";
 import type {
   PurchaseLineInput,
   PurchaseItemContextDto,
@@ -202,7 +203,7 @@ export function buildCostDistributionInputFromFormLines(
       taxableBase + freightAllocated + otherCostsAllocated,
     );
     const landedUnitCost =
-      quantityInBaseUom > 0 ? round2(totalLineCost / quantityInBaseUom) : 0;
+      quantityInBaseUom > 0 ? roundToDecimals(totalLineCost / quantityInBaseUom, getPrecisionPolicy().unitCostDecimals) : 0;
     return {
       id: String(l._key),
       description: l.description,
@@ -269,7 +270,7 @@ export function simulateCostDistribution(
       participationPct: (subtotalBase / baseTotal) * 100,
       allocatedAmount: share,
       allocatedPerUnit: perUnit,
-      newUnitCost: round2(l.landedUnitCost + perUnit),
+      newUnitCost: roundToDecimals(l.landedUnitCost + perUnit, getPrecisionPolicy().unitCostDecimals),
       newLineTotal: round2(l.totalLineCost + share),
     };
   });

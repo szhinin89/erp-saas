@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Companies;
+using ERP.Domain.Configuration.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
@@ -221,7 +223,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                 countingRenderer,
                 storageService,
                 new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-                currentUser.Object
+                currentUser.Object,
+                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
+                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
             );
 
         Result<RideGenerationResultDto> firstResult;
@@ -366,7 +371,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                 countingRenderer,
                 storageService,
                 new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-                currentUser.Object
+                currentUser.Object,
+                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
+                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
             );
 
         Result<RideGenerationResultDto> firstResult;
@@ -478,7 +486,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                 ),
                 storageService,
                 new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-                currentUser.Object
+                currentUser.Object,
+                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
+                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
             );
 
         Result<RideGenerationResultDto> firstResult;
@@ -552,7 +563,8 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
             _tenantId,
             RideDocumentType.Invoice,
             electronicDocumentId,
-            "unversioned"
+            // Standard commercial policy (quantity 4, sales unit price 2) used by this fixture.
+            new RideLinePrecision(4, 2).TemplateVersion
         );
         var forbiddenFullPath = Path.GetFullPath(Path.Combine(_fileStorageBasePath, relativePath));
         Directory.CreateDirectory(forbiddenFullPath);
@@ -618,7 +630,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
             ),
             storageService,
             new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-            currentUser.Object
+            currentUser.Object,
+                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
+                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
         );
 
         var act = () =>

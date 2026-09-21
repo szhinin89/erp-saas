@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.Branding;
 using ERP.Application.Modules.Ride.DTOs;
@@ -18,19 +19,14 @@ namespace ERP.Application.Modules.Ride.Services;
 /// de un parser o plantilla registrados es un resultado esperado (<see cref="RideOutcome.Failed"/>
 /// con <c>ReasonCode</c> explícito), nunca una excepción.
 ///
-/// La versión de plantilla, de branding y de renderer son constantes neutras en esta fase
-/// (ADR-025, Fase 5 del plan): ni <see cref="IRideTemplate"/> ni
-/// <see cref="IRideBrandingProvider"/> ni <see cref="IRideRenderer"/> exponen todavía su propia
-/// versión — ese es un hueco real entre ADR-025 §14 y los contratos ya congelados en Fases 2-4,
-/// documentado en la auditoría de esta fase. La lógica de comparación de huella en sí (delegada a
-/// <see cref="IRideCacheStrategy"/>) ya es definitiva, no provisional.
+/// The template version includes company presentation scales to invalidate older PDFs.
+/// Branding and renderer retain their neutral versions.
 /// </summary>
 public sealed class RidePipeline
 {
     /// <summary>Versión de la forma de <see cref="ERP.Domain.Modules.Ride.ValueObjects.RideModel"/> — se incrementa si ese VO cambia.</summary>
     public const string RideSpecificationVersion = "1.0.0";
 
-    private const string NeutralTemplateVersion = "unversioned";
     private const string NeutralBrandingVersion = "unversioned";
     private const string NeutralRendererVersion = "unversioned";
 
@@ -44,6 +40,7 @@ public sealed class RidePipeline
     private readonly IRidePdfStorageService _storageService;
     private readonly IRidePdfDocumentRepository _repository;
     private readonly ICurrentUser _currentUser;
+    private readonly ICompanyPrecisionPolicyRepository _precisionPolicies;
 
     public RidePipeline(
         IRideSourceXmlProvider sourceXmlProvider,
@@ -55,7 +52,8 @@ public sealed class RidePipeline
         IRideRenderer renderer,
         IRidePdfStorageService storageService,
         IRidePdfDocumentRepository repository,
-        ICurrentUser currentUser
+        ICurrentUser currentUser,
+        ICompanyPrecisionPolicyRepository precisionPolicies
     )
     {
         _sourceXmlProvider = sourceXmlProvider;
@@ -68,6 +66,7 @@ public sealed class RidePipeline
         _storageService = storageService;
         _repository = repository;
         _currentUser = currentUser;
+        _precisionPolicies = precisionPolicies;
     }
 
     public async Task<Result<RideGenerationResultDto>> ExecuteAsync(
@@ -139,6 +138,15 @@ public sealed class RidePipeline
                 "template_not_registered"
             );
 
+        var policy = await _precisionPolicies.FindAsync(tenantId, companyId, ct);
+        if (policy is null)
+            return Result<RideGenerationResultDto>.Failure(
+                "La empresa no tiene configuracion de precision."
+            );
+        var precision = new RideLinePrecision(policy.QuantityDecimals, policy.SalesUnitPriceDecimals);
+        // Invalidate legacy F2 PDFs and keep cached rendering tied to its presentation scales.
+        var templateVersion = precision.TemplateVersion;
+
         // 4. Consultar estrategia de cache — huella completa (ADR-025 §14).
         var sourceXmlHash = _contentHasher.Compute(authorizedXml);
         var templateId = documentType.ToString();
@@ -148,7 +156,7 @@ public sealed class RidePipeline
             electronicDocumentId,
             sourceXmlHash,
             templateId,
-            NeutralTemplateVersion,
+            templateVersion,
             NeutralBrandingVersion,
             NeutralRendererVersion,
             RideSpecificationVersion,
@@ -165,7 +173,7 @@ public sealed class RidePipeline
                 tenantId,
                 electronicDocumentId,
                 sourceXmlHash,
-                NeutralTemplateVersion,
+                templateVersion,
                 NeutralBrandingVersion,
                 NeutralRendererVersion,
                 RideSpecificationVersion,
@@ -207,14 +215,14 @@ public sealed class RidePipeline
                     "branding_resolution_failed"
                 );
 
-            var layout = template.Compose(parseResult.Value!, brandingResult.Value!);
+            var layout = template.Compose(parseResult.Value!, brandingResult.Value!, precision);
             var pdfBytes = await _renderer.RenderAsync(layout, ct);
 
             var storeResult = await _storageService.StoreAsync(
                 tenantId,
                 documentType,
                 electronicDocumentId,
-                NeutralTemplateVersion,
+                templateVersion,
                 pdfBytes,
                 ct
             );
@@ -246,7 +254,7 @@ public sealed class RidePipeline
             tenantId,
             electronicDocumentId,
             sourceXmlHash,
-            NeutralTemplateVersion,
+            templateVersion,
             NeutralBrandingVersion,
             NeutralRendererVersion,
             RideSpecificationVersion,
@@ -263,7 +271,7 @@ public sealed class RidePipeline
                 documentType,
                 sourceXmlHash,
                 templateId,
-                NeutralTemplateVersion,
+                templateVersion,
                 NeutralBrandingVersion,
                 NeutralRendererVersion,
                 RideSpecificationVersion,
@@ -287,7 +295,7 @@ public sealed class RidePipeline
 
         var metadata = new RidePdfMetadataDto(
             templateId,
-            NeutralTemplateVersion,
+            templateVersion,
             NeutralBrandingVersion,
             NeutralRendererVersion,
             sourceXmlHash.Value,

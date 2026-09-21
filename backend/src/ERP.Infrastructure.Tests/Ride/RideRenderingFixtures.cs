@@ -43,7 +43,8 @@ internal static class RideRenderingFixtures
 
         var layout = new DefaultInvoiceRideTemplate().Compose(
             parseResult.Value!,
-            branding ?? RideBranding.Empty()
+            branding ?? RideBranding.Empty(),
+            new RideLinePrecision(2, 2)
         );
         return (InvoiceRideDocumentLayout)layout;
     }

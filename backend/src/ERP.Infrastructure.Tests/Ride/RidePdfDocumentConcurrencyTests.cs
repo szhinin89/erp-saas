@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Companies;
+using ERP.Domain.Configuration.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
@@ -112,7 +114,10 @@ public sealed class RidePdfDocumentConcurrencyTests : IAsyncLifetime
             ),
             storageService,
             new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-            currentUser.Object
+            currentUser.Object,
+                Mock.Of<ICompanyPrecisionPolicyRepository>(p =>
+                    p.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) ==
+                    Task.FromResult<CompanyPrecisionPolicy?>(CompanyPrecisionPolicy.CreateStandardCommercial(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid())))
         );
 
     [Fact]

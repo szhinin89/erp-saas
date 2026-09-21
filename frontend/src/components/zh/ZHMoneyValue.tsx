@@ -17,19 +17,14 @@ export type ZHMoneyValueProps = {
   /** Cantidad de decimales a mostrar — el módulo consumidor decide cuál config de decimales
    * aplica según el tipo de valor (`totalAmount`, `taxAmount`, `salesUnitPrice`,
    * `purchaseUnitCost`, etc.); `ZHMoneyValue` no conoce ni resuelve esa config por sí mismo.
-   * Default `2`. Se valida defensivamente: `undefined`/`null` → `2`; fuera de `[0, 6]` → se
-   * recorta al límite más cercano. */
+   * Default `2`. La policy backend valida la escala; el componente la respeta sin recortarla. */
   decimals?: number;
   className?: string;
 };
 
 const DEFAULT_DECIMALS = 2;
-const MIN_DECIMALS = 0;
-const MAX_DECIMALS = 6;
-
 function resolveDecimals(decimals: number | null | undefined): number {
-  if (decimals == null || Number.isNaN(decimals)) return DEFAULT_DECIMALS;
-  return Math.min(MAX_DECIMALS, Math.max(MIN_DECIMALS, Math.trunc(decimals)));
+  return decimals ?? DEFAULT_DECIMALS;
 }
 
 /** Sin `locale` prop ni `ZHLocaleProvider` en el árbol, se usa `formatMoney` (punto decimal

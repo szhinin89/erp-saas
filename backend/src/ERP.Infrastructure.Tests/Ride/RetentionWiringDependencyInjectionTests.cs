@@ -71,6 +71,7 @@ public sealed class RetentionWiringDependencyInjectionTests
         services.AddScoped<IRideXmlParserResolver, RideXmlParserResolver>();
         services.AddScoped<IRideXmlParser, InvoiceRideXmlParser>();
         services.AddScoped<IRideXmlParser, CreditNoteRideXmlParser>();
+        services.AddScoped<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyRepository, ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository>();
         services.AddScoped<IRideTemplateResolver, RideTemplateResolver>();
         services.AddScoped<IRideTemplate, DefaultInvoiceRideTemplate>();
         services.AddScoped<IRideTemplate, CreditNoteRideTemplate>();

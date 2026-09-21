@@ -103,7 +103,7 @@ public sealed class CreditNoteRideTemplateTests
             []
         );
 
-        var layout = new CreditNoteRideTemplate().Compose(model, RideBranding.Empty());
+        var layout = new CreditNoteRideTemplate().Compose(model, RideBranding.Empty(), new RideLinePrecision(2, 2));
 
         layout
             .Should()

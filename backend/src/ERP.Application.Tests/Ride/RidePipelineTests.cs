@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Companies;
+using ERP.Domain.Configuration.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.Branding;
 using ERP.Application.Modules.Ride.DTOs;
@@ -40,11 +42,14 @@ public sealed class RidePipelineTests
         public Mock<IRideRenderer> Renderer { get; } = new();
         public Mock<IRidePdfStorageService> StorageService { get; } = new();
         public Mock<IRidePdfDocumentRepository> Repository { get; } = new();
+        public Mock<ICompanyPrecisionPolicyRepository> PrecisionPolicies { get; } = new();
         public Mock<ICurrentUser> CurrentUser { get; } = new();
 
         public Fixture()
         {
             CurrentUser.SetupGet(u => u.UserId).Returns(UserId);
+            PrecisionPolicies.Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(CompanyPrecisionPolicy.CreateStandardCommercial(TenantId, CompanyId, UserId));
         }
 
         public RidePipeline BuildPipeline() =>
@@ -58,7 +63,8 @@ public sealed class RidePipelineTests
                 Renderer.Object,
                 StorageService.Object,
                 Repository.Object,
-                CurrentUser.Object
+                CurrentUser.Object,
+                PrecisionPolicies.Object
             );
 
         public void SetupAvailableSource(
@@ -84,6 +90,24 @@ public sealed class RidePipelineTests
                         )
                     )
                 );
+    }
+
+    [Fact]
+    public async Task Missing_company_policy_fails_without_rendering_or_using_cache()
+    {
+        var fixture = new Fixture();
+        fixture.SetupAvailableSource();
+        fixture.ParserResolver.Setup(r => r.Resolve(RideDocumentType.Invoice))
+            .Returns(new FakeRideXmlParser(RideDocumentType.Invoice));
+        fixture.TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
+            .Returns(new DefaultInvoiceRideTemplate());
+        fixture.PrecisionPolicies.Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CompanyPrecisionPolicy?)null);
+        var result = await fixture.BuildPipeline().ExecuteAsync(
+            TenantId, CompanyId, SourceModule, SourceEntityId, false, CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();
+        fixture.Renderer.Invocations.Should().BeEmpty();
+        fixture.CacheStrategy.Invocations.Should().BeEmpty();
     }
 
     [Fact]
@@ -242,17 +266,24 @@ public sealed class RidePipelineTests
         );
     }
 
-    [Fact]
-    public async Task Case3_parser_and_template_registered_completes_the_full_orchestration_on_cache_miss()
+    [Theory]
+    [InlineData(false, false, 4, 2)]
+    [InlineData(false, true, 6, 4)]
+    [InlineData(true, false, 4, 2)]
+    [InlineData(true, true, 6, 4)]
+    public async Task Case3_parser_and_template_registered_completes_the_full_orchestration_on_cache_miss(
+        bool creditNote, bool highPrecision, int quantityDecimals, int priceDecimals)
     {
         var fixture = new Fixture();
-        fixture.SetupAvailableSource();
-        fixture
-            .ParserResolver.Setup(r => r.Resolve(RideDocumentType.Invoice))
-            .Returns(new FakeRideXmlParser(RideDocumentType.Invoice));
-        fixture
-            .TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
-            .Returns(new FakeRideTemplate(RideDocumentType.Invoice));
+        var documentType = creditNote ? RideDocumentType.CreditNote : RideDocumentType.Invoice;
+        fixture.SetupAvailableSource(documentType);
+        fixture.PrecisionPolicies.Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(highPrecision
+                ? CompanyPrecisionPolicy.CreateHighPrecision(TenantId, CompanyId, UserId)
+                : CompanyPrecisionPolicy.CreateStandardCommercial(TenantId, CompanyId, UserId));
+        fixture.ParserResolver.Setup(r => r.Resolve(documentType)).Returns(new FakeRideXmlParser(documentType));
+        fixture.TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
+            .Returns(creditNote ? new CreditNoteRideTemplate() : new DefaultInvoiceRideTemplate());
         fixture
             .ContentHasher.Setup(h => h.Compute(AuthorizedXml))
             .Returns(RideContentHash.Create(new string('a', 64)));
@@ -285,7 +316,7 @@ public sealed class RidePipelineTests
             .StorageService.Setup(s =>
                 s.StoreAsync(
                     TenantId,
-                    RideDocumentType.Invoice,
+                    documentType,
                     ElectronicDocumentId,
                     It.IsAny<string>(),
                     It.IsAny<byte[]>(),
@@ -324,6 +355,18 @@ public sealed class RidePipelineTests
         result.Value.StoragePath.Should().Be("ride/path/v1.pdf");
         result.Value.Metadata.Should().NotBeNull();
         result.Value.Metadata!.WasCached.Should().BeFalse();
+        var version = $"precision-1-q{quantityDecimals}-p{priceDecimals}";
+        result.Value.Metadata.TemplateVersion.Should().Be(version);
+        fixture.PrecisionPolicies.Verify(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Renderer.Verify(r => r.RenderAsync(
+            It.Is<IRideDocumentLayout>(l => l is InvoiceRideDocumentLayout &&
+                ((InvoiceRideDocumentLayout)l).Precision.QuantityDecimals == quantityDecimals &&
+                ((InvoiceRideDocumentLayout)l).Precision.SalesUnitPriceDecimals == priceDecimals),
+            It.IsAny<CancellationToken>()), Times.Once);
+        fixture.CacheStrategy.Verify(c => c.TryGetCachedAsync(
+            TenantId, ElectronicDocumentId, It.IsAny<RideContentHash>(), documentType.ToString(),
+            version, "unversioned", "unversioned", RidePipeline.RideSpecificationVersion,
+            It.IsAny<CancellationToken>()), Times.Once);
         fixture.Repository.Verify(
             r => r.AddAsync(It.IsAny<RidePdfDocument>(), It.IsAny<CancellationToken>()),
             Times.Once

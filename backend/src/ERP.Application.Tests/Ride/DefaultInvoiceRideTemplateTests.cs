@@ -25,7 +25,7 @@ public sealed class DefaultInvoiceRideTemplateTests
         );
         var template = new DefaultInvoiceRideTemplate();
 
-        var layout = template.Compose(model, branding);
+        var layout = template.Compose(model, branding, new RideLinePrecision(2, 2));
 
         layout.Should().BeOfType<InvoiceRideDocumentLayout>();
         var invoiceLayout = (InvoiceRideDocumentLayout)layout;
@@ -57,7 +57,7 @@ public sealed class DefaultInvoiceRideTemplateTests
         var model = RideTestModelBuilder.Build();
         var template = new DefaultInvoiceRideTemplate();
 
-        var layout = template.Compose(model, RideBranding.Empty());
+        var layout = template.Compose(model, RideBranding.Empty(), new RideLinePrecision(2, 2));
 
         // El tipo de retorno (IRideDocumentLayout, sin miembros propios) ya impide que Compose
         // exponga bytes en su firma — esta prueba solo confirma que produce un objeto real.

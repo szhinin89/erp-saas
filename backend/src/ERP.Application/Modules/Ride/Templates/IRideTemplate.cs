@@ -13,5 +13,5 @@ public interface IRideTemplate
 {
     RideDocumentType DocumentType { get; }
 
-    IRideDocumentLayout Compose(RideModel model, RideBranding branding);
+    IRideDocumentLayout Compose(RideModel model, RideBranding branding, RideLinePrecision precision);
 }

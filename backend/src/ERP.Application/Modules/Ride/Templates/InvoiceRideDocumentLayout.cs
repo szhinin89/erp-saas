@@ -11,6 +11,7 @@ namespace ERP.Application.Modules.Ride.Templates;
 /// </summary>
 public sealed class InvoiceRideDocumentLayout : IRideDocumentLayout
 {
+    public RideLinePrecision Precision { get; }
     public RideHeader Header { get; }
     public RideParty Issuer { get; }
     public RideParty Receiver { get; }
@@ -21,8 +22,9 @@ public sealed class InvoiceRideDocumentLayout : IRideDocumentLayout
     public RideBranding Branding { get; }
     public string QrPlaceholder { get; }
 
-    public InvoiceRideDocumentLayout(RideModel model, RideBranding branding)
+    public InvoiceRideDocumentLayout(RideModel model, RideBranding branding, RideLinePrecision precision)
     {
+        Precision = precision;
         Header = model.Header;
         Issuer = model.Issuer;
         Receiver = model.Receiver;

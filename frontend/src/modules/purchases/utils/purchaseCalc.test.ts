@@ -1,3 +1,6 @@
+import { buildCostDistributionInputFromFormLines, simulateCostDistribution } from "./purchaseCalc";
+import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
+import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   lineGross,
@@ -395,4 +398,27 @@ describe("payload de confirmación", () => {
     const rows = generateScheduleRows(5, 15, 500, "2026-01-01");
     rows.forEach((r, i) => expect(r.number).toBe(i + 1));
   });
+});
+
+
+describe("unit costs retain operational precision", () => {
+  it.each([[2, 0.33, 0.66], [6, 0.333333, 0.666666], [10, 0.3333333333, 0.6666666666]])(
+    "uses unitCostDecimals=%s independently of purchase and fiscal scales",
+    (decimals, expectedCost, expectedNewCost) => {
+      setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, unitCostDecimals: decimals });
+      try {
+        const lines = buildCostDistributionInputFromFormLines([
+          { ...mkLine(1, 1, "10", 0), _key: 1, quantityInBaseUom: 3 },
+        ]);
+        expect(lines[0].landedUnitCost).toBe(expectedCost);
+        expect(lines[0].totalLineCost).toBe(1);
+        const result = simulateCostDistribution(lines, new Set(["1"]), 1);
+        expect(result[0].newUnitCost).toBe(expectedNewCost);
+        expect(result[0].allocatedAmount).toBe(1);
+        expect(result[0].newLineTotal).toBe(2);
+      } finally {
+        setPrecisionPolicyForTests(TEST_PRECISION_POLICY);
+      }
+    },
+  );
 });
