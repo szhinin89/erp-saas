@@ -79,7 +79,7 @@ public sealed class StockAdjustment
             // DATETIME-COMPANY-CLOCK-GLOBAL-FIX-01: día operativo de la empresa (ICompanyClock,
             // resuelto en Application), nunca DateTime.UtcNow crudo — Domain no accede al reloj,
             // solo recibe el DateOnly ya resuelto.
-            AdjustmentDate = adjustmentDate.ToDateTime(TimeOnly.MinValue),
+            AdjustmentDate = UtcDateTime.Normalize(adjustmentDate.ToDateTime(TimeOnly.MinValue)),
             Status = "Draft",
         };
         a.SetCreated(createdBy);
